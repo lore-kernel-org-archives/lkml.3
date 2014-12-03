@@ -1,57 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaLCHFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:05:20 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:54013 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaLCHFS convert rfc822-to-8bit (ORCPT
+	id S1751941AbaLCHF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:05:57 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:53850 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaLCHFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:05:18 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB375ASB021284, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next] r8152: reduce memory copy for rx
-Thread-Topic: [PATCH net-next] r8152: reduce memory copy for rx
-Thread-Index: AQHQDrgS8Vmh5UfiJ0iekivC5Eu1N5x821QAgACRkiA=
-Date: Wed, 3 Dec 2014 07:05:10 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2ED360A@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-105-Taiwan-albertk@realtek.com>
- <1417586858.5303.118.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1417586858.5303.118.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 3 Dec 2014 02:05:55 -0500
+From: gyungoh@gmail.com
+X-Google-Original-From: jack.yoo@skyworksinc.com
+To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        trivial@kernel.org
+Cc: akpm@linux-foundation.org, jic23@kernel.org,
+        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
+        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
+        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v10 0/6] Add Skyworks SKY81452 device drivers
+Date: Wed,  3 Dec 2014 16:05:26 +0900
+Message-Id: <1417590332-4912-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-> Sent: Wednesday, December 03, 2014 2:08 PM
-[...]
-> Better performance for what workload exactly ?
+From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-I test it by using Chariot with 4 Tx and 4 Rx.
-It has about 4% improvement.
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
+sky81452-regulator was already applied. So this series doesn't
+include it.
 
-> cloning in rx path has many drawbacks, with skb->truesize 
-> being usually wrong.
+v10:
+Removed trivial get_brightness implementations for sky81452-backlight
 
-Excuse me. I find the skb_clone() would copy the
-truesize from original skb. Do you mean the value
-may not be suitable for the cloned skb?
+v9:
+Removed the change to remove MODULE_VERSION() for sky81452-regulator
 
-Could other method do the same thing? Or, do you
-think keeping the original one is better?
- 
-Best Regards,
-Hayes
+v8:
+Renamed property names for backlight with vendor prefix
+Modified gpio-enable property to generic property for GPIO
+Made up the example for backlight DT
+Changed the DT parsing of regulator using regulator_node and of_match
+
+v7:
+Modified licensing text to GPLv2
+Splitted Kconfig renaming from DT patch
+
+v6:
+Added new line character at the end of line of dev_err()
+
+v5:
+Changed DT for regulator : 'lout' node should be defined under 'regulator'
+Removed compatible string from sky81452-regulator driver
+Modified sky81452-regulator to return EINVAL when of_node is NULL
+Move sky81452-backlight.h to include/linux/platform_data
+
+v4:
+Removed MODULE_VERSION()
+Modified license to GPLv2
+Removed calling to backlight_device_unregister() in sky81452-backlight
+
+v3:
+Cleaned-up DBG messages
+Cleaned-up DT
+Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+Assigned mfd_cell.of_compatible for binding device node
+Modified error messages
+Modified sky81452-regulator to return ENODATA when of_node is NULL
+
+v2:
+Split the patches for each sub-system
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
+Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
+
+Gyungoh Yoo (6):
+  mfd: Add support for Skyworks SKY81452 driver
+  backlight: Add support Skyworks SKY81452 backlight driver
+  devicetree: mfd: Add new SKY81452 mfd binding
+  devicetree: backlight: Add new SKY81452 backlight binding
+  devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+  devicetree: i2c: Add SKY81452 to the Trivial Devices list
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  36 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  29 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 108 +++++++
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 334 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  31 ++
+ include/linux/platform_data/sky81452-backlight.h   |  46 +++
+ 12 files changed, 610 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/platform_data/sky81452-backlight.h
+
+-- 
+1.9.1
+
