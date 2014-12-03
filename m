@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaLCIHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:07:43 -0500
-Received: from [119.145.14.66] ([119.145.14.66]:43499 "EHLO
-	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaLCIHl (ORCPT
+	id S1751981AbaLCIII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:08:08 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:44457 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaLCIIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:07:41 -0500
-Message-ID: <547EC4A3.6060408@huawei.com>
-Date: Wed, 3 Dec 2014 16:06:59 +0800
-From: Qin Chuanyu <qinchuanyu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 3 Dec 2014 03:08:06 -0500
+Date: Wed, 3 Dec 2014 09:08:00 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alex Dubov <alex.dubov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+Message-ID: <20141203080800.GB5193@localhost.localdomain>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+ <1417494919-4577-2-git-send-email-oakad@yahoo.com>
+ <20141202170037.GG29748@ZenIV.linux.org.uk>
+ <CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
+ <1417589446.5303.121.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-To: <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: What's the concern about setting irq thread's policy as SCHED_FIFO
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.21.101]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.547EC4AD.0100,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5feaae0133f1305aacef6603134b4a07
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417589446.5303.121.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am doing network performance test under suse11sp3 and intel 82599 nic,
-Becasuse the softirq is out of schedule policy's control, so netserver 
-thread couldn't always get 100% cpu usage, then packet dropped in kernel 
-udp socket's receive queue.
+On Tue, Dec 02, 2014 at 10:50:46PM -0800, Eric Dumazet wrote:
+> I think I will ignore your future mails.
 
-In order to get a stable result, I did some patch in ixgbe driver and 
-then use irq_thread instead of softirq to handle rx.
-It seems work well, but irq_thread's SCHED_FIFO schedule policy cause 
-that when the cpu is limited, netserver couldn't work at all.
+And I won't have time to read them either, because I will be too busy
+passing fds to my two collies.
 
-So I change the irq_thread's schedule policy from SCHED_FIFO to 
-SCHED_NORMAL, then the irq_thread could share the cpu usage with 
-netserver thread.
-
-the question is:
-What's the concrete reason about setting irq thread's policy as SCHED_FIFO?
-Except the priority affecting the cpu usage, any function would be 
-broken if irq thread change to SCHED_NORMAL?
-
+Cheers,
+Richard
