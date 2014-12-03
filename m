@@ -1,2094 +1,3784 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaLCXMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:12:47 -0500
-Received: from mout.gmx.net ([212.227.17.20]:50631 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214AbaLCXMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:12:44 -0500
-Message-ID: <547F98DF.5050009@gmx.de>
-Date: Thu, 04 Dec 2014 00:12:31 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:33.0) Gecko/20100101 Firefox/33.0 SeaMonkey/2.30
-MIME-Version: 1.0
-To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
-        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/5] misc: sensorhub: Add sensorhub driver
-References: <1416593957-19788-1-git-send-email-k.wrona@samsung.com> <1416593957-19788-2-git-send-email-k.wrona@samsung.com>
-In-Reply-To: <1416593957-19788-2-git-send-email-k.wrona@samsung.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Provags-ID: V03:K0:Wlji1q6ARefO8vYNNqIRfB0cXmYwWg1L5G/jYTh3lE8kIXvIPH1
- U4wKR8LtNbX0m6y/rvzpacuCIJUhReHYQFbAqX2YqmF4ES1lqRt4lyPBNYETkbEZvwvIqod
- R/nT4OYgp6tihzx6pV3FwI0aHYh7+WWPRryIwWklsBWncGwZLoAUQe9lyJx7dn27ajlCgso
- pb33/+RJeouuJEqPJ5azg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752515AbaLCXNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:13:09 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33447 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457AbaLCXNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 18:13:04 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>, devicetree@vger.kernel.org,
+        linux-api <linux-api@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3] media: platform: add VPFE capture driver support for AM437X
+Date: Wed,  3 Dec 2014 23:12:58 +0000
+Message-Id: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karol Wrona schrieb am 21.11.2014 um 19:19:
-> Sensorhub  is MCU dedicated to collect data and manage several sensors.
-> Sensorhub is a spi device which provides a layer for IIO devices. It provides
-> some data parsing and common mechanism for sensorhub sensors.
-> 
-> Adds common sensorhub library for sensorhub driver and iio drivers
-> which uses sensorhub MCU to communicate with sensors.
-Quite massive. One major issue, also in the other patches, is that you miss to add the ssp_ prefix to functions, variables and definitions in some cases. Please take care of all of them. Also find some comments inline.
-> 
-> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/misc/Kconfig                   |    1 +
->  drivers/misc/Makefile                  |    1 +
->  drivers/misc/sensorhub/Kconfig         |   13 +
->  drivers/misc/sensorhub/Makefile        |    6 +
->  drivers/misc/sensorhub/ssp.h           |  279 +++++++++++
->  drivers/misc/sensorhub/ssp_dev.c       |  828 ++++++++++++++++++++++++++++++++
->  drivers/misc/sensorhub/ssp_spi.c       |  653 +++++++++++++++++++++++++
->  include/linux/iio/common/ssp_sensors.h |   79 +++
->  8 files changed, 1860 insertions(+)
->  create mode 100644 drivers/misc/sensorhub/Kconfig
->  create mode 100644 drivers/misc/sensorhub/Makefile
->  create mode 100644 drivers/misc/sensorhub/ssp.h
->  create mode 100644 drivers/misc/sensorhub/ssp_dev.c
->  create mode 100644 drivers/misc/sensorhub/ssp_spi.c
->  create mode 100644 include/linux/iio/common/ssp_sensors.h
-> 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index b2e68c1..89001ce 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -529,4 +529,5 @@ source "drivers/misc/genwqe/Kconfig"
->  source "drivers/misc/echo/Kconfig"
->  source "drivers/misc/cxl/Kconfig"
->  source "drivers/misc/stm32fwu/Kconfig"
-> +source "drivers/misc/sensorhub/Kconfig"
->  endmenu
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 88c8999..27d0881 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -57,3 +57,4 @@ obj-$(CONFIG_ECHO)		+= echo/
->  obj-$(CONFIG_VEXPRESS_SYSCFG)	+= vexpress-syscfg.o
->  obj-$(CONFIG_CXL_BASE)		+= cxl/
->  obj-$(CONFIG_STM32_UPGRADE_PROTOCOL)	+= stm32fwu/
-> +obj-$(CONFIG_SENSORS_SAMSUNG_SSP)	+= sensorhub/
-> diff --git a/drivers/misc/sensorhub/Kconfig b/drivers/misc/sensorhub/Kconfig
-> new file mode 100644
-> index 0000000..a77dc1f
-> --- /dev/null
-> +++ b/drivers/misc/sensorhub/Kconfig
-> @@ -0,0 +1,13 @@
-> +#
-> +# sensor drivers configuration
-> +#
-> +config SENSORS_SAMSUNG_SSP
-> +	tristate "Samsung Sensorhub driver"
-> +	depends on SPI
-> +	select STM32_UPGRADE_PROTOCOL
-> +	help
-> +	  SSP driver for sensor hub.
-> +	  If you say yes here you get ssp support for
-> +	  sensor hub.
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ssp_dev.
-> diff --git a/drivers/misc/sensorhub/Makefile b/drivers/misc/sensorhub/Makefile
-> new file mode 100644
-> index 0000000..c40ed72
-> --- /dev/null
-> +++ b/drivers/misc/sensorhub/Makefile
-> @@ -0,0 +1,6 @@
-> +#
-> +# Makefile for the sensor drivers.
-> +#
-> +
-> +obj-$(CONFIG_SENSORS_SAMSUNG_SSP)		+= ssp_dev.o ssp_spi.o
-> +
-> diff --git a/drivers/misc/sensorhub/ssp.h b/drivers/misc/sensorhub/ssp.h
-> new file mode 100644
-> index 0000000..e19ad21
-> --- /dev/null
-> +++ b/drivers/misc/sensorhub/ssp.h
-> @@ -0,0 +1,279 @@
-> +/*
-> + *  Copyright (C) 2011, Samsung Electronics Co. Ltd. All Rights Reserved.
-Maybe add 2014?
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef __SSP_SENSORHUB_H__
-> +#define __SSP_SENSORHUB_H__
-> +
-> +#include <linux/delay.h>
-> +#include <linux/gpio.h>
-> +#include <linux/iio/common/ssp_sensors.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/spi/spi.h>
-> +
-> +#define SSP_DEVICE_ID		0x55
-> +
-> +#ifdef SSP_DBG
-> +#define ssp_dbg(format, ...) pr_info("[SSP] "format, ##__VA_ARGS__)
-> +#else
-> +#define ssp_dbg(format, ...)
-> +#endif
-> +
-> +#define SSP_SW_RESET_TIME		3000
-> +/* Sensor polling in ms */
-> +#define SSP_DEFUALT_POLLING_DELAY	200
-Typo: SSP_DEFAULT_POLLING_DELAY
-> +#define SSP_DEFAULT_RETRIES		3
-> +#define SSP_DATA_PACKET_SIZE		960
-> +
-> +enum {
-> +	SSP_KERNEL_BINARY = 0,
-> +	SSP_KERNEL_CRASHED_BINARY,
-> +};
-> +
-> +enum {
-> +	SSP_INITIALIZATION_STATE = 0,
-> +	SSP_NO_SENSOR_STATE,
-> +	SSP_ADD_SENSOR_STATE,
-> +	SSP_RUNNING_SENSOR_STATE,
-> +};
-> +
-> +/* Firmware download STATE */
-> +enum {
-> +	SSP_FW_DL_STATE_FAIL = -1,
-> +	SSP_FW_DL_STATE_NONE = 0,
-> +	SSP_FW_DL_STATE_NEED_TO_SCHEDULE,
-> +	SSP_FW_DL_STATE_SCHEDULED,
-> +	SSP_FW_DL_STATE_DOWNLOADING,
-> +	SSP_FW_DL_STATE_SYNC,
-> +	SSP_FW_DL_STATE_DONE,
-> +};
-> +
-> +#define SSP_INVALID_REVISION			99999
-> +#define SSP_INVALID_REVISION2			0xffffff
-> +
-> +/* AP -> SSP Instruction */
-> +#define SSP_MSG2SSP_INST_BYPASS_SENSOR_ADD	0xa1
-> +#define SSP_MSG2SSP_INST_BYPASS_SENSOR_REMOVE	0xa2
-> +#define SSP_MSG2SSP_INST_REMOVE_ALL		0xa3
-> +#define SSP_MSG2SSP_INST_CHANGE_DELAY		0xa4
-> +#define SSP_MSG2SSP_INST_LIBRARY_ADD		0xb1
-> +#define SSP_MSG2SSP_INST_LIBRARY_REMOVE		0xb2
-> +#define SSP_MSG2SSP_INST_LIB_NOTI		0xb4
-> +#define SSP_MSG2SSP_INST_LIB_DATA		0xc1
-> +
-> +#define SSP_MSG2SSP_AP_MCU_SET_GYRO_CAL		0xcd
-> +#define SSP_MSG2SSP_AP_MCU_SET_ACCEL_CAL	0xce
-> +#define SSP_MSG2SSP_AP_STATUS_SHUTDOWN		0xd0
-> +#define SSP_MSG2SSP_AP_STATUS_WAKEUP		0xd1
-> +#define SSP_MSG2SSP_AP_STATUS_SLEEP		0xd2
-> +#define SSP_MSG2SSP_AP_STATUS_RESUME		0xd3
-> +#define SSP_MSG2SSP_AP_STATUS_SUSPEND		0xd4
-> +#define SSP_MSG2SSP_AP_STATUS_RESET		0xd5
-> +#define SSP_MSG2SSP_AP_STATUS_POW_CONNECTED	0xd6
-> +#define SSP_MSG2SSP_AP_STATUS_POW_DISCONNECTED	0xd7
-> +#define SSP_MSG2SSP_AP_TEMPHUMIDITY_CAL_DONE	0xda
-> +#define SSP_MSG2SSP_AP_MCU_SET_DUMPMODE		0xdb
-> +#define SSP_MSG2SSP_AP_MCU_DUMP_CHECK		0xdc
-> +#define SSP_MSG2SSP_AP_MCU_BATCH_FLUSH		0xdd
-> +#define SSP_MSG2SSP_AP_MCU_BATCH_COUNT		0xdf
-> +
-> +#define SSP_MSG2SSP_AP_WHOAMI				0x0f
-> +#define SSP_MSG2SSP_AP_FIRMWARE_REV			0xf0
-> +#define SSP_MSG2SSP_AP_SENSOR_FORMATION			0xf1
-> +#define SSP_MSG2SSP_AP_SENSOR_PROXTHRESHOLD		0xf2
-> +#define SSP_MSG2SSP_AP_SENSOR_BARCODE_EMUL		0xf3
-> +#define SSP_MSG2SSP_AP_SENSOR_SCANNING			0xf4
-> +#define SSP_MSG2SSP_AP_SET_MAGNETIC_HWOFFSET		0xf5
-> +#define SSP_MSG2SSP_AP_GET_MAGNETIC_HWOFFSET		0xf6
-> +#define SSP_MSG2SSP_AP_SENSOR_GESTURE_CURRENT		0xf7
-> +#define SSP_MSG2SSP_AP_GET_THERM			0xf8
-> +#define SSP_MSG2SSP_AP_GET_BIG_DATA			0xf9
-> +#define SSP_MSG2SSP_AP_SET_BIG_DATA			0xfa
-Double check these two values, as in other cases _SET has lower value than _GET.
-> +#define SSP_MSG2SSP_AP_START_BIG_DATA			0xfb
-> +#define SSP_MSG2SSP_AP_SET_MAGNETIC_STATIC_MATRIX	0xfd
-> +#define SSP_MSG2SSP_AP_SENSOR_TILT			0xea
-> +#define SSP_MSG2SSP_AP_MCU_SET_TIME			0xfe
-> +#define SSP_MSG2SSP_AP_MCU_GET_TIME			0xff
-> +
-> +#define SSP_MSG2SSP_AP_FUSEROM				0x01
-Leave an empty line?
-> +/* voice data */
-> +#define SSP_TYPE_WAKE_UP_VOICE_SERVICE			0x01
-> +#define SSP_TYPE_WAKE_UP_VOICE_SOUND_SOURCE_AM		0x01
-> +#define SSP_TYPE_WAKE_UP_VOICE_SOUND_SOURCE_GRAMMER	0x02
-> +
-> +/* Factory Test */
-> +#define SSP_ACCELEROMETER_FACTORY			0x80
-> +#define SSP_GYROSCOPE_FACTORY				0x81
-> +#define SSP_GEOMAGNETIC_FACTORY				0x82
-> +#define SSP_PRESSURE_FACTORY				0x85
-> +#define SSP_GESTURE_FACTORY				0x86
-> +#define SSP_TEMPHUMIDITY_CRC_FACTORY			0x88
-> +#define SSP_GYROSCOPE_TEMP_FACTORY			0x8a
-> +#define SSP_GYROSCOPE_DPS_FACTORY			0x8b
-> +#define SSP_MCU_FACTORY					0x8c
-> +#define SSP_MCU_SLEEP_FACTORY				0x8d
-> +
-> +/* SSP -> AP ACK about write CMD */
-> +#define SSP_MSG_ACK		0x80	/* ACK from SSP to AP */
-> +#define SSP_MSG_NAK		0x70	/* NAK from SSP to AP */
-> +
-> +/* Accelerometer sensor*/
-> +/* 16bits */
-> +/* FIXME rev min max for others */
-Use multiline comment style? Otherwise mind a space at the end of the first comment line.
-> +#define SSP_MAX_ACCEL_1G	16384
-> +#define SSP_MAX_ACCEL_2G	32767
-> +#define SSP_MIN_ACCEL_2G	-32768
-> +#define SSP_MAX_ACCEL_4G	65536
-> +
-> +#define SSP_MAX_GYRO	32767
-> +#define SSP_MIN_GYRO	-32768
-> +
-> +struct ssp_sensorhub_info {
-> +	char *fw_name;
-> +	char *fw_crashed_name;
-> +	unsigned int fw_rev;
-> +	const u8 * const mag_table;
-> +	const unsigned int mag_length;
-> +};
-> +
-> +/* ssp_msg options bit*/
-Mind a space.
-> +#define SSP_RW		0
-> +#define SSP_INDEX	3
-> +
-> +enum {
-> +	SSP_AP2HUB_READ = 0,
-> +	SSP_AP2HUB_WRITE,
-> +	SSP_HUB2AP_WRITE,
-> +	SSP_AP2HUB_READY,
-> +	SSP_AP2HUB_RETURN
-These values should be explicitly defined, to prevent failures.
-> +};
-> +
-> +enum {
-> +	SSP_BIG_TYPE_DUMP = 0,
-> +	SSP_BIG_TYPE_READ_LIB,
-> +	SSP_BIG_TYPE_VOICE_NET,
-> +	SSP_BIG_TYPE_VOICE_GRAM,
-> +	SSP_BIG_TYPE_VOICE_PCM,
-> +	SSP_BIG_TYPE_TEMP,
-> +	SSP_BIG_TYPE_MAX,
-> +};
-> +
-> +/**
-> + * struct ssp_data - ssp platformdata structure
-> + * @spi:		spi device
-> + * @sensorhub_info:	info about sensorhub board specific features
-> + * @wdt_timer:		watchdog timer
-> + * @work_wdt:		watchdog work
-> + * @work_firmware:	firmware upgrade work queue
-> + * @work_refresh:	refresh worqueue for reset request from MCU
-typo: work queue
-> + * @shut_down:		shut down flag
-> + * @mcu_dump_mode:	mcu dump mode for debug
-> + * @time_syncing:	time syncing indication flag
-> + * @timestamp:		previous time in ns calculated for time syncing
-> + * @check_status:	status table for each sensor
-> + * @com_fail_cnt:	communication fail count
-> + * @reset_cnt:		reset count
-> + * @time_out_cnt:	timeout count
-> + * @available_sensors:	available sensors seen by sensorhub (bit array)
-> + * @cur_firm_rev:	cached current firmware revision
-> + * @last_resume_state:	last AP resume/suspend state used to handle
-> + * the PM state of ssp
-Move some parts into the previous line and indent the rest more to indicate its status of description.
-> + * @last_ap_state:	(obsolete) sleep notification for MCU
-> + * @sensor_enable:	sensor enable mask
-> + * @delay_buf:		data acquisition intervals table
-> + * @batch_latency_buf:	jet unknown but existing in communication protocol
-> + * @batch_opt_buf:	jet unknown but existing in communication protocol
-> + * @accel_position:	jet unknown but existing in communication protocol
-> + * @mag_position:	jet unknown but existing in communication protocol
-Typo: yet
-> + * @fw_dl_state:	firmware download state
-> + * @comm_lock:		lock protecting the handshake
-> + * @pending_lock:	lock protecting pending list and completion
-> + * @mcu_reset:		mcu reset line
-> + * @ap_mcu_gpio:	ap to mcu gpio line
-> + * @mcu_ap_gpio:	mcu to ap gpio line
-> + * @pending_list:	pending list for messages queued to be sent/read
-> + * @sensor_devs:	registered IIO devices table
-> + * @enable_refcount:	enable reference count for wdt timer (watchdog)
-for wdt (watchdog timer)
-> + */
-> +struct ssp_data {
-> +	struct spi_device *spi;
-> +	struct ssp_sensorhub_info *sensorhub_info;
-> +	struct timer_list wdt_timer;
-> +	struct work_struct work_wdt;
-> +	struct delayed_work work_firmware;
-> +	struct delayed_work work_refresh;
-> +
-> +	bool shut_down;
-> +	bool mcu_dump_mode;
-> +	bool time_syncing;
-> +	int64_t timestamp;
-> +
-> +	int check_status[SSP_SENSOR_MAX];
-> +
-> +	unsigned int com_fail_cnt;
-> +	unsigned int reset_cnt;
-> +	unsigned int time_out_cnt;
-rename to timeout_cnt?
-> +
-> +	unsigned int available_sensors;
-> +	unsigned int cur_firm_rev;
-> +
-> +	char last_resume_state;
-> +	char last_ap_state;
-> +
-> +	unsigned int sensor_enable;
-> +	u32 delay_buf[SSP_SENSOR_MAX];
-> +	s32 batch_latency_buf[SSP_SENSOR_MAX];
-> +	s8 batch_opt_buf[SSP_SENSOR_MAX];
-> +
-> +	int accel_position;
-> +	int mag_position;
-> +	int fw_dl_state;
-> +
-> +	struct mutex comm_lock;
-> +	struct mutex pending_lock;
-> +
-> +	int mcu_reset;
-> +	int ap_mcu_gpio;
-> +	int mcu_ap_gpio;
-> +
-> +	struct list_head pending_list;
-> +
-> +	struct iio_dev *sensor_devs[SSP_SENSOR_MAX];
-> +	atomic_t enable_refcount;
-> +};
-> +
-> +void ssp_clean_pending_list(struct ssp_data *data);
-> +
-> +int ssp_command(struct ssp_data *data, char command, int arg);
-> +
-> +int ssp_send_instruction(struct ssp_data *, u8 inst, u8 sensor_type,
-> +			 u8 *send_buf, u8 length);
-int ssp_send_instruction(struct ssp_data *data, u8 inst, u8 sensor_type,
-			 u8 *send_buf, u8 length);
-> +
-> +int ssp_irq_msg(struct ssp_data *data);
-> +
-> +int ssp_get_chipid(struct ssp_data *data);
-> +
-> +int ssp_get_fuserom_data(struct ssp_data *data);
-Unused?
-> +
-> +int ssp_set_sensor_position(struct ssp_data *data);
-> +
-> +int ssp_set_magnetic_matrix(struct ssp_data *data);
-> +
-> +unsigned int ssp_get_sensor_scanning_info(struct ssp_data *data);
-> +
-> +unsigned int ssp_get_firmware_rev(struct ssp_data *data);
-> +
-> +int ssp_queue_ssp_refresh_task(struct ssp_data *data, int delay);
-> +
-> +#endif /* __SSP_SENSORHUB_H__ */
-> diff --git a/drivers/misc/sensorhub/ssp_dev.c b/drivers/misc/sensorhub/ssp_dev.c
-> new file mode 100644
-> index 0000000..09954c5
-> --- /dev/null
-> +++ b/drivers/misc/sensorhub/ssp_dev.c
-> @@ -0,0 +1,828 @@
-> +/*
-> +*  Copyright (C) 2012, Samsung Electronics Co. Ltd. All Rights Reserved.
-2014?
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/firmware.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/stm32fwu.h>
-> +#include "ssp.h"
-> +
-> +#define SSP_WDT_TIME		10000
-> +#define LIMIT_RESET_CNT		20
-> +#define LIMIT_TIMEOUT_CNT	3
-> +
-> +/* It is possible that it is max clk rate for version 1.0 of bootcode */
-> +#define BOOT_SPI_HZ	400000
-> +
-> +static const u8 magnitude_table[] = {110, 85, 171, 71, 203, 195, 0, 67, 208,
-> +	56, 175, 244, 206, 213, 0, 92, 250, 0, 55, 48, 189, 252, 171, 243, 13,
-> +	45, 250};
-> +
-> +static const struct ssp_sensorhub_info rinato_info = {
-> +	.fw_name = "ssp_B2.fw",
-> +	.fw_crashed_name = "ssp_crashed.fw",
-> +	.fw_rev = 14052300,
-> +	.mag_table = magnitude_table,
-> +	.mag_length = ARRAY_SIZE(magnitude_table),
-> +};
-> +
-> +static const struct ssp_sensorhub_info thermostat_info = {
-> +	.fw_name = "thermostat_B2.fw",
-> +	.fw_crashed_name = "ssp_crashed.fw",
-> +	.fw_rev = 14080600,
-> +	.mag_table = magnitude_table,
-> +	.mag_length = ARRAY_SIZE(magnitude_table),
-> +};
-> +
-> +static void start_reset_sequence(struct ssp_data *data)
-> +{
-> +	int i;
-> +
-> +	dev_info(&data->spi->dev, "%s\n", __func__);
-> +
-> +	gpio_set_value(data->mcu_reset, 0);
-> +	usleep_range(4000, 4100);
-> +	gpio_set_value(data->mcu_reset, 1);
-> +	msleep(45);
-> +
-> +	for (i = 0; i < 9; i++) {
-> +		gpio_set_value(data->mcu_reset, 0);
-> +		usleep_range(4000, 4100);
-> +		gpio_set_value(data->mcu_reset, 1);
-> +		usleep_range(15000, 15500);
-> +	}
-> +}
-> +
-> +static void ssp_toggle_mcu_reset(struct ssp_data *data)
-> +{
-> +	gpio_set_value(data->mcu_reset, 0);
-> +	usleep_range(1000, 1200);
-> +	gpio_set_value(data->mcu_reset, 1);
-> +	msleep(50);
-> +}
-> +
-> +static void sync_available_sensors(struct ssp_data *data)
-> +{
-> +	int i, ret;
-> +
-> +	for (i = 0; i < SSP_SENSOR_MAX; ++i) {
-> +		if ((data->available_sensors << i)  == 1)
-You probably mean:
-		if (data->available_sensors & BIT(i)) {
-> +			ret = ssp_enable_sensor(data, i, data->delay_buf[i]);
-> +			if (ret < 0)
-> +				continue;
-So, continue on error, but continue loop anyway if everything is fine? Maybe better output an error message.
-		}
-> +	}
-> +
-> +	ret  = ssp_command(data, SSP_MSG2SSP_AP_MCU_SET_DUMPMODE,
-> +			    data->mcu_dump_mode);
-Double space and too much indentation on second line.
-> +	if (ret < 0) {
-> +		pr_err("[SSP]: %s - SSP_MSG2SSP_AP_MCU_SET_DUMPMODE failed\n",
-> +		       __func__);
-> +	}
-> +}
-> +
-> +static void ssp_enable_mcu(struct ssp_data *data, bool enable)
-> +{
-> +	dev_info(&data->spi->dev, "Enable = %d, old enable = %d\n", enable,
-> +		 data->shut_down);
-This message is misleading, as data->shut_down doesn't mean the same as enable.
-> +
-> +	if (enable && data->shut_down) {
-> +		data->shut_down = false;
-> +		enable_irq(data->spi->irq);
-> +		enable_irq_wake(data->spi->irq);
-> +	} else if (!enable && !data->shut_down) {
-> +		data->shut_down = true;
-> +		disable_irq(data->spi->irq);
-> +		disable_irq_wake(data->spi->irq);
-> +	} else {
-> +		dev_err(&data->spi->dev,
-> +			"Error / enable = %d, old enable = %d\n", enable,
-> +			data->shut_down);
-Does this situation qualify as error?
-> +	}
-> +}
-> +
-> +static int ssp_forced_to_download(struct ssp_data *data, int bin_type)
-Parameter bin_type unused.
-> +{
-> +	int ret = 0, retry = 3;
-ret doesn't need to be initialized.
-> +	unsigned int speed;
-> +	struct stm32fwu_fw *fwu;
-> +	const struct firmware *fw = NULL;
-> +
-> +	ssp_dbg("%s, mcu binany update!\n", __func__);
-> +
-> +	ssp_enable_mcu(data, false);
-> +
-> +	data->fw_dl_state = SSP_FW_DL_STATE_DOWNLOADING;
-> +	dev_info(&data->spi->dev, "%s, DL state = %d\n", __func__,
-> +		 data->fw_dl_state);
-> +
-> +	speed = data->spi->max_speed_hz;
-> +	data->spi->max_speed_hz = BOOT_SPI_HZ;
-> +	ret = spi_setup(data->spi);
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev, "failed to setup spi for ssp_boot\n");
-> +		goto _err_begin;
-> +	}
-> +
-> +	dev_info(&data->spi->dev, "ssp_load_fw start\n");
-> +
-> +	ret = request_firmware(&fw, data->sensorhub_info->fw_name,
-> +			       &data->spi->dev);
-> +	if (ret < 0)
-> +		goto _err_begin;
-> +
-> +	fwu = stm32fwu_init(&data->spi->dev, STM32_SPI_SAMSUNG, fw->data,
-> +			    fw->size);
-> +	if (fwu == NULL) {
-> +		dev_err(&data->spi->dev, "stm32fw init  fail\n");
-> +		goto _err_fw;
-> +	}
-> +
-> +	start_reset_sequence(data);
-> +
-> +	ret = stm32fwu_spi_send_sync(fwu);
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev, "send sync failed with %d\n", ret);
-> +		return ret;
-goto _err_fwu; instead?
-> +	}
-> +
-> +	do {
-> +		dev_info(&data->spi->dev, "%d try\n", 3 - retry);
-> +		ret = stm32fwu_update(fwu);
-> +	} while (retry-- > 0 && ret < 0);
-What if update failed 3 times?
-> +
-> +	data->spi->max_speed_hz = speed;
-> +	ret = spi_setup(data->spi);
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev, "failed to setup spi for ssp_norm\n");
-> +		goto _err_fwu;
-> +	}
-> +
-> +	if (ret < 0)
-> +		goto _err_fwu;
-Should that be moved up after the update loop?
-> +
-> +	data->fw_dl_state = SSP_FW_DL_STATE_SYNC;
-> +	dev_info(&data->spi->dev, "%s, DL state = %d\n", __func__,
-> +		 data->fw_dl_state);
-> +
-> +	ssp_enable_mcu(data, true);
-> +
-> +	data->fw_dl_state = SSP_FW_DL_STATE_DONE;
-> +	dev_info(&data->spi->dev, "%s, DL state = %d\n", __func__,
-> +		 data->fw_dl_state);
-3 times the same message here. Maybe define a macro?
-> +
-> +_err_fwu:
-> +	stm32fwu_destroy(fwu);
-> +_err_fw:
-> +	release_firmware(fw);
-> +_err_begin:
-> +	if (ret < 0) {
-> +		data->fw_dl_state = SSP_FW_DL_STATE_FAIL;
-> +		dev_err(&data->spi->dev,
-> +			"%s - update_mcu_bin failed!\n", __func__);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +/*
-> + * This function is the first one which communicates with the mcu so it is
-> + * possible that the first attempt will fail
-> + */
-> +static int ssp_check_fwbl(struct ssp_data *data)
-> +{
-> +	int retries = 0;
-> +
-> +	while (retries++ < 5) {
-> +		data->cur_firm_rev = ssp_get_firmware_rev(data);
-> +		if (data->cur_firm_rev == SSP_INVALID_REVISION
-> +			|| data->cur_firm_rev == SSP_INVALID_REVISION2
-> +			|| data->cur_firm_rev < 0) {
-data->cur_firm_rev is unsigned.
-> +			dev_warn(&data->spi->dev,
-> +				 "Invalid revision, trying %d time\n", retries);
-> +		} else
-> +			break;
-> +	}
-> +
-> +	if (data->cur_firm_rev == SSP_INVALID_REVISION
-> +		|| data->cur_firm_rev == SSP_INVALID_REVISION2) {
-> +		dev_err(&data->spi->dev, "SSP_INVALID_REVISION\n");
-> +		return SSP_FW_DL_STATE_NEED_TO_SCHEDULE;
-> +
-> +	} else {
-No need for else.
-> +		if (data->cur_firm_rev != data->sensorhub_info->fw_rev) {
-> +			dev_info(&data->spi->dev,
-> +				 "MCU Firm Rev : Old = %8u, New = %8u\n",
-> +				 data->cur_firm_rev,
-> +				 data->sensorhub_info->fw_rev);
-> +
-> +			return SSP_FW_DL_STATE_NEED_TO_SCHEDULE;
-> +		}
-> +		dev_info(&data->spi->dev,
-> +			 "MCU Firm Rev : Old = %8u, New = %8u\n",
-> +			 data->cur_firm_rev,
-> +			 data->sensorhub_info->fw_rev);
-Maybe restructure, to first do dev_info, and then compare firmware revision.
-> +	}
-> +
-> +	return SSP_FW_DL_STATE_NONE;
-> +}
-> +
-> +static void reset_mcu(struct ssp_data *data)
-> +{
-> +	ssp_enable_mcu(data, false);
-> +	ssp_clean_pending_list(data);
-> +	ssp_toggle_mcu_reset(data);
-> +	ssp_enable_mcu(data, true);
-> +}
-> +
-> +static void wdt_work_func(struct work_struct *work)
-> +{
-> +	struct ssp_data *data = container_of(work, struct ssp_data, work_wdt);
-> +
-> +	dev_err(&data->spi->dev, "%s - Sensor state: 0x%x, RC: %u, CC: %u\n",
-> +		__func__, data->available_sensors, data->reset_cnt,
-> +		data->com_fail_cnt);
-> +
-> +	reset_mcu(data);
-> +	data->com_fail_cnt = 0;
-> +	data->time_out_cnt = 0;
-> +}
-> +
-> +static void wdt_timer_func(unsigned long ptr)
-> +{
-> +	struct ssp_data *data = (struct ssp_data *)ptr;
-> +
-> +	switch (data->fw_dl_state) {
-> +	case SSP_FW_DL_STATE_FAIL:
-> +	case SSP_FW_DL_STATE_DOWNLOADING:
-> +	case SSP_FW_DL_STATE_SYNC:
-> +		goto _mod;
-> +	}
-> +
-> +	if (data->time_out_cnt > LIMIT_TIMEOUT_CNT
-> +	    || data->com_fail_cnt > LIMIT_RESET_CNT)
-> +		queue_work(system_power_efficient_wq, &data->work_wdt);
-> +_mod:
-> +	mod_timer(&data->wdt_timer, jiffies + msecs_to_jiffies(SSP_WDT_TIME));
-> +}
-> +
-> +static void enable_wdt_timer(struct ssp_data *data)
-> +{
-> +	mod_timer(&data->wdt_timer, jiffies + msecs_to_jiffies(SSP_WDT_TIME));
-> +}
-> +
-> +static void disable_wdt_timer(struct ssp_data *data)
-> +{
-> +	del_timer_sync(&data->wdt_timer);
-> +	cancel_work_sync(&data->work_wdt);
-> +}
-> +
-> +/**
-> + * ssp_get_sensor_delay() - gets sensor data acquisition period
-> + * @data:	sensorhub structure
-> + * @type:	SSP sensor type
-> + *
-> + * Returns acquisition period in ms
-> + */
-> +u32 ssp_get_sensor_delay(struct ssp_data *data, enum ssp_sensor_type type)
-> +{
-> +	return data->delay_buf[type];
-> +}
-> +EXPORT_SYMBOL(ssp_get_sensor_delay);
-> +
-> +/**
-> + * ssp_enable_sensor() - enables data acquisition for sensor
-> + * @data:	sensorhub structure
-> + * @type:	SSP sensor type
-> + * @delay:	delay in ms
-> + *
-> + * Returns 0 or negative value in case of error
-> + */
-> +int ssp_enable_sensor(struct ssp_data *data, enum ssp_sensor_type type,
-> +		       u32 delay)
-> +{
-> +	int ret = 0;
-No need to initialize ret.
-> +	struct {
-> +		__le32 a;
-> +		__le32 b;
-> +		u8 c;
-> +	} __attribute__((__packed__)) to_send;
-> +
-> +	to_send.a = cpu_to_le32(delay);
-> +	to_send.b = cpu_to_le32(data->batch_latency_buf[type]);
-> +	to_send.c = data->batch_opt_buf[type];
-> +
-> +	switch (data->check_status[type]) {
-> +	case SSP_INITIALIZATION_STATE:
-> +		/* do calibration step */
-Is this supposed to fall through?
-> +	case SSP_ADD_SENSOR_STATE:
-> +		ret = ssp_send_instruction(data,
-> +					   SSP_MSG2SSP_INST_BYPASS_SENSOR_ADD,
-> +					   type,
-> +					   (char *)&to_send, sizeof(to_send));
-(u8 *)&to_send (if at all necessary)?
-> +		if (ret < 0) {
-> +			dev_err(&data->spi->dev, "Enabling sensor failed\n");
-> +			data->check_status[type] = SSP_NO_SENSOR_STATE;
-> +			goto derror;
-> +		}
-> +
-> +		data->sensor_enable |= 1 << type;
-Could be done as:
-		data->sensor_enable |= BIT(type);
-> +		data->check_status[type] = SSP_RUNNING_SENSOR_STATE;
-> +		break;
-> +	case SSP_RUNNING_SENSOR_STATE:
-> +		ret = ssp_send_instruction(data,
-> +					   SSP_MSG2SSP_INST_CHANGE_DELAY, type,
-> +				       (char *)&to_send, sizeof(to_send));
-Same as above, and improve indentation.
-> +		if (ret < 0) {
-> +			dev_err(&data->spi->dev,
-> +				"Changing delay sensor failed\n");
-"Changing sensor delay failed\n"
-> +			goto derror;
-> +		}
-> +		break;
-> +	default:
-> +		data->check_status[type] = SSP_ADD_SENSOR_STATE;
-> +		break;
-> +	}
-> +
-> +	data->delay_buf[type] = delay;
-> +
-> +	if (atomic_inc_return(&data->enable_refcount) == 1)
-> +		enable_wdt_timer(data);
-> +
-> +	return 0;
-> +
-> +derror:
-> +	return -EIO;
-return ret;
-> +}
-> +EXPORT_SYMBOL(ssp_enable_sensor);
-> +
-> +/**
-> + * ssp_change_delay() - changes data acquisition for sensor
-> + * @data:	sensorhub structure
-> + * @type:	SSP sensor type
-> + * @delay:	delay in ms
-> + *
-> + * Returns 0 or negative value in case of error
-> + */
-> +int ssp_change_delay(struct ssp_data *data, enum ssp_sensor_type type,
-> +		     u32 delay)
-> +{
-> +	int ret = 0;
-No need to initialize ret.
-> +	struct {
-> +		__le32 a;
-> +		__le32 b;
-> +		u8 c;
-> +	} __attribute__((__packed__)) to_send;
-> +
-> +	to_send.a = cpu_to_le32(delay);
-> +	to_send.b = cpu_to_le32(data->batch_latency_buf[type]);
-> +	to_send.c = data->batch_opt_buf[type];
-> +
-> +	ret = ssp_send_instruction(data, SSP_MSG2SSP_INST_CHANGE_DELAY, type,
-> +			       (char *)&to_send, sizeof(to_send));
-Improve indentation.
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev,
-> +			"Changing delay sensor failed\n");
-> +		return ret;
-> +	}
-> +
-> +	data->delay_buf[type] = delay;
-> +
-> +	return ret;
-return 0;
-> +}
-> +EXPORT_SYMBOL(ssp_change_delay);
-> +
-> +/**
-> + * ssp_disable_sensor() - disables sensor
-> + *
-> + * @data:	sensorhub structure
-> + * @type:	SSP sensor type
-> + *
-> + * Returns 0 or negative value in case of error
-> + */
-> +int ssp_disable_sensor(struct ssp_data *data, enum ssp_sensor_type type)
-> +{
-> +	int ret = 0;
-> +	__le32 command;
-> +
-> +	if (data->sensor_enable & (1 << type)) {
-(1 << type) could be written as BIT(type).
-> +		command  = cpu_to_le32(data->delay_buf[type]);
-Double whitespace.
-> +		ret = ssp_send_instruction(data,
-> +					  SSP_MSG2SSP_INST_BYPASS_SENSOR_REMOVE,
-> +				       type, (char *)&command, sizeof(__le32));
-sizeof(command)? Also improve intendation.
-> +		if (ret < 0) {
-> +			dev_err(&data->spi->dev, "Remove sensor fail\n");
-> +			return ret;
-> +		}
-> +
-> +		data->sensor_enable &= (~(1 << type));
-> +	}
-> +
-> +	data->check_status[type] = SSP_ADD_SENSOR_STATE;
-> +
-> +	if (atomic_dec_and_test(&data->enable_refcount))
-> +		disable_wdt_timer(data);
-> +
-> +	return ret;
-return 0;
-> +}
-> +EXPORT_SYMBOL(ssp_disable_sensor);
-> +
-> +static irqreturn_t sensordata_irq_thread_fn(int irq, void *dev_id)
-> +{
-> +	struct ssp_data *data = dev_id;
-> +
-> +	ssp_irq_msg(data);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int ssp_initialize_mcu(struct ssp_data *data)
-> +{
-> +	int ret;
-> +
-> +	ssp_clean_pending_list(data);
-> +
-> +	ret = ssp_get_chipid(data);
-> +	if (ret != SSP_DEVICE_ID) {
-> +		dev_err(&data->spi->dev, "%s - MCU %s ret = %d\n", __func__,
-> +		       ret < 0 ? "is not working" : "identyfication failed",
-Typo: identification. Also improve indentation.
-> +		       ret);
-> +		return ret >= 0 ? -ENODEV : ret;
-Turning it around to return ret < 0 ? ret : -ENODEV; makes it easier comparable
-to the message above.
-> +	}
-> +
-> +	dev_info(&data->spi->dev, "MCU device ID = %d, reading ID = %d\n",
-> +		 SSP_DEVICE_ID, ret);
-Whats the sense of a comparing message, since at this point ret == SSP_DEVICE_ID.
-> +
-> +	ret = ssp_set_sensor_position(data);
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev, "ssp_set_sensor_position failed\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = ssp_set_magnetic_matrix(data);
-> +	if (ret < 0)
-> +		dev_err(&data->spi->dev,
-> +			"%s - ssp_set_magnetic_matrix failed\n", __func__);
-Maybe return in case of error?
-> +
-> +	data->available_sensors = ssp_get_sensor_scanning_info(data);
-> +	if (data->available_sensors == 0) {
-> +		dev_err(&data->spi->dev,
-> +			"%s - ssp_get_sensor_scanning_info failed\n", __func__);
-> +		return -EIO;
-> +	}
-> +
-> +	data->cur_firm_rev = ssp_get_firmware_rev(data);
-> +	dev_info(&data->spi->dev, "MCU Firm Rev : New = %8u\n",
-> +		 data->cur_firm_rev);
-> +
-> +	return ssp_command(data, SSP_MSG2SSP_AP_MCU_DUMP_CHECK, 0);
-> +}
-> +
-> +static void ssp_refresh_task(struct work_struct *work)
-> +{
-> +	struct ssp_data *data = container_of((struct delayed_work *)work,
-> +			struct ssp_data, work_refresh);
-Improve indentation.
-> +
-> +	dev_info(&data->spi->dev, "refreshing\n");
-> +
-> +	data->reset_cnt++;
-> +
-> +	if (ssp_initialize_mcu(data) > 0) {
-Check for >= 0.
-> +		sync_available_sensors(data);
-> +		if (data->last_ap_state != 0)
-> +			ssp_command(data, data->last_ap_state, 0);
-> +
-> +		if (data->last_resume_state != 0)
-> +			ssp_command(data, data->last_resume_state, 0);
-> +
-> +		data->time_out_cnt = 0;
-> +		data->com_fail_cnt = 0;
-> +	}
-> +}
-> +
-> +int ssp_queue_ssp_refresh_task(struct ssp_data *data, int delay)
-Unsigned delay?
-> +{
-> +	cancel_delayed_work_sync(&data->work_refresh);
-> +
-> +	return queue_delayed_work(system_power_efficient_wq,
-> +				  &data->work_refresh,
-> +				  msecs_to_jiffies(delay));
-> +}
-> +
-> +static void work_function_firmware_update(struct work_struct *work)
-> +{
-> +	int ret;
-> +	struct ssp_data *data = container_of((struct delayed_work *)work,
-> +				struct ssp_data, work_firmware);
-Improve indentation.
-> +
-> +	dev_info(&data->spi->dev, "%s, is called\n", __func__);
-> +
-> +	ret = ssp_forced_to_download(data, SSP_KERNEL_BINARY);
-> +	if (ret < 0) {
-> +		dev_err(&data->spi->dev,
-> +			 "%s, ssp_forced_to_download failed!\n",
-Improve indentation.
-> +			__func__);
-> +		return;
-> +	}
-> +
-> +	ssp_queue_ssp_refresh_task(data, SSP_SW_RESET_TIME);
-> +
-> +	dev_info(&data->spi->dev, "%s done\n", __func__);
-> +}
-> +
-> +#ifdef CONFIG_OF
-> +static struct of_device_id ssp_of_match[] = {
-> +	{
-> +		.compatible	= "samsung,sensorhub-rinato",
-> +		.data		= &rinato_info,
-> +	}, {
-> +		.compatible	= "samsung,sensorhub-thermostat",
-> +		.data		= &thermostat_info,
-> +	},
-> +};
-> +MODULE_DEVICE_TABLE(of, ssp_of_match);
-> +
-> +static struct ssp_data *ssp_parse_dt(struct device *dev)
-> +{
-> +	int ret;
-> +	struct ssp_data *pdata;
-Name it data, like in all other cases before?
-> +	struct device_node *node = dev->of_node;
-> +	const struct of_device_id *match;
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return NULL;
-> +
-> +	pdata->mcu_ap_gpio = of_get_named_gpio(node, "mcu-ap-gpio", 0);
-> +	if (pdata->mcu_ap_gpio < 0)
-> +		goto err_free_pd;
-> +
-> +	pdata->ap_mcu_gpio = of_get_named_gpio(node, "ap-mcu-gpio", 0);
-> +	if (pdata->ap_mcu_gpio < 0)
-> +		goto err_free_pd;
-> +
-> +	pdata->mcu_reset = of_get_named_gpio(node, "mcu-reset", 0);
-> +	if (pdata->mcu_reset < 0)
-> +		goto err_free_pd;
-> +
-> +	ret = devm_gpio_request_one(dev, pdata->ap_mcu_gpio,
-> +				    GPIOF_OUT_INIT_HIGH, "ap-mcu-gpio");
-> +	if (ret)
-> +		goto err_free_pd;
-> +
-> +	ret = devm_gpio_request_one(dev, pdata->mcu_reset,
-> +				    GPIOF_OUT_INIT_HIGH, "mcu-reset");
-> +	if (ret)
-> +		goto err_ap_mcu;
-> +
-> +	match = of_match_node(ssp_of_match, node);
-> +	if (!match)
-> +		goto err_mcu_reset;
-> +
-> +	pdata->sensorhub_info = (struct ssp_sensorhub_info *) match->data;
-> +
-> +	ret = of_platform_populate(node, NULL, NULL, dev);
-> +	if (ret < 0) {
-> +		dev_err(dev, "of_platform_populate fail\n");
-> +		goto err_mcu_reset;
-> +	}
-> +
-> +	return pdata;
-> +
-> +err_mcu_reset:
-> +	devm_gpio_free(dev, pdata->mcu_reset);
-> +err_ap_mcu:
-> +	devm_gpio_free(dev, pdata->ap_mcu_gpio);
-> +err_free_pd:
-> +	devm_kfree(dev, pdata);
-> +	return NULL;
-> +}
-> +#else
-> +static struct ssp_data *ssp_parse_dt(struct platform_device *pdev)
-> +{
-> +	return NULL;
-> +}
-> +#endif
-> +
-> +/**
-> + * ssp_register_consumer() - registers iio consumer in ssp framework
-> + *
-> + * @indio_dev:	consumer iio device
-> + * @type:	ssp sensor type
-> + */
-> +void ssp_register_consumer(struct iio_dev *indio_dev, enum ssp_sensor_type type)
-> +{
-> +	/*TODO 3rd level device - hide it*/
-Missing whitespace at beginning and end of comment.
-> +	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
-> +
-> +	data->sensor_devs[type] = indio_dev;
-> +}
-> +EXPORT_SYMBOL(ssp_register_consumer);
-> +
-> +static int ssp_probe(struct spi_device *spi)
-> +{
-> +	int ret, i;
-> +	struct ssp_data *data;
-> +
-> +	data = spi->dev.platform_data;
-> +	if (!data) {
-> +		data = ssp_parse_dt(&spi->dev);
-> +		if (!data) {
-> +			dev_err(&spi->dev,
-> +				"%s:Failed to find platform data\n", __func__);
-> +			return -ENODEV;
-> +		}
-> +	}
-> +
-> +	spi->mode = SPI_MODE_1;
-> +	ret = spi_setup(spi);
-> +	if (ret < 0) {
-> +		dev_err(&spi->dev, "Failed to setup spi\n");
-> +		goto err_setup;
-Add __func__ to error message and return ret here?
-> +	}
-> +
-> +	data->fw_dl_state = SSP_FW_DL_STATE_NONE;
-> +	data->spi = spi;
-> +	spi_set_drvdata(spi, data);
-> +
-> +	mutex_init(&data->comm_lock);
-> +	mutex_init(&data->pending_lock);
-> +
-> +	for (i = 0; i < SSP_SENSOR_MAX; ++i) {
-> +		data->delay_buf[i] = SSP_DEFUALT_POLLING_DELAY;
-> +		data->batch_latency_buf[i] = 0;
-> +		data->batch_opt_buf[i] = 0;
-> +		data->check_status[i] = SSP_INITIALIZATION_STATE;
-> +	}
-> +
-> +	data->delay_buf[SSP_BIO_HRM_LIB] = 100;
-> +
-> +	data->time_syncing = true;
-> +
-> +	INIT_LIST_HEAD(&data->pending_list);
-> +
-> +	atomic_set(&data->enable_refcount, 0);
-> +
-> +	INIT_DELAYED_WORK(&data->work_firmware, work_function_firmware_update);
-> +	INIT_WORK(&data->work_wdt, wdt_work_func);
-> +	INIT_DELAYED_WORK(&data->work_refresh, ssp_refresh_task);
-> +
-> +	setup_timer(&data->wdt_timer, wdt_timer_func, (unsigned long)data);
-> +
-> +	ret = request_threaded_irq(data->spi->irq, NULL,
-> +				   sensordata_irq_thread_fn,
-> +				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-> +				   "SSP_Int", data);
-> +	if (ret < 0) {
-> +		dev_err(&spi->dev, "Irq request fail\n");
-> +		goto err_setup_irq;
-> +	}
-> +
-> +	/* Let's start with enabled one so irq balance could be ok */
-> +	data->shut_down = false;
-> +
-> +	/* just to avoid unbalanced irq set wake up */
-> +	enable_irq_wake(data->spi->irq);
-> +
-> +	data->fw_dl_state = ssp_check_fwbl(data);
-> +	if (data->fw_dl_state == SSP_FW_DL_STATE_NONE) {
-> +		ret = ssp_initialize_mcu(data);
-> +		if (ret < 0) {
-> +			dev_err(&spi->dev, "Initialize_mcu failed\n");
-> +			goto err_read_reg;
-> +		}
-> +	}
-> +
-> +	if (data->fw_dl_state == SSP_FW_DL_STATE_NEED_TO_SCHEDULE) {
-> +		dev_info(&spi->dev, "Firmware update is scheduled\n");
-> +		queue_delayed_work(system_power_efficient_wq,
-> +				&data->work_firmware, msecs_to_jiffies(1000));
-Improve indentation.
-> +		data->fw_dl_state = SSP_FW_DL_STATE_SCHEDULED;
-> +	} else if (data->fw_dl_state == SSP_FW_DL_STATE_FAIL) {
-> +		data->shut_down = true;
-Is this an error condition?
-> +	}
-> +
-Could work with switch (data->fw_dl_state).
-> +	return 0;
-> +
-> +err_read_reg:
-> +	free_irq(data->spi->irq, data);
-> +err_setup_irq:
-> +	mutex_destroy(&data->pending_lock);
-> +	mutex_destroy(&data->comm_lock);
-> +err_setup:
-> +	dev_err(&spi->dev, "Probe failed!\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static int ssp_remove(struct spi_device *spi)
-> +{
-> +	struct ssp_data *data = spi_get_drvdata(spi);
-> +
-> +	if (data->fw_dl_state >= SSP_FW_DL_STATE_SCHEDULED &&
-> +		data->fw_dl_state < SSP_FW_DL_STATE_DONE) {
-Improve indentation.
-> +		dev_err(&data->spi->dev,
-> +			"cancel_delayed_work_sync state = %d\n",
-> +			data->fw_dl_state);
-> +		cancel_delayed_work_sync(&data->work_firmware);
-> +	}
-> +
-> +	if (ssp_command(data, SSP_MSG2SSP_AP_STATUS_SHUTDOWN, 0) < 0)
-> +		dev_err(&data->spi->dev, "SSP_MSG2SSP_AP_STATUS_SHUTDOWN failed\n");
-Line too long.
-> +
-> +	ssp_enable_mcu(data, false);
-> +	disable_wdt_timer(data);
-> +
-> +	ssp_clean_pending_list(data);
-> +
-> +	free_irq(data->spi->irq, data);
-> +
-> +	del_timer_sync(&data->wdt_timer);
-> +	cancel_work_sync(&data->work_wdt);
-> +
-> +	mutex_destroy(&data->comm_lock);
-> +	mutex_destroy(&data->pending_lock);
-> +
-> +#ifdef CONFIG_OF
-> +	of_platform_depopulate(&spi->dev);
-> +#endif
-> +
-> +	return 0;
-> +}
-> +
-> +static int ssp_suspend(struct device *dev)
-> +{
-> +	int ret = 0;
-> +	struct ssp_data *data = spi_get_drvdata(to_spi_device(dev));
-> +
-> +	data->last_resume_state = SSP_MSG2SSP_AP_STATUS_SUSPEND;
-> +
-> +	if (atomic_read(&data->enable_refcount) > 0)
-> +		disable_wdt_timer(data);
-> +
-> +	if (ssp_command(data, SSP_MSG2SSP_AP_STATUS_SUSPEND, 0) < 0)
-> +		dev_err(&data->spi->dev,
-> +			"%s SSP_MSG2SSP_AP_STATUS_SUSPEND failed\n", __func__);
-> +
-> +	data->time_syncing = false;
-> +	disable_irq(data->spi->irq);
-> +
-> +	return ret;
-ret is kind of unused, so it should be used or dropped. return 0 directly here
-to indicate success.
-> +}
-> +
-> +static int ssp_resume(struct device *dev)
-> +{
-> +	int ret = 0;
-> +	struct ssp_data *data = spi_get_drvdata(to_spi_device(dev));
-> +
-> +	enable_irq(data->spi->irq);
-> +
-Re-enable data->time_syncing?
-> +	if (atomic_read(&data->enable_refcount) > 0)
-> +		enable_wdt_timer(data);
-> +
-> +	if (ssp_command(data, SSP_MSG2SSP_AP_STATUS_RESUME, 0) < 0)
-> +		dev_err(&data->spi->dev,
-> +			"%s SSP_MSG2SSP_AP_STATUS_RESUME failed\n", __func__);
-> +
-> +	data->last_resume_state = SSP_MSG2SSP_AP_STATUS_RESUME;
-> +
-> +	return ret;
-ret is kind of unused, so it should be used or dropped. return 0 directly here
-to indicate success.
-> +}
-> +
-> +static const struct dev_pm_ops ssp_pm_ops = {
-> +	SET_SYSTEM_SLEEP_PM_OPS(ssp_suspend, ssp_resume)
-> +};
-> +
-> +static struct spi_driver ssp_driver = {
-> +	.probe = ssp_probe,
-> +	.remove = ssp_remove,
-> +	.driver = {
-> +		.pm = &ssp_pm_ops,
-> +		.bus = &spi_bus_type,
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(ssp_of_match),
-> +		.name = "sensorhub"
-> +	},
-> +};
-> +
-> +module_spi_driver(ssp_driver);
-> +
-> +MODULE_DESCRIPTION("ssp sensorhub driver");
-> +MODULE_AUTHOR("Samsung Electronics");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/misc/sensorhub/ssp_spi.c b/drivers/misc/sensorhub/ssp_spi.c
-> new file mode 100644
-> index 0000000..c599e35
-> --- /dev/null
-> +++ b/drivers/misc/sensorhub/ssp_spi.c
-> @@ -0,0 +1,653 @@
-> +/*
-> + *  Copyright (C) 2012, Samsung Electronics Co. Ltd. All Rights Reserved.
-2014?
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include "ssp.h"
-> +
-> +#define SSP_DEV (&data->spi->dev)
-> +#define GET_MESSAGE_TYPE(data) (data & (3 << SSP_RW))
-> +
-> +/*
-> + * SSP -> AP Instruction
-> + * They tell what packet type can be expected. In the future there will
-> + * be less of them. BYPASS means common sensor packets with accel, gyro,
-> + * hrm etc. data. LIBRARY and META are mock-up's for now.
-> + */
-> +#define MSG2AP_INST_BYPASS_DATA		0x37
-> +#define MSG2AP_INST_LIBRARY_DATA	0x01
-> +#define MSG2AP_INST_DEBUG_DATA		0x03
-> +#define MSG2AP_INST_BIG_DATA		0x04
-> +#define MSG2AP_INST_META_DATA		0x05
-> +#define MSG2AP_INST_TIME_SYNC		0x06
-> +#define MSG2AP_INST_RESET		0x07
-> +
-> +#define UNINPLEMENTED -1
-> +
-> +struct ssp_msg_header {
-> +	u8 cmd;
-> +	__le16 length;
-> +	__le16 options;
-> +	__le32 data;
-> +} __attribute__((__packed__));
-> +
-> +struct ssp_msg {
-> +	u16 length;
-> +	u16 options;
-> +	struct list_head list;
-> +	struct completion *done;
-> +	struct ssp_msg_header *h;
-> +	char *buffer;
-> +};
-> +
-> +static const int offset_map[SSP_SENSOR_MAX] = {
-> +	[SSP_ACCELEROMETER_SENSOR] =		SSP_ACCELEROMETER_SIZE +
-> +		SSP_TIME_SIZE,
-Improve indentation.
-> +	[SSP_GYROSCOPE_SENSOR] =		SSP_GYROSCOPE_SIZE +
-> +		SSP_TIME_SIZE,
-Improve indentation.
-> +	[SSP_GEOMAGNETIC_UNCALIB_SENSOR] =	UNINPLEMENTED,
-> +	[SSP_GEOMAGNETIC_RAW] =			UNINPLEMENTED,
-> +	[SSP_GEOMAGNETIC_SENSOR] =		UNINPLEMENTED,
-> +	[SSP_PRESSURE_SENSOR] =			UNINPLEMENTED,
-> +	[SSP_GESTURE_SENSOR] =			UNINPLEMENTED,
-> +	[SSP_PROXIMITY_SENSOR] =		UNINPLEMENTED,
-> +	[SSP_TEMPERATURE_HUMIDITY_SENSOR] =	UNINPLEMENTED,
-> +	[SSP_LIGHT_SENSOR] =			UNINPLEMENTED,
-> +	[SSP_PROXIMITY_RAW] =			UNINPLEMENTED,
-> +	[SSP_ORIENTATION_SENSOR] =		UNINPLEMENTED,
-> +	[SSP_STEP_DETECTOR] =			UNINPLEMENTED,
-> +	[SSP_SIG_MOTION_SENSOR] =		UNINPLEMENTED,
-> +	[SSP_GYRO_UNCALIB_SENSOR] =		UNINPLEMENTED,
-> +	[SSP_GAME_ROTATION_VECTOR] =		UNINPLEMENTED,
-> +	[SSP_ROTATION_VECTOR] =			UNINPLEMENTED,
-> +	[SSP_STEP_COUNTER] =			UNINPLEMENTED ,
-> +	[SSP_BIO_HRM_RAW] =			SSP_BIO_HRM_RAW_SIZE +
-> +		SSP_TIME_SIZE,
-> +	[SSP_BIO_HRM_RAW_FAC] =			SSP_BIO_HRM_RAW_FAC_SIZE +
-> +		SSP_TIME_SIZE,
-> +	[SSP_BIO_HRM_LIB] =			SSP_BIO_HRM_LIB_SIZE +
-> +		SSP_TIME_SIZE,
-> +};
-> +
-> +#define SSP_HEADER_SIZE		(sizeof(struct ssp_msg_header))
-> +#define SSP_HEADER_SIZE_ALIGNED	(ALIGN(SSP_HEADER_SIZE, 4))
-> +
-> +static struct ssp_msg *create_msg(u8 cmd, u16 len, u16 opt, u32 data)
-> +{
-> +	struct ssp_msg_header h;
-> +	struct ssp_msg *msg;
-> +
-> +	msg = kzalloc(sizeof(*msg), GFP_KERNEL);
-> +	if (!msg)
-> +		return NULL;
-> +
-> +	h.cmd = cmd;
-> +	h.length = cpu_to_le16(len);
-> +	h.options = cpu_to_le16(opt);
-> +	h.data = cpu_to_le32(data);
-> +
-> +	msg->buffer = kzalloc(SSP_HEADER_SIZE_ALIGNED + len,
-> +			      GFP_KERNEL | GFP_DMA);
-> +	if (msg->buffer == NULL) {
-> +		kfree(msg);
-> +		return NULL;
-> +	}
-> +
-> +	msg->length = len;
-> +	msg->options = opt;
-> +
-> +	memcpy(msg->buffer, &h, SSP_HEADER_SIZE);
-> +
-> +	return msg;
-> +}
-> +
-> +static inline void fill_buffer(struct ssp_msg *m, unsigned int offset,
-> +			       const void *src, unsigned int len)
-> +{
-> +	memcpy(&m->buffer[SSP_HEADER_SIZE_ALIGNED + offset], src, len);
-> +}
-> +
-> +static inline void get_buffer(struct ssp_msg *m, unsigned int offset,
-> +			      void *dest, unsigned int len)
-> +{
-> +	memcpy(dest, &m->buffer[SSP_HEADER_SIZE_ALIGNED + offset],  len);
-> +}
-> +
-> +#define GET_BUFFER_AT_INDEX(m, index) \
-> +	(m->buffer[SSP_HEADER_SIZE_ALIGNED + index])
-> +#define SET_BUFFER_AT_INDEX(m, index, val) \
-> +	(m->buffer[SSP_HEADER_SIZE_ALIGNED + index] = val)
-> +
-> +static void clean_msg(struct ssp_msg *m)
-> +{
-> +	kfree(m->buffer);
-> +	kfree(m);
-> +}
-> +
-> +static int print_mcu_debug(char *data_frame, int *data_index,
-> +			   int received_len)
-> +{
-> +	int length = data_frame[(*data_index)++];
-> +
-> +	if (length > received_len - *data_index || length <= 0) {
-> +		ssp_dbg("[SSP]: MSG From MCU-invalid debug length(%d/%d)\n",
-> +			length, received_len);
-> +		return length ? length : -1;
-Return a valid errorcode?
-> +	}
-> +
-> +	ssp_dbg("[SSP]: MSG From MCU - %s\n", &data_frame[*data_index]);
-> +
-> +	*data_index += length;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * It was designed that way - additional lines to some kind of handshake,
-> + * please do not ask why - only the firmware guy can know it
-> + */
-> +static int check_lines(struct ssp_data *data, bool state)
-> +{
-> +	int delay_cnt = 0, status = 0;
-Get rid of status.
-> +
-> +	gpio_set_value_cansleep(data->ap_mcu_gpio, state);
-> +
-> +	while (gpio_get_value_cansleep(data->mcu_ap_gpio) != state) {
-> +
-> +		usleep_range(3000, 3500);
-> +
-> +		if (data->shut_down || delay_cnt++ > 500) {
-> +			dev_err(SSP_DEV, "%s:timeout, hw ack wait fail %d\n",
-> +				__func__, state);
-> +
-> +			if (!state) {
-> +				gpio_set_value_cansleep(data->ap_mcu_gpio, 1);
-> +				status = -1;
-Return directly here (preferably a valid error code)
-> +			} else
-> +				status = -2;
-Return directly here (also preferably an error code).
-Or just make the gpio-setting conditional, and return -ETIMEDOUT unconditionally.
-The exact return value isn't checked, anyway, and could then just be passed up
-in do_transfer().
-> +
-> +			break;
-No need for break then
-> +		}
-> +	}
-> +
-> +	return status;
-return 0;
-> +}
-> +
-> +static int do_transfer(struct ssp_data *data, struct ssp_msg *msg,
-> +		       struct completion *done, int timeout)
-> +{
-> +	int status = 0;
-No need to initialize status
-> +	/*
-> +	 * check if this is a short one way message or the whole transfer has
-> +	 * second part after an interrupt
-> +	 */
-> +	const bool use_no_irq = msg->length == 0;
-> +
-> +	if (data->shut_down)
-> +		return -EPERM;
-> +
-> +	msg->done = done;
-> +
-> +	mutex_lock(&data->comm_lock);
-> +
-> +	status = check_lines(data, false);
-> +	if (status < 0) {
-> +		status = -ETIMEDOUT;
-Would be obsolete if check_lines() would return this code on error.
-> +		goto _error_locked;
-> +	}
-> +
-> +	status = spi_write(data->spi, msg->buffer, SSP_HEADER_SIZE);
-> +	if (status < 0) {
-> +		gpio_set_value_cansleep(data->ap_mcu_gpio, 1);
-> +		dev_err(SSP_DEV, "%s spi_write fail\n", __func__);
-> +		goto _error_locked;
-> +	}
-> +
-> +	if (!use_no_irq) {
-> +		mutex_lock(&data->pending_lock);
-> +		list_add_tail(&msg->list, &data->pending_list);
-> +		mutex_unlock(&data->pending_lock);
-> +	}
-> +
-> +	status = check_lines(data, true);
-> +	if (status < 0) {
-> +		status = -ETIMEDOUT;
-Same here.
-> +		if (!use_no_irq) {
-> +			mutex_lock(&data->pending_lock);
-> +			list_del(&msg->list);
-> +			mutex_unlock(&data->pending_lock);
-> +		}
-> +		goto _error_locked;
-> +	}
-> +
-> +	mutex_unlock(&data->comm_lock);
-> +
-> +	if (use_no_irq)
-> +		return status;
-Drop this test.
-> +
-> +	if (done != NULL)
-	if(!use_no_irq && done != NULL)
-> +		if (wait_for_completion_timeout(done,
-> +					msecs_to_jiffies(timeout)) == 0) {
-Could be following indentation rules, if formated this way:
-		if (!wait_for_completion_timeout(done,
-						 msecs_to_jiffies(timeout)) {
-> +			mutex_lock(&data->pending_lock);
-> +			list_del(&msg->list);
-> +			mutex_unlock(&data->pending_lock);
-> +
-> +			status = -ETIMEDOUT;
-> +			data->time_out_cnt++;
-Don't populate status, instead return -ETIMEDOUT directly here.
-> +		}
-> +
-> +	return status;
-return 0 is more obvious.
-> +
-> +_error_locked:
-> +	mutex_unlock(&data->comm_lock);
-> +	data->time_out_cnt++;
-> +	return status;
-> +}
-> +
-> +static inline int ssp_spi_sync_command(struct ssp_data *data,
-> +				       struct ssp_msg *msg)
-> +{
-> +	return do_transfer(data, msg, NULL, 0);
-> +}
-> +
-> +static int ssp_spi_sync(struct ssp_data *data, struct ssp_msg *msg,
-> +			int timeout)
-> +{
-> +	DECLARE_COMPLETION_ONSTACK(done);
-> +
-> +	if (WARN_ON(!msg->length))
-> +		return -EPERM;
-> +
-> +	return do_transfer(data, msg, &done, timeout);
-> +}
-> +
-> +static int handle_big_data(struct ssp_data *data, char *dataframe,
-> +			   int *idx) {
-Parameters fit in one line.
-> +	/* mock-up, it will be changed with adding another sensor types */
-> +	*idx += 8;
-> +	return 0;
-> +}
-> +
-> +static int parse_dataframe(struct ssp_data *data, char *dataframe,
-> +			   int len)
-Parameters fit in one line.
-> +{
-> +	int idx, sd, ret = 0;
-ret is unnecessary.
-> +	u16 length = 0;
-length is just a placebo.
-> +	struct timespec ts;
-> +	struct ssp_sensor_data *sdata;
-> +	struct iio_dev **indio_devs = data->sensor_devs;
-> +
-> +	getnstimeofday(&ts);
-> +
-> +	for (idx = 0; idx < len;) {
-> +		switch (dataframe[idx++]) {
-> +		case MSG2AP_INST_BYPASS_DATA:
-> +			sd = dataframe[idx++];
-> +			if (sd < 0 || sd >= SSP_SENSOR_MAX) {
-> +				dev_err(SSP_DEV,
-> +					"Mcu data frame1 error %d\n", sd);
-> +				return -EPROTO;
-> +			}
-> +
-> +			if (indio_devs[sd] != NULL) {
-> +				sdata = iio_priv(indio_devs[sd]);
-> +				if (sdata->process_data)
-> +					sdata->process_data(
-Start parameters in first line.
-> +							    indio_devs[sd],
-> +							    &dataframe[idx],
-> +							    data->timestamp);
-> +			} else
-> +				dev_err(SSP_DEV, "no client for frame\n");
-> +
-> +			idx += offset_map[sd];
-> +			break;
-> +		case MSG2AP_INST_DEBUG_DATA:
-> +			sd = print_mcu_debug(dataframe, &idx, len);
-> +			if (sd) {
-> +				dev_err(SSP_DEV,
-> +					"Mcu data frame3 error %d\n", sd);
-> +				return -EPROTO;
-return sd?
-> +			}
-> +			break;
-> +		case MSG2AP_INST_LIBRARY_DATA:
-> +			idx += length;
-Placebo?
-> +			break;
-> +		case MSG2AP_INST_BIG_DATA:
-> +			handle_big_data(data, dataframe, &idx);
-> +			break;
-> +		case MSG2AP_INST_TIME_SYNC:
-> +			data->time_syncing = true;
-> +			break;
-> +		case MSG2AP_INST_RESET:
-> +			ssp_queue_ssp_refresh_task(data, 0);
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (data->time_syncing)
-> +		data->timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-> +
-> +	return ret;
-return 0 directly.
-> +}
-> +
-> +/* threaded irq */
-> +int ssp_irq_msg(struct ssp_data *data)
-> +{
-> +	bool found = false;
-> +	char *buffer;
-> +	__le16 *temp_buf;
-> +	u8 msg_type = 0;
-No need to initialize msg_type.
-> +	int ret = 0;
-No need to initialize ret.
-> +	u16 length, msg_options;
-> +	struct ssp_msg *msg, *n;
-> +
-> +	temp_buf = kmalloc(4, GFP_KERNEL | GFP_DMA);
-> +	if (temp_buf == NULL)
-> +		return -ENOMEM;
-> +
-> +	ret = spi_read(data->spi, temp_buf, 4);
-> +	if (ret < 0) {
-> +		dev_err(SSP_DEV, "header read fail\n");
-> +		kfree(temp_buf);
-> +		return ret;
-> +	}
-> +
-> +	length = le16_to_cpu(temp_buf[1]);
-> +	msg_options = le16_to_cpu(temp_buf[0]);
-> +
-> +	kfree(temp_buf);
-> +
-> +	if (length == 0) {
-> +		dev_err(SSP_DEV, "length received from mcu is 0\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	msg_type = GET_MESSAGE_TYPE(msg_options);
-> +
-> +	switch (msg_type) {
-> +	case SSP_AP2HUB_READ:
-> +	case SSP_AP2HUB_WRITE:
-> +		/*
-> +		 * this is a small list, a few elements - the packets can be
-> +		 * received with no order
-> +		 */
-> +		mutex_lock(&data->pending_lock);
-> +		list_for_each_entry_safe(msg, n, &data->pending_list, list) {
-> +			if (msg->options == msg_options) {
-> +				list_del(&msg->list);
-> +				found = true;
-> +				break;
-> +			}
-> +		}
-> +
-> +		if (!found) {
-> +			/*
-> +			 * here can be implemented dead messages handling
-> +			 * but the slave should not send such ones - it is to
-> +			 * check but let's handle this
-> +			 */
-> +			buffer = kmalloc(length, GFP_KERNEL | GFP_DMA);
-> +			if (!buffer) {
-> +				ret = -ENOMEM;
-> +				goto _unlock;
-> +			}
-> +
-> +			ret = spi_read(data->spi, buffer, length);
-Check ret for errors?
-> +			dev_err(SSP_DEV, "No match error %x\n",
-> +				msg_options);
-> +			ret = -EIO;
-> +			/* got dead packet so it is always an error */
-> +			kfree(buffer);
-> +			goto _unlock;
-> +		}
-> +
-> +		if (msg_type == SSP_AP2HUB_READ)
-> +			ret = spi_read(data->spi,
-> +				       &msg->buffer[SSP_HEADER_SIZE_ALIGNED],
-> +				       msg->length);
-> +
-> +		if (msg_type == SSP_AP2HUB_WRITE) {
-> +			ret = spi_write(data->spi,
-> +					&msg->buffer[SSP_HEADER_SIZE_ALIGNED],
-> +					msg->length);
-> +			if (msg_options & SSP_AP2HUB_RETURN) {
-> +				msg->options =
-> +					SSP_AP2HUB_READ | SSP_AP2HUB_RETURN;
-> +				msg->length = 1;
-> +
-> +				list_add_tail(&msg->list,
-> +					      &data->pending_list);
-These parameters fit into the first line.
-> +				goto _unlock;
-> +			}
-> +		}
-> +
-> +		if (msg->done)
-> +			if (!completion_done(msg->done))
-> +				complete(msg->done);
-> +_unlock:
-> +		mutex_unlock(&data->pending_lock);
-> +		break;
-> +	case SSP_HUB2AP_WRITE:
-> +		buffer = kzalloc(length, GFP_KERNEL | GFP_DMA);
-> +		if (buffer == NULL)
-> +			return  -ENOMEM;
-Double whitespace.
-> +
-> +		ret = spi_read(data->spi, buffer, length);
-> +		if (ret < 0) {
-> +			dev_err(SSP_DEV, "spi read fail\n");
-> +			kfree(buffer);
-> +			break;
-> +		}
-> +
-> +		parse_dataframe(data, buffer, length);
-Assign the result to ret?
-> +
-> +		kfree(buffer);
-> +		break;
-> +
-> +	default:
-> +		dev_err(SSP_DEV, "unknown msg type\n");
-Doesn't this qualify as error?
-> +		break;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +void ssp_clean_pending_list(struct ssp_data *data)
-> +{
-> +	struct ssp_msg *msg, *n;
-> +
-> +	mutex_lock(&data->pending_lock);
-> +	list_for_each_entry_safe(msg, n, &data->pending_list, list) {
-> +		list_del(&msg->list);
-> +
-> +		if (msg->done)
-> +			if (!completion_done(msg->done))
-> +				complete(msg->done);
-> +	}
-> +	mutex_unlock(&data->pending_lock);
-> +}
-> +
-> +int ssp_command(struct ssp_data *data, char command, int arg)
-> +{
-> +	int ret;
-> +	struct ssp_msg *msg;
-> +
-> +	msg = create_msg(command, 0, SSP_AP2HUB_WRITE, arg);
-> +	if (!msg)
-> +		return -ENOMEM;
-> +
-> +	ssp_dbg("%s - command 0x%x %d\n", __func__, command, arg);
-> +
-> +	ret = ssp_spi_sync_command(data, msg);
-> +	clean_msg(msg);
-> +
-> +	return ret;
-> +}
-> +
-> +int ssp_send_instruction(struct ssp_data *data, u8 inst, u8 sensor_type,
-> +			 u8 *send_buf, u8 length)
-> +{
-> +	int ret;
-> +	struct ssp_msg *msg;
-> +
-> +	if (data->fw_dl_state == SSP_FW_DL_STATE_DOWNLOADING) {
-> +		dev_err(SSP_DEV, "%s - Skip Inst! DL state = %d\n",
-> +			__func__, data->fw_dl_state);
-> +		return -EBUSY;
-> +	} else if ((!(data->available_sensors & (1 << sensor_type)))
-One pair of parenthesis can be dropped. Could use BIT(sensor_type).
-> +		   && (inst <= SSP_MSG2SSP_INST_CHANGE_DELAY)) {
-> +		dev_err(SSP_DEV, "%s - Bypass Inst Skip! - %u\n",
-> +			__func__, sensor_type);
-> +		return -EIO; /* just fail */
-> +	}
-> +
-> +	msg = create_msg(inst, length + 2, SSP_AP2HUB_WRITE, 0);
-> +	if (!msg)
-> +		return -ENOMEM;
-> +
-> +	fill_buffer(msg, 0, &sensor_type, 1);
-> +	fill_buffer(msg, 1, send_buf, length);
-> +
-> +	ssp_dbg("%s - Inst = 0x%x, Sensor Type = 0x%x, data = %u\n",
-> +		__func__, inst, sensor_type, send_buf[1]);
-> +
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +	clean_msg(msg);
-> +
-> +	return ret;
-> +}
-> +
-> +int ssp_get_chipid(struct ssp_data *data)
-> +{
-> +	int ret;
-> +	char buffer = 0;
-No need to initialize buffer.
-> +	struct ssp_msg *msg;
-> +
-> +	msg = create_msg(SSP_MSG2SSP_AP_WHOAMI, 1, SSP_AP2HUB_READ, 0);
-> +	if (!msg)
-> +		return -ENOMEM;
-> +
-> +
-Just one empty line.
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +
-> +	buffer = GET_BUFFER_AT_INDEX(msg, 0);
-> +
-> +	clean_msg(msg);
-> +
-> +	return ret < 0 ? ret : buffer;
-> +}
-> +
-> +int ssp_set_sensor_position(struct ssp_data *data)
-> +{
-> +	int ret = 0;
-No need to initialize ret.
-> +
-> +	struct ssp_msg *msg = create_msg(SSP_MSG2SSP_AP_SENSOR_FORMATION, 3,
-> +					 SSP_AP2HUB_WRITE, 0);
-> +	if (!msg)
-> +		return -ENOMEM;
-> +
-> +	/*
-> +	 * this needs some calrification with the protocol, default they will
-Typo: clarification
-> +	 * be 0 so it is ok
-> +	 */
-> +	SET_BUFFER_AT_INDEX(msg, 0, data->accel_position);
-> +	SET_BUFFER_AT_INDEX(msg, 1, data->accel_position);
-> +	SET_BUFFER_AT_INDEX(msg, 2, data->mag_position);
-> +
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +	if (ret < 0) {
-> +		dev_err(SSP_DEV, "%s -fail to ssp_set_sensor_position %d\n",
-Missing whitespace before fail.
-> +			__func__, ret);
-> +	} else {
-> +		dev_info(SSP_DEV,
-> +			 "Sensor Posision A : %u, G : %u, M: %u, P: %u\n",
-Typo: Position
-> +			 data->accel_position, data->accel_position,
-> +			 data->mag_position, 0);
-> +	}
-> +
-> +	clean_msg(msg);
-> +
-> +	return ret;
-> +}
-> +
-> +int ssp_set_magnetic_matrix(struct ssp_data *data)
-> +{
-> +	int ret;
-> +	struct ssp_msg *msg =
-> +		create_msg(SSP_MSG2SSP_AP_SET_MAGNETIC_STATIC_MATRIX,
-> +			   data->sensorhub_info->mag_length,
-> +			   SSP_AP2HUB_WRITE,
-> +			   0);
-Initialize msg on a separate line, that will give proper indentation.
-> +	if (!msg)
-> +		return -ENOMEM;
-> +
-> +	fill_buffer(msg, 0, data->sensorhub_info->mag_table,
-> +		    data->sensorhub_info->mag_length);
-> +
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +	clean_msg(msg);
-> +
-> +	return ret;
-> +}
-> +
-> +unsigned int ssp_get_sensor_scanning_info(struct ssp_data *data)
-> +{
-> +	int ret;
-> +	__le32 result;
-> +	u32 cpu_result = 0;
-> +
-> +	struct ssp_msg *msg = create_msg(SSP_MSG2SSP_AP_SENSOR_SCANNING, 4,
-> +					 SSP_AP2HUB_READ, 0);
-> +	if (!msg)
-> +		return 0;
-> +
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +	if (ret < 0) {
-> +		dev_err(SSP_DEV, "%s - spi read fail %d\n", __func__, ret);
-> +		goto _exit;
-> +	}
-> +
-> +	get_buffer(msg, 0, &result, 4);
-> +	cpu_result = le32_to_cpu(result);
-> +
-> +	dev_info(SSP_DEV, "%s state: 0x%08x\n", __func__, cpu_result);
-> +
-> +_exit:
-> +	clean_msg(msg);
-> +	return cpu_result;
-> +}
-> +
-> +unsigned int ssp_get_firmware_rev(struct ssp_data *data)
-> +{
-> +	int ret;
-> +	__le32 result;
-> +
-> +	struct ssp_msg *msg = create_msg(SSP_MSG2SSP_AP_FIRMWARE_REV, 4,
-> +					 SSP_AP2HUB_READ, 0);
-> +	if (!msg)
-> +		return  SSP_INVALID_REVISION;
-Double whitespace.
-> +
-> +	ret = ssp_spi_sync(data, msg, 1000);
-> +	get_buffer(msg, 0, &result, 4);
-> +	if (ret  < 0) {
-Double whitespace.
-> +		dev_err(SSP_DEV, "%s - transfer fail %d\n", __func__, ret);
-> +		ret = SSP_INVALID_REVISION;
-> +		goto _exit;
-> +	}
-> +
-> +	ret = le32_to_cpu(result);
-> +
-> +_exit:
-> +	clean_msg(msg);
-> +	return ret;
-> +}
-> diff --git a/include/linux/iio/common/ssp_sensors.h b/include/linux/iio/common/ssp_sensors.h
-> new file mode 100644
-> index 0000000..a53e3be
-> --- /dev/null
-> +++ b/include/linux/iio/common/ssp_sensors.h
-> @@ -0,0 +1,79 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
-> +#ifndef _SSP_SENSORS_H_
-> +#define _SSP_SENSORS_H_
-> +
-> +#include <linux/iio/iio.h>
-> +
-> +#define SSP_TIME_SIZE				4
-> +#define SSP_ACCELEROMETER_SIZE			6
-> +#define SSP_GYROSCOPE_SIZE			6
-> +#define SSP_BIO_HRM_RAW_SIZE			8
-> +#define SSP_BIO_HRM_RAW_FAC_SIZE		36
-> +#define SSP_BIO_HRM_LIB_SIZE			8
-> +
-> +/**
-> + * enum ssp_sensor_tyoe - SSP sensor type
-Typo: ssp_sensor_type
-> + */
-> +enum ssp_sensor_type {
-> +	SSP_ACCELEROMETER_SENSOR = 0,
-> +	SSP_GYROSCOPE_SENSOR,
-> +	SSP_GEOMAGNETIC_UNCALIB_SENSOR,
-> +	SSP_GEOMAGNETIC_RAW,
-> +	SSP_GEOMAGNETIC_SENSOR,
-> +	SSP_PRESSURE_SENSOR,
-> +	SSP_GESTURE_SENSOR,
-> +	SSP_PROXIMITY_SENSOR,
-> +	SSP_TEMPERATURE_HUMIDITY_SENSOR,
-> +	SSP_LIGHT_SENSOR,
-> +	SSP_PROXIMITY_RAW,
-> +	SSP_ORIENTATION_SENSOR,
-> +	SSP_STEP_DETECTOR,
-> +	SSP_SIG_MOTION_SENSOR,
-> +	SSP_GYRO_UNCALIB_SENSOR,
-> +	SSP_GAME_ROTATION_VECTOR,
-> +	SSP_ROTATION_VECTOR,
-> +	SSP_STEP_COUNTER,
-> +	SSP_BIO_HRM_RAW,
-> +	SSP_BIO_HRM_RAW_FAC,
-> +	SSP_BIO_HRM_LIB,
-> +	SSP_SENSOR_MAX,
-> +};
-> +
-> +struct ssp_data;
-> +
-> +/**
-> + * struct ssp_sensor_data - Sensor object
-> + * @process_data:	Callback to feed sensor data.
-> + * @type:		Used sensor type.
-> + */
-> +struct ssp_sensor_data {
-> +	int (*process_data)(struct iio_dev *indio_dev, void *buf,
-> +			    int64_t timestamp);
-> +	enum ssp_sensor_type type;
-> +};
-> +
-> +void ssp_register_consumer(struct iio_dev *indio_dev, enum ssp_sensor_type);
-void ssp_register_consumer(struct iio_dev *indio_dev, enum ssp_sensor_type type);
-> +
-> +int ssp_enable_sensor(struct ssp_data *data, enum ssp_sensor_type type,
-> +		       u32 delay);
-> +
-> +int ssp_disable_sensor(struct ssp_data *data, enum ssp_sensor_type type);
-> +
-> +u32 ssp_get_sensor_delay(struct ssp_data *data, enum ssp_sensor_type);
-> +
-> +int ssp_change_delay(struct ssp_data *data, enum ssp_sensor_type type,
-> +		     u32 delay);
-> +#endif /* _SSP_SENSORS_H_ */
-> 
+From: Benoit Parrot <bparrot@ti.com>
+
+This patch adds Video Processing Front End (VPFE) driver for
+AM437X family of devices
+Driver supports the following:
+- V4L2 API using MMAP buffer access based on videobuf2 api
+- Asynchronous sensor/decoder sub device registration
+- DT support
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Changes for v3:
+ a> Fixed review comments pointed by Hans.
+ 
+ Following is the v4l2-compliance output:-
+ ----------------------------------------
+ 
+ root@am437x-evm:~# ./v4l2-compliance -s -i 0 -vv
+Driver Info:
+        Driver name   : vpfe
+[   99.723462] vpfe 48328000.vpfe: =================  START STATUS  =================
+
+        Bus info      : platform:vpfe 48328000.vpfe
+        [   99.735701] vpfe 48328000.vpfe: ==================  END STATUS  ==================
+Driver version: 3.18.0
+        Capabilities  : 0x85200[   99.748824] vpfe 48328000.vpfe: invalid input index: 1
+001
+                Video Capture
+                Read/Write
+                Streaming
+                Extended Pix Format
+                Device Capabilities
+        Device Caps   : 0x05200001
+                Video Capture
+                Read/Write
+                Streaming
+                Extended Pix Format
+
+Compliance test for device /dev/video0 (not using libv4l2):
+
+Required ioctls:
+        test VIDIOC_QUERYCAP: OK
+
+Allow for multiple opens:
+        test second video open: OK
+        test VIDIOC_QUERYCAP: OK
+        test VIDIOC_G/S_PRIORITY: OK
+
+Debug ioctls:
+        test VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)
+        test VIDIOC_LOG_STATUS: OK
+
+Input ioctls:
+        test VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)
+        test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+        test VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)
+        test VIDIOC_ENUMAUDIO: OK (Not Supported)
+        test VIDIOC_G/S/ENUMINPUT: OK
+        test VIDIOC_G/S_AUDIO: OK (Not Supported)
+        Inputs: 1 Audio Inputs: 0 Tuners: 0
+
+Output ioctls:
+        test VIDIOC_G/S_MODULATOR: OK (Not Supported)
+        test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+        test VIDIOC_ENUMAUDOUT: OK (Not Supported)
+        test VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)
+        test VIDIOC_G/S_AUDOUT: OK (Not Supported)
+        Outputs: 0 Audio Outputs: 0 Modulators: 0
+
+Input/Output configuration ioctls:
+        test VIDIOC_ENUM/G/S/QUERY_STD: OK
+        test VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)
+        test VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)
+        test VIDIOC_G/S_EDID: OK (Not Supported)
+
+Test input 0:
+
+        Control ioctls:
+                test VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)
+                test VIDIOC_QUERYCTRL: OK (Not Supported)
+                test VIDIOC_G/S_CTRL: OK (Not Supported)
+                test VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)
+                test VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)
+                test VIDIOC_G/S_JPEGCOMP: OK (Not Supported)
+                Standard Controls: 0 Private Controls: 0
+
+        Format ioctls:
+                info: found 7 framesizes for pixel format 56595559
+                info: found 7 framesizes for pixel format 59565955
+                info: found 7 framesizes for pixel format 52424752
+                info: found 7 framesizes for pixel format 31384142
+                info: found 4 formats for buftype 1
+                test VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK
+                test VIDIOC_G/S_PARM: OK
+                test VIDIOC_G_FBUF: OK (Not Supported)
+                test VIDIOC_G_FMT: OK
+                test VIDIOC_TRY_FMT: OK
+                info: Could not perform global format test
+                test VIDIOC_S_FMT: OK
+                test VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)
+
+        Codec ioctls:
+                test VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)
+                test VIDIOC_G_ENC_INDEX: OK (Not Supported)
+                test VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)
+
+        Buffer ioctls:
+                info: test buftype Video Capture
+                test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+                test VIDIOC_EXPBUF: OK
+
+Streaming ioctls:
+        test read/write: OK
+            Video Capture:
+                Buffer: 0 Sequence: 0 Field: None Timestamp: 104.346919s
+                Buffer: 1 Sequence: 1 Field: None Timestamp: 104.369798s
+                Buffer: 2 Sequence: 2 Field: None Timestamp: 104.392679s
+                Buffer: 3 Sequence: 3 Field: None Timestamp: 104.598605s
+                Buffer: 0 Sequence: 4 Field: None Timestamp: 104.621486s
+                Buffer: 1 Sequence: 5 Field: None Timestamp: 104.644364s
+                Buffer: 2 Sequence: 6 Field: None Timestamp: 104.667245s
+                Buffer: 3 Sequence: 7 Field: None Timestamp: 104.690126s
+                Buffer: 0 Sequence: 8 Field: None Timestamp: 104.713005s
+                Buffer: 1 Sequence: 9 Field: None Timestamp: 104.735885s
+                Buffer: 2 Sequence: 10 Field: None Timestamp: 104.758766s
+                Buffer: 3 Sequence: 11 Field: None Timestamp: 104.781648s
+                Buffer: 0 Sequence: 12 Field: None Timestamp: 104.804527s
+                Buffer: 1 Sequence: 13 Field: None Timestamp: 104.827407s
+                Buffer: 2 Sequence: 14 Field: None Timestamp: 104.850288s
+                Buffer: 3 Sequence: 15 Field: None Timestamp: 104.873168s
+                Buffer: 0 Sequence: 16 Field: None Timestamp: 104.896048s
+                Buffer: 1 Sequence: 17 Field: None Timestamp: 104.918928s
+                Buffer: 2 Sequence: 18 Field: None Timestamp: 104.941809s
+                Buffer: 3 Sequence: 19 Field: None Timestamp: 104.964689s
+                Buffer: 0 Sequence: 20 Field: None Timestamp: 104.987570s
+                Buffer: 1 Sequence: 21 Field: None Timestamp: 105.010450s
+                Buffer: 2 Sequence: 22 Field: None Timestamp: 105.033330s
+                Buffer: 3 Sequence: 23 Field: None Timestamp: 105.056212s
+                Buffer: 0 Sequence: 24 Field: None Timestamp: 105.079091s
+                Buffer: 1 Sequence: 25 Field: None Timestamp: 105.101971s
+                Buffer: 2 Sequence: 26 Field: None Timestamp: 105.124851s
+                Buffer: 3 Sequence: 27 Field: None Timestamp: 105.147732s
+                Buffer: 0 Sequence: 28 Field: None Timestamp: 105.170615s
+                Buffer: 1 Sequence: 29 Field: None Timestamp: 105.193493s
+                Buffer: 2 Sequence: 30 Field: None Timestamp: 105.216373s
+                Buffer: 3 Sequence: 31 Field: None Timestamp: 105.239253s
+                Buffer: 0 Sequence: 32 Field: None Timestamp: 105.262134s
+                Buffer: 1 Sequence: 33 Field: None Timestamp: 105.285014s
+                Buffer: 2 Sequence: 34 Field: None Timestamp: 105.307894s
+                Buffer: 3 Sequence: 35 Field: None Timestamp: 105.330775s
+                Buffer: 0 Sequence: 36 Field: None Timestamp: 105.353656s
+                Buffer: 1 Sequence: 37 Field: None Timestamp: 105.376536s
+                Buffer: 2 Sequence: 38 Field: None Timestamp: 105.399416s
+                Buffer: 3 Sequence: 39 Field: None Timestamp: 105.422297s
+                Buffer: 0 Sequence: 40 Field: None Timestamp: 105.445177s
+                Buffer: 1 Sequence: 41 Field: None Timestamp: 105.468057s
+                Buffer: 2 Sequence: 42 Field: None Timestamp: 105.490938s
+                Buffer: 3 Sequence: 43 Field: None Timestamp: 105.513818s
+                Buffer: 0 Sequence: 44 Field: None Timestamp: 105.536698s
+                Buffer: 1 Sequence: 45 Field: None Timestamp: 105.559578s
+                Buffer: 2 Sequence: 46 Field: None Timestamp: 105.582459s
+                Buffer: 3 Sequence: 47 Field: None Timestamp: 105.605339s
+                Buffer: 0 Sequence: 48 Field: None Timestamp: 105.628219s
+                Buffer: 1 Sequence: 49 Field: None Timestamp: 105.651101s
+                Buffer: 2 Sequence: 50 Field: None Timestamp: 105.673980s
+                Buffer: 3 Sequence: 51 Field: None Timestamp: 105.696860s
+                Buffer: 0 Sequence: 52 Field: None Timestamp: 105.719741s
+                Buffer: 1 Sequence: 53 Field: None Timestamp: 105.742622s
+                Buffer: 2 Sequence: 54 Field: None Timestamp: 105.765502s
+                Buffer: 3 Sequence: 55 Field: None Timestamp: 105.788382s
+                Buffer: 0 Sequence: 56 Field: None Timestamp: 105.811263s
+                Buffer: 1 Sequence: 57 Field: None Timestamp: 105.834143s
+                Buffer: 2 Sequence: 58 Field: None Timestamp: 105.857023s
+                Buffer: 3 Sequence: 59 Field: None Timestamp: 105.879903s
+            Video Capture (polling):
+                Buffer: 0 Sequence: 60 Field: None Timestamp: 105.902784s
+                Buffer: 1 Sequence: 61 Field: None Timestamp: 105.925664s
+                Buffer: 2 Sequence: 62 Field: None Timestamp: 105.948544s
+                Buffer: 3 Sequence: 63 Field: None Timestamp: 105.971426s
+                Buffer: 0 Sequence: 64 Field: None Timestamp: 105.994306s
+                Buffer: 1 Sequence: 65 Field: None Timestamp: 106.017186s
+                Buffer: 2 Sequence: 66 Field: None Timestamp: 106.040064s
+                Buffer: 3 Sequence: 67 Field: None Timestamp: 106.062947s
+                Buffer: 0 Sequence: 68 Field: None Timestamp: 106.085826s
+                Buffer: 1 Sequence: 69 Field: None Timestamp: 106.108707s
+                Buffer: 2 Sequence: 70 Field: None Timestamp: 106.131589s
+                Buffer: 3 Sequence: 71 Field: None Timestamp: 106.154467s
+                Buffer: 0 Sequence: 72 Field: None Timestamp: 106.177348s
+                Buffer: 1 Sequence: 73 Field: None Timestamp: 106.200229s
+                Buffer: 2 Sequence: 74 Field: None Timestamp: 106.223109s
+                Buffer: 3 Sequence: 75 Field: None Timestamp: 106.245989s
+                Buffer: 0 Sequence: 76 Field: None Timestamp: 106.268869s
+                Buffer: 1 Sequence: 77 Field: None Timestamp: 106.291749s
+                Buffer: 2 Sequence: 78 Field: None Timestamp: 106.314630s
+                Buffer: 3 Sequence: 79 Field: None Timestamp: 106.337510s
+                Buffer: 0 Sequence: 80 Field: None Timestamp: 106.360393s
+                Buffer: 1 Sequence: 81 Field: None Timestamp: 106.383271s
+                Buffer: 2 Sequence: 82 Field: None Timestamp: 106.406152s
+                Buffer: 3 Sequence: 83 Field: None Timestamp: 106.429032s
+                Buffer: 0 Sequence: 84 Field: None Timestamp: 106.451912s
+                Buffer: 1 Sequence: 85 Field: None Timestamp: 106.474792s
+                Buffer: 2 Sequence: 86 Field: None Timestamp: 106.497673s
+                Buffer: 3 Sequence: 87 Field: None Timestamp: 106.520554s
+                Buffer: 0 Sequence: 88 Field: None Timestamp: 106.543434s
+                Buffer: 1 Sequence: 89 Field: None Timestamp: 106.566314s
+                Buffer: 2 Sequence: 90 Field: None Timestamp: 106.589195s
+                Buffer: 3 Sequence: 91 Field: None Timestamp: 106.612075s
+                Buffer: 0 Sequence: 92 Field: None Timestamp: 106.634955s
+                Buffer: 1 Sequence: 93 Field: None Timestamp: 106.657836s
+                Buffer: 2 Sequence: 94 Field: None Timestamp: 106.680716s
+                Buffer: 3 Sequence: 95 Field: None Timestamp: 106.703596s
+                Buffer: 0 Sequence: 96 Field: None Timestamp: 106.726476s
+                Buffer: 1 Sequence: 97 Field: None Timestamp: 106.749357s
+                Buffer: 2 Sequence: 98 Field: None Timestamp: 106.772237s
+                Buffer: 3 Sequence: 99 Field: None Timestamp: 106.795121s
+                Buffer: 0 Sequence: 100 Field: None Timestamp: 106.817998s
+                Buffer: 1 Sequence: 101 Field: None Timestamp: 106.840879s
+                Buffer: 2 Sequence: 102 Field: None Timestamp: 106.863759s
+                Buffer: 3 Sequence: 103 Field: None Timestamp: 106.886639s
+                Buffer: 0 Sequence: 104 Field: None Timestamp: 106.909519s
+                Buffer: 1 Sequence: 105 Field: None Timestamp: 106.932399s
+                Buffer: 2 Sequence: 106 Field: None Timestamp: 106.955280s
+                Buffer: 3 Sequence: 107 Field: None Timestamp: 106.978160s
+                Buffer: 0 Sequence: 108 Field: None Timestamp: 107.001041s
+                Buffer: 1 Sequence: 109 Field: None Timestamp: 107.023922s
+                Buffer: 2 Sequence: 110 Field: None Timestamp: 107.046801s
+                Buffer: 3 Sequence: 111 Field: None Timestamp: 107.069682s
+                Buffer: 0 Sequence: 112 Field: None Timestamp: 107.092562s
+                Buffer: 1 Sequence: 113 Field: None Timestamp: 107.115442s
+                Buffer: 2 Sequence: 114 Field: None Timestamp: 107.138322s
+                Buffer: 3 Sequence: 115 Field: None Timestamp: 107.161204s
+                Buffer: 0 Sequence: 116 Field: None Timestamp: 107.184083s
+                Buffer: 1 Sequence: 117 Field: None Timestamp: 107.206964s
+                Buffer: 2 Sequence: 118 Field: None Timestamp: 107.229844s
+                Buffer: 3 Sequence: 119 Field: None Timestamp: 107.252724s
+        test MMAP: OK
+        test USERPTR: OK (Not Supported)
+        test DMABUF: Cannot test, specify --expbuf-device
+
+Total: 42, Succeeded: 42, Failed: 0, Warnings: 0
+
+ .../devicetree/bindings/media/ti-am437x-vpfe.txt   |   61 +
+ MAINTAINERS                                        |    9 +
+ drivers/media/platform/Kconfig                     |    1 +
+ drivers/media/platform/Makefile                    |    2 +
+ drivers/media/platform/am437x/Kconfig              |   11 +
+ drivers/media/platform/am437x/Makefile             |    2 +
+ drivers/media/platform/am437x/am437x-vpfe.c        | 2779 ++++++++++++++++++++
+ drivers/media/platform/am437x/am437x-vpfe.h        |  283 ++
+ drivers/media/platform/am437x/am437x-vpfe_regs.h   |  140 +
+ include/uapi/linux/Kbuild                          |    1 +
+ include/uapi/linux/am437x-vpfe.h                   |  122 +
+ 11 files changed, 3411 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/ti-am437x-vpfe.txt
+ create mode 100644 drivers/media/platform/am437x/Kconfig
+ create mode 100644 drivers/media/platform/am437x/Makefile
+ create mode 100644 drivers/media/platform/am437x/am437x-vpfe.c
+ create mode 100644 drivers/media/platform/am437x/am437x-vpfe.h
+ create mode 100644 drivers/media/platform/am437x/am437x-vpfe_regs.h
+ create mode 100644 include/uapi/linux/am437x-vpfe.h
+
+diff --git a/Documentation/devicetree/bindings/media/ti-am437x-vpfe.txt b/Documentation/devicetree/bindings/media/ti-am437x-vpfe.txt
+new file mode 100644
+index 0000000..3932e76
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/ti-am437x-vpfe.txt
+@@ -0,0 +1,61 @@
++Texas Instruments AM437x CAMERA (VPFE)
++--------------------------------------
++
++The Video Processing Front End (VPFE) is a key component for image capture
++applications. The capture module provides the system interface and the
++processing capability to connect RAW image-sensor modules and video decoders
++to the AM437x device.
++
++Required properties:
++- compatible: must be "ti,am437x-vpfe"
++- reg: physical base address and length of the registers set for the device;
++- interrupts: should contain IRQ line for the VPFE;
++- ti,am437x-vpfe-interface: can be one of the following,
++	0 - Raw Bayer Interface.
++	1 - 8 Bit BT656 Interface.
++	2 - 10 Bit BT656 Interface.
++	3 - YCbCr 8 Bit Interface.
++	4 - YCbCr 16 Bit Interface.
++
++VPFE supports a single port node with parallel bus. It should contain one
++'port' child node with child 'endpoint' node. Please refer to the bindings
++defined in Documentation/devicetree/bindings/media/video-interfaces.txt.
++
++Example:
++	vpfe: vpfe@f0034000 {
++		compatible = "ti,am437x-vpfe";
++		reg = <0x48328000 0x2000>;
++		interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
++
++		pinctrl-names = "default", "sleep";
++		pinctrl-0 = <&vpfe_pins_default>;
++		pinctrl-1 = <&vpfe_pins_sleep>;
++
++		port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			vpfe0_ep: endpoint {
++				remote-endpoint = <&ov2659_1>;
++				ti,am437x-vpfe-interface = <0>;
++				bus-width = <8>;
++				hsync-active = <0>;
++				vsync-active = <0>;
++			};
++		};
++	};
++
++	i2c1: i2c@4802a000 {
++
++		ov2659@30 {
++			compatible = "ti,ov2659";
++			reg = <0x30>;
++
++			port {
++				ov2659_1: endpoint {
++					remote-endpoint = <&vpfe0_ep>;
++					bus-width = <8>;
++					mclk-frequency = <12000000>;
++				};
++			};
++	};
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a6288ca..a42d367 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8537,6 +8537,15 @@ S:	Maintained
+ F:	drivers/media/platform/davinci/
+ F:	include/media/davinci/
+ 
++TI AM437X VPFE DRIVER
++M:	Lad, Prabhakar <prabhakar.csengg@gmail.com>
++L:	linux-media@vger.kernel.org
++W:	http://linuxtv.org/
++Q:	http://patchwork.linuxtv.org/project/linux-media/list/
++T:	git git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git
++S:	Maintained
++F:	drivers/media/platform/am437x/
++
+ SIS 190 ETHERNET DRIVER
+ M:	Francois Romieu <romieu@fr.zoreil.com>
+ L:	netdev@vger.kernel.org
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 0c61155..6d94045 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -126,6 +126,7 @@ config VIDEO_S3C_CAMIF
+ source "drivers/media/platform/soc_camera/Kconfig"
+ source "drivers/media/platform/exynos4-is/Kconfig"
+ source "drivers/media/platform/s5p-tv/Kconfig"
++source "drivers/media/platform/am437x/Kconfig"
+ 
+ endif # V4L_PLATFORM_DRIVERS
+ 
+diff --git a/drivers/media/platform/Makefile b/drivers/media/platform/Makefile
+index b818afb..7bb6d46 100644
+--- a/drivers/media/platform/Makefile
++++ b/drivers/media/platform/Makefile
+@@ -49,4 +49,6 @@ obj-$(CONFIG_VIDEO_RENESAS_VSP1)	+= vsp1/
+ 
+ obj-y	+= omap/
+ 
++obj-$(CONFIG_VIDEO_AM437X_VPFE)		+= am437x/
++
+ ccflags-y += -I$(srctree)/drivers/media/i2c
+diff --git a/drivers/media/platform/am437x/Kconfig b/drivers/media/platform/am437x/Kconfig
+new file mode 100644
+index 0000000..97dea72
+--- /dev/null
++++ b/drivers/media/platform/am437x/Kconfig
+@@ -0,0 +1,11 @@
++config VIDEO_AM437X_VPFE
++	tristate "TI AM437x VPFE video capture driver"
++	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	depends on SOC_AM43XX || COMPILE_TEST
++	select VIDEOBUF2_DMA_CONTIG
++	help
++	   Support for AM437x Video Processing Front End based Video
++	   Capture Driver.
++
++	   To compile this driver as a module, choose M here. The module
++	   will be called ti_vpfe.
+diff --git a/drivers/media/platform/am437x/Makefile b/drivers/media/platform/am437x/Makefile
+new file mode 100644
+index 0000000..3c6b7bd
+--- /dev/null
++++ b/drivers/media/platform/am437x/Makefile
+@@ -0,0 +1,2 @@
++ti-vpfe-y := am437x-vpfe.o
++obj-$(CONFIG_VIDEO_AM437X_VPFE) += ti-vpfe.o
+diff --git a/drivers/media/platform/am437x/am437x-vpfe.c b/drivers/media/platform/am437x/am437x-vpfe.c
+new file mode 100644
+index 0000000..25863e8
+--- /dev/null
++++ b/drivers/media/platform/am437x/am437x-vpfe.c
+@@ -0,0 +1,2779 @@
++/*
++ * TI VPFE capture Driver
++ *
++ * Copyright (C) 2013 - 2014 Texas Instruments, Inc.
++ *
++ * Benoit Parrot <bparrot@ti.com>
++ * Lad, Prabhakar <prabhakar.csengg@gmail.com>
++ *
++ * This program is free software; you may redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/videodev2.h>
++
++#include <media/v4l2-common.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-event.h>
++#include <media/v4l2-of.h>
++
++#include "am437x-vpfe.h"
++
++#define VPFE_MODULE_NAME	"vpfe"
++#define VPFE_VERSION		"0.1.0"
++
++static int debug;
++module_param(debug, int, 0644);
++MODULE_PARM_DESC(debug, "Debug level 0-8");
++
++#define vpfe_dbg(level, dev, fmt, arg...)	\
++		v4l2_dbg(level, debug, &dev->v4l2_dev, fmt, ##arg)
++#define vpfe_info(dev, fmt, arg...)	\
++		v4l2_info(&dev->v4l2_dev, fmt, ##arg)
++#define vpfe_err(dev, fmt, arg...)	\
++		v4l2_err(&dev->v4l2_dev, fmt, ##arg)
++
++/* standard information */
++struct vpfe_standard {
++	v4l2_std_id std_id;
++	unsigned int width;
++	unsigned int height;
++	struct v4l2_fract pixelaspect;
++	int frame_format;
++};
++
++const struct vpfe_standard vpfe_standards[] = {
++	{V4L2_STD_525_60, 720, 480, {11, 10}, 1},
++	{V4L2_STD_625_50, 720, 576, {54, 59}, 1},
++};
++
++struct bus_format {
++	unsigned int width;
++	unsigned int bpp;
++};
++
++/*
++ * struct vpfe_fmt - VPFE media bus format information
++ * @name: V4L2 format description
++ * @code: V4L2 media bus format code
++ * @shifted: V4L2 media bus format code for the same pixel layout but
++ *	shifted to be 8 bits per pixel. =0 if format is not shiftable.
++ * @pixelformat: V4L2 pixel format FCC identifier
++ * @width: Bits per pixel (when transferred over a bus)
++ * @bpp: Bytes per pixel (when stored in memory)
++ * @supported: Indicates format supported by subdev
++ */
++struct vpfe_fmt {
++	const char *name;
++	u32 fourcc;
++	u32 code;
++	struct bus_format l;
++	struct bus_format s;
++	bool supported;
++	u32 index;
++};
++
++static struct vpfe_fmt formats[] = {
++	{
++		.name		= "YUV 4:2:2 packed, YCbYCr",
++		.fourcc		= V4L2_PIX_FMT_YUYV,
++		.code		= MEDIA_BUS_FMT_YUYV8_2X8,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	}, {
++		.name		= "YUV 4:2:2 packed, CbYCrY",
++		.fourcc		= V4L2_PIX_FMT_UYVY,
++		.code		= MEDIA_BUS_FMT_UYVY8_2X8,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	}, {
++		.name		= "YUV 4:2:2 packed, YCrYCb",
++		.fourcc		= V4L2_PIX_FMT_YVYU,
++		.code		= MEDIA_BUS_FMT_YVYU8_2X8,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	}, {
++		.name		= "YUV 4:2:2 packed, CrYCbY",
++		.fourcc		= V4L2_PIX_FMT_VYUY,
++		.code		= MEDIA_BUS_FMT_VYUY8_2X8,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	}, {
++		.name		= "RAW8 BGGR",
++		.fourcc		= V4L2_PIX_FMT_SBGGR8,
++		.code		= MEDIA_BUS_FMT_SBGGR8_1X8,
++		.l.width	= 10,
++		.l.bpp		= 2,
++		.s.width	= 8,
++		.s.bpp		= 1,
++		.supported	= false,
++	}, {
++		.name		= "RAW8 GBRG",
++		.fourcc		= V4L2_PIX_FMT_SGBRG8,
++		.code		= MEDIA_BUS_FMT_SGBRG8_1X8,
++		.l.width	= 10,
++		.l.bpp		= 2,
++		.s.width	= 8,
++		.s.bpp		= 1,
++		.supported	= false,
++	}, {
++		.name		= "RAW8 GRBG",
++		.fourcc		= V4L2_PIX_FMT_SGRBG8,
++		.code		= MEDIA_BUS_FMT_SGRBG8_1X8,
++		.l.width	= 10,
++		.l.bpp		= 2,
++		.s.width	= 8,
++		.s.bpp		= 1,
++		.supported	= false,
++	}, {
++		.name		= "RAW8 RGGB",
++		.fourcc		= V4L2_PIX_FMT_SRGGB8,
++		.code		= MEDIA_BUS_FMT_SRGGB8_1X8,
++		.l.width	= 10,
++		.l.bpp		= 2,
++		.s.width	= 8,
++		.s.bpp		= 1,
++		.supported	= false,
++	}, {
++		.name		= "RGB565 (LE)",
++		.fourcc		= V4L2_PIX_FMT_RGB565,
++		.code		= MEDIA_BUS_FMT_RGB565_2X8_LE,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	}, {
++		.name		= "RGB565 (BE)",
++		.fourcc		= V4L2_PIX_FMT_RGB565X,
++		.code		= MEDIA_BUS_FMT_RGB565_2X8_BE,
++		.l.width	= 10,
++		.l.bpp		= 4,
++		.s.width	= 8,
++		.s.bpp		= 2,
++		.supported	= false,
++	},
++};
++
++static int
++__vpfe_get_format(struct vpfe_device *vpfe,
++		  struct v4l2_format *format, unsigned int *bpp);
++
++static struct vpfe_fmt *find_format_by_code(unsigned int code)
++{
++	struct vpfe_fmt *fmt;
++	unsigned int k;
++
++	for (k = 0; k < ARRAY_SIZE(formats); k++) {
++		fmt = &formats[k];
++		if (fmt->code == code)
++			return fmt;
++	}
++
++	return NULL;
++}
++
++static struct vpfe_fmt *find_format_by_pix(unsigned int pixelformat)
++{
++	struct vpfe_fmt *fmt;
++	unsigned int k;
++
++	for (k = 0; k < ARRAY_SIZE(formats); k++) {
++		fmt = &formats[k];
++		if (fmt->fourcc == pixelformat)
++			return fmt;
++	}
++
++	return NULL;
++}
++
++static void
++mbus_to_pix(struct vpfe_device *vpfe,
++	    const struct v4l2_mbus_framefmt *mbus,
++	    struct v4l2_pix_format *pix, unsigned int *bpp)
++{
++	struct vpfe_subdev_info *sdinfo = vpfe->current_subdev;
++	unsigned int bus_width = sdinfo->vpfe_param.bus_width;
++	struct vpfe_fmt *fmt;
++
++	fmt = find_format_by_code(mbus->code);
++	if (WARN_ON(fmt == NULL)) {
++		pr_err("Invalid mbus code set\n");
++		*bpp = 1;
++		return;
++	}
++
++	memset(pix, 0, sizeof(*pix));
++	v4l2_fill_pix_format(pix, mbus);
++	pix->pixelformat = fmt->fourcc;
++	*bpp = (bus_width == 10) ?  fmt->l.bpp : fmt->s.bpp;
++
++	/* pitch should be 32 bytes aligned */
++	pix->bytesperline = ALIGN(pix->width * *bpp, 32);
++	pix->sizeimage = pix->bytesperline * pix->height;
++}
++
++static void pix_to_mbus(struct vpfe_device *vpfe,
++			struct v4l2_pix_format *pix_fmt,
++			struct v4l2_mbus_framefmt *mbus_fmt)
++{
++	struct vpfe_fmt *fmt;
++
++	fmt = find_format_by_pix(pix_fmt->pixelformat);
++	if (!fmt) {
++		/* default to first entry */
++		vpfe_dbg(3, vpfe, "Invalid pixel code: %x, default used instead\n",
++			pix_fmt->pixelformat);
++		fmt = &formats[0];
++	}
++
++	memset(mbus_fmt, 0, sizeof(*mbus_fmt));
++	v4l2_fill_mbus_format(mbus_fmt, pix_fmt, fmt->code);
++}
++
++/*  Print Four-character-code (FOURCC) */
++static char *print_fourcc(u32 fmt)
++{
++	static char code[5];
++
++	code[0] = (unsigned char)(fmt & 0xff);
++	code[1] = (unsigned char)((fmt >> 8) & 0xff);
++	code[2] = (unsigned char)((fmt >> 16) & 0xff);
++	code[3] = (unsigned char)((fmt >> 24) & 0xff);
++	code[4] = '\0';
++
++	return code;
++}
++
++static int
++cmp_v4l2_format(const struct v4l2_format *lhs, const struct v4l2_format *rhs)
++{
++	return lhs->type == rhs->type &&
++		lhs->fmt.pix.width == rhs->fmt.pix.width &&
++		lhs->fmt.pix.height == rhs->fmt.pix.height &&
++		lhs->fmt.pix.pixelformat == rhs->fmt.pix.pixelformat &&
++		lhs->fmt.pix.field == rhs->fmt.pix.field &&
++		lhs->fmt.pix.colorspace == rhs->fmt.pix.colorspace;
++}
++
++static inline u32 vpfe_reg_read(struct vpfe_ccdc *ccdc, u32 offset)
++{
++	return ioread32(ccdc->ccdc_cfg.base_addr + offset);
++}
++
++static inline void vpfe_reg_write(struct vpfe_ccdc *ccdc, u32 val, u32 offset)
++{
++	iowrite32(val, ccdc->ccdc_cfg.base_addr + offset);
++}
++
++static inline struct vpfe_device *to_vpfe(struct vpfe_ccdc *ccdc)
++{
++	return container_of(ccdc, struct vpfe_device, ccdc);
++}
++
++static inline struct vpfe_cap_buffer *to_vpfe_buffer(struct vb2_buffer *vb)
++{
++	return container_of(vb, struct vpfe_cap_buffer, vb);
++}
++
++static inline void vpfe_pcr_enable(struct vpfe_ccdc *ccdc, int flag)
++{
++	vpfe_reg_write(ccdc, !!flag, VPFE_PCR);
++}
++
++static void vpfe_config_enable(struct vpfe_ccdc *ccdc, int flag)
++{
++	unsigned int cfg;
++
++	if (!flag) {
++		cfg = vpfe_reg_read(ccdc, VPFE_CONFIG);
++		cfg &= ~(VPFE_CONFIG_EN_ENABLE << VPFE_CONFIG_EN_SHIFT);
++	} else {
++		cfg = VPFE_CONFIG_EN_ENABLE << VPFE_CONFIG_EN_SHIFT;
++	}
++
++	vpfe_reg_write(ccdc, cfg, VPFE_CONFIG);
++}
++
++static void vpfe_ccdc_setwin(struct vpfe_ccdc *ccdc,
++			     struct v4l2_rect *image_win,
++			     enum ccdc_frmfmt frm_fmt,
++			     int bpp)
++{
++	int horz_start, horz_nr_pixels;
++	int vert_start, vert_nr_lines;
++	int val, mid_img;
++
++	/*
++	 * ppc - per pixel count. indicates how many pixels per cell
++	 * output to SDRAM. example, for ycbcr, it is one y and one c, so 2.
++	 * raw capture this is 1
++	 */
++	horz_start = image_win->left * bpp;
++	horz_nr_pixels = (image_win->width * bpp) - 1;
++	vpfe_reg_write(ccdc, (horz_start << VPFE_HORZ_INFO_SPH_SHIFT) |
++				horz_nr_pixels, VPFE_HORZ_INFO);
++
++	vert_start = image_win->top;
++
++	if (frm_fmt == CCDC_FRMFMT_INTERLACED) {
++		vert_nr_lines = (image_win->height >> 1) - 1;
++		vert_start >>= 1;
++		/* Since first line doesn't have any data */
++		vert_start += 1;
++		/* configure VDINT0 */
++		val = (vert_start << VPFE_VDINT_VDINT0_SHIFT);
++	} else {
++		/* Since first line doesn't have any data */
++		vert_start += 1;
++		vert_nr_lines = image_win->height - 1;
++		/*
++		 * configure VDINT0 and VDINT1. VDINT1 will be at half
++		 * of image height
++		 */
++		mid_img = vert_start + (image_win->height / 2);
++		val = (vert_start << VPFE_VDINT_VDINT0_SHIFT) |
++				(mid_img & VPFE_VDINT_VDINT1_MASK);
++	}
++
++	vpfe_reg_write(ccdc, val, VPFE_VDINT);
++
++	vpfe_reg_write(ccdc, (vert_start << VPFE_VERT_START_SLV0_SHIFT) |
++				vert_start, VPFE_VERT_START);
++	vpfe_reg_write(ccdc, vert_nr_lines, VPFE_VERT_LINES);
++}
++
++static void vpfe_reg_dump(struct vpfe_ccdc *ccdc)
++{
++	struct vpfe_device *vpfe = to_vpfe(ccdc);
++
++	vpfe_dbg(3, vpfe, "ALAW: 0x%x\n", vpfe_reg_read(ccdc, VPFE_ALAW));
++	vpfe_dbg(3, vpfe, "CLAMP: 0x%x\n", vpfe_reg_read(ccdc, VPFE_CLAMP));
++	vpfe_dbg(3, vpfe, "DCSUB: 0x%x\n", vpfe_reg_read(ccdc, VPFE_DCSUB));
++	vpfe_dbg(3, vpfe, "BLKCMP: 0x%x\n", vpfe_reg_read(ccdc, VPFE_BLKCMP));
++	vpfe_dbg(3, vpfe, "COLPTN: 0x%x\n", vpfe_reg_read(ccdc, VPFE_COLPTN));
++	vpfe_dbg(3, vpfe, "SDOFST: 0x%x\n", vpfe_reg_read(ccdc, VPFE_SDOFST));
++	vpfe_dbg(3, vpfe, "SYN_MODE: 0x%x\n",
++		 vpfe_reg_read(ccdc, VPFE_SYNMODE));
++	vpfe_dbg(3, vpfe, "HSIZE_OFF: 0x%x\n",
++		 vpfe_reg_read(ccdc, VPFE_HSIZE_OFF));
++	vpfe_dbg(3, vpfe, "HORZ_INFO: 0x%x\n",
++		 vpfe_reg_read(ccdc, VPFE_HORZ_INFO));
++	vpfe_dbg(3, vpfe, "VERT_START: 0x%x\n",
++		 vpfe_reg_read(ccdc, VPFE_VERT_START));
++	vpfe_dbg(3, vpfe, "VERT_LINES: 0x%x\n",
++		 vpfe_reg_read(ccdc, VPFE_VERT_LINES));
++}
++
++static int
++vpfe_ccdc_validate_param(struct vpfe_ccdc *ccdc,
++			 struct vpfe_ccdc_config_params_raw *ccdcparam)
++{
++	struct vpfe_device *vpfe = to_vpfe(ccdc);
++	u8 max_gamma, max_data;
++
++	if (!ccdcparam->alaw.enable)
++		return 0;
++
++	max_gamma = ccdc_gamma_width_max_bit(ccdcparam->alaw.gamma_wd);
++	max_data = ccdc_data_size_max_bit(ccdcparam->data_sz);
++
++	if (ccdcparam->alaw.gamma_wd > VPFE_CCDC_GAMMA_BITS_09_0 ||
++	    ccdcparam->alaw.gamma_wd < VPFE_CCDC_GAMMA_BITS_15_6 ||
++	    max_gamma > max_data) {
++		vpfe_dbg(1, vpfe, "Invalid data line select\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void
++vpfe_ccdc_update_raw_params(struct vpfe_ccdc *ccdc,
++			    struct vpfe_ccdc_config_params_raw *raw_params)
++{
++	struct vpfe_ccdc_config_params_raw *config_params =
++				&ccdc->ccdc_cfg.bayer.config_params;
++
++	config_params = raw_params;
++}
++
++/*
++ * vpfe_ccdc_restore_defaults()
++ * This function will write defaults to all CCDC registers
++ */
++static void vpfe_ccdc_restore_defaults(struct vpfe_ccdc *ccdc)
++{
++	int i;
++
++	/* Disable CCDC */
++	vpfe_pcr_enable(ccdc, 0);
++
++	/* set all registers to default value */
++	for (i = 4; i <= 0x94; i += 4)
++		vpfe_reg_write(ccdc, 0,  i);
++
++	vpfe_reg_write(ccdc, VPFE_NO_CULLING, VPFE_CULLING);
++	vpfe_reg_write(ccdc, VPFE_CCDC_GAMMA_BITS_11_2, VPFE_ALAW);
++}
++
++static int vpfe_ccdc_close(struct vpfe_ccdc *ccdc, struct device *dev)
++{
++	int dma_cntl, i, pcr;
++
++	/* If the CCDC module is still busy wait for it to be done */
++	for (i = 0; i < 10; i++) {
++		usleep_range(5000, 6000);
++		pcr = vpfe_reg_read(ccdc, VPFE_PCR);
++		if (!pcr)
++			break;
++
++		/* make sure it it is disabled */
++		vpfe_pcr_enable(ccdc, 0);
++	}
++
++	/* Disable CCDC by resetting all register to default POR values */
++	vpfe_ccdc_restore_defaults(ccdc);
++
++	/* if DMA_CNTL overflow bit is set. Clear it
++	 *  It appears to take a while for this to become quiescent ~20ms
++	 */
++	for (i = 0; i < 10; i++) {
++		dma_cntl = vpfe_reg_read(ccdc, VPFE_DMA_CNTL);
++		if (!(dma_cntl & VPFE_DMA_CNTL_OVERFLOW))
++			break;
++
++		/* Clear the overflow bit */
++		vpfe_reg_write(ccdc, dma_cntl, VPFE_DMA_CNTL);
++		usleep_range(5000, 6000);
++	}
++
++	/* Disabled the module at the CONFIG level */
++	vpfe_config_enable(ccdc, 0);
++
++	pm_runtime_put_sync(dev);
++
++	return 0;
++}
++
++static int vpfe_ccdc_set_params(struct vpfe_ccdc *ccdc, void __user *params)
++{
++	struct vpfe_device *vpfe = container_of(ccdc, struct vpfe_device, ccdc);
++	struct vpfe_ccdc_config_params_raw raw_params;
++	int x;
++
++	if (ccdc->ccdc_cfg.if_type != VPFE_RAW_BAYER)
++		return -EINVAL;
++
++	x = copy_from_user(&raw_params, params, sizeof(raw_params));
++	if (x) {
++		vpfe_dbg(1, vpfe,
++			"vpfe_ccdc_set_params: error in copying ccdc params, %d\n",
++			x);
++		return -EFAULT;
++	}
++
++	if (!vpfe_ccdc_validate_param(ccdc, &raw_params)) {
++		vpfe_ccdc_update_raw_params(ccdc, &raw_params);
++			return 0;
++	}
++
++	return -EINVAL;
++}
++
++/*
++ * vpfe_ccdc_config_ycbcr()
++ * This function will configure CCDC for YCbCr video capture
++ */
++static void vpfe_ccdc_config_ycbcr(struct vpfe_ccdc *ccdc)
++{
++	struct vpfe_device *vpfe = container_of(ccdc, struct vpfe_device, ccdc);
++	struct ccdc_params_ycbcr *params = &ccdc->ccdc_cfg.ycbcr;
++	u32 syn_mode;
++
++	vpfe_dbg(3, vpfe, "vpfe_ccdc_config_ycbcr:\n");
++	/*
++	 * first restore the CCDC registers to default values
++	 * This is important since we assume default values to be set in
++	 * a lot of registers that we didn't touch
++	 */
++	vpfe_ccdc_restore_defaults(ccdc);
++
++	/*
++	 * configure pixel format, frame format, configure video frame
++	 * format, enable output to SDRAM, enable internal timing generator
++	 * and 8bit pack mode
++	 */
++	syn_mode = (((params->pix_fmt & VPFE_SYN_MODE_INPMOD_MASK) <<
++		    VPFE_SYN_MODE_INPMOD_SHIFT) |
++		    ((params->frm_fmt & VPFE_SYN_FLDMODE_MASK) <<
++		    VPFE_SYN_FLDMODE_SHIFT) | VPFE_VDHDEN_ENABLE |
++		    VPFE_WEN_ENABLE | VPFE_DATA_PACK_ENABLE);
++
++	/* setup BT.656 sync mode */
++	if (params->bt656_enable) {
++		vpfe_reg_write(ccdc, VPFE_REC656IF_BT656_EN, VPFE_REC656IF);
++
++		/*
++		 * configure the FID, VD, HD pin polarity,
++		 * fld,hd pol positive, vd negative, 8-bit data
++		 */
++		syn_mode |= VPFE_SYN_MODE_VD_POL_NEGATIVE;
++		if (ccdc->ccdc_cfg.if_type == VPFE_BT656_10BIT)
++			syn_mode |= VPFE_SYN_MODE_10BITS;
++		else
++			syn_mode |= VPFE_SYN_MODE_8BITS;
++	} else {
++		/* y/c external sync mode */
++		syn_mode |= (((params->fid_pol & VPFE_FID_POL_MASK) <<
++			     VPFE_FID_POL_SHIFT) |
++			     ((params->hd_pol & VPFE_HD_POL_MASK) <<
++			     VPFE_HD_POL_SHIFT) |
++			     ((params->vd_pol & VPFE_VD_POL_MASK) <<
++			     VPFE_VD_POL_SHIFT));
++	}
++	vpfe_reg_write(ccdc, syn_mode, VPFE_SYNMODE);
++
++	/* configure video window */
++	vpfe_ccdc_setwin(ccdc, &params->win,
++			 params->frm_fmt, params->bytesperpixel);
++
++	/*
++	 * configure the order of y cb cr in SDRAM, and disable latch
++	 * internal register on vsync
++	 */
++	if (ccdc->ccdc_cfg.if_type == VPFE_BT656_10BIT)
++		vpfe_reg_write(ccdc,
++			       (params->pix_order << VPFE_CCDCFG_Y8POS_SHIFT) |
++			       VPFE_LATCH_ON_VSYNC_DISABLE |
++			       VPFE_CCDCFG_BW656_10BIT, VPFE_CCDCFG);
++	else
++		vpfe_reg_write(ccdc,
++			       (params->pix_order << VPFE_CCDCFG_Y8POS_SHIFT) |
++			       VPFE_LATCH_ON_VSYNC_DISABLE, VPFE_CCDCFG);
++
++	/*
++	 * configure the horizontal line offset. This should be a
++	 * on 32 byte boundary. So clear LSB 5 bits
++	 */
++	vpfe_reg_write(ccdc, params->bytesperline, VPFE_HSIZE_OFF);
++
++	/* configure the memory line offset */
++	if (params->buf_type == CCDC_BUFTYPE_FLD_INTERLEAVED)
++		/* two fields are interleaved in memory */
++		vpfe_reg_write(ccdc, VPFE_SDOFST_FIELD_INTERLEAVED,
++			       VPFE_SDOFST);
++}
++
++static void
++vpfe_ccdc_config_black_clamp(struct vpfe_ccdc *ccdc,
++			     struct vpfe_ccdc_black_clamp *bclamp)
++{
++	u32 val;
++
++	if (!bclamp->enable) {
++		/* configure DCSub */
++		val = (bclamp->dc_sub) & VPFE_BLK_DC_SUB_MASK;
++		vpfe_reg_write(ccdc, val, VPFE_DCSUB);
++		vpfe_reg_write(ccdc, VPFE_CLAMP_DEFAULT_VAL, VPFE_CLAMP);
++		return;
++	}
++	/*
++	 * Configure gain,  Start pixel, No of line to be avg,
++	 * No of pixel/line to be avg, & Enable the Black clamping
++	 */
++	val = ((bclamp->sgain & VPFE_BLK_SGAIN_MASK) |
++	       ((bclamp->start_pixel & VPFE_BLK_ST_PXL_MASK) <<
++		VPFE_BLK_ST_PXL_SHIFT) |
++	       ((bclamp->sample_ln & VPFE_BLK_SAMPLE_LINE_MASK) <<
++		VPFE_BLK_SAMPLE_LINE_SHIFT) |
++	       ((bclamp->sample_pixel & VPFE_BLK_SAMPLE_LN_MASK) <<
++		VPFE_BLK_SAMPLE_LN_SHIFT) | VPFE_BLK_CLAMP_ENABLE);
++	vpfe_reg_write(ccdc, val, VPFE_CLAMP);
++	/* If Black clamping is enable then make dcsub 0 */
++	vpfe_reg_write(ccdc, VPFE_DCSUB_DEFAULT_VAL, VPFE_DCSUB);
++}
++
++static void
++vpfe_ccdc_config_black_compense(struct vpfe_ccdc *ccdc,
++				struct vpfe_ccdc_black_compensation *bcomp)
++{
++	u32 val;
++
++	val = ((bcomp->b & VPFE_BLK_COMP_MASK) |
++	      ((bcomp->gb & VPFE_BLK_COMP_MASK) <<
++	       VPFE_BLK_COMP_GB_COMP_SHIFT) |
++	      ((bcomp->gr & VPFE_BLK_COMP_MASK) <<
++	       VPFE_BLK_COMP_GR_COMP_SHIFT) |
++	      ((bcomp->r & VPFE_BLK_COMP_MASK) <<
++	       VPFE_BLK_COMP_R_COMP_SHIFT));
++	vpfe_reg_write(ccdc, val, VPFE_BLKCMP);
++}
++
++/*
++ * vpfe_ccdc_config_raw()
++ * This function will configure CCDC for Raw capture mode
++ */
++static void vpfe_ccdc_config_raw(struct vpfe_ccdc *ccdc)
++{
++	struct vpfe_device *vpfe = container_of(ccdc, struct vpfe_device, ccdc);
++	struct vpfe_ccdc_config_params_raw *config_params =
++				&ccdc->ccdc_cfg.bayer.config_params;
++	struct ccdc_params_raw *params = &ccdc->ccdc_cfg.bayer;
++	unsigned int syn_mode;
++	unsigned int val;
++
++	vpfe_dbg(3, vpfe, "vpfe_ccdc_config_raw:\n");
++
++	/* Reset CCDC */
++	vpfe_ccdc_restore_defaults(ccdc);
++
++	/* Disable latching function registers on VSYNC  */
++	vpfe_reg_write(ccdc, VPFE_LATCH_ON_VSYNC_DISABLE, VPFE_CCDCFG);
++
++	/*
++	 * Configure the vertical sync polarity(SYN_MODE.VDPOL),
++	 * horizontal sync polarity (SYN_MODE.HDPOL), frame id polarity
++	 * (SYN_MODE.FLDPOL), frame format(progressive or interlace),
++	 * data size(SYNMODE.DATSIZ), &pixel format (Input mode), output
++	 * SDRAM, enable internal timing generator
++	 */
++	syn_mode = (((params->vd_pol & VPFE_VD_POL_MASK) << VPFE_VD_POL_SHIFT) |
++		   ((params->hd_pol & VPFE_HD_POL_MASK) << VPFE_HD_POL_SHIFT) |
++		   ((params->fid_pol & VPFE_FID_POL_MASK) <<
++		   VPFE_FID_POL_SHIFT) | ((params->frm_fmt &
++		   VPFE_FRM_FMT_MASK) << VPFE_FRM_FMT_SHIFT) |
++		   ((config_params->data_sz & VPFE_DATA_SZ_MASK) <<
++		   VPFE_DATA_SZ_SHIFT) | ((params->pix_fmt &
++		   VPFE_PIX_FMT_MASK) << VPFE_PIX_FMT_SHIFT) |
++		   VPFE_WEN_ENABLE | VPFE_VDHDEN_ENABLE);
++
++	/* Enable and configure aLaw register if needed */
++	if (config_params->alaw.enable) {
++		val = ((config_params->alaw.gamma_wd &
++		      VPFE_ALAW_GAMMA_WD_MASK) | VPFE_ALAW_ENABLE);
++		vpfe_reg_write(ccdc, val, VPFE_ALAW);
++		vpfe_dbg(3, vpfe, "\nWriting 0x%x to ALAW...\n", val);
++	}
++
++	/* Configure video window */
++	vpfe_ccdc_setwin(ccdc, &params->win, params->frm_fmt,
++			 params->bytesperpixel);
++
++	/* Configure Black Clamp */
++	vpfe_ccdc_config_black_clamp(ccdc, &config_params->blk_clamp);
++
++	/* Configure Black level compensation */
++	vpfe_ccdc_config_black_compense(ccdc, &config_params->blk_comp);
++
++	/* If data size is 8 bit then pack the data */
++	if ((config_params->data_sz == VPFE_CCDC_DATA_8BITS) ||
++	    config_params->alaw.enable)
++		syn_mode |= VPFE_DATA_PACK_ENABLE;
++
++	/*
++	 * Configure Horizontal offset register. If pack 8 is enabled then
++	 * 1 pixel will take 1 byte
++	 */
++	vpfe_reg_write(ccdc, params->bytesperline, VPFE_HSIZE_OFF);
++
++	vpfe_dbg(3, vpfe, "Writing %d (%x) to HSIZE_OFF\n",
++		params->bytesperline, params->bytesperline);
++
++	/* Set value for SDOFST */
++	if (params->frm_fmt == CCDC_FRMFMT_INTERLACED) {
++		if (params->image_invert_enable) {
++			/* For interlace inverse mode */
++			vpfe_reg_write(ccdc, VPFE_INTERLACED_IMAGE_INVERT,
++				   VPFE_SDOFST);
++		} else {
++			/* For interlace non inverse mode */
++			vpfe_reg_write(ccdc, VPFE_INTERLACED_NO_IMAGE_INVERT,
++				   VPFE_SDOFST);
++		}
++	} else if (params->frm_fmt == CCDC_FRMFMT_PROGRESSIVE) {
++		vpfe_reg_write(ccdc, VPFE_PROGRESSIVE_NO_IMAGE_INVERT,
++			   VPFE_SDOFST);
++	}
++
++	vpfe_reg_write(ccdc, syn_mode, VPFE_SYNMODE);
++
++	vpfe_reg_dump(ccdc);
++}
++
++static inline int
++vpfe_ccdc_set_buftype(struct vpfe_ccdc *ccdc,
++		      enum ccdc_buftype buf_type)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		ccdc->ccdc_cfg.bayer.buf_type = buf_type;
++	else
++		ccdc->ccdc_cfg.ycbcr.buf_type = buf_type;
++
++	return 0;
++}
++
++static inline enum ccdc_buftype vpfe_ccdc_get_buftype(struct vpfe_ccdc *ccdc)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		return ccdc->ccdc_cfg.bayer.buf_type;
++
++	return ccdc->ccdc_cfg.ycbcr.buf_type;
++}
++
++static int vpfe_ccdc_set_pixel_format(struct vpfe_ccdc *ccdc, u32 pixfmt)
++{
++	struct vpfe_device *vpfe = container_of(ccdc, struct vpfe_device, ccdc);
++
++	vpfe_dbg(1, vpfe, "vpfe_ccdc_set_pixel_format: if_type: %d, pixfmt:%s\n",
++		 ccdc->ccdc_cfg.if_type, print_fourcc(pixfmt));
++
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER) {
++		ccdc->ccdc_cfg.bayer.pix_fmt = CCDC_PIXFMT_RAW;
++		/*
++		 * Need to clear it in case it was left on
++		 * after the last capture.
++		 */
++		ccdc->ccdc_cfg.bayer.config_params.alaw.enable = 0;
++
++		switch (pixfmt) {
++		case V4L2_PIX_FMT_SBGGR8:
++			ccdc->ccdc_cfg.bayer.config_params.alaw.enable = 1;
++			break;
++
++		case V4L2_PIX_FMT_YUYV:
++		case V4L2_PIX_FMT_UYVY:
++		case V4L2_PIX_FMT_YUV420:
++		case V4L2_PIX_FMT_NV12:
++		case V4L2_PIX_FMT_RGB565X:
++			break;
++
++		case V4L2_PIX_FMT_SBGGR16:
++		default:
++			return -EINVAL;
++		}
++	} else {
++		switch (pixfmt) {
++		case V4L2_PIX_FMT_YUYV:
++			ccdc->ccdc_cfg.ycbcr.pix_order = CCDC_PIXORDER_YCBYCR;
++			break;
++
++		case V4L2_PIX_FMT_UYVY:
++			ccdc->ccdc_cfg.ycbcr.pix_order = CCDC_PIXORDER_CBYCRY;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++static u32 vpfe_ccdc_get_pixel_format(struct vpfe_ccdc *ccdc)
++{
++	u32 pixfmt;
++
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER) {
++		pixfmt = V4L2_PIX_FMT_YUYV;
++	} else {
++		if (ccdc->ccdc_cfg.ycbcr.pix_order == CCDC_PIXORDER_YCBYCR)
++			pixfmt = V4L2_PIX_FMT_YUYV;
++		else
++			pixfmt = V4L2_PIX_FMT_UYVY;
++	}
++
++	return pixfmt;
++}
++
++static int
++vpfe_ccdc_set_image_window(struct vpfe_ccdc *ccdc,
++			   struct v4l2_rect *win, unsigned int bpp)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER) {
++		ccdc->ccdc_cfg.bayer.win = *win;
++		ccdc->ccdc_cfg.bayer.bytesperpixel = bpp;
++		ccdc->ccdc_cfg.bayer.bytesperline = ALIGN(win->width * bpp, 32);
++	} else {
++		ccdc->ccdc_cfg.ycbcr.win = *win;
++		ccdc->ccdc_cfg.ycbcr.bytesperpixel = bpp;
++		ccdc->ccdc_cfg.ycbcr.bytesperline = ALIGN(win->width * bpp, 32);
++	}
++
++	return 0;
++}
++
++static inline void
++vpfe_ccdc_get_image_window(struct vpfe_ccdc *ccdc,
++			   struct v4l2_rect *win)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		*win = ccdc->ccdc_cfg.bayer.win;
++	else
++		*win = ccdc->ccdc_cfg.ycbcr.win;
++}
++
++static inline unsigned int vpfe_ccdc_get_line_length(struct vpfe_ccdc *ccdc)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		return ccdc->ccdc_cfg.bayer.bytesperline;
++
++	return ccdc->ccdc_cfg.ycbcr.bytesperline;
++}
++
++static inline int
++vpfe_ccdc_set_frame_format(struct vpfe_ccdc *ccdc,
++			   enum ccdc_frmfmt frm_fmt)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		ccdc->ccdc_cfg.bayer.frm_fmt = frm_fmt;
++	else
++		ccdc->ccdc_cfg.ycbcr.frm_fmt = frm_fmt;
++
++	return 0;
++}
++
++static inline enum ccdc_frmfmt
++vpfe_ccdc_get_frame_format(struct vpfe_ccdc *ccdc)
++{
++	if (ccdc->ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		return ccdc->ccdc_cfg.bayer.frm_fmt;
++
++	return ccdc->ccdc_cfg.ycbcr.frm_fmt;
++}
++
++static inline int vpfe_ccdc_getfid(struct vpfe_ccdc *ccdc)
++{
++	return (vpfe_reg_read(ccdc, VPFE_SYNMODE) >> 15) & 1;
++}
++
++static inline void vpfe_set_sdr_addr(struct vpfe_ccdc *ccdc, unsigned long addr)
++{
++	vpfe_reg_write(ccdc, addr & 0xffffffe0, VPFE_SDR_ADDR);
++}
++
++static int vpfe_ccdc_set_hw_if_params(struct vpfe_ccdc *ccdc,
++				      struct vpfe_hw_if_param *params)
++{
++	struct vpfe_device *vpfe = container_of(ccdc, struct vpfe_device, ccdc);
++
++	ccdc->ccdc_cfg.if_type = params->if_type;
++
++	switch (params->if_type) {
++	case VPFE_BT656:
++	case VPFE_YCBCR_SYNC_16:
++	case VPFE_YCBCR_SYNC_8:
++	case VPFE_BT656_10BIT:
++		ccdc->ccdc_cfg.ycbcr.vd_pol = params->vdpol;
++		ccdc->ccdc_cfg.ycbcr.hd_pol = params->hdpol;
++		break;
++
++	case VPFE_RAW_BAYER:
++		ccdc->ccdc_cfg.bayer.vd_pol = params->vdpol;
++		ccdc->ccdc_cfg.bayer.hd_pol = params->hdpol;
++		if (params->bus_width == 10)
++			ccdc->ccdc_cfg.bayer.config_params.data_sz =
++				VPFE_CCDC_DATA_10BITS;
++		else
++			ccdc->ccdc_cfg.bayer.config_params.data_sz =
++				VPFE_CCDC_DATA_8BITS;
++		vpfe_dbg(1, vpfe, "params.bus_width: %d\n",
++			params->bus_width);
++		vpfe_dbg(1, vpfe, "config_params.data_sz: %d\n",
++			ccdc->ccdc_cfg.bayer.config_params.data_sz);
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void vpfe_clear_intr(struct vpfe_ccdc *ccdc, int vdint)
++{
++	unsigned int vpfe_int_status;
++
++	vpfe_int_status = vpfe_reg_read(ccdc, VPFE_IRQ_STS);
++
++	switch (vdint) {
++	/* VD0 interrupt */
++	case VPFE_VDINT0:
++		vpfe_int_status &= ~VPFE_VDINT0;
++		vpfe_int_status |= VPFE_VDINT0;
++		break;
++
++	/* VD1 interrupt */
++	case VPFE_VDINT1:
++		vpfe_int_status &= ~VPFE_VDINT1;
++		vpfe_int_status |= VPFE_VDINT1;
++		break;
++
++	/* VD2 interrupt */
++	case VPFE_VDINT2:
++		vpfe_int_status &= ~VPFE_VDINT2;
++		vpfe_int_status |= VPFE_VDINT2;
++		break;
++
++	/* Clear all interrupts */
++	default:
++		vpfe_int_status &= ~(VPFE_VDINT0 |
++				VPFE_VDINT1 |
++				VPFE_VDINT2);
++		vpfe_int_status |= (VPFE_VDINT0 |
++				VPFE_VDINT1 |
++				VPFE_VDINT2);
++		break;
++	}
++	/* Clear specific VDINT from the status register */
++	vpfe_reg_write(ccdc, vpfe_int_status, VPFE_IRQ_STS);
++
++	vpfe_int_status = vpfe_reg_read(ccdc, VPFE_IRQ_STS);
++
++	/* Acknowledge that we are done with all interrupts */
++	vpfe_reg_write(ccdc, 1, VPFE_IRQ_EOI);
++}
++
++static void vpfe_ccdc_config_defaults(struct vpfe_ccdc *ccdc)
++{
++	ccdc->ccdc_cfg.if_type = VPFE_RAW_BAYER;
++
++	ccdc->ccdc_cfg.ycbcr.pix_fmt = CCDC_PIXFMT_YCBCR_8BIT;
++	ccdc->ccdc_cfg.ycbcr.frm_fmt = CCDC_FRMFMT_INTERLACED;
++	ccdc->ccdc_cfg.ycbcr.fid_pol = VPFE_PINPOL_POSITIVE;
++	ccdc->ccdc_cfg.ycbcr.vd_pol = VPFE_PINPOL_POSITIVE;
++	ccdc->ccdc_cfg.ycbcr.hd_pol = VPFE_PINPOL_POSITIVE;
++	ccdc->ccdc_cfg.ycbcr.pix_order = CCDC_PIXORDER_CBYCRY;
++	ccdc->ccdc_cfg.ycbcr.buf_type = CCDC_BUFTYPE_FLD_INTERLEAVED;
++
++	ccdc->ccdc_cfg.ycbcr.win.left = 0;
++	ccdc->ccdc_cfg.ycbcr.win.top = 0;
++	ccdc->ccdc_cfg.ycbcr.win.width = 720;
++	ccdc->ccdc_cfg.ycbcr.win.height = 576;
++	ccdc->ccdc_cfg.ycbcr.bt656_enable = 1;
++
++	ccdc->ccdc_cfg.bayer.pix_fmt = CCDC_PIXFMT_RAW;
++	ccdc->ccdc_cfg.bayer.frm_fmt = CCDC_FRMFMT_PROGRESSIVE;
++	ccdc->ccdc_cfg.bayer.fid_pol = VPFE_PINPOL_POSITIVE;
++	ccdc->ccdc_cfg.bayer.vd_pol = VPFE_PINPOL_POSITIVE;
++	ccdc->ccdc_cfg.bayer.hd_pol = VPFE_PINPOL_POSITIVE;
++
++	ccdc->ccdc_cfg.bayer.win.left = 0;
++	ccdc->ccdc_cfg.bayer.win.top = 0;
++	ccdc->ccdc_cfg.bayer.win.width = 800;
++	ccdc->ccdc_cfg.bayer.win.height = 600;
++	ccdc->ccdc_cfg.bayer.config_params.data_sz = VPFE_CCDC_DATA_8BITS;
++	ccdc->ccdc_cfg.bayer.config_params.alaw.gamma_wd =
++						VPFE_CCDC_GAMMA_BITS_09_0;
++}
++
++/*
++ * vpfe_get_ccdc_image_format - Get image parameters based on CCDC settings
++ */
++static int vpfe_get_ccdc_image_format(struct vpfe_device *vpfe,
++				      struct v4l2_format *f)
++{
++	struct v4l2_rect image_win;
++	enum ccdc_buftype buf_type;
++	enum ccdc_frmfmt frm_fmt;
++
++	memset(f, 0, sizeof(*f));
++	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	vpfe_ccdc_get_image_window(&vpfe->ccdc, &image_win);
++	f->fmt.pix.width = image_win.width;
++	f->fmt.pix.height = image_win.height;
++	f->fmt.pix.bytesperline = vpfe_ccdc_get_line_length(&vpfe->ccdc);
++	f->fmt.pix.sizeimage = f->fmt.pix.bytesperline *
++				f->fmt.pix.height;
++	buf_type = vpfe_ccdc_get_buftype(&vpfe->ccdc);
++	f->fmt.pix.pixelformat = vpfe_ccdc_get_pixel_format(&vpfe->ccdc);
++	frm_fmt = vpfe_ccdc_get_frame_format(&vpfe->ccdc);
++
++	if (frm_fmt == CCDC_FRMFMT_PROGRESSIVE) {
++		f->fmt.pix.field = V4L2_FIELD_NONE;
++	} else if (frm_fmt == CCDC_FRMFMT_INTERLACED) {
++		if (buf_type == CCDC_BUFTYPE_FLD_INTERLEAVED) {
++			f->fmt.pix.field = V4L2_FIELD_INTERLACED;
++		 } else if (buf_type == CCDC_BUFTYPE_FLD_SEPARATED) {
++			f->fmt.pix.field = V4L2_FIELD_SEQ_TB;
++		} else {
++			vpfe_err(vpfe, "Invalid buf_type\n");
++			return -EINVAL;
++		}
++	} else {
++		vpfe_err(vpfe, "Invalid frm_fmt\n");
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static int vpfe_config_ccdc_image_format(struct vpfe_device *vpfe)
++{
++	enum ccdc_frmfmt frm_fmt = CCDC_FRMFMT_INTERLACED;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_config_ccdc_image_format\n");
++
++	vpfe_dbg(1, vpfe, "pixelformat: %s\n",
++		print_fourcc(vpfe->fmt.fmt.pix.pixelformat));
++
++	if (vpfe_ccdc_set_pixel_format(&vpfe->ccdc,
++			vpfe->fmt.fmt.pix.pixelformat) < 0) {
++		vpfe_err(vpfe, "couldn't set pix format in ccdc\n");
++		return -EINVAL;
++	}
++
++	/* configure the image window */
++	vpfe_ccdc_set_image_window(&vpfe->ccdc, &vpfe->crop, vpfe->bpp);
++
++	switch (vpfe->fmt.fmt.pix.field) {
++	case V4L2_FIELD_INTERLACED:
++		/* do nothing, since it is default */
++		ret = vpfe_ccdc_set_buftype(
++				&vpfe->ccdc,
++				CCDC_BUFTYPE_FLD_INTERLEAVED);
++		break;
++
++	case V4L2_FIELD_NONE:
++		frm_fmt = CCDC_FRMFMT_PROGRESSIVE;
++		/* buffer type only applicable for interlaced scan */
++		break;
++
++	case V4L2_FIELD_SEQ_TB:
++		ret = vpfe_ccdc_set_buftype(
++				&vpfe->ccdc,
++				CCDC_BUFTYPE_FLD_SEPARATED);
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	if (ret)
++		return ret;
++
++	return vpfe_ccdc_set_frame_format(&vpfe->ccdc, frm_fmt);
++}
++
++/*
++ * vpfe_config_image_format()
++ * For a given standard, this functions sets up the default
++ * pix format & crop values in the vpfe device and ccdc.  It first
++ * starts with defaults based values from the standard table.
++ * It then checks if sub device support g_mbus_fmt and then override the
++ * values based on that.Sets crop values to match with scan resolution
++ * starting at 0,0. It calls vpfe_config_ccdc_image_format() set the
++ * values in ccdc
++ */
++static int vpfe_config_image_format(struct vpfe_device *vpfe,
++				    v4l2_std_id std_id)
++{
++	struct v4l2_pix_format *pix = &vpfe->fmt.fmt.pix;
++	int i, ret;
++
++	for (i = 0; i < ARRAY_SIZE(vpfe_standards); i++) {
++		if (vpfe_standards[i].std_id & std_id) {
++			vpfe->std_info.active_pixels =
++					vpfe_standards[i].width;
++			vpfe->std_info.active_lines =
++					vpfe_standards[i].height;
++			vpfe->std_info.frame_format =
++					vpfe_standards[i].frame_format;
++			vpfe->std_index = i;
++
++			break;
++		}
++	}
++
++	if (i ==  ARRAY_SIZE(vpfe_standards)) {
++		vpfe_err(vpfe, "standard not supported\n");
++		return -EINVAL;
++	}
++
++	vpfe->crop.top = vpfe->crop.left = 0;
++	vpfe->crop.width = vpfe->std_info.active_pixels;
++	vpfe->crop.height = vpfe->std_info.active_lines;
++	pix->width = vpfe->crop.width;
++	pix->height = vpfe->crop.height;
++	pix->pixelformat = V4L2_PIX_FMT_YUYV;
++
++	/* first field and frame format based on standard frame format */
++	if (vpfe->std_info.frame_format)
++		pix->field = V4L2_FIELD_INTERLACED;
++	else
++		pix->field = V4L2_FIELD_NONE;
++
++	ret = __vpfe_get_format(vpfe, &vpfe->fmt, &vpfe->bpp);
++	if (ret)
++		return ret;
++
++	/* Update the crop window based on found values */
++	vpfe->crop.width = pix->width;
++	vpfe->crop.height = pix->height;
++
++	return vpfe_config_ccdc_image_format(vpfe);
++}
++
++static int vpfe_initialize_device(struct vpfe_device *vpfe)
++{
++	struct vpfe_subdev_info *sdinfo;
++	int ret;
++
++	sdinfo = &vpfe->cfg->sub_devs[0];
++	sdinfo->sd = vpfe->sd[0];
++	vpfe->current_input = 0;
++	vpfe->std_index = 0;
++	/* Configure the default format information */
++	ret = vpfe_config_image_format(vpfe,
++				       vpfe_standards[vpfe->std_index].std_id);
++	if (ret)
++		return ret;
++
++	pm_runtime_get_sync(vpfe->pdev);
++
++	vpfe_config_enable(&vpfe->ccdc, 1);
++
++	vpfe_ccdc_restore_defaults(&vpfe->ccdc);
++
++	/* Clear all VPFE interrupts */
++	vpfe_clear_intr(&vpfe->ccdc, -1);
++
++	return ret;
++}
++
++/*
++ * vpfe_release : This function is based on the vb2_fop_release
++ * helper function.
++ * It has been augmented to handle module power management,
++ * by disabling/enabling h/w module fcntl clock when necessary.
++ */
++static int vpfe_release(struct file *file)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_release\n");
++
++	ret = _vb2_fop_release(file, NULL);
++
++	if (v4l2_fh_is_singular_file(file)) {
++		mutex_lock(&vpfe->lock);
++		vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
++		v4l2_fh_release(file);
++		mutex_unlock(&vpfe->lock);
++	}
++
++	return ret;
++}
++
++/*
++ * vpfe_open : This function is based on the v4l2_fh_open helper function.
++ * It has been augmented to handle module power management,
++ * by disabling/enabling h/w module fcntl clock when necessary.
++ */
++static int vpfe_open(struct file *file)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	int ret;
++
++	ret = v4l2_fh_open(file);
++	if (ret) {
++		vpfe_err(vpfe, "v4l2_fh_open failed\n");
++		return ret;
++	}
++
++	if (!v4l2_fh_is_singular_file(file))
++		return 0;
++
++	mutex_lock(&vpfe->lock);
++	if (vpfe_initialize_device(vpfe)) {
++		mutex_unlock(&vpfe->lock);
++		v4l2_fh_release(file);
++		return -ENODEV;
++	}
++	mutex_unlock(&vpfe->lock);
++
++	return 0;
++}
++
++/**
++ * vpfe_schedule_next_buffer: set next buffer address for capture
++ * @vpfe : ptr to vpfe device
++ *
++ * This function will get next buffer from the dma queue and
++ * set the buffer address in the vpfe register for capture.
++ * the buffer is marked active
++ *
++ * Assumes caller is holding vpfe->dma_queue_lock already
++ */
++static inline void vpfe_schedule_next_buffer(struct vpfe_device *vpfe)
++{
++	vpfe->next_frm = list_entry(vpfe->dma_queue.next,
++				    struct vpfe_cap_buffer, list);
++	list_del(&vpfe->next_frm->list);
++
++	vpfe_set_sdr_addr(&vpfe->ccdc,
++		       vb2_dma_contig_plane_dma_addr(&vpfe->next_frm->vb, 0));
++}
++
++static inline void vpfe_schedule_bottom_field(struct vpfe_device *vpfe)
++{
++	unsigned long addr;
++
++	addr = vb2_dma_contig_plane_dma_addr(&vpfe->next_frm->vb, 0) +
++					vpfe->field_off;
++
++	vpfe_set_sdr_addr(&vpfe->ccdc, addr);
++}
++
++/*
++ * vpfe_process_buffer_complete: process a completed buffer
++ * @vpfe : ptr to vpfe device
++ *
++ * This function time stamp the buffer and mark it as DONE. It also
++ * wake up any process waiting on the QUEUE and set the next buffer
++ * as current
++ */
++static inline void vpfe_process_buffer_complete(struct vpfe_device *vpfe)
++{
++	v4l2_get_timestamp(&vpfe->cur_frm->vb.v4l2_buf.timestamp);
++	vpfe->cur_frm->vb.v4l2_buf.field = vpfe->fmt.fmt.pix.field;
++	vpfe->cur_frm->vb.v4l2_buf.sequence = vpfe->sequence++;
++	vb2_buffer_done(&vpfe->cur_frm->vb, VB2_BUF_STATE_DONE);
++	vpfe->cur_frm = vpfe->next_frm;
++}
++
++/*
++ * vpfe_isr : ISR handler for vpfe capture (VINT0)
++ * @irq: irq number
++ * @dev_id: dev_id ptr
++ *
++ * It changes status of the captured buffer, takes next buffer from the queue
++ * and sets its address in VPFE registers
++ */
++static irqreturn_t vpfe_isr(int irq, void *dev)
++{
++	struct vpfe_device *vpfe = (struct vpfe_device *)dev;
++	enum v4l2_field field;
++	int intr_status;
++	int fid;
++
++	intr_status = vpfe_reg_read(&vpfe->ccdc, VPFE_IRQ_STS);
++
++	if (intr_status & VPFE_VDINT0) {
++		field = vpfe->fmt.fmt.pix.field;
++
++		if (field == V4L2_FIELD_NONE) {
++			/* handle progressive frame capture */
++			if (vpfe->cur_frm != vpfe->next_frm)
++				vpfe_process_buffer_complete(vpfe);
++			goto next_intr;
++		}
++
++		/* interlaced or TB capture check which field
++		   we are in hardware */
++		fid = vpfe_ccdc_getfid(&vpfe->ccdc);
++
++		/* switch the software maintained field id */
++		vpfe->field ^= 1;
++		if (fid == vpfe->field) {
++			/* we are in-sync here,continue */
++			if (fid == 0) {
++				/*
++				 * One frame is just being captured. If the
++				 * next frame is available, release the
++				 * current frame and move on
++				 */
++				if (vpfe->cur_frm != vpfe->next_frm)
++					vpfe_process_buffer_complete(vpfe);
++				/*
++				 * based on whether the two fields are stored
++				 * interleave or separately in memory,
++				 * reconfigure the CCDC memory address
++				 */
++				if (field == V4L2_FIELD_SEQ_TB)
++					vpfe_schedule_bottom_field(vpfe);
++
++				goto next_intr;
++			}
++			/*
++			 * if one field is just being captured configure
++			 * the next frame get the next frame from the empty
++			 * queue if no frame is available hold on to the
++			 * current buffer
++			 */
++			spin_lock(&vpfe->dma_queue_lock);
++			if (!list_empty(&vpfe->dma_queue) &&
++			    vpfe->cur_frm == vpfe->next_frm)
++				vpfe_schedule_next_buffer(vpfe);
++			spin_unlock(&vpfe->dma_queue_lock);
++		} else if (fid == 0) {
++			/*
++			 * out of sync. Recover from any hardware out-of-sync.
++			 * May loose one frame
++			 */
++			vpfe->field = fid;
++		}
++	}
++
++next_intr:
++	if (intr_status & VPFE_VDINT1) {
++		spin_lock(&vpfe->dma_queue_lock);
++		if (vpfe->fmt.fmt.pix.field == V4L2_FIELD_NONE &&
++		    !list_empty(&vpfe->dma_queue) &&
++		    vpfe->cur_frm == vpfe->next_frm)
++			vpfe_schedule_next_buffer(vpfe);
++		spin_unlock(&vpfe->dma_queue_lock);
++	}
++
++	vpfe_clear_intr(&vpfe->ccdc, intr_status);
++
++	return IRQ_HANDLED;
++}
++
++static inline void vpfe_detach_irq(struct vpfe_device *vpfe)
++{
++	unsigned int intr = VPFE_VDINT0;
++	enum ccdc_frmfmt frame_format;
++
++	frame_format = vpfe_ccdc_get_frame_format(&vpfe->ccdc);
++	if (frame_format == CCDC_FRMFMT_PROGRESSIVE)
++		intr |= VPFE_VDINT1;
++
++	vpfe_reg_write(&vpfe->ccdc, intr, VPFE_IRQ_EN_CLR);
++}
++
++static inline void vpfe_attach_irq(struct vpfe_device *vpfe)
++{
++	unsigned int intr = VPFE_VDINT0;
++	enum ccdc_frmfmt frame_format;
++
++	frame_format = vpfe_ccdc_get_frame_format(&vpfe->ccdc);
++	if (frame_format == CCDC_FRMFMT_PROGRESSIVE)
++		intr |= VPFE_VDINT1;
++
++	vpfe_reg_write(&vpfe->ccdc, intr, VPFE_IRQ_EN_SET);
++}
++
++static int vpfe_querycap(struct file *file, void  *priv,
++			 struct v4l2_capability *cap)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	vpfe_dbg(2, vpfe, "vpfe_querycap\n");
++
++	strlcpy(cap->driver, VPFE_MODULE_NAME, sizeof(cap->driver));
++	strlcpy(cap->card, "TI AM437x VPFE", sizeof(cap->card));
++	snprintf(cap->bus_info, sizeof(cap->bus_info),
++			"platform:%s", vpfe->v4l2_dev.name);
++	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
++			    V4L2_CAP_READWRITE;
++	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
++
++	return 0;
++}
++
++/* get the format set at output pad of the adjacent subdev */
++static int __vpfe_get_format(struct vpfe_device *vpfe,
++			     struct v4l2_format *format, unsigned int *bpp)
++{
++	struct v4l2_mbus_framefmt mbus_fmt;
++	struct vpfe_subdev_info *sdinfo;
++	struct v4l2_subdev_format fmt;
++	int ret;
++
++	sdinfo = vpfe->current_subdev;
++	if (!sdinfo->sd)
++		return -EINVAL;
++
++	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++	fmt.pad = 0;
++
++	ret = v4l2_subdev_call(sdinfo->sd, pad, get_fmt, NULL, &fmt);
++	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
++		return ret;
++
++	if (!ret) {
++		v4l2_fill_pix_format(&format->fmt.pix, &fmt.format);
++		mbus_to_pix(vpfe, &fmt.format, &format->fmt.pix, bpp);
++	} else {
++		ret = v4l2_device_call_until_err(&vpfe->v4l2_dev,
++						 sdinfo->grp_id,
++						 video, g_mbus_fmt,
++						 &mbus_fmt);
++		if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
++			return ret;
++		v4l2_fill_pix_format(&format->fmt.pix, &mbus_fmt);
++		mbus_to_pix(vpfe, &mbus_fmt, &format->fmt.pix, bpp);
++	}
++
++	format->type = vpfe->fmt.type;
++
++	vpfe_dbg(1, vpfe,
++		 "%s size %dx%d (%s) bytesperline = %d, size = %d, bpp = %d\n",
++		 __func__, format->fmt.pix.width, format->fmt.pix.height,
++		 print_fourcc(format->fmt.pix.pixelformat),
++		 format->fmt.pix.bytesperline, format->fmt.pix.sizeimage, *bpp);
++
++	return 0;
++}
++
++/* set the format at output pad of the adjacent subdev */
++static int __vpfe_set_format(struct vpfe_device *vpfe,
++			     struct v4l2_format *format, unsigned int *bpp)
++{
++	struct v4l2_mbus_framefmt mbus_fmt;
++	struct vpfe_subdev_info *sdinfo;
++	struct v4l2_subdev_format fmt;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "__vpfe_set_format\n");
++
++	sdinfo = vpfe->current_subdev;
++	if (!sdinfo->sd)
++		return -EINVAL;
++
++	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
++	fmt.pad = 0;
++
++	pix_to_mbus(vpfe, &format->fmt.pix, &fmt.format);
++
++	ret = v4l2_subdev_call(sdinfo->sd, pad, set_fmt, NULL, &fmt);
++	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
++		return ret;
++
++	if (!ret) {
++		v4l2_fill_pix_format(&format->fmt.pix, &fmt.format);
++		mbus_to_pix(vpfe, &fmt.format, &format->fmt.pix, bpp);
++	} else {
++		ret = v4l2_device_call_until_err(&vpfe->v4l2_dev,
++						 sdinfo->grp_id,
++						 video, s_mbus_fmt,
++						 &mbus_fmt);
++		if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
++			return ret;
++
++		v4l2_fill_pix_format(&format->fmt.pix, &mbus_fmt);
++		mbus_to_pix(vpfe, &mbus_fmt, &format->fmt.pix, bpp);
++	}
++
++	format->type = vpfe->fmt.type;
++
++	vpfe_dbg(1, vpfe,
++		 "%s size %dx%d (%s) bytesperline = %d, size = %d, bpp = %d\n",
++		 __func__,  format->fmt.pix.width, format->fmt.pix.height,
++		 print_fourcc(format->fmt.pix.pixelformat),
++		 format->fmt.pix.bytesperline, format->fmt.pix.sizeimage, *bpp);
++
++	return 0;
++}
++
++static int vpfe_g_fmt(struct file *file, void *priv,
++		      struct v4l2_format *fmt)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	vpfe_dbg(2, vpfe, "vpfe_g_fmt\n");
++
++	*fmt = vpfe->fmt;
++
++	return 0;
++}
++
++static int vpfe_enum_fmt(struct file *file, void  *priv,
++			 struct v4l2_fmtdesc *f)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct vpfe_subdev_info *sdinfo;
++	struct vpfe_fmt *fmt = NULL;
++	unsigned int k;
++
++	vpfe_dbg(2, vpfe, "vpfe_enum_format index:%d\n",
++		f->index);
++
++	sdinfo = vpfe->current_subdev;
++	if (!sdinfo->sd)
++		return -EINVAL;
++
++	if (f->index > ARRAY_SIZE(formats))
++		return -EINVAL;
++
++	for (k = 0; k < ARRAY_SIZE(formats); k++) {
++		if (formats[k].index == f->index) {
++			fmt = &formats[k];
++			break;
++		}
++	}
++	if (!fmt)
++		return -EINVAL;
++
++	strncpy(f->description, fmt->name, sizeof(f->description) - 1);
++	f->pixelformat = fmt->fourcc;
++	f->type = vpfe->fmt.type;
++
++	vpfe_dbg(1, vpfe, "vpfe_enum_format: mbus index: %d code: %x pixelformat: %s [%s]\n",
++		f->index, fmt->code, print_fourcc(fmt->fourcc), fmt->name);
++
++	return 0;
++}
++
++static int vpfe_try_fmt(struct file *file, void *priv,
++			struct v4l2_format *fmt)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	unsigned int bpp;
++
++	vpfe_dbg(2, vpfe, "vpfe_try_fmt\n");
++
++	return __vpfe_get_format(vpfe, fmt, &bpp);
++}
++
++static int vpfe_s_fmt(struct file *file, void *priv,
++		      struct v4l2_format *fmt)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct v4l2_format format;
++	unsigned int bpp;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_s_fmt\n");
++
++	/* If streaming is started, return error */
++	if (vb2_is_busy(&vpfe->buffer_queue)) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		return -EBUSY;
++	}
++
++	ret = vpfe_try_fmt(file, priv, fmt);
++	if (ret)
++		return ret;
++
++
++	if (!cmp_v4l2_format(fmt, &format)) {
++		/* Sensor format is different from the requested format
++		 * so we need to change it
++		 */
++		ret = __vpfe_set_format(vpfe, fmt, &bpp);
++		if (ret)
++			return ret;
++	} else /* Just make sure all of the fields are consistent */
++		*fmt = format;
++
++	/* First detach any IRQ if currently attached */
++	vpfe_detach_irq(vpfe);
++	vpfe->fmt = *fmt;
++	vpfe->bpp = bpp;
++
++	/* Update the crop window based on found values */
++	vpfe->crop.width = fmt->fmt.pix.width;
++	vpfe->crop.height = fmt->fmt.pix.height;
++
++	/* set image capture parameters in the ccdc */
++	return vpfe_config_ccdc_image_format(vpfe);
++}
++
++static int vpfe_enum_size(struct file *file, void  *priv,
++			  struct v4l2_frmsizeenum *fsize)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct v4l2_subdev_frame_size_enum fse;
++	struct vpfe_subdev_info *sdinfo;
++	struct v4l2_mbus_framefmt mbus;
++	struct v4l2_pix_format pix;
++	struct vpfe_fmt *fmt;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_enum_size\n");
++
++	/* check for valid format */
++	fmt = find_format_by_pix(fsize->pixel_format);
++	if (!fmt) {
++		vpfe_dbg(3, vpfe, "Invalid pixel code: %x, default used instead\n",
++			fsize->pixel_format);
++		return -EINVAL;
++	}
++
++	memset(fsize->reserved, 0x0, sizeof(fsize->reserved));
++
++	sdinfo = vpfe->current_subdev;
++	if (!sdinfo->sd)
++		return -EINVAL;
++
++	memset(&pix, 0x0, sizeof(pix));
++	/* Construct pix from parameter and use default for the rest */
++	pix.pixelformat = fsize->pixel_format;
++	pix.width = 640;
++	pix.height = 480;
++	pix.colorspace = V4L2_COLORSPACE_SRGB;
++	pix.field = V4L2_FIELD_NONE;
++	pix_to_mbus(vpfe, &pix, &mbus);
++
++	memset(&fse, 0x0, sizeof(fse));
++	fse.index = fsize->index;
++	fse.pad = 0;
++	fse.code = mbus.code;
++	ret = v4l2_subdev_call(sdinfo->sd, pad, enum_frame_size, NULL, &fse);
++	if (ret)
++		return -EINVAL;
++
++	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d code: %x W:[%d,%d] H:[%d,%d]\n",
++		fse.index, fse.code, fse.min_width, fse.max_width,
++		fse.min_height, fse.max_height);
++
++	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
++	fsize->discrete.width = fse.max_width;
++	fsize->discrete.height = fse.max_height;
++
++	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d pixformat: %s size: %dx%d\n",
++		fsize->index, print_fourcc(fsize->pixel_format),
++		fsize->discrete.width, fsize->discrete.height);
++
++	return 0;
++}
++
++/*
++ * vpfe_get_subdev_input_index - Get subdev index and subdev input index for a
++ * given app input index
++ */
++static int
++vpfe_get_subdev_input_index(struct vpfe_device *vpfe,
++			    int *subdev_index,
++			    int *subdev_input_index,
++			    int app_input_index)
++{
++	struct vpfe_config *cfg = vpfe->cfg;
++	struct vpfe_subdev_info *sdinfo;
++	int i, j = 0;
++
++	for (i = 0; i < ARRAY_SIZE(vpfe->cfg->asd); i++) {
++		sdinfo = &cfg->sub_devs[i];
++		if (app_input_index < (j + 1)) {
++			*subdev_index = i;
++			*subdev_input_index = app_input_index - j;
++			return 0;
++		}
++		j++;
++	}
++	return -EINVAL;
++}
++
++/*
++ * vpfe_get_app_input - Get app input index for a given subdev input index
++ * driver stores the input index of the current sub device and translate it
++ * when application request the current input
++ */
++static int vpfe_get_app_input_index(struct vpfe_device *vpfe,
++				    int *app_input_index)
++{
++	struct vpfe_config *cfg = vpfe->cfg;
++	struct vpfe_subdev_info *sdinfo;
++	int i, j = 0;
++
++	for (i = 0; i < ARRAY_SIZE(vpfe->cfg->asd); i++) {
++		sdinfo = &cfg->sub_devs[i];
++		if (!strcmp(sdinfo->name, vpfe->current_subdev->name)) {
++			if (vpfe->current_input >= 1)
++				return -1;
++			*app_input_index = j + vpfe->current_input;
++			return 0;
++		}
++		j++;
++	}
++	return -EINVAL;
++}
++
++static int vpfe_enum_input(struct file *file, void *priv,
++			   struct v4l2_input *inp)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct vpfe_subdev_info *sdinfo;
++	int subdev, index;
++
++	vpfe_dbg(2, vpfe, "vpfe_enum_input\n");
++
++	if (vpfe_get_subdev_input_index(vpfe, &subdev, &index,
++					inp->index) < 0) {
++		vpfe_dbg(1, vpfe,
++			"input information not found for the subdev\n");
++		return -EINVAL;
++	}
++	sdinfo = &vpfe->cfg->sub_devs[subdev];
++	*inp = sdinfo->inputs[index];
++
++	return 0;
++}
++
++static int vpfe_g_input(struct file *file, void *priv, unsigned int *index)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	vpfe_dbg(2, vpfe, "vpfe_g_input\n");
++
++	return vpfe_get_app_input_index(vpfe, index);
++}
++
++/* Assumes caller is holding vpfe_dev->lock */
++static int vpfe_set_input(struct vpfe_device *vpfe, unsigned int index)
++{
++	int subdev_index = 0, inp_index = 0;
++	struct vpfe_subdev_info *sdinfo;
++	struct vpfe_route *route;
++	u32 input, output;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_set_input: index: %d\n", index);
++
++	/* If streaming is started, return error */
++	if (vb2_is_busy(&vpfe->buffer_queue)) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		return -EBUSY;
++	}
++	ret = vpfe_get_subdev_input_index(vpfe,
++					  &subdev_index,
++					  &inp_index,
++					  index);
++	if (ret < 0) {
++		vpfe_err(vpfe, "invalid input index: %d\n", index);
++		goto get_out;
++	}
++
++	sdinfo = &vpfe->cfg->sub_devs[subdev_index];
++	sdinfo->sd = vpfe->sd[subdev_index];
++	route = &sdinfo->routes[inp_index];
++	if (route && sdinfo->can_route) {
++		input = route->input;
++		output = route->output;
++		if (sdinfo->sd) {
++			ret = v4l2_subdev_call(sdinfo->sd, video,
++					s_routing, input, output, 0);
++			if (ret) {
++				vpfe_err(vpfe, "s_routing failed\n");
++				ret = -EINVAL;
++				goto get_out;
++			}
++		}
++
++	}
++
++	vpfe->current_subdev = sdinfo;
++	if (sdinfo->sd)
++		vpfe->v4l2_dev.ctrl_handler = sdinfo->sd->ctrl_handler;
++	vpfe->current_input = index;
++	vpfe->std_index = 0;
++
++	/* set the bus/interface parameter for the sub device in ccdc */
++	ret = vpfe_ccdc_set_hw_if_params(&vpfe->ccdc, &sdinfo->vpfe_param);
++	if (ret)
++		return ret;
++
++	/* set the default image parameters in the device */
++	return vpfe_config_image_format(vpfe,
++					vpfe_standards[vpfe->std_index].std_id);
++
++get_out:
++	return ret;
++}
++
++static int vpfe_s_input(struct file *file, void *priv, unsigned int index)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	vpfe_dbg(2, vpfe,
++		"vpfe_s_input: index: %d\n", index);
++
++	return vpfe_set_input(vpfe, index);
++}
++
++static int vpfe_querystd(struct file *file, void *priv, v4l2_std_id *std_id)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct vpfe_subdev_info *sdinfo;
++
++	vpfe_dbg(2, vpfe, "vpfe_querystd\n");
++
++	sdinfo = vpfe->current_subdev;
++	if (!(sdinfo->inputs[0].capabilities & V4L2_IN_CAP_STD))
++		return -ENODATA;
++
++	/* Call querystd function of decoder device */
++	return v4l2_device_call_until_err(&vpfe->v4l2_dev, sdinfo->grp_id,
++					 video, querystd, std_id);
++}
++
++static int vpfe_s_std(struct file *file, void *priv, v4l2_std_id std_id)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct vpfe_subdev_info *sdinfo;
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_s_std\n");
++
++	sdinfo = vpfe->current_subdev;
++	if (!(sdinfo->inputs[0].capabilities & V4L2_IN_CAP_STD))
++		return -ENODATA;
++
++	/* If streaming is started, return error */
++	if (vb2_is_busy(&vpfe->buffer_queue)) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		ret = -EBUSY;
++		return ret;
++	}
++
++	ret = v4l2_device_call_until_err(&vpfe->v4l2_dev, sdinfo->grp_id,
++					 video, s_std, std_id);
++	if (ret < 0) {
++		vpfe_err(vpfe, "Failed to set standard\n");
++		return ret;
++	}
++	ret = vpfe_config_image_format(vpfe, std_id);
++
++	return ret;
++}
++
++static int vpfe_g_std(struct file *file, void *priv, v4l2_std_id *std_id)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct vpfe_subdev_info *sdinfo;
++
++	vpfe_dbg(2, vpfe, "vpfe_g_std\n");
++
++	sdinfo = vpfe->current_subdev;
++	if (sdinfo->inputs[0].capabilities != V4L2_IN_CAP_STD)
++		return -ENODATA;
++
++	*std_id = vpfe_standards[vpfe->std_index].std_id;
++
++	return 0;
++}
++
++/*
++ * vpfe_calculate_offsets : This function calculates buffers offset
++ * for top and bottom field
++ */
++static void vpfe_calculate_offsets(struct vpfe_device *vpfe)
++{
++	struct v4l2_rect image_win;
++
++	vpfe_dbg(2, vpfe, "vpfe_calculate_offsets\n");
++
++	vpfe_ccdc_get_image_window(&vpfe->ccdc, &image_win);
++	vpfe->field_off = image_win.height * image_win.width;
++}
++
++/*
++ * vpfe_queue_setup - Callback function for buffer setup.
++ * @vq: vb2_queue ptr
++ * @fmt: v4l2 format
++ * @nbuffers: ptr to number of buffers requested by application
++ * @nplanes:: contains number of distinct video planes needed to hold a frame
++ * @sizes[]: contains the size (in bytes) of each plane.
++ * @alloc_ctxs: ptr to allocation context
++ *
++ * This callback function is called when reqbuf() is called to adjust
++ * the buffer count and buffer size
++ */
++static int vpfe_queue_setup(struct vb2_queue *vq,
++			    const struct v4l2_format *fmt,
++			    unsigned int *nbuffers, unsigned int *nplanes,
++			    unsigned int sizes[], void *alloc_ctxs[])
++{
++	struct vpfe_device *vpfe = vb2_get_drv_priv(vq);
++
++	if (fmt && fmt->fmt.pix.sizeimage < vpfe->fmt.fmt.pix.sizeimage)
++		return -EINVAL;
++
++	if (vq->num_buffers + *nbuffers < 3)
++		*nbuffers = 3 - vq->num_buffers;
++
++	*nplanes = 1;
++	sizes[0] = fmt ? fmt->fmt.pix.sizeimage : vpfe->fmt.fmt.pix.sizeimage;
++	alloc_ctxs[0] = vpfe->alloc_ctx;
++
++	vpfe_dbg(1, vpfe,
++		"nbuffers=%d, size=%u\n", *nbuffers, sizes[0]);
++
++	/* Calculate field offset */
++	vpfe_calculate_offsets(vpfe);
++
++	return 0;
++}
++
++/*
++ * vpfe_buffer_prepare :  callback function for buffer prepare
++ * @vb: ptr to vb2_buffer
++ *
++ * This is the callback function for buffer prepare when vb2_qbuf()
++ * function is called. The buffer is prepared and user space virtual address
++ * or user address is converted into  physical address
++ */
++static int vpfe_buffer_prepare(struct vb2_buffer *vb)
++{
++	struct vpfe_device *vpfe = vb2_get_drv_priv(vb->vb2_queue);
++
++	vb2_set_plane_payload(vb, 0, vpfe->fmt.fmt.pix.sizeimage);
++
++	if (vb2_get_plane_payload(vb, 0) > vb2_plane_size(vb, 0))
++		return -EINVAL;
++
++	vb->v4l2_buf.field = vpfe->fmt.fmt.pix.field;
++
++	return 0;
++}
++
++/*
++ * vpfe_buffer_queue : Callback function to add buffer to DMA queue
++ * @vb: ptr to vb2_buffer
++ */
++static void vpfe_buffer_queue(struct vb2_buffer *vb)
++{
++	struct vpfe_device *vpfe = vb2_get_drv_priv(vb->vb2_queue);
++	struct vpfe_cap_buffer *buf = to_vpfe_buffer(vb);
++	unsigned long flags = 0;
++
++	/* add the buffer to the DMA queue */
++	spin_lock_irqsave(&vpfe->dma_queue_lock, flags);
++	list_add_tail(&buf->list, &vpfe->dma_queue);
++	spin_unlock_irqrestore(&vpfe->dma_queue_lock, flags);
++}
++
++/*
++ * vpfe_start_streaming : Starts the DMA engine for streaming
++ * @vb: ptr to vb2_buffer
++ * @count: number of buffers
++ */
++static int vpfe_start_streaming(struct vb2_queue *vq, unsigned int count)
++{
++	struct vpfe_device *vpfe = vb2_get_drv_priv(vq);
++	struct vpfe_cap_buffer *buf, *tmp;
++	struct vpfe_subdev_info *sdinfo;
++	unsigned long flags;
++	unsigned long addr;
++	int ret;
++
++	spin_lock_irqsave(&vpfe->dma_queue_lock, flags);
++
++	vpfe->field = 0;
++	vpfe->sequence = 0;
++
++	sdinfo = vpfe->current_subdev;
++
++	vpfe_attach_irq(vpfe);
++
++	if (vpfe->ccdc.ccdc_cfg.if_type == VPFE_RAW_BAYER)
++		vpfe_ccdc_config_raw(&vpfe->ccdc);
++	else
++		vpfe_ccdc_config_ycbcr(&vpfe->ccdc);
++
++	/* Get the next frame from the buffer queue */
++	vpfe->next_frm = list_entry(vpfe->dma_queue.next,
++				    struct vpfe_cap_buffer, list);
++	vpfe->cur_frm = vpfe->next_frm;
++	/* Remove buffer from the buffer queue */
++	list_del(&vpfe->cur_frm->list);
++	spin_unlock_irqrestore(&vpfe->dma_queue_lock, flags);
++
++	addr = vb2_dma_contig_plane_dma_addr(&vpfe->cur_frm->vb, 0);
++
++	vpfe_set_sdr_addr(&vpfe->ccdc, (unsigned long)(addr));
++
++	vpfe_pcr_enable(&vpfe->ccdc, 1);
++
++	ret = v4l2_subdev_call(sdinfo->sd, video, s_stream, 1);
++	if (ret < 0) {
++		vpfe_err(vpfe, "Error in attaching interrupt handle\n");
++		goto err;
++	}
++
++	return 0;
++
++err:
++	list_for_each_entry_safe(buf, tmp, &vpfe->dma_queue, list) {
++		list_del(&buf->list);
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_QUEUED);
++	}
++	spin_unlock_irqrestore(&vpfe->dma_queue_lock, flags);
++
++	return ret;
++}
++
++/*
++ * vpfe_stop_streaming : Stop the DMA engine
++ * @vq: ptr to vb2_queue
++ *
++ * This callback stops the DMA engine and any remaining buffers
++ * in the DMA queue are released.
++ */
++static void vpfe_stop_streaming(struct vb2_queue *vq)
++{
++	struct vpfe_device *vpfe = vb2_get_drv_priv(vq);
++	struct vpfe_subdev_info *sdinfo;
++	unsigned long flags;
++	int ret;
++
++	vpfe_pcr_enable(&vpfe->ccdc, 0);
++
++	vpfe_detach_irq(vpfe);
++
++	sdinfo = vpfe->current_subdev;
++	ret = v4l2_subdev_call(sdinfo->sd, video, s_stream, 0);
++	if (ret && ret != -ENOIOCTLCMD && ret != -ENODEV)
++		vpfe_dbg(1, vpfe, "stream off failed in subdev\n");
++
++	/* release all active buffers */
++	spin_lock_irqsave(&vpfe->dma_queue_lock, flags);
++	if (vpfe->cur_frm == vpfe->next_frm) {
++		vb2_buffer_done(&vpfe->cur_frm->vb, VB2_BUF_STATE_ERROR);
++	} else {
++		if (vpfe->cur_frm != NULL)
++			vb2_buffer_done(&vpfe->cur_frm->vb,
++					VB2_BUF_STATE_ERROR);
++		if (vpfe->next_frm != NULL)
++			vb2_buffer_done(&vpfe->next_frm->vb,
++					VB2_BUF_STATE_ERROR);
++	}
++
++	while (!list_empty(&vpfe->dma_queue)) {
++		vpfe->next_frm = list_entry(vpfe->dma_queue.next,
++						struct vpfe_cap_buffer, list);
++		list_del(&vpfe->next_frm->list);
++		vb2_buffer_done(&vpfe->next_frm->vb, VB2_BUF_STATE_ERROR);
++	}
++	spin_unlock_irqrestore(&vpfe->dma_queue_lock, flags);
++}
++
++static int vpfe_cropcap(struct file *file, void *priv,
++			struct v4l2_cropcap *crop)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	vpfe_dbg(2, vpfe, "vpfe_cropcap\n");
++
++	if (vpfe->std_index >= ARRAY_SIZE(vpfe_standards))
++		return -EINVAL;
++
++	memset(crop, 0, sizeof(struct v4l2_cropcap));
++
++	crop->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	crop->defrect.width = vpfe_standards[vpfe->std_index].width;
++	crop->bounds.width = crop->defrect.width;
++	crop->defrect.height = vpfe_standards[vpfe->std_index].height;
++	crop->bounds.height = crop->defrect.height;
++	crop->pixelaspect = vpfe_standards[vpfe->std_index].pixelaspect;
++
++	return 0;
++}
++
++static int
++vpfe_g_selection(struct file *file, void *fh, struct v4l2_selection *s)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++
++	switch (s->target) {
++	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
++	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
++	case V4L2_SEL_TGT_CROP_BOUNDS:
++	case V4L2_SEL_TGT_CROP_DEFAULT:
++		s->r.left = s->r.top = 0;
++		s->r.width = vpfe->crop.width;
++		s->r.height = vpfe->crop.height;
++		break;
++
++	case V4L2_SEL_TGT_CROP:
++		s->r = vpfe->crop;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int enclosed_rectangle(struct v4l2_rect *a, struct v4l2_rect *b)
++{
++	if (a->left < b->left || a->top < b->top)
++		return 0;
++
++	if (a->left + a->width > b->left + b->width)
++		return 0;
++
++	if (a->top + a->height > b->top + b->height)
++		return 0;
++
++	return 1;
++}
++
++static int
++vpfe_s_selection(struct file *file, void *fh, struct v4l2_selection *s)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	struct v4l2_rect cr = vpfe->crop;
++	struct v4l2_rect r = s->r;
++
++	/* If streaming is started, return error */
++	if (vb2_is_busy(&vpfe->buffer_queue)) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		return -EBUSY;
++	}
++
++	if (s->type != V4L2_BUF_TYPE_VIDEO_CAPTURE ||
++			s->target != V4L2_SEL_TGT_CROP)
++		return -EINVAL;
++
++	v4l_bound_align_image(&r.width, 0, cr.width, 0,
++			      &r.height, 0, cr.height, 0, 0);
++
++	r.left = clamp_t(unsigned int, r.left, 0, cr.width - r.width);
++	r.top  = clamp_t(unsigned int, r.top, 0, cr.height - r.height);
++
++	if (s->flags & V4L2_SEL_FLAG_LE && !enclosed_rectangle(&r, &s->r))
++		return -ERANGE;
++
++	if (s->flags & V4L2_SEL_FLAG_GE && !enclosed_rectangle(&s->r, &r))
++		return -ERANGE;
++
++	s->r = vpfe->crop = r;
++
++	vpfe_ccdc_set_image_window(&vpfe->ccdc, &r, vpfe->bpp);
++	vpfe->fmt.fmt.pix.width = r.width;
++	vpfe->fmt.fmt.pix.height = r.height;
++	vpfe->fmt.fmt.pix.bytesperline = vpfe_ccdc_get_line_length(&vpfe->ccdc);
++	vpfe->fmt.fmt.pix.sizeimage = vpfe->fmt.fmt.pix.bytesperline *
++						vpfe->fmt.fmt.pix.height;
++
++	vpfe_dbg(1, vpfe, "cropped (%d,%d)/%dx%d of %dx%d\n",
++		 r.left, r.top, r.width, r.height, cr.width, cr.height);
++
++	return 0;
++}
++
++static long vpfe_ioctl_default(struct file *file, void *priv,
++			       bool valid_prio, unsigned int cmd, void *param)
++{
++	struct vpfe_device *vpfe = video_drvdata(file);
++	int ret;
++
++	vpfe_dbg(2, vpfe, "vpfe_ioctl_default\n");
++
++	if (!valid_prio) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		return -EBUSY;
++	}
++
++	/* If streaming is started, return error */
++	if (vb2_is_busy(&vpfe->buffer_queue)) {
++		vpfe_err(vpfe, "%s device busy\n", __func__);
++		return -EBUSY;
++	}
++
++	switch (cmd) {
++	case VIDIOC_AM437X_CCDC_CFG:
++		ret = vpfe_ccdc_set_params(&vpfe->ccdc, param);
++		if (ret) {
++			vpfe_dbg(2, vpfe,
++				"Error setting parameters in CCDC\n");
++			return ret;
++		}
++		ret = vpfe_get_ccdc_image_format(vpfe,
++						 &vpfe->fmt);
++		if (ret < 0) {
++			vpfe_dbg(2, vpfe,
++				"Invalid image format at CCDC\n");
++			return ret;
++		}
++		break;
++
++	default:
++		ret = -ENOTTY;
++		break;
++	}
++
++	return ret;
++}
++
++static const struct vb2_ops vpfe_video_qops = {
++	.wait_prepare		= vb2_ops_wait_prepare,
++	.wait_finish		= vb2_ops_wait_finish,
++	.queue_setup		= vpfe_queue_setup,
++	.buf_prepare		= vpfe_buffer_prepare,
++	.buf_queue		= vpfe_buffer_queue,
++	.start_streaming	= vpfe_start_streaming,
++	.stop_streaming		= vpfe_stop_streaming,
++};
++
++/* vpfe capture driver file operations */
++static const struct v4l2_file_operations vpfe_fops = {
++	.owner		= THIS_MODULE,
++	.open		= vpfe_open,
++	.release	= vpfe_release,
++	.read		= vb2_fop_read,
++	.poll		= vb2_fop_poll,
++	.unlocked_ioctl	= video_ioctl2,
++	.mmap		= vb2_fop_mmap,
++};
++
++/* vpfe capture ioctl operations */
++static const struct v4l2_ioctl_ops vpfe_ioctl_ops = {
++	.vidioc_querycap		= vpfe_querycap,
++	.vidioc_enum_fmt_vid_cap	= vpfe_enum_fmt,
++	.vidioc_g_fmt_vid_cap		= vpfe_g_fmt,
++	.vidioc_s_fmt_vid_cap		= vpfe_s_fmt,
++	.vidioc_try_fmt_vid_cap		= vpfe_try_fmt,
++
++	.vidioc_enum_framesizes		= vpfe_enum_size,
++
++	.vidioc_enum_input		= vpfe_enum_input,
++	.vidioc_g_input			= vpfe_g_input,
++	.vidioc_s_input			= vpfe_s_input,
++
++	.vidioc_querystd		= vpfe_querystd,
++	.vidioc_s_std			= vpfe_s_std,
++	.vidioc_g_std			= vpfe_g_std,
++
++	.vidioc_reqbufs			= vb2_ioctl_reqbufs,
++	.vidioc_create_bufs		= vb2_ioctl_create_bufs,
++	.vidioc_prepare_buf		= vb2_ioctl_prepare_buf,
++	.vidioc_querybuf		= vb2_ioctl_querybuf,
++	.vidioc_qbuf			= vb2_ioctl_qbuf,
++	.vidioc_dqbuf			= vb2_ioctl_dqbuf,
++	.vidioc_expbuf			= vb2_ioctl_expbuf,
++	.vidioc_streamon		= vb2_ioctl_streamon,
++	.vidioc_streamoff		= vb2_ioctl_streamoff,
++
++	.vidioc_log_status		= v4l2_ctrl_log_status,
++	.vidioc_subscribe_event		= v4l2_ctrl_subscribe_event,
++	.vidioc_unsubscribe_event	= v4l2_event_unsubscribe,
++
++	.vidioc_cropcap			= vpfe_cropcap,
++	.vidioc_g_selection		= vpfe_g_selection,
++	.vidioc_s_selection		= vpfe_s_selection,
++
++	.vidioc_default			= vpfe_ioctl_default,
++};
++
++static int
++vpfe_async_bound(struct v4l2_async_notifier *notifier,
++		 struct v4l2_subdev *subdev,
++		 struct v4l2_async_subdev *asd)
++{
++	struct vpfe_device *vpfe = container_of(notifier->v4l2_dev,
++					       struct vpfe_device, v4l2_dev);
++	struct v4l2_subdev_mbus_code_enum mbus_code;
++	struct vpfe_subdev_info *sdinfo;
++	bool found = false;
++	int i, j;
++
++	vpfe_dbg(1, vpfe, "vpfe_async_bound\n");
++
++	for (i = 0; i < ARRAY_SIZE(vpfe->cfg->asd); i++) {
++		sdinfo = &vpfe->cfg->sub_devs[i];
++
++		if (!strcmp(sdinfo->name, subdev->name)) {
++			vpfe->sd[i] = subdev;
++			vpfe_info(vpfe,
++				 "v4l2 sub device %s registered\n",
++				 subdev->name);
++			vpfe->sd[i]->grp_id =
++					sdinfo->grp_id;
++			/* update tvnorms from the sub devices */
++			for (j = 0; j < 1; j++)
++				vpfe->video_dev->tvnorms |=
++					sdinfo->inputs[j].std;
++
++			found = true;
++			break;
++		}
++	}
++
++	if (!found) {
++		vpfe_info(vpfe, "sub device (%s) not matched\n", subdev->name);
++		return -EINVAL;
++	}
++
++	/* setup the supported formats & indexes */
++	for (j = 0, i = 0; ; ++j) {
++		struct vpfe_fmt *fmt;
++		int ret;
++
++		memset(&mbus_code, 0, sizeof(mbus_code));
++		mbus_code.index = j;
++		ret = v4l2_subdev_call(subdev, pad, enum_mbus_code,
++			       NULL, &mbus_code);
++		if (ret)
++			break;
++
++		fmt = find_format_by_code(mbus_code.code);
++		if (!fmt)
++			continue;
++
++		fmt->supported = true;
++		fmt->index = i++;
++	}
++
++	return 0;
++}
++
++static int vpfe_probe_complete(struct vpfe_device *vpfe)
++{
++	struct video_device *vdev;
++	struct vb2_queue *q;
++	int err;
++
++	spin_lock_init(&vpfe->dma_queue_lock);
++	mutex_init(&vpfe->lock);
++
++	vpfe->fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++
++	/* set first sub device as current one */
++	vpfe->current_subdev = &vpfe->cfg->sub_devs[0];
++	vpfe->v4l2_dev.ctrl_handler = vpfe->sd[0]->ctrl_handler;
++
++	err = vpfe_set_input(vpfe, 0);
++	if (err)
++		goto probe_out;
++
++	/* Initialize videobuf2 queue as per the buffer type */
++	vpfe->alloc_ctx = vb2_dma_contig_init_ctx(vpfe->pdev);
++	if (IS_ERR(vpfe->alloc_ctx)) {
++		vpfe_err(vpfe, "Failed to get the context\n");
++		err = PTR_ERR(vpfe->alloc_ctx);
++		goto probe_out;
++	}
++
++	q = &vpfe->buffer_queue;
++	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	q->io_modes = VB2_MMAP | VB2_DMABUF | VB2_READ;
++	q->drv_priv = vpfe;
++	q->ops = &vpfe_video_qops;
++	q->mem_ops = &vb2_dma_contig_memops;
++	q->buf_struct_size = sizeof(struct vpfe_cap_buffer);
++	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
++	q->lock = &vpfe->lock;
++	q->min_buffers_needed = 1;
++
++	err = vb2_queue_init(q);
++	if (err) {
++		vpfe_err(vpfe, "vb2_queue_init() failed\n");
++		vb2_dma_contig_cleanup_ctx(vpfe->alloc_ctx);
++		goto probe_out;
++	}
++
++	INIT_LIST_HEAD(&vpfe->dma_queue);
++
++	vdev = vpfe->video_dev;
++	strlcpy(vdev->name, VPFE_MODULE_NAME, sizeof(vdev->name));
++	vdev->release = video_device_release;
++	vdev->fops = &vpfe_fops;
++	vdev->ioctl_ops = &vpfe_ioctl_ops;
++	vdev->v4l2_dev = &vpfe->v4l2_dev;
++	vdev->vfl_dir = VFL_DIR_RX;
++	vdev->queue = q;
++	vdev->lock = &vpfe->lock;
++	video_set_drvdata(vdev, vpfe);
++	err = video_register_device(vpfe->video_dev, VFL_TYPE_GRABBER, -1);
++	if (err) {
++		vpfe_err(vpfe,
++			"Unable to register video device.\n");
++		goto probe_out;
++	}
++
++	return 0;
++
++probe_out:
++	v4l2_device_unregister(&vpfe->v4l2_dev);
++	return err;
++}
++
++static int vpfe_async_complete(struct v4l2_async_notifier *notifier)
++{
++	struct vpfe_device *vpfe = container_of(notifier->v4l2_dev,
++					struct vpfe_device, v4l2_dev);
++
++	return vpfe_probe_complete(vpfe);
++}
++
++static struct vpfe_config *
++vpfe_get_pdata(struct platform_device *pdev)
++{
++	struct device_node *endpoint = NULL, *rem = NULL;
++	struct v4l2_of_endpoint bus_cfg;
++	struct vpfe_subdev_info *sdinfo;
++	struct vpfe_config *pdata;
++	unsigned int flags;
++	unsigned int i;
++	int err;
++
++	dev_dbg(&pdev->dev, "vpfe_get_pdata\n");
++
++	if (!IS_ENABLED(CONFIG_OF) || !pdev->dev.of_node)
++		return pdev->dev.platform_data;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	for (i = 0; ; i++) {
++		endpoint = of_graph_get_next_endpoint(pdev->dev.of_node,
++						      endpoint);
++		if (!endpoint)
++			break;
++
++		sdinfo = &pdata->sub_devs[i];
++		sdinfo->grp_id = 0;
++
++		/* we only support camera */
++		sdinfo->inputs[0].index = i;
++		strcpy(sdinfo->inputs[0].name, "Camera");
++		sdinfo->inputs[0].type = V4L2_INPUT_TYPE_CAMERA;
++		sdinfo->inputs[0].std = V4L2_STD_ALL;
++		sdinfo->inputs[0].capabilities = V4L2_IN_CAP_STD;
++
++		sdinfo->can_route = 0;
++		sdinfo->routes = NULL;
++
++		of_property_read_u32(endpoint, "ti,am437x-vpfe-interface",
++				     &sdinfo->vpfe_param.if_type);
++		if (sdinfo->vpfe_param.if_type < 0 ||
++			sdinfo->vpfe_param.if_type > 4) {
++			sdinfo->vpfe_param.if_type = VPFE_RAW_BAYER;
++		}
++
++		err = v4l2_of_parse_endpoint(endpoint, &bus_cfg);
++		if (err) {
++			dev_err(&pdev->dev, "Could not parse the endpoint\n");
++			goto done;
++		}
++
++		sdinfo->vpfe_param.bus_width = bus_cfg.bus.parallel.bus_width;
++
++		if (sdinfo->vpfe_param.bus_width < 8 ||
++			sdinfo->vpfe_param.bus_width > 16) {
++			dev_err(&pdev->dev, "Invalid bus width.\n");
++			goto done;
++		}
++
++		flags = bus_cfg.bus.parallel.flags;
++
++		if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
++			sdinfo->vpfe_param.hdpol = 1;
++
++		if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
++			sdinfo->vpfe_param.vdpol = 1;
++
++		rem = of_graph_get_remote_port_parent(endpoint);
++		if (!rem) {
++			dev_err(&pdev->dev, "Remote device at %s not found\n",
++				endpoint->full_name);
++			goto done;
++		}
++
++		strncpy(sdinfo->name, rem->name, sizeof(sdinfo->name));
++
++		pdata->asd[i] = devm_kzalloc(&pdev->dev,
++					     sizeof(struct v4l2_async_subdev),
++					     GFP_KERNEL);
++		pdata->asd[i]->match_type = V4L2_ASYNC_MATCH_OF;
++		pdata->asd[i]->match.of.node = rem;
++		of_node_put(endpoint);
++		of_node_put(rem);
++	}
++
++	of_node_put(endpoint);
++	return pdata;
++
++done:
++	of_node_put(endpoint);
++	of_node_put(rem);
++	return NULL;
++}
++
++/*
++ * vpfe_probe : This function creates device entries by register
++ * itself to the V4L2 driver and initializes fields of each
++ * device objects
++ */
++static int vpfe_probe(struct platform_device *pdev)
++{
++	struct vpfe_config *vpfe_cfg = vpfe_get_pdata(pdev);
++	struct vpfe_device *vpfe;
++	struct vpfe_ccdc *ccdc;
++	struct resource	*res;
++	int ret;
++
++	if (!vpfe_cfg) {
++		dev_err(&pdev->dev, "No platform data\n");
++		return -EINVAL;
++	}
++
++	vpfe = devm_kzalloc(&pdev->dev, sizeof(*vpfe), GFP_KERNEL);
++	if (!vpfe)
++		return -ENOMEM;
++
++	vpfe->pdev = &pdev->dev;
++	vpfe->cfg = vpfe_cfg;
++	ccdc = &vpfe->ccdc;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	ccdc->ccdc_cfg.base_addr = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(ccdc->ccdc_cfg.base_addr))
++		return PTR_ERR(ccdc->ccdc_cfg.base_addr);
++
++	vpfe->irq = platform_get_irq(pdev, 0);
++	if (vpfe->irq <= 0) {
++		dev_err(&pdev->dev, "No IRQ resource\n");
++		return -ENODEV;
++	}
++
++	ret = devm_request_irq(vpfe->pdev, vpfe->irq, vpfe_isr, 0,
++			       "vpfe_capture0", vpfe);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to request interrupt\n");
++		return -EINVAL;
++	}
++
++	vpfe->video_dev = video_device_alloc();
++	if (!vpfe->video_dev) {
++		dev_err(&pdev->dev, "Unable to allocate video device\n");
++		return -ENOMEM;
++	}
++
++	ret = v4l2_device_register(&pdev->dev, &vpfe->v4l2_dev);
++	if (ret) {
++		vpfe_err(vpfe,
++			"Unable to register v4l2 device.\n");
++		goto probe_out_video_release;
++	}
++
++	/* set the driver data in platform device */
++	platform_set_drvdata(pdev, vpfe);
++	/* Enabling module functional clock */
++	pm_runtime_enable(&pdev->dev);
++
++	/* for now just enable it here instead of waiting for the open */
++	pm_runtime_get_sync(&pdev->dev);
++
++	vpfe_ccdc_config_defaults(ccdc);
++
++	pm_runtime_put_sync(&pdev->dev);
++
++	vpfe->sd = devm_kzalloc(&pdev->dev, sizeof(struct v4l2_subdev *) *
++				ARRAY_SIZE(vpfe->cfg->asd), GFP_KERNEL);
++	if (!vpfe->sd) {
++		ret = -ENOMEM;
++		goto probe_out_v4l2_unregister;
++	}
++
++	vpfe->notifier.subdevs = vpfe->cfg->asd;
++	vpfe->notifier.num_subdevs = ARRAY_SIZE(vpfe->cfg->asd);
++	vpfe->notifier.bound = vpfe_async_bound;
++	vpfe->notifier.complete = vpfe_async_complete;
++	ret = v4l2_async_notifier_register(&vpfe->v4l2_dev,
++						&vpfe->notifier);
++	if (ret) {
++		vpfe_err(vpfe, "Error registering async notifier\n");
++		ret = -EINVAL;
++		goto probe_out_v4l2_unregister;
++	}
++
++	return 0;
++
++probe_out_v4l2_unregister:
++	v4l2_device_unregister(&vpfe->v4l2_dev);
++probe_out_video_release:
++	if (!video_is_registered(vpfe->video_dev))
++		video_device_release(vpfe->video_dev);
++	return ret;
++}
++
++/*
++ * vpfe_remove : It un-register device from V4L2 driver
++ */
++static int vpfe_remove(struct platform_device *pdev)
++{
++	struct vpfe_device *vpfe = platform_get_drvdata(pdev);
++
++	vpfe_dbg(2, vpfe, "vpfe_remove\n");
++
++	pm_runtime_disable(&pdev->dev);
++
++	v4l2_async_notifier_unregister(&vpfe->notifier);
++	v4l2_device_unregister(&vpfe->v4l2_dev);
++	video_unregister_device(vpfe->video_dev);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static void vpfe_save_context(struct vpfe_ccdc *ccdc)
++{
++	ccdc->ccdc_ctx[VPFE_PCR >> 2] = vpfe_reg_read(ccdc, VPFE_PCR);
++	ccdc->ccdc_ctx[VPFE_SYNMODE >> 2] = vpfe_reg_read(ccdc, VPFE_SYNMODE);
++	ccdc->ccdc_ctx[VPFE_SDOFST >> 2] = vpfe_reg_read(ccdc, VPFE_SDOFST);
++	ccdc->ccdc_ctx[VPFE_SDR_ADDR >> 2] = vpfe_reg_read(ccdc, VPFE_SDR_ADDR);
++	ccdc->ccdc_ctx[VPFE_CLAMP >> 2] = vpfe_reg_read(ccdc, VPFE_CLAMP);
++	ccdc->ccdc_ctx[VPFE_DCSUB >> 2] = vpfe_reg_read(ccdc, VPFE_DCSUB);
++	ccdc->ccdc_ctx[VPFE_COLPTN >> 2] = vpfe_reg_read(ccdc, VPFE_COLPTN);
++	ccdc->ccdc_ctx[VPFE_BLKCMP >> 2] = vpfe_reg_read(ccdc, VPFE_BLKCMP);
++	ccdc->ccdc_ctx[VPFE_VDINT >> 2] = vpfe_reg_read(ccdc, VPFE_VDINT);
++	ccdc->ccdc_ctx[VPFE_ALAW >> 2] = vpfe_reg_read(ccdc, VPFE_ALAW);
++	ccdc->ccdc_ctx[VPFE_REC656IF >> 2] = vpfe_reg_read(ccdc, VPFE_REC656IF);
++	ccdc->ccdc_ctx[VPFE_CCDCFG >> 2] = vpfe_reg_read(ccdc, VPFE_CCDCFG);
++	ccdc->ccdc_ctx[VPFE_CULLING >> 2] = vpfe_reg_read(ccdc, VPFE_CULLING);
++	ccdc->ccdc_ctx[VPFE_HD_VD_WID >> 2] = vpfe_reg_read(ccdc,
++							    VPFE_HD_VD_WID);
++	ccdc->ccdc_ctx[VPFE_PIX_LINES >> 2] = vpfe_reg_read(ccdc,
++							    VPFE_PIX_LINES);
++	ccdc->ccdc_ctx[VPFE_HORZ_INFO >> 2] = vpfe_reg_read(ccdc,
++							    VPFE_HORZ_INFO);
++	ccdc->ccdc_ctx[VPFE_VERT_START >> 2] = vpfe_reg_read(ccdc,
++							     VPFE_VERT_START);
++	ccdc->ccdc_ctx[VPFE_VERT_LINES >> 2] = vpfe_reg_read(ccdc,
++							     VPFE_VERT_LINES);
++	ccdc->ccdc_ctx[VPFE_HSIZE_OFF >> 2] = vpfe_reg_read(ccdc,
++							    VPFE_HSIZE_OFF);
++}
++
++static int vpfe_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct vpfe_device *vpfe = platform_get_drvdata(pdev);
++	struct vpfe_ccdc *ccdc = &vpfe->ccdc;
++
++	/* if streaming has not started we don't care */
++	if (!vb2_start_streaming_called(&vpfe->buffer_queue))
++		return 0;
++
++	pm_runtime_get_sync(dev);
++	vpfe_config_enable(ccdc, 1);
++
++	/* Save VPFE context */
++	vpfe_save_context(ccdc);
++
++	/* Disable CCDC */
++	vpfe_pcr_enable(ccdc, 0);
++	vpfe_config_enable(ccdc, 0);
++
++	/* Disable both master and slave clock */
++	pm_runtime_put_sync(dev);
++
++	/* Select sleep pin state */
++	pinctrl_pm_select_sleep_state(dev);
++
++	return 0;
++}
++
++static void vpfe_restore_context(struct vpfe_ccdc *ccdc)
++{
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_SYNMODE >> 2], VPFE_SYNMODE);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_CULLING >> 2], VPFE_CULLING);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_SDOFST >> 2], VPFE_SDOFST);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_SDR_ADDR >> 2], VPFE_SDR_ADDR);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_CLAMP >> 2], VPFE_CLAMP);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_DCSUB >> 2], VPFE_DCSUB);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_COLPTN >> 2], VPFE_COLPTN);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_BLKCMP >> 2], VPFE_BLKCMP);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_VDINT >> 2], VPFE_VDINT);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_ALAW >> 2], VPFE_ALAW);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_REC656IF >> 2], VPFE_REC656IF);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_CCDCFG >> 2], VPFE_CCDCFG);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_PCR >> 2], VPFE_PCR);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_HD_VD_WID >> 2],
++						VPFE_HD_VD_WID);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_PIX_LINES >> 2],
++						VPFE_PIX_LINES);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_HORZ_INFO >> 2],
++						VPFE_HORZ_INFO);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_VERT_START >> 2],
++						VPFE_VERT_START);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_VERT_LINES >> 2],
++						VPFE_VERT_LINES);
++	vpfe_reg_write(ccdc, ccdc->ccdc_ctx[VPFE_HSIZE_OFF >> 2],
++						VPFE_HSIZE_OFF);
++}
++
++static int vpfe_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct vpfe_device *vpfe = platform_get_drvdata(pdev);
++	struct vpfe_ccdc *ccdc = &vpfe->ccdc;
++
++	/* if streaming has not started we don't care */
++	if (!vb2_start_streaming_called(&vpfe->buffer_queue))
++		return 0;
++
++	/* Enable both master and slave clock */
++	pm_runtime_get_sync(dev);
++	vpfe_config_enable(ccdc, 1);
++
++	/* Restore VPFE context */
++	vpfe_restore_context(ccdc);
++
++	vpfe_config_enable(ccdc, 0);
++	pm_runtime_put_sync(dev);
++
++	/* Select default pin state */
++	pinctrl_pm_select_default_state(dev);
++
++	return 0;
++}
++
++#endif
++
++static SIMPLE_DEV_PM_OPS(vpfe_pm_ops, vpfe_suspend, vpfe_resume);
++
++static const struct of_device_id vpfe_of_match[] = {
++	{ .compatible = "ti,am437x-vpfe", },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, vpfe_of_match);
++
++static struct platform_driver vpfe_driver = {
++	.probe		= vpfe_probe,
++	.remove		= vpfe_remove,
++	.driver = {
++		.name	= VPFE_MODULE_NAME,
++		.owner	= THIS_MODULE,
++		.pm	= &vpfe_pm_ops,
++		.of_match_table = of_match_ptr(vpfe_of_match),
++	},
++};
++
++module_platform_driver(vpfe_driver);
++
++MODULE_AUTHOR("Texas Instruments");
++MODULE_DESCRIPTION("TI AM437x VPFE driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(VPFE_VERSION);
+diff --git a/drivers/media/platform/am437x/am437x-vpfe.h b/drivers/media/platform/am437x/am437x-vpfe.h
+new file mode 100644
+index 0000000..0f55735
+--- /dev/null
++++ b/drivers/media/platform/am437x/am437x-vpfe.h
+@@ -0,0 +1,283 @@
++/*
++ * Copyright (C) 2013 - 2014 Texas Instruments, Inc.
++ *
++ * Benoit Parrot <bparrot@ti.com>
++ * Lad, Prabhakar <prabhakar.csengg@gmail.com>
++ *
++ * This program is free software; you may redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#ifndef AM437X_VPFE_H
++#define AM437X_VPFE_H
++
++#include <linux/am437x-vpfe.h>
++#include <linux/clk.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/i2c.h>
++#include <linux/videodev2.h>
++
++#include <media/v4l2-dev.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-ioctl.h>
++#include <media/videobuf2-dma-contig.h>
++
++#include "am437x-vpfe_regs.h"
++
++enum vpfe_pin_pol {
++	VPFE_PINPOL_POSITIVE = 0,
++	VPFE_PINPOL_NEGATIVE,
++};
++
++enum vpfe_hw_if_type {
++	/* Raw Bayer */
++	VPFE_RAW_BAYER = 0,
++	/* BT656 - 8 bit */
++	VPFE_BT656,
++	/* BT656 - 10 bit */
++	VPFE_BT656_10BIT,
++	/* YCbCr - 8 bit with external sync */
++	VPFE_YCBCR_SYNC_8,
++	/* YCbCr - 16 bit with external sync */
++	VPFE_YCBCR_SYNC_16,
++};
++
++/* interface description */
++struct vpfe_hw_if_param {
++	enum vpfe_hw_if_type if_type;
++	enum vpfe_pin_pol hdpol;
++	enum vpfe_pin_pol vdpol;
++	unsigned int bus_width;
++};
++
++#define VPFE_MAX_SUBDEV		1
++#define VPFE_MAX_INPUTS		1
++
++struct vpfe_pixel_format {
++	struct v4l2_fmtdesc fmtdesc;
++	/* bytes per pixel */
++	int bpp;
++};
++
++struct vpfe_std_info {
++	int active_pixels;
++	int active_lines;
++	/* current frame format */
++	int frame_format;
++};
++
++struct vpfe_route {
++	u32 input;
++	u32 output;
++};
++
++struct vpfe_subdev_info {
++	 char name[32];
++	/* Sub device group id */
++	int grp_id;
++	/* inputs available at the sub device */
++	struct v4l2_input inputs[VPFE_MAX_INPUTS];
++	/* Sub dev routing information for each input */
++	struct vpfe_route *routes;
++	/* check if sub dev supports routing */
++	int can_route;
++	/* ccdc bus/interface configuration */
++	struct vpfe_hw_if_param vpfe_param;
++	struct v4l2_subdev *sd;
++};
++
++struct vpfe_config {
++	/* information about each subdev */
++	struct vpfe_subdev_info sub_devs[VPFE_MAX_SUBDEV];
++	/* Flat array, arranged in groups */
++	struct v4l2_async_subdev *asd[VPFE_MAX_SUBDEV];
++};
++
++struct vpfe_cap_buffer {
++	struct vb2_buffer vb;
++	struct list_head list;
++};
++
++enum ccdc_pixfmt {
++	CCDC_PIXFMT_RAW = 0,
++	CCDC_PIXFMT_YCBCR_16BIT,
++	CCDC_PIXFMT_YCBCR_8BIT,
++};
++
++enum ccdc_frmfmt {
++	CCDC_FRMFMT_PROGRESSIVE = 0,
++	CCDC_FRMFMT_INTERLACED,
++};
++
++/* PIXEL ORDER IN MEMORY from LSB to MSB */
++/* only applicable for 8-bit input mode  */
++enum ccdc_pixorder {
++	CCDC_PIXORDER_YCBYCR,
++	CCDC_PIXORDER_CBYCRY,
++};
++
++enum ccdc_buftype {
++	CCDC_BUFTYPE_FLD_INTERLEAVED,
++	CCDC_BUFTYPE_FLD_SEPARATED
++};
++
++
++/* returns the highest bit used for the gamma */
++static inline u8 ccdc_gamma_width_max_bit(enum vpfe_ccdc_gamma_width width)
++{
++	return 15 - width;
++}
++
++/* returns the highest bit used for this data size */
++static inline u8 ccdc_data_size_max_bit(enum vpfe_ccdc_data_size sz)
++{
++	return sz == VPFE_CCDC_DATA_8BITS ? 7 : 15 - sz;
++}
++
++/* Structure for CCDC configuration parameters for raw capture mode */
++struct ccdc_params_raw {
++	/* pixel format */
++	enum ccdc_pixfmt pix_fmt;
++	/* progressive or interlaced frame */
++	enum ccdc_frmfmt frm_fmt;
++	struct v4l2_rect win;
++	/* Current Format Bytes Per Pixels */
++	unsigned int bytesperpixel;
++	/* Current Format Bytes per Lines
++	 * (Aligned to 32 bytes) used for HORZ_INFO
++	 */
++	unsigned int bytesperline;
++	/* field id polarity */
++	enum vpfe_pin_pol fid_pol;
++	/* vertical sync polarity */
++	enum vpfe_pin_pol vd_pol;
++	/* horizontal sync polarity */
++	enum vpfe_pin_pol hd_pol;
++	/* interleaved or separated fields */
++	enum ccdc_buftype buf_type;
++	/*
++	 * enable to store the image in inverse
++	 * order in memory(bottom to top)
++	 */
++	unsigned char image_invert_enable;
++	/* configurable parameters */
++	struct vpfe_ccdc_config_params_raw config_params;
++};
++
++struct ccdc_params_ycbcr {
++	/* pixel format */
++	enum ccdc_pixfmt pix_fmt;
++	/* progressive or interlaced frame */
++	enum ccdc_frmfmt frm_fmt;
++	struct v4l2_rect win;
++	/* Current Format Bytes Per Pixels */
++	unsigned int bytesperpixel;
++	/* Current Format Bytes per Lines
++	 * (Aligned to 32 bytes) used for HORZ_INFO
++	 */
++	unsigned int bytesperline;
++	/* field id polarity */
++	enum vpfe_pin_pol fid_pol;
++	/* vertical sync polarity */
++	enum vpfe_pin_pol vd_pol;
++	/* horizontal sync polarity */
++	enum vpfe_pin_pol hd_pol;
++	/* enable BT.656 embedded sync mode */
++	int bt656_enable;
++	/* cb:y:cr:y or y:cb:y:cr in memory */
++	enum ccdc_pixorder pix_order;
++	/* interleaved or separated fields  */
++	enum ccdc_buftype buf_type;
++};
++
++/*
++ * CCDC operational configuration
++ */
++struct ccdc_config {
++	/* CCDC interface type */
++	enum vpfe_hw_if_type if_type;
++	/* Raw Bayer configuration */
++	struct ccdc_params_raw bayer;
++	/* YCbCr configuration */
++	struct ccdc_params_ycbcr ycbcr;
++	/* ccdc base address */
++	void __iomem *base_addr;
++};
++
++struct vpfe_ccdc {
++	struct ccdc_config ccdc_cfg;
++	u32 ccdc_ctx[VPFE_REG_END / sizeof(u32)];
++};
++
++struct vpfe_device {
++	/* V4l2 specific parameters */
++	/* Identifies video device for this channel */
++	struct video_device *video_dev;
++	/* sub devices */
++	struct v4l2_subdev **sd;
++	/* vpfe cfg */
++	struct vpfe_config *cfg;
++	/* V4l2 device */
++	struct v4l2_device v4l2_dev;
++	/* parent device */
++	struct device *pdev;
++	/* subdevice async Notifier */
++	struct v4l2_async_notifier notifier;
++	/* Indicates id of the field which is being displayed */
++	unsigned field;
++	unsigned sequence;
++	/* current interface type */
++	struct vpfe_hw_if_param vpfe_if_params;
++	/* ptr to currently selected sub device */
++	struct vpfe_subdev_info *current_subdev;
++	/* current input at the sub device */
++	int current_input;
++	/* Keeps track of the information about the standard */
++	struct vpfe_std_info std_info;
++	/* std index into std table */
++	int std_index;
++	/* IRQs used when CCDC output to SDRAM */
++	unsigned int irq;
++	/* Pointer pointing to current v4l2_buffer */
++	struct vpfe_cap_buffer *cur_frm;
++	/* Pointer pointing to next v4l2_buffer */
++	struct vpfe_cap_buffer *next_frm;
++	/* Used to store pixel format */
++	struct v4l2_format fmt;
++	/* Used to store current bytes per pixel based on current format */
++	unsigned int bpp;
++	/*
++	 * used when IMP is chained to store the crop window which
++	 * is different from the image window
++	 */
++	struct v4l2_rect crop;
++	/* Buffer queue used in video-buf */
++	struct vb2_queue buffer_queue;
++	/* Allocator-specific contexts for each plane */
++	struct vb2_alloc_ctx *alloc_ctx;
++	/* Queue of filled frames */
++	struct list_head dma_queue;
++	/* IRQ lock for DMA queue */
++	spinlock_t dma_queue_lock;
++	/* lock used to access this structure */
++	struct mutex lock;
++	/*
++	 * offset where second field starts from the starting of the
++	 * buffer for field separated YCbCr formats
++	 */
++	u32 field_off;
++	struct vpfe_ccdc ccdc;
++};
++
++#endif	/* AM437X_VPFE_H */
+diff --git a/drivers/media/platform/am437x/am437x-vpfe_regs.h b/drivers/media/platform/am437x/am437x-vpfe_regs.h
+new file mode 100644
+index 0000000..4a0ed29
+--- /dev/null
++++ b/drivers/media/platform/am437x/am437x-vpfe_regs.h
+@@ -0,0 +1,140 @@
++/*
++ * TI AM437x Image Sensor Interface Registers
++ *
++ * Copyright (C) 2013 - 2014 Texas Instruments, Inc.
++ *
++ * Benoit Parrot <bparrot@ti.com>
++ * Lad, Prabhakar <prabhakar.csengg@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef AM437X_VPFE_REGS_H
++#define AM437X_VPFE_REGS_H
++
++/* VPFE module register offset */
++#define VPFE_REVISION				0x0
++#define VPFE_PCR				0x4
++#define VPFE_SYNMODE				0x8
++#define VPFE_HD_VD_WID				0xc
++#define VPFE_PIX_LINES				0x10
++#define VPFE_HORZ_INFO				0x14
++#define VPFE_VERT_START				0x18
++#define VPFE_VERT_LINES				0x1c
++#define VPFE_CULLING				0x20
++#define VPFE_HSIZE_OFF				0x24
++#define VPFE_SDOFST				0x28
++#define VPFE_SDR_ADDR				0x2c
++#define VPFE_CLAMP				0x30
++#define VPFE_DCSUB				0x34
++#define VPFE_COLPTN				0x38
++#define VPFE_BLKCMP				0x3c
++#define VPFE_VDINT				0x48
++#define VPFE_ALAW				0x4c
++#define VPFE_REC656IF				0x50
++#define VPFE_CCDCFG				0x54
++#define VPFE_DMA_CNTL				0x98
++#define VPFE_SYSCONFIG				0x104
++#define VPFE_CONFIG				0x108
++#define VPFE_IRQ_EOI				0x110
++#define VPFE_IRQ_STS_RAW			0x114
++#define VPFE_IRQ_STS				0x118
++#define VPFE_IRQ_EN_SET				0x11c
++#define VPFE_IRQ_EN_CLR				0x120
++#define VPFE_REG_END				0x124
++
++/* Define bit fields within selected registers */
++#define VPFE_FID_POL_MASK			1
++#define VPFE_FID_POL_SHIFT			4
++#define VPFE_HD_POL_MASK			1
++#define VPFE_HD_POL_SHIFT			3
++#define VPFE_VD_POL_MASK			1
++#define VPFE_VD_POL_SHIFT			2
++#define VPFE_HSIZE_OFF_MASK			0xffffffe0
++#define VPFE_32BYTE_ALIGN_VAL			31
++#define VPFE_FRM_FMT_MASK			0x1
++#define VPFE_FRM_FMT_SHIFT			7
++#define VPFE_DATA_SZ_MASK			7
++#define VPFE_DATA_SZ_SHIFT			8
++#define VPFE_PIX_FMT_MASK			3
++#define VPFE_PIX_FMT_SHIFT			12
++#define VPFE_VP2SDR_DISABLE			0xfffbffff
++#define VPFE_WEN_ENABLE				(1 << 17)
++#define VPFE_SDR2RSZ_DISABLE			0xfff7ffff
++#define VPFE_VDHDEN_ENABLE			(1 << 16)
++#define VPFE_LPF_ENABLE				(1 << 14)
++#define VPFE_ALAW_ENABLE			(1 << 3)
++#define VPFE_ALAW_GAMMA_WD_MASK			7
++#define VPFE_BLK_CLAMP_ENABLE			(1 << 31)
++#define VPFE_BLK_SGAIN_MASK			0x1f
++#define VPFE_BLK_ST_PXL_MASK			0x7fff
++#define VPFE_BLK_ST_PXL_SHIFT			10
++#define VPFE_BLK_SAMPLE_LN_MASK			7
++#define VPFE_BLK_SAMPLE_LN_SHIFT		28
++#define VPFE_BLK_SAMPLE_LINE_MASK		7
++#define VPFE_BLK_SAMPLE_LINE_SHIFT		25
++#define VPFE_BLK_DC_SUB_MASK			0x03fff
++#define VPFE_BLK_COMP_MASK			0xff
++#define VPFE_BLK_COMP_GB_COMP_SHIFT		8
++#define VPFE_BLK_COMP_GR_COMP_SHIFT		16
++#define VPFE_BLK_COMP_R_COMP_SHIFT		24
++#define VPFE_LATCH_ON_VSYNC_DISABLE		(1 << 15)
++#define VPFE_DATA_PACK_ENABLE			(1 << 11)
++#define VPFE_HORZ_INFO_SPH_SHIFT		16
++#define VPFE_VERT_START_SLV0_SHIFT		16
++#define VPFE_VDINT_VDINT0_SHIFT			16
++#define VPFE_VDINT_VDINT1_MASK			0xffff
++#define VPFE_PPC_RAW				1
++#define VPFE_DCSUB_DEFAULT_VAL			0
++#define VPFE_CLAMP_DEFAULT_VAL			0
++#define VPFE_COLPTN_VAL				0xbb11bb11
++#define VPFE_TWO_BYTES_PER_PIXEL		2
++#define VPFE_INTERLACED_IMAGE_INVERT		0x4b6d
++#define VPFE_INTERLACED_NO_IMAGE_INVERT		0x0249
++#define VPFE_PROGRESSIVE_IMAGE_INVERT		0x4000
++#define VPFE_PROGRESSIVE_NO_IMAGE_INVERT	0
++#define VPFE_INTERLACED_HEIGHT_SHIFT		1
++#define VPFE_SYN_MODE_INPMOD_SHIFT		12
++#define VPFE_SYN_MODE_INPMOD_MASK		3
++#define VPFE_SYN_MODE_8BITS			(7 << 8)
++#define VPFE_SYN_MODE_10BITS			(6 << 8)
++#define VPFE_SYN_MODE_11BITS			(5 << 8)
++#define VPFE_SYN_MODE_12BITS			(4 << 8)
++#define VPFE_SYN_MODE_13BITS			(3 << 8)
++#define VPFE_SYN_MODE_14BITS			(2 << 8)
++#define VPFE_SYN_MODE_15BITS			(1 << 8)
++#define VPFE_SYN_MODE_16BITS			(0 << 8)
++#define VPFE_SYN_FLDMODE_MASK			1
++#define VPFE_SYN_FLDMODE_SHIFT			7
++#define VPFE_REC656IF_BT656_EN			3
++#define VPFE_SYN_MODE_VD_POL_NEGATIVE		(1 << 2)
++#define VPFE_CCDCFG_Y8POS_SHIFT			11
++#define VPFE_CCDCFG_BW656_10BIT			(1 << 5)
++#define VPFE_SDOFST_FIELD_INTERLEAVED		0x249
++#define VPFE_NO_CULLING				0xffff00ff
++#define VPFE_VDINT0				(1 << 0)
++#define VPFE_VDINT1				(1 << 1)
++#define VPFE_VDINT2				(1 << 2)
++#define VPFE_DMA_CNTL_OVERFLOW			(1 << 31)
++
++#define VPFE_CONFIG_PCLK_INV_SHIFT		0
++#define VPFE_CONFIG_PCLK_INV_MASK		1
++#define VPFE_CONFIG_PCLK_INV_NOT_INV		0
++#define VPFE_CONFIG_PCLK_INV_INV		1
++#define VPFE_CONFIG_EN_SHIFT			1
++#define VPFE_CONFIG_EN_MASK			2
++#define VPFE_CONFIG_EN_DISABLE			0
++#define VPFE_CONFIG_EN_ENABLE			1
++#define VPFE_CONFIG_ST_SHIFT			2
++#define VPFE_CONFIG_ST_MASK			4
++#define VPFE_CONFIG_ST_OCP_ACTIVE		0
++#define VPFE_CONFIG_ST_OCP_STANDBY		1
++
++#endif		/* AM437X_VPFE_REGS_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index ed39ac8..65495f0 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -34,6 +34,7 @@ header-y += adfs_fs.h
+ header-y += affs_hardblocks.h
+ header-y += agpgart.h
+ header-y += aio_abi.h
++header-y += am437x-vpfe.h
+ header-y += apm_bios.h
+ header-y += arcfb.h
+ header-y += atalk.h
+diff --git a/include/uapi/linux/am437x-vpfe.h b/include/uapi/linux/am437x-vpfe.h
+new file mode 100644
+index 0000000..9b03033f
+--- /dev/null
++++ b/include/uapi/linux/am437x-vpfe.h
+@@ -0,0 +1,122 @@
++/*
++ * Copyright (C) 2013 - 2014 Texas Instruments, Inc.
++ *
++ * Benoit Parrot <bparrot@ti.com>
++ * Lad, Prabhakar <prabhakar.csengg@gmail.com>
++ *
++ * This program is free software; you may redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++#ifndef AM437X_VPFE_USER_H
++#define AM437X_VPFE_USER_H
++
++enum vpfe_ccdc_data_size {
++	VPFE_CCDC_DATA_16BITS = 0,
++	VPFE_CCDC_DATA_15BITS,
++	VPFE_CCDC_DATA_14BITS,
++	VPFE_CCDC_DATA_13BITS,
++	VPFE_CCDC_DATA_12BITS,
++	VPFE_CCDC_DATA_11BITS,
++	VPFE_CCDC_DATA_10BITS,
++	VPFE_CCDC_DATA_8BITS,
++};
++
++/* enum for No of pixel per line to be avg. in Black Clamping*/
++enum vpfe_ccdc_sample_length {
++	VPFE_CCDC_SAMPLE_1PIXELS = 0,
++	VPFE_CCDC_SAMPLE_2PIXELS,
++	VPFE_CCDC_SAMPLE_4PIXELS,
++	VPFE_CCDC_SAMPLE_8PIXELS,
++	VPFE_CCDC_SAMPLE_16PIXELS,
++};
++
++/* enum for No of lines in Black Clamping */
++enum vpfe_ccdc_sample_line {
++	VPFE_CCDC_SAMPLE_1LINES = 0,
++	VPFE_CCDC_SAMPLE_2LINES,
++	VPFE_CCDC_SAMPLE_4LINES,
++	VPFE_CCDC_SAMPLE_8LINES,
++	VPFE_CCDC_SAMPLE_16LINES,
++};
++
++/* enum for Alaw gamma width */
++enum vpfe_ccdc_gamma_width {
++	VPFE_CCDC_GAMMA_BITS_15_6 = 0,	/* use bits 15-6 for gamma */
++	VPFE_CCDC_GAMMA_BITS_14_5,
++	VPFE_CCDC_GAMMA_BITS_13_4,
++	VPFE_CCDC_GAMMA_BITS_12_3,
++	VPFE_CCDC_GAMMA_BITS_11_2,
++	VPFE_CCDC_GAMMA_BITS_10_1,
++	VPFE_CCDC_GAMMA_BITS_09_0,	/* use bits 9-0 for gamma */
++};
++
++/* structure for ALaw */
++struct vpfe_ccdc_a_law {
++	/* Enable/disable A-Law */
++	unsigned char enable;
++	/* Gamma Width Input */
++	enum vpfe_ccdc_gamma_width gamma_wd;
++};
++
++/* structure for Black Clamping */
++struct vpfe_ccdc_black_clamp {
++	unsigned char enable;
++	/* only if bClampEnable is TRUE */
++	enum vpfe_ccdc_sample_length sample_pixel;
++	/* only if bClampEnable is TRUE */
++	enum vpfe_ccdc_sample_line sample_ln;
++	/* only if bClampEnable is TRUE */
++	unsigned short start_pixel;
++	/* only if bClampEnable is TRUE */
++	unsigned short sgain;
++	/* only if bClampEnable is FALSE */
++	unsigned short dc_sub;
++};
++
++/* structure for Black Level Compensation */
++struct vpfe_ccdc_black_compensation {
++	/* Constant value to subtract from Red component */
++	char r;
++	/* Constant value to subtract from Gr component */
++	char gr;
++	/* Constant value to subtract from Blue component */
++	char b;
++	/* Constant value to subtract from Gb component */
++	char gb;
++};
++
++/* Structure for CCDC configuration parameters for raw capture mode passed
++ * by application
++ */
++struct vpfe_ccdc_config_params_raw {
++	/* data size value from 8 to 16 bits */
++	enum vpfe_ccdc_data_size data_sz;
++	/* Structure for Optional A-Law */
++	struct vpfe_ccdc_a_law alaw;
++	/* Structure for Optical Black Clamp */
++	struct vpfe_ccdc_black_clamp blk_clamp;
++	/* Structure for Black Compensation */
++	struct vpfe_ccdc_black_compensation blk_comp;
++};
++
++/*
++ *  Private IOCTL
++ * VIDIOC_AM437X_CCDC_CFG - Set CCDC configuration for raw capture
++ * This is an experimental ioctl that will change in future kernels. So use
++ * this ioctl with care !
++ **/
++#define VIDIOC_AM437X_CCDC_CFG \
++	_IOW('V', BASE_VIDIOC_PRIVATE + 1, void *)
++
++#endif		/* AM437X_VPFE_USER_H */
+-- 
+1.9.1
 
