@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaLCUTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:19:50 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47472 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaLCUTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:19:49 -0500
-Date: Wed, 3 Dec 2014 20:19:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>
-Message-ID: <20141203201905.GO7712@sirena.org.uk>
-References: <547F3CAC.9050105@arm.com>
- <2041200.ZjakFFAZAU@wuerfel>
+	id S1752064AbaLCUUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:20:39 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892AbaLCUUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 15:20:37 -0500
+Message-ID: <547F7092.8080001@nod.at>
+Date: Wed, 03 Dec 2014 21:20:34 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pmewarBF2ZzreSyu"
-Content-Disposition: inline
-In-Reply-To: <2041200.ZjakFFAZAU@wuerfel>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/5] ASoC: dwc: Add devicetree support for Designware I2S
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Harald Geyer <harald@ccbib.org>
+CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at>
+In-Reply-To: <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Harald,
 
---pmewarBF2ZzreSyu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Am 03.12.2014 um 13:18 schrieb Harald Geyer:
+> Hi Richard,
+> 
+> thanks for all the work you put into this!
+> 
+> Richard Weinberger writes:
+>> Please see my current patches for your driver.
+>> As discussed in an earlier mail I'm testing with the DHT22 sensor only.
+>> With the IRQ changes I see 84 edges.
+> 
+> This still surprises me. With the IRQ changes I would expect the
+> preamble to be 2 edges only. I must be missing something. Can you
+> explain this to me?
 
-On Wed, Dec 03, 2014 at 09:13:18PM +0100, Arnd Bergmann wrote:
+Did some more tests.
+With my IRQ changes applied I get as stated 84 edges,
+without I get 85. So we're only losing one edge.
 
-> I don't think we even have to worry about the platform_data case here:
-> the only platform using this hardware in Linux is arm/mach-spear, and
-> it defines a device node with a binding that is similar to the one you
-> document here but that is not implemented in the driver.
+Of course if we're too slow with registering the IRQ we'll lose
+more edges and the results renders unusable.
 
-Not all the world uses DT, this is a DesignWare IP so it's likely to get
-deployed widely - potentially on PCI cards and things like that.
-
---pmewarBF2ZzreSyu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUf3A4AAoJECTWi3JdVIfQH4gH/R3yPL0BX9ABaSL9ZtwgNQXC
-PKfHlsCE3P24RrJ7Tzy42n8UkkZv1BWMq1wLGAp8ZQ1foep2BCdPlD+dcmeKMe/S
-/g/8X7KhJ8j/sT2Hr6z0M8oRQfuagV6/Y9rZZu3HrymOB/PiPWUGvq+rejcuHqGH
-tbtchpaAquuNW3QhPT42s1I6+iryoes83Kx7dB6pegQMJNUDrmaiFmrXQnb6x+NU
-98Q8YOOtoFq79+KqQfTVMK4Auq1bmkNouj07tCdKhNoCZcPNdxcXQNT4BviWtTAb
-pw04LM75ZoyoVgb5MPCEnMdlffP14PdJJ179/UdFy79qXhTydsZhnFFLTBzg7Ds=
-=Cm/k
------END PGP SIGNATURE-----
-
---pmewarBF2ZzreSyu--
+Thanks,
+//richard
