@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904AbaLCIge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:36:34 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:29195 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaLCIgc (ORCPT
+	id S1751979AbaLCIhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:37:01 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:62042 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaLCIg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:36:32 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-1e-547ecb8dd160
-Message-id: <547ECB8B.3040905@samsung.com>
-Date: Wed, 03 Dec 2014 09:36:27 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kevin Hilman <khilman@kernel.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC v2 08/12] soc: samsung: pm_domain: Add support for
- parent power domain
-References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
- <1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
- <1416834256-11225-8-git-send-email-amit.daniel@samsung.com>
- <CAPDyKFoBnViXQF=wDYp0x4gaOO4ht3a8KBeY6=k6_Zkkav28pQ@mail.gmail.com>
- <CADGdYn4Vi2wV1y3Y0cTbPL0cFR2EEV7jT=82fHNYu+=xwZ7mBA@mail.gmail.com>
- <CAMuHMdX+rcmUM+_4c72b16Zs_c5KMhO3bYSH5-AUp087cwGdeA@mail.gmail.com>
-In-reply-to: <CAMuHMdX+rcmUM+_4c72b16Zs_c5KMhO3bYSH5-AUp087cwGdeA@mail.gmail.com>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xy7q9p+tCDHonslo0XA2xmH/kHKvF
-	s1t7mSx6F1xls3i6+TGTxabH11gtLu+aw2bxufcIo8WM8/uYLBZt/cJuceb0JVaLw2/aWS2O
-	rw134PXYtKqTzePOtT1sHocOdzB6bF5S77HlajuLR9+WVYwenzfJBbBHcdmkpOZklqUW6dsl
-	cGVM3PGHpWCRcMWlp19ZGxiv8nUxcnJICJhI3L7/mBXCFpO4cG89WxcjF4eQwFJGiWV3dkM5
-	nxgljn++wA5SxSugJbH/3G4WEJtFQFWifVY3WDebgKFE19suNhBbVCBGYvHC1cwQ9YISPybf
-	A6rn4BARiJP4dZITZCazwHYWiVe7nrCBxIUFEiRmX1SG2DWdWeLRkk2MIL2cAsESC/ctAJvD
-	LGAm8eXlYVYIW15i85q3zBMYBWYhWTELSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl
-	5+duYoREzJcdjIuPWR1iFOBgVOLhVZhSFyLEmlhWXJl7iFGCg1lJhHfZDqAQb0piZVVqUX58
-	UWlOavEhRiYOTqkGRrWPk5bvK1D7FrIuwi+hLKP126f1ZyqKMwobA+NNEufU/854t2ybfUBO
-	c9nuVwd05Ezcn0rv2d8VUdt0kZUn2d3uhlRRco/FnO+up/tn2lhUHiux79gouu4e+7X/8b/b
-	bpyrKYz5ezmz+WXLZ3l/VXfjrWu2PT8mvkNx9cwY5TUzf97i/+P4SImlOCPRUIu5qDgRAHLg
-	Xsl2AgAA
+	Wed, 3 Dec 2014 03:36:59 -0500
+Date: Wed, 3 Dec 2014 00:36:55 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felix Fietkau <nbd@openwrt.org>, Ben Greear <greearb@candelatech.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ net-next tree
+Message-ID: <20141203083655.GA5418@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Arend van Spriel <arend@broadcom.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Felix Fietkau <nbd@openwrt.org>,
+	Ben Greear <greearb@candelatech.com>
+References: <20141201181933.6dfaad66@canb.auug.org.au>
+ <547C19ED.10201@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547C19ED.10201@broadcom.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+all,
 
-On 2014-11-25 10:19, Geert Uytterhoeven wrote:
-> On Tue, Nov 25, 2014 at 9:57 AM, amit daniel kachhap
-> <amit.daniel@samsung.com>  wrote:
->>>> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>>> index 00ebda1..0160bdc 100644
->>>> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>>> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>>> @@ -24,6 +24,7 @@ Optional Properties:
->>>>          - pclkN, clkN: Pairs of parent of input clock and input clock to the
->>>>                  devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
->>>>                  are supported currently.
->>>> +- parents: phandle of parent power domains.
-> Why not using just "power-domains = <&pd_top>"?
-> This is consistent with how clocks refer to their parent clocks.
+On Mon, Dec 01, 2014 at 08:34:05AM +0100, Arend van Spriel wrote:
+> On 01-12-14 08:19, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the driver-core tree got a conflict in
+> > drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
+> > ("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
+> > ("ath9k: restart hardware after noise floor calibration failure") and
+> > 325e18817668 ("ath9k: fix misc debugfs when not using chan context")
+> > from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
+> > for ath9k debugfs files") from the driver-core tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> > 
+> > Greg, I am not sure why those 2 commits are even in your tree.  Do they
+> > depend on something else in your tree?
+> 
+> They do. The three commits below are related:
+> 
+> d32394f ath: ath9k: use debugfs_create_devm_seqfile() helper for
+> seq_file entrie
+> 631bee2 ath: use seq_file api for ath9k debugfs files
+> 98210b7 debugfs: add helper function to create device related seq_file
+> 
+> The ath patches were made to provide example of using the new helper
+> function and get some idea about code savings. Greg and John discussed
+> who would take them. I noticed other ath changes in net-next so I kinda
+> expected this email ;-)
+> 
+> Regards,
+> Arend
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I agree. The only question is weather exynos dts should keep using 
-samsung,power-domain
-property, or switch to generic 'power-domains' approach. I assume that 
-exynos-pm driver
-should support both.
+I just ran in to a problem with one of these commits.
 
->>>>   Node of a device using power domains must have a samsung,power-domain property
->>>>   defined with a phandle to respective power domain.
->>>> @@ -48,6 +49,7 @@ Example:
->>>>          mfc_pd: power-domain@10044060 {
->>>>                  compatible = "samsung,exynos4210-pd", "samsung,exynos7-pd-mfc";
->>>>                  reg = <0x10044060 0x20>;
->>>> +               parents = <&pd_top>;
->>>>                  #power-domain-cells = <0>;
->>>>          };
->>> This seems like a good and generic approach to describe that a PM
->>> domain could have a parent. I would suggest to rename it, such it
->>> reflects its a PM domain binding though.
->> I am not sure if this is generic. I guess PD's represented like below
->> are more generic.
->> PD1 {
->>          PD2 {
->>                  PD3 {
->>                  };
->>          };
->> };
-> Such a representation is not always possible.
-> If you have one power-controller for a hierarchy of PM domains, you can
-> use it.
-> If you have multiple power-controllers, the power controller nodes are at the
-> same level in DT, so you'll have to use "power-domains" properties to link
-> them together.
+On an Acer C720 laptop if a suspend is performed the screen freezes,
+the machine locks up, and according to the indicator lights it does
+not enter suspend.  A hard reset is required to get it running again.
 
-I agree. I will send updated patch for this purpose for existing exynos4 
-power domain driver.
+I have bisected the kernel and found that the following is the first bad
+commit.
 
-Best regards
+  commit d32394fae95741d733b174ec1446f27765f80233
+  Author: Arend van Spriel <arend@broadcom.com>
+  Date:   Sun Nov 9 11:32:00 2014 +0100
+  
+      ath: ath9k: use debugfs_create_devm_seqfile() helper for seq_file
+  entries
+      
+      Use the helper to get rid of the file operations per debugfs file.
+  The
+      struct ath9k_softc pointer is set as device driver data to be
+  obtained
+      in the seq_file read operation.
+      
+      Signed-off-by: Arend van Spriel <arend@broadcom.com>
+      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Let me know if I can do anything else to help.
+
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
-
+- Jeremiah Mahler
