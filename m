@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaLCLoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:44:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54701 "EHLO mx2.suse.de"
+	id S1753544AbaLCLo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:44:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54635 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506AbaLCL1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752512AbaLCL1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:31 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Greg Kurz <gkurz@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 020/101] hwrng: pseries - port to new read API and fix stack corruption
-Date: Wed,  3 Dec 2014 12:25:42 +0100
-Message-Id: <50e52368e667f2a8d5a43c0c9f60b4391a5bc715.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 075/101] Input: wm97xx - adapt parameters to tosa touchscreen.
+Date: Wed,  3 Dec 2014 12:26:37 +0100
+Message-Id: <05b598ab439ca2aaff4930d45ec74062f484d52e.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,79 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
+From: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 24c65bc7037e7d0f362c0df70d17dd72ee64b8b9 upstream.
+commit 859abd1d59e2db07d2e4db27074fc33568353d11 upstream.
 
-The add_early_randomness() function in drivers/char/hw_random/core.c passes
-a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
-returns four 64-bit values and trashes 16 bytes on the stack.
+Sharp SL-6000 (tosa) touchscreen needs wider limits to properly map all
+points on the screen. Expand ranges in abs_x and abs_y arrays according
+to the touchscreen area.
 
-This bug has been lying around for a long time. It got unveiled by:
-
-commit d3cc7996473a7bdd33256029988ea690754e4e2a
-Author: Amit Shah <amit.shah@redhat.com>
-Date:   Thu Jul 10 15:42:34 2014 +0530
-
-    hwrng: fetch randomness only after device init
-
-It may trig a oops while loading or unloading the pseries-rng module for both
-PowerVM and PowerKVM guests.
-
-This patch does two things:
-- pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
-  since we're not on a hot path.
-- move to the new read API so that we know the return buffer size for sure.
-
-Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/char/hw_random/pseries-rng.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/input/touchscreen/wm97xx-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
-index b761459a3436..ab11c16352f8 100644
---- a/drivers/char/hw_random/pseries-rng.c
-+++ b/drivers/char/hw_random/pseries-rng.c
-@@ -26,18 +26,21 @@
+diff --git a/drivers/input/touchscreen/wm97xx-core.c b/drivers/input/touchscreen/wm97xx-core.c
+index 7e45c9f6e6b7..b08c16bd816e 100644
+--- a/drivers/input/touchscreen/wm97xx-core.c
++++ b/drivers/input/touchscreen/wm97xx-core.c
+@@ -70,11 +70,11 @@
+  * Documentation/input/input-programming.txt for more details.
+  */
  
- #define MODULE_NAME "pseries-rng"
+-static int abs_x[3] = {350, 3900, 5};
++static int abs_x[3] = {150, 4000, 5};
+ module_param_array(abs_x, int, NULL, 0);
+ MODULE_PARM_DESC(abs_x, "Touchscreen absolute X min, max, fuzz");
  
--static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
-+static int pseries_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
- {
-+	u64 buffer[PLPAR_HCALL_BUFSIZE];
-+	size_t size = max < 8 ? max : 8;
- 	int rc;
+-static int abs_y[3] = {320, 3750, 40};
++static int abs_y[3] = {200, 4000, 40};
+ module_param_array(abs_y, int, NULL, 0);
+ MODULE_PARM_DESC(abs_y, "Touchscreen absolute Y min, max, fuzz");
  
--	rc = plpar_hcall(H_RANDOM, (unsigned long *)data);
-+	rc = plpar_hcall(H_RANDOM, (unsigned long *)buffer);
- 	if (rc != H_SUCCESS) {
- 		pr_err_ratelimited("H_RANDOM call failed %d\n", rc);
- 		return -EIO;
- 	}
-+	memcpy(data, buffer, size);
- 
- 	/* The hypervisor interface returns 64 bits */
--	return 8;
-+	return size;
- }
- 
- /**
-@@ -56,7 +59,7 @@ static unsigned long pseries_rng_get_desired_dma(struct vio_dev *vdev)
- 
- static struct hwrng pseries_rng = {
- 	.name		= MODULE_NAME,
--	.data_read	= pseries_rng_data_read,
-+	.read		= pseries_rng_read,
- };
- 
- static int __init pseries_rng_probe(struct vio_dev *dev,
 -- 
 2.1.3
 
