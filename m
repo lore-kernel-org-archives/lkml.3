@@ -1,195 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaLCQWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:22:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33853 "EHLO mx2.suse.de"
+	id S1752897AbaLCQXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:23:41 -0500
+Received: from bues.ch ([80.190.117.144]:48891 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898AbaLCQWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:22:07 -0500
-Message-ID: <547F38AD.9050103@suse.de>
-Date: Wed, 03 Dec 2014 17:22:05 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751847AbaLCQXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:23:39 -0500
+Date: Wed, 3 Dec 2014 17:23:15 +0100
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Andrey Skvortsov <andrej.skvortzov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        b43-dev <b43-dev@lists.infradead.org>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
+Message-ID: <20141203172315.120040c2@wiggum>
+In-Reply-To: <20141203161452.GD2896@tuxdriver.com>
+References: <20141201111125.GA11974@localhost.localdomain>
+	<1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
+	<20141201221023.79ffb40d@wiggum>
+	<20141202200129.GA4580@crion89>
+	<20141202211211.7e08b935@wiggum>
+	<547E3BF5.5060201@lwfinger.net>
+	<20141203161855.50951aa8@wiggum>
+	<20141203161452.GD2896@tuxdriver.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jason Wilkes <letshaveanadventure@gmail.com>
-CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: scsi: aic7xxx: Fix positive error codes.
-References: <1417564984-6941-1-git-send-email-letshaveanadventure@gmail.com>
-In-Reply-To: <1417564984-6941-1-git-send-email-letshaveanadventure@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/W55AsAgnlqTaZg/M34CqBBN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 01:03 AM, Jason Wilkes wrote:
-> Note:
-> There are more instances of the problem described below, but I
-> thought I'd explain the first one in detail, to make sure it's
-> worth fixing the others (and to make sure I didn't do anything
-> stupid, which I may have. I'm new to this :-). Alright, here we go!
-> 
-> A few drivers seem to return positive error codes internally, in
-> order to signal something to a static function in the same driver.
-> (see, for example, drivers/staging/lustre/lnet/lnet/lib-move.c)
-> That's unusual, but seems okay as long as they're consistent between
-> return codes and return code checks. However, a problem might arise
-> if +ERRORCODE rather than -ERRORCODE is returned to other layers
-> of the kernel (e.g., to the driver core). Let's do some exploring...
-> 
-> Here's a function that returns +ENOMEM
-> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-> FUNC: aic7770_map_registers
-> 
-> int
-> aic7770_map_registers(struct ahc_softc *ahc, u_int port)
-> {
-> ... (clipped for brevity) ..
-> 
-> 	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
-> 		return (ENOMEM);
-> 
-> ... (clipped for brevity) ..
-> }
-> 
-> This may not be a problem, unless we're passing the value
-> outside the current module. So who calls this function?
-> $ grep -r -C20 aic7770_map_registers
-> 
-> Looks like it's only ever called in:
-> FILE: drivers/scsi/aic7xxx/aic7770.c
-> FUNC: aic7770_config
-> 
-> int aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
-> {
-> ... (code and stuff) ...
-> 
-> 	error = aic7770_map_registers(ahc, io);
-> 	if (error != 0)
-> 		return (error);
-> 
-> ... (code and stuff) ...
-> }
-> 
-> Hmm... Let's see who calls this guy.
-> $ grep -r -C20 aic7770_config
-> 
-> This too is only called once, in:
-> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-> FUNC: aic7770_probe
-> 
-> static int
-> aic7770_probe(struct device *dev)
-> {
-> ... (blah blah blah) ...
-> 
-> 	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
-> 			       eisaBase);
-> 	if (error != 0) {
-> 		ahc->bsh.ioport = 0;
-> 		ahc_free(ahc);
-> 		return (error);
-> 	}
-> 
-> ... (blah blah blah) ...
-> }
-> 
-> Same deal as before. Okay, so who calls aic7770_probe?
-> 
-> Well, as expected, no one calls it, at least not by name.
-> It's just the .probe function in the following struct:
-> 
-> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-> 
-> static struct eisa_driver aic7770_driver = {
-> 	.id_table	= aic7770_ids,
-> 	.driver = {
-> 		.name   = "aic7xxx",
-> 		.probe  = aic7770_probe,
-> 		.remove = aic7770_remove,
-> 	}
-> };
-> 
-> So the return code *is* being passed to another layer of the kernel,
-> in which case it should probably be negative.
-> 
-> There are lots of similar examples in the same driver. I'd be happy
-> to fix them up, but I thought I should send this patch first, to make
-> sure I'm not doing anything obviously wrong.
-> 
-> Ooh! One more thing, just to be safe. Above, I assumed that grepping
-> the kernel tree would give us all the places where an identifier shows
-> up, but maybe this driver does something clever with the preprocessor.
-> 
-> $ grep -r '##' drivers/scsi/aic7xxx/ || cowsay hooray
->  ________
-> < hooray >
->  --------
->         \   ^__^
->          \  (oo)\_______
->             (__)\       )\/\
->                 ||----w |
->                 ||     ||
-> 
-> Okay good, so there shouldn't be any ## magic messing with our greps.
-> Alright, I guess I should send this patch off now. Thanks for reading,
-> and apologies in advance if I'm a moron :-)
-> 
-> Signed-off-by: Jason Wilkes <letshaveanadventure@gmail.com>
-> ---
->  drivers/scsi/aic7xxx/aic7770.c     | 2 +-
->  drivers/scsi/aic7xxx/aic7770_osm.c | 6 +++---
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/scsi/aic7xxx/aic7770.c b/drivers/scsi/aic7xxx/aic7770.c
-> index 5000bd6..cecdea9 100644
-> --- a/drivers/scsi/aic7xxx/aic7770.c
-> +++ b/drivers/scsi/aic7xxx/aic7770.c
-> @@ -171,7 +171,7 @@ aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
->  		break;
->  	default:
->  		printk("aic7770_config: invalid irq setting %d\n", intdef);
-> -		return (ENXIO);
-> +		return -ENXIO;
->  	}
->  
->  	if ((intdef & EDGE_TRIG) != 0)
-> diff --git a/drivers/scsi/aic7xxx/aic7770_osm.c b/drivers/scsi/aic7xxx/aic7770_osm.c
-> index 3d401d0..50f030d 100644
-> --- a/drivers/scsi/aic7xxx/aic7770_osm.c
-> +++ b/drivers/scsi/aic7xxx/aic7770_osm.c
-> @@ -51,7 +51,7 @@ aic7770_map_registers(struct ahc_softc *ahc, u_int port)
->  	 * Lock out other contenders for our i/o space.
->  	 */
->  	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
-> -		return (ENOMEM);
-> +		return -ENOMEM;
->  	ahc->tag = BUS_SPACE_PIO;
->  	ahc->bsh.ioport = port;
->  	return (0);
-> @@ -87,10 +87,10 @@ aic7770_probe(struct device *dev)
->  	sprintf(buf, "ahc_eisa:%d", eisaBase >> 12);
->  	name = kstrdup(buf, GFP_ATOMIC);
->  	if (name == NULL)
-> -		return (ENOMEM);
-> +		return -ENOMEM;
->  	ahc = ahc_alloc(&aic7xxx_driver_template, name);
->  	if (ahc == NULL)
-> -		return (ENOMEM);
-> +		return -ENOMEM;
->  	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
->  			       eisaBase);
->  	if (error != 0) {
-> 
-Looks okay so far, but have you validated all callers to ensure they
-use the new syntax?
+--Sig_/W55AsAgnlqTaZg/M34CqBBN
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Cheers,
+On Wed, 3 Dec 2014 11:14:52 -0500
+"John W. Linville" <linville@tuxdriver.com> wrote:
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
+> On Wed, Dec 03, 2014 at 04:18:55PM +0100, Michael B=C3=BCsch wrote:
+> > On Tue, 02 Dec 2014 16:23:49 -0600
+> > Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> >=20
+> > > On 12/02/2014 02:12 PM, Michael B=C3=BCsch wrote:
+> > > > On Tue, 2 Dec 2014 23:01:29 +0300
+> > > > Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+> > > >
+> > > >> On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael B=C3=BCsch wrote:
+> > > >>> On Mon,  1 Dec 2014 23:46:38 +0300
+> > > >>> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+> > > >>>
+> > > >>>> Wake On Lan was not working on laptop DELL Vostro 1500.
+> > > >>>> If WOL was turned on, BCM4401 was powered up in suspend mode. LE=
+Ds blinked.
+> > > >>>> But the laptop could not be woken up with the Magic Packet. The =
+reason for
+> > > >>>> that was that PCIE was not enabled as a system wakeup source and
+> > > >>>> therefore the host PCI bridge was not powered up in suspend mode.
+> > > >>>> PCIE was not enabled in suspend by PM because no child devices w=
+ere
+> > > >>>> registered as wakeup source during suspend process.
+> > > >>>> On laptop BCM4401 is connected through the SSB bus, that is conn=
+ected to the
+> > > >>>> PCI-Express bus. SSB and B44 did not use standard PM wakeup func=
+tions
+> > > >>>> and did not forward wakeup settings to their parents.
+> > > >>>> To fix that B44 driver enables PM wakeup and registers new wakeu=
+p source
+> > > >>>> using device_set_wakeup_enable(). Wakeup is automatically report=
+ed to the parent SSB
+> > > >>>> bus via power.wakeup_path. SSB bus enables wakeup for the parent=
+ PCI bridge, if there is any
+> > > >>>> child devices with enabled wakeup functionality. All other steps=
+ are
+> > > >>>> done by PM core code.
+> > > >>>
+> > > >>> Thanks, this looks good.
+> > > >>> I assume you tested this (I currently don't have a device to test=
+ this).
+> > > >>
+> > > >> Sure, I've tested it. WOL from suspend is working and after resume=
+ from hibernate Ethernet is working too.
+> > > >
+> > > > That sounds good, indeed.
+> > > > I'd still prefer, if someone with b43 (wireless) would test it, too.
+> > >=20
+> > > I did a partial test with my PowerBook G4. With the patch installed, =
+it would=20
+> > > both suspend and hibernate, but WOL would be impossible. This compute=
+r uses a=20
+> > > PCMCIA version of the BCM4318, and power is turned off to the PCMCIA =
+card when=20
+> > > suspended or hibernating.
+> >=20
+> > Thanks for testing.
+> >=20
+> > John, can you take this one? Or do we need to split the b44 part out?
+> > I added my Signed-off.
+>=20
+> Um, sure...3.19 is OK I presume?
+
+I think we could even wait for 3.20.
+
+--=20
+Michael
+
+--Sig_/W55AsAgnlqTaZg/M34CqBBN
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUfzj1AAoJEPUyvh2QjYsOTmoQAMevc185S57uGkwv0paXBp0T
+V9QgJQDXzvoGJur9dnYUGCwfXnkWs2T+2qwP2rvjtMpusBn2u/r6gUKH7wqn3bJr
+bnf/fCVc7zOdfNN7K3lLYKjRZ6PZ07OsWqQAy5HvjAFH940eKBEnyhTtKnWnc19F
+xjPdSmHszvUpmjsiDWj+aIKU0VqUZmKJnTSJKx7FAb/EF2twp44GQWKrk9xIUFZ8
+nUgeye4+ew28S1e/6icvmPHDRTZiGHLkoAwLtbNrEm8wwxhW3qpz68NWZ9zJiRP9
+sdjOhcqqm0SauEB2Kd5rGv/Iwmg+1vTmAlGT7cQSpwdV0+zQY6OIngVs8PZShu4F
+sYDmiZ2JQKir92QvbvvzKbX7WcotLIxwo+x8TNMPaOTzYV8PCdewN9drD+d3kWDJ
+SShBAHPMytYTxihfj4K+MQJ78PDj1LS2o8yPQY9lvfi4rLWYDLEuC0GXLFqMYLut
+SqdHpHM1+kJ9BXOCeUgYFrPpEV0DqfMu6lj/aGrQj0fzVrAtIZhRRxgMl9jU+Uhl
+brZAwfpwt10huU4faSZN/RK/H+Hauv4i1H+7I23Wm3PA442RiFRNgxp35/bXp7Ws
+qcDNnBzWrNtjoxLiIe0CX8Rna0xef6UcsXlYaVzeFQJWCHEpq6T78/IUy6VJM68p
+mhgRzlEArQn7jxLURSEi
+=BAFn
+-----END PGP SIGNATURE-----
+
+--Sig_/W55AsAgnlqTaZg/M34CqBBN--
