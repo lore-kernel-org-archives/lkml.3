@@ -1,83 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaLCJBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:01:16 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:54340 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaLCJBP (ORCPT
+	id S1751576AbaLCJBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:01:23 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50288 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaLCJBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:01:15 -0500
+	Wed, 3 Dec 2014 04:01:19 -0500
 From: Alex Dubov <alex.dubov@gmail.com>
 X-Google-Original-From: Alex Dubov <oakad@yahoo.com>
 To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, corbet@lwn.net, richardcochran@gmail.com
-Subject: syscall: introduce sendfd() syscall (v.2)
-Date: Wed,  3 Dec 2014 20:00:54 +1100
-Message-Id: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+Cc: viro@zeniv.linux.org.uk, corbet@lwn.net, richardcochran@gmail.com,
+        Alex Dubov <oakad@yahoo.com>
+Subject: [PATCH] syscall: introduce sendfd() syscall (v.2)
+Date: Wed,  3 Dec 2014 20:00:55 +1100
+Message-Id: <1417597255-32530-2-git-send-email-oakad@yahoo.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+References: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would like to present my second attempt at file descriptor duplication over
-Posix.1b real-time signal transport. All the constructive points raised
-in the previous discussion are believed to be addressed.
+Present patch introduces exceptionally easy to use, low latency and low
+overhead mechanism for transferring file descriptors between cooperating
+processes:
 
-To this end, I would like to address some concerns raised in the preceding
-discussion:
+    int sendfd(pid_t pid, int sig, int fd)
 
-1. Claim: signals as a transport would not scale
+Given a target process pid, the sendfd() will queue a real-time signal for
+delivery to task referenced by pid. If signal can be delivered to destination
+tasks and it chooses to collect the associated signal info, a new file
+descriptor will be created on its behalf, pointing to file originally referred
+by fd (the value of newly created file descriptor will be communicated as
+integer payload within the siginfo data).
 
-Each task_struct allocated by kernel has its own signal queue, reliable, when
-Posix.1b signals are concerned. This queue essentially serves as per-task
-mail box, enabling complex applications to send signals from each thread to
-each thread directly, with very low overhead, and thus avoid any shared
-contention points outright (originating task's pid is passed along with
-the siginfo data, so source based dispatching is perfectly possible).
+Signed-off-by: Alex Dubov <oakad@yahoo.com>
+---
+ arch/x86/syscalls/syscall_32.tbl   |  2 +
+ arch/x86/syscalls/syscall_64.tbl   |  1 +
+ include/asm-generic/siginfo.h      |  1 +
+ include/linux/syscalls.h           |  1 +
+ include/uapi/asm-generic/siginfo.h |  1 +
+ init/Kconfig                       | 11 +++++
+ kernel/signal.c                    | 89 ++++++++++++++++++++++++++++++++++++++
+ kernel/sys_ni.c                    |  3 ++
+ 8 files changed, 109 insertions(+)
 
-Also, signals can be trivially integrated with other communication mediums,
-as signalfd() syscall is perfectly compatible with epoll.
-
-2. Claim: adding new functionality to the signal transport will create new
-attack/DoS vectors.
-
-Nothing can be further from truth.
-
-2.a. If task A has sufficient capabilities to send signals to task B, then
-task A is already in position to do anything it wants with task B, including
-killing it outright.
-
-2.b. Flood attacks on signal queues are not dangerous to the system, as signal
-queues are relatively shallow and consume little memory even when full. Compare
-with infamous "recursive fd" attack against AF_UNIX fd transport , which plagues
-application development to this day (due to safeguards introduced to alleviate
-it).
-
-2.c. Natural decoupling of signal transport from vfs internals prevents any
-sort of "recursive fd" attacks altogether (it is even safe to send the
-signalfd() fd through - this can be considered a convenient feature to
-replicate signal delivery masks around; of course, the receiving task will only
-receive its own signals through it, peeking on other task's signals will not be
-possible).
-
-3. Suggestion: new file desriptors should not appear in destination processes
-out of the blue.
-
-3.a. To receive the signal, process must make non-trivial preparations (
-manipulate signal masks, etc), which would only happen if certain signals
-are expected.
-
-3.b. In present implementation, file desriptor is only created at the
-destination when destination task explictly elects to receive the associated
-signal info with sigtimedwait/signalfd. In the absence of destination task
-cooperation, the only overhead on the kernel side will be a single pair
-of ref_count increment/decrement, that is, completely negligible.
-
-3.c. Due to the nature of siginfo delivery, operations on file descriptor table
-are completely safe and indistinguishable from a normal dup() system call.
-
-I would appreciate any additional constructive criticism, as it is in my
-interest as well to end up with safe and simple solution. However, I would
-prefer the criticism to target particular technical shortcomings, and not be
-derived from personal preferences, if possible.
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index 9fe1b5d..e2782bd 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -364,3 +364,5 @@
+ 355	i386	getrandom		sys_getrandom
+ 356	i386	memfd_create		sys_memfd_create
+ 357	i386	bpf			sys_bpf
++358	i386	sendfd			sys_sendfd
++
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 281150b..4d6b55d 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -328,6 +328,7 @@
+ 319	common	memfd_create		sys_memfd_create
+ 320	common	kexec_file_load		sys_kexec_file_load
+ 321	common	bpf			sys_bpf
++322	common	sendfd			sys_sendfd
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+index 3d1a3af..c8af06f 100644
+--- a/include/asm-generic/siginfo.h
++++ b/include/asm-generic/siginfo.h
+@@ -12,6 +12,7 @@
+ #define __SI_RT		(5 << 16)
+ #define __SI_MESGQ	(6 << 16)
+ #define __SI_SYS	(7 << 16)
++#define __SI_FILEP	(8 << 16)
+ #define __SI_CODE(T,N)	((T) | ((N) & 0xffff))
+ 
+ struct siginfo;
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index bda9b81..1871b72f 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -877,4 +877,5 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
+ asmlinkage long sys_getrandom(char __user *buf, size_t count,
+ 			      unsigned int flags);
+ asmlinkage long sys_bpf(int cmd, union bpf_attr *attr, unsigned int size);
++asmlinkage long sys_sendfd(pid_t pid, int sig, int fd);
+ #endif
+diff --git a/include/uapi/asm-generic/siginfo.h b/include/uapi/asm-generic/siginfo.h
+index ba5be7f..a92e38e 100644
+--- a/include/uapi/asm-generic/siginfo.h
++++ b/include/uapi/asm-generic/siginfo.h
+@@ -148,6 +148,7 @@ typedef struct siginfo {
+ #define __SI_RT		0
+ #define __SI_MESGQ	0
+ #define __SI_SYS	0
++#define __SI_FILEP	0
+ #define __SI_CODE(T,N)	(N)
+ #endif
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 2081a4d..6a62a44 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1505,6 +1505,17 @@ config SIGNALFD
+ 
+ 	  If unsure, say Y.
+ 
++config SENDFD
++	bool "Enable sendfd() system call" if EXPERT
++	default y
++	help
++	  Enable the sendfd() system call that allows rapid duplication
++	  of file descriptor across process boundaries. The target process
++	  will receive a duplicate file descriptor delivered with one of
++	  Posix.1b real-time signals.
++
++	  If unsure, say Y.
++
+ config TIMERFD
+ 	bool "Enable timerfd() system call" if EXPERT
+ 	select ANON_INODES
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 8f0876f..299ee9c 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -35,6 +35,11 @@
+ #include <linux/cn_proc.h>
+ #include <linux/compiler.h>
+ 
++#ifdef CONFIG_SENDFD
++#include <linux/file.h>
++#include <linux/fdtable.h>
++#endif
++
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/signal.h>
+ 
+@@ -394,8 +399,15 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
+ 
+ static void __sigqueue_free(struct sigqueue *q)
+ {
++	if (q->info.si_code == __SI_FILEP) {
++		fput((struct file *)q->info.si_ptr);
++		q->info.si_code = 0;
++		q->info.si_ptr = NULL;
++	}
++
+ 	if (q->flags & SIGQUEUE_PREALLOC)
+ 		return;
++
+ 	atomic_dec(&q->user->sigpending);
+ 	free_uid(q->user);
+ 	kmem_cache_free(sigqueue_cachep, q);
+@@ -543,6 +555,44 @@ unblock_all_signals(void)
+ 	spin_unlock_irqrestore(&current->sighand->siglock, flags);
+ }
+ 
++#ifdef CONFIG_SENDFD
++
++/*
++ * sendfd_copy_install can only be reached from collect_signal(), that is from
++ * signalfd_read or sigtimedwait. This means that receiver took explicit steps
++ * to recover the siginfo and will be aware that it received a new fd.
++ *
++ * This also means we are not in the signal context, so no problems invoking
++ * a variety of dupfd().
++ *
++ * If user neglects to recover the siginfo, the reference count on the passed
++ * struct file will be invariably decremented in sigqueue_free.
++ */
++static void sendfd_copy_install(siginfo_t *dst, siginfo_t const *src)
++{
++	int fd = __alloc_fd(
++		current->files, 0, rlimit(RLIMIT_NOFILE), O_CLOEXEC
++	);
++	struct file *f = (struct file *)src->si_ptr;
++
++	dst->si_signo = src->si_signo;
++	dst->si_code = __SI_RT;
++	dst->si_pid = src->si_pid;
++	dst->si_uid = src->si_uid;
++
++	if (fd >= 0) {
++		get_file(f);
++		__fd_install(current->files, fd, f);
++		dst->si_errno = 0;
++		dst->si_int = fd;
++	} else {
++		dst->si_errno = fd;
++		dst->si_int = -1;
++	}
++}
++
++#endif /* CONFIG_SENDFD */
++
+ static void collect_signal(int sig, struct sigpending *list, siginfo_t *info)
+ {
+ 	struct sigqueue *q, *first = NULL;
+@@ -564,7 +614,15 @@ static void collect_signal(int sig, struct sigpending *list, siginfo_t *info)
+ 	if (first) {
+ still_pending:
+ 		list_del_init(&first->list);
++#ifdef CONFIG_SENDFD
++		if (first->info.si_code != __SI_FILEP)
++			copy_siginfo(info, &first->info);
++		else
++			sendfd_copy_install(info, &first->info);
++#else
+ 		copy_siginfo(info, &first->info);
++#endif /* CONFIG_SENDFD */
++
+ 		__sigqueue_free(first);
+ 	} else {
+ 		/*
+@@ -3664,3 +3722,34 @@ kdb_send_sig_info(struct task_struct *t, struct siginfo *info)
+ 		kdb_printf("Signal %d is sent to process %d.\n", sig, t->pid);
+ }
+ #endif	/* CONFIG_KGDB_KDB */
++
++#ifdef CONFIG_SENDFD
++
++SYSCALL_DEFINE3(sendfd, pid_t, pid, int, sig, int, fd)
++{
++	struct siginfo s_info = {
++		.si_signo = sig,
++		.si_errno = 0,
++		.si_code = __SI_FILEP
++	};
++	int rc = 0;
++
++	if ((sig < SIGRTMIN) || (sig > SIGRTMAX))
++		return -EINVAL;
++
++	s_info.si_pid = task_pid_vnr(current);
++	s_info.si_uid = from_kuid_munged(current_user_ns(), current_uid());
++	s_info.si_ptr = fget(fd);
++
++	if (!s_info.si_ptr)
++		return -EBADF;
++
++	rc = kill_pid_info(sig, &s_info, find_vpid(pid));
++
++	if (rc < 0)
++		fput((struct file *)s_info.si_ptr);
++
++	return rc;
++}
++
++#endif /* CONFIG_SENDFD */
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 02aa418..353cddb 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -224,3 +224,6 @@ cond_syscall(sys_seccomp);
+ 
+ /* access BPF programs and maps */
+ cond_syscall(sys_bpf);
++
++/* send file descriptor to another process */
++cond_syscall(sys_sendfd);
+-- 
+1.8.3.2
 
