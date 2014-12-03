@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaLCBMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:12:48 -0500
-Received: from ozlabs.org ([103.22.144.67]:38060 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaLCBMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:12:47 -0500
-Date: Wed, 3 Dec 2014 12:12:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: linux-next: manual merge of the pm tree with the arm tree
-Message-ID: <20141203121235.3eabd77b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751442AbaLCBNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:13:01 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51154 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751359AbaLCBM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:12:59 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH] block / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Wed, 03 Dec 2014 02:34:23 +0100
+Message-ID: <1836422.FyhARLgxbM@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/LonQYs_zs168hu1tVxmAx+d"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/LonQYs_zs168hu1tVxmAx+d
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Hi Rafael,
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-Today's linux-next merge of the pm tree got a conflict in
-include/linux/pm_runtime.h between commit 3fb1581ea1ab ("ARM: 8199/1:
-PM / Runtime: Add getter for querying the IRQ safe option v12") from
-the arm tree and commit 6d14dd40f550 ("PM: Drop CONFIG_PM_RUNTIME from
-the driver core") from the pm tree.
+Replace CONFIG_PM_RUNTIME with CONFIG_PM in the block device core.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
 
-diff --cc include/linux/pm_runtime.h
-index 44d74f0f182e,eda4feede048..000000000000
---- a/include/linux/pm_runtime.h
-+++ b/include/linux/pm_runtime.h
-@@@ -128,12 -118,14 +118,19 @@@ static inline void pm_runtime_mark_last
-  	ACCESS_ONCE(dev->power.last_busy) =3D jiffies;
-  }
- =20
- +static inline bool pm_runtime_is_irq_safe(struct device *dev)
- +{
- +	return dev->power.irq_safe;
- +}
- +
-- #else /* !CONFIG_PM_RUNTIME */
-+ #else /* !CONFIG_PM */
-+=20
-+ static inline bool queue_pm_work(struct work_struct *work) { return false=
-; }
-+=20
-+ static inline int pm_generic_runtime_suspend(struct device *dev) { return=
- 0; }
-+ static inline int pm_generic_runtime_resume(struct device *dev) { return =
-0; }
-+ static inline int pm_runtime_force_suspend(struct device *dev) { return 0=
-; }
-+ static inline int pm_runtime_force_resume(struct device *dev) { return 0;=
+Please let me know if it is OK to take this one into linux-pm.
+
+---
+ block/blk-core.c       |    6 +++---
+ block/elevator.c       |    2 +-
+ include/linux/blkdev.h |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+Index: linux-pm/include/linux/blkdev.h
+===================================================================
+--- linux-pm.orig/include/linux/blkdev.h
++++ linux-pm/include/linux/blkdev.h
+@@ -398,7 +398,7 @@ struct request_queue {
+ 	 */
+ 	struct kobject mq_kobj;
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 	struct device		*dev;
+ 	int			rpm_status;
+ 	unsigned int		nr_pending;
+@@ -1057,7 +1057,7 @@ extern void blk_put_queue(struct request
+ /*
+  * block layer runtime pm functions
+  */
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
+ extern int blk_pre_runtime_suspend(struct request_queue *q);
+ extern void blk_post_runtime_suspend(struct request_queue *q, int err);
+Index: linux-pm/block/blk-core.c
+===================================================================
+--- linux-pm.orig/block/blk-core.c
++++ linux-pm/block/blk-core.c
+@@ -1325,7 +1325,7 @@ void part_round_stats(int cpu, struct hd
  }
- =20
-  static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
-  {
+ EXPORT_SYMBOL_GPL(part_round_stats);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static void blk_pm_put_request(struct request *rq)
+ {
+ 	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
+@@ -2134,7 +2134,7 @@ void blk_account_io_done(struct request
+ 	}
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ /*
+  * Don't process normal requests when queue is suspended
+  * or in the process of suspending/resuming
+@@ -3159,7 +3159,7 @@ void blk_finish_plug(struct blk_plug *pl
+ }
+ EXPORT_SYMBOL(blk_finish_plug);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ /**
+  * blk_pm_runtime_init - Block layer runtime PM initialization routine
+  * @q: the queue of the device
+Index: linux-pm/block/elevator.c
+===================================================================
+--- linux-pm.orig/block/elevator.c
++++ linux-pm/block/elevator.c
+@@ -539,7 +539,7 @@ void elv_bio_merged(struct request_queue
+ 		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static void blk_pm_requeue_request(struct request *rq)
+ {
+ 	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
 
---Sig_/LonQYs_zs168hu1tVxmAx+d
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUfmOKAAoJEMDTa8Ir7ZwV2FkP/jWWhNV/qM9TpsahBq4x+MZC
-ufFE8DVbgOJOFo0nAj5HBi8hyrWHwnm7kdGjQ0f79cz2Y2/KnMPvFW+UTa2fIYac
-Abd7j6QNLsilSvB/0Z2azf+wPwawRYH/FJvfYulR86dGFDkTGBtyD6QCq4MpSd82
-rRvFUo1kZOeeORI15wIhtV8qP2Y4oDf2sMnY/6SN8PO3rYw1LdHo+sNRK2krFMZb
-+ToirmTqRPQiMwecc7AezlTsrxRylAYa7/S8mTI0n6mKPQ7LWpy9DYd1oueIwX7L
-cJXidaMuHtuT9S7V/1O3zffwMsfUHes02FPplptNQkdJV3XAPSZNMsYRxgmcu318
-ZYPBC9oJjS4upi1bhpDNGRYq1ftraDu/m4OjUMnw3uv7C3evhapvGeVO3ElJHpHH
-IJCmtyZHCYt3ajT8eTM22T8qhJ5iwsWmloemikB9xbXUfu1c2QPD/6f82141XBUo
-JbJbqI9L1yPZY7QZDCIKeNrPcD5SsMt5S/MfHpieSGRRV+WPRju7opekqEwOwXp0
-cmzwuW3Eh6uvYcGLtoQL7SGkgaU1tRhcbQwEarfbkQwv43auDagY2hME89kOYSyx
-PqzJBrQvR8gHcykxJ83x9wIDw84oNWweCHoCzh5OeRsCni9sMmxPq6SdqWIW7cdd
-tql27gq4ElDDXn2VMlf3
-=jRj0
------END PGP SIGNATURE-----
-
---Sig_/LonQYs_zs168hu1tVxmAx+d--
