@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaLCGiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 01:38:09 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64732 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaLCGiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 01:38:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
-References: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
-Date: Tue, 2 Dec 2014 22:38:04 -0800
-Message-ID: <CABg9mcso+YeS-sgAQmAu6MvsfNnzrKYuUG8m+WYJmxdaxbGmPA@mail.gmail.com>
-Subject: Re: [PATCH v2 net] bpf: x86: fix epilogue generation for eBPF programs
-From: Z Lim <zlim.lnx@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751522AbaLCGk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 01:40:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216AbaLCGk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 01:40:57 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next] virtio-net: don't do header check for dodgy gso packets
+Date: Wed,  3 Dec 2014 14:40:44 +0800
+Message-Id: <1417588844-11095-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
+There's no need to do header check for virito-net since:
 
-On Sat, Nov 29, 2014 at 2:46 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> classic BPF has a restriction that last insn is always BPF_RET.
-> eBPF doesn't have BPF_RET instruction and this restriction.
-> It has BPF_EXIT insn which can appear anywhere in the program
-> one or more times and it doesn't have to be last insn.
+- Host set dodgy for all gso packets from guest and check the header.
+- Host should prepare for all kinds of evil packets from guest, since
+  malicious guest can send any kinds of packet.
 
-Just to confirm, in valid eBPF, BPF_EXIT *must* be present at least
-once, correct?
-Does an eBPF JIT implementation need to check for it?
+So this patch sets NETIF_F_GSO_ROBUST for virtio-net to skip the check.
 
-> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
-> and all other BPF_EXIT instructions will be emitted as jump.
->
-> Since jump offset to epilogue is computed as:
-> jmp_offset = ctx->cleanup_addr - addrs[i]
-> we need to change type of cleanup_addr to signed to compute the offset as:
-> (long long) ((int)20 - (int)30)
-> instead of:
-> (long long) ((unsigned int)20 - (int)30)
->
-> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
-> Note, this bug is applicable only to native eBPF programs
-> which first were introduced in 3.18, so no need for stable.
->
-> arm64 JIT has the same problem, but the fix is not as trivial,
-> so will be done as separate patch.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I'll cook up a patch for arm64 if you haven't already done so.
-Any related test case I should run through?
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index b0bc8ea..4cd242b 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1760,6 +1760,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		if (virtio_has_feature(vdev, VIRTIO_NET_F_HOST_ECN))
+ 			dev->hw_features |= NETIF_F_TSO_ECN;
+ 
++		dev->features |= NETIF_F_GSO_ROBUST;
++
+ 		if (gso)
+ 			dev->features |= dev->hw_features & NETIF_F_ALL_TSO;
+ 		/* (!csum && gso) case will be fixed by register_netdev() */
+-- 
+1.9.1
+
