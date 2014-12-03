@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaLCT5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:57:10 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:52802 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaLCT5I (ORCPT
+	id S1751897AbaLCT7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:59:46 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37301 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaLCT7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:57:08 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>, Inki Dae <inki.dae@samsung.com>,
-        Tobias Jakobi <Liquid.Acid@gmx.net>, Daniel Drake <drake@endlessm.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v2 2/7] ARM: Exynos: add support for sub-power domains
-References: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
-	<1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
-	<CAMuHMdWjZTRVrdcdu2toj9FYi5gOgw_Hf23SRh=9-QKwQDJy0g@mail.gmail.com>
-	<547F065A.5030505@samsung.com>
-Date: Wed, 03 Dec 2014 11:57:05 -0800
-In-Reply-To: <547F065A.5030505@samsung.com> (Marek Szyprowski's message of
-	"Wed, 03 Dec 2014 13:47:22 +0100")
-Message-ID: <7hvblsy0a6.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 3 Dec 2014 14:59:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20141203142034.5c14529d@tlielax.poochiereds.net>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141203121118.21a32fe1@notabene.brown>
+	<20141202202946.1e0f399b@tlielax.poochiereds.net>
+	<20141203155649.GB5013@htj.dyndns.org>
+	<20141203110405.5ecc85df@tlielax.poochiereds.net>
+	<20141203140202.7865bedb@tlielax.poochiereds.net>
+	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
+	<20141203142034.5c14529d@tlielax.poochiereds.net>
+Date: Wed, 3 Dec 2014 14:59:43 -0500
+Message-ID: <CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based nfsd
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek Szyprowski <m.szyprowski@samsung.com> writes:
-
-> Hello,
->
-> On 2014-12-03 13:36, Geert Uytterhoeven wrote:
->> Hi Marek,
+On Wed, Dec 3, 2014 at 2:20 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> On Wed, 3 Dec 2014 14:08:01 -0500
+> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+>> Which workqueue are you using? Since the receive code is non-blocking,
+>> I'd expect you might be able to use rpciod, for the initial socket
+>> reads, but you wouldn't want to use that for the actual knfsd
+>> processing.
 >>
->> On Wed, Dec 3, 2014 at 1:33 PM, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
->>> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>> index abde1ea8a119..b884358ebb1a 100644
->>> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->>> @@ -22,6 +22,8 @@ Optional Properties:
->>>          - pclkN, clkN: Pairs of parent of input clock and input clock to the
->>>                  devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
->>>                  are supported currently.
->>> +- samsung,power-domain: phandle to a master power domain that the given domain
->>> +                      is a part of
->> For new DTSes I'd recommend using the generic "power-domains" only.
 >
-> I think that some consistency in dts style will be really an added
-> value. In my opinion for
-> all existing DTSes we should keep using 'samsung,power-domain' (even
-> for defining a parent
-> power domains) and for all new DTSes, the generic 'power-domains'
-> binding should be used.
+> I'm using the same (nfsd) workqueue for everything. The workqueue
+> isn't really the bottleneck though, it's the work_struct.
+>
+> Basically, the problem is that the work_struct in the svc_xprt was
+> remaining busy for far too long. So, even though the XPT_BUSY bit had
+> cleared, the work wouldn't get picked up again until the previous
+> workqueue job had returned.
+>
+> With the change I made today, I just added a new work_struct to
+> svc_rqst and queue that to the same workqueue to do svc_process as soon
+> as the receive is done. That means though that each RPC ends up waiting
+> in the queue twice (once to do the receive and once to process the
+> RPC), and I think that's probably the reason for the performance delta.
 
-Or even better, convert the existing DTSs to use generic power-domain
-first, and then use generic ones going forward also.
+Why would the queuing latency still be significant now?
 
-Kevin
+> What I think I'm going to do on the next pass is have the job that
+> enqueues the xprt instead try to find an svc_rqst. If it finds it,
+> then it can go ahead and queue the work struct in it to do the receive
+> and processing in a single go.
+>
+> If it can't find one, it'll queue the xprt's work to allocate one and
+> then queue that to do all of the work as before. That will likely
+> penalize the case where there isn't an available svc_rqst, but in the
+> common case that there is one it should go quickly.
+
+
+-- 
+Trond Myklebust
+
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
