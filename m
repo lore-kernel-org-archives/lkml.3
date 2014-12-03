@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaLCB6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:58:33 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:22144 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaLCB63 (ORCPT
+	id S1751076AbaLCCAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:00:09 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:18974 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750730AbaLCCAI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:58:29 -0500
-Subject: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-To: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <david.daney@cavium.com>,
-        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
-        <davidlohr@hp.com>, <macro@linux-mips.org>, <chenhc@lemote.com>,
-        <cl@linux.com>, <mingo@kernel.org>, <richard@nod.at>,
-        <zajec5@gmail.com>, <james.hogan@imgtec.com>, <keescook@chromium.org>,
-        <tj@kernel.org>, <alex@alex-smith.me.uk>, <pbonzini@redhat.com>,
-        <blogic@openwrt.org>, <paul.burton@imgtec.com>,
-        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
-        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
-        <lars.persson@axis.com>
-Date: Tue, 2 Dec 2014 17:58:24 -0800
-Message-ID: <20141203015824.13886.74616.stgit@linux-yegoshin>
-In-Reply-To: <20141203015537.13886.50830.stgit@linux-yegoshin>
-References: <20141203015537.13886.50830.stgit@linux-yegoshin>
-User-Agent: StGit/0.17.1-dirty
+	Tue, 2 Dec 2014 21:00:08 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44386951"
+Message-ID: <547E6F8C.1060709@cn.fujitsu.com>
+Date: Wed, 3 Dec 2014 10:03:56 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+To: <paulmck@linux.vnet.ibm.com>
+CC: =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>	<20141126024032.GA13246@redhat.com>	<20141126225745.GA30346@redhat.com>	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>	<20141127225637.GA24019@redhat.com>	<m5dart$co$1@ger.gmane.org>	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>	<547b8a45.6e608c0a.20f9.1002@mx.google.com>	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>	<547bbe36.48548c0a.105c.779c@mx.google.com>	<20141201191431.GA17385@linux.vnet.ibm.com>	<547D7B05.6080403@cn.fujitsu.com> <547defc3.28568c0a.73eb.1a1e@mx.google.com>
+In-Reply-To: <547defc3.28568c0a.73eb.1a1e@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a last step of 3 patches which shift FPU emulation out of
-stack into protected area. So, it disables a default executable stack.
+On 12/03/2014 12:58 AM, Dâniel Fraga wrote:
+> On Tue, 2 Dec 2014 16:40:37 +0800
+> Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> 
+>> It is needed at lest for testing.
+>>
+>> CONFIG_TREE_PREEMPT_RCU=y with CONFIG_PREEMPT=n is needed for testing too.
+>>
+>> Please enable them (or enable them under CONFIG_RCU_TRACE=y)
+> 
+> 	Lai, sorry but I didn't understand. Do you mean both of them
+> enabled? Because how can CONFIG_TREE_PREEMPT_RCU be enabled without
+> CONFIG_PREEMPT ?
 
-Additionally, it sets a default data area non-executable protection.
 
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
----
- arch/mips/include/asm/page.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sorry, I replied to Paul, and my reply was off-topic, it has nothing
+related your reports. Sorry again.
 
-diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
-index 3be81803595d..d49ba81cb4ed 100644
---- a/arch/mips/include/asm/page.h
-+++ b/arch/mips/include/asm/page.h
-@@ -230,7 +230,7 @@ extern int __virt_addr_valid(const volatile void *kaddr);
- #define virt_addr_valid(kaddr)						\
- 	__virt_addr_valid((const volatile void *) (kaddr))
- 
--#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
-+#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
- 				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
- 
- #define UNCAC_ADDR(addr)	((addr) - PAGE_OFFSET + UNCAC_BASE)
+I think we need two combinations for testing (not mainline, but I think
+they (combinations) should be enabled for test farms).
+
+So I hope Paul enable them (combinations).
+
+combination1: CONFIG_TREE_PREEMPT_RCU=n & CONFIG_PREEMPT=y
+combination2: CONFIG_TREE_PREEMPT_RCU=y & CONFIG_PREEMPT=n
+
+The core code should work correctly in these combinations.
+I agree with Paul that these combinations should not be enabled in production,
+So my request is: enable these combinations under CONFIG_RCU_TRACE
+or CONFIG_TREE_RCU_TRACE.
+
+For myself, I always edit the Kconfig directly, thus it is not a problem
+for me.  But there is no way for test farms to test these combinations.
+
+Thanks,
+Lai
+
+> 
+> 	If you mean both enabled, I already reported a call trace with
+> both enabled:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=85941
+> 
+> 	Please see my previous answer to Linus and Paul too.
+> 
+> 	Regarding CONFIG_RCU_TRACE, do you mean
+> "CONFIG_TREE_RCU_TRACE"? I couldn't find CONFIG_RCU_TRACE.
+> 
+> 	Thanks.
+> 
 
