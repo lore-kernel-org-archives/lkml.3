@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaLCKyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:54:10 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:63301 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLCKyI (ORCPT
+	id S1752201AbaLCKy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:54:27 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:33490 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbaLCKyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:54:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stefan Agner <stefan@agner.ch>, shawn.guo@linaro.org,
-        kernel@pengutronix.de, linux@arm.linux.org.uk,
-        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/12] ARM: unify MMU/!MMU addruart calls
-Date: Wed, 03 Dec 2014 11:53:31 +0100
-Message-ID: <2260991.G6QM1xu48B@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1417565531-4507-10-git-send-email-stefan@agner.ch>
-References: <1417565531-4507-1-git-send-email-stefan@agner.ch> <1417565531-4507-10-git-send-email-stefan@agner.ch>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Y0EEABdcc8ngtk42M1DDA+J7voWGOdq6cd8HdtGaCWO
- oDC0xEGirWkzRtRZaOjztqOva+9/ZzniNKyMPtk+9P91KH1jeF
- oJfncLrvfY+7Qi2LKXY/I6A7seD+4IYi1NezcPr/l2n+kr1wBK
- 4rmv9rWpVFh1SXJxI2GZ0+bRseHg0KtsOocYFHwaX5J48RLF2x
- NZdA5yZmw00B4vR9NvnHsvOmSLFY6b2LsxUTzRLNQubuTWBsrB
- ClVkdqqJDpImuIeUtdti0P78yTnE5MRUDWSayTw6gQbkHlbhV9
- GDMGCW4p1XfuIE3RoBR31cx4MiSJ/FDMT2/6fd5TxKf7aO3KdC
- fvsUE9cvtB1GpdInh0qg=
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 3 Dec 2014 05:54:23 -0500
+From: Bartosz Golaszewski <bartekgola@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bartekgola@gmail.com>
+Subject: [PATCH v3 0/3] hwmon: ina2xx: new attributes
+Date: Wed,  3 Dec 2014 11:54:11 +0100
+Message-Id: <1417604054-8694-1-git-send-email-bartekgola@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 01:12:08 Stefan Agner wrote:
-> Remove the needless differences between MMU/!MMU addruart calls.
-> This allows to use the same addruart macro on SoC level. Useful
-> for SoC consisting of multiple CPUs with and without MMU such as
-> Freescale Vybrid.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> 
+This series extends the sysfs interface to make the driver configurable
+at run-time.
 
-I think I had the same patch somewhere hidden in my collection
-of stuff I need to submit one day. Looks good.
+The shunt_resistor attribute allows to change the shunt resistance value
+at run-time in cases where ina2xx used to do the measurement isn't integrated
+with the shunt.
 
-	Arnd
+The avg_rate attribute allows to increase/decrease noise reduction.
+
+v3:
+- avg_rate is now only created for ina226
+- avg_rate displays available averaging rates on read
+- other minor fixes according to the code review
+
+v2: https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg776942.html
+
+The following patches have been rebased against the hwmon-next branch.
+
+Bartosz Golaszewski (3):
+  hwmon: ina2xx: make shunt resistance configurable at run-time
+  hwmon: ina2xx: allow to change the averaging rate at run-time
+  hwmon: ina2xx: documentation update for new sysfs attributes
+
+ Documentation/hwmon/ina2xx |  10 ++-
+ drivers/hwmon/ina2xx.c     | 195 ++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 190 insertions(+), 15 deletions(-)
+
+-- 
+2.1.3
+
