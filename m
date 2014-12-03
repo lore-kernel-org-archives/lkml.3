@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaLCRGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:06:08 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:51532 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaLCRGE (ORCPT
+	id S1751516AbaLCRGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:06:18 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:58928 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaLCRGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:06:04 -0500
+	Wed, 3 Dec 2014 12:06:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Mason <mpeg.blue@free.fr>, Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Creating 16 MB super-sections for MMIO
+Date: Wed, 03 Dec 2014 18:06:08 +0100
+Message-ID: <2452742.elcJohDinR@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <547F1C11.5090408@free.fr>
+References: <547D97A5.4090302@free.fr> <20141203103211.GB7373@e104818-lin.cambridge.arm.com> <547F1C11.5090408@free.fr>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6s-dKRtwjBhVE2d1L-qOYX_71hQOT9svu4m_+kDZESPaw@mail.gmail.com>
-References: <CAL8zT=iXizKqJjWDcLT-chZ7=ioPYtQcB4GeqZpiL7kCpGOKZw@mail.gmail.com>
-	<CACxGe6sRULEmOvdxFvR=Mcbf4Cgd3YijrJg1q9Uz1vgYw5tG+w@mail.gmail.com>
-	<CAL8zT=geUOJnmUHvqyYk651U+HF3NSy3XU7hiWUn3gPX0sVjPg@mail.gmail.com>
-	<CACxGe6skTZDe40eJN06BDapfKuN-KzMqgbEWNyLiTeXTt5dw5g@mail.gmail.com>
-	<CAOMZO5AmA5-Ji6SDUv6b3qrhSi-KvSNYDV=ZaL7HoOhh-6SnsA@mail.gmail.com>
-	<CACxGe6s-dKRtwjBhVE2d1L-qOYX_71hQOT9svu4m_+kDZESPaw@mail.gmail.com>
-Date: Wed, 3 Dec 2014 15:06:02 -0200
-Message-ID: <CAOMZO5CBiq1=fmCaMOJqTiGMi5uRPvV2-jxbovvuS-g6E5LpNA@mail.gmail.com>
-Subject: Re: DT parsing : duplicate name error
-From: Fabio Estevam <festevam@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bryan Wu <cooloney@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:r+ipLw9WE0eo1K0cfk2JJ9xumS0cIe6czXgTLfEVahD
+ 3jqIM1X0nz1WFfqRxHy1nzBnlGhxp/HWmZepDN01LNZrG/wgGo
+ ySDr4lh771OUpUq/RGX+Dupqj+4dQOb9G3dMVmbs4kb3wk8qOX
+ PgNPGXhqn7T0HA9Lhn6VbZgFrX4SpTah3JE4uz9fQ/23eru4Zk
+ RkSHBAOagICZ48ViL1iK9sa3SziqKP4TAMtykY5IAAjMFQMANg
+ 8tSak/oObvPMWxgrwd7350A0q7U+5l2f8+A6hMqkQpQFuPdj16
+ D0CO8dAqxLXb86ZdxEFvqjvqiTytGkhKptlhPWUTsz/vbjoG9F
+ XtBRaCd9P4Fv74M7SyfU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 2:07 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Dec 3, 2014 at 4:04 PM, Fabio Estevam <festevam@gmail.com> wrote:
->> On Wed, Dec 3, 2014 at 1:41 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->>> From a quick reading of the backlog, for some reason the new device is
->>> getting assigned NULL as the device name in led_classdev_register().
->>> Probably because led_cdev->name is set to NULL. The leds are getting
->>> bound to the LED driver in gpio_led_probe() which is the non-DT path
->>> for creating LED devices. That would mean there is pdata attached to
->>> the LED device, but I haven't dug any farther than that. Really need
->>> the bisect to narrow down what is going on.
->>
->> Ok, so this issue happens when two or more gpio-leds do not contain
->> the 'label' property.
->>
->> 'label' is an optional property according to
->> Documentation/devicetree/bindings/leds/common.txt:
->>
->> "Optional properties for child nodes:
->> - label : The label for this LED.  If omitted, the label is
->>   taken from the node name (excluding the unit address)."
->>
->> This works fine on 3.17.1 as we used to have this logic in leds-gpio:
->> led.name = of_get_property(child, "label", NULL) ? : child->name;
->>
->> ,but since commit a43f2cbbb009f96 ("leds: leds-gpio: Make use of
->> device property API "), this is no longer true:
->>
->>  + fwnode_property_read_string(child, "label", &led.name);
->>
->> If 'label' is not present then both of the LEDs will have the same
->> name and then the duplicate name error will happen.
->>
->> So we would need something like this:
->>
->>  if (fwnode_property_present(child, "label"))
->>        fwnode_property_read_string(child, "label", &led.name);
->>  else
->>      get the name from the child ---> This is what I am not sure how
->> to do after the conversion to use fwnode_handle.
->
-> Ah, that makes sense. The device properties change needs to be
-> reworked/fixed up to have a DT specific part when the label property
-> is missing. Either that or the device properties API needs to gain the
-> ability to return the node name.
+On Wednesday 03 December 2014 15:20:01 Mason wrote:
+> 
+> As far as I could tell, Linux does not create a super-section in the
+> case outlined above. Perhaps I misread the source code?
 
-I managed to fix this issue. Will send a patch shortly.
+I believe you are right, and I also agree that in theory implementing
+what you say (both 64k and 16M mappings) can only help, but it's not
+obvious if this makes a measurable difference in the end.
+
+MMIO register accesses are usually slow for other reasons, and
+they tend to be rare, so it's possible that you won't be able
+to ever tell a difference because the MMIO TLB often gets evicted
+by user mappings between accesses to different 1MB sections,
+and the timing difference between a TLB-hot and cold MMIO access
+might not be that great (depending on the latency of a particular
+register).
+
+I don't think there would be any objections to doing superpage
+or supersection mappings for early page tables if you can show
+any benefit whatsoever, but it may be hard to come up with a
+scenario where it's actually measurable.
+
+	Arnd
