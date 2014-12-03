@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083AbaLCOaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:30:03 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:43650 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaLCOaA (ORCPT
+	id S1753142AbaLCOcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:32:55 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:14123 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbaLCOcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:30:00 -0500
-Date: Wed, 3 Dec 2014 15:30:29 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout
- correctly
-Message-ID: <20141203143029.GF32117@phenom.ffwll.local>
-Mail-Followup-To: John Stultz <john.stultz@linaro.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
- <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
- <20141202163506.GG18921@nuc-i3427.alporthouse.com>
- <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+	Wed, 3 Dec 2014 09:32:54 -0500
+Message-ID: <547F1F11.5090803@atmel.com>
+Date: Wed, 3 Dec 2014 15:32:49 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v3 02/11] mfd: syscon: Add Atmel Matrix bus DT binding
+ documentation
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-3-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1417429647-3419-3-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 08:54:13AM -0800, John Stultz wrote:
-> On Tue, Dec 2, 2014 at 8:35 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
-> >> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
-> >> +{
-> >> +     u64 usecs = div_u64(m + 999, 1000);
-> >> +     unsigned long j = usecs_to_jiffies(usecs);
-> >> +
-> >> +     return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
-> >
-> > Or more concisely and review friendly:
-> >
-> > static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
-> > {
-> >         return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
-> > }
+Le 01/12/2014 11:27, Boris Brezillon a écrit :
+> The Matrix registers are provided to configure internal bus behavior on
+> at91 SoCs.
+> Some registers might be access by several drivers (e.g. to configure
+> external memory bus timings), hence we declare this register set as a
+> syscon device.
 > 
-> Yea. This looks much nicer. Seems generic enough it might be better
-> added next to nsec_to_jiffies64() in kernel/time/time.c or jiffies.h
-> rather then in a driver header.
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  .../devicetree/bindings/mfd/atmel-matrix.txt       | 24 ++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/atmel-matrix.txt b/Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+> new file mode 100644
+> index 0000000..e56e27a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+> @@ -0,0 +1,24 @@
+> +* Device tree bindings for Atmel Bus Matrix
+> +
+> +The Bus Matrix registers are used to configure Atmel SoCs internal bus
+> +behavior (master/slave priorities, undefined burst length type, ...)
+> +
+> +Required properties:
+> +- compatible:		Should be one of the following
+> +			"atmel,at91sam9260-matrix", "syscon"
+> +			"atmel,at91sam9261-matrix", "syscon"
+> +			"atmel,at91sam9263-matrix", "syscon"
+> +			"atmel,at91sam9263-matrix", "syscon"
 
-Ok, that needs an EXPORT_SYMBOL for nsecs_to_jiffies64. Can I count your
-"Yea" above as an ack for adding that and pulling it in through
-drm-intel.git?
--Daniel
+Same string as the preceding one: shouldn't it be at91sam9rl?
+
+
+> +			"atmel,at91sam9g45-matrix", "syscon"
+> +			"atmel,at91sam9n12-matrix", "syscon"
+> +			"atmel,at91sam9x5-matrix", "syscon"
+> +			"atmel,sama5d3-matrix", "syscon"
+> +- reg:			Contains offset/length value of the Bus Matrix
+> +			memory region.
+> +
+> +Example:
+> +
+> +matrix: matrix@ffffec00 {
+> +	compatible = "atmel,sama5d3-matrix", "syscon";
+> +	reg = <0xffffec00 0x200>;
+> +};
+> 
+
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Nicolas Ferre
