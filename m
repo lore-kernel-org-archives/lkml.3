@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaLCRjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:39:16 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47300 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaLCRjP (ORCPT
+	id S1751378AbaLCRmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:42:06 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:59379 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaLCRmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:39:15 -0500
-Date: Wed, 3 Dec 2014 17:38:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
-Message-ID: <20141203173854.GE7712@sirena.org.uk>
-References: <547F3CB2.5070306@arm.com>
+	Wed, 3 Dec 2014 12:42:04 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: dvhart@infradead.org, mjg59@srcf.ucam.org
+Cc: linux-api@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libsmbios-devel@lists.us.dell.com,
+        Srinivas_G_Gowda@dell.com, Michael_E_Brown@dell.com,
+        pali.rohar@gmail.com, Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: [PATCH] Documentation: Add entry for dell-laptop sysfs interface
+Date: Wed,  3 Dec 2014 18:41:33 +0100
+Message-Id: <1417628493-29323-1-git-send-email-gabriele.mzt@gmail.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qRudkE5L6XDjsdFd"
-Content-Disposition: inline
-In-Reply-To: <547F3CB2.5070306@arm.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/5] ASoC: dwc: Ensure FIFOs are flushed to prevent
- channel swap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the documentation for the new sysfs interface of dell-laptop
+that allows to configure the keyboard illumination on Dell systems.
 
---qRudkE5L6XDjsdFd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+---
+ .../ABI/testing/sysfs-platform-dell-laptop         | 60 ++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-dell-laptop
 
-On Wed, Dec 03, 2014 at 04:39:14PM +0000, Andrew Jackson wrote:
-> If the FIFOs aren't flushed, the left/right channels may be swapped:
-> this may occur if the FIFOs are not empty when the streams start.
+diff --git a/Documentation/ABI/testing/sysfs-platform-dell-laptop b/Documentation/ABI/testing/sysfs-platform-dell-laptop
+new file mode 100644
+index 0000000..7969443
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-platform-dell-laptop
+@@ -0,0 +1,60 @@
++What:		/sys/class/leds/dell::kbd_backlight/als_setting
++Date:		December 2014
++KernelVersion:	3.19
++Contact:	Gabriele Mazzotta <gabriele.mzt@gmail.com>,
++		Pali Rohár <pali.rohar@gmail.com>
++Description:
++		This file allows to control the automatic keyboard
++		illumination mode on some systems that have an ambient
++		light sensor. Write 1 to this file to enable the auto
++		mode, 0 to disable it.
++
++What:		/sys/class/leds/dell::kbd_backlight/start_triggers
++Date:		December 2014
++KernelVersion:	3.19
++Contact:	Gabriele Mazzotta <gabriele.mzt@gmail.com>,
++		Pali Rohár <pali.rohar@gmail.com>
++Description:
++		This file allows to control the input triggers that
++		turn on the keyboard backlight illumination that is
++		disabled because of inactivity.
++		Read the file to see the triggers available. The ones
++		enabled are preceded by '+', those disabled by '-'.
++
++		To enable a trigger, write its name preceded by '+' to
++		this file. To disable a trigger, write its name preceded
++		by '-' instead.
++
++		For example, to enable the keyboard as trigger run:
++		    echo +keyboard > /sys/class/leds/dell::kbd_backlight/start_triggers
++		To disable it:
++		    echo -keyboard > /sys/class/leds/dell::kbd_backlight/start_triggers
++
++		Note that not all the available triggers can be configured.
++
++What:		/sys/class/leds/dell::kbd_backlight/stop_timeout
++Date:		December 2014
++KernelVersion:	3.19
++Contact:	Gabriele Mazzotta <gabriele.mzt@gmail.com>,
++		Pali Rohár <pali.rohar@gmail.com>
++Description:
++		This file allows to specify the interval after which the
++		keyboard illumination is disabled because of inactivity.
++		The timeouts are expressed in seconds, minutes, hours and
++		days, for which the symbols are 's', 'm', 'h' and 'd'
++		respectively.
++
++		To configure the timeout, write to this file a value along
++		with any the above units. If no unit is specified, the value
++		is assumed to be expressed in seconds.
++
++		For example, to set the timeout to 10 minutes run:
++		    echo 10m > /sys/class/leds/dell::kbd_backlight/stop_timeout
++
++		Note that when this file is read, the returned value might be
++		expressed in a different unit than the one used when the timeout
++		was set.
++
++		Also note that only some timeouts are supported and that
++		some systems might fall back to a specific timeout in case
++		an invalid timeout is written to this file.
+-- 
+2.1.3
 
->  	/* Iterate over set of channels - independently controlled. */
->  	do {
->  		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-> +			i2s_write_reg(dev->i2s_base, TXFFR, 1);
-
-This is an example of the problem with putting fixes at the end of the
-series - this can't be applied without your previous change to add the
-support for more channels (which is a new feature).
-
---qRudkE5L6XDjsdFd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUf0qtAAoJECTWi3JdVIfQRAsH/27TgFyUrg50dPyNwTQcAJ92
-cSi9jkTbAZM+j6Q78f1ExylGk7yPksydf80TaBY26kjwpFC2tHQ9QIv0wpGqC7lw
-wMlMkBpmFAcRE572Rou/t2wt4XYJcy0g+cXtmbRNdr/faLzTudumrO9c4tQcYmFE
-tlSu7kyHRnw6Mi+4i0rGbtXxJTN34cpXk3/dv7o3z2GvykJgZhOdJMjO5ds5gZAz
-KqQkLYGmzqw7/ZX83umNx3psVQsk8lfyjL3fWSMvG+W0/4hJXzXmvgLXWRZmHCJC
-cE4Fj/7Qhlz687RyLD3q7tpWH+ahKjZppsWcHIb4X7T5OMtxkYZ6EHANmdaeoLE=
-=GnW3
------END PGP SIGNATURE-----
-
---qRudkE5L6XDjsdFd--
