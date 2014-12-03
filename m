@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaLCLfK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:35:10 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:39315 "EHLO
+	id S1751261AbaLCLfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:35:43 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39302 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753105AbaLCLcS (ORCPT
+	with ESMTP id S1753100AbaLCLcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:32:18 -0500
+	Wed, 3 Dec 2014 06:32:17 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 04/11] ARM: at91/dt: at91sam9261: fix clocks and clock-names in udc definition
-Date: Wed,  3 Dec 2014 12:32:03 +0100
-Message-Id: <1417606330-17753-5-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 03/11] usb: gadget: at91_udc: Document DT clocks and clock-names property
+Date: Wed,  3 Dec 2014 12:32:02 +0100
+Message-Id: <1417606330-17753-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,32 +30,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peripheral clock is named pclk and system clock is named hclk (those are
-the names expected by the at91_udc driver).
-
-Drop the deprecated usb_clk (formerly used to configure the usb clock rate
-which is now directly configurable through hclk).
+The at91_udc driver request 2 clocks, and thus need them to be defined in
+the device tree.
+Document the clocks and clock-names properties so that everybody use the
+correct names.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/at91sam9261.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/usb/atmel-usb.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-index a81aab4..7119f1f 100644
---- a/arch/arm/boot/dts/at91sam9261.dtsi
-+++ b/arch/arm/boot/dts/at91sam9261.dtsi
-@@ -122,8 +122,8 @@
- 				compatible = "atmel,at91rm9200-udc";
- 				reg = <0xfffa4000 0x4000>;
- 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
--				clocks = <&usb>, <&udc_clk>, <&udpck>;
--				clock-names = "usb_clk", "udc_clk", "udpck";
-+				clocks = <&udc_clk>, <&udpck>;
-+				clock-names = "pclk", "hclk";
- 				status = "disabled";
- 			};
+diff --git a/Documentation/devicetree/bindings/usb/atmel-usb.txt b/Documentation/devicetree/bindings/usb/atmel-usb.txt
+index bc2222c..6007231 100644
+--- a/Documentation/devicetree/bindings/usb/atmel-usb.txt
++++ b/Documentation/devicetree/bindings/usb/atmel-usb.txt
+@@ -36,6 +36,10 @@ Required properties:
+  - compatible: Should be "atmel,at91rm9200-udc"
+  - reg: Address and length of the register set for the device
+  - interrupts: Should contain macb interrupt
++ - clocks: Should reference the peripheral and the AHB clocks
++ - clock-names: Should contains two strings
++		"pclk" for the peripheral clock
++		"hclk" for the AHB clock
  
+ Optional properties:
+  - atmel,vbus-gpio: If present, specifies a gpio that needs to be
 -- 
 1.9.1
 
