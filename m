@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaLCJZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:25:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56821 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaLCJZV (ORCPT
+	id S1752046AbaLCJZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:25:37 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62378 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaLCJZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:25:21 -0500
-Message-ID: <1417598713.2419.1.camel@pengutronix.de>
-Subject: Re: [PATCH 2/2] mmc: sdhci-esdhc-imx: enable IPG clock for sdio
- interrupts
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Stefan Agner <stefan@agner.ch>
-Cc: chris@printf.net, ulf.hansson@linaro.org, anton@enomsg.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, shawn.guo@linaro.org,
-        b29396@freescale.com, linux-arm-kernel@lists.infradead.org
-Date: Wed, 03 Dec 2014 10:25:13 +0100
-In-Reply-To: <1417538845-10867-2-git-send-email-stefan@agner.ch>
-References: <1417538845-10867-1-git-send-email-stefan@agner.ch>
-	 <1417538845-10867-2-git-send-email-stefan@agner.ch>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
+	Wed, 3 Dec 2014 04:25:32 -0500
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Reply-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+X-Mailer: Modest 3.90.7
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
+	 <201411291849.44032@pali> <20141129175152.GA32510@kroah.com>
+	 <201411291904.07644@pali> <1417526599.15239.7.camel@chaos.site>
+	 <547DCC15.70300@roeck-us.net>  <20141203100928.14d23c9f@endymion.delvare>
+In-Reply-To: <20141203100928.14d23c9f@endymion.delvare>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1417598726.14672.5.camel@Pali-Nokia-N900>
+Date: Wed, 03 Dec 2014 10:25:26 +0100
+Message-Id: <1417598726.14672.6.camel@Pali-Nokia-N900>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 02.12.2014, 17:47 +0100 schrieb Stefan Agner:
-> Enable IPG clock for sdio interrupts while runtime PM, since this
-> clock is needed for register access. The need of this clock has been
-> verified on Vybrid, but this is probably true for i.MX53 and maybe
-> others. The need for bus access during runtime suspend has been
-> introduced with be138554a792 ("mmc: sdhci: allow sdio interrupts
-> while sdhci runtime suspended").
+On Wed Dec   3 10:09:28 2014 Jean Delvare <jdelvare@suse.de> wrote:
+> Hi Guenter,
 > 
-Am I reading this wrong, or is this commit actually doing something
-different than what the commit message says?
-
-This does _not_ enable the IPG clock during runtime PM, in fact it is
-disabling it while suspending even with SDIO ints enabled, which is
-wrong, as no SDIO interrupts will be delivered with this clock disabled.
-
-One thing that seems to be wrong with the current code is that the state
-of sdhci_sdio_irq_enabled could change between a runtime suspend and
-resume, so to keep the clocks balanced the driver has to remember if it
-disabled those two clocks in the suspend path and always enable them in
-that case in the resume path.
-
-Regards,
-Lucas
-
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  drivers/mmc/host/sdhci-esdhc-imx.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> On Tue, 02 Dec 2014 06:26:29 -0800, Guenter Roeck wrote:
+> > On 12/02/2014 05:23 AM, Jean Delvare wrote:
+> > > Ultimately /proc/i8k should be killed altogether and every function
+> > > should use the appropriate standard interface. But I don't have any
+> > > Dell laptop around so I won't go into that myself.
+> > 
+> > The only function not covered by hwmon, as far as I can see, is reading
+> > the "Fn key" status, whatever that is, and reporting the power status
+> > (AC or battery).
+> > 
+> > The first seems to be covered by the already existing dell drivers in
+> > platform/x86. The latter must be covered as well; Linux does
+> > display the correct power status on all my Dell laptops.
 > 
-> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-> index 587ee0e..b7e9ad1 100644
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -1193,10 +1193,10 @@ static int sdhci_esdhc_runtime_suspend(struct device *dev)
->  
->  	ret = sdhci_runtime_suspend_host(host);
->  
-> -	if (!sdhci_sdio_irq_enabled(host)) {
-> +	if (!sdhci_sdio_irq_enabled(host))
->  		clk_disable_unprepare(imx_data->clk_per);
-> -		clk_disable_unprepare(imx_data->clk_ipg);
-> -	}
-> +
-> +	clk_disable_unprepare(imx_data->clk_ipg);
->  	clk_disable_unprepare(imx_data->clk_ahb);
->  
->  	return ret;
-> @@ -1208,10 +1208,10 @@ static int sdhci_esdhc_runtime_resume(struct device *dev)
->  	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->  	struct pltfm_imx_data *imx_data = pltfm_host->priv;
->  
-> -	if (!sdhci_sdio_irq_enabled(host)) {
-> +	if (!sdhci_sdio_irq_enabled(host))
->  		clk_prepare_enable(imx_data->clk_per);
-> -		clk_prepare_enable(imx_data->clk_ipg);
-> -	}
-> +
-> +	clk_prepare_enable(imx_data->clk_ipg);
->  	clk_prepare_enable(imx_data->clk_ahb);
->  
->  	return sdhci_runtime_resume_host(host);
+> How old are they? The i8k driver is ancestral, so I could imagine that
+> i8k is the only way to report power status on very old Dell laptop
+> models. Or maybe not, I just don't know.
+> 
+
+It was also for laptops around year 2000. So maybe yes, those laptops probably do not have working acpi power status...
+
+> > Changing the ABI is not supposed to happen, so I am not sure if we can
+> > just drop the /proc interface.
+> 
+> Dropping deprecated interfaces after a transition period is not so
+> uncommon. AFAIK the proc interface of i8k is only used by the i8kutils
+> user-space package, which FWIW is no longer part of openSUSE.
+
+There are some forks of this package which some users use. And openSUSE is not only one linux distribution. E.g. In Ubuntu and Debian i8kutils package is still available.
+
+> The dell-laptop and dell-wmi drivers are almost 6 years old, that looks
+> like an already very comfortable transition period to me.
+> 
+
+dell-laptop is using another Dell SMM interface (this one documented), but it does not support temperature and fan control status. It is not acpi driver.
+
+dell-wmi is using acpi/wmi for receiving events (nothing more).
+
+I would like to see i8k driver not integrated into dell-laptop becuase it use totally different interface...
+
+Anyway, what does i8k mean? That dell interface is somehow called DELLDIAG, so I do not know what i8k means...
+
+> That being said, that's only my opinion and I'm not going to fight for
+> this. If the hwmon interface is moved to dell-laptop and i8k is killed,
+> I'm happy. If the i8k driver is moved to drivers/hwmon and stripped
+> down, I'm happy. But if none of this happens, I don't really care, to
+> be honest.
+> 
+
+For new laptops Fn key status is not supported by i8k (al least on my E6440) and power status is reported by acpi.
+
+So what would be probably better is to split driver into two: One which provides only /proc/i8k interface (unchanged) and other one which provides hwmon interface.
+
+Users of new laptops do not need /proc/i8k anymore (only if they use i8kutils), so would be able to compile only hwmon...
+
+Anyway, do we need to touch /proc/i8k code? It supports only one (first) temperature sensor, one fan control... And i think it is already separated from hwmon code (which doing some detection of more sensors, fans, ...), so what about moving hwmon interface into separate module? We just need some common code for executing SMM function.
+
+> -- 
+> Jean Delvare
+> SUSE L3 Support
 
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Pali Rohár
+pali.rohar@gmail.com
 
