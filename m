@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaLCLgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:36:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54668 "EHLO mx2.suse.de"
+	id S1753341AbaLCLhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:37:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54664 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635AbaLCL1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:44 -0500
+	id S1752614AbaLCL1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:42 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        linux-pcmcia@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 079/101] pcmcia: journada720: use sa1100 pin interfaces correctly
-Date: Wed,  3 Dec 2014 12:26:41 +0100
-Message-Id: <bd66de1b39f7694430862d9637475439be571d62.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 092/101] ieee802154: fix error handling in ieee802154fake_probe()
+Date: Wed,  3 Dec 2014 12:26:54 +0100
+Message-Id: <0d55bc1cf51599a78ae3bb5182fa2eda1e9c0c7c.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -26,76 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 58409f9d21a9d372e35857b5b8aaf334997b127b upstream.
+[ Upstream commit 8c2dd54485ccee7fc4086611e188478584758c8d ]
 
-commit dabd14684bc2 "PCMCIA: sa1111: remove duplicated initializers"
-incorrectly moved some code into the pcmcia_jornada720_init, causing
-a few build errors, and for unknown reasons, the driver lacks
-an inclusion of <linux/io.h>, so we get the build errors, and more:
+In case of any failure ieee802154fake_probe() just calls unregister_netdev().
+But it does not look safe to unregister netdevice before it was registered.
 
-sa1111_jornada720.c: In function 'pcmcia_jornada720_init':
-sa1111_jornada720.c:101:3: error: implicit declaration of function 'IOMEM' [-Werror=implicit-function-declaration]
-   GRER |= 0x00000002;
-   ^
-sa1111_jornada720.c:104:3: warning: passing argument 1 of 'sa1111_set_io_dir' from incompatible pointer type [enabled by default]
-   sa1111_set_io_dir(dev, pin, 0, 0);
-   ^
+The patch implements straightforward resource deallocation in case of
+failure in ieee802154fake_probe().
 
-This patch uses the SA1111_DEV() to convert the dev pointer to the
-correct type before passing it and adds the missing include.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-Cc: linux-pcmcia@lists.infradead.org
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/pcmcia/sa1111_jornada720.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ieee802154/fakehard.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pcmcia/sa1111_jornada720.c b/drivers/pcmcia/sa1111_jornada720.c
-index 3baa3ef09682..40e040314503 100644
---- a/drivers/pcmcia/sa1111_jornada720.c
-+++ b/drivers/pcmcia/sa1111_jornada720.c
-@@ -9,6 +9,7 @@
- #include <linux/device.h>
- #include <linux/errno.h>
- #include <linux/init.h>
-+#include <linux/io.h>
+diff --git a/drivers/net/ieee802154/fakehard.c b/drivers/net/ieee802154/fakehard.c
+index bf0d55e2dd63..6adbef89c4b0 100644
+--- a/drivers/net/ieee802154/fakehard.c
++++ b/drivers/net/ieee802154/fakehard.c
+@@ -376,17 +376,20 @@ static int ieee802154fake_probe(struct platform_device *pdev)
  
- #include <mach/hardware.h>
- #include <asm/hardware/sa1111.h>
-@@ -94,6 +95,7 @@ static struct pcmcia_low_level jornada720_pcmcia_ops = {
- int pcmcia_jornada720_init(struct device *dev)
- {
- 	int ret = -ENODEV;
-+	struct sa1111_dev *sadev = SA1111_DEV(dev);
+ 	err = wpan_phy_register(phy);
+ 	if (err)
+-		goto out;
++		goto err_phy_reg;
  
- 	if (machine_is_jornada720()) {
- 		unsigned int pin = GPIO_A0 | GPIO_A1 | GPIO_A2 | GPIO_A3;
-@@ -101,12 +103,12 @@ int pcmcia_jornada720_init(struct device *dev)
- 		GRER |= 0x00000002;
+ 	err = register_netdev(dev);
+-	if (err < 0)
+-		goto out;
++	if (err)
++		goto err_netdev_reg;
  
- 		/* Set GPIO_A<3:1> to be outputs for PCMCIA/CF power controller: */
--		sa1111_set_io_dir(dev, pin, 0, 0);
--		sa1111_set_io(dev, pin, 0);
--		sa1111_set_sleep_io(dev, pin, 0);
-+		sa1111_set_io_dir(sadev, pin, 0, 0);
-+		sa1111_set_io(sadev, pin, 0);
-+		sa1111_set_sleep_io(sadev, pin, 0);
+ 	dev_info(&pdev->dev, "Added ieee802154 HardMAC hardware\n");
+ 	return 0;
  
- 		sa11xx_drv_pcmcia_ops(&jornada720_pcmcia_ops);
--		ret = sa1111_pcmcia_add(dev, &jornada720_pcmcia_ops,
-+		ret = sa1111_pcmcia_add(sadev, &jornada720_pcmcia_ops,
- 				sa11xx_drv_pcmcia_add_one);
- 	}
+-out:
+-	unregister_netdev(dev);
++err_netdev_reg:
++	wpan_phy_unregister(phy);
++err_phy_reg:
++	free_netdev(dev);
++	wpan_phy_free(phy);
+ 	return err;
+ }
  
 -- 
 2.1.3
