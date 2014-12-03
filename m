@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaLCBcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:32:22 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63629 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751005AbaLCBcU (ORCPT
+	id S1751209AbaLCBed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:34:33 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:65095 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaLCBeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:32:20 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Jingoo Han <jg1.han@samsung.com>, Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drm / exynos / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Wed, 03 Dec 2014 02:53:44 +0100
-Message-ID: <19437813.I83iiGloeA@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Tue, 2 Dec 2014 20:34:31 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20141203013105.GA21642@kroah.com>
+References: <1417533075-687-1-git-send-email-paul@mybb.com>
+	<20141203004852.GA15236@kroah.com>
+	<CAO7UptcspiZCNi8smcmhOWM9Rdn+QYHPJYmZb90A-_3sJ4wYqQ@mail.gmail.com>
+	<20141203013105.GA21642@kroah.com>
+Date: Tue, 2 Dec 2014 19:34:30 -0600
+Message-ID: <CAO7Uptf=ThowWRogXcktj7wEK-3rTGOxNMb37YGWC-s5F6W9kQ@mail.gmail.com>
+Subject: Re: [PATCH] Staging: ft1000: fix spaces around comparisons in ft1000_debug.c
+From: Paul H <paul@mybboard.net>
+To: Greg KH <greg@kroah.com>
+Cc: Paul H <paul@mybb.com>, Belisko Marek <marek.belisko@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Well shoot, please ignore what I just sent in then, I thought I had it.
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+-Paul
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM in 4 files under
-gpu/drm/exynos/.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
-
-Please let me know if it is OK to take this one into linux-pm.
-
----
- drivers/gpu/drm/exynos/exynos_drm_fimc.c    |    2 +-
- drivers/gpu/drm/exynos/exynos_drm_g2d.c     |    2 +-
- drivers/gpu/drm/exynos/exynos_drm_gsc.c     |    2 +-
- drivers/gpu/drm/exynos/exynos_drm_rotator.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-pm/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-+++ linux-pm/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-@@ -1817,7 +1817,7 @@ static int fimc_resume(struct device *de
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int fimc_runtime_suspend(struct device *dev)
- {
- 	struct fimc_context *ctx = get_fimc_context(dev);
-Index: linux-pm/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-+++ linux-pm/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-@@ -1764,7 +1764,7 @@ static int gsc_resume(struct device *dev
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int gsc_runtime_suspend(struct device *dev)
- {
- 	struct gsc_context *ctx = get_gsc_context(dev);
-Index: linux-pm/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-+++ linux-pm/drivers/gpu/drm/exynos/exynos_drm_rotator.c
-@@ -822,7 +822,7 @@ static int rotator_resume(struct device
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int rotator_runtime_suspend(struct device *dev)
- {
- 	struct rot_context *rot = dev_get_drvdata(dev);
-Index: linux-pm/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-+++ linux-pm/drivers/gpu/drm/exynos/exynos_drm_g2d.c
-@@ -1540,7 +1540,7 @@ static int g2d_resume(struct device *dev
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int g2d_runtime_suspend(struct device *dev)
- {
- 	struct g2d_data *g2d = dev_get_drvdata(dev);
-
+On Tue, Dec 2, 2014 at 7:31 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Dec 02, 2014 at 07:10:41PM -0600, Paul H wrote:
+>> A tutorial I read suggested using a different branch for applying the
+>> patches; I named it "fix-spaces".  It would appear it is mistaken
+>> then?
+>
+> You have to make your patch against the linux-next tree, not Linus's
+> tree, so as to not duplicate other people's work that has already been
+> accepted.
+>
+> You can name your branch whatever you want to, that doesn't matter :)
+>
+> greg k-h
