@@ -1,567 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114AbaLCCRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:17:55 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:65147 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaLCCRw (ORCPT
+	id S1751338AbaLCCUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:20:10 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41181 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaLCCUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:17:52 -0500
-X-AuditID: cbfee68f-f791c6d000004834-5d-547e72cc3734
-From: Jingoo Han <jg1.han@samsung.com>
-To: gyungoh@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
-        cooloney@gmail.com, broonie@kernel.org, lgirdwood@gmail.com
-Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        treding@nvidia.com, florian.vaussard@epfl.ch, trivial@kernel.org,
-        linux@roeck-us.net, andrew@lunn.ch, jic23@kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
- <1417507529-13654-3-git-send-email-jack.yoo@skyworksinc.com>
-In-reply-to: <1417507529-13654-3-git-send-email-jack.yoo@skyworksinc.com>
-Subject: Re: [PATCH v9 2/8] backlight: Add support Skyworks SKY81452 backlight
- driver
-Date: Wed, 03 Dec 2014 11:19:06 +0900
-Message-id: <001401d00e9f$83d6b660$8b842320$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdAOBtPQ9s8b+6giSe+XR56nJnxyCQAl/whA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Se0hTYRjG+845O24j7TS1PgcZ2BXJLlPXJ10oLDqh3egGEdWyk0pu2jZX
-	YcisRFs1FSthlbV102VIVuYky6Yilc10NrXaTFExr4XmZWbldvpj/z3v+73P+3v4eLm44CNH
-	yI2XKRm5TJIQRPKJ93+6RSEf5Kl7Vt7NAajebsbRtfZOEtWYcjB0u9rCQXW9WoCy+vUcVPm7
-	DCBTy170t6OPgyy9hQB9utBGoLR7VgJZ9Y0c9O2cEUNtv2oAGm3KxJC1/CaJOvV1GLrf3ICh
-	7LzHBEqvqPZC7y9x0JdJHzT02optgHRRfhGgrdorGP0g/RFOm3R2L7rw4QhJlxgvkrS6sp6g
-	v9peknT+2120qWwYo6+cHyRp05jai9Y+MwK6UD9G0i9s+Tg9XBK4kzrAX3uMSYhXMfIV64/w
-	46622sikF2dPa+2PMDXIZDSAx4VUGHxnuEWweg786CgmNYDPFVAPAJxwPgEawHUPNdwVs30D
-	gM9Ka73Ywgng5cnLpMtNUovhyEiV+8GPSgOw/IYauAqcKsZhr+khxloyAKytKSBce3nUVthe
-	u9Hl9qX2w+GqIo5LE9QimFdf4d7qTa2DTd2DOKtnw/FchzsrTgXDYlMtxur58GnRAM5GXQI7
-	pkJcbT9KBLsMn3F2xA++6hl054HUUx4c+F73n0XB0VwzwXrnwZJKnP2KAPimoIXIBlDnQdZ5
-	kHUeZJ0H4g4gjMCfSYpJUhyNlYcuV0ikimRZ7PKYRGkJYA8tqwzYK9eYAcUFQTO90aHUPQKO
-	RKU4IzWD8OlEObjQPyZx+jZlysOrQsUiFB4WHipaHSEOmuutF07sFlCxEiVzgmGSGPlheXIC
-	ozADjMsTqoHcsd+yoscJg8mFzcZ+nnMoqvj2vj6fqNLE6HFN2TV+x3FFtCbi+VRIwaYFs8UN
-	FduWrgxQNv7El3FFFn7XjANh1zcLbdCx46BzfdwpXlrgpNF/e+T8XVm+pfMsPgGRs36rVAYl
-	3NInPakUtMpmBNqih4xNKSkZjenn9/64dBAGEYo4yapgXK6Q/ANM94CbYwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA2WSf0yMcRzHfZ/nueeu5nic4rv8as+Gabvqrrq+mUxY+xJbcmT+cJ66R7W6
-	q91Tza9xfjQkV36t7dhxKDrRRHRNssiNWleOCKHQLBSVH0O465Y1vn+9P+/v5/X+/thHQsrM
-	dIAkTZ/NG/RcBkv7Uo2/XjHyJsM2dWi+MwI5O+pJdLTzNY0a7AcJdOJ2swg19ZgAKnxvFaGb
-	P6sBsj9ehX53vROh5p4ygB7ufkGhHWdcFHJZ74vQy502Ar343ADQlwd7CeSqOU6j19YmApU8
-	aiVQUfEFCuXV3hajxv0i9PTHONRX5yIWQFxuKQfYZTpA4NK88yS2mzvEuOzsII0rbftobLzp
-	pPCztus0ttxdge3VAwQ+sKuXxvavRjE2XbEBXGb9SuNrbRYSD1ROj2fWGsG8VJ7T8oZAXp+c
-	qU3Tp0SzcSs1izQRqlCFXBGFItlAPafjo9nFy+LlsWkZ7v9gA3O5jBy3Fc8JAhsy//+EVepY
-	ORoB18iXqxP+MsrQf9b6iyD1SHsbnXVt60ZTx3nCCPby+UAigUw4bD2tygc+bjkJtjyvoPOB
-	r0TGnALwylWH2Ft8B7DgRwHt6aKZWXBw8Nbwhh+zA8CaY0bgKUimgoQ99rOEF9kDoKPhHOU5
-	w4dZAjsdMR56IpMIB26VizyaYmbCYmftcKqUiYYPuntJr54Avx1+Tnk0yQTBCruD8OoZ8HL5
-	B9J77dmwa0jusf0YJXxz6gnpbfGDN972giIgM49KMo9KMo9KMo9CTgLKBvz5rOQsISlFpwwW
-	OJ2Qo08JTs7UVYLhueyeUg1sRlQPGAlgx0rRum1qmYjLFTbp6gGUkKyfND3JbUm13KbNvCFT
-	Y8jJ4IV6EOF+6EEywD850z3l+myNIixcpYxSqpAyPDKSnSx93K5Ty5gULptP5/ks3jDCERKf
-	APfcdBXUhs7TzimerP8oln7gunPWVQ816xylJWEgpCao9k7f6vgyjXZpf11uVMyjwpjo3eEL
-	E6a9PWkK7G6z9h9PnM9vOKf4uQGXVG1xTf1EWsRdqZbWz84Tfftedh5aqGpK3O5/qF+2XnSJ
-	r+wdf/T30L2nc4OLQuK+vWupqsoe09rPUkIqpwgiDQL3B1Gg04etAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 2 Dec 2014 21:20:08 -0500
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <547E7363.9060002@lge.com>
+Date: Wed, 03 Dec 2014 11:20:19 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, kernel-forum@lge.com
+CC: Sinchul Jung <sinchul.jung@lge.com>
+Subject: =?EUC-KR?B?dnphbGxvY7D6IGt6YWxsb2PAxyC8urTJIML3wMw=?=
+Content-Type: multipart/mixed;
+ boundary="------------070905050505090005090201"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 02, 2014 5:05 PM, Gyungoh Yoo wrote:
-> 
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> 
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> ---
-> Changes v9:
-> Nothing
-> 
-> Changes v8:
-> Renamed property names for backlight with vendor prefix
-> Modified gpio-enable property to generic property for GPIO
-> 
-> Changes v7:
-> Modified licensing text to GPLv2
-> 
-> Changes v6:
-> Added new line character at the end of line of dev_err()
-> 
-> Changes v5:
-> Move sky81452-backlight.h to include/linux/platform_data
-> 
-> Changes v4:
-> Reordering header files for readability
-> Removed calling to backlight_device_unregister()
-> Removed MODULE_VERSION()
-> Modified license to GPLv2
-> 
-> Changes v3:
-> Modified DBG messages
-> 
-> Changes v2:
-> Added 'compatible' attribute in the driver
-> Added message for exception or errors
-> 
->  drivers/video/backlight/Kconfig                  |  10 +
->  drivers/video/backlight/Makefile                 |   1 +
->  drivers/video/backlight/sky81452-backlight.c     | 340 +++++++++++++++++++++++
->  include/linux/platform_data/sky81452-backlight.h |  46 +++
->  4 files changed, 397 insertions(+)
->  create mode 100644 drivers/video/backlight/sky81452-backlight.c
->  create mode 100644 include/linux/platform_data/sky81452-backlight.h
-> 
-> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-> index 8d03924..2586fdd 100644
-> --- a/drivers/video/backlight/Kconfig
-> +++ b/drivers/video/backlight/Kconfig
-> @@ -409,6 +409,16 @@ config BACKLIGHT_PANDORA
->  	  If you have a Pandora console, say Y to enable the
->  	  backlight driver.
-> 
-> +config BACKLIGHT_SKY81452
-> +	tristate "Backlight driver for SKY81452"
-> +	depends on BACKLIGHT_CLASS_DEVICE && MFD_SKY81452
-> +	help
-> +	  If you have a Skyworks SKY81452, say Y to enable the
-> +	  backlight driver.
-> +
-> +	  To compile this driver as a module, choose M here: the module will
-> +	  be called sky81452-backlight
-> +
->  config BACKLIGHT_TPS65217
->  	tristate "TPS65217 Backlight"
->  	depends on BACKLIGHT_CLASS_DEVICE && MFD_TPS65217
-> diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-> index fcd50b73..d67073f 100644
-> --- a/drivers/video/backlight/Makefile
-> +++ b/drivers/video/backlight/Makefile
-> @@ -50,6 +50,7 @@ obj-$(CONFIG_BACKLIGHT_PANDORA)		+= pandora_bl.o
->  obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
->  obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
->  obj-$(CONFIG_BACKLIGHT_SAHARA)		+= kb3886_bl.o
-> +obj-$(CONFIG_BACKLIGHT_SKY81452)	+= sky81452-backlight.o
->  obj-$(CONFIG_BACKLIGHT_TOSA)		+= tosa_bl.o
->  obj-$(CONFIG_BACKLIGHT_TPS65217)	+= tps65217_bl.o
->  obj-$(CONFIG_BACKLIGHT_WM831X)		+= wm831x_bl.o
-> diff --git a/drivers/video/backlight/sky81452-backlight.c b/drivers/video/backlight/sky81452-
-> backlight.c
-> new file mode 100644
-> index 0000000..45e575f
-> --- /dev/null
-> +++ b/drivers/video/backlight/sky81452-backlight.c
-> @@ -0,0 +1,340 @@
-> +/*
-> + * sky81452-backlight.c	SKY81452 backlight driver
-> + *
-> + * Copyright 2014 Skyworks Solutions Inc.
-> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2
-> + * as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/backlight.h>
-> +#include <linux/err.h>
-> +#include <linux/gpio.h>
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/platform_data/sky81452-backlight.h>
-> +#include <linux/slab.h>
-> +
-> +/* registers */
-> +#define SKY81452_REG0	0x00
-> +#define SKY81452_REG1	0x01
-> +#define SKY81452_REG2	0x02
-> +#define SKY81452_REG4	0x04
-> +#define SKY81452_REG5	0x05
-> +
-> +/* bit mask */
-> +#define SKY81452_CS	0xFF
-> +#define SKY81452_EN	0x3F
-> +#define SKY81452_IGPW	0x20
-> +#define SKY81452_PWMMD	0x10
-> +#define SKY81452_PHASE	0x08
-> +#define SKY81452_ILIM	0x04
-> +#define SKY81452_VSHRT	0x03
-> +#define SKY81452_OCP	0x80
-> +#define SKY81452_OTMP	0x40
-> +#define SKY81452_SHRT	0x3F
-> +#define SKY81452_OPN	0x3F
-> +
-> +#define SKY81452_DEFAULT_NAME "lcd-backlight"
-> +#define SKY81452_MAX_BRIGHTNESS	(SKY81452_CS + 1)
-> +
-> +#define CTZ(b) __builtin_ctz(b)
-> +
-> +static int sky81452_bl_update_status(struct backlight_device *bd)
-> +{
-> +	const struct sky81452_bl_platform_data *pdata =
-> +			dev_get_platdata(bd->dev.parent);
-> +	const unsigned int brightness = (unsigned int)bd->props.brightness;
-> +	struct regmap *regmap = bl_get_data(bd);
-> +	int ret;
-> +
-> +	if (brightness > 0) {
-> +		ret = regmap_write(regmap, SKY81452_REG0, brightness - 1);
-> +		if (IS_ERR_VALUE(ret))
-> +			return ret;
-> +
-> +		return regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN,
-> +					pdata->enable << CTZ(SKY81452_EN));
-> +	}
-> +
-> +	return regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN, 0);
-> +}
-> +
-> +static int sky81452_bl_get_brightness(struct backlight_device *bd)
-> +{
-> +	return bd->props.brightness;
-> +}
+This is a multi-part message in MIME format.
+--------------070905050505090005090201
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 
-Please remove sky81452_bl_get_brightness().
-In the case of just returning 'props.brightness',
-backglight core can also return 'props.brightness'.
-So, there is no need to add sky81452_bl_get_brightness().
 
-Please refer to the following patches.
-  backlight: Remove trivial get_brightness implementations
-  backlight: Show brightness even if get_brightness is not implemented
 
-Others look good.
-Thanks.
+GPU DDK는 특정 구조체의 메모리 할당을 vzalloc으로 하고 있습니다.
+그 구조체는 크기가 몇백byte에서 16K까지 다양합니다.
 
-Best regards,
-Jingoo Han
+프로파일 결과 vzalloc이 너무 느려서 kzalloc으로 바꿔볼까하는 생각이 들었습니다.
+모든 vzalloc을 kzalloc으로 바꾸면 빨라질 수도 있겠지만
+너무 큰 크기의 메모리 할당에 kzalloc을 쓰면 메모리 단편화도 커질것이고 low-mem도 없어질 것이고 등등의
+문제가 생길것 같았습니다.
 
-> +
-> +static const struct backlight_ops sky81452_bl_ops = {
-> +	.update_status = sky81452_bl_update_status,
-> +	.get_brightness = sky81452_bl_get_brightness,
-> +};
-> +
-> +static ssize_t sky81452_bl_store_enable(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
-> +	unsigned long value;
-> +	int ret;
-> +
-> +	ret = kstrtoul(buf, 16, &value);
-> +	if (IS_ERR_VALUE(ret))
-> +		return ret;
-> +
-> +	ret = regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN,
-> +					value << CTZ(SKY81452_EN));
-> +	if (IS_ERR_VALUE(ret))
-> +		return ret;
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t sky81452_bl_show_open_short(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
-> +	unsigned int reg, value = 0;
-> +	char tmp[3];
-> +	int i, ret;
-> +
-> +	reg = !strcmp(attr->attr.name, "open") ? SKY81452_REG5 : SKY81452_REG4;
-> +	ret = regmap_read(regmap, reg, &value);
-> +	if (IS_ERR_VALUE(ret))
-> +		return ret;
-> +
-> +	if (value & SKY81452_SHRT) {
-> +		*buf = 0;
-> +		for (i = 0; i < 6; i++) {
-> +			if (value & 0x01) {
-> +				sprintf(tmp, "%d ", i + 1);
-> +				strcat(buf, tmp);
-> +			}
-> +			value >>= 1;
-> +		}
-> +		strcat(buf, "\n");
-> +	} else {
-> +		strcpy(buf, "none\n");
-> +	}
-> +
-> +	return strlen(buf);
-> +}
-> +
-> +static ssize_t sky81452_bl_show_fault(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
-> +	unsigned int value = 0;
-> +	int ret;
-> +
-> +	ret = regmap_read(regmap, SKY81452_REG4, &value);
-> +	if (IS_ERR_VALUE(ret))
-> +		return ret;
-> +
-> +	*buf = 0;
-> +
-> +	if (value & SKY81452_OCP)
-> +		strcat(buf, "over-current ");
-> +
-> +	if (value & SKY81452_OTMP)
-> +		strcat(buf, "over-temperature");
-> +
-> +	strcat(buf, "\n");
-> +	return strlen(buf);
-> +}
-> +
-> +static DEVICE_ATTR(enable, S_IWGRP | S_IWUSR, NULL, sky81452_bl_store_enable);
-> +static DEVICE_ATTR(open, S_IRUGO, sky81452_bl_show_open_short, NULL);
-> +static DEVICE_ATTR(short, S_IRUGO, sky81452_bl_show_open_short, NULL);
-> +static DEVICE_ATTR(fault, S_IRUGO, sky81452_bl_show_fault, NULL);
-> +
-> +static struct attribute *sky81452_bl_attribute[] = {
-> +	&dev_attr_enable.attr,
-> +	&dev_attr_open.attr,
-> +	&dev_attr_short.attr,
-> +	&dev_attr_fault.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group sky81452_bl_attr_group = {
-> +	.attrs = sky81452_bl_attribute,
-> +};
-> +
-> +#ifdef CONFIG_OF
-> +static struct sky81452_bl_platform_data *sky81452_bl_parse_dt(
-> +							struct device *dev)
-> +{
-> +	struct device_node *np = of_node_get(dev->of_node);
-> +	struct sky81452_bl_platform_data *pdata;
-> +	int ret;
-> +
-> +	if (!np) {
-> +		dev_err(dev, "backlight node not found.\n");
-> +		return ERR_PTR(-ENODATA);
-> +	}
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata) {
-> +		of_node_put(np);
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	of_property_read_string(np, "name", &pdata->name);
-> +	pdata->ignore_pwm = of_property_read_bool(np, "skyworks,ignore-pwm");
-> +	pdata->dpwm_mode = of_property_read_bool(np, "skyworks,dpwm-mode");
-> +	pdata->phase_shift = of_property_read_bool(np, "skyworks,phase-shift");
-> +	pdata->gpio_enable = of_get_gpio(np, 0);
-> +
-> +	ret = of_property_read_u32(np, "skyworks,en-channels", &pdata->enable);
-> +	if (IS_ERR_VALUE(ret))
-> +		pdata->enable = SKY81452_EN >> CTZ(SKY81452_EN);
-> +
-> +	ret = of_property_read_u32(np, "skyworks,short-detection-threshold",
-> +			&pdata->short_detection_threshold);
-> +	if (IS_ERR_VALUE(ret))
-> +		pdata->short_detection_threshold = 7;
-> +
-> +	ret = of_property_read_u32(np, "skyworks,current-limit",
-> +			&pdata->boost_current_limit);
-> +	if (IS_ERR_VALUE(ret))
-> +		pdata->boost_current_limit = 2750;
-> +
-> +	of_node_put(np);
-> +	return pdata;
-> +}
-> +#else
-> +static struct sky81452_bl_platform_data *sky81452_bl_parse_dt(
-> +							struct device *dev)
-> +{
-> +	return ERR_PTR(-EINVAL);
-> +}
-> +#endif
-> +
-> +static int sky81452_bl_init_device(struct regmap *regmap,
-> +		struct sky81452_bl_platform_data *pdata)
-> +{
-> +	unsigned int value;
-> +
-> +	value = pdata->ignore_pwm ? SKY81452_IGPW : 0;
-> +	value |= pdata->dpwm_mode ? SKY81452_PWMMD : 0;
-> +	value |= pdata->phase_shift ? 0 : SKY81452_PHASE;
-> +
-> +	if (pdata->boost_current_limit == 2300)
-> +		value |= SKY81452_ILIM;
-> +	else if (pdata->boost_current_limit != 2750)
-> +		return -EINVAL;
-> +
-> +	if (pdata->short_detection_threshold < 4 ||
-> +				pdata->short_detection_threshold > 7)
-> +		return -EINVAL;
-> +	value |= (7 - pdata->short_detection_threshold) << CTZ(SKY81452_VSHRT);
-> +
-> +	return regmap_write(regmap, SKY81452_REG2, value);
-> +}
-> +
-> +static int sky81452_bl_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct regmap *regmap = dev_get_drvdata(dev->parent);
-> +	struct sky81452_bl_platform_data *pdata = dev_get_platdata(dev);
-> +	struct backlight_device *bd;
-> +	struct backlight_properties props;
-> +	const char *name;
-> +	int ret;
-> +
-> +	if (!pdata) {
-> +		pdata = sky81452_bl_parse_dt(dev);
-> +		if (IS_ERR(pdata))
-> +			return PTR_ERR(pdata);
-> +	}
-> +
-> +	if (gpio_is_valid(pdata->gpio_enable)) {
-> +		ret = devm_gpio_request_one(dev, pdata->gpio_enable,
-> +					GPIOF_OUT_INIT_HIGH, "sky81452-en");
-> +		if (IS_ERR_VALUE(ret)) {
-> +			dev_err(dev, "failed to request GPIO. err=%d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	ret = sky81452_bl_init_device(regmap, pdata);
-> +	if (IS_ERR_VALUE(ret)) {
-> +		dev_err(dev, "failed to initialize. err=%d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	memset(&props, 0, sizeof(props));
-> +	props.max_brightness = SKY81452_MAX_BRIGHTNESS,
-> +	name = pdata->name ? pdata->name : SKY81452_DEFAULT_NAME;
-> +	bd = devm_backlight_device_register(dev, name, dev, regmap,
-> +						&sky81452_bl_ops, &props);
-> +	if (IS_ERR(bd)) {
-> +		dev_err(dev, "failed to register. err=%ld\n", PTR_ERR(bd));
-> +		return PTR_ERR(bd);
-> +	}
-> +
-> +	platform_set_drvdata(pdev, bd);
-> +
-> +	ret  = sysfs_create_group(&bd->dev.kobj, &sky81452_bl_attr_group);
-> +	if (IS_ERR_VALUE(ret)) {
-> +		dev_err(dev, "failed to create attribute. err=%d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int sky81452_bl_remove(struct platform_device *pdev)
-> +{
-> +	const struct sky81452_bl_platform_data *pdata =
-> +						dev_get_platdata(&pdev->dev);
-> +	struct backlight_device *bd = platform_get_drvdata(pdev);
-> +
-> +	sysfs_remove_group(&bd->dev.kobj, &sky81452_bl_attr_group);
-> +
-> +	bd->props.power = FB_BLANK_UNBLANK;
-> +	bd->props.brightness = 0;
-> +	backlight_update_status(bd);
-> +
-> +	if (gpio_is_valid(pdata->gpio_enable))
-> +		gpio_set_value_cansleep(pdata->gpio_enable, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id sky81452_bl_of_match[] = {
-> +	{ .compatible = "skyworks,sky81452-backlight", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, sky81452_bl_of_match);
-> +#endif
-> +
-> +static struct platform_driver sky81452_bl_driver = {
-> +	.driver = {
-> +		.name = "sky81452-backlight",
-> +		.of_match_table = of_match_ptr(sky81452_bl_of_match),
-> +	},
-> +	.probe = sky81452_bl_probe,
-> +	.remove = sky81452_bl_remove,
-> +};
-> +
-> +module_platform_driver(sky81452_bl_driver);
-> +
-> +MODULE_DESCRIPTION("Skyworks SKY81452 backlight driver");
-> +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/platform_data/sky81452-backlight.h b/include/linux/platform_data/sky81452-
-> backlight.h
-> new file mode 100644
-> index 0000000..1231e9b
-> --- /dev/null
-> +++ b/include/linux/platform_data/sky81452-backlight.h
-> @@ -0,0 +1,46 @@
-> +/*
-> + * sky81452.h	SKY81452 backlight driver
-> + *
-> + * Copyright 2014 Skyworks Solutions Inc.
-> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2
-> + * as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef _SKY81452_BACKLIGHT_H
-> +#define _SKY81452_BACKLIGHT_H
-> +
-> +/**
-> + * struct sky81452_platform_data
-> + * @name:	backlight driver name.
-> +		If it is not defined, default name is lcd-backlight.
-> + * @gpio_enable:GPIO number which control EN pin
-> + * @enable:	Enable mask for current sink channel 1, 2, 3, 4, 5 and 6.
-> + * @ignore_pwm:	true if DPWMI should be ignored.
-> + * @dpwm_mode:	true is DPWM dimming mode, otherwise Analog dimming mode.
-> + * @phase_shift:true is phase shift mode.
-> + * @short_detecion_threshold:	It should be one of 4, 5, 6 and 7V.
-> + * @boost_current_limit:	It should be one of 2300, 2750mA.
-> + */
-> +struct sky81452_bl_platform_data {
-> +	const char *name;
-> +	int gpio_enable;
-> +	unsigned int enable;
-> +	bool ignore_pwm;
-> +	bool dpwm_mode;
-> +	bool phase_shift;
-> +	unsigned int short_detection_threshold;
-> +	unsigned int boost_current_limit;
-> +};
-> +
-> +#endif
-> --
-> 1.9.1
+그래서 얼마정도 크기까지는 kzalloc을 써도 될까하는 고민을 하다가
+그냥 2K부터 2K씩 증가하면서 kmalloc, kzalloc, vzalloc을 실행해봤습니다.
 
+저는 그냥 kzalloc도 kmalloc이니까 vzalloc보다 빠를줄 알았습니다.
+그런데 8K ~ 24K 구간에서는 kzalloc = vzalloc 이라는 결과가 나왔습니다.
+즉 kzalloc이나 vzalloc이나 선형적으로 실행 시간이 증가하는 구간이 있는데
+제 생각에는 memset(0)이 있어서 그런것 같습니다.
+어떻게 생각하세요?
+
+어쨌든 제 결론은 1페이지 이하의 할당에는 vzalloc을 kmalloc으로 바꿀 생각입니다.
+그래도 1페이지 이하니까 메모리 단편화에는 영향이 없겠지요?
+
+조언부탁드립니다.
+
+ps
+실험은 H15보드에서 커널만 부팅되고 webos등은 실행되지 않은
+거의 로드가 없는 상황에서 진행되었습니다.
+
+테스트 소스입니다.
+
+#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/cdev.h>
+#include <linux/slab.h>
+
+#include <linux/fs.h>
+#include <asm/uaccess.h>
+#include <linux/export.h>
+#include <asm/io.h>
+#include <linux/mm_types.h>
+#include <linux/list.h>
+#include <linux/vmalloc.h>
+#include <linux/time.h>
+#include <linux/hrtimer.h>
+
+MODULE_LICENSE("GPL");
+
+
+
+
+#define TEST 100
+char *ptr[TEST];
+
+static int __init verify_iondev_init(void)
+{
+        int i;
+        size_t alloc_size;
+        ktime_t start, end;
+
+        printk("start\n");
+        for (alloc_size = 2048; alloc_size <= 8*4096; alloc_size += 2048) {
+                start = ktime_get();
+                for (i = 0; i < TEST; i++) {
+                        ptr[i] = vzalloc(alloc_size);
+                }
+                end = ktime_get();
+                printk("kzalloc(%d) * %d = %llu\n", alloc_size, TEST, end.tv64 - start.tv64);
+
+                for (i = 0; i < TEST; i++) {
+                        vfree(ptr[i]);
+                }
+        }
+
+        return 0;
+}
+
+static void __exit verify_iondev_exit(void)
+{
+        int i;
+
+        return ;
+}
+
+module_init(verify_iondev_init);
+module_exit(verify_iondev_exit);
+
+-- 
+Thanks,
+Gioh Kim
+
+--------------070905050505090005090201
+Content-Type: image/png;
+ name="kzalloc_vzalloc.png"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="kzalloc_vzalloc.png"
+
+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
+--------------070905050505090005090201--
