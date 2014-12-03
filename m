@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaLCJ0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:26:53 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42035 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaLCJ0v (ORCPT
+	id S1752108AbaLCJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:28:24 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:35980 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934AbaLCJ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:26:51 -0500
-Message-ID: <547ED753.3060508@hitachi.com>
-Date: Wed, 03 Dec 2014 18:26:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 3 Dec 2014 04:28:23 -0500
+Date: Wed, 3 Dec 2014 01:28:21 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Jan Vesely <jvesely@redhat.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>, hch@infradead.org
+Subject: Re: [PATCH 0/2] mpt{2,3}sas remove disconnected phys on topology
+ change
+Message-ID: <20141203092821.GA14517@infradead.org>
+References: <1375351291-27107-1-git-send-email-jvesely@redhat.com>
+ <57e91c7f7bc1d3e0cd511f828ec8140b@mail.gmail.com>
+ <547DC792.6070506@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alexei Starovoitov <ast@plumgrid.com>
-Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
-References: <20141203031334.174087814@goodmis.org> <20141203032106.156623189@goodmis.org>
-In-Reply-To: <20141203032106.156623189@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547DC792.6070506@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/03 12:13), Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Tue, Dec 02, 2014 at 03:07:14PM +0100, Tomas Henzl wrote:
+> Hi Sreekanth,
 > 
-> Add a test to test the event filter logic. It currently tests the
-> following filters against sched:sched_switch event.
-> 
->    ( prev_pid != 0 )
->    ( prev_pid == 0 )
->    ( prev_pid < 100 )
->    ( prev_pid <= $$ )
->    ( prev_pid > 100 )
->    ( prev_pid >= $$ )
->   ! ( prev_pid != 0 )
->   ! ( prev_pid == 0 )
->   ! ( prev_pid < 100 )
->   ! ( prev_pid <= $$ )
->   ! ( prev_pid > 100 )
->   ! ( prev_pid >= $$ )
->    ( prev_pid != 0 && next_pid > 10 )
->    ( prev_pid != 0 || next_pid > 10 )
->   ! ( prev_pid != 0 && next_pid > 10 )
->   ! ( prev_pid != 0 || next_pid > 10 )
->    ( prev_pid & 1 )
->    ( prev_pid & 2 )
->    ( prev_pid & 4 )
->    ( prev_pid & 8 )
->    ( prev_pid & 16 )
->   ! ( prev_pid & 1 )
->   ! ( prev_pid & 2 )
->   ! ( prev_pid & 4 )
->   ! ( prev_pid & 8 )
->   ! ( prev_pid & 16 )
->    ( next_comm ~ "ftrace-test-fil" )
->    ( next_comm != "ftrace-test-fil" )
->   ! ( next_comm ~ "ftrace-test-fil" )
->   ! ( next_comm != "ftrace-test-fil" )
-> 
+> I think this should be handled as any other change with an usual
+> patch sent to the list, 'git revert 3520f9c779' and 'git revert 963ba22b90'
+> will create the patches for you.
 
-Hmm, this uses some bash-only syntax, here is the result of checkbashisms.
-
-# checkbashisms tools/testing/selftests/ftrace/test.d/ftrace/filter.tc
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 70 (should be 'b = a'):
-            if [ "$not" == '!' ]; then
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 99 (should be 'b = a'):
-            if [ "$not" == '!' ]; then
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 137 (let ...):
-    let x=1
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 148 (let ...):
-            let val="$pid & $x"
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 155 (should be 'b = a'):
-            elif [ "$not" == '!' ]; then
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 160 (let ...):
-        let x="$x << 1"
-possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 182 (should be 'b = a'):
-            if [ "$not" == '!' ]; then
-
-to allow run this on busybox or dash, we'd better clean it.
-
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
-[...]
-> +# Test more complex compares (&& and !!)
-> +test_cmp2 -ne 0 -a -gt 10 "!= 0" "> 10" "&&" ''
-> +test_cmp2 -ne 0 -o -gt 10 "!= 0" "> 10" "||" ''
-
-This might better be
-test_cmp2 -ne 0 -a -gt 10 "!= 0" "&&" "> 10" ''
-test_cmp2 -ne 0 -o -gt 10 "!= 0" "||" "> 10" ''
-
-:-)
-
-> +
-> +test_cmp2 -ne 0 -a -gt 10 "!= 0" "> 10" "&&" '!'
-> +test_cmp2 -ne 0 -o -gt 10 "!= 0" "> 10" "||" '!'
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Exactly.  And now I'll need a review for them..
 
