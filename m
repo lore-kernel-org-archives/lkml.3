@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaLCHUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:20:33 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:44956 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaLCHUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:20:03 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: jay.xu@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <963614f8917a4731e0f9354ff1d2a8ea>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Jianqun Xu <jay.xu@rock-chips.com>
-To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        sonnyrao@chromium.org, heiko@sntech.de
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, Jianqun Xu <jay.xu@rock-chips.com>
-Subject: [PATCH v2 1/2] ASoC: dt-bindings: rockchip-i2s: add an optional property "i2s_clk_out"
-Date: Wed,  3 Dec 2014 15:18:37 +0800
-Message-Id: <1417591118-18695-2-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com>
-References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
- <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com>
+	id S1751893AbaLCHUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:20:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811AbaLCHU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:20:27 -0500
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
+        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
+Subject: [PATCH v3 net-next 1/2] net: allow large number of rx queues
+Date: Wed,  3 Dec 2014 12:49:36 +0530
+Message-Id: <1417591177-7985-2-git-send-email-pagupta@redhat.com>
+In-Reply-To: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an property "i2s_clk_out", which enables to output clock to outside
-of rockchip SoCs. Let's make it optional since not each board needs it.
+netif_alloc_rx_queues() uses kcalloc() to allocate memory
+for "struct netdev_queue *_rx" array.
+If we are doing large rx queue allocation kcalloc() might
+fail, so this patch does a fallback to vzalloc().
+Similar implementation is done for tx queue allocation in
+netif_alloc_netdev_queues().
 
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+We avoid failure of high order memory allocation
+with the help of vzalloc(), this allows us to do large
+rx and tx queue allocation which in turn helps us to
+increase the number of queues in tun.
+
+As vmalloc() adds overhead on a critical network path,
+__GFP_REPEAT flag is used with kzalloc() to do this fallback
+only when really needed.
+
+Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: David Gibson <dgibson@redhat.com>
 ---
- Documentation/devicetree/bindings/sound/rockchip-i2s.txt | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/core/dev.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-index 9b82c20..c8f5ac0 100644
---- a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-+++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-@@ -22,6 +22,10 @@ Required properties:
-    - "i2s_hclk": clock for I2S BUS
-    - "i2s_clk" : clock for I2S controller
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e916ba8..abe9560 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6059,17 +6059,25 @@ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
+ EXPORT_SYMBOL(netif_stacked_transfer_operstate);
  
-+Optional property:
-+- "i2s_clk_out" : clock output to outside of chip, usally as master clock for audio
-+	codec chip
+ #ifdef CONFIG_SYSFS
++static void netif_free_rx_queues(struct net_device *dev)
++{
++	kvfree(dev->_rx);
++}
 +
- Example for rk3288 I2S controller:
+ static int netif_alloc_rx_queues(struct net_device *dev)
+ {
+ 	unsigned int i, count = dev->num_rx_queues;
+ 	struct netdev_rx_queue *rx;
++	size_t sz = count * sizeof(*rx);
  
- i2s@ff890000 {
-@@ -32,6 +36,6 @@ i2s@ff890000 {
- 	#size-cells = <0>;
- 	dmas = <&pdma1 0>, <&pdma1 1>;
- 	dma-names = "tx", "rx";
--	clock-names = "i2s_hclk", "i2s_clk";
--	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-+	clock-names = "i2s_hclk", "i2s_clk", "i2s_clk_out";
-+	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>, <&cru SCLK_I2S0_CLKOUT>;
- };
+ 	BUG_ON(count < 1);
+ 
+-	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
+-	if (!rx)
+-		return -ENOMEM;
+-
++	rx = kzalloc(sz, GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
++	if (!rx) {
++		rx = vzalloc(sz);
++		if (!rx)
++			return -ENOMEM;
++	}
+ 	dev->_rx = rx;
+ 
+ 	for (i = 0; i < count; i++)
+@@ -6698,9 +6706,8 @@ void free_netdev(struct net_device *dev)
+ 
+ 	netif_free_tx_queues(dev);
+ #ifdef CONFIG_SYSFS
+-	kfree(dev->_rx);
++	netif_free_rx_queues(dev);
+ #endif
+-
+ 	kfree(rcu_dereference_protected(dev->ingress_queue, 1));
+ 
+ 	/* Flush device addresses */
 -- 
-1.9.1
-
+1.8.3.1
 
