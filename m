@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaLFEff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 23:35:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52745 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320AbaLFEfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 23:35:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="425801221"
-Message-ID: <548286EA.6000402@intel.com>
-Date: Sat, 06 Dec 2014 12:32:42 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751414AbaLFEio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 23:38:44 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:49606 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaLFEim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 23:38:42 -0500
+Date: Wed, 3 Dec 2014 10:07:57 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2] dell-smo8800: Add more ACPI ids and change
+ description of driver
+Message-ID: <20141203180756.GC20370@vmdeb7>
+References: <20141203134323.GI75099@vmdeb7>
+ <1417781146-6261-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-To: Gerd Hoffmann <kraxel@redhat.com>, kvm@vger.kernel.org,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        linux-kernel@vger.kernel.org, "Haron, Sandra" <sandra.haron@intel.com>
-Subject: Re: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
- GVT-g(full GPU virtualization) for KVM
-References: <547FC5DE.4010701@intel.com> <1417769421.11297.37.camel@nilsson.home.kraxel.org> <20141205135418.GL20350@phenom.ffwll.local>
-In-Reply-To: <20141205135418.GL20350@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417781146-6261-1-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 09:54 PM, Daniel Vetter wrote:
-> Yeah done a quick read-through of just the i915 bits too, same comment. I
-> guess this is just the first RFC and the redesign we've discussed about
-> already with xengt is in progress somewhere?
+On Fri, Dec 05, 2014 at 01:05:46PM +0100, Pali Rohár wrote:
+> This patch adds other ACPI ids from Windows inf driver which should be handled
+> by dell-smo8800 driver. ACPI devices have same structure -- one IRQ number.
+> 
+> This patch also updates description of module.
+> 
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 
-Yes, it's marching on with Xen now. The KVM implementation is
-currently not even feature complete - we still have PPGTT missing.
+Queued to testing, thanks Pali.
 
-
->
-> Thanks, Daniel
->
-
---
-Thanks,
-Jike
+-- 
+Darren Hart
+Intel Open Source Technology Center
