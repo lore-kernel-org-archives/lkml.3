@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaLCX0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:26:25 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:62177 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaLCX0X convert rfc822-to-8bit (ORCPT
+	id S1752195AbaLCX3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:29:24 -0500
+Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:38183 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751110AbaLCX3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:26:23 -0500
+	Wed, 3 Dec 2014 18:29:22 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2895:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3870:3872:3873:3874:5007:6261:6690:7875:7903:7904:8531:9036:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:14096:14097:21060:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wine79_34827b2d8c211
+X-Filterd-Recvd-Size: 2403
+Date: Wed, 3 Dec 2014 18:29:11 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
+Message-ID: <20141203182911.1d4a8f8e@gandalf.local.home>
+In-Reply-To: <547F9939.7010207@hitachi.com>
+References: <20141203031334.174087814@goodmis.org>
+	<20141203032106.156623189@goodmis.org>
+	<547ED753.3060508@hitachi.com>
+	<20141203043423.6c7e4524@gandalf.local.home>
+	<547F9939.7010207@hitachi.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
-References: <20141203220836.GC31369@lerouge> <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Dec 2014 15:26:01 -0800
-Message-ID: <CALCETrVCwBw9zdcopZoVRnr-D-EYyjuXfqPu5OHnsc0LQJPxJA@mail.gmail.com>
-Subject: Re: [PATCH] context_tracking: Restore previous state in schedule_user
-To: Andy Lutomirski <luto@amacapital.net>, Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Dave -- apparently git doesn't pick up Reported-By]
+On Thu, 04 Dec 2014 08:14:01 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
---Andy
+> >> to allow run this on busybox or dash, we'd better clean it.
+> > 
+> > Do you know how to fix this?
+> 
+> Yes, it's easy :).
+> As the tool output, [ a == b ] can be changed to [ a = b ],
+> and "let ..." can be changed to "$((...))"
 
-On Wed, Dec 3, 2014 at 3:18 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> It appears that some SCHEDULE_USER (asm for schedule_user) callers
-> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
-> and schedule_user will return in RCU user context.  This causes RCU
-> warnings and possible failures.
->
-> This is intended to be a minimal fix suitable for 3.18.
->
-> Reported-by: Dave Jones <davej@redhat.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> Hi all-
->
-> This is intended to be a suitable last-minute fix for the RCU issue that
-> Dave saw.
->
-> Dave, can you confirm that this fixes it?
->
-> Frédéric, can you confirm that you think that this will have no effect
-> on correct callers of schedule_user and that will do the right thing
-> for incorrect callers of schedule_user?
->
-> I don't like the x86 asm that calls this at all, and I don't really
-> like the fragility of the mechanism is general, but I think that this
-> improves the situation enough to avoid problems in the short term.
->
-> With the obvious warning added, I get:
->
-> [    0.751022] ------------[ cut here ]------------
-> [    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
-> [    0.753477] Modules linked in:
-> [    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
-> [    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-> [    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
-> [    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
-> [    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
-> [    0.762294] Call Trace:
-> [    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
-> [    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
-> [    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
-> [    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
-> [    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
-> [    0.768011] ---[ end trace 329f34db2b3be966 ]---
->
-> So, yes, we have a bug, and this could cause any number of strange
-> problems.
->
->  kernel/sched/core.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 24beb9bb4c3e..39d9d95331b7 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
->          * or we have been woken up remotely but the IPI has not yet arrived,
->          * we haven't yet exited the RCU idle mode. Do it here manually until
->          * we find a better solution.
-> +        *
-> +        * NB: There are buggy callers of this function.  Ideally we
-> +        * should warn if prev_state != IN_USER, but that will trigger
-> +        * to frequently to make sense yet.
->          */
-> -       user_exit();
-> +       enum ctx_state prev_state = exception_enter();
->         schedule();
-> -       user_enter();
-> +       exception_exit(prev_state);
->  }
->  #endif
->
-> --
-> 1.9.3
->
+OK, thanks.
 
+> 
+> > 
+> >>
+> >>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> >>> ---
+> >> [...]
+> >>> +# Test more complex compares (&& and !!)
+> >>> +test_cmp2 -ne 0 -a -gt 10 "!= 0" "> 10" "&&" ''
+> >>> +test_cmp2 -ne 0 -o -gt 10 "!= 0" "> 10" "||" ''
+> >>
+> >> This might better be
+> >> test_cmp2 -ne 0 -a -gt 10 "!= 0" "&&" "> 10" ''
+> >> test_cmp2 -ne 0 -o -gt 10 "!= 0" "||" "> 10" ''
+> >>
+> >> :-)
+> > 
+> > Sure.
+> > 
+> > OK, I'll hold off on sending this patch then till 3.20.
+> 
+> OK.
+> 
+> > 
+> > I'll still add the update to the kernel for 3.19, but the testing for
+> > it needs work. It passes my test suite, but I don't know how to handle
+> > the busybox limitations.
+> 
+> If you are using Fedora, it provides dash and busybox packages too.
 
+Yep, and so does Debian. In fact, I notice that my Debian boxes all
+have /bin/sh linked to dash not bash (which means they were not as
+susceptible to the bash bug).
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+-- Steve
