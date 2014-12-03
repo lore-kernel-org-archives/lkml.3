@@ -1,130 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaLCCev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:34:51 -0500
-Received: from mga14.intel.com ([192.55.52.115]:45705 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaLCCet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:34:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="424347794"
-Message-ID: <547E76C7.8000907@intel.com>
-Date: Wed, 03 Dec 2014 10:34:47 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751382AbaLCCff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:35:35 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:61299 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750886AbaLCCfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 21:35:33 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44389200"
+Message-ID: <547E7348.5020204@cn.fujitsu.com>
+Date: Wed, 3 Dec 2014 10:19:52 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jens Axboe <axboe@kernel.dk>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] block / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-References: <1836422.FyhARLgxbM@vostro.rjw.lan>
-In-Reply-To: <1836422.FyhARLgxbM@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
+To: <linux-mtd@lists.infradead.org>
+CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: [RESEND PATCH 1/3] mtd:mtdblock: remove the needless mtdblks_lock
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 09:34 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
+The global lock mtdblks_lock was used to protect the original mtdblks
+array to avoid race conditions. As the mtdblks array was already gone,
+but the mtdblks_lock is left, and it causes latency when open/release dev.
+So we need to remove it here.
 
-Nice change!
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/mtd/mtdblock.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-> 
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM in the block device core.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
+index 485ea75..bb4c14f 100644
+--- a/drivers/mtd/mtdblock.c
++++ b/drivers/mtd/mtdblock.c
+@@ -45,8 +45,6 @@ struct mtdblk_dev {
+ 	enum { STATE_EMPTY, STATE_CLEAN, STATE_DIRTY } cache_state;
+ };
+ 
+-static DEFINE_MUTEX(mtdblks_lock);
+-
+ /*
+  * Cache stuff...
+  *
+@@ -286,10 +284,8 @@ static int mtdblock_open(struct mtd_blktrans_dev *mbd)
+ 
+ 	pr_debug("mtdblock_open\n");
+ 
+-	mutex_lock(&mtdblks_lock);
+ 	if (mtdblk->count) {
+ 		mtdblk->count++;
+-		mutex_unlock(&mtdblks_lock);
+ 		return 0;
+ 	}
+ 
+@@ -302,8 +298,6 @@ static int mtdblock_open(struct mtd_blktrans_dev *mbd)
+ 		mtdblk->cache_data = NULL;
+ 	}
+ 
+-	mutex_unlock(&mtdblks_lock);
+-
+ 	pr_debug("ok\n");
+ 
+ 	return 0;
+@@ -315,8 +309,6 @@ static void mtdblock_release(struct mtd_blktrans_dev *mbd)
+ 
+ 	pr_debug("mtdblock_release\n");
+ 
+-	mutex_lock(&mtdblks_lock);
+-
+ 	mutex_lock(&mtdblk->cache_mutex);
+ 	write_cached_data(mtdblk);
+ 	mutex_unlock(&mtdblk->cache_mutex);
+@@ -331,8 +323,6 @@ static void mtdblock_release(struct mtd_blktrans_dev *mbd)
+ 		vfree(mtdblk->cache_data);
+ 	}
+ 
+-	mutex_unlock(&mtdblks_lock);
+-
+ 	pr_debug("ok\n");
+ }
+ 
+-- 
+1.7.7
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-
-Thanks,
-Aaron
-
-> ---
-> 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
-> 
-> Please let me know if it is OK to take this one into linux-pm.
-> 
-> ---
->  block/blk-core.c       |    6 +++---
->  block/elevator.c       |    2 +-
->  include/linux/blkdev.h |    4 ++--
->  3 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> Index: linux-pm/include/linux/blkdev.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/blkdev.h
-> +++ linux-pm/include/linux/blkdev.h
-> @@ -398,7 +398,7 @@ struct request_queue {
->  	 */
->  	struct kobject mq_kobj;
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  	struct device		*dev;
->  	int			rpm_status;
->  	unsigned int		nr_pending;
-> @@ -1057,7 +1057,7 @@ extern void blk_put_queue(struct request
->  /*
->   * block layer runtime pm functions
->   */
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
->  extern int blk_pre_runtime_suspend(struct request_queue *q);
->  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-> Index: linux-pm/block/blk-core.c
-> ===================================================================
-> --- linux-pm.orig/block/blk-core.c
-> +++ linux-pm/block/blk-core.c
-> @@ -1325,7 +1325,7 @@ void part_round_stats(int cpu, struct hd
->  }
->  EXPORT_SYMBOL_GPL(part_round_stats);
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static void blk_pm_put_request(struct request *rq)
->  {
->  	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
-> @@ -2134,7 +2134,7 @@ void blk_account_io_done(struct request
->  	}
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  /*
->   * Don't process normal requests when queue is suspended
->   * or in the process of suspending/resuming
-> @@ -3159,7 +3159,7 @@ void blk_finish_plug(struct blk_plug *pl
->  }
->  EXPORT_SYMBOL(blk_finish_plug);
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  /**
->   * blk_pm_runtime_init - Block layer runtime PM initialization routine
->   * @q: the queue of the device
-> Index: linux-pm/block/elevator.c
-> ===================================================================
-> --- linux-pm.orig/block/elevator.c
-> +++ linux-pm/block/elevator.c
-> @@ -539,7 +539,7 @@ void elv_bio_merged(struct request_queue
->  		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static void blk_pm_requeue_request(struct request *rq)
->  {
->  	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
-> 
+.
 
