@@ -1,299 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaLCQJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:09:16 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:65468 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaLCQJJ (ORCPT
+	id S1753334AbaLCQJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:09:32 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44648 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaLCQJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:09:09 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-d2-547f35a2bf5c
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>
-Subject: [PATCH/RFC v9 18/19] leds: max77693: add support for V4L2 Flash
- sub-device
-Date: Wed, 03 Dec 2014 17:06:53 +0100
-Message-id: <1417622814-10845-19-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jQd1FpvUhBv0vLCw2zljPanF050Qm
-	i/43C1ktzr1ayWjRe/U5o8XZpjfsFpd3zWGz2PpmHaNFz4atrBZLr19ksrh76iibxYTpa1ks
-	WvceYbfYvespq8XhN+2sFmf2r2Sz+LTlG5ODoMeaeWsYPS739TJ57Jx1l91j5fIvbB6Hvy5k
-	8di0qpPNY97JQI8983+wevRtWcXosWL1d3aPz5vkArijuGxSUnMyy1KL9O0SuDJmPbvHVPDT
-	oeJgj0UD4xvTLkZODgkBE4lLnT/ZIWwxiQv31rN1MXJxCAlMZ5R4f/0JC4TTziTxcOZyJpAq
-	NgFDiZ8vXgPZHBwiAtESl47Vg9QwC3xgkrj4/wvYJGGBUIm++a+ZQWwWAVWJvZvfgtm8Ap4S
-	/x58YgPplRBQkJgzyQYkzAkUfvrjPjtIWEjAQ+LgRP8JjLwLGBlWMYqmFiQXFCel5xrqFSfm
-	Fpfmpesl5+duYgSH+zOpHYwrGywOMQpwMCrx8FrE1YUIsSaWFVfmHmKU4GBWEuF99g0oxJuS
-	WFmVWpQfX1Sak1p8iFGag0VJnPfGzdwQIYH0xJLU7NTUgtQimCwTB6dUA6Obh0rVbOXd7y+Y
-	bBWwkjp3ks2peGOqw4K8pWp/F+Rueti6++hCp16NL4En/4sa/CmQW9r6LUDIsrMh94SQgpXz
-	HeVkj5YFcycH3HuwzPNWZAH/ZP+/12bUBR/z3iaUxOwo9oEjIMUv/KDYveSpSfu32Zd8t1P9
-	p9Z9uOqA6ZvVy+yt1+2RW6nEUpyRaKjFXFScCAAv0jCDcwIAAA==
+	Wed, 3 Dec 2014 11:09:14 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, agraf@suse.de, joel.schopp@amd.com,
+        gleb@kernel.org, pbonzini@redhat.com, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        a.motakis@virtualopensystems.com
+Subject: [PATCH v5 5/5] KVM: arm/arm64: add irqfd support
+Date: Wed,  3 Dec 2014 17:07:12 +0100
+Message-Id: <1417622832-5460-6-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417622832-5460-1-git-send-email-eric.auger@linaro.org>
+References: <1417622832-5460-1-git-send-email-eric.auger@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for V4L2 Flash sub-device to the max77693 LED Flash class
-driver. The support allows for V4L2 Flash sub-device to take the control
-of the LED Flash class device.
+This patch enables irqfd on arm/arm64.
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Sakari Ailus <sakari.ailus@linux.intel.com>
+Both irqfd and resamplefd are supported. Injection is implemented
+in vgic.c without routing.
+
+This patch enables CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD.
+
+KVM_CAP_IRQFD is now advertised. KVM_CAP_IRQFD_RESAMPLE capability
+automatically is advertised as soon as CONFIG_HAVE_KVM_IRQFD is set.
+
+Irqfd injection is restricted to SPI. The rationale behind not
+supporting PPI irqfd injection is that any device using a PPI would
+be a private-to-the-CPU device (timer for instance), so its state
+would have to be context-switched along with the VCPU and would
+require in-kernel wiring anyhow. It is not a relevant use case for
+irqfds.
+
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
+
 ---
- drivers/leds/leds-max77693.c |  133 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 132 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/leds/leds-max77693.c b/drivers/leds/leds-max77693.c
-index 67a2f8f..e93edbd 100644
---- a/drivers/leds/leds-max77693.c
-+++ b/drivers/leds/leds-max77693.c
-@@ -21,6 +21,7 @@
- #include <linux/regmap.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-+#include <media/v4l2-flash.h>
+v4 -> v5:
+- squash [PATCH v4 3/3] KVM: arm64: add irqfd support into this patch
+- some rewording in Documentation/virtual/kvm/api.txt and in vgic
+  vgic_process_maintenance unlock comment.
+- move explanation of why not supporting PPI into commit message
+- in case of injection before gic readiness, -ENODEV is returned. It is
+  up to the user space to avoid this situation.
+
+v3 -> v4:
+- reword commit message
+- explain why we unlock the distributor before calling kvm_notify_acked_irq
+- rename is_assigned_irq into has_notifier
+- change EOI and injection kvm_debug format string
+- remove error local variable in kvm_set_irq
+- Move HAVE_KVM_IRQCHIP unset in a separate patch
+- handle case were the irqfd injection is attempted before the vgic is ready.
+  in such a case the notifier, if any, is called immediatly
+- use nr_irqs to test spi is within correct range
+
+v2 -> v3:
+- removal of irq.h from eventfd.c put in a separate patch to increase
+  visibility
+- properly expose KVM_CAP_IRQFD capability in arm.c
+- remove CONFIG_HAVE_KVM_IRQCHIP meaningfull only if irq_comm.c is used
+
+v1 -> v2:
+- rebase on 3.17rc1
+- move of the dist unlock in process_maintenance
+- remove of dist lock in __kvm_vgic_sync_hwstate
+- rewording of the commit message (add resamplefd reference)
+- remove irq.h
+---
+ Documentation/virtual/kvm/api.txt |  6 +++-
+ arch/arm/include/uapi/asm/kvm.h   |  3 ++
+ arch/arm/kvm/Kconfig              |  2 ++
+ arch/arm/kvm/Makefile             |  2 +-
+ arch/arm/kvm/arm.c                |  3 ++
+ arch/arm64/include/uapi/asm/kvm.h |  3 ++
+ arch/arm64/kvm/Kconfig            |  2 ++
+ arch/arm64/kvm/Makefile           |  2 +-
+ virt/kvm/arm/vgic.c               | 63 ++++++++++++++++++++++++++++++++++++---
+ 9 files changed, 79 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index 7610eaa..8993556 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -2206,7 +2206,7 @@ into the hash PTE second double word).
+ 4.75 KVM_IRQFD
  
- #define MODE_OFF		0
- #define MODE_FLASH1		(1 << 0)
-@@ -49,6 +50,7 @@ enum {
- struct max77693_sub_led {
- 	struct led_classdev_flash ldev;
- 	struct work_struct work_brightness_set;
-+	struct v4l2_flash *v4l2_flash;
+ Capability: KVM_CAP_IRQFD
+-Architectures: x86 s390
++Architectures: x86 s390 arm arm64
+ Type: vm ioctl
+ Parameters: struct kvm_irqfd (in)
+ Returns: 0 on success, -1 on error
+@@ -2232,6 +2232,10 @@ Note that closing the resamplefd is not sufficient to disable the
+ irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
+ and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
  
- 	unsigned int torch_brightness;
- 	unsigned int flash_timeout;
-@@ -602,6 +604,32 @@ unlock:									\
- 	return ret;							\
- }
++On ARM/ARM64, the gsi field in the kvm_irqfd struct specifies the Shared
++Peripheral Interrupt (SPI) index, such that the GIC interrupt ID is
++given by gsi + 32.
++
+ 4.76 KVM_PPC_ALLOCATE_HTAB
  
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+#define MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(ID)			\
-+static int max77693_led##ID##_external_strobe_set(			\
-+				struct v4l2_flash *v4l2_flash,		\
-+				bool enable)				\
-+{									\
-+	struct max77693_led *led =					\
-+			ldev##ID##_to_led(v4l2_flash->flash);		\
-+	int ret;							\
-+									\
-+	mutex_lock(&led->lock);						\
-+									\
-+	if (enable)							\
-+		ret = max77693_add_mode(led, MODE_FLASH_EXTERNAL##ID);	\
-+	else								\
-+		ret = max77693_clear_mode(led,				\
-+					MODE_FLASH_EXTERNAL##ID);	\
-+									\
-+	mutex_unlock(&led->lock);					\
-+									\
-+	return ret;							\
-+}
-+#else
-+#define MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(ID)
+ Capability: KVM_CAP_PPC_ALLOC_HTAB
+diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+index 09ee408..77547bb 100644
+--- a/arch/arm/include/uapi/asm/kvm.h
++++ b/arch/arm/include/uapi/asm/kvm.h
+@@ -196,6 +196,9 @@ struct kvm_arch_memory_slot {
+ /* Highest supported SPI, from VGIC_NR_IRQS */
+ #define KVM_ARM_IRQ_GIC_MAX		127
+ 
++/* One single KVM irqchip, ie. the VGIC */
++#define KVM_NR_IRQCHIPS          1
++
+ /* PSCI interface */
+ #define KVM_PSCI_FN_BASE		0x95c1ba5e
+ #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
+diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+index 9f581b1..e519a40 100644
+--- a/arch/arm/kvm/Kconfig
++++ b/arch/arm/kvm/Kconfig
+@@ -24,6 +24,7 @@ config KVM
+ 	select KVM_MMIO
+ 	select KVM_ARM_HOST
+ 	depends on ARM_VIRT_EXT && ARM_LPAE
++	select HAVE_KVM_EVENTFD
+ 	---help---
+ 	  Support hosting virtualized guest machines. You will also
+ 	  need to select one or more of the processor modules below.
+@@ -55,6 +56,7 @@ config KVM_ARM_MAX_VCPUS
+ config KVM_ARM_VGIC
+ 	bool "KVM support for Virtual GIC"
+ 	depends on KVM_ARM_HOST && OF
++	select HAVE_KVM_IRQFD
+ 	default y
+ 	---help---
+ 	  Adds support for a hardware assisted, in-kernel GIC emulation.
+diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
+index f7057ed..859db09 100644
+--- a/arch/arm/kvm/Makefile
++++ b/arch/arm/kvm/Makefile
+@@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
+ AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
+ 
+ KVM := ../../../virt/kvm
+-kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
++kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
+ 
+ obj-y += kvm-arm.o init.o interrupts.o
+ obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index 5309e4b..45681b4 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -172,6 +172,9 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
+ 	case KVM_CAP_IRQCHIP:
+ 		r = vgic_present;
+ 		break;
++#ifdef CONFIG_HAVE_KVM_IRQFD
++	case KVM_CAP_IRQFD:
 +#endif
-+
- #define MAX77693_LED_FLASH_FAULT_GET(ID)				\
- static int max77693_led##ID##_flash_fault_get(				\
- 				struct led_classdev_flash *flash,	\
-@@ -670,6 +698,7 @@ MAX77693_LED_TORCH_BRIGHTNESS_SET(1)
- MAX77693_LED_FLASH_BRIGHTNESS_SET(1)
- MAX77693_LED_FLASH_STROBE_SET(1)
- MAX77693_LED_FLASH_STROBE_GET(1)
-+MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(1)
- MAX77693_LED_FLASH_TIMEOUT_SET(1)
- MAX77693_LED_FLASH_FAULT_GET(1)
+ 	case KVM_CAP_DEVICE_CTRL:
+ 	case KVM_CAP_USER_MEMORY:
+ 	case KVM_CAP_SYNC_MMU:
+diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
+index 8e38878..1ed4417 100644
+--- a/arch/arm64/include/uapi/asm/kvm.h
++++ b/arch/arm64/include/uapi/asm/kvm.h
+@@ -182,6 +182,9 @@ struct kvm_arch_memory_slot {
+ /* Highest supported SPI, from VGIC_NR_IRQS */
+ #define KVM_ARM_IRQ_GIC_MAX		127
  
-@@ -679,6 +708,7 @@ MAX77693_LED_TORCH_BRIGHTNESS_SET(2)
- MAX77693_LED_FLASH_BRIGHTNESS_SET(2)
- MAX77693_LED_FLASH_STROBE_SET(2)
- MAX77693_LED_FLASH_STROBE_GET(2)
-+MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(2)
- MAX77693_LED_FLASH_TIMEOUT_SET(2)
- MAX77693_LED_FLASH_FAULT_GET(2)
++/* One single KVM irqchip, ie. the VGIC */
++#define KVM_NR_IRQCHIPS          1
++
+ /* PSCI interface */
+ #define KVM_PSCI_FN_BASE		0x95c1ba5e
+ #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
+diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
+index 279e1a0..09c25c2 100644
+--- a/arch/arm64/kvm/Kconfig
++++ b/arch/arm64/kvm/Kconfig
+@@ -26,6 +26,7 @@ config KVM
+ 	select KVM_ARM_HOST
+ 	select KVM_ARM_VGIC
+ 	select KVM_ARM_TIMER
++	select HAVE_KVM_EVENTFD
+ 	---help---
+ 	  Support hosting virtualized guest machines.
  
-@@ -838,9 +868,35 @@ static const struct led_flash_ops flash_ops##ID = {				\
- 	.fault_get		= max77693_led##ID##_flash_fault_get,		\
- }
+@@ -50,6 +51,7 @@ config KVM_ARM_MAX_VCPUS
+ config KVM_ARM_VGIC
+ 	bool
+ 	depends on KVM_ARM_HOST && OF
++	select HAVE_KVM_IRQFD
+ 	---help---
+ 	  Adds support for a hardware assisted, in-kernel GIC emulation.
  
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+#define MAX77693_LED_V4L2_FLASH_OPS(ID)						\
-+static const struct v4l2_flash_ops v4l2_flash##ID##_ops = {			\
-+	.external_strobe_set = max77693_led##ID##_external_strobe_set,		\
-+}
-+
-+#define MAX77693_LED_GET_V4L2_FLASH_OPS(ID)					\
-+static inline const struct v4l2_flash_ops *get_v4l2_flash##ID##_ops(void)	\
-+{										\
-+	return &v4l2_flash##ID##_ops;						\
-+}
-+#else
-+#define MAX77693_LED_V4L2_FLASH_OPS(ID)
-+
-+#define MAX77693_LED_GET_V4L2_FLASH_OPS(ID)					\
-+static inline const struct v4l2_flash_ops *get_v4l2_flash##ID##_ops(void)	\
-+{										\
-+	return NULL;								\
-+}
-+#endif
-+
- MAX77693_LED_INIT_FLASH_OPS(1);
- MAX77693_LED_INIT_FLASH_OPS(2);
+diff --git a/arch/arm64/kvm/Makefile b/arch/arm64/kvm/Makefile
+index 32a0961..2e6b827 100644
+--- a/arch/arm64/kvm/Makefile
++++ b/arch/arm64/kvm/Makefile
+@@ -11,7 +11,7 @@ ARM=../../../arch/arm/kvm
  
-+MAX77693_LED_V4L2_FLASH_OPS(1);
-+MAX77693_LED_V4L2_FLASH_OPS(2);
-+MAX77693_LED_GET_V4L2_FLASH_OPS(1);
-+MAX77693_LED_GET_V4L2_FLASH_OPS(2);
-+
- static void max77693_init_flash_settings(struct max77693_led *led,
- 					 struct max77693_led_settings *s,
- 					 int led_id)
-@@ -876,18 +932,68 @@ static void max77693_init_flash_settings(struct max77693_led *led,
- 	setting->val = setting->max;
- }
+ obj-$(CONFIG_KVM_ARM_HOST) += kvm.o
  
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+static void max77693_init_v4l2_ctrl_config(struct max77693_led_settings *s,
-+					struct max77693_led_platform_data *p,
-+					struct v4l2_flash_ctrl_config *config,
-+					int led_id)
-+{
-+	struct led_flash_setting *setting;
-+	struct v4l2_ctrl_config *c;
-+
-+	c = &config->intensity;
-+	setting = &s->torch_brightness;
-+	c->min = setting->min;
-+	c->max = setting->max;
-+	c->step = setting->step;
-+	c->def = setting->val;
-+
-+	c = &config->flash_intensity;
-+	setting = &s->flash_brightness;
-+	c->min = setting->min;
-+	c->max = setting->max;
-+	c->step = setting->step;
-+	c->def = setting->val;
-+
-+	c = &config->flash_timeout;
-+	setting = &s->flash_timeout;
-+	c->min = setting->min;
-+	c->max = setting->max;
-+	c->step = setting->step;
-+	c->def = setting->val;
-+
-+	/* Init flash faults config */
-+	config->flash_faults =	V4L2_FLASH_FAULT_OVER_VOLTAGE |
-+				V4L2_FLASH_FAULT_SHORT_CIRCUIT |
-+				V4L2_FLASH_FAULT_OVER_CURRENT;
-+
-+	config->has_external_strobe =
-+			!!(p->trigger[led_id] & MAX77693_LED_TRIG_FLASH);
-+}
-+#else
-+#define max77693_init_v4l2_ctrl_config(s, p, config, led_id)
-+#endif
-+
- static int max77693_register_led(struct max77693_led *led, int id)
+-kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
++kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
+ kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/arm.o $(ARM)/mmu.o $(ARM)/mmio.o
+ kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/psci.o $(ARM)/perf.o
+ 
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index 3aaca49..6ab232a 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -1446,7 +1446,10 @@ epilog:
+ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
  {
- 	struct platform_device *pdev = led->pdev;
- 	struct led_classdev_flash *flash;
- 	struct led_classdev *led_cdev;
- 	struct max77693_sub_led *sub_leds = led->sub_leds;
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+	struct v4l2_flash_ctrl_config v4l2_flash_config;
-+#endif
-+	const struct v4l2_flash_ops *v4l2_flash_ops = NULL;
- 	struct max77693_led_settings settings;
-+	int ret;
+ 	u32 status = vgic_get_interrupt_status(vcpu);
++	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+ 	bool level_pending = false;
++	struct kvm *kvm = vcpu->kvm;
++	bool has_notifier;
  
- 	flash = &sub_leds[id].ldev;
+ 	kvm_debug("STATUS = %08x\n", status);
  
- 	/* Initialize flash settings */
- 	max77693_init_flash_settings(led, &settings, id);
-+	/* Initialize V4L2 Flash config basing on initialized settings */
-+	max77693_init_v4l2_ctrl_config(&settings, led->pdata,
-+					&v4l2_flash_config, id);
+@@ -1463,6 +1466,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 			struct vgic_lr vlr = vgic_get_lr(vcpu, lr);
+ 			WARN_ON(vgic_irq_is_edge(vcpu, vlr.irq));
  
- 	/* Initialize LED Flash class device */
- 	led_cdev = &flash->led_cdev;
-@@ -901,6 +1007,7 @@ static int max77693_register_led(struct max77693_led *led, int id)
- 		INIT_WORK(&sub_leds[id].work_brightness_set,
- 				max77693_led1_brightness_set_work);
- 		flash->ops = &flash_ops1;
-+		v4l2_flash_ops = get_v4l2_flash1_ops();
- 	} else {
- 		led_cdev->brightness_set = max77693_led2_brightness_set;
- 		led_cdev->brightness_set_sync =
-@@ -908,6 +1015,7 @@ static int max77693_register_led(struct max77693_led *led, int id)
- 		INIT_WORK(&sub_leds[id].work_brightness_set,
- 				max77693_led2_brightness_set_work);
- 		flash->ops = &flash_ops2;
-+		v4l2_flash_ops = get_v4l2_flash2_ops();
- 	}
++			spin_lock(&dist->lock);
+ 			vgic_irq_clear_queued(vcpu, vlr.irq);
+ 			WARN_ON(vlr.state & LR_STATE_MASK);
+ 			vlr.state = 0;
+@@ -1481,6 +1485,24 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 			 */
+ 			vgic_dist_irq_clear_soft_pend(vcpu, vlr.irq);
  
- 	led_cdev->max_brightness = settings.torch_brightness.val /
-@@ -921,7 +1029,27 @@ static int max77693_register_led(struct max77693_led *led, int id)
- 	sub_leds[id].flash_timeout = flash->timeout.val;
++			/*
++			 * kvm_notify_acked_irq calls kvm_set_irq()
++			 * to reset the IRQ level. Need to release the
++			 * lock for kvm_set_irq to grab it.
++			 */
++			spin_unlock(&dist->lock);
++
++			has_notifier = kvm_irq_has_notifier(kvm, 0,
++						vlr.irq - VGIC_NR_PRIVATE_IRQS);
++
++			if (has_notifier) {
++				kvm_debug("Guest EOIed vIRQ %d on CPU %d\n",
++					  vlr.irq, vcpu->vcpu_id);
++				kvm_notify_acked_irq(kvm, 0,
++						vlr.irq - VGIC_NR_PRIVATE_IRQS);
++			}
++			spin_lock(&dist->lock);
++
+ 			/* Any additional pending interrupt? */
+ 			if (vgic_dist_irq_get_level(vcpu, vlr.irq)) {
+ 				vgic_cpu_irq_set(vcpu, vlr.irq);
+@@ -1490,6 +1512,8 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+ 				vgic_cpu_irq_clear(vcpu, vlr.irq);
+ 			}
  
- 	/* Register in the LED subsystem. */
--	return led_classdev_flash_register(&pdev->dev, flash);
-+	ret = led_classdev_flash_register(&pdev->dev, flash);
-+	if (ret < 0)
-+		return ret;
++			spin_unlock(&dist->lock);
 +
-+	sub_leds[id].v4l2_flash =
-+		v4l2_flash_init(flash,
-+				v4l2_flash_ops,
-+				led->pdata->sub_nodes[id],
-+				&v4l2_flash_config);
-+
-+	if (IS_ERR(sub_leds[id].v4l2_flash)) {
-+		ret = PTR_ERR(sub_leds[id].v4l2_flash);
-+		goto err_v4l2_flash_init;
-+	}
-+
-+	return 0;
-+
-+err_v4l2_flash_init:
-+	led_classdev_flash_unregister(flash);
-+
-+	return ret;
+ 			/*
+ 			 * Despite being EOIed, the LR may not have
+ 			 * been marked as empty.
+@@ -1554,14 +1578,10 @@ void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
+ 
+ void kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
+ {
+-	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+-
+ 	if (!irqchip_in_kernel(vcpu->kvm))
+ 		return;
+ 
+-	spin_lock(&dist->lock);
+ 	__kvm_vgic_sync_hwstate(vcpu);
+-	spin_unlock(&dist->lock);
  }
  
- static int max77693_led_probe(struct platform_device *pdev)
-@@ -972,6 +1100,7 @@ static int max77693_led_probe(struct platform_device *pdev)
- err_register_led2:
- 	if (!p->fleds[FLED1])
- 		goto err_setup;
-+	v4l2_flash_release(sub_leds[FLED1].v4l2_flash);
- 	led_classdev_flash_unregister(&sub_leds[FLED1].ldev);
- err_setup:
- 	mutex_destroy(&led->lock);
-@@ -986,11 +1115,13 @@ static int max77693_led_remove(struct platform_device *pdev)
- 	struct max77693_sub_led *sub_leds = led->sub_leds;
- 
- 	if (led->iout_joint || p->fleds[FLED1]) {
-+		v4l2_flash_release(sub_leds[FLED1].v4l2_flash);
- 		led_classdev_flash_unregister(&sub_leds[FLED1].ldev);
- 		cancel_work_sync(&sub_leds[FLED1].work_brightness_set);
- 	}
- 
- 	if (!led->iout_joint && p->fleds[FLED2]) {
-+		v4l2_flash_release(sub_leds[FLED2].v4l2_flash);
- 		led_classdev_flash_unregister(&sub_leds[FLED2].ldev);
- 		cancel_work_sync(&sub_leds[FLED2].work_brightness_set);
- 	}
+ int kvm_vgic_vcpu_pending_irq(struct kvm_vcpu *vcpu)
+@@ -2477,3 +2497,38 @@ out_free_irq:
+ 	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
+ 	return ret;
+ }
++
++int kvm_irq_map_gsi(struct kvm *kvm,
++		    struct kvm_kernel_irq_routing_entry *entries,
++		    int gsi)
++{
++	return gsi;
++}
++
++int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin)
++{
++	return pin;
++}
++
++int kvm_set_irq(struct kvm *kvm, int irq_source_id,
++		u32 irq, int level, bool line_status)
++{
++	unsigned int spi = irq + VGIC_NR_PRIVATE_IRQS;
++
++	kvm_debug("irqfd sets vIRQ %d to %d\n", irq, level);
++
++	if (likely(vgic_initialized(kvm))) {
++		if (spi > kvm->arch.vgic.nr_irqs)
++			return -EINVAL;
++		return kvm_vgic_inject_irq(kvm, 0, spi, level);
++	} else
++		return -ENODEV;
++}
++
++/* MSI not implemented yet */
++int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
++		struct kvm *kvm, int irq_source_id,
++		int level, bool line_status)
++{
++	return 0;
++}
 -- 
-1.7.9.5
+1.9.1
 
