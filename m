@@ -1,134 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaLCKfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:35:34 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:54670 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaLCKfc (ORCPT
+	id S1752124AbaLCKhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:37:09 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:55146 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaLCKhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:35:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Ward <robert.ward114@googlemail.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: char: mem: Make /dev/mem an optional device
-Date: Wed, 03 Dec 2014 11:35:27 +0100
-Message-ID: <89216621.RaKMSXnzQp@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1412030818030.7838@rob-thinkpad>
-References: <alpine.DEB.2.10.1412030818030.7838@rob-thinkpad>
+	Wed, 3 Dec 2014 05:37:06 -0500
+Message-ID: <547EE7C9.9060207@mentor.com>
+Date: Wed, 3 Dec 2014 16:06:57 +0530
+From: Bhuvanesh <bhuvanesh_surachari@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:R7F5lqNjb9nkKp0ADKNiRnMztq6PtMXo0yIC5SqXfJ0
- AFRT3sC05t2kW1FfOsJilNk6XqAayqlgwbLhtJ6YoiLRiHYqak
- qHmjVSRyetzHS5+w3+3fw3fx+OFUdVqrxVfgJyv2XWl9n7kYcF
- gP646G4Vz/q4C44xOTtG5pYl4qZnIINFReLHgxgPFGC9vlH3xn
- VMW2s5mNO0q3x1gaR1PLMpCZ2gfW0feoVKd+dUMhrSvcR+Jcpj
- pjBFbvnKdxwjNgbJLAy0/ncJV1pgkbRjCHTtzNtGxnowhNucyM
- 6I2Ufe6/DyL85GFFR2o5fq0lP527B9hKBcygcaXZ5Ng65ipJdC
- hg+WXQQoOcDj44nVAc2U=
-X-UI-Out-Filterresults: notjunk:1;
+To: <chris@printf.net>, <ulf.hansson@linaro.org>, <snitzer@redhat.com>,
+        <axboe@fb.com>, <harish_kandiga@mentor.com>,
+        <rmk+kernel@arm.linux.org.uk>, <joe@perches.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: queue:Improve error handling during allocation of bounce
+ buffers.
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 08:21:04 Rob Ward wrote:
-> From ecd3ac31f6be2372d2beac0cc4831e74aeae75d2 Mon Sep 17 00:00:00 2001
-> From: Rob Ward <robert.ward114@googlemail.com>
-> Date: Wed, 5 Nov 2014 19:13:53 +0000
-> Subject: [PATCH] drivers: char: mem: Make /dev/mem an optional device
+Hi,
 
-Please leave out these headers from the email. If you use git-send-email,
-it will work the right way, but for regular email clients you need to
-remove them manually.
+  During our rigorous testing of inserting and removing SD card we found
+exception in the kernel. Please find the backtrace as below:
 
-> Adds Kconfig option CONFIG_DEVMEM that allows the
-> /dev/mem device to be disabled.
-> 
-> Option defaults to /dev/mem enabled.
+[ 1605.392278] Backtrace: 
+[ 1605.395466] [<800117c4>] (dump_backtrace+0x0/0x100) from [<803f2cf4>] (dump_stack+0x18/0x1c)
+[ 1605.408679] [<803f2cdc>] (dump_stack+0x0/0x1c) from [<800b4038>] (warn_alloc_failed+0xec/0x10c)
+[ 1605.423194] [<800b3f4c>] (warn_alloc_failed+0x0/0x10c) from [<800b6d10>] (__alloc_pages_nodemask+0x764/0x890)
+[ 1605.439126] [<800b65ac>] (__alloc_pages_nodemask+0x0/0x890) from [<800b6e54>] (__get_free_pages+0x18/0x54)
+[ 1605.453885] [<800b6e3c>] (__get_free_pages+0x0/0x54) from [<800e4504>] (kmalloc_order_trace+0x2c/0xe8)
+[ 1605.470367] [<800e44d8>] (kmalloc_order_trace+0x0/0xe8) from [<800e5c4c>] (__kmalloc+0x38/0x1e4)
+[ 1605.482358] [<800e5c14>] (__kmalloc+0x0/0x1e4) from [<8026ac50>] (mmc_init_queue+0x198/0x444)
+[ 1605.494663] [<8026aab8>] (mmc_init_queue+0x0/0x444) from [<80268638>] (mmc_blk_alloc_req+0x184/0x354)
+[ 1605.513224] [<802684b4>] (mmc_blk_alloc_req+0x0/0x354) from [<80268f54>] (mmc_blk_probe+0x7c/0x28c)
+[ 1605.527459] [<80268ed8>] (mmc_blk_probe+0x0/0x28c) from [<8025e8f0>] (mmc_bus_probe+0x1c/0x20)
+[ 1605.543524] [<8025e8d4>] (mmc_bus_probe+0x0/0x20) from [<802a0d2c>] (driver_probe_device+0xb4/0x204)
+[ 1605.558819] [<802a0c78>] (driver_probe_device+0x0/0x204) from [<802a0eac>] (__device_attach+0x30/0x4c)
+[ 1605.571747] [<802a0e7c>] (__device_attach+0x0/0x4c) from [<8029f3b4>] (bus_for_each_drv+0x80/0x94)
+[ 1605.587027] [<8029f334>] (bus_for_each_drv+0x0/0x94) from [<802a0c2c>] (device_attach+0x70/0x94)
+[ 1605.601680] [<802a0bbc>] (device_attach+0x0/0x94) from [<802a01e0>] (bus_probe_device+0x30/0xa0)
+[ 1605.614128] [<802a01b0>] (bus_probe_device+0x0/0xa0) from [<8029e8bc>] (device_add+0x42c/0x570)
+[ 1605.626933] [<8029e490>] (device_add+0x0/0x570) from [<8025eda0>] (mmc_add_card+0x188/0x1e4)
+[ 1605.638880] [<8025ec18>] (mmc_add_card+0x0/0x1e4) from [<802637bc>] (mmc_attach_sd+0x188/0x210)
+[ 1605.651413] [<80263634>] (mmc_attach_sd+0x0/0x210) from [<8025e508>] (mmc_rescan+0x240/0x2ac)
+[ 1605.666968] [<8025e2c8>] (mmc_rescan+0x0/0x2ac) from [<8003cde0>] (process_one_work+0x2cc/0x460)
+[ 1605.682229] [<8003cb14>] (process_one_work+0x0/0x460) from [<8003d240>] (worker_thread+0x298/0x3ec)
+[ 1605.698223] [<8003cfa8>] (worker_thread+0x0/0x3ec) from [<80042490>] (kthread+0xb4/0xc0)
+[ 1605.707312] [<800423dc>] (kthread+0x0/0xc0) from [<8000d9b8>] (ret_from_fork+0x14/0x3c)
+[ 1605.846505] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[ 1605.859027] pgd = 80004000
+[ 1605.862280] [00000000] *pgd=00000000
+[ 1605.866415] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+[ 1605.949143] CPU: 0    Not tainted  (3.8.13.27-03391-g4e6f494 #1)
+[ 1605.955216] PC is at __blk_segment_map_sg+0xfc/0x140
+[ 1605.955216] PC is at __blk_segment_map_sg+0xfc/0x140
+[ 1605.960240] LR is at blk_rq_map_sg+0xa0/0x1d8
+[ 1605.964657] pc : [<802240fc>]    lr : [<802241e0>]    psr: 60000013
+[ 1605.964657] sp : 81fe5db8  ip : 81fe5df0  fp : 81fe5dec
+[ 1605.976191] r10: 81fe5e04  r9 : 00000000  r8 : 00000000
+[ 1605.981473] r7 : 81fe5e00  r6 : 00001000  r5 : 81fe5e04  r4 : ad1ea3c4
+[ 1605.988056] r3 : 00000000  r2 : 80667000  r1 : 00000000  r0 : ac2972a0
+[ 1605.994638] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[ 1606.002001] Control: 10c5387d  Table: 3d09004a  DAC: 00000015
+[ 1606.007801] Process mmcqd/0 (pid: 13804, stack limit = 0x81fe4238)
+[ 1606.014034] Stack: (0x81fe5db8 to 0x81fe6000)
+[ 1606.018446] 5da0:                                                       ac274a38 00000000
+[ 1606.026681] 5dc0: 00000000 ac2972a0 ad1f4af8 ad1ea380 00000001 00000000 00000000 81fe5e04
+[ 1606.034917] 5de0: 81fe5e3c 81fe5df0 802241e0 8022400c 81fe5e04 81fe5e08 81fe5e0c 00000031
+[ 1606.043152] 5e00: 00000000 00000000 00000000 00000001 81fe5e54 8633a030 8633a800 ad1f4af8
+[ 1606.051386] 5e20: 00000008 8633a034 8633a008 8633a000 81fe5e5c 81fe5e40 8026b06c 8022414c
+[ 1606.059622] 5e40: 8633a030 8633a800 ad1f4af8 00000008 81fe5e94 81fe5e60 80268c14 8026b04c
+[ 1606.067857] 5e60: 803f90d8 00000000 81fe5e8c 8633a800 ad1f4af8 8633a008 ac07f000 ad1f4af8
+[ 1606.076091] 5e80: 8633a000 8633a034 81fe5edc 81fe5e98 802699a8 80268994 81fe5eb4 00000000
+[ 1606.084326] 5ea0: 00000000 00000000 00100100 00200200 803f7f98 ad1f4af8 8633a800 8633a008
+[ 1606.092562] 5ec0: ac07f000 8633a000 81fe4000 8633a000 81fe5f24 81fe5ee0 8026a210 80269920
+[ 1606.100798] 5ee0: 00000000 ad1f4af8 81fe5f0c 81fe5ef8 802204e0 120d0000 120d0000 8633a008
+[ 1606.109034] 5f00: ad1f4af8 8633a010 ac2972a0 81fe4028 81fe4000 00000001 81fe5f5c 81fe5f28
+[ 1606.117270] 5f20: 8026a89c 80269d4c 00000000 120d0000 8026a7bc ac23bc28 00000000 8633a008
+[ 1606.125506] 5f40: 8026a7bc 00000000 00000000 00000000 81fe5fac 81fe5f60 80042490 8026a7c8
+[ 1606.133742] 5f60: 803f9134 00000000 81fe5f94 8633a008 00000000 00000000 81fe5f78 81fe5f78
+[ 1606.141977] 5f80: 00000000 00000000 81fe5f88 81fe5f88 ac23bc28 800423dc 00000000 00000000
+[ 1606.150213] 5fa0: 00000000 81fe5fb0 8000d9b8 800423e8 00000000 00000000 00000000 00000000
+[ 1606.158448] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[ 1606.166684] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 1da1d629 0030d97d
+[ 1606.174914] Backtrace: 
+[ 1606.177445] [<80224000>] (__blk_segment_map_sg+0x0/0x140) from [<802241e0>] (blk_rq_map_sg+0xa0/0x1d8)
+[ 1606.186822] [<80224140>] (blk_rq_map_sg+0x0/0x1d8) from [<8026b06c>] (mmc_queue_map_sg+0x2c/0x94)
+[ 1606.195759] [<8026b040>] (mmc_queue_map_sg+0x0/0x94) from [<80268c14>] (mmc_blk_rw_rq_prep+0x28c/0x300)
+[ 1606.210939] [<80268988>] (mmc_blk_rw_rq_prep+0x0/0x300) from [<802699a8>] (mmc_blk_issue_rw_rq+0x94/0x42c)
+[ 1606.220655] [<80269914>] (mmc_blk_issue_rw_rq+0x0/0x42c) from [<8026a210>] (mmc_blk_issue_rq+0x4d0/0x500)
+[ 1606.230284] [<80269d40>] (mmc_blk_issue_rq+0x0/0x500) from [<8026a89c>] (mmc_queue_thread+0xe0/0x17c)
+[ 1606.239571] [<8026a7bc>] (mmc_queue_thread+0x0/0x17c) from [<80042490>] (kthread+0xb4/0xc0)
+[ 1606.247989] [<800423dc>] (kthread+0x0/0xc0) from [<8000d9b8>] (ret_from_fork+0x14/0x3c)
+[ 1606.261771] Code: e5850000 e5953000 e5942000 e5941008 (e5930000) 
+[ 1606.301708] Kernel panic - not syncing: Fatal exception
+[ 1606.307005] Rebooting in 1 seconds..
 
-Please explain the purpose of this. Are you doing this for security
-considerations, for space savings, or something else.
+On analysis i found that error handling in mmc_init_queue during 
+allocation of bounce buffers is incomplete. In the exception case the 
+allocation of current bounce buffer fails and the previous bounce 
+buffer allocation succeeds. This later leads to exception in, 
+__blk_segment_map_sg while trying to access the bounce buffer.
 
-If you are worried about security, please explain the possible attack
-vector you are closing, if you want to save kernel text size, show
-how much you save. It also helps to show a guess of what might break
-if you turn it off.
+The below patch improves the error handling during allocation of 
+bounce buffers. The previous bounce buffer is allocated only if the 
+allocation of current bounce buffer succeeds.
 
-> Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
-> ---
->  drivers/char/Kconfig |  9 +++++++++
->  drivers/char/mem.c   | 19 ++++++++++++++++++-
->  2 files changed, 27 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-> index efefd12..a4af822 100644
-> --- a/drivers/char/Kconfig
-> +++ b/drivers/char/Kconfig
-> @@ -6,6 +6,15 @@ menu "Character devices"
->  
->  source "drivers/tty/Kconfig"
->  
-> +config DEVMEM
-> +	bool "/dev/mem virtual device support"
-> +	default y
 
-Should this be
+>From 7ea020e32e1fbe4d05d104e31815d908af92f2a5 Mon Sep 17 00:00:00 2001
+From: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
+Date: Mon, 1 Dec 2014 02:23:02 -0500
+Subject: [PATCH] mmc: queue:Improve error handling during allocation of
+ bounce buffers.
 
-	bool "/dev/mem virtual device support" if EXPERT
+Allocation of previous bounce buffer in mmc_init_queue when the current
+bounce buffer allocation fails was leading to a crash later in
+__blk_segment_map_sg. Error handling is improved by allocating previous
+bounce buffer only if the current bounce buffer allocation succeeds.
 
-so normal users don't accidentally disable it?
+Signed-off-by: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
+Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
+---
+ drivers/mmc/card/queue.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-> index 524b707..feadc87 100644
-> --- a/drivers/char/mem.c
-> +++ b/drivers/char/mem.c
-> @@ -92,6 +92,7 @@ void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
->   * This funcion reads the *physical* memory. The f_pos points directly to the
->   * memory location.
->   */
-> +#ifdef CONFIG_DEVMEM
->  static ssize_t read_mem(struct file *file, char __user *buf,
->  			size_t count, loff_t *ppos)
->  {
-> @@ -216,6 +217,7 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
->  	*ppos += written;
->  	return written;
->  }
-> +#endif
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index cfa6110..236d194 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -232,13 +232,15 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 			if (!mqrq_cur->bounce_buf) {
+ 				pr_warn("%s: unable to allocate bounce cur buffer\n",
+ 					mmc_card_name(card));
+-			}
+-			mqrq_prev->bounce_buf = kmalloc(bouncesz, GFP_KERNEL);
+-			if (!mqrq_prev->bounce_buf) {
+-				pr_warn("%s: unable to allocate bounce prev buffer\n",
+-					mmc_card_name(card));
+-				kfree(mqrq_cur->bounce_buf);
+-				mqrq_cur->bounce_buf = NULL;
++			} else {
++				mqrq_prev->bounce_buf =
++						kmalloc(bouncesz, GFP_KERNEL);
++				if (!mqrq_prev->bounce_buf) {
++					pr_warn("%s: unable to allocate bounce prev buffer\n",
++						mmc_card_name(card));
++					kfree(mqrq_cur->bounce_buf);
++					mqrq_cur->bounce_buf = NULL;
++				}
+ 			}
+ 		}
+ 
+-- 
+1.7.9.5
 
-Adding a lot of #ifdef isn't nice, there are better ways to achieve the
-same.
 
-> +#ifdef CONFIG_DEVMEM
->  static const struct file_operations mem_fops = {
->  	.llseek		= memory_lseek,
->  	.read		= read_mem,
-> @@ -720,6 +734,7 @@ static const struct file_operations mem_fops = {
->  	.open		= open_mem,
->  	.get_unmapped_area = get_unmapped_area_mem,
->  };
-> +#endif
+Kindly review the patch.
 
-I would probably do it here an leave the mem_fops visible to the compiler
-but mark it as '__maybe_unused' to avoid the warning when the reference below
-is not there.
-
->  #ifdef CONFIG_DEVKMEM
->  static const struct file_operations kmem_fops = {
-> @@ -782,7 +797,9 @@ static const struct memdev {
->  	const struct file_operations *fops;
->  	struct backing_dev_info *dev_info;
->  } devlist[] = {
-> +#ifdef CONFIG_DEVMEM
->  	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi },
-> +#endif
->  #ifdef CONFIG_DEVKMEM
->  	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi },
->  #endif
-
-To keep it in sync with kmem, I would then submit a cleanup patch to
-do the same for kmem_fops and replace the other #ifdef lines with
-__maybe_unused statement for kmem_fops.
-
-	Arnd
+Thank you,
+Regards,
+Bhuvanesh
