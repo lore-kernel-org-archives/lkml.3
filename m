@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaLCLb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:31:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54686 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648AbaLCL1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:46 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Bohac <jbohac@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 095/101] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
-Date: Wed,  3 Dec 2014 12:26:57 +0100
-Message-Id: <f39a6f3d592372cd369b6a04a8562f3e6f41ee47.1417605922.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-References: <cover.1417605922.git.jslaby@suse.cz>
+	id S1753152AbaLCLcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:32:22 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39263 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753095AbaLCLcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:32:15 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH 00/11] usb: gadget: at91_udc: Rework for multi-platform support
+Date: Wed,  3 Dec 2014 12:31:59 +0100
+Message-Id: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Bohac <jbohac@suse.cz>
+Hello,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This series reworks the at91_udc driver to prepare at91 for multi-platform
+support.
 
-===============
+It also include several fixes:
+ - fix clock names to be consistent with other USB drivers
+ - document clocks and clock-names properties in atmel-usb DT bindings doc
 
-[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
+and some cleanup changes:
+ - remove useless usb_clk
+ - allocate at91_udc instance instead of using the statically defined one
+ - simplify the probe and remove functions by using devm_ helpers
+ - remove !DT specific code
 
-This fixes an old regression introduced by commit
-b0d0d915 (ipx: remove the BKL).
+The series depends on this patch [1] (which adds matrix registers definition).
 
-When a recvmsg syscall blocks waiting for new data, no data can be sent on the
-same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
+Regards,
 
-This breaks mars-nwe (NetWare emulator):
-- the ncpserv process reads the request using recvmsg
-- ncpserv forks and spawns nwconn
-- ncpserv calls a (blocking) recvmsg and waits for new requests
-- nwconn deadlocks in sendmsg on the same socket
+Boris
 
-Commit b0d0d915 has simply replaced BKL locking with
-lock_sock/release_sock. Unlike now, BKL got unlocked while
-sleeping, so a blocking recvmsg did not block a concurrent
-sendmsg.
+[1]https://lkml.org/lkml/2014/12/3/230
 
-Only keep the socket locked while actually working with the socket data and
-release it prior to calling skb_recv_datagram().
+Boris Brezillon (11):
+  usb: gadget: at91_udc: Fix clock names
+  usb: gadget: at91_udc: Drop uclk clock
+  usb: gadget: at91_udc: Document DT clocks and clock-names property
+  ARM: at91/dt: at91sam9261: fix clocks and clock-names in udc
+    definition
+  usb: gadget: at91_udc: Remove non-DT handling code
+  usb: gadget: at91_udc: Simplify probe and remove functions
+  usb: gadget: at91_udc: Rework for multi-platform kernel support
+  usb: gadget: at91_udc: Update DT binding documentation
+  usb: gadget: at91_udc: Allocate udc instance
+  ARM: at91/dt: declare matrix node as a syscon device
+  ARM: at91/dt: fix at91 udc compatible strings
 
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipx/af_ipx.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/usb/atmel-usb.txt          |  10 +-
+ arch/arm/boot/dts/at91sam9260.dtsi                 |   2 +-
+ arch/arm/boot/dts/at91sam9261.dtsi                 |   9 +-
+ arch/arm/boot/dts/at91sam9263.dtsi                 |   2 +-
+ drivers/usb/gadget/udc/Kconfig                     |   1 +
+ drivers/usb/gadget/udc/at91_udc.c                  | 530 +++++++++++----------
+ drivers/usb/gadget/udc/at91_udc.h                  |   9 +-
+ 7 files changed, 298 insertions(+), 265 deletions(-)
 
-diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index e096025b477f..6857ae49dc8c 100644
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -1778,6 +1778,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct ipxhdr *ipx = NULL;
- 	struct sk_buff *skb;
- 	int copied, rc;
-+	bool locked = true;
- 
- 	lock_sock(sk);
- 	/* put the autobinding in */
-@@ -1804,6 +1805,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 
-+	release_sock(sk);
-+	locked = false;
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &rc);
- 	if (!skb)
-@@ -1837,7 +1840,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- out_free:
- 	skb_free_datagram(sk, skb);
- out:
--	release_sock(sk);
-+	if (locked)
-+		release_sock(sk);
- 	return rc;
- }
- 
 -- 
-2.1.3
+1.9.1
 
