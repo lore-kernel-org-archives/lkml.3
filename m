@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaLCQ0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:26:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38961 "EHLO mx1.redhat.com"
+	id S1753535AbaLCQ0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:26:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38420 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566AbaLCQY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:24:56 -0500
+	id S1752515AbaLCQYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:24:55 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,23 +16,22 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 7/8] perf data: Enable stream flush within processing
-Date: Wed,  3 Dec 2014 17:24:01 +0100
-Message-Id: <1417623842-14331-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/8] perf tools: Add new perf data command
+Date: Wed,  3 Dec 2014 17:23:56 +0100
+Message-Id: <1417623842-14331-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
 References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For big data files the size of data allocated for stream
-instance could get really high. It's needed to flush the
-data out of the stream once in a while.
+Adding new 'perf data' command to provide operations over
+data files.
 
-Unfortunately there's no size indication in the stream
-object, so we govern the flush based on the number of
-stored events. Current flush limit is set ot 100000
-events.
+The 'perf data convert' sub command is coming in following
+patch, but there's possibility for other useful commands
+like 'perf data ls' (to display perf data file in directory
+in ls style).
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -44,79 +43,169 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/data-convert-bt.c | 28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-data.txt | 15 +++++++
+ tools/perf/Makefile.perf               |  1 +
+ tools/perf/builtin-data.c              | 75 ++++++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                   |  1 +
+ tools/perf/command-list.txt            |  1 +
+ tools/perf/perf.c                      |  1 +
+ 6 files changed, 94 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-data.txt
+ create mode 100644 tools/perf/builtin-data.c
 
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index 2bc70b8d128d..df95fac399d7 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -43,6 +43,7 @@ struct evsel_priv {
- struct ctf_stream {
- 	struct bt_ctf_stream *stream;
- 	int cpu;
-+	u32 count;
- };
- 
- struct ctf_writer {
-@@ -392,7 +393,10 @@ static int ctf_stream__flush(struct ctf_stream *cs)
- 		if (err)
- 			pr_err("CTF stream %d flush failed\n", cs->cpu);
- 
--		pr("Flush stream for cpu %d\n", cs->cpu);
-+		pr("Flush stream for cpu %d (%u samples)\n",
-+		   cs->cpu, cs->count);
+diff --git a/tools/perf/Documentation/perf-data.txt b/tools/perf/Documentation/perf-data.txt
+new file mode 100644
+index 000000000000..b8c83947715c
+--- /dev/null
++++ b/tools/perf/Documentation/perf-data.txt
+@@ -0,0 +1,15 @@
++perf-data(1)
++==============
 +
-+		cs->count = 0;
- 	}
- 
- 	return err;
-@@ -490,6 +494,19 @@ static int get_sample_cpu(struct ctf_writer *cw, struct perf_sample *sample,
- 	return cpu;
- }
- 
-+#define STREAM_FLUSH_COUNT 100000
++NAME
++----
++perf-data - Data file related processing
 +
-+/*
-+ * Currently we have no other way to determine the
-+ * time for the stream flush other than keep track
-+ * of the number of events and check it against
-+ * threshold.
-+ */
-+static bool is_flush_needed(struct ctf_stream *cs)
++SYNOPSIS
++--------
++[verse]
++'perf data' [<common options>] <command> [<options>]",
++
++DESCRIPTION
++-----------
++Data file related processing.
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 3421c65130f1..33864dd316e5 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -485,6 +485,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
++BUILTIN_OBJS += $(OUTPUT)builtin-data.o
+ 
+ PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
+ 
+diff --git a/tools/perf/builtin-data.c b/tools/perf/builtin-data.c
+new file mode 100644
+index 000000000000..1eee97d020fa
+--- /dev/null
++++ b/tools/perf/builtin-data.c
+@@ -0,0 +1,75 @@
++#include <linux/compiler.h>
++#include "builtin.h"
++#include "perf.h"
++#include "debug.h"
++#include "parse-options.h"
++
++typedef int (*data_cmd_fn_t)(int argc, const char **argv, const char *prefix);
++
++struct data_cmd {
++	const char	*name;
++	const char	*summary;
++	data_cmd_fn_t	fn;
++};
++
++static struct data_cmd data_cmds[];
++
++#define for_each_cmd(cmd) \
++	for (cmd = data_cmds; cmd && cmd->name; cmd++)
++
++static const struct option data_options[] = {
++	OPT_END()
++};
++
++static const char * const data_usage[] = {
++	"perf data [<common options>] <command> [<options>]",
++	NULL
++};
++
++static void print_usage(void)
 +{
-+	return cs->count >= STREAM_FLUSH_COUNT;
++	struct data_cmd *cmd;
++
++	printf("Usage:\n");
++	printf("\t%s\n\n", data_usage[0]);
++	printf("\tAvailable commands:\n");
++
++	for_each_cmd(cmd) {
++		printf("\t %s\t- %s\n", cmd->name, cmd->summary);
++	}
++
++	printf("\n");
 +}
 +
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *_event __maybe_unused,
- 				struct perf_sample *sample,
-@@ -535,8 +552,13 @@ static int process_sample_event(struct perf_tool *tool,
- 	}
- 
- 	cs = ctf_stream(cw, get_sample_cpu(cw, sample, evsel));
--	if (cs)
-+	if (cs) {
-+		if (is_flush_needed(cs))
-+			ctf_stream__flush(cs);
++static struct data_cmd data_cmds[] = {
++	{ NULL },
++};
 +
-+		cs->count++;
- 		bt_ctf_stream_append_event(cs->stream, event);
++int cmd_data(int argc, const char **argv, const char *prefix)
++{
++	struct data_cmd *cmd;
++	const char *cmdstr;
++
++	/* No command specified. */
++	if (argc < 2)
++		goto usage;
++
++	argc = parse_options(argc, argv, data_options, data_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (argc < 1)
++		goto usage;
++
++	cmdstr = argv[0];
++
++	for_each_cmd(cmd) {
++		if (strcmp(cmd->name, cmdstr))
++			continue;
++
++		return cmd->fn(argc, argv, prefix);
 +	}
++
++	pr_err("Unknown command: %s\n", cmdstr);
++usage:
++	print_usage();
++	return -1;
++}
+diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+index b210d62907e4..3688ad29085f 100644
+--- a/tools/perf/builtin.h
++++ b/tools/perf/builtin.h
+@@ -37,6 +37,7 @@ extern int cmd_test(int argc, const char **argv, const char *prefix);
+ extern int cmd_trace(int argc, const char **argv, const char *prefix);
+ extern int cmd_inject(int argc, const char **argv, const char *prefix);
+ extern int cmd_mem(int argc, const char **argv, const char *prefix);
++extern int cmd_data(int argc, const char **argv, const char *prefix);
  
- 	bt_ctf_event_put(event);
- 	return cs ? 0 : -1;
-@@ -724,7 +746,7 @@ static int setup_streams(struct ctf_writer *cw, struct perf_session *session)
- 	 * Try to get the number of cpus used in the data file,
- 	 * if not present fallback to the MAX_CPUS.
- 	 */
--	if (!ph)
-+	if (!ph || !ph->env.nr_cpus_avail)
- 		ncpus = MAX_CPUS;
- 	else
- 		ncpus = ph->env.nr_cpus_avail;
+ extern int find_scripts(char **scripts_array, char **scripts_path_array);
+ #endif
+diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
+index 0906fc401c52..00fcaf8a5b8d 100644
+--- a/tools/perf/command-list.txt
++++ b/tools/perf/command-list.txt
+@@ -7,6 +7,7 @@ perf-archive			mainporcelain common
+ perf-bench			mainporcelain common
+ perf-buildid-cache		mainporcelain common
+ perf-buildid-list		mainporcelain common
++perf-data			mainporcelain common
+ perf-diff			mainporcelain common
+ perf-evlist			mainporcelain common
+ perf-inject			mainporcelain common
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 452a8474d29d..68e87dec8f41 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -62,6 +62,7 @@ static struct cmd_struct commands[] = {
+ #endif
+ 	{ "inject",	cmd_inject,	0 },
+ 	{ "mem",	cmd_mem,	0 },
++	{ "data",	cmd_data,	0 },
+ };
+ 
+ struct pager_config {
 -- 
 1.9.3
 
