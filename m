@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaLCVnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:43:03 -0500
-Received: from na6sys009bog005.obsmtp.com ([74.125.150.50]:45753 "HELO
-	na6sys009bog005.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751639AbaLCVm7 (ORCPT
+	id S1752040AbaLCVlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:41:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33275 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbaLCVlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:42:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALnjE+pNbwtGPsHfTJ0FXxdSpXT=AKgtfHPqT5matCx+PGcXbA@mail.gmail.com>
-References: <1417575363-13770-1-git-send-email-joestringer@nicira.com> <CALnjE+pNbwtGPsHfTJ0FXxdSpXT=AKgtfHPqT5matCx+PGcXbA@mail.gmail.com>
-From: Joe Stringer <joestringer@nicira.com>
-Date: Wed, 3 Dec 2014 13:42:38 -0800
-Message-ID: <CANr6G5xWMYv2=z7TES+pYqHDqxFmrzP+RpXfUDC6qUL_yqkJEQ@mail.gmail.com>
-Subject: Re: [PATCHv11 net-next 1/2] openvswitch: Refactor ovs_nla_fill_match().
-To: Pravin Shelar <pshelar@nicira.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "dev@openvswitch.org" <dev@openvswitch.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Dec 2014 16:41:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v5 2/9] driver core: Provide an wrapper around the mutex to do lockdep warnings
+Date: Wed,  3 Dec 2014 16:40:27 -0500
+Message-Id: <1417642834-20350-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
+References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 December 2014 at 11:37, Pravin Shelar <pshelar@nicira.com> wrote:
-> On Tue, Dec 2, 2014 at 6:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
->> diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
->> index 332b5a0..b2a3796 100644
->> --- a/net/openvswitch/datapath.c
->> +++ b/net/openvswitch/datapath.c
->> @@ -462,10 +462,8 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
->>                              0, upcall_info->cmd);
->>         upcall->dp_ifindex = dp_ifindex;
->>
->> -       nla = nla_nest_start(user_skb, OVS_PACKET_ATTR_KEY);
->> -       err = ovs_nla_put_flow(key, key, user_skb);
->> +       err = ovs_nla_put_flow(key, key, OVS_PACKET_ATTR_KEY, false, user_skb);
->
-> We need different name here, since it does not operate on flow. maybe
-> __ovs_nla_put_key(). we can move the function definition to
-> flow_netlink.h
+Instead of open-coding it in drivers that want to double check
+that their functions are indeed holding the device lock.
 
-OK sure. I'll fix this up for the next version.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Suggested-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/xen/xen-pciback/pci_stub.c | 2 +-
+ include/linux/device.h             | 5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index 9cbe1a3..8b77089 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -278,7 +278,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	/* Cleanup our device
+ 	 * (so it's ready for the next domain)
+ 	 */
+-	lockdep_assert_held(&dev->dev.mutex);
++	device_lock_assert(&dev->dev);
+ 	__pci_reset_function_locked(dev);
+ 	pci_restore_state(dev);
+ 
+diff --git a/include/linux/device.h b/include/linux/device.h
+index ce1f2160..41d6a75 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -911,6 +911,11 @@ static inline void device_unlock(struct device *dev)
+ 	mutex_unlock(&dev->mutex);
+ }
+ 
++static inline void device_lock_assert(struct device *dev)
++{
++	lockdep_assert_held(&dev->mutex);
++}
++
+ void driver_init(void);
+ 
+ /*
+-- 
+1.9.3
+
