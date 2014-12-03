@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaLCQSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:18:41 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44160 "EHLO
+	id S1753844AbaLCQSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:18:47 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44187 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaLCQSg (ORCPT
+	with ESMTP id S1753378AbaLCQSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:18:36 -0500
+	Wed, 3 Dec 2014 11:18:43 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
@@ -16,58 +16,139 @@ To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 0/3] genirq: Saving/restoring the irqchip state of an irq line
-Date: Wed,  3 Dec 2014 16:18:20 +0000
-Message-Id: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v2 3/3] irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
+Date: Wed,  3 Dec 2014 16:18:23 +0000
+Message-Id: <1417623503-30261-4-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
+References: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite Linux offering a rather fine grained control over the life
-cycle of an interrupt, there is a few cases where it would be very
-useful to snapshot (or even set) the internal state of the interrupt
-controller for a given interrupt line:
+Add the required hooks for the internal state of an interrupt
+to be exposed to other subsystems.
 
-- With KVM, a device shared between VMs must have its whole context
-  switched, and that includes the interrupt line state. KVM/arm is
-  moving to using this.
-- Some GPIO controllers seem to require peeking into the interrupt
-  controller they are connected to to report their internal state.
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic-v3.c | 83 +++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 70 insertions(+), 13 deletions(-)
 
-Instead of letting people facing this situation doing horrible
-(controller specific) hacks in their code, let's offer a couple of new
-entry points that allow a few attributes to be read and set.
-
-Of course, this is a very dangerous thing to do if you don't know what
-you doing, and I wouldn't expect most drivers to use this. But this
-can also be a life saver at times.
-
-This patch series implement said API, and adds support for this to the
-two main ARM interrupt controllers (GIC and GICv3). Available at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/irqchip_state
-
->From v1 [1]:
-- Rebased on top of 3.18-rc7 + tip/irq/irqdomain-arm
-- Now deals with stacked domains
-- Changed the API to be less ambiguous (after review by tglx)
-- Added IRQCHIP_STATE_LINE_LEVEL (as requested by Bjorn Anderson)
-
-[1] https://lkml.org/lkml/2014/10/25/134
-
-Marc Zyngier (3):
-  genirq: Allow the irqchip state of an IRQ to be save/restored
-  irqchip: GIC: Add support for irq_{get,set}_irqchip_state
-  irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
-
- drivers/irqchip/irq-gic-v3.c | 83 +++++++++++++++++++++++++++++++++-------
- drivers/irqchip/irq-gic.c    | 69 ++++++++++++++++++++++++++++++---
- include/linux/interrupt.h    | 14 +++++++
- include/linux/irq.h          |  6 +++
- kernel/irq/manage.c          | 91 ++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 245 insertions(+), 18 deletions(-)
-
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 1a146cc..6e73846 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -195,6 +195,19 @@ static void gic_enable_redist(bool enable)
+ /*
+  * Routines to disable, enable, EOI and route interrupts
+  */
++static int gic_peek_irq(struct irq_data *d, u32 offset)
++{
++	u32 mask = 1 << (gic_irq(d) % 32);
++	void __iomem *base;
++
++	if (gic_irq_in_rdist(d))
++		base = gic_data_rdist_sgi_base();
++	else
++		base = gic_data.dist_base;
++
++	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
++}
++
+ static void gic_poke_irq(struct irq_data *d, u32 offset)
+ {
+ 	u32 mask = 1 << (gic_irq(d) % 32);
+@@ -223,6 +236,61 @@ static void gic_unmask_irq(struct irq_data *d)
+ 	gic_poke_irq(d, GICD_ISENABLER);
+ }
+ 
++static int gic_irq_set_irqchip_state(struct irq_data *d,
++				     enum irqchip_irq_state which, bool val)
++{
++	u32 reg;
++
++	if (d->hwirq >= gic_data.irq_nr) /* PPI/SPI only */
++		return -EINVAL;
++
++	switch (which) {
++	case IRQCHIP_STATE_PENDING:
++		reg = val ? GICD_ISPENDR : GICD_ICPENDR;
++		break;
++
++	case IRQCHIP_STATE_ACTIVE:
++		reg = val ? GICD_ISACTIVER : GICD_ICACTIVER;
++		break;
++
++	case IRQCHIP_STATE_MASKED:
++		reg = val ? GICD_ICENABLER : GICD_ISENABLER;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	gic_poke_irq(d, reg);
++	return 0;
++}
++
++static int gic_irq_get_irqchip_state(struct irq_data *d,
++				     enum irqchip_irq_state which, bool *val)
++{
++	if (d->hwirq >= gic_data.irq_nr) /* PPI/SPI only */
++		return -EINVAL;
++
++	switch (which) {
++	case IRQCHIP_STATE_PENDING:
++		*val = gic_peek_irq(d, GICD_ISPENDR);
++		break;
++
++	case IRQCHIP_STATE_ACTIVE:
++		*val = gic_peek_irq(d, GICD_ISACTIVER);
++		break;
++
++	case IRQCHIP_STATE_MASKED:
++		*val = !gic_peek_irq(d, GICD_ISENABLER);
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static void gic_eoi_irq(struct irq_data *d)
+ {
+ 	gic_write_eoir(gic_irq(d));
+@@ -418,19 +486,6 @@ static void gic_cpu_init(void)
+ }
+ 
+ #ifdef CONFIG_SMP
+-static int gic_peek_irq(struct irq_data *d, u32 offset)
+-{
+-	u32 mask = 1 << (gic_irq(d) % 32);
+-	void __iomem *base;
+-
+-	if (gic_irq_in_rdist(d))
+-		base = gic_data_rdist_sgi_base();
+-	else
+-		base = gic_data.dist_base;
+-
+-	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
+-}
+-
+ static int gic_secondary_init(struct notifier_block *nfb,
+ 			      unsigned long action, void *hcpu)
+ {
+@@ -597,6 +652,8 @@ static struct irq_chip gic_chip = {
+ 	.irq_eoi		= gic_eoi_irq,
+ 	.irq_set_type		= gic_set_type,
+ 	.irq_set_affinity	= gic_set_affinity,
++	.irq_get_irqchip_state	= gic_irq_get_irqchip_state,
++	.irq_set_irqchip_state	= gic_irq_set_irqchip_state,
+ };
+ 
+ #define GIC_ID_NR		(1U << gic_data.rdists.id_bits)
 -- 
 2.1.3
 
