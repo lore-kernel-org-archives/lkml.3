@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaLCVtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:49:01 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55795 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaLCVs7 (ORCPT
+	id S1752303AbaLCVuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:50:12 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36905 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaLCVuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:48:59 -0500
-Date: Wed, 3 Dec 2014 22:48:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-15?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141203210504.GA6361@redhat.com>
-Message-ID: <alpine.DEB.2.11.1412032207140.16275@nanos>
-References: <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com> <1417540493.21136.3@mail.thefacebook.com> <20141203184111.GA32005@redhat.com> <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com> <20141203190045.GB32005@redhat.com>
- <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com> <CANcMJZA1NXUMLEveA2k5njFnWc1pCSwSeAOQH7VQCOR-QtiR8g@mail.gmail.com> <alpine.DEB.2.11.1412032126130.16275@nanos> <20141203204439.GA5019@redhat.com> <alpine.DEB.2.11.1412032156210.16275@nanos>
- <20141203210504.GA6361@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 3 Dec 2014 16:50:10 -0500
+Date: Wed, 3 Dec 2014 22:50:09 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Heyang Zhou <zhy@mrl.im>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: GPL violation: China Telecom uses a modified linux kernel in its
+ product without sources
+Message-ID: <20141203215009.GA31938@amd>
+References: <1417610321.11684.4.camel@mrl.im>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417610321.11684.4.camel@mrl.im>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Dave Jones wrote:
-> On Wed, Dec 03, 2014 at 09:59:20PM +0100, Thomas Gleixner wrote:
+Hi!
+
+> I think China Telecom is violating GPL in one of its products, iTV.
+> The product uses linux as its OS. To run on MIPS architecture, it does a
+> lot of modification to linux kernel. But there is NO source published. I
+> phoned them and they just refused to open the source. 
+> The product 'iTV' is distributed and being used by many people. And I'm
+> sure that it uses Linux kernel, for I've checked its UART output.
 > 
->  > Can you please provide the cpuinfo flags of that box?
-> 
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-> mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe
-> syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good
-> nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64
-> monitor ds_cpl vmx smx est tm2 ssse3 fma cx16 xtpr pdcm pcid sse4_1
-> sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand
-> lahf_lm abm ida arat epb pln pts dtherm tpr_shadow vnmi flexpriority ept
-> vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm
-> xsaveopt
 
-So that has nonstop_tsc and constant_tsc, which means that we switch
-to sched_clock_stable, i.e. no range checks, nothing. We just take the
-raw value and use it.
+This would be right place to coordinate action:
 
-The clocksource code is a bit more paranoid and lets the TSC be
-monitored by the watchdog. Now, if the TSC is detected as unstable we
-should switch back to sched_clock_unstable, but we don't have a
-mechanism for that.
+http://en.wikipedia.org/wiki/Gpl-violations.org
 
-That was obviously not considered when the sched_clock_stable stuff
-was introduced. So sched_clock() happily uses TSC as a reliable thing
-even when the clocksource code detected that it is crap.
-
-For sure we need something here, but that sched_clock_stable
-mechanism got introduced in 3.14, so it does not make any sense that
-you observe that only post 3.16.
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
-
-
+...but for some reason, Gpl-violations.org does not work for me.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
