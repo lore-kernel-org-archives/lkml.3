@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081AbaLCQ4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:56:03 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45415 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaLCQ4B (ORCPT
+	id S1751303AbaLCQ4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:56:35 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:42478 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaLCQ4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:56:01 -0500
-Message-ID: <547F40FC.7030403@oracle.com>
-Date: Wed, 03 Dec 2014 11:57:32 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 3 Dec 2014 11:56:33 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: galak@codeaurora.org
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <1b3311cfc671b59b310976b45e58b81a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547F40B8.6060706@rock-chips.com>
+Date: Thu, 04 Dec 2014 00:56:24 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, Laszlo Ersek <lersek@redhat.com>,
-        Andrew Jones <drjones@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH RESEND] xen/blkfront: improve protection against issuing
- unsupported REQ_FUA
-References: <1414417478-20268-1-git-send-email-vkuznets@redhat.com> <1417438873-2082-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1417438873-2082-1-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v16 03/12] drm: imx: imx-hdmi: convert imx-hdmi to drm_bridge
+ mode
+References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com> <1417620566-30496-1-git-send-email-andy.yan@rock-chips.com> <20141203153847.GC11285@n2100.arm.linux.org.uk> <547F3495.9070206@rock-chips.com> <20141203161122.GF11285@n2100.arm.linux.org.uk> <547F3A9F.30701@rock-chips.com> <20141203163318.GH11285@n2100.arm.linux.org.uk>
+In-Reply-To: <20141203163318.GH11285@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 08:01 AM, Vitaly Kuznetsov wrote:
-> Guard against issuing unsupported REQ_FUA and REQ_FLUSH was introduced
-> in d11e61583 and was factored out into blkif_request_flush_valid() in
-> 0f1ca65ee. However:
-> 1) This check in incomplete. In case we negotiated to feature_flush = REQ_FLUSH
->     and flush_op = BLKIF_OP_FLUSH_DISKCACHE (so FUA is unsupported) FUA request
->     will still pass the check.
-> 2) blkif_request_flush_valid() is misnamed. It is bool but returns true when
->     the request is invalid.
-> 3) When blkif_request_flush_valid() fails -EIO is being returned. It seems that
->     -EOPNOTSUPP is more appropriate here.
-> Fix all of the above issues.
+Hi Russell:
+On 2014年12月04日 00:33, Russell King - ARM Linux wrote:
+> On Thu, Dec 04, 2014 at 12:30:23AM +0800, Andy Yan wrote:
+>> On 2014年12月04日 00:11, Russell King - ARM Linux wrote:
+>>> I meant that imx_hdmi_bind should be passed these, so that it needs to
+>>> know nothing about the struct device beyond the generic device structure.
+>>> In other words, the dw-hdmi core should not assume that the struct device
+>>> is part of a platform device.
+>>>
+>>     if so, how about the device tree properties  ddc-i2c-bus, reg-io-width,
+>> iahb, isfr,
+>>    they are all found by device?
+> If the device has a device tree node associated with it, it will have a
+> non-NULL dev->of_node - which is part of the generic device structure.
 >
-> This patch is based on the original patch by Laszlo Ersek and a comment by
-> Jeff Moyer.
->
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> Reviewed-by: Laszlo Ersek <lersek@redhat.com>
-
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-
-(although, as I mentioned last time, a companion patch to remove 
-flush_op would be a good thing to have)
-
-
--boris
-
-> ---
->   drivers/block/xen-blkfront.c | 14 ++++++++------
->   1 file changed, 8 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 5ac312f..2e6c103 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -582,12 +582,14 @@ static inline void flush_requests(struct blkfront_info *info)
->   		notify_remote_via_irq(info->irq);
->   }
->   
-> -static inline bool blkif_request_flush_valid(struct request *req,
-> -					     struct blkfront_info *info)
-> +static inline bool blkif_request_flush_invalid(struct request *req,
-> +					       struct blkfront_info *info)
->   {
->   	return ((req->cmd_type != REQ_TYPE_FS) ||
-> -		((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
-> -		!info->flush_op));
-> +		((req->cmd_flags & REQ_FLUSH) &&
-> +		 !(info->feature_flush & REQ_FLUSH)) ||
-> +		((req->cmd_flags & REQ_FUA) &&
-> +		 !(info->feature_flush & REQ_FUA)));
->   }
->   
->   /*
-> @@ -612,8 +614,8 @@ static void do_blkif_request(struct request_queue *rq)
->   
->   		blk_start_request(req);
->   
-> -		if (blkif_request_flush_valid(req, info)) {
-> -			__blk_end_request_all(req, -EIO);
-> +		if (blkif_request_flush_invalid(req, info)) {
-> +			__blk_end_request_all(req, -EOPNOTSUPP);
->   			continue;
->   		}
->   
+   so , I just need get the resource and irq number in the 
+dw_hdmi-imx/rockchip ,than
+   pass them to imx_hdmi_bind, as the properties ddc-i2c-bus, 
+reg-io-width, iahb,isfr, they
+   are still can be handled in imx_hdmi_bind ?
 
