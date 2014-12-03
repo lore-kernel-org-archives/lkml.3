@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaLCIEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:04:37 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62821 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaLCIEf (ORCPT
+	id S1751919AbaLCIHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:07:43 -0500
+Received: from [119.145.14.66] ([119.145.14.66]:43499 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaLCIHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:04:35 -0500
-Message-ID: <547EC40E.5010506@redhat.com>
-Date: Wed, 03 Dec 2014 09:04:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 3 Dec 2014 03:07:41 -0500
+Message-ID: <547EC4A3.6060408@huawei.com>
+Date: Wed, 3 Dec 2014 16:06:59 +0800
+From: Qin Chuanyu <qinchuanyu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH] KVM: cpuid: mask more bits in leaf 0xd and subleaves
-References: <1417525770-16485-1-git-send-email-pbonzini@redhat.com> <20141202230536.GA12980@potion.redhat.com>
-In-Reply-To: <20141202230536.GA12980@potion.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: <netdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: What's the concern about setting irq thread's policy as SCHED_FIFO
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.21.101]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020208.547EC4AD.0100,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 5feaae0133f1305aacef6603134b4a07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am doing network performance test under suse11sp3 and intel 82599 nic,
+Becasuse the softirq is out of schedule policy's control, so netserver 
+thread couldn't always get 100% cpu usage, then packet dropped in kernel 
+udp socket's receive queue.
 
+In order to get a stable result, I did some patch in ixgbe driver and 
+then use irq_thread instead of softirq to handle rx.
+It seems work well, but irq_thread's SCHED_FIFO schedule policy cause 
+that when the cpu is limited, netserver couldn't work at all.
 
-On 03/12/2014 00:05, Radim Krčmář wrote:
-> 2014-12-02 14:09+0100, Paolo Bonzini:
->> - EAX=0Dh, ECX=1: output registers EBX/ECX/EDX are reserved.
-> 
-> (As good as reserved without XSAVES/IA32_XSS.)
-> 
->> - EAX=0Dh, ECX>1: output register ECX is zero for all the CPUID leaves
->> we support, because variable "supported" comes from XCR0 and not XSS.
->> However, only bits above 0 are reserved.  Output register EDX is reserved.
-> 
-> (Yes.  Well, EDX is 0 when the sub-leaf is invalid.)
-> 
->> Source: Intel Architecture Instruction Set Extensions Programming
->> Reference, ref. number 319433-022
->>
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> --
->>  arch/x86/kvm/cpuid.c | 13 ++++++++++---
->>  1 file changed, 10 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
->> index 0d919bc33b02..b1366743a728 100644
->> --- a/arch/x86/kvm/cpuid.c
->> +++ b/arch/x86/kvm/cpuid.c
->> @@ -470,10 +470,17 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->>  				goto out;
->>  
->>  			do_cpuid_1_ent(&entry[i], function, idx);
->> -			if (idx == 1)
->> +			if (idx == 1) {
->>  				entry[i].eax &= kvm_supported_word10_x86_features;
->> -			else if (entry[i].eax == 0 || !(supported & mask))
->> -				continue;
->> +				entry[i].ebx = 0;
->> +				entry[i].ecx = 0;
->> +			} else {
->> +				if (entry[i].eax == 0 || !(supported & mask))
->> +					continue;
->> +				WARN_ON_ONCE(entry[i].ecx & 1);
->> +				entry[i].ecx &= 1;
-> 
->  ECX  Bit 0 is set if the sub-leaf index, n, maps to a valid bit in the
->       IA32_XSS MSR and bit 0 is clear if n maps to a valid bit in XCR0.
-> 
-> ECX should be set to 0 instead, we definitely don't map to a valid bit
-> in IA32_XSS now.
+So I change the irq_thread's schedule policy from SCHED_FIFO to 
+SCHED_NORMAL, then the irq_thread could share the cpu usage with 
+netserver thread.
 
-Well, there is a WARN just above. :)  But I can change it to zero instead.
+the question is:
+What's the concrete reason about setting irq thread's policy as SCHED_FIFO?
+Except the priority affecting the cpu usage, any function would be 
+broken if irq thread change to SCHED_NORMAL?
 
-> (Having only one part of cpuid ready for it is weird ...)
-> 
->> +			}
->> +			entry[i].edx = 0;
->>  			entry[i].flags |=
->>  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-> 
-> (Unrelated, I have yet to understand how this flag translates
->  * If ECX contains an invalid sub-leaf index, EAX/EBX/ECX/EDX return 0.)
-
-If the index is invalid, entry[i].eax is zero and we do not return
-anything at all.
-
-Paolo
-
->>  			++*nent;
-> 
-> Forcing a change of the XSAVES implementation is a likely purpose of
-> this patch and it is correct after changing the ecx handling, so then,
-> 
-> Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
-> 
