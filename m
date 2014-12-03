@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaLCTUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:20:48 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47418 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaLCTUp (ORCPT
+	id S1751983AbaLCTXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:23:31 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:39001 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaLCTX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:20:45 -0500
-Date: Wed, 3 Dec 2014 19:20:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jianqun Xu <jay.xu@rock-chips.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, sonnyrao@chromium.org,
-        heiko@sntech.de, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
-Message-ID: <20141203192024.GL7712@sirena.org.uk>
-References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
- <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com>
- <1417591118-18695-3-git-send-email-jay.xu@rock-chips.com>
+	Wed, 3 Dec 2014 14:23:29 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "open list\:ARM\/Rockchip SoC..." 
+	<linux-rockchip@lists.infradead.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Tony Xie <xxx@rock-chips.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 0/4] This suspend patch is only support cut off the power of cpu and some external
+References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
+	<7htx1f409k.fsf@deeprootsystems.com>
+	<CAD=FV=V2go5BMFbiFKu73_aVz5ck949W-kJQ6WLkAQRPJbjPVA@mail.gmail.com>
+	<CAD=FV=XuQk17CTNKJY++J+w9Ab9_OUX0ca0A99m7yKPAWSs2=w@mail.gmail.com>
+	<7hmw763kql.fsf@deeprootsystems.com> <547F1639.3030102@rock-chips.com>
+Date: Wed, 03 Dec 2014 11:23:26 -0800
+In-Reply-To: <547F1639.3030102@rock-chips.com> (Chris Zhong's message of "Wed,
+	03 Dec 2014 21:55:05 +0800")
+Message-ID: <7hiohszgep.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JQobbgWnX7WjL0pQ"
-Content-Disposition: inline
-In-Reply-To: <1417591118-18695-3-git-send-email-jay.xu@rock-chips.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] ASoC: rockchip: i2s: add support for grabbing
- output clock to codec
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chris Zhong <zyw@rock-chips.com> writes:
 
---JQobbgWnX7WjL0pQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[...]
 
-On Wed, Dec 03, 2014 at 03:18:38PM +0800, Jianqun Xu wrote:
-> From: Sonny Rao <sonnyrao@chromium.org>
->=20
-> We need to claim the clock which is driving the codec so that when we ena=
-ble
-> clock gating, we continue to clock the codec when needed.  I make this an
-> optional clock since there might be some applications where we don't need=
- it
-> but can still use the I2S block.
+> I have test these patches on evb board base on next-20141128 with a
+> defconfig[0], and with u-boot[1].
+> As Doug said, we need below 3 patches for resume.
+>
+> 1.https://patchwork.kernel.org/patch/5051881/  - clocksource:
+>    arch_timer: Allow the device tree to specify uninitialized timer
+>    registers
+>
+> 2.https://patchwork.kernel.org/patch/5363671/  - clocksource:
+>    arch_timer: Fix code to use physical timers when requested
+>
+> 3.https://patchwork.kernel.org/patch/5382141/  - ARM: dts: rk3288: add
+>    arm,cpu-registers-not-fw-configured
+>
+>
+> And it will auto wakeup, as Heiko said in v8.  
 
-I would expect that the clock for the CODEC should be managed by the
-CODEC if at all possible - that seems more logical than having the CPU
-I2S controller request and manage it if it's a separate clock.  Why add
-this to the CPU side driver?
+OK, with your series plus those 3 patches on top of next-20141128, I'm
+now seeing it auto-wakeup, either with multi_v7_defconfig or Heiko's
+rk3288_defconfig.
 
-We've not always done this for older systems due to the lack of a usable
-clock API but that's starting to be addressed.
+> But I have never notice before, since the u-boot never enable edp, and
+> I use the coreboot with edp display.  Actually it is a bug in rk3288,
+> the rk3288 have not 27Mhz clock source, but the edp initially set to
+> this non-existent clock. At this time, edp is working on a unknown
+> state, and it always bring a interrupt, this interrupt avoid system
+> enter suspend. 
 
---JQobbgWnX7WjL0pQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I see, good find!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> So if we want to enter suspend normally, the
+> edp_24m_sel(bit 15) of CRU_CLKSEL28_CON(0xff7600d0) must be set to 1.
 
-iQEcBAEBAgAGBQJUf2J4AAoJECTWi3JdVIfQpDUH+QGvbqNNpYTTeH9BR7l1M2F1
-Zbiy2YsxaimSZggqRO1wIKuXgiikPtNctuduDCCN9feAWkjvvh5qPfo2gTE3EMw/
-p4PHfrozU/7NMhkZ4bJwneTMg2/Cs4YTMKpEYF1VD8rDZvyR4OzGswTNnJSrBX4Q
-bYLL0NyUb/hQUIHzAF2VAU6ffbjPXJvrAmzolEp7ujsuRq3qpRDtU8hiScaUpUG2
-8sluxjAaNbtMpB6ycQUx8ImIf48z3uRLrPK8mQW8THX1d/tFBtqk2ZBI0xNSdV8T
-8lowjJ2p+9y15mhDLOrOZg1N2Toh6Uo6VK/xfSFRUNYUw4FSUyDrvRHp74J3YAA=
-=2pcn
------END PGP SIGNATURE-----
+I didn't try your u-boot fix, but it sounds like there should be a kernel
+fix for this.  Why doesn't the disabling of unused clocks put the EDP
+into a safe/disabled state?
 
---JQobbgWnX7WjL0pQ--
+Kevin
+
