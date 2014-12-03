@@ -1,188 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaLCQ0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:26:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaLCQYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:24:52 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>, Jiri Olsa <jolsa@kernel.org>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/8] perf data: Add a 'perf' prefix to the generic fields
-Date: Wed,  3 Dec 2014 17:23:58 +0100
-Message-Id: <1417623842-14331-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
-References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
+	id S1752885AbaLCQ3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:29:19 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7014 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751890AbaLCQ3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:29:16 -0500
+Message-ID: <547F3A57.7000106@sonymobile.com>
+Date: Wed, 3 Dec 2014 08:29:11 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
+References: <547E854E.5060101@sonymobile.com> <1417578191.16722.11.camel@concordia>
+In-Reply-To: <1417578191.16722.11.camel@concordia>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-Some of the tracers bring their own id or pid fields and we can end up
-having two of them. This patch adds a "perf_" prefix to the 'generic'
-fields so we avoid a clash of the member names.
 
-The change is visible in the babeltrace output:
+On 12/02/2014 07:43 PM, Michael Ellerman wrote:
+> On Tue, 2014-12-02 at 19:36 -0800, Tim Bird wrote:
+>> This test shows the amount of memory used by the system.
+>> Note that this is dependent on the user-space that is loaded
+>> when this program runs.  Optimally, this program would be
+>> run as the init program itself.
+> 
+> Sorry to only chime in at v5.
+> 
+>> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+>> new file mode 100644
+>> index 0000000..47f8e9c
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/Makefile
+>> @@ -0,0 +1,15 @@
+>> +#ifndef CC
+>> +	CC = $(CROSS_COMPILE)gcc
+>> +#endif
+> 
+> I think the following is preferable:
+> 
+>   CC := $(CROSS_COMPILE)$(CC)
+> 
+> 
+> It allows optionally setting a custom CC, as well as optionally CROSS_COMPILE.
 
-Before:
-  $ babeltrace ./ctf-data/
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
-  ...
+I'm not sure I follow this.
 
-Now:
-  $ babeltrace ./ctf-data/
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 114 }
-  ...
+If CC is unset, you get only the CROSS_COMPILE prefix.
+If CC is set to e.g. 'gcc', then you get a nicely formatted toolchain string.
+But if CC already has the prefix applied, then this will result in
+  having it duplicated, which surely won't work correctly.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeremie Galarneau <jgalar@efficios.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- tools/perf/util/data-convert-bt.c | 42 ++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+In the long run, I would hope that a higher level Makefile or environment setting
+will be setting the toolchain string appropriately (as well as handling build flags)
+which is why I wanted to use an ifndef (which Thomas correctly pointed out is just
+wrong).
 
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index 33a0774f03e4..3c39fae9c07e 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -147,60 +147,62 @@ static int add_generic_values(struct ctf_writer *cw,
- 	 */
- 
- 	if (type & PERF_SAMPLE_IP) {
--		ret = value_set_u64_hex(cw, event, "ip", sample->ip);
-+		ret = value_set_u64_hex(cw, event, "perf_ip", sample->ip);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_TID) {
--		ret = value_set_s32(cw, event, "tid", sample->tid);
-+		ret = value_set_s32(cw, event, "perf_tid", sample->tid);
- 		if (ret)
- 			return -1;
- 
--		ret = value_set_s32(cw, event, "pid", sample->tid);
-+		ret = value_set_s32(cw, event, "perf_pid", sample->tid);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if ((type & PERF_SAMPLE_ID) ||
- 	    (type & PERF_SAMPLE_IDENTIFIER)) {
--		ret = value_set_u64(cw, event, "id", sample->id);
-+		ret = value_set_u64(cw, event, "perf_id", sample->id);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_STREAM_ID) {
--		ret = value_set_u64(cw, event, "stream_id", sample->id);
-+		ret = value_set_u64(cw, event, "perf_stream_id", sample->id);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_CPU) {
--		ret = value_set_u32(cw, event, "cpu", sample->cpu);
-+		ret = value_set_u32(cw, event, "perf_cpu", sample->cpu);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_PERIOD) {
--		ret = value_set_u64(cw, event, "period", sample->period);
-+		ret = value_set_u64(cw, event, "perf_period", sample->period);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_WEIGHT) {
--		ret = value_set_u64(cw, event, "weight", sample->weight);
-+		ret = value_set_u64(cw, event, "perf_weight", sample->weight);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_DATA_SRC) {
--		ret = value_set_u64(cw, event, "data_src", sample->data_src);
-+		ret = value_set_u64(cw, event, "perf_data_src",
-+				sample->data_src);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_TRANSACTION) {
--		ret = value_set_u64(cw, event, "transaction", sample->transaction);
-+		ret = value_set_u64(cw, event, "perf_transaction",
-+				sample->transaction);
- 		if (ret)
- 			return -1;
- 	}
-@@ -276,34 +278,34 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
- 	} while (0)
- 
- 	if (type & PERF_SAMPLE_IP)
--		ADD_FIELD(event_class, cw->data.u64_hex, "ip");
-+		ADD_FIELD(event_class, cw->data.u64_hex, "perf_ip");
- 
- 	if (type & PERF_SAMPLE_TID) {
--		ADD_FIELD(event_class, cw->data.s32, "tid");
--		ADD_FIELD(event_class, cw->data.s32, "pid");
-+		ADD_FIELD(event_class, cw->data.s32, "perf_tid");
-+		ADD_FIELD(event_class, cw->data.s32, "perf_pid");
- 	}
- 
- 	if ((type & PERF_SAMPLE_ID) ||
- 	    (type & PERF_SAMPLE_IDENTIFIER))
--		ADD_FIELD(event_class, cw->data.u64, "id");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_id");
- 
- 	if (type & PERF_SAMPLE_STREAM_ID)
--		ADD_FIELD(event_class, cw->data.u64, "stream_id");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_stream_id");
- 
- 	if (type & PERF_SAMPLE_CPU)
--		ADD_FIELD(event_class, cw->data.u32, "cpu");
-+		ADD_FIELD(event_class, cw->data.u32, "perf_cpu");
- 
- 	if (type & PERF_SAMPLE_PERIOD)
--		ADD_FIELD(event_class, cw->data.u64, "period");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_period");
- 
- 	if (type & PERF_SAMPLE_WEIGHT)
--		ADD_FIELD(event_class, cw->data.u64, "weight");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_weight");
- 
- 	if (type & PERF_SAMPLE_DATA_SRC)
--		ADD_FIELD(event_class, cw->data.u64, "data_src");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_data_src");
- 
- 	if (type & PERF_SAMPLE_TRANSACTION)
--		ADD_FIELD(event_class, cw->data.u64, "transaction");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_transaction");
- 
- #undef ADD_FIELD
- 	return 0;
--- 
-1.9.3
+Actually, after getting this tiny program accepted, my next task was working on a
+proper fix for handling cross compilation in a more generic (not case-by-case) way.
+
+CROSS_COMPILE prefix usage looks a bit uncoordinated in the tools directory, but most
+tests seem to be favoring $(CROSS_COMPILE)gcc.
+
+ $ cd tools ; mgrep CROSS
+./vm/Makefile:CC = $(CROSS_COMPILE)gcc
+./usb/Makefile:CC = $(CROSS_COMPILE)gcc
+./testing/selftests/net/Makefile:CC = $(CROSS_COMPILE)gcc
+./testing/selftests/vm/Makefile:CC = $(CROSS_COMPILE)gcc
+./testing/selftests/efivarfs/Makefile:CC = $(CROSS_COMPILE)gcc
+./testing/selftests/size/Makefile:	CC = $(CROSS_COMPILE)gcc
+./testing/selftests/powerpc/Makefile:CC := $(CROSS_COMPILE)$(CC)
+./hv/Makefile:CC = $(CROSS_COMPILE)gcc
+./perf/config/feature-checks/Makefile:CC := $(CROSS_COMPILE)gcc -MD
+./perf/config/feature-checks/Makefile:PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+./lib/api/Makefile:CC = $(CROSS_COMPILE)gcc
+./lib/api/Makefile:AR = $(CROSS_COMPILE)ar
+./lib/lockdep/Makefile:# Allow setting CC and AR, or setting CROSS_COMPILE as a prefix.
+./lib/lockdep/Makefile:$(call allow-override,CC,$(CROSS_COMPILE)gcc)
+./lib/lockdep/Makefile:$(call allow-override,AR,$(CROSS_COMPILE)ar)
+./lib/lockdep/Makefile:TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
+./lib/traceevent/Makefile:# Allow setting CC and AR, or setting CROSS_COMPILE as a prefix.
+./lib/traceevent/Makefile:$(call allow-override,CC,$(CROSS_COMPILE)gcc)
+./lib/traceevent/Makefile:$(call allow-override,AR,$(CROSS_COMPILE)ar)
+./lib/traceevent/Makefile:TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
+./cgroup/Makefile:CC = $(CROSS_COMPILE)gcc
+./power/acpi/Makefile:CROSS = #/usr/i386-linux-uclibc/usr/bin/i386-uclibc-
+./power/acpi/Makefile:CC = $(CROSS)gcc
+./power/acpi/Makefile:LD = $(CROSS)gcc
+./power/acpi/Makefile:STRIP = $(CROSS)strip
+./power/cpupower/Makefile:CROSS = #/usr/i386-linux-uclibc/usr/bin/i386-uclibc-
+./power/cpupower/Makefile:CC = $(CROSS)gcc
+./power/cpupower/Makefile:LD = $(CROSS)gcc
+./power/cpupower/Makefile:AR = $(CROSS)ar
+./power/cpupower/Makefile:STRIP = $(CROSS)strip
+./power/cpupower/Makefile:RANLIB = $(CROSS)ranlib
+./power/cpupower/Makefile:export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
+./power/x86/turbostat/Makefile:CC		= $(CROSS_COMPILE)gcc
+
+I agree it's desirable not to hardcode gcc, but we seem to be doing it all over
+the place already.
+ -- Tim
 
