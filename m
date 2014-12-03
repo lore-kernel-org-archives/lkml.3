@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaLCIkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:40:45 -0500
-Received: from smtprelay0064.hostedemail.com ([216.40.44.64]:35235 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751675AbaLCIko (ORCPT
+	id S1751463AbaLCIsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:48:25 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:46707 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaLCIsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:40:44 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3867:3868:3871:3872:3873:5007:6261:7576:7875:7903:9040:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: class66_6423654ad12e
-X-Filterd-Recvd-Size: 2930
-Date: Wed, 3 Dec 2014 03:40:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
-Message-ID: <20141203034033.19a30e2f@gandalf.local.home>
-In-Reply-To: <CAMEtUuyzfKYVSJUra6nib-wWYQ91uEPC6mizF9PLpg+5Kjb+3w@mail.gmail.com>
-References: <20141203031334.174087814@goodmis.org>
-	<20141203032106.156623189@goodmis.org>
-	<CAMEtUuyzfKYVSJUra6nib-wWYQ91uEPC6mizF9PLpg+5Kjb+3w@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 3 Dec 2014 03:48:23 -0500
+Date: Wed, 3 Dec 2014 08:48:15 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: gyungoh@gmail.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Jingoo Han <jg1.han@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, jack.yoo@skyworksinc.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        heiko@sntech.de, Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <treding@nvidia.com>, florian.vaussard@epfl.ch,
+        Jiri Kosina <trivial@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Andrew Lunn <andrew@lunn.ch>, jic23@kernel.org
+Subject: Re: [PATCH v9 2/8] backlight: Add support Skyworks SKY81452
+ backlight driver
+Message-ID: <20141203084815.GF22522@x1>
+References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1417507529-13654-3-git-send-email-jack.yoo@skyworksinc.com>
+ <CAK5ve-+zYtdf2fo=xqAZaR6vcrOQRSicZC+2AX0qHNqmBhoDTg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-+zYtdf2fo=xqAZaR6vcrOQRSicZC+2AX0qHNqmBhoDTg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 22:22:16 -0800
-Alexei Starovoitov <ast@plumgrid.com> wrote:
+On Tue, 02 Dec 2014, Bryan Wu wrote:
 
-> On Tue, Dec 2, 2014 at 7:13 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> On Tue, Dec 2, 2014 at 12:05 AM,  <gyungoh@gmail.com> wrote:
+> > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > >
-> > Add a test to test the event filter logic. It currently tests the
-> > following filters against sched:sched_switch event.
-> >
-> >    ( prev_pid != 0 )
-> >    ( prev_pid == 0 )
-> >    ( prev_pid < 100 )
-> >    ( prev_pid <= $$ )
-> >    ( prev_pid > 100 )
-> >    ( prev_pid >= $$ )
-> >   ! ( prev_pid != 0 )
-> >   ! ( prev_pid == 0 )
-> >   ! ( prev_pid < 100 )
-> >   ! ( prev_pid <= $$ )
-> >   ! ( prev_pid > 100 )
-> >   ! ( prev_pid >= $$ )
-> >    ( prev_pid != 0 && next_pid > 10 )
-> >    ( prev_pid != 0 || next_pid > 10 )
-> >   ! ( prev_pid != 0 && next_pid > 10 )
-> >   ! ( prev_pid != 0 || next_pid > 10 )
-> >    ( prev_pid & 1 )
-> >    ( prev_pid & 2 )
-> >    ( prev_pid & 4 )
-> >    ( prev_pid & 8 )
-> >    ( prev_pid & 16 )
-> >   ! ( prev_pid & 1 )
-> >   ! ( prev_pid & 2 )
-> >   ! ( prev_pid & 4 )
-> >   ! ( prev_pid & 8 )
-> >   ! ( prev_pid & 16 )
-> >    ( next_comm ~ "ftrace-test-fil" )
-> >    ( next_comm != "ftrace-test-fil" )
-> >   ! ( next_comm ~ "ftrace-test-fil" )
-> >   ! ( next_comm != "ftrace-test-fil" )
+> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
-> thanks for the tests!
-> Since you're adding full support for 'not',
-> I think would be good to have few more tests
-> where ! is not a top node. Like:
-> (prev_pid != 0 && !(next_pid & 2))
-> and another one with ! at multiple levels, like:
-> (prev_pid != 0 && !(next_pid != 2 && !(prev_pid > 3)))
-> ... or reject them during parsing.
+> This patch looks good to me and I think Jingoo reviewed it already. So
+> please take my Ack here:
+> Acked-by: Bryan Wu <cooloney@gmail.com>
+> 
+> Lee, can you apply this patch?
 
-Sure, would you like to add them :-)
+I can, but we need to see what's happening with the other patches in
+the set first.
 
-I spent more time on this than I should have. I have other things to
-work on and this little project has already put me behind on my other
-tasks.
-
--- Steve
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
