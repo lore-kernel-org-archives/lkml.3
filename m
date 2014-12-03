@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaLCBKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:10:45 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:36647 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaLCBKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:10:43 -0500
+	id S1751311AbaLCBLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:11:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41947 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252AbaLCBLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:11:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,504,1413270000"; 
+   d="scan'208";a="617645155"
+Date: Wed, 3 Dec 2014 08:50:59 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] kvm: x86: revert mask out xsaves
+Message-ID: <20141203005059.GA5084@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1417500894-7604-1-git-send-email-wanpeng.li@linux.intel.com>
+ <547D7E6D.6090000@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20141203004852.GA15236@kroah.com>
-References: <1417533075-687-1-git-send-email-paul@mybb.com>
-	<20141203004852.GA15236@kroah.com>
-Date: Tue, 2 Dec 2014 19:10:41 -0600
-Message-ID: <CAO7UptcspiZCNi8smcmhOWM9Rdn+QYHPJYmZb90A-_3sJ4wYqQ@mail.gmail.com>
-Subject: Re: [PATCH] Staging: ft1000: fix spaces around comparisons in ft1000_debug.c
-From: Paul H <paul@mybboard.net>
-To: Greg KH <greg@kroah.com>
-Cc: Paul H <paul@mybb.com>, Belisko Marek <marek.belisko@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547D7E6D.6090000@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A tutorial I read suggested using a different branch for applying the
-patches; I named it "fix-spaces".  It would appear it is mistaken
-then?
-
-Thanks again, hope I'm not bothering at all, first time trying to give back.
-
--Paul
-
-On Tue, Dec 2, 2014 at 6:48 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Dec 02, 2014 at 09:11:15AM -0600, Paul Hedman wrote:
->> This fix fixes spacing issues around operators, e.g. i=0 to i = 0, found by the checkpatch.pl tool.
+On Tue, Dec 02, 2014 at 09:55:09AM +0100, Paolo Bonzini wrote:
 >
-> Please wrap your changelog at the correct column.
 >
->>
->> Signed-off-by: Paul Hedman <paul@mybb.com>
+>On 02/12/2014 07:14, Wanpeng Li wrote:
+>> xsaves will be exported to guest in the next patch, so revert the
+>> mask out xsaves patch.
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 >> ---
->>  drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 28 ++++++++++++------------
->>  1 file changed, 14 insertions(+), 14 deletions(-)
+>>  arch/x86/kvm/cpuid.c | 10 +---------
+>>  1 file changed, 1 insertion(+), 9 deletions(-)
+>> 
+>> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+>> index a4f5ac4..7af07571 100644
+>> --- a/arch/x86/kvm/cpuid.c
+>> +++ b/arch/x86/kvm/cpuid.c
+>> @@ -320,10 +320,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  		F(ADX) | F(SMAP) | F(AVX512F) | F(AVX512PF) | F(AVX512ER) |
+>>  		F(AVX512CD);
+>>  
+>> -	/* cpuid 0xD.1.eax */
+>> -	const u32 kvm_supported_word10_x86_features =
+>> -		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
 >
-> This doesn't apply to my tree at all :(
+>Every single bit needs to be whitelisted independently of the others, so
+>a full revert is not possible.  We need to be careful about post-Skylake
+>processors introducing new bits in this cpuid leaf.
 >
+>Also, you cannot just add F(XSAVES) here; you must only do it if XSAVES
+>is actually supported.  This makes sure that nested virtualization will
+>_not_ present XSAVES to the guests until specific support is introduced
+>for XSAVES and XRSTORS exits (including the XSS exit bitmap).
 
+I will try to enable nested xsaves.
 
+Regards,
+Wanpeng Li 
 
--- 
--Paul H.
-MyBB Support Team
+>
+>In order to do this, you have to introduce a new member in kvm_x86_ops,
+>modeling what was done for MPX.  The second patch can then implement
+>this new member.
+>
+>Thanks,
+>
+>Paolo
+>
+>>  	/* all calls to cpuid_count() should be made on the same cpu */
+>>  	get_cpu();
+>>  
+>> @@ -460,8 +456,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  		entry->eax &= supported;
+>>  		entry->edx &= supported >> 32;
+>>  		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+>> -		if (!supported)
+>> -			break;
+>>  
+>>  		for (idx = 1, i = 1; idx < 64; ++idx) {
+>>  			u64 mask = ((u64)1 << idx);
+>> @@ -469,9 +463,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  				goto out;
+>>  
+>>  			do_cpuid_1_ent(&entry[i], function, idx);
+>> -			if (idx == 1)
+>> -				entry[i].eax &= kvm_supported_word10_x86_features;
+>> -			else if (entry[i].eax == 0 || !(supported & mask))
+>> +			if (entry[i].eax == 0 || !(supported & mask))
+>>  				continue;
+>>  			entry[i].flags |=
+>>  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+>> 
