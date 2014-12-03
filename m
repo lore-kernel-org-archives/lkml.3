@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaLCPU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:20:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679AbaLCPUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:20:23 -0500
-Message-ID: <547F242D.1060705@redhat.com>
-Date: Wed, 03 Dec 2014 09:54:37 -0500
-From: William Cohen <wcohen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751909AbaLCPUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:20:52 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:34223 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751665AbaLCPUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 10:20:50 -0500
+Date: Wed, 3 Dec 2014 08:20:40 -0700
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Block core regression fix for 3.18
+Message-ID: <20141203152022.GA4640@kernel.dk>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        David Long <dave.long@linaro.org>
-CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com>
-In-Reply-To: <547C36DB.7060903@hitachi.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-03_07:2014-12-03,2014-12-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=4.40203429263875e-14 kscore.compositescore=0
+ circleOfTrustscore=33.2965958620397 compositescore=0.986137415400633
+ urlsuspect_oldscore=0.986137415400633 suspectscore=3
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.986137415400633 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412030144
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 04:37 AM, Masami Hiramatsu wrote:
-> (2014/11/29 1:01), Steve Capper wrote:
->> On 27 November 2014 at 06:07, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>> (2014/11/27 3:59), Steve Capper wrote:
->>>> The crash is extremely easy to reproduce.
->>>>
->>>> I've not observed any missed events on a kprobe on an arm64 system
->>>> that's still alive.
->>>> My (limited!) understanding is that this suggests there could be a
->>>> problem with how missed events from a recursive call to memcpy are
->>>> being handled.
->>>
->>> I think so too. BTW, could you bisect that? :)
->>>
->>
->> I can't bisect, but the following functions look suspicious to me
->> (again I'm new to kprobes...):
->> kprobes_save_local_irqflag
->> kprobes_restore_local_irqflag
->>
->> I think these are breaking somehow when nested (i.e. from a recursive probe).
-> 
-> Agreed. On x86, prev_kprobe has old_flags and saved_flags, this
-> at least must have saved_irqflag and save/restore it in
-> save/restore_previous_kprobe().
-> 
-> What about adding this?
-> 
->  struct prev_kprobe {
->  	struct kprobe *kp;
->  	unsigned int status;
-> +	unsigned long saved_irqflag;
->  };
-> 
-> and
-> 
->  static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
->  {
->  	kcb->prev_kprobe.kp = kprobe_running();
->  	kcb->prev_kprobe.status = kcb->kprobe_status;
-> +	kcb->prev_kprobe.saved_irqflag = kcb->saved_irqflag;
->  }
-> 
->  static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
->  {
->  	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
->  	kcb->kprobe_status = kcb->prev_kprobe.status;
-> +	kcb->saved_irqflag = kcb->prev_kprobe.saved_irqflag;
->  }
-> 
-> 
+Hi Linus,
 
-I have noticed with the aarch64 kprobe patches and recent kernel I can get the machine to end up getting stuck and printing out endless strings of
+Single fix for a regression introduced in this development cycle, where
+dm on top of dif/dix is broken. From Darrick Wong.
 
-[187694.855843] Unexpected kernel single-step exception at EL1
-[187694.861385] Unexpected kernel single-step exception at EL1
-[187694.866926] Unexpected kernel single-step exception at EL1
-[187694.872467] Unexpected kernel single-step exception at EL1
-[187694.878009] Unexpected kernel single-step exception at EL1
-[187694.883550] Unexpected kernel single-step exception at EL1
+Please pull!
 
-I can reproduce this pretty easily on my machine with functioncallcount.stp from https://sourceware.org/systemtap/examples/profiling/functioncallcount.stp and the following steps:
+  git://git.kernel.dk/linux-block.git for-linus
 
-# stap -p4 -k -m mm_probes -w functioncallcount.stp "*@mm/*.c" -c "sleep 1"
-# staprun mm_probes.ko -c "sleep 1"
+----------------------------------------------------------------
+Darrick J. Wong (1):
+      block: fix regression where bio_integrity_process uses wrong bio_vec iterator
 
--Will
+ block/bio-integrity.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-> 
-> 
->> That would explain why the state of play of the interrupts is in an
->> unexpected state in the crash I reported:
->> "The point of failure in the panic was:
->> fs/buffer.c:1257
->>
->> static inline void check_irqs_on(void)
->> {
->> #ifdef irqs_disabled
->>         BUG_ON(irqs_disabled());
->> #endif
->> }
->> "
->>
->> This is all new to me so I'm still at the head-scratching stage.
-> 
-> Ah, I see.
-> 
-> Thank you,
-> 
->>
->> David,
->> Does the above make sense to you? Have you managed to reproduce the crash I get?
->>
->> Cheers,
->> --
->> Steve
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
+
+diff --git a/block/bio-integrity.c b/block/bio-integrity.c
+index 0984232e429f..5cbd5d9ea61d 100644
+--- a/block/bio-integrity.c
++++ b/block/bio-integrity.c
+@@ -216,9 +216,10 @@ static int bio_integrity_process(struct bio *bio,
+ {
+ 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
+ 	struct blk_integrity_iter iter;
+-	struct bio_vec *bv;
++	struct bvec_iter bviter;
++	struct bio_vec bv;
+ 	struct bio_integrity_payload *bip = bio_integrity(bio);
+-	unsigned int i, ret = 0;
++	unsigned int ret = 0;
+ 	void *prot_buf = page_address(bip->bip_vec->bv_page) +
+ 		bip->bip_vec->bv_offset;
+ 
+@@ -227,11 +228,11 @@ static int bio_integrity_process(struct bio *bio,
+ 	iter.seed = bip_get_seed(bip);
+ 	iter.prot_buf = prot_buf;
+ 
+-	bio_for_each_segment_all(bv, bio, i) {
+-		void *kaddr = kmap_atomic(bv->bv_page);
++	bio_for_each_segment(bv, bio, bviter) {
++		void *kaddr = kmap_atomic(bv.bv_page);
+ 
+-		iter.data_buf = kaddr + bv->bv_offset;
+-		iter.data_size = bv->bv_len;
++		iter.data_buf = kaddr + bv.bv_offset;
++		iter.data_size = bv.bv_len;
+ 
+ 		ret = proc_fn(&iter);
+ 		if (ret) {
+
+-- 
+Jens Axboe
 
