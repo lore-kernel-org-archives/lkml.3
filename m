@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaLCHzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:55:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60624 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180AbaLCHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:50:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852295"
-From: Feng Wu <feng.wu@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
-        joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 09/25] iommu, x86: define irq_remapping_cap()
-Date: Wed,  3 Dec 2014 15:39:38 +0800
-Message-Id: <1417592394-24343-10-git-send-email-feng.wu@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
-References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
+	id S1752722AbaLCHzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:55:51 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:23377 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323AbaLCHzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:55:47 -0500
+X-AuditID: cbfee68d-f79296d000004278-39-547ec1f38156
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH v5 0/2] Add regulator-haptic driver
+Date: Wed, 03 Dec 2014 16:55:26 +0900
+Message-id: <1417593328-8223-1-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsWyRsSkRPfzwboQg31HpS2uf3nOanF40QtG
+	ix0NR1gtehdcZbO4+ekbq8XlXXPYLGac38fkwO6xc9Zddo++LasYPT5vkgtgjuKySUnNySxL
+	LdK3S+DKWLx/BlPBXK6KvT8nMDUwfmLvYuTkkBAwkbi5cz4jhC0mceHeejYQW0hgKaPEzVuK
+	XYwcYDW775V0MXIBhRcxSjxY2McE4bQxSZzdeZ0ZpIFNQFvi+/rFrCC2iECoxOcLs5hBipgF
+	NjJK/Hp0GSwhLGAs8XvDXyYQm0VAVWLVrEVgNq+Au0Rb829WiG0KEnMm2YD0Sgh8ZpN4c+A5
+	I0S9gMS3yYdYIGpkJTYdYIY4WlLi4IobLBMYBRcwMqxiFE0tSC4oTkovMtQrTswtLs1L10vO
+	z93ECAzQ0/+e9e5gvH3A+hCjAAejEg+vRVxdiBBrYllxZe4hRlOgDROZpUST84FxkFcSb2hs
+	ZmRhamJqbGRuaaYkzqso9TNYSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PX/rc71p52KXv4
+	kn+ZwXbr1btvlVc8069PYPzldI9tww2+6ZzlAgcDOsL3M550kVh3LtVFanfnBh1xhuN/V30s
+	iL8zg39q9DaNPxPuzNo/J4N7zhtrm0L3qZ9YLLhn/iwRyP14p153m+gsluMrf5yd6x/QOXn+
+	3P6npf77P17wucKzfFvouZtflViKMxINtZiLihMBx0YtWUsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+xgO7ng3UhBnvnilhc//Kc1eLwoheM
+	FjsajrBa9C64ymZx89M3VovLu+awWcw4v4/Jgd1j56y77B59W1YxenzeJBfAHNXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLF4/wymgrlcFXt/TmBqYPzE3sXIwSEhYCKx
+	+15JFyMnkCkmceHeerYuRi4OIYFFjBIPFvYxQThtTBJnd15nBqliE9CW+L5+MSuILSIQKvH5
+	wixmkCJmgY2MEr8eXQZLCAsYS/ze8JcJxGYRUJVYNWsRmM0r4C7R1vybFWKzgsScSTYTGLkX
+	MDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOgGdSOxhXNlgcYhTgYFTi4bWIqwsRYk0s
+	K67MPcQowcGsJMK7bAdQiDclsbIqtSg/vqg0J7X4EKMp0PKJzFKiyfnA6MwriTc0NjEzsjQy
+	N7QwMjZXEue9cTM3REggPbEkNTs1tSC1CKaPiYNTqoGRpejHd/mKTDV9eY5df2aaNB3NntS9
+	hI+Rbd2vXeapO/sbD0xw6rpskuC/+NcMjfCb/q+z5pyaxVbvOGFHbEHd8leeZyxvPXp26cm8
+	n806m+N8j1Xnn97Izb2g3oXTXijtLeutg88On+/q1fCeeznxqodgNqe8r7TolPLz5vZqt6on
+	HlDkr92pxFKckWioxVxUnAgAhE6xcpYCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new interface irq_remapping_cap() to detect
-whether irq remapping supports new features, such as VT-d
-Posted-Interrupts. We export this function out, so that KVM
-code can check this and use this mechanism properly.
+This patch series adds regulator-haptic driver.
+The regulator-haptic has haptic motor and it is controlled by
+voltage of regulator via force feedback framework.
 
-Signed-off-by: Feng Wu <feng.wu@intel.com>
-Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/irq_remapping.h |    2 ++
- drivers/iommu/irq_remapping.c        |   12 ++++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+Changes in v5:
+ - give preference to platform data
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index f87ac70..b3ad067 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -37,6 +37,7 @@ enum irq_remap_cap {
- 
- extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
-+extern bool irq_remapping_cap(enum irq_remap_cap cap);
- extern void set_irq_remapping_broken(void);
- extern int irq_remapping_prepare(void);
- extern int irq_remapping_enable(void);
-@@ -69,6 +70,7 @@ struct vcpu_data {
- 
- static inline void setup_irq_remapping_ops(void) { }
- static inline int irq_remapping_supported(void) { return 0; }
-+static bool irq_remapping_cap(enum irq_remap_cap cap) { return 0; }
- static inline void set_irq_remapping_broken(void) { }
- static inline int irq_remapping_prepare(void) { return -ENODEV; }
- static inline int irq_remapping_enable(void) { return -ENODEV; }
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index e63e969..b008663 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -103,6 +103,18 @@ int irq_remapping_supported(void)
- 	return remap_ops->supported();
- }
- 
-+bool irq_remapping_cap(enum irq_remap_cap cap)
-+{
-+	if (disable_irq_post)
-+		return 0;
-+
-+	if (!remap_ops || !remap_ops->capability)
-+		return 0;
-+
-+	return remap_ops->capability(cap);
-+}
-+EXPORT_SYMBOL_GPL(irq_remapping_cap);
-+
- int __init irq_remapping_prepare(void)
- {
- 	if (!remap_ops || !remap_ops->prepare)
+Changes in v4:
+ - _regulator_get() -> _regulator_get_exclusive()
+
+Changes in v3:
+ - fix typo in Documentation
+ - add define in header file
+
+Changes in v2:
+ - remove driver owner
+ - merge enable/disable function
+ - support platform data
+ - fix wrong suspends_state check in regulator_haptic_resume()
+
+Jaewon Kim (2):
+  Input: add regulator haptic driver
+  ARM: dts: Add regulator-haptic device node for exynos3250-rinato
+
+ .../devicetree/bindings/input/regulator-haptic.txt |   21 ++
+ arch/arm/boot/dts/exynos3250-rinato.dts            |    7 +
+ drivers/input/misc/Kconfig                         |   11 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/regulator-haptic.c              |  246 ++++++++++++++++++++
+ include/linux/input/regulator-haptic.h             |   31 +++
+ 6 files changed, 317 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/regulator-haptic.txt
+ create mode 100644 drivers/input/misc/regulator-haptic.c
+ create mode 100644 include/linux/input/regulator-haptic.h
+
 -- 
-1.7.1
+1.7.9.5
 
