@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaLCDkX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 22:40:23 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42968 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaLCDkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 22:40:22 -0500
-Date: Wed, 3 Dec 2014 03:40:20 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alex Dubov <alex.dubov@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
-Message-ID: <20141203034020.GI29748@ZenIV.linux.org.uk>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
- <1417494919-4577-2-git-send-email-oakad@yahoo.com>
- <20141202170037.GG29748@ZenIV.linux.org.uk>
- <CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751354AbaLCDnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 22:43:15 -0500
+Received: from ozlabs.org ([103.22.144.67]:59393 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869AbaLCDnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 22:43:14 -0500
+Message-ID: <1417578191.16722.11.camel@concordia>
+Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Tim Bird <tim.bird@sonymobile.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Date: Wed, 03 Dec 2014 14:43:11 +1100
+In-Reply-To: <547E854E.5060101@sonymobile.com>
+References: <547E854E.5060101@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 01:22:33PM +1100, Alex Dubov wrote:
+On Tue, 2014-12-02 at 19:36 -0800, Tim Bird wrote:
+> This test shows the amount of memory used by the system.
+> Note that this is dependent on the user-space that is loaded
+> when this program runs.  Optimally, this program would be
+> run as the init program itself.
 
-> On a less related note, I hope you will agree that the simpler
-> mechanism for this very in-demand feature is long overdue on Linux
-> (every man and his dog are passing fds around these days).
+Sorry to only chime in at v5.
 
-... and I'm less than sure that it's a good thing.  If nothing else,
-once the pieces of your program are passing descriptors around freely,
-you have created a barfball that will be impossible to split between
-several boxen if you run into scalability issues.  Descriptor-passing
-is limited to a single system; you *can't* do that between e.g. components
-of a cluster.  So it's not an unmixed blessing, just as overuse of
-shared memory segments, etc.  They do have their uses, but that needs
-to be carefully considered every time, or you'll create a major headache
-a few years down the road.
+> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+> new file mode 100644
+> index 0000000..47f8e9c
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/Makefile
+> @@ -0,0 +1,15 @@
+> +#ifndef CC
+> +	CC = $(CROSS_COMPILE)gcc
+> +#endif
+
+I think the following is preferable:
+
+  CC := $(CROSS_COMPILE)$(CC)
+
+
+It allows optionally setting a custom CC, as well as optionally CROSS_COMPILE.
+
+The only thing it doesn't do is choose gcc explicitly, but you shouldn't really
+do that anyway - unless you absolutely require gcc. Let the user choose their
+compiler by choosing where cc points.
+
+cheers
+
+
+
