@@ -1,74 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaLCFN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 00:13:58 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:50766 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaLCFN4 (ORCPT
+	id S1751369AbaLCFO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 00:14:59 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:50524 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaLCFO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 00:13:56 -0500
+	Wed, 3 Dec 2014 00:14:57 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB35ErK9004754, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: reduce memory copy for rx
+Date: Wed, 3 Dec 2014 13:14:38 +0800
+Message-ID: <1394712342-15778-105-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-In-Reply-To: <1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
-	<1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
-Date: Tue, 2 Dec 2014 21:13:55 -0800
-X-Google-Sender-Auth: ob0PSjid2eLb-KgXZ7897ApNXrQ
-Message-ID: <CAD=FV=VupzfrWWkRMmQz_c57Gq59gmM4Oq=iYrYfHuTeR8giKQ@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns doesn't
- meet I2C spec
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+If the data size is more than half of the AGG_BUG_SZ, allocate a new
+rx buffer and use skb_clone() to avoid the memory copy.
 
-On Tue, Dec 2, 2014 at 6:37 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> high_ns calculated from the low division of CLKDIV register is the sum
-> of actual measured high_ns and rise_ns. The rise time which related to
-> external pull-up resistor can be up to the maximum rise time in I2C spec.
->
-> In my test, if external pull-up resistor is 4.7K, rise_ns is about
-> 700ns. So the actual measured high_ns is about 3900ns, which is less
-> than 4000ns(the minimum high_ns in I2C spec).
->
-> To fix this bug, min_low_ns should include fall time and min_high_ns
-> should include rise time too.
->
-> This patch merged the patch that Doug submitted to chromium, which
-> can get the rise and fall times for signals from the device tree.
-> This allows us to more accurately calculate timings. see:
-> https://chromium-review.googlesource.com/#/c/232774/
->
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
-> Changes in v2:
-> - merged the patch that Doug submitted to chromium
->
->  Documentation/devicetree/bindings/i2c/i2c-rk3x.txt | 10 ++++
->  drivers/i2c/busses/i2c-rk3x.c                      | 55 +++++++++++++++-------
->  2 files changed, 47 insertions(+), 18 deletions(-)
+The original method is that allocate the memory and copy data for each
+packet in a rx buffer. The new one is that when the data size for a rx
+buffer is more than RX_THRESHOLD_CLONED, allocate a new rx buffer and
+use skb_clone for each packet in the rx buffer. According to the
+experiment, the new mothod has better performance.
 
-This looks good to me.  Thank you for spinning.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 110 +++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 77 insertions(+), 33 deletions(-)
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 4a9ece0..e44b9fb 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -26,7 +26,7 @@
+ #include <linux/mdio.h>
+ 
+ /* Version Information */
+-#define DRIVER_VERSION "v1.07.0 (2014/10/09)"
++#define DRIVER_VERSION "v1.08.0 (2014/11/27)"
+ #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
+ #define DRIVER_DESC "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
+ #define MODULENAME "r8152"
+@@ -447,6 +447,8 @@ enum rtl_register_content {
+ #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
+ #define RTL8153_RMS		RTL8153_MAX_PACKET
+ #define RTL8152_TX_TIMEOUT	(5 * HZ)
++#define AGG_BUF_SZ		16384 /* 16K */
++#define RX_THRESHOLD_CLONED	(AGG_BUF_SZ / 2)
+ 
+ /* rtl8152 flags */
+ enum rtl8152_flags {
+@@ -534,8 +536,7 @@ struct rx_agg {
+ 	struct list_head list;
+ 	struct urb *urb;
+ 	struct r8152 *context;
+-	void *buffer;
+-	void *head;
++	struct sk_buff *skb;
+ };
+ 
+ struct tx_agg {
+@@ -605,9 +606,8 @@ enum tx_csum_stat {
+  * The RTL chips use a 64 element hash table based on the Ethernet CRC.
+  */
+ static const int multicast_filter_limit = 32;
+-static unsigned int agg_buf_sz = 16384;
+ 
+-#define RTL_LIMITED_TSO_SIZE	(agg_buf_sz - sizeof(struct tx_desc) - \
++#define RTL_LIMITED_TSO_SIZE	(AGG_BUF_SZ - sizeof(struct tx_desc) - \
+ 				 VLAN_ETH_HLEN - VLAN_HLEN)
+ 
+ static
+@@ -1210,9 +1210,8 @@ static void free_all_mem(struct r8152 *tp)
+ 		usb_free_urb(tp->rx_info[i].urb);
+ 		tp->rx_info[i].urb = NULL;
+ 
+-		kfree(tp->rx_info[i].buffer);
+-		tp->rx_info[i].buffer = NULL;
+-		tp->rx_info[i].head = NULL;
++		dev_kfree_skb(tp->rx_info[i].skb);
++		tp->rx_info[i].skb = NULL;
+ 	}
+ 
+ 	for (i = 0; i < RTL8152_MAX_TX; i++) {
+@@ -1231,6 +1230,31 @@ static void free_all_mem(struct r8152 *tp)
+ 	tp->intr_buff = NULL;
+ }
+ 
++static struct sk_buff *rtl_alloc_rx_skb(struct r8152 *tp, gfp_t gfp_mask)
++{
++	struct net_device *netdev = tp->netdev;
++	struct sk_buff *skb;
++
++	skb = __netdev_alloc_skb(netdev, AGG_BUF_SZ, gfp_mask);
++	if (!skb)
++		goto out1;
++
++	if (skb->data != rx_agg_align(skb->data)) {
++		int rl;
++
++		dev_kfree_skb_any(skb);
++		skb = __netdev_alloc_skb(netdev, AGG_BUF_SZ + RX_ALIGN,
++					 gfp_mask);
++		if (!skb)
++			goto out1;
++
++		rl = (int)(rx_agg_align(skb->data) - (void *)skb->data);
++		skb_reserve(skb, rl);
++	}
++out1:
++	return skb;
++}
++
+ static int alloc_all_mem(struct r8152 *tp)
+ {
+ 	struct net_device *netdev = tp->netdev;
+@@ -1239,7 +1263,6 @@ static int alloc_all_mem(struct r8152 *tp)
+ 	struct usb_host_endpoint *ep_intr = alt->endpoint + 2;
+ 	struct urb *urb;
+ 	int node, i;
+-	u8 *buf;
+ 
+ 	node = netdev->dev.parent ? dev_to_node(netdev->dev.parent) : -1;
+ 
+@@ -1249,39 +1272,33 @@ static int alloc_all_mem(struct r8152 *tp)
+ 	skb_queue_head_init(&tp->tx_queue);
+ 
+ 	for (i = 0; i < RTL8152_MAX_RX; i++) {
+-		buf = kmalloc_node(agg_buf_sz, GFP_KERNEL, node);
+-		if (!buf)
+-			goto err1;
++		struct sk_buff *skb;
+ 
+-		if (buf != rx_agg_align(buf)) {
+-			kfree(buf);
+-			buf = kmalloc_node(agg_buf_sz + RX_ALIGN, GFP_KERNEL,
+-					   node);
+-			if (!buf)
+-				goto err1;
+-		}
++		skb = rtl_alloc_rx_skb(tp, GFP_KERNEL);
++		if (!skb)
++			goto err1;
+ 
+ 		urb = usb_alloc_urb(0, GFP_KERNEL);
+ 		if (!urb) {
+-			kfree(buf);
++			dev_kfree_skb(skb);
+ 			goto err1;
+ 		}
+ 
+ 		INIT_LIST_HEAD(&tp->rx_info[i].list);
+ 		tp->rx_info[i].context = tp;
+ 		tp->rx_info[i].urb = urb;
+-		tp->rx_info[i].buffer = buf;
+-		tp->rx_info[i].head = rx_agg_align(buf);
++		tp->rx_info[i].skb = skb;
+ 	}
+ 
+ 	for (i = 0; i < RTL8152_MAX_TX; i++) {
+-		buf = kmalloc_node(agg_buf_sz, GFP_KERNEL, node);
++		u8 *buf = kmalloc_node(AGG_BUF_SZ, GFP_KERNEL, node);
++
+ 		if (!buf)
+ 			goto err1;
+ 
+ 		if (buf != tx_agg_align(buf)) {
+ 			kfree(buf);
+-			buf = kmalloc_node(agg_buf_sz + TX_ALIGN, GFP_KERNEL,
++			buf = kmalloc_node(AGG_BUF_SZ + TX_ALIGN, GFP_KERNEL,
+ 					   node);
+ 			if (!buf)
+ 				goto err1;
+@@ -1538,7 +1555,7 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 	tx_data = agg->head;
+ 	agg->skb_num = 0;
+ 	agg->skb_len = 0;
+-	remain = agg_buf_sz;
++	remain = AGG_BUF_SZ;
+ 
+ 	while (remain >= ETH_ZLEN + sizeof(struct tx_desc)) {
+ 		struct tx_desc *tx_desc;
+@@ -1587,7 +1604,7 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 
+ 		dev_kfree_skb_any(skb);
+ 
+-		remain = agg_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
++		remain = AGG_BUF_SZ - (int)(tx_agg_align(tx_data) - agg->head);
+ 	}
+ 
+ 	if (!skb_queue_empty(&skb_head)) {
+@@ -1666,6 +1683,8 @@ static void rx_bottom(struct r8152 *tp)
+ 
+ 	list_for_each_safe(cursor, next, &rx_queue) {
+ 		struct rx_desc *rx_desc;
++		struct sk_buff *rx_skb;
++		bool cloned = false;
+ 		struct rx_agg *agg;
+ 		int len_used = 0;
+ 		struct urb *urb;
+@@ -1678,10 +1697,21 @@ static void rx_bottom(struct r8152 *tp)
+ 		if (urb->actual_length < ETH_ZLEN)
+ 			goto submit;
+ 
+-		rx_desc = agg->head;
+-		rx_data = agg->head;
++		rx_skb = agg->skb;
++		rx_desc = (struct rx_desc *)rx_skb->data;
++		rx_data = rx_skb->data;
+ 		len_used += sizeof(struct rx_desc);
+ 
++		if (!NET_IP_ALIGN && urb->actual_length > RX_THRESHOLD_CLONED) {
++			struct sk_buff *new_skb;
++
++			new_skb = rtl_alloc_rx_skb(tp, GFP_ATOMIC);
++			if (new_skb) {
++				agg->skb = new_skb;
++				cloned = true;
++			}
++		}
++
+ 		while (urb->actual_length > len_used) {
+ 			struct net_device *netdev = tp->netdev;
+ 			struct net_device_stats *stats = &netdev->stats;
+@@ -1699,14 +1729,23 @@ static void rx_bottom(struct r8152 *tp)
+ 			pkt_len -= CRC_SIZE;
+ 			rx_data += sizeof(struct rx_desc);
+ 
+-			skb = netdev_alloc_skb_ip_align(netdev, pkt_len);
++			if (cloned)
++				skb = skb_clone(rx_skb, GFP_ATOMIC);
++			else
++				skb = netdev_alloc_skb_ip_align(netdev,
++								pkt_len);
+ 			if (!skb) {
+ 				stats->rx_dropped++;
+ 				goto find_next_rx;
+ 			}
+ 
+ 			skb->ip_summed = r8152_rx_csum(tp, rx_desc);
+-			memcpy(skb->data, rx_data, pkt_len);
++
++			if (cloned)
++				skb_reserve(skb, (int)(rx_data - rx_skb->data));
++			else
++				memcpy(skb->data, rx_data, pkt_len);
++
+ 			skb_put(skb, pkt_len);
+ 			skb->protocol = eth_type_trans(skb, netdev);
+ 			rtl_rx_vlan_tag(rx_desc, skb);
+@@ -1717,10 +1756,14 @@ static void rx_bottom(struct r8152 *tp)
+ find_next_rx:
+ 			rx_data = rx_agg_align(rx_data + pkt_len + CRC_SIZE);
+ 			rx_desc = (struct rx_desc *)rx_data;
+-			len_used = (int)(rx_data - (u8 *)agg->head);
++			len_used = (int)(rx_data - rx_skb->data);
+ 			len_used += sizeof(struct rx_desc);
+ 		}
+ 
++		/* free the cloned skb */
++		if (cloned)
++			dev_kfree_skb_any(rx_skb);
++
+ submit:
+ 		r8152_submit_rx(tp, agg, GFP_ATOMIC);
+ 	}
+@@ -1789,10 +1832,11 @@ static void bottom_half(unsigned long data)
+ static
+ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
+ {
++	struct sk_buff *skb = agg->skb;
+ 	int ret;
+ 
+ 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
+-			  agg->head, agg_buf_sz,
++			  skb->data, AGG_BUF_SZ,
+ 			  (usb_complete_t)read_bulk_callback, agg);
+ 
+ 	ret = usb_submit_urb(agg->urb, mem_flags);
+@@ -1951,7 +1995,7 @@ static void set_tx_qlen(struct r8152 *tp)
+ {
+ 	struct net_device *netdev = tp->netdev;
+ 
+-	tp->tx_qlen = agg_buf_sz / (netdev->mtu + VLAN_ETH_HLEN + VLAN_HLEN +
++	tp->tx_qlen = AGG_BUF_SZ / (netdev->mtu + VLAN_ETH_HLEN + VLAN_HLEN +
+ 				    sizeof(struct tx_desc));
+ }
+ 
+-- 
+1.9.3
+
