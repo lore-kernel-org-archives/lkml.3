@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaLCT41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:56:27 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:39976 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaLCT40 (ORCPT
+	id S1751843AbaLCT5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:57:10 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52802 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbaLCT5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:56:26 -0500
+	Wed, 3 Dec 2014 14:57:08 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc\@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene@kernel.org>, Inki Dae <inki.dae@samsung.com>,
+        Tobias Jakobi <Liquid.Acid@gmx.net>, Daniel Drake <drake@endlessm.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2 2/7] ARM: Exynos: add support for sub-power domains
+References: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
+	<1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
+	<CAMuHMdWjZTRVrdcdu2toj9FYi5gOgw_Hf23SRh=9-QKwQDJy0g@mail.gmail.com>
+	<547F065A.5030505@samsung.com>
+Date: Wed, 03 Dec 2014 11:57:05 -0800
+In-Reply-To: <547F065A.5030505@samsung.com> (Marek Szyprowski's message of
+	"Wed, 03 Dec 2014 13:47:22 +0100")
+Message-ID: <7hvblsy0a6.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
-References: <547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141203190045.GB32005@redhat.com>
-	<CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
-Date: Wed, 3 Dec 2014 11:56:25 -0800
-X-Google-Sender-Auth: 3NUiZKncPgzbZudYN4_iUx-gzKs
-Message-ID: <CANcMJZA1NXUMLEveA2k5njFnWc1pCSwSeAOQH7VQCOR-QtiR8g@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: John Stultz <john.stultz@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 11:25 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Dec 3, 2014 at 11:00 AM, Dave Jones <davej@redhat.com> wrote:
->>
->> So right after sending my last mail, I rebooted, and restarted the run
->> on the same kernel again.
->>
->> As I was writing this mail, this happened.
->>
->> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! [trinity-c178:20182]
->>
->> and that's all that made it over the console. I couldn't log in via ssh,
->> and thought "ah-ha, so it IS bad".  I walked over to reboot it, and
->> found I could actually log in on the console. check out this dmesg..
->>
->> [  503.683055] Clocksource tsc unstable (delta = -95946009388 ns)
->> [  503.692038] Switched to clocksource hpet
->> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! [trinity-c178:20182]
->
-> Interesting. That whole NMI watchdog thing happens pretty much 22s
-> after the "TSC unstable" message.
->
-> Have you ever seen that TSC issue before? The watchdog relies on
-> comparing get_timestamp() differences, so if the timestamp was
-> incorrect...
->
-> Maybe that whole "clocksource_watchdog()" is bogus. That delta is
-> about 96 seconds, sounds very odd. I'm not seeing how the TSC could
-> actually scew up that badly, so I'd almost be more likely to blame the
-> "watchdog" clock.
->
-> I don't know. This piece of code:
->
->         delta = clocksource_delta(wdnow, cs->wd_last, watchdog->mask);
->
-> makes no sense to me. Shouldn't it be
->
->         delta = clocksource_delta(wdnow, watchdog->wd_last, watchdog->mask);
+Marek Szyprowski <m.szyprowski@samsung.com> writes:
 
-So we store wdnow value in the cs->wd_last a few lines below, so I
-don't think that's problematic.
+> Hello,
+>
+> On 2014-12-03 13:36, Geert Uytterhoeven wrote:
+>> Hi Marek,
+>>
+>> On Wed, Dec 3, 2014 at 1:33 PM, Marek Szyprowski
+>> <m.szyprowski@samsung.com> wrote:
+>>> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+>>> index abde1ea8a119..b884358ebb1a 100644
+>>> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+>>> @@ -22,6 +22,8 @@ Optional Properties:
+>>>          - pclkN, clkN: Pairs of parent of input clock and input clock to the
+>>>                  devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
+>>>                  are supported currently.
+>>> +- samsung,power-domain: phandle to a master power domain that the given domain
+>>> +                      is a part of
+>> For new DTSes I'd recommend using the generic "power-domains" only.
+>
+> I think that some consistency in dts style will be really an added
+> value. In my opinion for
+> all existing DTSes we should keep using 'samsung,power-domain' (even
+> for defining a parent
+> power domains) and for all new DTSes, the generic 'power-domains'
+> binding should be used.
 
-I do recall seeing problematic watchdog behavior back in the day w/
-PREEMPT_RT when a high priority task really starved the watchdog for a
-long time. When we came back the hpet had wrapped, making the wd_delta
-look quite small relative to the TSC delta, causing improper
-disqualification of the TSC.
+Or even better, convert the existing DTSs to use generic power-domain
+first, and then use generic ones going forward also.
 
-But in that case the watchdog would disqualify the TSC after the
-stall, and here the stall is happening right afterwards. So I'm not
-sure.
-
-I'll look around for some other suspects though. The nohz ntp
-improvments might be high on my list there, since it was a 3.17 item.
-Will dig.
-
-thanks
--john
+Kevin
