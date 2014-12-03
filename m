@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaLCKdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:33:15 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:62520 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaLCKdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:33:12 -0500
-Date: Wed, 3 Dec 2014 11:33:56 +0100
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        kvm-devel <kvm@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Alexander Graf <agraf@suse.de>, "gleb@kernel.org" <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
-Message-ID: <20141203103356.GD17502@cbox>
-References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org>
- <CAFEAcA9YmAVYAOFbmV53Y3zBdcmK9MGSVR4gaLCjKxbyrZ6Xaw@mail.gmail.com>
+	id S1752125AbaLCKfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:35:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53653 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593AbaLCKfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 05:35:09 -0500
+Date: Wed, 3 Dec 2014 11:35:06 +0100
+From: Joerg Roedel <jroedel@suse.de>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Fix kdump failures with crashkernel=high
+Message-ID: <20141203103506.GN3156@suse.de>
+References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
+ <20141203040123.GB23163@dhcp-17-37.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFEAcA9YmAVYAOFbmV53Y3zBdcmK9MGSVR4gaLCjKxbyrZ6Xaw@mail.gmail.com>
+In-Reply-To: <20141203040123.GB23163@dhcp-17-37.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 05:50:00PM +0000, Peter Maydell wrote:
-> On 2 December 2014 at 17:27, Eric Auger <eric.auger@linaro.org> wrote:
-> > Since the advent of dynamic initialization of VGIC, this latter is
-> > initialized very late, on the first vcpu run. This initialization
-> > could be initiated much earlier by the user, as soon as it has
-> > provided the requested dimensioning parameters:
-> > - number of IRQs and number of vCPUs,
-> > - DIST and CPU interface base address.
-> >
-> > One motivation behind being able to initialize the VGIC sooner is
-> > related to the setup of IRQ injection in VFIO use case. The VFIO
-> > signaling, especially when used along with irqfd must be set *after*
-> > vgic initialization to prevent any virtual IRQ injection before
-> > VGIC initialization. If virtual IRQ injection occurs before the VGIC
-> > init, the IRQ cannot be injected and subsequent injection is blocked
-> > due to VFIO completion mechanism (unmask/mask or forward/unforward).
-> 
-> This implies that you're potentially injecting virtual IRQs
-> (and changing the state of the VGIC) before we actually
-> start running the VM (ie before userspace calls KVM_RUN).
-> Is that right? It seems odd, but maybe vfio works that way?
-> 
-Yeah, I can't think of a cleaner way to do this.  VFIO doesn't know
-anything about KVM or whether a machine is running or not.  QEMU has to
-configure all this before starting a VM (wiring up IRQs after the VM is
-running is even more weird imho, when would you even do that?) so
-interrupts from the real hardware are bound to hit VFIO just
-before/during/after VCPUs are started, and VFIO doesn't have any caching
-mechanism for this state, it really has to go to the consumer of the
-interrupt, which is KVM in the case of forwarded interrupts.
+Hi,
 
-Did I miss something obvious here?
+On Wed, Dec 03, 2014 at 12:01:23PM +0800, WANG Chao wrote:
+>From your experience It seems like swiotlb isn't working well with
+> crashkernel=X,high alone. What about using crashkernel=X,low with
+> crashkernel=X,high? Is there any reason you have to use
+> crashkernel=X,high alone?
 
--Christoffer
+Sure, when I specify an additional crashkernel=X,low then I can get
+things to work this way too. But my patch-set is about changing the
+default, since the failure was seen on common server systems with the
+defaults.
+
+> crashkernel=X,high shouldn't automatically reserve 72M low at the first
+> place. Now it's going insane if you increase it to 256M by default.
+
+How should a kernel without some low memory (which has only memory above
+4G available) handle any 32bit DMA devices? There would be no way to
+allocate DMA-able memory for those devices.
+
+And as I said, if people prefer it I can change the patch-set so that
+the amount of low-memory allocated is subtracted from the amount of
+high-memory. This way the overall memory usage for kdump would stay the
+same while changing the defaults to work on more systems.
+
+
+	Joerg
+
