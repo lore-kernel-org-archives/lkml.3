@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaLCHvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:51:04 -0500
+	id S1752511AbaLCHvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:51:31 -0500
 Received: from mga01.intel.com ([192.55.52.88]:2631 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357AbaLCHvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:51:00 -0500
+	id S1752445AbaLCHu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:50:57 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852605"
+   d="scan'208";a="631852582"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
         joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
         kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 25/25] iommu/vt-d: Add a command line parameter for VT-d posted-interrupts
-Date: Wed,  3 Dec 2014 15:39:54 +0800
-Message-Id: <1417592394-24343-26-git-send-email-feng.wu@intel.com>
+Subject: [v2 24/25] KVM: Suppress posted-interrupt when 'SN' is set
+Date: Wed,  3 Dec 2014 15:39:53 +0800
+Message-Id: <1417592394-24343-25-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
 References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
@@ -25,62 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable VT-d Posted-Interrtups and add a command line
-parameter for it.
+Currently, we don't support urgent interrupt, all interrupts
+are recognized as non-urgent interrupt, so we cannot send
+posted-interrupt when 'SN' is set.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 ---
- Documentation/kernel-parameters.txt |    1 +
- drivers/iommu/irq_remapping.c       |   12 ++++++++----
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/kvm/vmx.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 838f377..324b790 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1453,6 +1453,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			nosid	disable Source ID checking
- 			no_x2apic_optout
- 				BIOS x2APIC opt-out request will be ignored
-+			nopost	disable Interrupt Posting
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index dc6fd84..6b2f3e7 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4306,15 +4306,22 @@ static int vmx_vm_has_apicv(struct kvm *kvm)
+ static void vmx_deliver_posted_interrupt(struct kvm_vcpu *vcpu, int vector)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+-	int r;
++	int r, sn;
  
- 	iomem=		Disable strict checking of access to MMIO memory
- 		strict	regions from userspace.
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index b008663..aa3cd23 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -24,7 +24,7 @@ int irq_remap_broken;
- int disable_sourceid_checking;
- int no_x2apic_optout;
+ 	if (pi_test_and_set_pir(vector, &vmx->pi_desc))
+ 		return;
  
--int disable_irq_post = 1;
-+int disable_irq_post = 0;
- 
- static struct irq_remap_ops *remap_ops;
- 
-@@ -59,14 +59,18 @@ static __init int setup_irqremap(char *str)
- 		return -EINVAL;
- 
- 	while (*str) {
--		if (!strncmp(str, "on", 2))
-+		if (!strncmp(str, "on", 2)) {
- 			disable_irq_remap = 0;
--		else if (!strncmp(str, "off", 3))
-+			disable_irq_post = 0;
-+		} else if (!strncmp(str, "off", 3)) {
- 			disable_irq_remap = 1;
--		else if (!strncmp(str, "nosid", 5))
-+			disable_irq_post = 1;
-+		} else if (!strncmp(str, "nosid", 5))
- 			disable_sourceid_checking = 1;
- 		else if (!strncmp(str, "no_x2apic_optout", 16))
- 			no_x2apic_optout = 1;
-+		else if (!strncmp(str, "nopost", 6))
-+			disable_irq_post = 1;
- 
- 		str += strcspn(str, ",");
- 		while (*str == ',')
++	/*
++	 * Currently, we don't support urgent interrupt, all interrupts
++	 * are recognized as non-urgent interrupt, so we cannot send
++	 * posted-interrupt when 'SN' is set.
++	 */
++	sn = pi_test_sn(&vmx->pi_desc);
++
+ 	r = pi_test_and_set_on(&vmx->pi_desc);
+ 	kvm_make_request(KVM_REQ_EVENT, vcpu);
+ #ifdef CONFIG_SMP
+-	if (!r && (vcpu->mode == IN_GUEST_MODE))
++	if (!r && !sn && (vcpu->mode == IN_GUEST_MODE))
+ 		apic->send_IPI_mask(get_cpu_mask(vcpu->cpu),
+ 				POSTED_INTR_VECTOR);
+ 	else
 -- 
 1.7.1
 
