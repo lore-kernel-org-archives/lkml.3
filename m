@@ -1,445 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaLCNgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:36:16 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4963 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430AbaLCNgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:36:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,507,1413270000"; 
-   d="scan'208";a="647549849"
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: jic23@kernel.org, pmeerw@pmeerw.net, srinivas.pandruvada@linux.intel.com,
-        knaack.h@gmx.de
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        daniel.baluta@intel.com
-Subject: [PATCH v4 5/6] iio: imu: kmx61: Add support for data ready triggers
-Date: Wed,  3 Dec 2014 15:31:52 +0200
-Message-Id: <1417613513-28285-6-git-send-email-daniel.baluta@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417613513-28285-1-git-send-email-daniel.baluta@intel.com>
-References: <1417613513-28285-1-git-send-email-daniel.baluta@intel.com>
+	id S1752613AbaLCNhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:37:46 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62635 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaLCNho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:37:44 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-17-547f1225877e
+Message-id: <547F1221.8040807@samsung.com>
+Date: Wed, 03 Dec 2014 16:37:37 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "nadia.derbey" <Nadia.Derbey@bull.net>, aquini <aquini@redhat.com>,
+        davidlohr <davidlohr@hp.com>, Joe Perches <joe@perches.com>,
+        manfred <manfred@colorfullife.com>, avagin <avagin@openvz.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kostya Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        kasan-dev <kasan-dev@googlegroups.com>,
+        David Rientjes <rientjes@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: Out-of-bounds access in __do_proc_doulongvec_minmax
+References: <CACT4Y+aUYGCsqGWWJEG2KHXc_Heq6k1=yPuA+7qrRbB+jsRC6A@mail.gmail.com>
+ <547F0486.7020400@samsung.com>
+ <CACT4Y+Z-G2L6LBBSUyp3smDF8a=HNsYdp=ug21dot6DNdMMU4Q@mail.gmail.com>
+In-reply-to: <CACT4Y+Z-G2L6LBBSUyp3smDF8a=HNsYdp=ug21dot6DNdMMU4Q@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t/xq7qqQvUhBve6RCzmrF/DZtGzeyeT
+	xYyHv1gsViy9xmKx5L6wxfOHD9ktJjxsY7eYff8xUPzZfSaL7c/eMlncfD6HxWJl5wNWi/7H
+	39ktLu+aw2ax7/4UVosPa0+xWJzoW8tk0bZkI5ODkMeLhVuYPSY+ncnq8XL7BjaPnbPusnss
+	2FTqsWfiSTaPXdt2MnmcmPGbxWPeyUCPSYc/M3l8WXWN2eP9vqtsHp83yQXwRnHZpKTmZJal
+	FunbJXBlfPzWxl6wX79i+/f9TA2MM9W7GDk5JARMJP5MOc8CYYtJXLi3nq2LkYtDSGApo8TO
+	lduYIJxmJok1fSvAqngFtCQ+3+pgB7FZBFQl5jceAIuzCehJ/Ju1nQ3EFhWIkLiyZg4jRL2g
+	xI/J98BqRATUJBpf94BtYBZYxipx6+A+sCJhAQeJbdNaoVbvYpTY2vqStYuRg4NTIFhi330/
+	EJNZQF1iypRckHJmAXmJzWveMk9gFJiFZMUshKpZSKoWMDKvYhRNLU0uKE5KzzXUK07MLS7N
+	S9dLzs/dxAiJzi87GBcfszrEKMDBqMTDqzClLkSINbGsuDL3EKMEB7OSCO+zb0Ah3pTEyqrU
+	ovz4otKc1OJDjEwcnFINjBw7H9feSvvbV+B8/rzTI8P1x6smm24qWJ+x7fqJZOHGDatlNnVp
+	z6jg+5EXX3rOxPGyQkr9ygOvLWpfG63582ev7IzkYC9eHyXbm+XvV/4/fEesMPDDd95va4+m
+	MqzqTr5heVXPZb79eRVZxflPJmm0cNy379/ff/GW/afqubFy/NJTjb+UeCuxFGckGmoxFxUn
+	AgCFiyWPrAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This creates a data ready trigger per IIO device.
+On 12/03/2014 04:27 PM, Dmitry Vyukov wrote:
+> On Wed, Dec 3, 2014 at 3:39 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+>> On 12/03/2014 12:04 PM, Dmitry Vyukov wrote:
+>>> Hi,
+>>>
+>>> I am working on AddressSanitizer, a fast memory error detector for kernel:
+>>> https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+>>>
+>>> Here is a bug report that I've got while running trinity:
+>>>
+>>> ==================================================================
+>>> BUG: AddressSanitizer: out of bounds access in
+>>> __do_proc_doulongvec_minmax+0x8a0/0x9a0 at addr ffffffff83980960
+>>> Read of size 8 by task trinity-c14/6919
+>>> Out-of-bounds access to the global variable 'zero'
+>>> [ffffffff83980960-ffffffff83980964) defined at ipc/ipc_sysctl.c:158
+>>
+>> This line seems incorrect. Judging from the backtrace below variable 'zero' is
+>> defined in kernel/sysctl.c:123
+>>
+>>
+>>>
+>>> CPU: 1 PID: 6919 Comm: trinity-c14 Not tainted 3.18.0-rc1+ #50
+>>> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+>>>  0000000000000001 ffff8800b68cf418 ffffffff82c2d3ae 0000000000000000
+>>>  ffff8800b68cf4c0 ffff8800b68cf4a8 ffffffff813eaa81 ffffffff0000000c
+>>>  ffff88010b003600 ffff8800b68cf479 0000000000000296 0000000000000000
+>>> Call Trace:
+>>>  [<ffffffff813ead71>] __asan_report_load8_noabort+0x51/0x70
+>>> mm/kasan/report.c:248
+>>>  [<ffffffff810cc3e0>] __do_proc_doulongvec_minmax+0x8a0/0x9a0
+>>> kernel/sysctl.c:2284
+>>>  [<     inlined    >] proc_doulongvec_minmax+0x50/0x80
+>>> do_proc_doulongvec_minmax kernel/sysctl.c:2322
+>>>  [<ffffffff810cc530>] proc_doulongvec_minmax+0x50/0x80 kernel/sysctl.c:2345
+>>>  [<ffffffff813c9e5a>] hugetlb_sysctl_handler_common+0x12a/0x3c0
+>>> mm/hugetlb.c:2270
+>>>  [<ffffffff813cb45c>] hugetlb_mempolicy_sysctl_handler+0x1c/0x20
+>>> mm/hugetlb.c:2293
+>>>  [<ffffffff8153e6e9>] proc_sys_call_handler+0x179/0x1f0
+>>> fs/proc/proc_sysctl.c:506
+>>>  [<ffffffff8153e76f>] proc_sys_write+0xf/0x20 fs/proc/proc_sysctl.c:524
+>>>  [<ffffffff813f1563>] __kernel_write+0x123/0x440 fs/read_write.c:502
+>>>  [<ffffffff8147ebaa>] write_pipe_buf+0x14a/0x1d0 fs/splice.c:1074
+>>>  [<     inlined    >] __splice_from_pipe+0x22e/0x6f0
+>>> splice_from_pipe_feed fs/splice.c:769
+>>>  [<ffffffff8147dbde>] __splice_from_pipe+0x22e/0x6f0 fs/splice.c:886
+>>>  [<ffffffff81483211>] splice_from_pipe+0xc1/0x110 fs/splice.c:921
+>>>  [<ffffffff81483298>] default_file_splice_write+0x18/0x50 fs/splice.c:1086
+>>>  [<     inlined    >] direct_splice_actor+0x104/0x1c0 do_splice_from
+>>> fs/splice.c:1128
+>>>  [<ffffffff8147cfc4>] direct_splice_actor+0x104/0x1c0 fs/splice.c:1284
+>>>  [<ffffffff8147e5ba>] splice_direct_to_actor+0x24a/0x6f0 fs/splice.c:1237
+>>>  [<ffffffff81483424>] do_splice_direct+0x154/0x270 fs/splice.c:1327
+>>>  [<ffffffff813f3bfb>] do_sendfile+0x5fb/0x1260 fs/read_write.c:1266
+>>>  [<     inlined    >] SyS_sendfile64+0xfa/0x100 SYSC_sendfile64
+>>> fs/read_write.c:1327
+>>>  [<ffffffff813f6bea>] SyS_sendfile64+0xfa/0x100 fs/read_write.c:1313
+>>>  [<ffffffff82c464f9>] ia32_do_call+0x13/0x13 arch/x86/ia32/ia32entry.S:444
+>>> Memory state around the buggy address:
+>>>  ffffffff83980680: 04 f8 f8 f8 f8 f8 f8 f8 02 f8 f8 f8 f8 f8 f8 f8
+>>>  ffffffff83980700: 00 f8 f8 f8 f8 f8 f8 f8 00 f8 f8 f8 f8 f8 f8 f8
+>>>  ffffffff83980780: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 00 00 00 00
+>>>  ffffffff83980800: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 04 f8 f8 f8
+>>>  ffffffff83980880: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
+>>>> ffffffff83980900: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
+>>>                                                        ^
+>>>  ffffffff83980980: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 00
+>>>  ffffffff83980a00: 02 f8 f8 f8 f8 f8 f8 f8 00 00 00 00 00 00 00 00
+>>>  ffffffff83980a80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>>>  ffffffff83980b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>>>  ffffffff83980b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>>> ==================================================================
+>>>
+>>> The core creates ctl_table as:
+>>>
+>>> static int zero;
+>>> static int one = 1;
+>>> static int int_max = INT_MAX;
+>>> static struct ctl_table ipc_kern_table[] = {
+>>> {
+>>> ...
+>>>   {
+>>>     .procname = "shm_rmid_forced",
+>>>     .data = &init_ipc_ns.shm_rmid_forced,
+>>>     .maxlen = sizeof(init_ipc_ns.shm_rmid_forced),
+>>>     .mode = 0644,
+>>>     .proc_handler = proc_ipc_dointvec_minmax_orphans,
+>>>     .extra1 = &zero,
+>>>     .extra2 = &one,
+>>>   },
+>>>
+>>> But later extra1/2 are casted to *unsigned long**:
+>>>
+>>> static int __do_proc_doulongvec_minmax(void *data, struct ctl_table
+>>> *table, int write, ...
+>>> {
+>>>   ...
+>>>   min = (unsigned long *) table->extra1;
+>>>   max = (unsigned long *) table->extra2;
+>>>
+>>> This leads to bogus bounds check for the sysctl value.
+>>>
+>>> The bug is added in commit:
+>>>
+>>> commit 9eefe520c814f6f62c5d36a2ddcd3fb99dfdb30e
+>>> Author: Nadia Derbey <Nadia.Derbey@bull.net>
+>>> Date:   Fri Jul 25 01:48:08 2008 -0700
+>>>
+>>> Later zero and one were used in a bunch of other ctl_table's.
+>>>
+>>
+>> I think you are blaming wrong commit. This bug was introduced by
+>> ed4d4902ebdd7ca8b5a51daaf6bebf4b172895cc ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity")
+>>
+>> We have two options to fix this. Reintroduce back hugetlb_zero or make 'zero' unsigned long instead.
+>> I would prefer the latter, changing type to 'unsigned long' shouldn't harm any other users of this variable.
+>>
+> 
+> ipc/ipc_sysctl.c also contains zero, one and int_max variables that
+> are used in a similar way:
+> 
 
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
----
- drivers/iio/imu/Kconfig |   2 +
- drivers/iio/imu/kmx61.c | 295 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 296 insertions(+), 1 deletion(-)
+Yes, but they all look correct to me. Proc handlers in ipc/ipc_sysctl.c
+use proc_dointvec_minmax() so they should be fine with 'int zero'.
 
-diff --git a/drivers/iio/imu/Kconfig b/drivers/iio/imu/Kconfig
-index db4221d..5e610f7 100644
---- a/drivers/iio/imu/Kconfig
-+++ b/drivers/iio/imu/Kconfig
-@@ -28,6 +28,8 @@ config ADIS16480
- config KMX61
- 	tristate "Kionix KMX61 6-axis accelerometer and magnetometer"
- 	depends on I2C
-+	select IIO_BUFFER
-+	select IIO_TRIGGERED_BUFFER
- 	help
- 	  Say Y here if you want to build a driver for Kionix KMX61 6-axis
- 	  accelerometer and magnetometer.
-diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
-index f69ae5a7..0f6816a 100644
---- a/drivers/iio/imu/kmx61.c
-+++ b/drivers/iio/imu/kmx61.c
-@@ -20,9 +20,14 @@
- #include <linux/pm_runtime.h>
- #include <linux/iio/iio.h>
- #include <linux/iio/sysfs.h>
-+#include <linux/iio/trigger.h>
-+#include <linux/iio/buffer.h>
-+#include <linux/iio/triggered_buffer.h>
-+#include <linux/iio/trigger_consumer.h>
- 
- #define KMX61_DRV_NAME "kmx61"
- #define KMX61_GPIO_NAME "kmx61_int"
-+#define KMX61_IRQ_NAME "kmx61_event"
- 
- #define KMX61_REG_WHO_AM_I	0x00
- 
-@@ -55,9 +60,11 @@
- #define KMX61_MAG_ZOUT_L	0x16
- #define KMX61_MAG_ZOUT_H	0x17
- 
-+#define KMX61_REG_INL		0x28
- #define KMX61_REG_STBY		0x29
- #define KMX61_REG_CTRL1		0x2A
- #define KMX61_REG_ODCNTL	0x2C
-+#define KMX61_REG_INC1		0x2D
- 
- #define KMX61_ACC_STBY_BIT	BIT(0)
- #define KMX61_MAG_STBY_BIT	BIT(1)
-@@ -67,6 +74,13 @@
- 
- #define KMX61_REG_CTRL1_GSEL_MASK	0x03
- 
-+#define KMX61_REG_CTRL1_BIT_RES		BIT(4)
-+#define KMX61_REG_CTRL1_BIT_DRDYE	BIT(5)
-+
-+#define KMX61_REG_INC1_BIT_DRDYM	BIT(1)
-+#define KMX61_REG_INC1_BIT_DRDYA	BIT(2)
-+#define KMX61_REG_INC1_BIT_IEN		BIT(5)
-+
- #define KMX61_ACC_ODR_SHIFT	0
- #define KMX61_MAG_ODR_SHIFT	4
- #define KMX61_ACC_ODR_MASK	0x0F
-@@ -100,9 +114,13 @@ struct kmx61_data {
- 
- 	/* accelerometer specific data */
- 	struct iio_dev *acc_indio_dev;
-+	struct iio_trigger *acc_dready_trig;
-+	bool acc_dready_trig_on;
- 
- 	/* magnetometer specific data */
- 	struct iio_dev *mag_indio_dev;
-+	struct iio_trigger *mag_dready_trig;
-+	bool mag_dready_trig_on;
- };
- 
- enum kmx61_range {
-@@ -466,6 +484,69 @@ static int kmx61_chip_init(struct kmx61_data *data)
- 	return 0;
- }
- 
-+static int kmx61_setup_new_data_interrupt(struct kmx61_data *data,
-+					  bool status, u8 device)
-+{
-+	u8 mode;
-+	int ret;
-+
-+	ret = kmx61_get_mode(data, &mode, KMX61_ACC | KMX61_MAG);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INC1);
-+	if (ret < 0) {
-+		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-+		return ret;
-+	}
-+
-+	if (status) {
-+		ret |= KMX61_REG_INC1_BIT_IEN;
-+		if (device & KMX61_ACC)
-+			ret |= KMX61_REG_INC1_BIT_DRDYA;
-+		if (device & KMX61_MAG)
-+			ret |=  KMX61_REG_INC1_BIT_DRDYM;
-+	} else {
-+		ret &= ~KMX61_REG_INC1_BIT_IEN;
-+		if (device & KMX61_ACC)
-+			ret &= ~KMX61_REG_INC1_BIT_DRDYA;
-+		if (device & KMX61_MAG)
-+			ret &= ~KMX61_REG_INC1_BIT_DRDYM;
-+	}
-+	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_INC1, ret);
-+	if (ret < 0) {
-+		dev_err(&data->client->dev, "Error writing reg_int_ctrl1\n");
-+		return ret;
-+	}
-+
-+	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
-+	if (ret < 0) {
-+		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-+		return ret;
-+	}
-+
-+	if (status)
-+		ret |= KMX61_REG_CTRL1_BIT_DRDYE;
-+	else
-+		ret &= ~KMX61_REG_CTRL1_BIT_DRDYE;
-+
-+	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
-+	if (ret < 0) {
-+		dev_err(&data->client->dev, "Error writing reg_ctrl1\n");
-+		return ret;
-+	}
-+
-+	ret = kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG, true);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
- /**
-  * kmx61_set_power_state() - set power state for kmx61 @device
-  * @data - kmx61 device private pointer
-@@ -626,11 +707,34 @@ static int kmx61_write_raw(struct iio_dev *indio_dev,
- 	}
- }
- 
-+static int kmx61_acc_validate_trigger(struct iio_dev *indio_dev,
-+				      struct iio_trigger *trig)
-+{
-+	struct kmx61_data *data = kmx61_get_data(indio_dev);
-+
-+	if (data->acc_dready_trig != trig)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int kmx61_mag_validate_trigger(struct iio_dev *indio_dev,
-+				      struct iio_trigger *trig)
-+{
-+	struct kmx61_data *data = kmx61_get_data(indio_dev);
-+
-+	if (data->mag_dready_trig != trig)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
- static const struct iio_info kmx61_acc_info = {
- 	.driver_module		= THIS_MODULE,
- 	.read_raw		= kmx61_read_raw,
- 	.write_raw		= kmx61_write_raw,
- 	.attrs			= &kmx61_acc_attribute_group,
-+	.validate_trigger	= kmx61_acc_validate_trigger,
- };
- 
- static const struct iio_info kmx61_mag_info = {
-@@ -638,8 +742,109 @@ static const struct iio_info kmx61_mag_info = {
- 	.read_raw		= kmx61_read_raw,
- 	.write_raw		= kmx61_write_raw,
- 	.attrs			= &kmx61_mag_attribute_group,
-+	.validate_trigger	= kmx61_mag_validate_trigger,
-+};
-+
-+
-+static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
-+					    bool state)
-+{
-+	int ret = 0;
-+	u8 device;
-+
-+	struct iio_dev *indio_dev = iio_trigger_get_drvdata(trig);
-+	struct kmx61_data *data = iio_priv(indio_dev);
-+
-+	mutex_lock(&data->lock);
-+
-+	if (data->acc_dready_trig == trig)
-+		device = KMX61_ACC;
-+	else
-+		device = KMX61_MAG;
-+
-+	ret = kmx61_set_power_state(data, state, device);
-+	if (ret < 0) {
-+		mutex_unlock(&data->lock);
-+		return ret;
-+	}
-+
-+	ret = kmx61_setup_new_data_interrupt(data, state, device);
-+	if (ret < 0) {
-+		kmx61_set_power_state(data, false, device);
-+		mutex_unlock(&data->lock);
-+		return ret;
-+	}
-+
-+	if (data->acc_dready_trig == trig)
-+		data->acc_dready_trig_on = state;
-+	else
-+		data->mag_dready_trig_on = state;
-+
-+	mutex_unlock(&data->lock);
-+
-+	return 0;
-+}
-+
-+static int kmx61_trig_try_reenable(struct iio_trigger *trig)
-+{
-+	struct iio_dev *indio_dev = iio_trigger_get_drvdata(trig);
-+	struct kmx61_data *data = kmx61_get_data(indio_dev);
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INL);
-+	if (ret < 0) {
-+		dev_err(&data->client->dev, "Error reading reg_inl\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct iio_trigger_ops kmx61_trigger_ops = {
-+	.set_trigger_state = kmx61_data_rdy_trigger_set_state,
-+	.try_reenable = kmx61_trig_try_reenable,
-+	.owner = THIS_MODULE,
- };
- 
-+static irqreturn_t kmx61_data_rdy_trig_poll(int irq, void *private)
-+{
-+	struct kmx61_data *data = private;
-+
-+	if (data->acc_dready_trig_on)
-+		iio_trigger_poll(data->acc_dready_trig);
-+	if (data->mag_dready_trig_on)
-+		iio_trigger_poll(data->mag_dready_trig);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t kmx61_trigger_handler(int irq, void *p)
-+{
-+	struct iio_poll_func *pf = p;
-+	struct iio_dev *indio_dev = pf->indio_dev;
-+	struct kmx61_data *data = kmx61_get_data(indio_dev);
-+	int bit, ret, i = 0;
-+	s16 buffer[8];
-+
-+	mutex_lock(&data->lock);
-+	for_each_set_bit(bit, indio_dev->buffer->scan_mask,
-+			 indio_dev->masklength) {
-+		ret = kmx61_read_measurement(data, KMX61_ACC_XOUT_L, bit);
-+		if (ret < 0) {
-+			mutex_unlock(&data->lock);
-+			goto err;
-+		}
-+		buffer[i++] = ret;
-+	}
-+	mutex_unlock(&data->lock);
-+
-+	iio_push_to_buffers(indio_dev, buffer);
-+err:
-+	iio_trigger_notify_done(indio_dev->trig);
-+
-+	return IRQ_HANDLED;
-+}
-+
- static const char *kmx61_match_acpi_device(struct device *dev)
- {
- 	const struct acpi_device_id *id;
-@@ -702,6 +907,32 @@ static struct iio_dev *kmx61_indiodev_setup(struct kmx61_data *data,
- 	return indio_dev;
- }
- 
-+static struct iio_trigger *kmx61_trigger_setup(struct kmx61_data *data,
-+					       struct iio_dev *indio_dev,
-+					       const char *tag)
-+{
-+	struct iio_trigger *trig;
-+	int ret;
-+
-+	trig = devm_iio_trigger_alloc(&data->client->dev,
-+				      "%s-%s-dev%d",
-+				      indio_dev->name,
-+				      tag,
-+				      indio_dev->id);
-+	if (!trig)
-+		return ERR_PTR(-ENOMEM);
-+
-+	trig->dev.parent = &data->client->dev;
-+	trig->ops = &kmx61_trigger_ops;
-+	iio_trigger_set_drvdata(trig, indio_dev);
-+
-+	ret = iio_trigger_register(trig);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	return trig;
-+}
-+
- static int kmx61_probe(struct i2c_client *client,
- 		       const struct i2c_device_id *id)
- {
-@@ -748,10 +979,55 @@ static int kmx61_probe(struct i2c_client *client,
- 	if (client->irq < 0)
- 		client->irq = kmx61_gpio_probe(client, data);
- 
-+	if (client->irq >= 0) {
-+		ret = devm_request_threaded_irq(&client->dev, client->irq,
-+						kmx61_data_rdy_trig_poll,
-+						NULL,
-+						IRQF_TRIGGER_RISING,
-+						KMX61_IRQ_NAME,
-+						data);
-+		if (ret)
-+			goto err_chip_uninit;
-+
-+		data->acc_dready_trig =
-+			kmx61_trigger_setup(data, data->acc_indio_dev,
-+					    "dready");
-+		if (IS_ERR(data->acc_dready_trig))
-+			return PTR_ERR(data->acc_dready_trig);
-+
-+		data->mag_dready_trig =
-+			kmx61_trigger_setup(data, data->mag_indio_dev,
-+					    "dready");
-+		if (IS_ERR(data->mag_dready_trig)) {
-+			ret = PTR_ERR(data->mag_dready_trig);
-+			goto err_trigger_unregister;
-+		}
-+
-+		ret = iio_triggered_buffer_setup(data->acc_indio_dev,
-+						 &iio_pollfunc_store_time,
-+						 kmx61_trigger_handler,
-+						 NULL);
-+		if (ret < 0) {
-+			dev_err(&data->client->dev,
-+				"Failed to setup acc triggered buffer\n");
-+			goto err_trigger_unregister;
-+		}
-+
-+		ret = iio_triggered_buffer_setup(data->mag_indio_dev,
-+						 &iio_pollfunc_store_time,
-+						 kmx61_trigger_handler,
-+						 NULL);
-+		if (ret < 0) {
-+			dev_err(&data->client->dev,
-+				"Failed to setup mag triggered buffer\n");
-+			goto err_trigger_unregister;
-+		}
-+	}
-+
- 	ret = iio_device_register(data->acc_indio_dev);
- 	if (ret < 0) {
- 		dev_err(&client->dev, "Failed to register acc iio device\n");
--		goto err_chip_uninit;
-+		goto err_buffer_cleanup;
- 	}
- 
- 	ret = iio_device_register(data->mag_indio_dev);
-@@ -774,6 +1050,16 @@ err_iio_unregister_mag:
- 	iio_device_unregister(data->mag_indio_dev);
- err_iio_unregister_acc:
- 	iio_device_unregister(data->acc_indio_dev);
-+err_buffer_cleanup:
-+	if (client->irq >= 0) {
-+		iio_triggered_buffer_cleanup(data->acc_indio_dev);
-+		iio_triggered_buffer_cleanup(data->mag_indio_dev);
-+	}
-+err_trigger_unregister:
-+	if (data->acc_dready_trig)
-+		iio_trigger_unregister(data->acc_dready_trig);
-+	if (data->mag_dready_trig)
-+		iio_trigger_unregister(data->mag_dready_trig);
- err_chip_uninit:
- 	kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
- 	return ret;
-@@ -790,6 +1076,13 @@ static int kmx61_remove(struct i2c_client *client)
- 	iio_device_unregister(data->acc_indio_dev);
- 	iio_device_unregister(data->mag_indio_dev);
- 
-+	if (client->irq >= 0) {
-+		iio_triggered_buffer_cleanup(data->acc_indio_dev);
-+		iio_triggered_buffer_cleanup(data->mag_indio_dev);
-+		iio_trigger_unregister(data->acc_dready_trig);
-+		iio_trigger_unregister(data->mag_dready_trig);
-+	}
-+
- 	mutex_lock(&data->lock);
- 	kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
- 	mutex_unlock(&data->lock);
--- 
-1.9.1
+But hugetlb_sysctl_handler_common() calls proc_doulongvec_minmax(), therefore it needs 'unsigned long'.
+
+> static int zero;
+> static int one = 1;
+> static int int_max = INT_MAX;
+> 
 
