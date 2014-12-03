@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334AbaLCBwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:52:53 -0500
-Received: from ozlabs.org ([103.22.144.67]:55675 "EHLO ozlabs.org"
+	id S1751056AbaLCB5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:57:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59425 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232AbaLCBwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:52:51 -0500
-Date: Wed, 3 Dec 2014 12:52:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        stephen hemminger <stephen@networkplumber.org>
-Subject: linux-next: manual merge of the net-next tree with the
- kselftest-fixes tree
-Message-ID: <20141203125238.48fa7380@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750833AbaLCB5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:57:22 -0500
+Date: Wed, 3 Dec 2014 02:57:16 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-omap@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] hsi / OMAP / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Message-ID: <20141203015716.GA29215@earth.universe>
+References: <6319344.XVfdONE5DJ@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/+PSmxa3y_RuCJsG7Uphl6rI"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
+Content-Disposition: inline
+In-Reply-To: <6319344.XVfdONE5DJ@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+PSmxa3y_RuCJsG7Uphl6rI
-Content-Type: text/plain; charset=US-ASCII
+
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi,
 
-Today's linux-next merge of the net-next tree got a conflict in
-include/uapi/linux/Kbuild between commit 3f4994cfc15f ("kcmp: Move
-kcmp.h into uapi") from the kselftest-fixes tree and commit
-df32dd2054b6 ("uapi: resort Kbuild entries") from the net-next tree.
+On Wed, Dec 03, 2014 at 03:02:24AM +0100, Rafael J. Wysocki wrote:
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+>=20
+> Do that for the omap_ssi driver.
+>=20
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Acked-By: Sebastian Reichel <sre@kernel.org>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- Sebastian
 
-diff --cc include/uapi/linux/Kbuild
-index d78fecf216bf,a1e8175cc488..000000000000
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@@ -211,12 -211,11 +211,12 @@@ header-y +=3D ivtv.
-  header-y +=3D ixjuser.h
-  header-y +=3D jffs2.h
-  header-y +=3D joystick.h
- +header-y +=3D kcmp.h
-- header-y +=3D kd.h
-  header-y +=3D kdev_t.h
-- header-y +=3D kernel-page-flags.h
-- header-y +=3D kernel.h
-+ header-y +=3D kd.h
-  header-y +=3D kernelcapi.h
-+ header-y +=3D kernel.h
-+ header-y +=3D kernel-page-flags.h
-  header-y +=3D kexec.h
-  header-y +=3D keyboard.h
-  header-y +=3D keyctl.h
-
---Sig_/+PSmxa3y_RuCJsG7Uphl6rI
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAEBCAAGBQJUfmzwAAoJEMDTa8Ir7ZwVzdEP/R2dC4soe0tC9SXyYdOUzCZe
-/6Ajh6yFu21DHZM5mkaR6DhHSUYWjX1nnUt20VxhueFUhVIe9ImE37dgs7AkNRoU
-fWtBz2tfbklWnleIrbuoarAeVtWdn603O2IV/bari51pbHNGbcHv3FyckHUEEnEo
-8GHtHt7rEAqQ/LStF4tBXtbqoH+NKateRdRf9vV7rgVX+6gRrfIdBglvEGTcME83
-HxUCE8NJA3bkCdaal+PkPP7HDqrNFfnTkT2EsFKaRfFs4YSEy0/6Xx5PLzp6No7a
-FAjmWf8Wxxxn33eJCjUEI9YFpfWYKmITOugtlVMGx8UtfQ6qwVfq0gw6MxR5Ru4D
-vMPzmFs286rQpvyulO44Ns04EFTQYasFHrOj2RWbLhOfO38EqjUK2I1Zo4p6Li+E
-CGe2Njxy5gkiU6DBIMKnakFwBWXrIWnEB7HxvUvcWrcq8QIjqx39udc93nEKqQWz
-rwraArb3JEdCaa6mVchHPfuhsferLIN3xHPPuh30GIqO4k7sOabAi/WR7QiVRhoq
-1ZW6pwHQYtKU3i+7Ik8q70/gGDnK8sidtdBmqumfQvYzh7z+eL72tRtVNTzE6/fw
-QSDK0oPBlwWScyRwKRvsv9s1sFllYoA4F7kf8MXEJZweAtgrKpBAJVWGqb7C+KGU
-TlMKk1LlBj3RS1mab5uL
-=y44f
+iQIcBAEBCgAGBQJUfm37AAoJENju1/PIO/qaZBQP/1W0BOz17Rq63nUFxXXBqJUo
+8/Xr5Jteme/iS7VbjK30ya1Dv7bogM2gTJOo+BNILVhb3L8rZQilsC+CyPNUubtd
+lmccFgtSeusC0X956oZ5w7N9C+mN+qYrOXlby+/5qvLUuxTHBHKVS6tJPJOBPFGh
+WsCKFDWte1P/Yzqh8baxXdjLa6ul4FEF+U7eBcfqyf/2va/6xPvG6q1zIBuX1O+j
+fO7nsO1biGvyFXgTLsuwU2CKETdULlzjI/SAJgRfifwCdtoQ+U9hNI/aYovrbkpy
+ys/KjBhDlzL6BP+R1zxpS4QBOThLf8+9UXceuCuxIF5s3qamBDyI+MN6+HgHVl7n
+Kxb8/HcCWgYclB/RHPBMl7nFqnbhhmdw7kDWqaekVOYGHjkEJa5DTKHN2ubqXHmX
+K5HrPs6gpuD4BcXnana52hgVSrBCdh+jPlQz5SDzJtlR+daFzTuIt/T08yBXkpkT
+o2mDsMIxshHxlhr2DNJM5reN/nmQdv+WPJ7kB7B7hlLRpTskXo+O+q3YVsbjvu4U
+E0ZaxUmQD5uyZK9R1w3+rKh56r5Hh/Y1LdbId66zLxQ5DXCWv2Iq+eblSdSaQ9q6
+fIAY9M+ZW2U24ux7dVF8vr6GC579Lx85nrKeondrW1evc/YxXE82JXXf8zScJJFv
+NAzsH0mA64IWOLBCTOHX
+=jA9Q
 -----END PGP SIGNATURE-----
 
---Sig_/+PSmxa3y_RuCJsG7Uphl6rI--
+--k+w/mQv8wyuph6w0--
