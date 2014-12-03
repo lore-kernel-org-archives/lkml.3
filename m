@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaLCBWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:22:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53351 "HELO
+	id S1751303AbaLCBYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:24:22 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51140 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750896AbaLCBWo (ORCPT
+	with SMTP id S1750884AbaLCBYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:22:44 -0500
+	Tue, 2 Dec 2014 20:24:21 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] DMA / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Wed, 03 Dec 2014 02:44:08 +0100
-Message-ID: <2237445.kkHAuggnGG@vostro.rjw.lan>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: Re: linux-next: manual merge of the pm tree with the arm tree
+Date: Wed, 03 Dec 2014 02:45:35 +0100
+Message-ID: <2220221.lsImPz8V5G@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141203121235.3eabd77b@canb.auug.org.au>
+References: <20141203121235.3eabd77b@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; boundary="nextPart4808115.MsWV0D8ghN"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+--nextPart4808115.MsWV0D8ghN
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/dma/nbpfaxi.c
-and drivers/dma/tegra20-apb-dma.c.
+On Wednesday, December 03, 2014 12:12:35 PM Stephen Rothwell wrote:
+> Hi Rafael,
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Hi,
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+> Today's linux-next merge of the pm tree got a conflict in
+> include/linux/pm_runtime.h between commit 3fb1581ea1ab ("ARM: 8199/1:
+> PM / Runtime: Add getter for querying the IRQ safe option v12") from
+> the arm tree and commit 6d14dd40f550 ("PM: Drop CONFIG_PM_RUNTIME from
+> the driver core") from the pm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Please let me know if it is OK to take this one into linux-pm.
+Looks OK to me, thanks!
 
----
- drivers/dma/nbpfaxi.c         |    2 +-
- drivers/dma/tegra20-apb-dma.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+--nextPart4808115.MsWV0D8ghN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
-Index: linux-pm/drivers/dma/nbpfaxi.c
-===================================================================
---- linux-pm.orig/drivers/dma/nbpfaxi.c
-+++ linux-pm/drivers/dma/nbpfaxi.c
-@@ -1479,7 +1479,7 @@ static struct platform_device_id nbpf_id
- };
- MODULE_DEVICE_TABLE(platform, nbpf_ids);
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int nbpf_runtime_suspend(struct device *dev)
- {
- 	struct nbpf_device *nbpf = platform_get_drvdata(to_platform_device(dev));
-Index: linux-pm/drivers/dma/tegra20-apb-dma.c
-===================================================================
---- linux-pm.orig/drivers/dma/tegra20-apb-dma.c
-+++ linux-pm/drivers/dma/tegra20-apb-dma.c
-@@ -1587,7 +1587,7 @@ static int tegra_dma_pm_resume(struct de
- #endif
- 
- static const struct dev_pm_ops tegra_dma_dev_pm_ops = {
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	.runtime_suspend = tegra_dma_runtime_suspend,
- 	.runtime_resume = tegra_dma_runtime_resume,
- #endif
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJUfmtJAAoJEILEb/54YlRxr0sP/ipBaAFeOR9SmnFwTD0p2hgL
+ZKH/qy+MmisU9pFRjTQ24fznCJTfQuJi/lc6QczuKFDZhyTgKEngeD4Z5io3jfbD
+crTnlF/6Bx5NxDJtJfio2Gwzssj0tueaNPkUz9EQVg/bwCVykmx7UKLnP1D42h74
+dRioncG2fgiZ/0tkj8x9t2pD9WLlz/2lDYPQEcU4KTMNljT/t2+iFsjAj5uCoI2h
+fKr2NzGDU2srrFFRw/Ipe/Svmzm00SZAcrTDtqWhA0EnYgcxHWluprKUh/Wn02xd
+ng6hYkaW2X3RIvK34Avpz7/M3SGwcNIJV4CB7UXh7HdxHJZ3/H2Rb7rp2lu8OWSL
+8Q7/WpRzkh2wktPVD/cmTU7F5H09Px2DQTs58Q7rXMlMqSKpsH61jInoCwkUikT1
+WUlKzPNe02lNQu9TfgfjF/D0FgXIfcaf3inPhXrJMWcpGJ9mYzzmiArNMpYt3P5d
+s7Jt+E554gdYgaC/IQMaG/nF++BUtyroO+RHBwMV182JHWE3Ox1PkMwNBzZDcSBl
+eoirxygBHIAHd3RpXh7rkzkmJz5oXjA+jlN+ltnCEcFNGirCVUVnSkcbJnEJZRej
+joeF+02gsZhQpD4e/D/8QGPKcN9JydIO1MUy90StUlR2N04f68Nqyy7DP5aw8LOs
+oawwJE9sSQ/IBQ6tO3qM
+=Ew2c
+-----END PGP SIGNATURE-----
+
+--nextPart4808115.MsWV0D8ghN--
 
