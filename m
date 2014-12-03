@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaLCPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:54:57 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57625 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaLCPyy (ORCPT
+	id S1751934AbaLCP4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:56:55 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:41828 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaLCP4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:54:54 -0500
-Date: Wed, 3 Dec 2014 16:54:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: memcontrol.c:  Cleaning up function that are not
- used anywhere
-Message-ID: <20141203155451.GI23236@dhcp22.suse.cz>
-References: <1417560083-27157-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20141203152231.GA2822@phnom.home.cmpxchg.org>
+	Wed, 3 Dec 2014 10:56:53 -0500
+Date: Wed, 3 Dec 2014 10:56:49 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: NeilBrown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
+ nfsd
+Message-ID: <20141203155649.GB5013@htj.dyndns.org>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+ <20141203121118.21a32fe1@notabene.brown>
+ <20141202202946.1e0f399b@tlielax.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141203152231.GA2822@phnom.home.cmpxchg.org>
+In-Reply-To: <20141202202946.1e0f399b@tlielax.poochiereds.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-12-14 10:22:31, Johannes Weiner wrote:
-> On Tue, Dec 02, 2014 at 11:41:23PM +0100, Rickard Strandqvist wrote:
-> > Remove function mem_cgroup_lru_names_not_uptodate() that is not used anywhere.
-> > 
-> > This was partially found by using a static code analysis program called cppcheck.
-> > 
-> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> > ---
-> >  mm/memcontrol.c |    5 -----
-> >  1 file changed, 5 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index d6ac0e3..5edd1fe 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -4379,11 +4379,6 @@ static int memcg_numa_stat_show(struct seq_file *m, void *v)
-> >  }
-> >  #endif /* CONFIG_NUMA */
-> >  
-> > -static inline void mem_cgroup_lru_names_not_uptodate(void)
-> > -{
-> > -	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
-> > -}
-> 
-> That assertion doesn't work in an unused function, but we still want
-> this check.  Please move the BUILD_BUG_ON() to the beginning of
-> memcg_stat_show() instead.
+Hello, Neil, Jeff.
 
-Ohh. I have completely missed the point of the check! Moving the check
-to memcg_stat_show sounds like a good idea.
+On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
+> That's a good point. I had originally thought that max_active on an
+> unbound workqueue would be the number of concurrent jobs that could run
+> across all the CPUs, but now that I look I'm not sure that's really
+> the case.
+
+@max_active is a per-pool number.  By default, unbound wqs use
+per-node pools, so @max_active would be per-node.  Currently,
+@max_active is mostly meant as a protection against run-away
+workqueues creating crazy number of workers, which has been enough for
+the existing wq users.  *Maybe* it makes sense to make it actually
+mean maximum concurrency which would prolly involve aggregated per-cpu
+distribution mechanism so that we don't end up inc'ing and dec'ing the
+same counter from all CPUs on each work item execution.
+
+However, I do agree with Neil that making it user configurable is
+almost always painful.  It's usually a question without a good answer
+and the same value may behave differently depending on a lot of
+implementation details and a better approach, probably, is to use
+@max_active as the last resort protection mechanism while providing
+automatic throttling of in-flight work items which is meaningful for
+the specific use cases.
+
+> I've heard random grumblings from various people in the past that
+> workqueues have significant latency, but this is the first time I've
+> really hit it in practice. If we can get this fixed, then that may be a
+> significant perf win for all workqueue users. For instance, rpciod in
+> the NFS client is all workqueue-based. Getting that latency down could
+> really help things.
+> 
+> I'm currently trying to roll up a kernel module for benchmarking the
+> workqueue dispatching code in the hopes that we can use that to help
+> nail it down.
+
+Definitely, there were some reportings but nothing really got tracked
+down properly.  It'd be awesome to actually find out where the latency
+is coming from.
+
+Thanks!
 
 -- 
-Michal Hocko
-SUSE Labs
+tejun
