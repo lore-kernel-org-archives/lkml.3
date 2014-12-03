@@ -1,428 +1,940 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaLCH4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:56:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:23377 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaLCHzt (ORCPT
+	id S1752758AbaLCH5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:57:25 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:60835 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaLCH5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:55:49 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-1a-547ec1f331e2
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        Jaewon Kim <jaewon02.kim@samsung.com>,
-        Hyunhee Kim <hyunhee.kim@samsung.com>
-Subject: [PATCH v5 1/2] Input: add regulator haptic driver
-Date: Wed, 03 Dec 2014 16:55:27 +0900
-Message-id: <1417593328-8223-2-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1417593328-8223-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1417593328-8223-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkWPfzwboQg42nTSyuf3nOanF40QtG
-	i88fWtgtdjQcYbXoXXCVzeLmp2+sFpd3zWGzmHF+H5MDh8fOWXfZPfq2rGL0+LxJLoA5issm
-	JTUnsyy1SN8ugStj2vR+toI/kRXLzn5iamDs8O5i5OSQEDCReDJhFyOELSZx4d56ti5GLg4h
-	gaWMEoc37GOHKfr2/QJUYhGjxMHjr9khnDYmibM7rzODVLEJaEt8X7+YFcQWEQiV+HxhFjNI
-	EbPADUaJC5umsIAkhAWsJE59uQNWxCKgKtGxqA9sBa+Au8Tk90+BVnAArVOQmDPJBsTkFPCQ
-	uDM7CMQUAqq4d04WZKKEwGR2iROXH7BATBGQ+Db5EAtEp6zEpgPMEDdLShxccYNlAqPwAkaG
-	VYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiBoX3637OJOxjvH7A+xCjAwajEw2sRVxcixJpY
-	VlyZe4jRFGjDRGYp0eR8YATllcQbGpsZWZiamBobmVuaKYnz6kj/DBYSSE8sSc1OTS1ILYov
-	Ks1JLT7EyMTBKdXAuP59CEfv1fhlKj3vXy8TTOWPafXM9+BJ9o6WkdEqfim1evdP26zLCz4n
-	r/pbuXqfkMF1zTtaEy7ffjlHprXpqtxOuZmsdva8rhe5/j32mNLmf3quU7ncRZejL4u371v8
-	7dwehaPZqtcklDdIazhVsJc4uKdfMKh0Deq6/ILttMw/rhUncw8JKrEUZyQaajEXFScCAMAg
-	fpNoAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jAd3PB+tCDHZt1rK4/uU5q8XhRS8Y
-	LT5/aGG32NFwhNWid8FVNoubn76xWlzeNYfNYsb5fUwOHB47Z91l9+jbsorR4/MmuQDmqAZG
-	m4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygE5QUyhJz
-	SoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGdOm97MV/ImsWHb2E1MDY4d3FyMn
-	h4SAicS37xfYIGwxiQv31gPZXBxCAosYJQ4ef80O4bQxSZzdeZ0ZpIpNQFvi+/rFrCC2iECo
-	xOcLs5hBipgFbjBKXNg0hQUkISxgJXHqyx2wIhYBVYmORX3sIDavgLvE5PdPgVZwAK1TkJgz
-	yQbE5BTwkLgzOwjEFAKquHdOdgIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZHz
-	TGoH48oGi0OMAhyMSjy8FnF1IUKsiWXFlbmHGCU4mJVEeJftAArxpiRWVqUW5ccXleakFh9i
-	NAU6aSKzlGhyPjCq80riDY1NzIwsjcwNLYyMzZXEeW/czA0REkhPLEnNTk0tSC2C6WPi4JRq
-	YGSrPvpp9e8fS8NlVHSnZ/Iukzu4xGffpQfBVqpGDtd1rsVz9Rr/qdkonFB7e3vWCcalAbX7
-	fz6Y2Rfne3rdst7KsMRHp+MPea3WX7J5/dIbO66eCao87Hdkf7Zu2p1p7DVd37caaRxUYJgX
-	4Mm82fPuDma2m3d3JB5b2JJ4YK1RZ0TK261MT/uUWIozEg21mIuKEwHGHkkwsgIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 3 Dec 2014 02:57:20 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: roger.chen@rock-chips.com
+X-FST-TO: eddie.cai@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: roger.chen@rock-chips.com
+X-UNIQUE-TAG: <35f41b63fafe877b1a300542b9fe0459>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547EC24E.6050905@rock-chips.com>
+Date: Wed, 03 Dec 2014 15:57:02 +0800
+From: Roger <roger.chen@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        kever.yang@rock-chips.com, eddie.cai@rock-chips.com
+Subject: Re: [PATCH v2 1/6] GMAC: add driver for Rockchip RK3288 SoCs integrated
+ GMAC
+References: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com> <1417056728-3642-1-git-send-email-roger.chen@rock-chips.com> <1591535.72TyRu5yfQ@diego>
+In-Reply-To: <1591535.72TyRu5yfQ@diego>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for haptic driver controlled by
-voltage of regulator. And this driver support for
-Force Feedback interface from input framework
+Hi! Heiko
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- .../devicetree/bindings/input/regulator-haptic.txt |   21 ++
- drivers/input/misc/Kconfig                         |   11 +
- drivers/input/misc/Makefile                        |    1 +
- drivers/input/misc/regulator-haptic.c              |  246 ++++++++++++++++++++
- include/linux/input/regulator-haptic.h             |   31 +++
- 5 files changed, 310 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/regulator-haptic.txt
- create mode 100644 drivers/input/misc/regulator-haptic.c
- create mode 100644 include/linux/input/regulator-haptic.h
+about regulator, power gpio,  reset gpio and irq gpio
+please refer to my comment inline, tks.
 
-diff --git a/Documentation/devicetree/bindings/input/regulator-haptic.txt b/Documentation/devicetree/bindings/input/regulator-haptic.txt
-new file mode 100644
-index 0000000..3ed1c7e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/regulator-haptic.txt
-@@ -0,0 +1,21 @@
-+* Regulator Haptic Device Tree Bindings
-+
-+Required Properties:
-+ - compatible : Should be "regulator-haptic"
-+ - haptic-supply : Power supply to the haptic motor.
-+	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+ - max-microvolt : The maximum voltage value supplied to the haptic motor.
-+		[The unit of the voltage is a micro]
-+
-+ - min-microvolt : The minimum voltage value supplied to the haptic motor.
-+		[The unit of the voltage is a micro]
-+
-+Example:
-+
-+	haptics {
-+		compatible = "regulator-haptic";
-+		haptic-supply = <&motor_regulator>;
-+		max-microvolt = <2700000>;
-+		min-microvolt = <1100000>;
-+	};
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 23297ab..e5e556d 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -394,6 +394,17 @@ config INPUT_CM109
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called cm109.
- 
-+config INPUT_REGULATOR_HAPTIC
-+	tristate "regulator haptics support"
-+	select INPUT_FF_MEMLESS
-+	help
-+	  This option enables device driver support for the haptic controlled
-+	  by regulator. This driver supports ff-memless interface
-+	  from input framework.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called regulator-haptic.
-+
- config INPUT_RETU_PWRBUTTON
- 	tristate "Retu Power button Driver"
- 	depends on MFD_RETU
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 19c7603..1f135af 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -53,6 +53,7 @@ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
- obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
- obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
- obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
-+obj-$(CONFIG_INPUT_REGULATOR_HAPTIC)	+= regulator-haptic.o
- obj-$(CONFIG_INPUT_RETU_PWRBUTTON)	+= retu-pwrbutton.o
- obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
- obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
-diff --git a/drivers/input/misc/regulator-haptic.c b/drivers/input/misc/regulator-haptic.c
-new file mode 100644
-index 0000000..c355942
---- /dev/null
-+++ b/drivers/input/misc/regulator-haptic.c
-@@ -0,0 +1,246 @@
-+/*
-+ * Regulator haptic driver
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-+ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/input.h>
-+#include <linux/input/regulator-haptic.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+
-+#define MAX_MAGNITUDE_SHIFT	16
-+
-+struct regulator_haptic {
-+	struct device *dev;
-+	struct input_dev *input_dev;
-+	struct regulator *regulator;
-+	struct work_struct work;
-+
-+	bool enabled;
-+	bool suspend_state;
-+	unsigned int max_volt;
-+	unsigned int min_volt;
-+	unsigned int intensity;
-+	unsigned int magnitude;
-+};
-+
-+static void regulator_haptic_enable(struct regulator_haptic *haptic, bool state)
-+{
-+	int error;
-+
-+	if (haptic->enabled == state)
-+		return;
-+
-+	if (state)
-+		error = regulator_enable(haptic->regulator);
-+	else
-+		error = regulator_disable(haptic->regulator);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot enable regulator\n");
-+		return;
-+	}
-+
-+	haptic->enabled = state;
-+}
-+
-+static void regulator_haptic_work(struct work_struct *work)
-+{
-+	struct regulator_haptic *haptic = container_of(work,
-+					struct regulator_haptic, work);
-+	int error;
-+
-+	error = regulator_set_voltage(haptic->regulator,
-+			haptic->intensity + haptic->min_volt, haptic->max_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot set regulator voltage\n");
-+		return;
-+	}
-+
-+	if (haptic->magnitude)
-+		regulator_haptic_enable(haptic, true);
-+	else
-+		regulator_haptic_enable(haptic, false);
-+}
-+
-+static int regulator_haptic_play_effect(struct input_dev *input, void *data,
-+					struct ff_effect *effect)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+	u64 volt_mag_multi;
-+
-+	haptic->magnitude = effect->u.rumble.strong_magnitude;
-+	if (!haptic->magnitude)
-+		haptic->magnitude = effect->u.rumble.weak_magnitude;
-+
-+
-+	volt_mag_multi = (u64)(haptic->max_volt - haptic->min_volt) *
-+					haptic->magnitude;
-+	haptic->intensity = (unsigned int)(volt_mag_multi >>
-+					MAX_MAGNITUDE_SHIFT);
-+
-+	schedule_work(&haptic->work);
-+
-+	return 0;
-+}
-+
-+static void regulator_haptic_close(struct input_dev *input)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+
-+	cancel_work_sync(&haptic->work);
-+	regulator_haptic_enable(haptic, false);
-+}
-+
-+#ifdef CONFIG_OF
-+static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
-+{
-+	struct device_node *node = haptic->dev->of_node;
-+	int error;
-+
-+	error = of_property_read_u32(node, "max-microvolt", &haptic->max_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot parse max-microvolt\n");
-+		return error;
-+	}
-+
-+	error = of_property_read_u32(node, "min-microvolt", &haptic->min_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot parse min-microvolt\n");
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_OF */
-+
-+static int regulator_haptic_probe(struct platform_device *pdev)
-+{
-+	struct regulator_haptic *haptic;
-+	struct regulator_haptic_data *data = dev_get_platdata(&pdev->dev);
-+	struct input_dev *input_dev;
-+	int error;
-+
-+	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
-+	if (!haptic)
-+		return -ENOMEM;
-+
-+	haptic->dev = &pdev->dev;
-+	haptic->enabled = false;
-+	haptic->suspend_state = false;
-+	INIT_WORK(&haptic->work, regulator_haptic_work);
-+
-+	if (!data) {
-+		if (pdev->dev.of_node) {
-+			error = regulator_haptic_parse_dt(haptic);
-+			if (error) {
-+				dev_err(&pdev->dev, "failed to parse device tree\n");
-+				return error;
-+			}
-+		} else {
-+			dev_err(&pdev->dev, "failed to get platdata\n");
-+			return -EINVAL;
-+		}
-+	} else {
-+		haptic->regulator = data->regulator;
-+		haptic->max_volt = data->max_volt;
-+		haptic->min_volt = data->min_volt;
-+	}
-+
-+	haptic->regulator = devm_regulator_get_exclusive(&pdev->dev, "haptic");
-+	if (IS_ERR(haptic->regulator)) {
-+		dev_err(&pdev->dev, "failed to get regulator\n");
-+		return PTR_ERR(haptic->regulator);
-+	}
-+
-+	input_dev = devm_input_allocate_device(&pdev->dev);
-+	if (!input_dev)
-+		return  -ENOMEM;
-+
-+	haptic->input_dev = input_dev;
-+	haptic->input_dev->name = "regulator-haptic";
-+	haptic->input_dev->dev.parent = &pdev->dev;
-+	haptic->input_dev->close = regulator_haptic_close;
-+	input_set_drvdata(haptic->input_dev, haptic);
-+	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
-+
-+	error = input_ff_create_memless(input_dev, NULL,
-+			      regulator_haptic_play_effect);
-+	if (error) {
-+		dev_err(&pdev->dev, "failed to create force-feedback\n");
-+		return error;
-+	}
-+
-+	error = input_register_device(haptic->input_dev);
-+	if (error) {
-+		dev_err(&pdev->dev, "failed to register input device\n");
-+		return error;
-+	}
-+
-+	platform_set_drvdata(pdev, haptic);
-+
-+	return 0;
-+}
-+
-+static int __maybe_unused regulator_haptic_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	if (haptic->enabled) {
-+		regulator_haptic_enable(haptic, false);
-+		haptic->suspend_state = true;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __maybe_unused regulator_haptic_resume(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	if (haptic->suspend_state) {
-+		regulator_haptic_enable(haptic, true);
-+		haptic->suspend_state = false;
-+	}
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(regulator_haptic_pm_ops,
-+		regulator_haptic_suspend, regulator_haptic_resume);
-+
-+static struct of_device_id regulator_haptic_dt_match[] = {
-+	{ .compatible = "regulator-haptic" },
-+	{ /* sentinel */ },
-+};
-+
-+static struct platform_driver regulator_haptic_driver = {
-+	.probe		= regulator_haptic_probe,
-+	.driver		= {
-+		.name		= "regulator-haptic",
-+		.of_match_table = regulator_haptic_dt_match,
-+		.pm		= &regulator_haptic_pm_ops,
-+	},
-+};
-+module_platform_driver(regulator_haptic_driver);
-+
-+MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
-+MODULE_AUTHOR("Hyunhee Kim <hyunhee.kim@samsung.com>");
-+MODULE_DESCRIPTION("Regulator haptic driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/input/regulator-haptic.h b/include/linux/input/regulator-haptic.h
-new file mode 100644
-index 0000000..05ae038
---- /dev/null
-+++ b/include/linux/input/regulator-haptic.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Regulator Haptic Platform Data
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-+ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _REGULATOR_HAPTIC_H
-+#define _REGULATOR_HAPTIC_H
-+
-+/*
-+ * struct regulator_haptic_data - Platform device data
-+ *
-+ * @regulator: Power supply to the haptic motor
-+ * @max_volt: maximum voltage value supplied to the haptic motor.
-+ * 		<The unit of the voltage is a micro>
-+ * @min_volt: minimum voltage value supplied to the haptic motor.
-+ * 		<The unit of the voltage is a micro>
-+ */
-+struct regulator_haptic_data {
-+	struct regulator *regulator;
-+	unsigned int max_volt;
-+	unsigned int min_volt;
-+};
-+
-+#endif /* _REGULATOR_HAPTIC_H */
--- 
-1.7.9.5
+On 2014/12/2 7:44, Heiko Stübner wrote:
+> Hi Roger,
+>
+> the comments inline are a rough first review. I hope to get a clearer picture
+> for the stuff I'm not sure about in v3 once the big issues are fixed.
+>
+>
+> Am Donnerstag, 27. November 2014, 10:52:08 schrieb Roger Chen:
+>> This driver is based on stmmac driver.
+>>
+>> modification based on Giuseppe CAVALLARO's suggestion:
+>> 1. use BIT()
+>>
+>> 	> +/*RK3288_GRF_SOC_CON3*/
+>> 	> +#define GMAC_TXCLK_DLY_ENABLE   ((0x4000 << 16) | (0x4000))
+>> 	> +#define GMAC_TXCLK_DLY_DISABLE  ((0x4000 << 16) | (0x0000))
+>>
+>> 	...
+>>
+>> 	why do not use BIT and BIT_MASK where possible?
+>>
+>> 	===>after modification:
+>>
+>> 	#define GRF_BIT(nr)     (BIT(nr) | BIT(nr+16))
+>> 	#define GRF_CLR_BIT(nr) (BIT(nr+16))
+>> 	#define GMAC_TXCLK_DLY_ENABLE   GRF_BIT(14)
+>> 	#define GMAC_TXCLK_DLY_DISABLE  GRF_CLR_BIT(14)
+>> 	...
+>> 2.
+>>
+>> 	> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> 	> +             GMAC_PHY_INTF_SEL_RGMII);
+>> 	> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> 	> +             GMAC_RMII_MODE_CLR);
+>>
+>> 	maybe you could perform just one write unless there is some HW
+>> 	constraint.
+>>
+>> 	===>after modification:
+>>
+>> 	regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> 			 GMAC_PHY_INTF_SEL_RGMII | GMAC_RMII_MODE_CLR);
+>>
+>> 3. use macros
+>>
+>> 	> +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO3D_E, 0xFFFFFFFF);
+>> 	> +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E,
+>> 	> +             0x3<<2<<16 | 0x3<<2);
+>>
+>> 	pls use macros, these shift sequence is really help to decode
+>>
+>> 	===>after modification:
+>>
+>> 	regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4A_E, GPIO4A_12MA);
+>> 	regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E, GPIO4B_2_12MA);
+>>
+>> 4. remove grf fail check in rk_gmac_setup()
+>>
+>> 	> +    if (IS_ERR(bsp_priv->grf))
+>> 	> +        dev_err(&pdev->dev, "Missing rockchip,grf property\n");
+>>
+>> 	I wonder if you can fail on here and save all the check in
+>> 	set_rgmii_speed etc.
+>> 	Maybe this can be considered a mandatory property for the glue-logic.
+>>
+>> 5. remove .tx_coe=1
+>>
+>> 	> +const struct stmmac_of_data rk_gmac_data = {
+>> 	> +    .has_gmac = 1,
+>> 	> +    .tx_coe = 1,
+>>
+>> 	FYI, on new gmac there is the HW capability register to dinamically
+>> 	provide you if coe is supported.
+>>
+>> 	IMO you should add the OF "compatible" string and in case of mac
+>> 	newer than the 3.50a you can remove coe.
+> changelogs like these, should be compact and also not be in the commit message
+> itself, but in the "comment"-section below the "---" and before the diffstat.
+>
+>
+>> Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
+>> ---
+> changelog here ... the commonly used pattern is something like
+>
+> changes since v2:
+> - ...
+> - ...
+>
+> changes since v1:
+> - ...
+>
+>>   drivers/net/ethernet/stmicro/stmmac/Makefile       |    2 +-
+>>   drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c     |  636
+>> ++++++++++++++++++++ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |
+>>   3 +
+>>   .../net/ethernet/stmicro/stmmac/stmmac_platform.h  |    1 +
+>>   4 files changed, 641 insertions(+), 1 deletion(-)
+>>   create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>>
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile
+>> b/drivers/net/ethernet/stmicro/stmmac/Makefile index ac4d562..73c2715
+>> 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/Makefile
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
+>> @@ -6,7 +6,7 @@ stmmac-objs:= stmmac_main.o stmmac_ethtool.o stmmac_mdio.o
+>> ring_mode.o	\
+>>
+>>   obj-$(CONFIG_STMMAC_PLATFORM) += stmmac-platform.o
+>>   stmmac-platform-objs:= stmmac_platform.o dwmac-meson.o dwmac-sunxi.o	\
+>> -		       dwmac-sti.o dwmac-socfpga.o
+>> +		       dwmac-sti.o dwmac-socfpga.o dwmac-rk.o
+>>
+>>   obj-$(CONFIG_STMMAC_PCI) += stmmac-pci.o
+>>   stmmac-pci-objs:= stmmac_pci.o
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>> b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c new file mode 100644
+>> index 0000000..870563f
+>> --- /dev/null
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>> @@ -0,0 +1,636 @@
+>> +/**
+>> + * dwmac-rk.c - Rockchip RK3288 DWMAC specific glue layer
+>> + *
+>> + * Copyright (C) 2014 Chen-Zhi (Roger Chen)
+>> + *
+>> + * Chen-Zhi (Roger Chen)  <roger.chen@rock-chips.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/stmmac.h>
+>> +#include <linux/bitops.h>
+>> +#include <linux/clk.h>
+>> +#include <linux/phy.h>
+>> +#include <linux/of_net.h>
+>> +#include <linux/gpio.h>
+>> +#include <linux/of_gpio.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/regulator/consumer.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/mfd/syscon.h>
+>> +#include <linux/regmap.h>
+>> +
+>> +struct rk_priv_data {
+>> +	struct platform_device *pdev;
+>> +	int phy_iface;
+>> +	bool power_ctrl_by_pmu;
+>> +	char pmu_regulator[32];
+>> +	int pmu_enable_level;
+>> +
+>> +	int power_io;
+>> +	int power_io_level;
+>> +	int reset_io;
+>> +	int reset_io_level;
+>> +	int phyirq_io;
+>> +	int phyirq_io_level;
+>> +
+>> +	bool clk_enabled;
+>> +	bool clock_input;
+>> +
+>> +	struct clk *clk_mac;
+>> +	struct clk *clk_mac_pll;
+>> +	struct clk *gmac_clkin;
+>> +	struct clk *mac_clk_rx;
+>> +	struct clk *mac_clk_tx;
+>> +	struct clk *clk_mac_ref;
+>> +	struct clk *clk_mac_refout;
+>> +	struct clk *aclk_mac;
+>> +	struct clk *pclk_mac;
+>> +
+>> +	int tx_delay;
+>> +	int rx_delay;
+>> +
+>> +	struct regmap *grf;
+>> +};
+>> +
+>> +#define RK3288_GRF_SOC_CON1 0x0248
+>> +#define RK3288_GRF_SOC_CON3 0x0250
+>> +#define RK3288_GRF_GPIO3D_E 0x01ec
+>> +#define RK3288_GRF_GPIO4A_E 0x01f0
+>> +#define RK3288_GRF_GPIO4B_E 0x01f4
+> here you're using a space instead of a tab, please select one pattern either
+> tabs or space but do not mix them.
+>
+>
+>> +#define GPIO3D_2MA	0xFFFF0000
+>> +#define GPIO3D_4MA	0xFFFF5555
+>> +#define GPIO3D_8MA	0xFFFFAAAA
+>> +#define GPIO3D_12MA	0xFFFFFFFF
+>> +
+>> +#define GPIO4A_2MA	0xFFFF0000
+>> +#define GPIO4A_4MA	0xFFFF5555
+>> +#define GPIO4A_8MA	0xFFFFAAAA
+>> +#define GPIO4A_12MA	0xFFFFFFFF
+> see comment about pin settings below
+>
+>
+>> +
+>> +#define GRF_BIT(nr)	(BIT(nr) | BIT(nr+16))
+>> +#define GRF_CLR_BIT(nr)	(BIT(nr+16))
+>> +
+>> +#define GPIO4B_2_2MA	(GRF_CLR_BIT(2) | GRF_CLR_BIT(3))
+>> +#define GPIO4B_2_4MA	(GRF_BIT(2) | GRF_CLR_BIT(3))
+>> +#define GPIO4B_2_8MA	(GRF_CLR_BIT(2) | GRF_BIT(3))
+>> +#define GPIO4B_2_12MA	(GRF_BIT(2) | GRF_BIT(3))
+>> +
+>> +/*RK3288_GRF_SOC_CON1*/
+>> +#define GMAC_PHY_INTF_SEL_RGMII	(GRF_BIT(6) | GRF_CLR_BIT(7) |
+>> GRF_CLR_BIT(8))
+>> +#define GMAC_PHY_INTF_SEL_RMII  (GRF_CLR_BIT(6) |
+>> GRF_CLR_BIT(7) | GRF_BIT(8))
+>> +#define GMAC_FLOW_CTRL          GRF_BIT(9)
+>> +#define GMAC_FLOW_CTRL_CLR      GRF_CLR_BIT(9)
+>> +#define GMAC_SPEED_10M          GRF_CLR_BIT(10)
+>> +#define GMAC_SPEED_100M         GRF_BIT(10)
+>> +#define GMAC_RMII_CLK_25M       GRF_BIT(11)
+>> +#define GMAC_RMII_CLK_2_5M      GRF_CLR_BIT(11)
+>> +#define GMAC_CLK_125M           (GRF_CLR_BIT(12) | GRF_CLR_BIT(13))
+>> +#define GMAC_CLK_25M            (GRF_BIT(12) | GRF_BIT(13))
+>> +#define GMAC_CLK_2_5M           (GRF_CLR_BIT(12) | GRF_BIT(13))
+>> +#define GMAC_RMII_MODE          GRF_BIT(14)
+>> +#define GMAC_RMII_MODE_CLR      GRF_CLR_BIT(14)
+>> +
+>> +/*RK3288_GRF_SOC_CON3*/
+>> +#define GMAC_TXCLK_DLY_ENABLE   GRF_BIT(14)
+>> +#define GMAC_TXCLK_DLY_DISABLE  GRF_CLR_BIT(14)
+>> +#define GMAC_RXCLK_DLY_ENABLE   GRF_BIT(15)
+>> +#define GMAC_RXCLK_DLY_DISABLE  GRF_CLR_BIT(15)
+>> +#define GMAC_CLK_RX_DL_CFG(val) ((0x7F<<7<<16) | (val<<7))
+>> +#define GMAC_CLK_TX_DL_CFG(val) ((0x7F<<16) | (val))
+> again mixed tabs and spaces as delimiters.
+>
+> Also the _CFG macros are not well abstracted. You could take a look at the
+> HIWORD_UPDATE macro in drivers/clk/rockchip/clk.h:
+>
+> #define GMAC_CLK_DL_MASK	0x7f
+> #define GMAC_CLK_RX_DL_CFG(val)  HIWORD_UPDATE(val, GMAC_CLK_DL_MASK, 7)
+> #define GMAC_CLK_TX_DL_CFG(val)  HIWORD_UPDATE(val, GMAC_CLK_DL_MASK, 0)
+>
+>
+>> +
+>> +static void set_to_rgmii(struct rk_priv_data *bsp_priv,
+>> +			 int tx_delay, int rx_delay)
+>> +{
+>> +	if (IS_ERR(bsp_priv->grf)) {
+>> +		pr_err("%s: Missing rockchip,grf property\n", __func__);
+>> +		return;
+>> +	}
+>> +
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +		     GMAC_PHY_INTF_SEL_RGMII | GMAC_RMII_MODE_CLR);
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON3,
+>> +		     GMAC_RXCLK_DLY_ENABLE | GMAC_TXCLK_DLY_ENABLE |
+>> +		     GMAC_CLK_RX_DL_CFG(rx_delay) |
+>> +		     GMAC_CLK_TX_DL_CFG(tx_delay));
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_GPIO3D_E, GPIO3D_12MA);
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4A_E, GPIO4A_12MA);
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E, GPIO4B_2_12MA);
+> please don't write to parts controlled by other drivers - here the drive
+> strength settings of pins is controlled by the pinctrl driver. Instead you can
+> just set the drive-strength in the pinctrl settings.
+>
+>
+>> +
+>> +	pr_debug("%s: tx delay=0x%x; rx delay=0x%x;\n",
+>> +		 __func__, tx_delay, rx_delay);
+>> +}
+>> +
+>> +static void set_to_rmii(struct rk_priv_data *bsp_priv)
+>> +{
+>> +	if (IS_ERR(bsp_priv->grf)) {
+>> +		pr_err("%s: Missing rockchip,grf property\n", __func__);
+> you have a device-reference in rk_priv_data, so you could use dev_err here.
+> Same for all other pr_err/pr_debug/pr_* calls in this file.
+>
+>
+>> +		return;
+>> +	}
+>> +
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +		     GMAC_PHY_INTF_SEL_RMII);
+>> +	regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +		     GMAC_RMII_MODE);
+> these two could be combined?
+>
+>
+>> +}
+>> +
+>> +static void set_rgmii_speed(struct rk_priv_data *bsp_priv, int speed)
+>> +{
+>> +	if (IS_ERR(bsp_priv->grf)) {
+>> +		pr_err("%s: Missing rockchip,grf property\n", __func__);
+>> +		return;
+>> +	}
+>> +
+>> +	if (speed == 10)
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, GMAC_CLK_2_5M);
+>> +	else if (speed == 100)
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, GMAC_CLK_25M);
+>> +	else if (speed == 1000)
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, GMAC_CLK_125M);
+>> +	else
+>> +		pr_err("unknown speed value for RGMII! speed=%d", speed);
+>> +}
+>> +
+>> +static void set_rmii_speed(struct rk_priv_data *bsp_priv, int speed)
+>> +{
+>> +	if (IS_ERR(bsp_priv->grf)) {
+>> +		pr_err("%s: Missing rockchip,grf property\n", __func__);
+>> +		return;
+>> +	}
+>> +
+>> +	if (speed == 10) {
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +			     GMAC_RMII_CLK_2_5M);
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +			     GMAC_SPEED_10M);
+> combine into one write?
+>
+>
+>> +	} else if (speed == 100) {
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +			     GMAC_RMII_CLK_25M);
+>> +		regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>> +			     GMAC_SPEED_100M);
+> combine into one write?
+>
+>
+>> +	} else {
+>> +		pr_err("unknown speed value for RMII! speed=%d", speed);
+>> +	}
+>> +}
+>> +
+>> +#define MAC_CLK_RX	"mac_clk_rx"
+>> +#define MAC_CLK_TX	"mac_clk_tx"
+>> +#define CLK_MAC_REF	"clk_mac_ref"
+>> +#define CLK_MAC_REF_OUT	"clk_mac_refout"
+>> +#define CLK_MAC_PLL	"clk_mac_pll"
+>> +#define ACLK_MAC	"aclk_mac"
+>> +#define PCLK_MAC	"pclk_mac"
+>> +#define MAC_CLKIN	"ext_gmac"
+>> +#define CLK_MAC		"stmmaceth"
+> why the need to extra constants for the clock names and not use the real names
+> directly like most other drivers do?
+>
+>
+>> +
+>> +static int gmac_clk_init(struct rk_priv_data *bsp_priv)
+>> +{
+>> +	struct device *dev = &bsp_priv->pdev->dev;
+>> +
+>> +	bsp_priv->clk_enabled = false;
+>> +
+>> +	bsp_priv->mac_clk_rx = clk_get(dev, MAC_CLK_RX);
+>> +	if (IS_ERR(bsp_priv->mac_clk_rx))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, MAC_CLK_RX);
+>> +
+>> +	bsp_priv->mac_clk_tx = clk_get(dev, MAC_CLK_TX);
+>> +	if (IS_ERR(bsp_priv->mac_clk_tx))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, MAC_CLK_TX);
+>> +
+>> +	bsp_priv->clk_mac_ref = clk_get(dev, CLK_MAC_REF);
+>> +	if (IS_ERR(bsp_priv->clk_mac_ref))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, CLK_MAC_REF);
+>> +
+>> +	bsp_priv->clk_mac_refout = clk_get(dev, CLK_MAC_REF_OUT);
+>> +	if (IS_ERR(bsp_priv->clk_mac_refout))
+>> +		pr_warn("%s: warning:cannot get clock %s\n",
+>> +			__func__, CLK_MAC_REF_OUT);
+>> +
+>> +	bsp_priv->aclk_mac = clk_get(dev, ACLK_MAC);
+>> +	if (IS_ERR(bsp_priv->aclk_mac))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, ACLK_MAC);
+>> +
+>> +	bsp_priv->pclk_mac = clk_get(dev, PCLK_MAC);
+>> +	if (IS_ERR(bsp_priv->pclk_mac))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, PCLK_MAC);
+>> +
+>> +	bsp_priv->clk_mac_pll = clk_get(dev, CLK_MAC_PLL);
+>> +	if (IS_ERR(bsp_priv->clk_mac_pll))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, CLK_MAC_PLL);
+>> +
+>> +	bsp_priv->gmac_clkin = clk_get(dev, MAC_CLKIN);
+>> +	if (IS_ERR(bsp_priv->gmac_clkin))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, MAC_CLKIN);
+>> +
+>> +	bsp_priv->clk_mac = clk_get(dev, CLK_MAC);
+>> +	if (IS_ERR(bsp_priv->clk_mac))
+>> +		pr_warn("%s: warning: cannot get clock %s\n",
+>> +			__func__, CLK_MAC);
+> there is not clk_put in the _remove case ... maybe you could simply use
+> devm_clk_get here so that all clocks are put on device removal.
+>
+> Also you're warning on every missing clock. Below it looks like you need a
+> different set of them for rgmii and rmii, so maybe you should simply error out
+> when core clocks for the selected phy-mode are missing.
+>
+>
+>> +
+>> +	if (bsp_priv->clock_input) {
+>> +		pr_info("%s: clock input from PHY\n", __func__);
+>> +	} else {
+>> +		if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII)
+>> +			clk_set_rate(bsp_priv->clk_mac_pll, 50000000);
+>> +
+>> +		clk_set_parent(bsp_priv->clk_mac, bsp_priv->clk_mac_pll);
+> why the explicit reparenting. The common clock-framework is intelligent enough
+> to select the best suitable parent.
+>
+> In general I'm thinking the clock-handling inside this driver should be
+> simplyfied, as the common-clock framework can handle most cases itself. I.e. if
+> a 125MHz external clock is present and so on. But haven't looked to deep yet.
+>
+>
+>
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int gmac_clk_enable(struct rk_priv_data *bsp_priv, bool enable)
+>> +{
+>> +	int phy_iface = phy_iface = bsp_priv->phy_iface;
+>> +
+>> +	if (enable) {
+>> +		if (!bsp_priv->clk_enabled) {
+>> +			if (phy_iface == PHY_INTERFACE_MODE_RMII) {
+>> +				if (!IS_ERR(bsp_priv->mac_clk_rx))
+>> +					clk_prepare_enable(
+>> +						bsp_priv->mac_clk_rx);
+>> +
+>> +				if (!IS_ERR(bsp_priv->clk_mac_ref))
+>> +					clk_prepare_enable(
+>> +						bsp_priv->clk_mac_ref);
+>> +
+>> +				if (!IS_ERR(bsp_priv->clk_mac_refout))
+>> +					clk_prepare_enable(
+>> +						bsp_priv->clk_mac_refout);
+>> +			}
+>> +
+>> +			if (!IS_ERR(bsp_priv->aclk_mac))
+>> +				clk_prepare_enable(bsp_priv->aclk_mac);
+>> +
+>> +			if (!IS_ERR(bsp_priv->pclk_mac))
+>> +				clk_prepare_enable(bsp_priv->pclk_mac);
+>> +
+>> +			if (!IS_ERR(bsp_priv->mac_clk_tx))
+>> +				clk_prepare_enable(bsp_priv->mac_clk_tx);
+>> +
+>> +			/**
+>> +			 * if (!IS_ERR(bsp_priv->clk_mac))
+>> +			 *	clk_prepare_enable(bsp_priv->clk_mac);
+>> +			 */
+>> +			mdelay(5);
+>> +			bsp_priv->clk_enabled = true;
+>> +		}
+>> +	} else {
+>> +		if (bsp_priv->clk_enabled) {
+>> +			if (phy_iface == PHY_INTERFACE_MODE_RMII) {
+>> +				if (!IS_ERR(bsp_priv->mac_clk_rx))
+>> +					clk_disable_unprepare(
+>> +						bsp_priv->mac_clk_rx);
+>> +
+>> +				if (!IS_ERR(bsp_priv->clk_mac_ref))
+>> +					clk_disable_unprepare(
+>> +						bsp_priv->clk_mac_ref);
+>> +
+>> +				if (!IS_ERR(bsp_priv->clk_mac_refout))
+>> +					clk_disable_unprepare(
+>> +						bsp_priv->clk_mac_refout);
+>> +			}
+>> +
+>> +			if (!IS_ERR(bsp_priv->aclk_mac))
+>> +				clk_disable_unprepare(bsp_priv->aclk_mac);
+>> +
+>> +			if (!IS_ERR(bsp_priv->pclk_mac))
+>> +				clk_disable_unprepare(bsp_priv->pclk_mac);
+>> +
+>> +			if (!IS_ERR(bsp_priv->mac_clk_tx))
+>> +				clk_disable_unprepare(bsp_priv->mac_clk_tx);
+>> +			/**
+>> +			 * if (!IS_ERR(bsp_priv->clk_mac))
+>> +			 *	clk_disable_unprepare(bsp_priv->clk_mac);
+>> +			 */
+>> +			bsp_priv->clk_enabled = false;
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int power_on_by_pmu(struct rk_priv_data *bsp_priv, bool enable)
+>> +{
+>> +	struct regulator *ldo;
+>> +	char *ldostr = bsp_priv->pmu_regulator;
+>> +	int ret;
+>> +
+>> +	if (!ldostr) {
+>> +		pr_err("%s: no ldo found\n", __func__);
+>> +		return -1;
+>> +	}
+>> +
+>> +	ldo = regulator_get(NULL, ldostr);
+>> +	if (!ldo) {
+>> +		pr_err("\n%s get ldo %s failed\n", __func__, ldostr);
+>> +	} else {
+>> +		if (enable) {
+>> +			if (!regulator_is_enabled(ldo)) {
+>> +				regulator_set_voltage(ldo, 3300000, 3300000);
+>> +				ret = regulator_enable(ldo);
+>> +				if (ret != 0)
+>> +					pr_err("%s: fail to enable %s\n",
+>> +					       __func__, ldostr);
+>> +				else
+>> +					pr_info("turn on ldo done.\n");
+>> +			} else {
+>> +				pr_warn("%s is enabled before enable", ldostr);
+>> +			}
+>> +		} else {
+>> +			if (regulator_is_enabled(ldo)) {
+>> +				ret = regulator_disable(ldo);
+>> +				if (ret != 0)
+>> +					pr_err("%s: fail to disable %s\n",
+>> +					       __func__, ldostr);
+>> +				else
+>> +					pr_info("turn off ldo done.\n");
+>> +			} else {
+>> +				pr_warn("%s is disabled before disable",
+>> +					ldostr);
+>> +			}
+>> +		}
+>> +		regulator_put(ldo);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int power_on_by_gpio(struct rk_priv_data *bsp_priv, bool enable)
+>> +{
+>> +	if (enable) {
+>> +		/*power on*/
+>> +		if (gpio_is_valid(bsp_priv->power_io))
+>> +			gpio_direction_output(bsp_priv->power_io,
+>> +					      bsp_priv->power_io_level);
+>> +	} else {
+>> +		/*power off*/
+>> +		if (gpio_is_valid(bsp_priv->power_io))
+>> +			gpio_direction_output(bsp_priv->power_io,
+>> +					      !bsp_priv->power_io_level);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int phy_power_on(struct rk_priv_data *bsp_priv, bool enable)
+>> +{
+>> +	int ret = -1;
+>> +
+>> +	pr_info("Ethernet PHY power %s\n", enable == 1 ? "on" : "off");
+>> +
+>> +	if (bsp_priv->power_ctrl_by_pmu)
+>> +		ret = power_on_by_pmu(bsp_priv, enable);
+>> +	else
+>> +		ret =  power_on_by_gpio(bsp_priv, enable);
+> this looks wrong. This should always be a regulator. Even a regulator + switch
+> controlled by a gpio can still be modelled as regulator, so that you don't
+> need this switch and assorted special handling - so just use the regulator API
+>
+In some case, it would be a switching circuit to control the power for PHY.
+All I need to do is to control a GPIO to make switch on/off.  So...
+>> +
+>> +	if (enable) {
+>> +		/*reset*/
+>> +		if (gpio_is_valid(bsp_priv->reset_io)) {
+>> +			gpio_direction_output(bsp_priv->reset_io,
+>> +					      bsp_priv->reset_io_level);
+>> +			mdelay(5);
+>> +			gpio_direction_output(bsp_priv->reset_io,
+>> +					      !bsp_priv->reset_io_level);
+>> +		}
+>> +		mdelay(30);
+>> +
+>> +	} else {
+>> +		/*pull down reset*/
+>> +		if (gpio_is_valid(bsp_priv->reset_io)) {
+>> +			gpio_direction_output(bsp_priv->reset_io,
+>> +					      bsp_priv->reset_io_level);
+>> +		}
+>> +	}
+> I'm not sure yet if it would be better to use the reset framework for this.
+> While it says it is also meant for reset-gpios, there does not seem a driver
+> for this to exist yet.
+>
+What should I do?
+>
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +#define GPIO_PHY_POWER	"gmac_phy_power"
+>> +#define GPIO_PHY_RESET	"gmac_phy_reset"
+>> +#define GPIO_PHY_IRQ	"gmac_phy_irq"
+> again I don't understand why these constants are necessary
+>
+>> +
+>> +static void *rk_gmac_setup(struct platform_device *pdev)
+>> +{
+>> +	struct rk_priv_data *bsp_priv;
+>> +	struct device *dev = &pdev->dev;
+>> +	enum of_gpio_flags flags;
+>> +	int ret;
+>> +	const char *strings = NULL;
+>> +	int value;
+>> +	int irq;
+>> +
+>> +	bsp_priv = devm_kzalloc(dev, sizeof(*bsp_priv), GFP_KERNEL);
+>> +	if (!bsp_priv)
+>> +		return ERR_PTR(-ENOMEM);
+>> +
+>> +	bsp_priv->phy_iface = of_get_phy_mode(dev->of_node);
+>> +
+>> +	ret = of_property_read_string(dev->of_node, "pmu_regulator", &strings);
+>> +	if (ret) {
+>> +		pr_err("%s: Can not read property: pmu_regulator.\n", __func__);
+>> +		bsp_priv->power_ctrl_by_pmu = false;
+>> +	} else {
+>> +		pr_info("%s: ethernet phy power controlled by pmu(%s).\n",
+>> +			__func__, strings);
+>> +		bsp_priv->power_ctrl_by_pmu = true;
+>> +		strcpy(bsp_priv->pmu_regulator, strings);
+>> +	}
+> There is a generic regulator-dt-binding for regulator-consumers available
+> which you should of course use.
+>
+The same explanation as above
+>> +
+>> +	ret = of_property_read_u32(dev->of_node, "pmu_enable_level", &value);
+>> +	if (ret) {
+>> +		pr_err("%s: Can not read property: pmu_enable_level.\n",
+>> +		       __func__);
+>> +		bsp_priv->power_ctrl_by_pmu = false;
+>> +	} else {
+>> +		pr_info("%s: PHY power controlled by pmu(level = %s).\n",
+>> +			__func__, (value == 1) ? "HIGH" : "LOW");
+>> +		bsp_priv->power_ctrl_by_pmu = true;
+>> +		bsp_priv->pmu_enable_level = value;
+>> +	}
+> What is this used for? Enabling should of course be done via regulator_enable
+> and disabling using regulator_disable.
+>
+>
+>> +
+>> +	ret = of_property_read_string(dev->of_node, "clock_in_out", &strings);
+>> +	if (ret) {
+>> +		pr_err("%s: Can not read property: clock_in_out.\n", __func__);
+>> +		bsp_priv->clock_input = true;
+>> +	} else {
+>> +		pr_info("%s: clock input or output? (%s).\n",
+>> +			__func__, strings);
+>> +		if (!strcmp(strings, "input"))
+>> +			bsp_priv->clock_input = true;
+>> +		else
+>> +			bsp_priv->clock_input = false;
+>> +	}
+>> +
+>> +	ret = of_property_read_u32(dev->of_node, "tx_delay", &value);
+>> +	if (ret) {
+>> +		bsp_priv->tx_delay = 0x30;
+>> +		pr_err("%s: Can not read property: tx_delay.", __func__);
+>> +		pr_err("%s: set tx_delay to 0x%x\n",
+>> +		       __func__, bsp_priv->tx_delay);
+>> +	} else {
+>> +		pr_info("%s: TX delay(0x%x).\n", __func__, value);
+>> +		bsp_priv->tx_delay = value;
+>> +	}
+>> +
+>> +	ret = of_property_read_u32(dev->of_node, "rx_delay", &value);
+>> +	if (ret) {
+>> +		bsp_priv->rx_delay = 0x10;
+>> +		pr_err("%s: Can not read property: rx_delay.", __func__);
+>> +		pr_err("%s: set rx_delay to 0x%x\n",
+>> +		       __func__, bsp_priv->rx_delay);
+>> +	} else {
+>> +		pr_info("%s: RX delay(0x%x).\n", __func__, value);
+>> +		bsp_priv->rx_delay = value;
+>> +	}
+>> +
+>> +	bsp_priv->grf = syscon_regmap_lookup_by_phandle(dev->of_node,
+>> +							"rockchip,grf");
+>> +	bsp_priv->phyirq_io =
+>> +		of_get_named_gpio_flags(dev->of_node,
+>> +					"phyirq-gpio", 0, &flags);
+>> +	bsp_priv->phyirq_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>> +
+>> +	bsp_priv->reset_io =
+>> +		of_get_named_gpio_flags(dev->of_node,
+>> +					"reset-gpio", 0, &flags);
+>> +	bsp_priv->reset_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>> +
+>> +	bsp_priv->power_io =
+>> +		of_get_named_gpio_flags(dev->of_node, "power-gpio", 0, &flags);
+>> +	bsp_priv->power_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>> +
+>> +	/*power*/
+>> +	if (!gpio_is_valid(bsp_priv->power_io)) {
+>> +		pr_err("%s: Failed to get GPIO %s.\n",
+>> +		       __func__, "power-gpio");
+>> +	} else {
+>> +		ret = gpio_request(bsp_priv->power_io, GPIO_PHY_POWER);
+>> +		if (ret)
+>> +			pr_err("%s: ERROR: Failed to request GPIO %s.\n",
+>> +			       __func__, GPIO_PHY_POWER);
+>> +	}
+> When everything power-related is handled using the regulator api, you don't
+> need this
+The same explanation as above
+>
+>> +
+>> +	if (!gpio_is_valid(bsp_priv->reset_io)) {
+>> +		pr_err("%s: ERROR: Get reset-gpio failed.\n", __func__);
+>> +	} else {
+>> +		ret = gpio_request(bsp_priv->reset_io, GPIO_PHY_RESET);
+>> +		if (ret)
+>> +			pr_err("%s: ERROR: Failed to request GPIO %s.\n",
+>> +			       __func__, GPIO_PHY_RESET);
+>> +	}
+>> +
+>> +	if (bsp_priv->phyirq_io > 0) {
+> This is more for my understanding: why does the mac driver need to handle the
+> phy interrupt - but I might be overlooking something.
+>
+phy interrupt is not mandatory.  In most of the time,  in order to find 
+something happen in PHY, for example,
+link is up or down,  we just use polling method to read the phy's 
+register in a timer.
+Buf if phy interrupt is in use, when link is up or down,  phy interrupt 
+pin will be assert to inform the CPU.
+I just implement the driver for phy interrupt gpio,  not enable it as 
+default.
+
+>> +		struct plat_stmmacenet_data *plat_dat;
+>> +
+>> +		pr_info("PHY irq in use\n");
+>> +		ret = gpio_request(bsp_priv->phyirq_io, GPIO_PHY_IRQ);
+>> +		if (ret < 0) {
+>> +			pr_warn("%s: Failed to request GPIO %s\n",
+>> +				__func__, GPIO_PHY_IRQ);
+>> +			goto goon;
+>> +		}
+>> +
+>> +		ret = gpio_direction_input(bsp_priv->phyirq_io);
+>> +		if (ret < 0) {
+>> +			pr_err("%s, Failed to set input for GPIO %s\n",
+>> +			       __func__, GPIO_PHY_IRQ);
+>> +			gpio_free(bsp_priv->phyirq_io);
+>> +			goto goon;
+>> +		}
+>> +
+>> +		irq = gpio_to_irq(bsp_priv->phyirq_io);
+>> +		if (irq < 0) {
+>> +			ret = irq;
+>> +			pr_err("Failed to set irq for %s\n",
+>> +			       GPIO_PHY_IRQ);
+>> +			gpio_free(bsp_priv->phyirq_io);
+>> +			goto goon;
+>> +		}
+>> +
+>> +		plat_dat = dev_get_platdata(&pdev->dev);
+>> +		if (plat_dat)
+>> +			plat_dat->mdio_bus_data->probed_phy_irq = irq;
+>> +		else
+>> +			pr_err("%s: plat_data is NULL\n", __func__);
+>> +	}
+>> +
+>> +goon:
+>> +	/*rmii or rgmii*/
+>> +	if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RGMII) {
+>> +		pr_info("%s: init for RGMII\n", __func__);
+>> +		set_to_rgmii(bsp_priv, bsp_priv->tx_delay, bsp_priv->rx_delay);
+>> +	} else if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII) {
+>> +		pr_info("%s: init for RMII\n", __func__);
+>> +		set_to_rmii(bsp_priv);
+>> +	} else {
+>> +		pr_err("%s: ERROR: NO interface defined!\n", __func__);
+>> +	}
+>> +
+>> +	bsp_priv->pdev = pdev;
+>> +
+>> +	gmac_clk_init(bsp_priv);
+>> +
+>> +	return bsp_priv;
+>> +}
+>> +
+>> +static int rk_gmac_init(struct platform_device *pdev, void *priv)
+>> +{
+>> +	struct rk_priv_data *bsp_priv = priv;
+>> +	int ret;
+>> +
+>> +	ret = phy_power_on(bsp_priv, true);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	ret = gmac_clk_enable(bsp_priv, true);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void rk_gmac_exit(struct platform_device *pdev, void *priv)
+>> +{
+>> +	struct rk_priv_data *gmac = priv;
+>> +
+>> +	phy_power_on(gmac, false);
+>> +	gmac_clk_enable(gmac, false);
+>> +}
+>> +
+>> +static void rk_fix_speed(void *priv, unsigned int speed)
+>> +{
+>> +	struct rk_priv_data *bsp_priv = priv;
+>> +
+>> +	if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RGMII)
+>> +		set_rgmii_speed(bsp_priv, speed);
+>> +	else if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII)
+>> +		set_rmii_speed(bsp_priv, speed);
+>> +	else
+>> +		pr_err("unsupported interface %d", bsp_priv->phy_iface);
+>> +}
+>> +
+>> +const struct stmmac_of_data rk_gmac_data = {
+>> +	.has_gmac = 1,
+>> +	.fix_mac_speed = rk_fix_speed,
+>> +	.setup = rk_gmac_setup,
+>> +	.init = rk_gmac_init,
+>> +	.exit = rk_gmac_exit,
+>> +};
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c index
+>> 15814b7..b4dee96 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> @@ -33,6 +33,7 @@
+>>
+>>   static const struct of_device_id stmmac_dt_ids[] = {
+>>   	/* SoC specific glue layers should come before generic bindings */
+>> +	{ .compatible = "rockchip,rk3288-gmac", .data = &rk_gmac_data},
+> please name that rk3288_gmac_data [of course the other occurences too]
+> It makes it easier to see which soc it is meant for and it's also not save to
+> assume that the next one will use the same register + bit positions in the
+> grf.
+>
+>
+>>   	{ .compatible = "amlogic,meson6-dwmac", .data = &meson6_dwmac_data},
+>>   	{ .compatible = "allwinner,sun7i-a20-gmac", .data = &sun7i_gmac_data},
+>>   	{ .compatible = "st,stih415-dwmac", .data = &stih4xx_dwmac_data},
+>> @@ -291,6 +292,8 @@ static int stmmac_pltfr_probe(struct platform_device
+>> *pdev) return  -ENOMEM;
+>>   		}
+>>
+>> +		pdev->dev.platform_data = plat_dat;
+>> +
+>>   		ret = stmmac_probe_config_dt(pdev, plat_dat, &mac);
+>>   		if (ret) {
+>>   			pr_err("%s: main dt probe failed", __func__);
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>> b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h index
+>> 25dd1f7..32a0516 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>> @@ -24,5 +24,6 @@ extern const struct stmmac_of_data sun7i_gmac_data;
+>>   extern const struct stmmac_of_data stih4xx_dwmac_data;
+>>   extern const struct stmmac_of_data stid127_dwmac_data;
+>>   extern const struct stmmac_of_data socfpga_gmac_data;
+>> +extern const struct stmmac_of_data rk_gmac_data;
+>>
+>>   #endif /* __STMMAC_PLATFORM_H__ */
+>
+>
+
 
