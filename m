@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaLCLh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:37:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54661 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633AbaLCL1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:44 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 078/101] pcmcia: pxa2xx: fix logic for lubbock
-Date: Wed,  3 Dec 2014 12:26:40 +0100
-Message-Id: <2948ce57731969aa662e0192d2df0749f1f21462.1417605922.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-References: <cover.1417605922.git.jslaby@suse.cz>
+	id S1752840AbaLCLiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:38:17 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51678 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaLCLiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:38:14 -0500
+MIME-Version: 1.0
+X-Originating-IP: [95.23.62.239]
+In-Reply-To: <1655942.O63mJN07or@vostro.rjw.lan>
+References: <1655942.O63mJN07or@vostro.rjw.lan>
+Date: Wed, 3 Dec 2014 12:38:12 +0100
+Message-ID: <CABxcv=n-ADTXRaS6_K=B7UZEi9aCysNgS9yMs8jiZWY-2yqRLQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+Hello Rafael,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Dec 3, 2014 at 2:50 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+>
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/gpio/gpio-omap.c.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
 
-===============
+Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
 
-commit f1674f213ec81c55c909bb6805d3502b5883754d upstream.
+>
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+>
+> Please let me know if it is OK to take this one into linux-pm.
+>
 
-The lubbock platform uses the sa1111 companion chip with a pxa250
-CPU, which means it requires both the PCMCIA_SA1111 and the
-PCMCIA_PXA2XX code to be built into the kernel. Unfortunately,
-the Makefile and Kconfig don't agree on how this is accomplished,
-leading to a situation where you get this link error when building
-a lubbock kernel with PCMCIA_SA1111 enabled but PCMCIA_PXA2XX
-disabled:
+AFAICT there isn't another patch for gpio-omap on this cycle so I'm OK
+if you take this through linux-pm.
 
-ERROR: "pxa2xx_configure_sockets" [drivers/pcmcia/sa1111_cs.ko] undefined!
-ERROR: "pxa2xx_drv_pcmcia_ops" [drivers/pcmcia/sa1111_cs.ko] undefined!
-ERROR: "pxa2xx_drv_pcmcia_add_one" [drivers/pcmcia/sa1111_cs.ko] undefined!
-
-This patch changes the Kconfig code to disallow that particular
-configuration.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/pcmcia/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
-index 0c657d6af03d..51cf8083b299 100644
---- a/drivers/pcmcia/Kconfig
-+++ b/drivers/pcmcia/Kconfig
-@@ -202,6 +202,7 @@ config PCMCIA_SA1111
- 	depends on ARM && SA1111 && PCMCIA
- 	select PCMCIA_SOC_COMMON
- 	select PCMCIA_SA11XX_BASE if ARCH_SA1100
-+	select PCMCIA_PXA2XX if ARCH_LUBBOCK && SA1111
- 	help
- 	  Say Y  here to include support for SA1111-based PCMCIA or CF
- 	  sockets, found on the Jornada 720, Graphicsmaster and other
-@@ -217,7 +218,6 @@ config PCMCIA_PXA2XX
- 		    || ARCOM_PCMCIA || ARCH_PXA_ESERIES || MACH_STARGATE2 \
- 		    || MACH_VPAC270 || MACH_BALLOON3 || MACH_COLIBRI \
- 		    || MACH_COLIBRI320 || MACH_H4700)
--	select PCMCIA_SA1111 if ARCH_LUBBOCK && SA1111
- 	select PCMCIA_SOC_COMMON
- 	help
- 	  Say Y here to include support for the PXA2xx PCMCIA controller
--- 
-2.1.3
-
+Best regards,
+Javier
