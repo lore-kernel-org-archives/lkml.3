@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaLCPWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:22:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47664 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaLCPWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:22:19 -0500
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: jejb@kernel.org, Christoph Hellwig <hch@infradead.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Tomas Henzl <thenzl@redhat.com>
-Subject: Re: [PATCH 00/22] mpt2sas, mpt3sas: SAS2 Phase 19,20 and SAS3 Phase 4,5 patches
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-	<CAK=zhgqOuU68rxiWjGWDd+-O-D4WstvqTJ-MZc1rDGCe97VhZA@mail.gmail.com>
-Date: Wed, 03 Dec 2014 10:21:33 -0500
-In-Reply-To: <CAK=zhgqOuU68rxiWjGWDd+-O-D4WstvqTJ-MZc1rDGCe97VhZA@mail.gmail.com>
-	(Sreekanth Reddy's message of "Wed, 3 Dec 2014 20:43:47 +0530")
-Message-ID: <yq1wq68lpxe.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751996AbaLCPWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:22:41 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:51386 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958AbaLCPWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 10:22:39 -0500
+Date: Wed, 3 Dec 2014 10:22:31 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: memcontrol.c:  Cleaning up function that are not
+ used anywhere
+Message-ID: <20141203152231.GA2822@phnom.home.cmpxchg.org>
+References: <1417560083-27157-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417560083-27157-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+On Tue, Dec 02, 2014 at 11:41:23PM +0100, Rickard Strandqvist wrote:
+> Remove function mem_cgroup_lru_names_not_uptodate() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  mm/memcontrol.c |    5 -----
+>  1 file changed, 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d6ac0e3..5edd1fe 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4379,11 +4379,6 @@ static int memcg_numa_stat_show(struct seq_file *m, void *v)
+>  }
+>  #endif /* CONFIG_NUMA */
+>  
+> -static inline void mem_cgroup_lru_names_not_uptodate(void)
+> -{
+> -	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+> -}
 
-Sreekanth> Anyone who aware of mpt2sas/mpt3sas driver's can please
-Sreekanth> review this patch set.
-
-It's on my todo list.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+That assertion doesn't work in an unused function, but we still want
+this check.  Please move the BUILD_BUG_ON() to the beginning of
+memcg_stat_show() instead.
