@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaLCL3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:29:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54697 "EHLO mx2.suse.de"
+	id S1752863AbaLCL3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:29:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54625 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058AbaLCL1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752652AbaLCL1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:48 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 101/101] x86: kvm: use alternatives for VMCALL vs. VMMCALL if kernel text is read-only
-Date: Wed,  3 Dec 2014 12:27:03 +0100
-Message-Id: <a05916f8ff7280e8539dac505bc3100212a3a098.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        stable@kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 099/101] ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+Date: Wed,  3 Dec 2014 12:27:01 +0100
+Message-Id: <ec81c28104fd2198f076203be3d1bae5546e863f.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -25,99 +22,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c1118b3602c2329671ad5ec8bdf8e374323d6343 upstream.
+commit 5f16f3225b06242a9ee876f07c1c9b6ed36a22b6 upstream.
 
-On x86_64, kernel text mappings are mapped read-only with CONFIG_DEBUG_RODATA.
-In that case, KVM will fail to patch VMCALL instructions to VMMCALL
-as required on AMD processors.
+Use cmpxchg() to atomically set i_flags instead of clearing out the
+S_IMMUTABLE, S_APPEND, etc. flags and then setting them from the
+EXT4_IMMUTABLE_FL, EXT4_APPEND_FL flags, since this opens up a race
+where an immutable file has the immutable flag cleared for a brief
+window of time.
 
-The failure mode is currently a divide-by-zero exception, which obviously
-is a KVM bug that has to be fixed.  However, picking the right instruction
-between VMCALL and VMMCALL will be faster and will help if you cannot upgrade
-the hypervisor.
+js: there is no change for ext4. This patch defines merely
+    inode_set_flags for jffs in the next patch. I wonder why do we
+    have both inode_set_flags and set_mask_bits? Looks like an
+    improperly resolved merge conflict.
 
-Reported-by: Chris Webb <chris@arachsys.com>
-Tested-by: Chris Webb <chris@arachsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+Reported-by: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: stable@kernel.org
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/cpufeature.h |  1 +
- arch/x86/include/asm/kvm_para.h   | 10 ++++++++--
- arch/x86/kernel/cpu/amd.c         |  7 +++++++
- 3 files changed, 16 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c    |  4 ++--
+ fs/inode.c         | 31 +++++++++++++++++++++++++++++++
+ include/linux/fs.h |  3 +++
+ 3 files changed, 36 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 89270b4318db..c2f19a83498d 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -203,6 +203,7 @@
- #define X86_FEATURE_DECODEASSISTS (8*32+12) /* AMD Decode Assists support */
- #define X86_FEATURE_PAUSEFILTER (8*32+13) /* AMD filtered pause intercept */
- #define X86_FEATURE_PFTHRESHOLD (8*32+14) /* AMD pause filter threshold */
-+#define X86_FEATURE_VMMCALL	(8*32+15) /* Prefer vmmcall to vmcall */
- 
- 
- /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index c7678e43465b..e62cf897f781 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -2,6 +2,7 @@
- #define _ASM_X86_KVM_PARA_H
- 
- #include <asm/processor.h>
-+#include <asm/alternative.h>
- #include <uapi/asm/kvm_para.h>
- 
- extern void kvmclock_init(void);
-@@ -16,10 +17,15 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index a58a796bb92b..ba68d211d748 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3970,8 +3970,8 @@ void ext4_set_inode_flags(struct inode *inode)
+ 		new_fl |= S_NOATIME;
+ 	if (flags & EXT4_DIRSYNC_FL)
+ 		new_fl |= S_DIRSYNC;
+-	set_mask_bits(&inode->i_flags,
+-		      S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC, new_fl);
++	inode_set_flags(inode, new_fl,
++			S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
  }
- #endif /* CONFIG_KVM_GUEST */
  
--/* This instruction is vmcall.  On non-VT architectures, it will generate a
-- * trap that we will then rewrite to the appropriate instruction.
-+#ifdef CONFIG_DEBUG_RODATA
-+#define KVM_HYPERCALL \
-+        ALTERNATIVE(".byte 0x0f,0x01,0xc1", ".byte 0x0f,0x01,0xd9", X86_FEATURE_VMMCALL)
-+#else
-+/* On AMD processors, vmcall will generate a trap that we will
-+ * then rewrite to the appropriate instruction.
-  */
- #define KVM_HYPERCALL ".byte 0x0f,0x01,0xc1"
-+#endif
- 
- /* For KVM hypercalls, a three-byte sequence of either the vmcall or the vmmcall
-  * instruction.  The hypervisor may replace it with something else but only the
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 28233b9e45cc..ee51e67df1b1 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -509,6 +509,13 @@ static void early_init_amd(struct cpuinfo_x86 *c)
- 	}
- #endif
- 
-+	/*
-+	 * This is only needed to tell the kernel whether to use VMCALL
-+	 * and VMMCALL.  VMMCALL is never executed except under virt, so
-+	 * we can set it unconditionally.
-+	 */
-+	set_cpu_cap(c, X86_FEATURE_VMMCALL);
+ /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
+diff --git a/fs/inode.c b/fs/inode.c
+index 1e6e8468f2d8..d9134a0f5dd9 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1871,3 +1871,34 @@ void inode_dio_done(struct inode *inode)
+ 		wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
+ }
+ EXPORT_SYMBOL(inode_dio_done);
 +
- 	/* F16h erratum 793, CVE-2013-6885 */
- 	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
- 		u64 val;
++/*
++ * inode_set_flags - atomically set some inode flags
++ *
++ * Note: the caller should be holding i_mutex, or else be sure that
++ * they have exclusive access to the inode structure (i.e., while the
++ * inode is being instantiated).  The reason for the cmpxchg() loop
++ * --- which wouldn't be necessary if all code paths which modify
++ * i_flags actually followed this rule, is that there is at least one
++ * code path which doesn't today --- for example,
++ * __generic_file_aio_write() calls file_remove_suid() without holding
++ * i_mutex --- so we use cmpxchg() out of an abundance of caution.
++ *
++ * In the long run, i_mutex is overkill, and we should probably look
++ * at using the i_lock spinlock to protect i_flags, and then make sure
++ * it is so documented in include/linux/fs.h and that all code follows
++ * the locking convention!!
++ */
++void inode_set_flags(struct inode *inode, unsigned int flags,
++		     unsigned int mask)
++{
++	unsigned int old_flags, new_flags;
++
++	WARN_ON_ONCE(flags & ~mask);
++	do {
++		old_flags = ACCESS_ONCE(inode->i_flags);
++		new_flags = (old_flags & ~mask) | flags;
++	} while (unlikely(cmpxchg(&inode->i_flags, old_flags,
++				  new_flags) != old_flags));
++}
++EXPORT_SYMBOL(inode_set_flags);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 6535d5af027e..9cb726aa09fc 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2496,6 +2496,9 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
+ void inode_dio_wait(struct inode *inode);
+ void inode_dio_done(struct inode *inode);
+ 
++extern void inode_set_flags(struct inode *inode, unsigned int flags,
++			    unsigned int mask);
++
+ extern const struct file_operations generic_ro_fops;
+ 
+ #define special_file(m) (S_ISCHR(m)||S_ISBLK(m)||S_ISFIFO(m)||S_ISSOCK(m))
 -- 
 2.1.3
 
