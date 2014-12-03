@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446AbaLCLmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:42:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54705 "EHLO mx2.suse.de"
+	id S1753207AbaLCLmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:42:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54669 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaLCL1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752523AbaLCL1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:36 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 066/101] rcu: Make callers awaken grace-period kthread
-Date: Wed,  3 Dec 2014 12:26:28 +0100
-Message-Id: <9b3128c465d0ad59ca8739b8028bcad4042eb170.1417605922.git.jslaby@suse.cz>
+        Cristian Stoica <cristian.stoica@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 019/101] crypto: caam - remove duplicated sg copy functions
+Date: Wed,  3 Dec 2014 12:25:41 +0100
+Message-Id: <e5fbc698350a42a56f5c165dbb6283d69b65d3f3.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -27,105 +23,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 48a7639ce80cf279834d0d44865e49ecd714f37d upstream.
+commit 307fd543f3d23f8f56850eca1b27b1be2fe71017 upstream.
 
-The rcu_start_gp_advanced() function currently uses irq_work_queue()
-to defer wakeups of the RCU grace-period kthread.  This deferring
-is necessary to avoid RCU-scheduler deadlocks involving the rcu_node
-structure's lock, meaning that RCU cannot call any of the scheduler's
-wake-up functions while holding one of these locks.
+Replace equivalent (and partially incorrect) scatter-gather functions
+with ones from crypto-API.
 
-Unfortunately, the second and subsequent calls to irq_work_queue() are
-ignored, and the first call will be ignored (aside from queuing the work
-item) if the scheduler-clock tick is turned off.  This is OK for many
-uses, especially those where irq_work_queue() is called from an interrupt
-or softirq handler, because in those cases the scheduler-clock-tick state
-will be re-evaluated, which will turn the scheduler-clock tick back on.
-On the next tick, any deferred work will then be processed.
+The replacement is motivated by page-faults in sg_copy_part triggered
+by successive calls to crypto_hash_update. The following fault appears
+after calling crypto_ahash_update twice, first with 13 and then
+with 285 bytes:
 
-However, this strategy does not always work for RCU, which can be invoked
-at process level from idle CPUs.  In this case, the tick might never
-be turned back on, indefinitely defering a grace-period start request.
-Note that the RCU CPU stall detector cannot see this condition, because
-there is no RCU grace period in progress.  Therefore, we can (and do!)
-see long tens-of-seconds stalls in grace-period handling.  In theory,
-we could see a full grace-period hang, but rcutorture testing to date
-has seen only the tens-of-seconds stalls.  Event tracing demonstrates
-that irq_work_queue() is being called repeatedly to no effect during
-these stalls: The "newreq" event appears repeatedly from a task that is
-not one of the grace-period kthreads.
+Unable to handle kernel paging request for data at address 0x00000008
+Faulting instruction address: 0xf9bf9a8c
+Oops: Kernel access of bad area, sig: 11 [#1]
+SMP NR_CPUS=8 CoreNet Generic
+Modules linked in: tcrypt(+) caamhash caam_jr caam tls
+CPU: 6 PID: 1497 Comm: cryptomgr_test Not tainted
+3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2 #75
+task: e9308530 ti: e700e000 task.ti: e700e000
+NIP: f9bf9a8c LR: f9bfcf28 CTR: c0019ea0
+REGS: e700fb80 TRAP: 0300   Not tainted
+(3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2)
+MSR: 00029002 <CE,EE,ME>  CR: 44f92024  XER: 20000000
+DEAR: 00000008, ESR: 00000000
 
-In theory, irq_work_queue() might be fixed to avoid this sort of issue,
-but RCU's requirements are unusual and it is quite straightforward to pass
-wake-up responsibility up through RCU's call chain, so that the wakeup
-happens when the offending locks are released.
+GPR00: f9bfcf28 e700fc30 e9308530 e70b1e55 00000000 ffffffdd e70b1e54 0bebf888
+GPR08: 902c7ef5 c0e771e2 00000002 00000888 c0019ea0 00000000 00000000 c07a4154
+GPR16: c08d0000 e91a8f9c 00000001 e98fb400 00000100 e9c83028 e70b1e08 e70b1d48
+GPR24: e992ce10 e70b1dc8 f9bfe4f4 e70b1e55 ffffffdd e70b1ce0 00000000 00000000
+NIP [f9bf9a8c] sg_copy+0x1c/0x100 [caamhash]
+LR [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
+Call Trace:
+[e700fc30] [f9bf9c50] sg_copy_part+0xe0/0x160 [caamhash] (unreliable)
+[e700fc50] [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
+[e700fcb0] [f954e19c] crypto_tls_genicv+0x13c/0x300 [tls]
+[e700fd10] [f954e65c] crypto_tls_encrypt+0x5c/0x260 [tls]
+[e700fd40] [c02250ec] __test_aead.constprop.9+0x2bc/0xb70
+[e700fe40] [c02259f0] alg_test_aead+0x50/0xc0
+[e700fe60] [c02241e4] alg_test+0x114/0x2e0
+[e700fee0] [c022276c] cryptomgr_test+0x4c/0x60
+[e700fef0] [c004f658] kthread+0x98/0xa0
+[e700ff40] [c000fd04] ret_from_kernel_thread+0x5c/0x64
 
-This commit therefore makes this change.  The rcu_start_gp_advanced(),
-rcu_start_future_gp(), rcu_accelerate_cbs(), rcu_advance_cbs(),
-__note_gp_changes(), and rcu_start_gp() functions now return a boolean
-which indicates when a wake-up is needed.  A new rcu_gp_kthread_wake()
-does the wakeup when it is necessary and safe to do so: No self-wakes,
-no wake-ups if the ->gp_flags field indicates there is no need (as in
-someone else did the wake-up before we got around to it), and no wake-ups
-before the grace-period kthread has been created.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-[ Pranith: backport to 3.13-stable: just rcu_gp_kthread_wake(),
-  prereq for 2aa792e "rcu: Use rcu_gp_kthread_wake() to wake up grace
-  period kthreads" ]
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Cristian Stoica <cristian.stoica@freescale.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/rcutree.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/crypto/caam/caamhash.c   | 22 ++++++++++++++--------
+ drivers/crypto/caam/sg_sw_sec4.h | 38 --------------------------------------
+ 2 files changed, 14 insertions(+), 46 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 32618b3fe4e6..ec5848e9d5d9 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1131,6 +1131,22 @@ static int rcu_future_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
+index e732bd962e98..af351f478b14 100644
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -832,8 +832,9 @@ static int ahash_update_ctx(struct ahash_request *req)
+ 					   edesc->sec4_sg + sec4_sg_src_index,
+ 					   chained);
+ 			if (*next_buflen) {
+-				sg_copy_part(next_buf, req->src, to_hash -
+-					     *buflen, req->nbytes);
++				scatterwalk_map_and_copy(next_buf, req->src,
++							 to_hash - *buflen,
++							 *next_buflen, 0);
+ 				state->current_buf = !state->current_buf;
+ 			}
+ 		} else {
+@@ -866,7 +867,8 @@ static int ahash_update_ctx(struct ahash_request *req)
+ 			kfree(edesc);
+ 		}
+ 	} else if (*next_buflen) {
+-		sg_copy(buf + *buflen, req->src, req->nbytes);
++		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
++					 req->nbytes, 0);
+ 		*buflen = *next_buflen;
+ 		*next_buflen = last_buflen;
+ 	}
+@@ -1213,8 +1215,9 @@ static int ahash_update_no_ctx(struct ahash_request *req)
+ 		src_map_to_sec4_sg(jrdev, req->src, src_nents,
+ 				   edesc->sec4_sg + 1, chained);
+ 		if (*next_buflen) {
+-			sg_copy_part(next_buf, req->src, to_hash - *buflen,
+-				    req->nbytes);
++			scatterwalk_map_and_copy(next_buf, req->src,
++						 to_hash - *buflen,
++						 *next_buflen, 0);
+ 			state->current_buf = !state->current_buf;
+ 		}
+ 
+@@ -1245,7 +1248,8 @@ static int ahash_update_no_ctx(struct ahash_request *req)
+ 			kfree(edesc);
+ 		}
+ 	} else if (*next_buflen) {
+-		sg_copy(buf + *buflen, req->src, req->nbytes);
++		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
++					 req->nbytes, 0);
+ 		*buflen = *next_buflen;
+ 		*next_buflen = 0;
+ 	}
+@@ -1402,7 +1406,8 @@ static int ahash_update_first(struct ahash_request *req)
+ 		}
+ 
+ 		if (*next_buflen)
+-			sg_copy_part(next_buf, req->src, to_hash, req->nbytes);
++			scatterwalk_map_and_copy(next_buf, req->src, to_hash,
++						 *next_buflen, 0);
+ 
+ 		sh_len = desc_len(sh_desc);
+ 		desc = edesc->hw_desc;
+@@ -1435,7 +1440,8 @@ static int ahash_update_first(struct ahash_request *req)
+ 		state->update = ahash_update_no_ctx;
+ 		state->finup = ahash_finup_no_ctx;
+ 		state->final = ahash_final_no_ctx;
+-		sg_copy(next_buf, req->src, req->nbytes);
++		scatterwalk_map_and_copy(next_buf, req->src, 0,
++					 req->nbytes, 0);
+ 	}
+ #ifdef DEBUG
+ 	print_hex_dump(KERN_ERR, "next buf@"__stringify(__LINE__)": ",
+diff --git a/drivers/crypto/caam/sg_sw_sec4.h b/drivers/crypto/caam/sg_sw_sec4.h
+index e0037c8ee243..ce28a563effc 100644
+--- a/drivers/crypto/caam/sg_sw_sec4.h
++++ b/drivers/crypto/caam/sg_sw_sec4.h
+@@ -116,41 +116,3 @@ static int dma_unmap_sg_chained(struct device *dev, struct scatterlist *sg,
+ 	}
+ 	return nents;
  }
- 
- /*
-+ * Awaken the grace-period kthread for the specified flavor of RCU.
-+ * Don't do a self-awaken, and don't bother awakening when there is
-+ * nothing for the grace-period kthread to do (as in several CPUs
-+ * raced to awaken, and we lost), and finally don't try to awaken
-+ * a kthread that has not yet been created.
-+ */
-+static void rcu_gp_kthread_wake(struct rcu_state *rsp)
-+{
-+	if (current == rsp->gp_kthread ||
-+	    !ACCESS_ONCE(rsp->gp_flags) ||
-+	    !rsp->gp_kthread)
-+		return;
-+	wake_up(&rsp->gp_wq);
-+}
-+
-+/*
-  * If there is room, assign a ->completed number to any callbacks on
-  * this CPU that have not already been assigned.  Also accelerate any
-  * callbacks that were previously assigned a ->completed number that has
-@@ -1528,7 +1544,7 @@ static void rsp_wakeup(struct irq_work *work)
- 	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
- 
- 	/* Wake up rcu_gp_kthread() to start the grace period. */
--	wake_up(&rsp->gp_wq);
-+	rcu_gp_kthread_wake(rsp);
- }
- 
- /*
+-
+-/* Copy from len bytes of sg to dest, starting from beginning */
+-static inline void sg_copy(u8 *dest, struct scatterlist *sg, unsigned int len)
+-{
+-	struct scatterlist *current_sg = sg;
+-	int cpy_index = 0, next_cpy_index = current_sg->length;
+-
+-	while (next_cpy_index < len) {
+-		memcpy(dest + cpy_index, (u8 *) sg_virt(current_sg),
+-		       current_sg->length);
+-		current_sg = scatterwalk_sg_next(current_sg);
+-		cpy_index = next_cpy_index;
+-		next_cpy_index += current_sg->length;
+-	}
+-	if (cpy_index < len)
+-		memcpy(dest + cpy_index, (u8 *) sg_virt(current_sg),
+-		       len - cpy_index);
+-}
+-
+-/* Copy sg data, from to_skip to end, to dest */
+-static inline void sg_copy_part(u8 *dest, struct scatterlist *sg,
+-				      int to_skip, unsigned int end)
+-{
+-	struct scatterlist *current_sg = sg;
+-	int sg_index, cpy_index;
+-
+-	sg_index = current_sg->length;
+-	while (sg_index <= to_skip) {
+-		current_sg = scatterwalk_sg_next(current_sg);
+-		sg_index += current_sg->length;
+-	}
+-	cpy_index = sg_index - to_skip;
+-	memcpy(dest, (u8 *) sg_virt(current_sg) +
+-	       current_sg->length - cpy_index, cpy_index);
+-	current_sg = scatterwalk_sg_next(current_sg);
+-	if (end - sg_index)
+-		sg_copy(dest + cpy_index, current_sg, end - sg_index);
+-}
 -- 
 2.1.3
 
