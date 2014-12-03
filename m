@@ -1,109 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaLCHVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:21:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349AbaLCHUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:20:02 -0500
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
-Subject: [PATCH v3 net-net 0/2] Increase the limit of tuntap queues
-Date: Wed,  3 Dec 2014 12:49:35 +0530
-Message-Id: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
+	id S1751685AbaLCH1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:27:50 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56093 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaLCH1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:27:49 -0500
+From: Rob Ward <robert.ward114@googlemail.com>
+X-Google-Original-From: Rob Ward <rob@rob-thinkpad>
+Date: Wed, 3 Dec 2014 07:27:36 +0000 (GMT)
+To: joern@lazybastard.org, dwmw2@infradead.org, computersforpeace@gmail.com
+cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH V3] mtd: phram: Allow multiple phram devices on cmd
+ line
+In-Reply-To: <alpine.DEB.2.10.1411091618160.7838@rob-thinkpad>
+Message-ID: <alpine.DEB.2.10.1412030722110.7838@rob-thinkpad>
+References: <alpine.DEB.2.10.1410211859030.7838@rob-thinkpad> <alpine.DEB.2.10.1411091618160.7838@rob-thinkpad>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Networking under KVM works best if we allocate a per-vCPU rx and tx
-queue in a virtual NIC. This requires a per-vCPU queue on the host side.
-Modern physical NICs have multiqueue support for large number of queues.
-To scale vNIC to run multiple queues parallel to maximum number of vCPU's
-we need to increase number of queues support in tuntap.   
+>From 900dbad52b2cc88b46c5716b1afd22698f6d83aa Mon Sep 17 00:00:00 2001
+From: Rob Ward <robert.ward114@googlemail.com>
+Date: Tue, 21 Oct 2014 17:46:53 +0100
+Subject: [PATCH] mtd: phram: Allow multiple phram devices on cmd line
 
-Changes from v2:
-PATCH 3: David Miller     - flex array adds extra level of indirection
-                            for preallocated array.(dropped, as flow array
-			    is allocated using kzalloc with failover to zalloc). 
-Changes from v1:
-PATCH 2: David Miller     - sysctl changes to limit number of queues 
-                            not required for unprivileged users(dropped).
+Allow the phram module the ability to create multiple phram mtd
+devices via the kernel command line.
 
-Changes from RFC
-PATCH 1: Sergei Shtylyov  - Add an empty line after declarations.
-PATCH 2: Jiri Pirko -       Do not introduce new module paramaters.
-	 Michael.S.Tsirkin- We can use sysctl for limiting max number
-                            of queues.
+Currently the phram module only allows a single mtd device to be
+created via the kernel command line. This is due to the phram
+module having to store the values until it is initialised
+later. This storage is done using a single char[] meaning when
+the module_param_call is made the previous value is overidden.
 
-This series is to increase the number of tuntap queues. Original work is being 
-done by 'jasowang@redhat.com'. I am taking this 'https://lkml.org/lkml/2013/6/19/29' 
-patch series as a reference. As per discussion in the patch series:
+This change modifies the phram system to use a char[][] allowing
+multiple devices to be created.
 
-There were two reasons which prevented us from increasing number of tun queues:
+The array size if controlled using the new config option
+CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS that allows the maximum
+number of devices to be specified. Currently this option
+defaults to a value of 1 leaving the behaviour unchanged.
 
-- The netdev_queue array in netdevice were allocated through kmalloc, which may 
-  cause a high order memory allocation too when we have several queues. 
-  E.g. sizeof(netdev_queue) is 320, which means a high order allocation would 
-  happens when the device has more than 16 queues.
+If the array is full a message is printed to the console and the
+module_param_call returns.
 
-- We store the hash buckets in tun_struct which results a very large size of
-  tun_struct, this high order memory allocation fail easily when the memory is
-  fragmented.
+To test, in all cases an area of memory needs to be reserved via
+the command line e.g. memmap=10M$114M
 
-The patch 60877a32bce00041528576e6b8df5abe9251fa73 increases the number of tx 
-queues. Memory allocation fallback to vzalloc() when kmalloc() fails.
+To test with phram build into the kernel on the command line add
+the following:
 
-This series tries to address following issues:
+phram.phram=alpha,114Mi,1Mi phram.phram=beta,115Mi,1Mi
 
-- Increase the number of netdev_queue queues for rx similarly its done for tx 
-  queues by falling back to vzalloc() when memory allocation with kmalloc() fails.
+If CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is left as default i.e. 1
+then the first device, alpha will be created only. If the value of
+CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is increased to 2 or more then
+both alpha and beta will be created.
 
-- Increase number of queues to 256, maximum number is equal to maximum number 
-  of vCPUS allowed in a guest.
+To test phram built as a module insmod with the following arguments:
 
-I have done some testing to test any regression with sample program which creates 
-tun/tap for single queue / multiqueue device. I have also done testing with multiple 
-parallel Netperf sessions from guest to host for different combination of queues 
-and CPU's. It seems to be working fine without much increase in cpu load with the 
-increase in number of queues. Though i had limitation of 4 physical CPU's. 
+phram=gamma,114Mi,1Mi phram=delta,115Mi,1Mi
 
+In this case two devices should be created.
 
-For this test vhost threads are pinned to separate CPU's. Below are the results:
-Host kernel: 3.18.rc4, Intel(R) Core(TM) i7-3520M CPU @ 2.90GHz, 4 CPUS
-NIC : Ethernet controller: Intel Corporation 82579LM Gigabit Network
+Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
+---
+ drivers/mtd/devices/Kconfig | 12 ++++++++++++
+ drivers/mtd/devices/phram.c | 39 ++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 46 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index c49d0b1..5fdc80b 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -136,6 +136,18 @@ config MTD_PHRAM
+ 	  doesn't have access to, memory beyond the mem=xxx limit, nvram,
+ 	  memory on the video card, etc...
+ 
++config MTD_PHRAM_MAX_CMDLINE_ARGS
++	int "Max number of devices via Kernel command line"
++	depends on MTD_PHRAM=y
++	default 1
++	help
++	  Specify the number of phram devices that can be initialised
++	  using the Kernel command line.
++
++	  This option is only applicable when phram is built into the
++	  Kernel. When built as a module many devices can be specified
++	  at module insmod.
++
+ config MTD_LART
+ 	tristate "28F160xx flash driver for LART"
+ 	depends on SA1100_LART
+diff --git a/drivers/mtd/devices/phram.c b/drivers/mtd/devices/phram.c
+index effd9a4..b42678e 100644
+--- a/drivers/mtd/devices/phram.c
++++ b/drivers/mtd/devices/phram.c
+@@ -212,9 +212,13 @@ static int phram_init_called;
+  * - phram.phram=<device>,<address>,<size> for built-in case
+  * We leave 64 bytes for the device name, 20 for the address and 20 for the
+  * size.
++ *
++ * The maximum number of devices supported is controlled by the
++ * MTD_PHRAM_MAX_CMDLINE_ARGS config option
++ *
+  * Example: phram.phram=rootfs,0xa0000000,512Mi
+  */
+-static char phram_paramline[64 + 20 + 20];
++static char phram_paramline[CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS][64 + 20 + 20];
+ #endif
+ 
+ static int phram_setup(const char *val)
+@@ -271,6 +275,8 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
+ #ifdef MODULE
+ 	return phram_setup(val);
+ #else
++	int i;
++
+ 	/*
+ 	 * If more parameters are later passed in via
+ 	 * /sys/module/phram/parameters/phram
+@@ -290,9 +296,25 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
+ 	 * phram_setup().
+ 	 */
+ 
+-	if (strlen(val) >= sizeof(phram_paramline))
++	if (strlen(val) >= sizeof(phram_paramline[0]))
+ 		return -ENOSPC;
+-	strcpy(phram_paramline, val);
++
++	/*
++	 * Check if any space is left in the array. If no space
++	 * is left then print warning and return 0
++	 */
++
++	if (phram_paramline[ARRAY_SIZE(phram_paramline) - 1][0]) {
++		pr_warn("exceeded limit via cmd_line - %s ignored", val);
++		return 0;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(phram_paramline); i++) {
++		if (!phram_paramline[i][0]) {
++			strcpy(phram_paramline[i], val);
++			break;
++		}
++	}
+ 
+ 	return 0;
+ #endif
+@@ -307,8 +329,15 @@ static int __init init_phram(void)
+ 	int ret = 0;
+ 
+ #ifndef MODULE
+-	if (phram_paramline[0])
+-		ret = phram_setup(phram_paramline);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(phram_paramline); i++) {
++		if (phram_paramline[i][0]) {
++			ret = phram_setup(phram_paramline[i]);
++			if (ret)
++				break;
++		}
++	}
+ 	phram_init_called = 1;
+ #endif
+ 
+-- 
+2.0.2
 
-Patch Applied  %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle  throughput
-Single Queue
--------------
-Before :all    7.94    0.01    1.79    3.00    0.26    0.15    0.00    3.21    0.00   83.64  64924.94
-After  :all    2.15    0.00    0.82    2.21    0.08    0.13    0.00    0.83    0.00   93.79  68799.88
-
-2 Queues
-Before :all    6.75    0.06    1.91    3.93    0.23    0.21    0.00    3.84    0.00   83.07  69569.30
-After  :all    2.12    0.00    0.92    2.51    0.08    0.15    0.00    1.19    0.00   93.02  71386.79
-
-4 Queues
-Before :all    6.09    0.05    1.88    3.83    0.22    0.22    0.00    3.74    0.00   83.98  76170.60
-After  :all    2.12    0.00    1.01    2.72    0.09    0.16    0.00    1.47    0.00   92.43  75492.34
-
-8 Queues
-Before :all    5.80    0.05    1.91    3.97    0.21    0.23    0.00    3.88    0.00   83.96  70843.88
-After  :all    2.06    0.00    1.06    2.77    0.09    0.17    0.00    1.66    0.00   92.19  74486.31
-16 Queues
---------------
-After  :all    2.04    0.00    1.13    2.90    0.10    0.18    0.00    2.02    0.00   91.63  73227.45
-
-Patches Summary:
-  net: allow large number of rx queues
-  tuntap: Increase the number of queues in tun
-
- drivers/net/tun.c |    9 +++++----
- net/core/dev.c    |   19 +++++++++++++------
- 2 files changed, 18 insertions(+), 10 deletions(-)
