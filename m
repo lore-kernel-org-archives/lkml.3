@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaLCQUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:20:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55613 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaLCQUs (ORCPT
+	id S1753899AbaLCQVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:21:16 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:37206 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207AbaLCQVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:20:48 -0500
-Message-ID: <1417623615.5124.19.camel@pengutronix.de>
-Subject: Re: [PATCH v16 03/12] drm: imx: imx-hdmi: convert imx-hdmi to
- drm_bridge mode
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, airlied@linux.ie,
-        heiko@sntech.de, fabio.estevam@freescale.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
+	Wed, 3 Dec 2014 11:21:14 -0500
+Message-ID: <547F3876.70207@atmel.com>
+Date: Wed, 3 Dec 2014 17:21:10 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
-Date: Wed, 03 Dec 2014 17:20:15 +0100
-In-Reply-To: <547F3495.9070206@rock-chips.com>
-References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417620566-30496-1-git-send-email-andy.yan@rock-chips.com>
-	 <20141203153847.GC11285@n2100.arm.linux.org.uk>
-	 <547F3495.9070206@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v3 07/11] ARM: at91: select ATMEL_EBI when compiling a
+ kernel for at91sam9 or sama5d3
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-8-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1417429647-3419-8-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Le 01/12/2014 11:27, Boris Brezillon a �crit :
+> at91sam9* and sama5d* SoCs have an EBI (External Bus Interface).
+> Select the ATMEL_EBI driver when support for these SoCs is selected.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/Kconfig | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> index 0e6d548..a72402a 100644
+> --- a/arch/arm/mach-at91/Kconfig
+> +++ b/arch/arm/mach-at91/Kconfig
+> @@ -49,6 +49,7 @@ config SOC_AT91SAM9
+>  	select GENERIC_CLOCKEVENTS
+>  	select MEMORY if USE_OF
+>  	select ATMEL_SDRAMC if USE_OF
+> +	select ATMEL_EBI if USE_OF
 
-Am Donnerstag, den 04.12.2014, 00:04 +0800 schrieb Andy Yan:
-> On 2014年12月03日 23:38, Russell King - ARM Linux wrote:
-> > On Wed, Dec 03, 2014 at 11:29:26PM +0800, Andy Yan wrote:
-> >> +int imx_hdmi_bind(struct device *dev, struct device *master,
-> >> +		  void *data, struct drm_encoder *encoder,
-> >> +		  const struct imx_hdmi_plat_data *plat_data)
-> >>   {
-> >>   	struct platform_device *pdev = to_platform_device(dev);
-> >> -	const struct of_device_id *of_id =
-> >> -				of_match_device(imx_hdmi_dt_ids, dev);
-> >>   	struct drm_device *drm = data;
-> >>   	struct device_node *np = dev->of_node;
-> >>   	struct device_node *ddc_node;
-> >> @@ -1594,19 +1566,16 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
-> >>   	struct resource *iores;
-> >>   	int ret, irq;
-> >>   
-> >> -	hdmi = devm_kzalloc(dev, sizeof(*hdmi), GFP_KERNEL);
-> >> +	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
-> >>   	if (!hdmi)
-> >>   		return -ENOMEM;
-> >>   
-> >> -	hdmi->dev = dev;
-> >> +	hdmi->plat_data = plat_data;
-> >> +	hdmi->dev = &pdev->dev;
-> >> +	hdmi->dev_type = plat_data->dev_type;
-> >>   	hdmi->sample_rate = 48000;
-> >>   	hdmi->ratio = 100;
-> >> -
-> >> -	if (of_id) {
-> >> -		const struct platform_device_id *device_id = of_id->data;
-> >> -
-> >> -		hdmi->dev_type = device_id->driver_data;
-> >> -	}
-> >> +	hdmi->encoder = encoder;
-> > I'd suggest changing imx_hdmi_bind() to take the struct resource and irq
-> > number, and avoiding the platform device stuff altogether in here.
-> >
->     Actually this is what the current code do: the resource and irq number
-> are all handled in imx_hdmi_bind
+We can remove "USE_OF" for next version.
 
-It would be better if the bind function would not have to care about
-platform resources, that should be handled in the probe function. I had
-a patch to move them:
+>  config SOC_SAMA5
+>  	bool
+> @@ -58,6 +59,7 @@ config SOC_SAMA5
+>  	select USE_OF
+>  	select MEMORY
+>  	select ATMEL_SDRAMC
+> +	select ATMEL_EBI
+>  
+>  menu "Atmel AT91 System-on-Chip"
+>  
+> 
 
-http://lists.freedesktop.org/archives/dri-devel/2014-May/059630.html
 
-Maybe you could incorporate something like this?
-
-regards
-Philipp
-
+-- 
+Nicolas Ferre
