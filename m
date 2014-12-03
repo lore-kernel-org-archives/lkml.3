@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaLCQuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:50:14 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36073 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750833AbaLCQuM (ORCPT
+	id S1751975AbaLCQuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:50:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41824 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaLCQup convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:50:12 -0500
-Date: Wed, 3 Dec 2014 16:49:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Russ Dill <russ.dill@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
-Message-ID: <20141203164951.GI11285@n2100.arm.linux.org.uk>
-References: <1417461694-5129-1-git-send-email-dianders@chromium.org>
- <20141201225057.GA11285@n2100.arm.linux.org.uk>
- <CAD=FV=VT7gr504-ZgWPfha+40XDX5eShkzZ36bg=-4Oub1S27w@mail.gmail.com>
- <25485084.A6ydfR9Xle@wuerfel>
- <CAD=FV=UFWZEcbO2ty0m+qEGv4Xgq0N=Rs30wBgw=6+OGd5gSpg@mail.gmail.com>
- <CACRpkdapVhrQe7n5wDzZbf3fYGGpB-jPzG8Z+A8X6j5ERLxAfg@mail.gmail.com>
- <CAD=FV=Vn_U6YWFN-hruWcYo-HSHt9=hwduEv32Bb5aP_hzNB8Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=Vn_U6YWFN-hruWcYo-HSHt9=hwduEv32Bb5aP_hzNB8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Dec 2014 11:50:45 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based nfsd
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20141203155649.GB5013@htj.dyndns.org>
+Date: Wed, 3 Dec 2014 11:50:32 -0500
+Cc: Jeff Layton <jeff.layton@primarydata.com>, Neil Brown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D84C9E44-84EC-426D-95D7-4A7B2F5663AA@oracle.com>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com> <20141203121118.21a32fe1@notabene.brown> <20141202202946.1e0f399b@tlielax.poochiereds.net> <20141203155649.GB5013@htj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.6)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 08:44:55AM -0800, Doug Anderson wrote:
-> Sure.  I look forward to someone solving it.  ...and as I said, until
-> someone does solve it I think we're blocked from landing deep sleep
-> mode for rk3288 upstream (unless someone decides that my patches are
-> OK).
 
-What we definitely don't want to do is to have each SoC doing their
-own thing on this, so we really need it to either be generic across
-all ARMs, or fully generic.
+On Dec 3, 2014, at 10:56 AM, Tejun Heo <tj@kernel.org> wrote:
 
-So, if it can be turned into some kind of generic infrastructure, I'd
-be happier with it, because that would help it be re-used across other
-SoCs.
+> Hello, Neil, Jeff.
+> 
+> On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
+>> That's a good point. I had originally thought that max_active on an
+>> unbound workqueue would be the number of concurrent jobs that could run
+>> across all the CPUs, but now that I look I'm not sure that's really
+>> the case.
+> 
+> @max_active is a per-pool number.  By default, unbound wqs use
+> per-node pools, so @max_active would be per-node.  Currently,
+> @max_active is mostly meant as a protection against run-away
+> workqueues creating crazy number of workers, which has been enough for
+> the existing wq users.  *Maybe* it makes sense to make it actually
+> mean maximum concurrency which would prolly involve aggregated per-cpu
+> distribution mechanism so that we don't end up inc'ing and dec'ing the
+> same counter from all CPUs on each work item execution.
+> 
+> However, I do agree with Neil that making it user configurable is
+> almost always painful.  It's usually a question without a good answer
+> and the same value may behave differently depending on a lot of
+> implementation details and a better approach, probably, is to use
+> @max_active as the last resort protection mechanism while providing
+> automatic throttling of in-flight work items which is meaningful for
+> the specific use cases.
+> 
+>> I've heard random grumblings from various people in the past that
+>> workqueues have significant latency, but this is the first time I've
+>> really hit it in practice. If we can get this fixed, then that may be a
+>> significant perf win for all workqueue users. For instance, rpciod in
+>> the NFS client is all workqueue-based. Getting that latency down could
+>> really help things.
+>> 
+>> I'm currently trying to roll up a kernel module for benchmarking the
+>> workqueue dispatching code in the hopes that we can use that to help
+>> nail it down.
+> 
+> Definitely, there were some reportings but nothing really got tracked
+> down properly.  It'd be awesome to actually find out where the latency
+> is coming from.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+I’ve measured some long (>10usec) latencies for queue_workqueue()
+and wake_up_bit() calls with CPU-intensive workloads.
+
+Often these APIs are invoked while one or more spinlocks are
+held. That makes it easy to back up a lot of work if one of
+these calls is slow for any reason.
+
+For wake_up_bit(), this doesn’t include how long it takes before
+the awoken process is run. With CPU-intensive workloads, it’s
+often the case that hundreds of usecs elapse, and the awoken
+process is migrated to another CPU (observed via ftrace).
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
