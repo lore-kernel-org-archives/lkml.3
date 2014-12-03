@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaLCWN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 17:13:57 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:54305 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752244AbaLCWNz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752265AbaLCWNz (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 3 Dec 2014 17:13:55 -0500
-Message-Id: <20141203221351.632914199@goodmis.org>
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:32890 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751164AbaLCWNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 17:13:53 -0500
+Message-Id: <20141203221351.469425546@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 03 Dec 2014 17:13:14 -0500
+Date: Wed, 03 Dec 2014 17:13:13 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [for-next][PATCH 3/5] Documentation: describe trace_buf_size parameter more accurately
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 2/5] tracing: Allow NOT to filter AND and OR clauses
 References: <20141203221311.563559646@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0003-Documentation-describe-trace_buf_size-parameter-more.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-tracing-Allow-NOT-to-filter-AND-and-OR-clauses.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I'm stuck into panic that too litte free memory is left when I boot with
-trace_buf_size parameter. After digging into the problem, I found that
-trace_buf_size is the size of trace buffer on each cpu rather than total
-size of trace buffer. To prevent victim like me, change description of
-trace_buf_size parameter more accurately.
+Add support to allow not "!" for and (&&) and (||). That is:
 
-Link: http://lkml.kernel.org/r/1417570760-10620-1-git-send-email-iamjoonsoo.kim@lge.com
+ !(field1 == X && field2 == Y)
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Where the value of the full clause will be notted.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/kernel-parameters.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_events_filter.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7dbe5ec9d9cd..1d09eb37c562 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3477,7 +3477,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			are saved.
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index e6a33db83856..ced69da0ff55 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -489,9 +489,10 @@ static int process_ops(struct filter_pred *preds,
+ 		if (!WARN_ON_ONCE(!pred->fn))
+ 			match = pred->fn(pred, rec);
+ 		if (!!match == type)
+-			return match;
++			break;
+ 	}
+-	return match;
++	/* If not of not match is equal to not of not, then it is a match */
++	return !!match == !op->not;
+ }
  
- 	trace_buf_size=nn[KMG]
--			[FTRACE] will set tracing buffer size.
-+			[FTRACE] will set tracing buffer size on each cpu.
+ struct filter_match_preds_data {
+@@ -740,10 +741,10 @@ static int filter_set_pred(struct event_filter *filter,
+ 		 * then this op can be folded.
+ 		 */
+ 		if (left->index & FILTER_PRED_FOLD &&
+-		    (left->op == dest->op ||
++		    ((left->op == dest->op && !left->not) ||
+ 		     left->left == FILTER_PRED_INVALID) &&
+ 		    right->index & FILTER_PRED_FOLD &&
+-		    (right->op == dest->op ||
++		    ((right->op == dest->op && !right->not) ||
+ 		     right->left == FILTER_PRED_INVALID))
+ 			dest->index |= FILTER_PRED_FOLD;
  
- 	trace_event=[event-list]
- 			[FTRACE] Set and start specified trace events in order
 -- 
 2.1.3
 
