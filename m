@@ -1,156 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaLCOmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:42:36 -0500
-Received: from mta-out1.inet.fi ([62.71.2.227]:47857 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaLCOme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:42:34 -0500
-Date: Wed, 3 Dec 2014 16:14:33 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Oleg Nesterov <oleg@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from
- m_start() to proc_maps_open()
-Message-ID: <20141203141433.GA25683@node.dhcp.inet.fi>
-References: <20140805194627.GA30693@redhat.com>
- <20140805194655.GA30728@redhat.com>
+	id S1752709AbaLCOnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:43:10 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:50856 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaLCOnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:43:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        russ.dill@gmail.com, Olof Johansson <olof@lixom.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
+Date: Wed, 03 Dec 2014 15:42:50 +0100
+Message-ID: <6779994.zYRbhBjLnB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAD=FV=UFWZEcbO2ty0m+qEGv4Xgq0N=Rs30wBgw=6+OGd5gSpg@mail.gmail.com>
+References: <1417461694-5129-1-git-send-email-dianders@chromium.org> <25485084.A6ydfR9Xle@wuerfel> <CAD=FV=UFWZEcbO2ty0m+qEGv4Xgq0N=Rs30wBgw=6+OGd5gSpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140805194655.GA30728@redhat.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:pHeco+3xDwwS8fS4ypveWU6ir4HZRn/kAdm9m2i1gDcYy55Aqcy
+ ws/jFCtGK78VkirJQNIK1IYY+Cp9A6B2DF03D7GJNDgtj7cTzNrrZ6PCKhZrOVW/y766hnd
+ x3Psrvciezl56X80IqcfLPBXpA4X8onoVcJfrdnXj+Q+Seg9uW9J9qn8ZWivTQfIvWwIIw5
+ UMDbxYsydMFR8X1bU6k/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 09:46:55PM +0200, Oleg Nesterov wrote:
-> A simple test-case from Kirill Shutemov
+On Tuesday 02 December 2014 09:36:00 Doug Anderson wrote:
+> On Tue, Dec 2, 2014 at 1:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 01 December 2014 15:04:59 Doug Anderson wrote:
+> >> On Mon, Dec 1, 2014 at 2:50 PM, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > I recently looked at another vendor tree (quantenna wifi access point,
+> > based on arch/arc), which was putting arbitrary functions into SRAM
+> > for performance reasons, in their case the entire hot path for network
+> > switching. Having at least the infrastructure to do this seems like
+> > a great idea, even though it's very hard to do in a general-purpose
+> > kernel, as you'd have a hard time squeezing as much code as possible
+> > into the available SRAM.
 > 
-> 	cat /proc/self/maps >/dev/null
-> 	chmod +x /proc/self/net/packet
-> 	exec /proc/self/net/packet
+> I'm always a fan of seeing general infrastructure introduced, though
+> we always need to make sure that the general infrastructure makes
+> things easier and not harder.  There's always the danger of adding so
+> much abstraction for a small thing that using it is like pulling
+> teeth.  I'm not saying that's the case here, but it is always a
+> danger.
 > 
-> makes lockdep unhappy, cat/exec take seq_file->lock + cred_guard_mutex in
-> the opposite order.
+> Note: I will point out a critical differences between the "hotpath"
+> problem and the one I'm solving here.  When you're just trying to
+> speed up a hotpath, it's not the end of the world if there's a stray
+> access to SDRAM.  If you happen to access a global variable in SDRAM,
+> or use a libc function to do division, or have a WARN_ON, those things
+> are OK.  It might also be OK if the stack was still in SDRAM.  When
+> you're compiling code that has to run with no other kernel function
+> present it's really nice to link them into a separate executable.
 
-Oleg, I see it again with almost the same test-case:
+Yes, makes sense. We might be able to use the same trick that we have
+for verifying __init sections though: During the final link of the
+vmlinux or module, check that an SRAM function only calls other
+functions that are in SRAM and accesses global variables that way
+too.
 
-	cat /proc/self/stack >/dev/null
-	chmod +x /proc/self/net/packet
-	exec /proc/self/net/packet
+It wouldn't cover any pointers you pass using function arguments
+though, and I don't yet understand the requirements for stack accesses.
+How do you currently deal with local variables that are put on the
+stack by a blob?
 
-Looks like bunch of proc files were converted to use seq_file by Alexey
-Dobriyan around the same time you've fixed the issue for /proc/pid/maps.
+> > and I also don't think I want to have
+> > the infrastructure for it in mach-rockchip and would want to see that
+> > at least shared across arch/arm if it's too hard to do
+> > cross-architecture. If you were to include code from drivers/memory/
+> > in the blob, you couldn't keep it in mach-rockchip anyway.
+> 
+> I guess I was envisioning that if other places need similar
+> functionality that they would copy the ideas here.  Some of the
+> Makefile bits could possibly be shared through some type of Makefile
+> library.  I know copying code / Makefiles is bad, but sometimes it's
+> the cleanest way to do something.  If we start seeing a lot of
+> duplication then we can make things common and we can truly evaluate
+> whether the common solution is better than the duplication.
 
-More generic test-case:
+The makefile parts should be really easy to share by putting them
+into scripts/Makefile.lib.
 
-	find /proc/self/ -type f -exec dd if='{}' of=/dev/null bs=1 count=1 ';' 2>/dev/null
-	chmod +x /proc/self/net/packet
-	exec /proc/self/net/packet
+> > AFAICT, the quantenna implementation is similar to the itcm/dtcm
+> > stuff we already have (but are not using upstream), so I wonder
+> > why we can't use that here too, see Documentation/arm/tcm.txt
+> 
+> I wasn't aware of the TCM stuff.  Thanks for the pointer!  It looks
+> pretty neat...
+> 
+> Ah, but the TCM stuff has a critical difference from my problem.  By
+> the very definition of TCM you don't need to do relocation.
+> 
+> TCM has the magical property that you can assign the physical address.
+> That means that you instantly sidestep multiplatform problems of
+> having SRAM at different physical addresses.  You can compile the code
+> to assume it's at 0xfffe0000 and it will work on every single machine
+> out there that needs TCM.  So if you've got a generic "udelay"
+> function you could just mark it as a "tcmfunc" and it will work
+> everywhere.  No relocation needed and the compiler knows exactly where
+> things will be.
 
-David, any justification for allowing chmod +x for files under
-/proc/pid/net?
+Ok, I have to admit that I don't actually understand the differences
+myself. Why does the physical address of the TCM matter? Can't we
+just map the SRAM to a sufficiently large well-known virtual address?
 
-[    2.042212] ======================================================
-[    2.042930] [ INFO: possible circular locking dependency detected ]
-[    2.043648] 3.18.0-rc7-00003-g3a18ca061311-dirty #237 Not tainted
-[    2.044350] -------------------------------------------------------
-[    2.045054] sh/94 is trying to acquire lock:
-[    2.045546]  (&p->lock){+.+.+.}, at: [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
-[    2.045781] 
-[    2.045781] but task is already holding lock:
-[    2.045781]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811c0e3d>] prepare_bprm_creds+0x2d/0x90
-[    2.045781] 
-[    2.045781] which lock already depends on the new lock.
-[    2.045781] 
-[    2.045781] 
-[    2.045781] the existing dependency chain (in reverse order) is:
-[    2.045781] 
--> #1 (&sig->cred_guard_mutex){+.+.+.}:
-[    2.045781]        [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
-[    2.045781]        [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
-[    2.045781]        [<ffffffff81849da6>] mutex_lock_killable_nested+0x66/0x460
-[    2.045781]        [<ffffffff81229de4>] lock_trace+0x24/0x70
-[    2.045781]        [<ffffffff81229e8f>] proc_pid_stack+0x5f/0xe0
-[    2.045781]        [<ffffffff81227244>] proc_single_show+0x54/0xa0
-[    2.045781]        [<ffffffff811e13a0>] seq_read+0xe0/0x3e0
-[    2.045781]        [<ffffffff811b9377>] vfs_read+0x97/0x180
-[    2.045781]        [<ffffffff811b9f5d>] SyS_read+0x4d/0xc0
-[    2.045781]        [<ffffffff8184e492>] system_call_fastpath+0x12/0x17
-[    2.045781] 
--> #0 (&p->lock){+.+.+.}:
-[    2.045781]        [<ffffffff810a389f>] validate_chain.isra.36+0xfff/0x1400
-[    2.045781]        [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
-[    2.045781]        [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
-[    2.045781]        [<ffffffff81849629>] mutex_lock_nested+0x69/0x3c0
-[    2.045781]        [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
-[    2.045781]        [<ffffffff81226428>] proc_reg_read+0x48/0x70
-[    2.045781]        [<ffffffff811b9377>] vfs_read+0x97/0x180
-[    2.045781]        [<ffffffff811bf1a8>] kernel_read+0x48/0x60
-[    2.045781]        [<ffffffff811bfb2c>] prepare_binprm+0xdc/0x180
-[    2.045781]        [<ffffffff811c139a>] do_execve_common.isra.29+0x4fa/0x960
-[    2.045781]        [<ffffffff811c1818>] do_execve+0x18/0x20
-[    2.045781]        [<ffffffff811c1b05>] SyS_execve+0x25/0x30
-[    2.045781]        [<ffffffff8184ea49>] stub_execve+0x69/0xa0
-[    2.045781] 
-[    2.045781] other info that might help us debug this:
-[    2.045781] 
-[    2.045781]  Possible unsafe locking scenario:
-[    2.045781] 
-[    2.045781]        CPU0                    CPU1
-[    2.045781]        ----                    ----
-[    2.045781]   lock(&sig->cred_guard_mutex);
-[    2.045781]                                lock(&p->lock);
-[    2.045781]                                lock(&sig->cred_guard_mutex);
-[    2.045781]   lock(&p->lock);
-[    2.045781] 
-[    2.045781]  *** DEADLOCK ***
-[    2.045781] 
-[    2.045781] 1 lock held by sh/94:
-[    2.045781]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811c0e3d>] prepare_bprm_creds+0x2d/0x90
-[    2.045781] 
-[    2.045781] stack backtrace:
-[    2.045781] CPU: 0 PID: 94 Comm: sh Not tainted 3.18.0-rc7-00003-g3a18ca061311-dirty #237
-[    2.045781] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-[    2.045781]  ffffffff82a48d50 ffff88085427bad8 ffffffff81844a85 0000000000000cac
-[    2.045781]  ffffffff82a654a0 ffff88085427bb28 ffffffff810a1b03 0000000000000000
-[    2.045781]  ffff88085427bb68 ffff88085427bb28 ffff8808547f1500 ffff8808547f1c40
-[    2.045781] Call Trace:
-[    2.045781]  [<ffffffff81844a85>] dump_stack+0x4e/0x68
-[    2.045781]  [<ffffffff810a1b03>] print_circular_bug+0x203/0x310
-[    2.045781]  [<ffffffff810a389f>] validate_chain.isra.36+0xfff/0x1400
-[    2.045781]  [<ffffffff8108fa76>] ? local_clock+0x16/0x30
-[    2.045781]  [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
-[    2.045781]  [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
-[    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
-[    2.045781]  [<ffffffff81849629>] mutex_lock_nested+0x69/0x3c0
-[    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
-[    2.045781]  [<ffffffff8108f9f8>] ? sched_clock_cpu+0x98/0xc0
-[    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
-[    2.045781]  [<ffffffff814050b9>] ? lockref_put_or_lock+0x29/0x40
-[    2.045781]  [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
-[    2.045781]  [<ffffffff814050b9>] ? lockref_put_or_lock+0x29/0x40
-[    2.045781]  [<ffffffff81226428>] proc_reg_read+0x48/0x70
-[    2.045781]  [<ffffffff811b9377>] vfs_read+0x97/0x180
-[    2.045781]  [<ffffffff811bf1a8>] kernel_read+0x48/0x60
-[    2.045781]  [<ffffffff811bfb2c>] prepare_binprm+0xdc/0x180
-[    2.045781]  [<ffffffff811c139a>] do_execve_common.isra.29+0x4fa/0x960
-[    2.092142] tsc: Refined TSC clocksource calibration: 2693.484 MHz
-[    2.045781]  [<ffffffff811c0fd3>] ? do_execve_common.isra.29+0x133/0x960
-[    2.045781]  [<ffffffff8184f04d>] ? retint_swapgs+0xe/0x13
-[    2.045781]  [<ffffffff811c1818>] do_execve+0x18/0x20
-[    2.045781]  [<ffffffff811c1b05>] SyS_execve+0x25/0x30
-[    2.045781]  [<ffffffff8184ea49>] stub_execve+0x69/0xa0
--- 
- Kirill A. Shutemov
+> Unfortunately, the rk3288 doesn't have TCM.  I tried enabling it and
+> got these nice printouts at boot:
+> 
+>     DTCM    : 0xfffe8000 - 0xfffe8000   (   0 kB)
+>     ITCM    : 0xfffe0000 - 0xfffe0000   (   0 kB)
+> 
+> Instead of TCM I'm using the "PMU SRAM" on the rk3288 which is
+> designed to keep code and data across deep sleep.  Adding relocation
+> to the existing TCM support gets back into the rats nest of issues
+> that I was trying to avoid tackling.
+> 
+> A few other TCM thoughts:
+> 
+> 1. It sure seems unlikely that the current TCM solution would scale to
+> multiplatform.  Oh right, Linus W said this in his reply, too.  If
+> you've got SoC_A, SoC_B, and SoC_C all marking their functions
+> "tcmfunc" then they'll all be placed in the TCM section, right?
+
+Correct, that would be a problem, at least if the total size grows
+to more than the minimum of any of the chips' physical SRAM.
+
+> There's no way to detect that you're on SoC_A and that you only need
+> the SoC_A code.  Given the marching orders of multiplatform,
+> multiplatform, multiplatform then I _think_ that means we shouldn't
+> let anyone merge any code to mainline that uses TCM (unless TCM gets
+> revamped).
+
+Just out of curiosity, what sizes are we looking at here, for the
+code you currently have and the available SRAM on rk3288?
+
+> 2. I haven't tried it, but it seems like the compiler still might not
+> catch stray (accidental) accesses from the TCM section to the non-TCM
+> section.  Again, this isn't a showstopper because you'd just track
+> each one down, but it is a nice feature of adding a separate
+> executable.
+
+No, the compiler won't care about this, but as mentioned above we
+can have the kernel linker scripts help us a bit here.
+
+	Arnd
