@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaLCSqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 13:46:07 -0500
-Received: from smtprelay0248.hostedemail.com ([216.40.44.248]:41205 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751190AbaLCSqC (ORCPT
+	id S1751832AbaLCSru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 13:47:50 -0500
+Received: from na6sys009bog035.obsmtp.com ([74.125.150.109]:56937 "HELO
+	na6sys009bog035.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751041AbaLCSrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 13:46:02 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3870:3872:4321:4605:5007:6261:6691:7903:7904:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13019:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: girls44_345453c83d11a
-X-Filterd-Recvd-Size: 1602
-Message-ID: <1417632358.2902.20.camel@perches.com>
-Subject: Re: [PATCH] Staging: line6: fix parentheses around macro in
- usbdefs.h
-From: Joe Perches <joe@perches.com>
-To: Sam van Kampen <sam@tehsvk.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Bajumpaa <cbajumpa@gmail.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Davide Berardi <berardi.dav@gmail.com>, devel@driverdev.osuosl.org
-Date: Wed, 03 Dec 2014 10:45:58 -0800
-In-Reply-To: <20141203183442.GA3480@nsa.gov>
-References: <20141203183442.GA3480@nsa.gov>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Dec 2014 13:47:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417575363-13770-2-git-send-email-joestringer@nicira.com>
+References: <1417575363-13770-1-git-send-email-joestringer@nicira.com> <1417575363-13770-2-git-send-email-joestringer@nicira.com>
+From: Joe Stringer <joestringer@nicira.com>
+Date: Wed, 3 Dec 2014 10:47:26 -0800
+Message-ID: <CANr6G5z-kokWkBs3bb=bXrBmBUhaqHKH1QfeXycFWxSNf00qFw@mail.gmail.com>
+Subject: Re: [PATCHv11 net-next 2/2] openvswitch: Add support for unique flow IDs.
+To: Pravin Shelar <pshelar@nicira.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        Linux Netdev List <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 19:34 +0100, Sam van Kampen wrote:
-> This patch fixes the error "Macros with complex values should be enclosed in
-> parentheses", as reported by checkpatch.pl.
-[]
-> diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
-[]
-> @@ -40,7 +40,7 @@
->  #define LINE6_DEVID_TONEPORT_UX2  0x4142
->  #define LINE6_DEVID_VARIAX        0x534d
->  
-> -#define LINE6_BIT(x) LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x
-> +#define LINE6_BIT(x) (LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x)
+I forgot to mention that this is the first post based against net-next.
 
-The uses are pretty ugly.
+On 2 December 2014 at 18:56, Joe Stringer <joestringer@nicira.com> wrote:
+> <....snip...>
+> diff --git a/net/openvswitch/flow.h b/net/openvswitch/flow.h
+> index a8b30f3..7f31dbf 100644
+> --- a/net/openvswitch/flow.h
+> +++ b/net/openvswitch/flow.h
+> @@ -197,6 +197,13 @@ struct sw_flow_match {
+>         struct sw_flow_mask *mask;
+>  };
+>
+> +#define MAX_UFID_LENGTH 256
+> +
+> +struct sw_flow_id {
+> +       u32 ufid_len;
+> +       u32 ufid[MAX_UFID_LENGTH / 4];
+> +};
+> +
+>  struct sw_flow_actions {
+>         struct rcu_head rcu;
+>         u32 actions_len;
 
-It'd probably be nicer if all the LINE6_BIT uses were
-direct enum declarations instead.
-
-
-
+Pravin, I changed the 'struct sw_flow_id' to the above after feedback
+from the previous round, but it doesn't seem quite right. Is this what
+you meant? Given that current ovs-vswitchd userspace only generates
+128bit UFIDs, it seems wasteful to be allocating so much for this. Did
+you have in mind for this to be united with the unmasked_key?
