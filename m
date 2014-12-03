@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaLCCgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:36:04 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:19894 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750969AbaLCCgB (ORCPT
+	id S1751898AbaLCCgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:36:31 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60129 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaLCCga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:36:01 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44389228"
-Message-ID: <547E7365.8090603@cn.fujitsu.com>
-Date: Wed, 3 Dec 2014 10:20:21 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: <linux-mtd@lists.infradead.org>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [RESEND PATCH 3/3] mtd/mtdblock: introduce helper macro blktrans_dev_to_mtdblk
- to wrap the conversion (mtd_blktrans_dev to mtdblk_dev)
-References: <1417052709-22026-1-git-send-email-guz.fnst@cn.fujitsu.com>
-In-Reply-To: <1417052709-22026-1-git-send-email-guz.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+	Tue, 2 Dec 2014 21:36:30 -0500
+From: Fred Chou <fred.chou.nd@gmail.com>
+X-Google-Original-From: Fred Chou
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, fred.chou.nd@gmail.com
+Subject: [PATCH] staging: rt8192u: fix sparse warnings in r8192U_core.c
+Date: Wed,  3 Dec 2014 10:38:27 +0800
+Message-Id: <1417574307-3030-1-git-send-email-fred.chou.nd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper macro blktrans_dev_to_mtdblk to wrap the conversion
-(mtd_blktrans_dev to mtdblk_dev), just cleanup.
+From: Fred Chou <fred.chou.nd@gmail.com>
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Fixed the following warnings in sparse:
+drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
+ 	symbol 'dump_eprom' was not declared.
+	Should it be static?
+drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
+ 	symbol 'ComputeTxTime' was not declared.
+	Should it be static?
+drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
+	symbol 'txqueue2outpipe' was not declared.
+	Should it be static?
+drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
+	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
+	Should it be static?
+
+Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
 ---
- drivers/mtd/mtdblock.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
-index acc00f1..3af3d1c 100644
---- a/drivers/mtd/mtdblock.c
-+++ b/drivers/mtd/mtdblock.c
-@@ -50,6 +50,8 @@ struct mtdblk_dev {
- 	enum CACHE_STATES cache_state;
- };
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 7640386..6b647ad 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
  
-+#define blktrans_dev_to_mtdblk(dev) container_of(dev, struct mtdblk_dev, mbd)
-+
- /*
-  * Cache stuff...
-  *
-@@ -263,14 +265,16 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
- static int mtdblock_readsect(struct mtd_blktrans_dev *dev,
- 			      unsigned long block, char *buf)
+ 
+ /* this is only for debug */
+-void dump_eprom(struct net_device *dev)
++static void dump_eprom(struct net_device *dev)
  {
--	struct mtdblk_dev *mtdblk = container_of(dev, struct mtdblk_dev, mbd);
-+	struct mtdblk_dev *mtdblk = blktrans_dev_to_mtdblk(dev);
-+
- 	return do_cached_read(mtdblk, block<<9, 512, buf);
+ 	int i;
+ 	for (i = 0; i < 63; i++)
+@@ -1486,7 +1486,7 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
+ 
+ u16 N_DBPSOfRate(u16 DataRate);
+ 
+-u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
++static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+ 		  u8 bShortPreamble)
+ {
+ 	u16	FrameTime;
+@@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
+ 	return N_DBPS;
  }
  
- static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
- 			      unsigned long block, char *buf)
+-unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
++static unsigned int txqueue2outpipe(struct r8192_priv *priv,
++						unsigned int tx_queue)
  {
--	struct mtdblk_dev *mtdblk = container_of(dev, struct mtdblk_dev, mbd);
-+	struct mtdblk_dev *mtdblk = blktrans_dev_to_mtdblk(dev);
-+
- 	if (unlikely(!mtdblk->cache_data && mtdblk->cache_size)) {
- 		mtdblk->cache_data = vmalloc(mtdblk->mbd.mtd->erasesize);
- 		if (!mtdblk->cache_data)
-@@ -285,7 +289,7 @@ static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
+ 	if (tx_queue >= 9) {
+ 		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
+@@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
  
- static int mtdblock_open(struct mtd_blktrans_dev *mbd)
+ }
+ 
+-u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
++static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
++						bool bIsRxAggrSubframe)
  {
--	struct mtdblk_dev *mtdblk = container_of(mbd, struct mtdblk_dev, mbd);
-+	struct mtdblk_dev *mtdblk = blktrans_dev_to_mtdblk(mbd);
- 
- 	pr_debug("mtdblock_open\n");
- 
-@@ -310,7 +314,7 @@ static int mtdblock_open(struct mtd_blktrans_dev *mbd)
- 
- static void mtdblock_release(struct mtd_blktrans_dev *mbd)
- {
--	struct mtdblk_dev *mtdblk = container_of(mbd, struct mtdblk_dev, mbd);
-+	struct mtdblk_dev *mtdblk = blktrans_dev_to_mtdblk(mbd);
- 
- 	pr_debug("mtdblock_release\n");
- 
-@@ -333,7 +337,7 @@ static void mtdblock_release(struct mtd_blktrans_dev *mbd)
- 
- static int mtdblock_flush(struct mtd_blktrans_dev *dev)
- {
--	struct mtdblk_dev *mtdblk = container_of(dev, struct mtdblk_dev, mbd);
-+	struct mtdblk_dev *mtdblk = blktrans_dev_to_mtdblk(dev);
- 
- 	mutex_lock(&mtdblk->cache_mutex);
- 	write_cached_data(mtdblk);
+ #ifdef USB_RX_AGGREGATION_SUPPORT
+ 	if (bIsRxAggrSubframe)
 -- 
-1.7.7
-
-.
+1.9.1
 
