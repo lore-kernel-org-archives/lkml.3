@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaLCUoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:44:24 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42874 "EHLO
+	id S1752255AbaLCUof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:44:35 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42918 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750855AbaLCUoW (ORCPT
+	with ESMTP id S1752032AbaLCUob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:44:22 -0500
+	Wed, 3 Dec 2014 15:44:31 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,83 +21,39 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>,
         Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Wed,  3 Dec 2014 21:44:04 +0100
-Message-Id: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v5 08/11] ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
+Date: Wed,  3 Dec 2014 21:44:12 +0100
+Message-Id: <1417639455-17410-9-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EBI (External Bus Interface) is used to access external peripherals
-(NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-Each device is assigned a CS line and an address range and can have its
-own configuration (timings, access mode, bus width, ...).
-This driver provides a generic DT binding to configure a device according
-to its requirements.
-For specific device controllers (like the NAND one) the SMC timings
-should be configured by the controller driver through the matrix and
-smc syscon regmaps.
+Add the SMC node in sama5d3 dtsi.
 
-The first 4 patches introduce 2 syscon devices needed to configure the
-EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
-patches declares the EBI related nodes in sama5d3 dts[i] files.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Changes since v4:
-- fix inconsistencies in SMC and MATRIX registers definition
-- add missing compatible strings for at91sam9rl SoC
-- fix DT bindings documentation
-- replace "atmel,generic-dev" property by "atmel,specialized-logic"
-
-Changes since v3:
-- added AT91_MATRIX_USBPUCR_PUON definition
-- removed useless macros (those directly returning SoC specific register
-  offsets)
-- use syscon_regmap_lookup_by_phandle instead of of_parse_phandle +
-  syscon_node_to_regmap
-- drop AT91_EBICSA_REGFIELD and AT91_MULTI_EBICSA_REGFIELD macros
-
-Changes since v2:
-- minor fixes int DT bindings doc
-- fix SMC macros
-- make use of SMC macros defined in include/linux/mfd/syscon/atmel-smc.h
-
-Changes since v1:
-- almost everything :-)
-
-Boris Brezillon (11):
-  mfd: syscon: Add atmel-matrix registers definition
-  mfd: syscon: Add Atmel Matrix bus DT binding documentation
-  mfd: syscon: Add atmel-smc registers definition
-  mfd: syscon: Add Atmel SMC binding doc
-  memory: add Atmel EBI (External Bus Interface) driver
-  memory: atmel-ebi: add DT bindings documentation
-  ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or
-    sama5d3
-  ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
-  ARM: at91/dt: add matrix node in sama5d3 dtsi
-  ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
-  ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
-
- .../bindings/memory-controllers/atmel-ebi.txt      | 155 ++++++
- .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
- .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
- arch/arm/boot/dts/sama5d3.dtsi                     |  93 ++++
- arch/arm/boot/dts/sama5d3xcm.dtsi                  |  33 ++
- arch/arm/mach-at91/Kconfig                         |   2 +
- drivers/memory/Kconfig                             |  11 +
- drivers/memory/Makefile                            |   1 +
- drivers/memory/atmel-ebi.c                         | 579 +++++++++++++++++++++
- include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
- include/linux/mfd/syscon/atmel-smc.h               | 173 ++++++
- 11 files changed, 1207 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
- create mode 100644 drivers/memory/atmel-ebi.c
- create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
- create mode 100644 include/linux/mfd/syscon/atmel-smc.h
-
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 5f4144d..9f1eed5 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -395,6 +395,11 @@
+ 				clock-names = "tdes_clk";
+ 			};
+ 
++			hsmc: hsmc@ffffc000 {
++				compatible = "atmel,sama5d3-smc", "syscon";
++				reg = <0xffffc000 0x1000>;
++			};
++
+ 			dma0: dma-controller@ffffe600 {
+ 				compatible = "atmel,at91sam9g45-dma";
+ 				reg = <0xffffe600 0x200>;
 -- 
 1.9.1
 
