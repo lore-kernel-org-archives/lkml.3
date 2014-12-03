@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaLCXx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:53:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57697 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaLCXxy (ORCPT
+	id S1752509AbaLCXzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:55:23 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:26116 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbaLCXzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:53:54 -0500
-Date: Wed, 3 Dec 2014 15:53:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Richard Weinberger <richard@nod.at>, David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct
- task_struct
-Message-Id: <20141203155352.ea5322ff45c6200238c7ef51@linux-foundation.org>
-In-Reply-To: <CALCETrVk0EBL0vk8kjOhjkMAOaxXukCdSptzfHU=g1s7JChXiQ@mail.gmail.com>
-References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
-	<alpine.DEB.2.11.1410291908290.5308@nanos>
-	<CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com>
-	<20141110.211319.1983610686941713044.davem@davemloft.net>
-	<5461EA6B.9020305@nod.at>
-	<CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
-	<20141203153721.30b32472145aa560921bdc1e@linux-foundation.org>
-	<CALCETrVk0EBL0vk8kjOhjkMAOaxXukCdSptzfHU=g1s7JChXiQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 3 Dec 2014 18:55:21 -0500
+Message-ID: <547FA2E5.1040105@imgtec.com>
+Date: Wed, 3 Dec 2014 15:55:17 -0800
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>
+CC: <Zubair.Kakakhel@imgtec.com>, <geert+renesas@glider.be>,
+        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
+        <macro@linux-mips.org>, <chenhc@lemote.com>, <cl@linux.com>,
+        <mingo@kernel.org>, <richard@nod.at>, <zajec5@gmail.com>,
+        <james.hogan@imgtec.com>, <keescook@chromium.org>, <tj@kernel.org>,
+        <alex@alex-smith.me.uk>, <pbonzini@redhat.com>, <blogic@openwrt.org>,
+        <paul.burton@imgtec.com>, <qais.yousef@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <markos.chandras@imgtec.com>,
+        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
+        <lars.persson@axis.com>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
+References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 15:38:29 -0800 Andy Lutomirski <luto@amacapital.net> wrote:
+On 12/03/2014 03:44 PM, David Daney wrote:
 
-> Yes, exactly.
-> 
-> >
-> > Spelling this out in the changelog would be useful for the ignorant and
-> > the forgetful ;)
-> 
-> Want a new version, or will you fix it up yourself?
-> 
+(...)
 
-I think I can work that out.
+Big work but it doesn't support customized instructions, multiple ASEs, 
+MIPS R6 etc.
 
-A couple of linux-next things to check:
+Well, it is still not a replacement of XOL emulation.
+Even close.
 
-- arch/arm/include/asm/thread_info.h:arm_restart_block has
-  disappeared from the thread_info.
 
-- the reference to ti->restart_block in arch/arm/kernel/traps.c has
-  vanished.  I couldn't find anywhere where it was moved to.
