@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaLCLRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:17:37 -0500
-Received: from sauhun.de ([89.238.76.85]:50397 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707AbaLCLRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:17:35 -0500
-Date: Wed, 3 Dec 2014 12:17:32 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        linux-i2c@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] i2c-omap / PM: Drop CONFIG_PM_RUNTIME from i2c-omap.c
-Message-ID: <20141203111732.GC1039@katana>
-References: <1764802.h0lkXSoFee@vostro.rjw.lan>
+	id S1751937AbaLCLWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:22:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46972 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLCLWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:22:36 -0500
+Date: Wed, 3 Dec 2014 11:22:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-spi@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com
+Message-ID: <20141203112213.GV7712@sirena.org.uk>
+References: <alpine.DEB.2.02.1412022041580.16734@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TYecfFk8j8mZq+dy"
+	protocol="application/pgp-signature"; boundary="PRH0fqouaz6lm1TV"
 Content-Disposition: inline
-In-Reply-To: <1764802.h0lkXSoFee@vostro.rjw.lan>
+In-Reply-To: <alpine.DEB.2.02.1412022041580.16734@utopia.booyaka.com>
+X-Cookie: Celebrity voices impersonated.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/of: fix warning due to missing CONFIG_OF_DYNAMIC
+ dependency
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---TYecfFk8j8mZq+dy
+--PRH0fqouaz6lm1TV
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 03, 2014 at 02:58:15AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, Dec 02, 2014 at 08:46:28PM +0000, Paul Walmsley wrote:
 >=20
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so some #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may be dropped now.
->=20
-> Do that in drivers/i2c/busses/i2c-omap.c.
->=20
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->=20
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
->=20
-> Please let me know if it is OK to take this one into linux-pm.
+> linux-next commit ce79d54ae447d65117303ca9f61ffe9dcbc2465d ("spi/of: Add =
+OF
+> notifier handler") is causing the following warning during boot:
 
-=46rom my side, yes:
+Someone already sent a patch for this (think it might have been
+Fengguang).  I'm hoping Grant's going to apply it, I can't since the
+code is in the DT tree.
 
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-
-Might be worth waiting a day for an ack from someone at TI. They usually
-keep a good eye on their drivers.
-
-
---TYecfFk8j8mZq+dy
+--PRH0fqouaz6lm1TV
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUfvFMAAoJEBQN5MwUoCm2qbUQAKrX54LEYWLrqmU+/rMj37u9
-ApAk6STSKWHuglymQ+gjXBlGBSwu9d7xjt9ROWXIppd/hRDqLHUY/FB3/3YDaAMl
-O/m0kI1BiwYcha8jbd+bFcakOMBJeNZEiVTpKCj+qMDtlGQffzZkupP+0XlGYwvu
-ZRuQzc9elGnu0fxoDw3/4Isic00MKZm43vgfJBBrJxaeCCmImez8UubXmHv6z8UQ
-D+lnMqvlBDMJYGHbwClUcw8nbtfbX4xkxoYxcw4x4D0X4y9njQjEsj9tpJxOHsdc
-jZDs0o6NrdgewZhh8N4MtW7lDb3q6olpcD5jUuHrn7JgGK/88FxcMn9h5cLX5QSG
-MFDsBKj9zAWHbsXjgDlGwZQx0FNZilJ3Z8V5NO+Jy1iTKpJckE47aBiKuqTwk6ss
-W02L0cf+V6Ub/RRRkSVLRy0/CPwFXhGVxCVTHT19AIXRLU7KEQRJs1jE2NpUk+mk
-E302ihKPACI3VrDNQ5LD3mRWrDvk1JHFzq8A5L9todD/T9sImOeEF4wNxf1vlVsC
-vYQiWDmr44Ig+INYtjLl1Q37LdDohphw2aAtIlF8gAC+d2XlQUcYQoDR6Y2v33U2
-nuXzbF6Y3UW1+Xs4ezUmBBrjz7Jv7TiGXr82GXiQpQwzv54tvK+9pzi/bgJK7brf
-9kindPUPir34s8hey5Qj
-=dMhd
+iQEcBAEBAgAGBQJUfvJkAAoJECTWi3JdVIfQ31gH/0SM17cqZHq3nR+UFwO3a6jh
+xXyPOMCM9igiz8aWSwqET1AmChwGD7a+K2MNF3GD5p9kVnQ+TwNIZtQF/qBycxiY
+bsFUB5M+mv5o8VRERB/v/10gK/vYS4XtOnU0L2TrtabIAal2FswKd61mq6GGP1Je
+S8b08by7DlnFES+713nx4+4WA7j6SuQBf2MsREJ9q5KZSpkLltUXKaSN26elopyR
+4dui63o+0/3IFkSUv0tfQaAvXkGJ/l+PweHMsTKcaMvIgm9OH+Onsi9pHaX+++RO
+cfIpyFXOvZ6Qxyb5MFz/4vdwm7/9CADD01CWU4f6u3tKl5Yp7Em+m/5oSAdJPts=
+=GnU2
 -----END PGP SIGNATURE-----
 
---TYecfFk8j8mZq+dy--
+--PRH0fqouaz6lm1TV--
