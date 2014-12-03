@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaLCLww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:52:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50171 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881AbaLCLwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:52:50 -0500
-Message-ID: <1417607520.5124.8.camel@pengutronix.de>
-Subject: Re: [PATCH v15 06/12] dt-bindings: add document for dw_hdmi
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, heiko@sntech.de, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, ykk@rock-chips.com,
-        devel@driverdev.osuosl.org, Pawel Moll <pawel.moll@arm.com>,
-        linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
-        devicetree@vger.kernel.org, Zubair.Kakakhel@imgtec.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Sean Paul <seanpaul@chromium.org>, rmk+kernel@arm.linux.org.uk,
-        mark.yao@rock-chips.com, fabio.estevam@freescale.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, djkurtz@google.com,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        vladimir_zapolskiy@mentor.com, Lucas Stach <l.stach@pengutronix.de>
-Date: Wed, 03 Dec 2014 12:52:00 +0100
-In-Reply-To: <547EDBEE.70700@rock-chips.com>
-References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417544629.3411.15.camel@pengutronix.de> <547EDBEE.70700@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753931AbaLCLxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:53:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54685 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752336AbaLCL1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:15 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Johannes Berg <johannes@sipsolutions.net>,
+        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 031/101] mac80211: properly flush delayed scan work on interface removal
+Date: Wed,  3 Dec 2014 12:25:53 +0100
+Message-Id: <3a5a7cd8d92bf9d5a42694a5bebc37934561602d.1417605922.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
+References: <cover.1417605922.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 03.12.2014, 17:46 +0800 schrieb Andy Yan:
-> On 2014年12月03日 02:23, Philipp Zabel wrote:
-> > Hi Andy,
-> >
-> > Am Dienstag, den 02.12.2014, 15:42 +0800 schrieb Andy Yan:
-> >> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-> >> new file mode 100644
-> >> index 0000000..107c1ca
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-> >> @@ -0,0 +1,40 @@
-> >> +DesignWare HDMI bridge bindings
-> >> +
-> >> +Required properities:
-> >> +- compatible: platform specific such as:
-> >> +   * "fsl,imx6q-hdmi"
-> >> +   * "fsl,imx6dl-hdmi"
-> >> +   * "rockchip,rk3288-dw-hdmi"
-> > I think we should add a common compatible value "snps,dw-hdmi-tx" here:
-> >
-> > 	compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx";
-> >
-> >> +- reg: Physical base address and length of the controller's registers.
-> >> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-> > Better make ddc-i2c-bus optional, see the other thread about the ddc i2c
-> > master.
->      I have the same idea too, but the patch about ddc i2c master has not
->   landed yet,  can we change the ddc-i2c-bus to optional  after the ddc 
-> i2c master
->   patch land?
+From: Johannes Berg <johannes@sipsolutions.net>
 
-Check out Documentation/devicetree/bindings/drm/imx/hdmi.txt, it was
-already marked as optional. We can't make it required now.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-regards
-Philipp
+===============
+
+commit 46238845bd609a5c0fbe076e1b82b4c5b33360b2 upstream.
+
+When an interface is deleted, an ongoing hardware scan is canceled and
+the driver must abort the scan, at the very least reporting completion
+while the interface is removed.
+
+However, if it scheduled the work that might only run after everything
+is said and done, which leads to cfg80211 warning that the scan isn't
+reported as finished yet; this is no fault of the driver, it already
+did, but mac80211 hasn't processed it.
+
+To fix this situation, flush the delayed work when the interface being
+removed is the one that was executing the scan.
+
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/mac80211/iface.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
+index d019b42e4a65..31da72ce76ef 100644
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -749,10 +749,12 @@ static void ieee80211_do_stop(struct ieee80211_sub_if_data *sdata,
+ 	u32 hw_reconf_flags = 0;
+ 	int i, flushed;
+ 	struct ps_data *ps;
++	bool cancel_scan;
+ 
+ 	clear_bit(SDATA_STATE_RUNNING, &sdata->state);
+ 
+-	if (rcu_access_pointer(local->scan_sdata) == sdata)
++	cancel_scan = rcu_access_pointer(local->scan_sdata) == sdata;
++	if (cancel_scan)
+ 		ieee80211_scan_cancel(local);
+ 
+ 	/*
+@@ -959,6 +961,9 @@ static void ieee80211_do_stop(struct ieee80211_sub_if_data *sdata,
+ 
+ 	ieee80211_recalc_ps(local, -1);
+ 
++	if (cancel_scan)
++		flush_delayed_work(&local->scan_work);
++
+ 	if (local->open_count == 0) {
+ 		ieee80211_stop_device(local);
+ 
+-- 
+2.1.3
 
