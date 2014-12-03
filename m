@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaLCVl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:41:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33593 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaLCVlL (ORCPT
+	id S1752158AbaLCVlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:41:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33290 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaLCVlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:41:11 -0500
+	Wed, 3 Dec 2014 16:41:06 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: bhelgaas@google.com, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: Jan Beulich <JBeulich@suse.com>, Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v5 8/9] xen-pciback: drop SR-IOV VFs when PF driver unloads
-Date: Wed,  3 Dec 2014 16:40:33 -0500
-Message-Id: <1417642834-20350-9-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v5 6/9] PCI: Expose pci_load_saved_state for public consumption.
+Date: Wed,  3 Dec 2014 16:40:31 -0500
+Message-Id: <1417642834-20350-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
 References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <JBeulich@suse.com>
+We have the pci_load_and_free_saved_state, and pci_store_saved_state
+but are missing the functionality to just load the state
+multiple times in the PCI device without having to free/save
+the state.
 
-When a PF driver unloads, it may find it necessary to leave the VFs
-around simply because of pciback having marked them as assigned to a
-guest. Utilize a suitable notification to let go of the VFs, thus
-allowing the PF to go back into the state it was before its driver
-loaded (which in particular allows the driver to be loaded again with
-it being able to create the VFs anew, but which also allows to then
-pass through the PF instead of the VFs).
+This patch makes it possible to use this function.
 
-Don't do this however for any VFs currently in active use by a guest.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-[v2: Removed the switch statement, moved it about]
-[v3: Redid it a bit differently]
+CC: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c | 54 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ drivers/pci/pci.c   | 5 +++--
+ include/linux/pci.h | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 8580e53..cc3cbb4 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -1518,6 +1518,53 @@ parse_error:
- fs_initcall(pcistub_init);
- #endif
- 
-+#ifdef CONFIG_PCI_IOV
-+static struct pcistub_device *find_vfs(const struct pci_dev *pdev)
-+{
-+	struct pcistub_device *psdev = NULL;
-+	unsigned long flags;
-+	bool found = false;
-+
-+	spin_lock_irqsave(&pcistub_devices_lock, flags);
-+	list_for_each_entry(psdev, &pcistub_devices, dev_list) {
-+		if (!psdev->pdev && psdev->dev != pdev
-+		    && pci_physfn(psdev->dev) == pdev) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
-+	if (found)
-+		return psdev;
-+	return NULL;
-+}
-+
-+static int pci_stub_notifier(struct notifier_block *nb,
-+			     unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+	const struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (action != BUS_NOTIFY_UNBIND_DRIVER)
-+		return NOTIFY_DONE;
-+
-+	if (!pdev->is_physfn)
-+		return NOTIFY_DONE;
-+
-+	for (;;) {
-+		struct pcistub_device *psdev = find_vfs(pdev);
-+		if (!psdev)
-+			break;
-+		device_release_driver(&psdev->dev->dev);
-+	}
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block pci_stub_nb = {
-+	.notifier_call = pci_stub_notifier,
-+};
-+#endif
-+
- static int __init xen_pcibk_init(void)
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 625a4ac..f00a9d6 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1142,8 +1142,8 @@ EXPORT_SYMBOL_GPL(pci_store_saved_state);
+  * @dev: PCI device that we're dealing with
+  * @state: Saved state returned from pci_store_saved_state()
+  */
+-static int pci_load_saved_state(struct pci_dev *dev,
+-				struct pci_saved_state *state)
++int pci_load_saved_state(struct pci_dev *dev,
++			 struct pci_saved_state *state)
  {
- 	int err;
-@@ -1539,12 +1586,19 @@ static int __init xen_pcibk_init(void)
- 	err = xen_pcibk_xenbus_register();
- 	if (err)
- 		pcistub_exit();
-+#ifdef CONFIG_PCI_IOV
-+	else
-+		bus_register_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
+ 	struct pci_cap_saved_data *cap;
  
- 	return err;
+@@ -1171,6 +1171,7 @@ static int pci_load_saved_state(struct pci_dev *dev,
+ 	dev->state_saved = true;
+ 	return 0;
  }
++EXPORT_SYMBOL_GPL(pci_load_saved_state);
  
- static void __exit xen_pcibk_cleanup(void)
- {
-+#ifdef CONFIG_PCI_IOV
-+	bus_unregister_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
- 	xen_pcibk_xenbus_unregister();
- 	pcistub_exit();
- }
+ /**
+  * pci_load_and_free_saved_state - Reload the save state pointed to by state,
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 5be8db4..08088cb1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1003,6 +1003,8 @@ void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
+ int pci_save_state(struct pci_dev *dev);
+ void pci_restore_state(struct pci_dev *dev);
+ struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
++int pci_load_saved_state(struct pci_dev *dev,
++			 struct pci_saved_state *state);
+ int pci_load_and_free_saved_state(struct pci_dev *dev,
+ 				  struct pci_saved_state **state);
+ struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
 -- 
 1.9.3
 
