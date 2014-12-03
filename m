@@ -1,72 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056AbaLCB5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:57:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59425 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaLCB5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:57:22 -0500
-Date: Wed, 3 Dec 2014 02:57:16 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-omap@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] hsi / OMAP / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Message-ID: <20141203015716.GA29215@earth.universe>
-References: <6319344.XVfdONE5DJ@vostro.rjw.lan>
+	id S1751347AbaLCB5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:57:48 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61146 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751244AbaLCB5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:57:46 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kristen Carlson Accardi <kristen@linux.intel.com>
+Cc: Ethan Zhao <ethan.zhao@oracle.com>, dirk.j.brandewie@intel.com,
+        linda.knippers@hp.com, viresh.kumar@linaro.org, corbet@lwn.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [PATCH 1/2 V6] intel_pstate: skip this driver if Sun server has _PPC method
+Date: Wed, 03 Dec 2014 03:19:10 +0100
+Message-ID: <20270069.XOrGjO4EFd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141202102231.32b43385@kcaccard-desk.amr.corp.intel.com>
+References: <1417401128-32086-1-git-send-email-ethan.zhao@oracle.com> <20141202102231.32b43385@kcaccard-desk.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-In-Reply-To: <6319344.XVfdONE5DJ@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, December 02, 2014 10:22:31 AM Kristen Carlson Accardi wrote:
+> On Mon, 1 Dec 2014 11:32:08 +0900
+> Ethan Zhao <ethan.zhao@oracle.com> wrote:
+> 
+> > Oracle Sun X86 servers have dynamic power capping capability that works via
+> > ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
+> > enabled.
+> > 
+> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> > Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> > Tested-by: Linda Knippers <linda.knippers@hp.com>
+> 
+> Acked-by: Kristen Carlson Accardi <kristen@linux.intel.com>
 
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Patch queued up for 3.19-rc1, thanks!
 
-Hi,
+> > ---
+> >   v2: fix break HP Proliant issue.
+> >   v3: expand the hardware vendor list.
+> >   v4: refine code.
+> >   v5v6: change enum PCC to PPC.
+> > 
+> >  drivers/cpufreq/intel_pstate.c | 45 ++++++++++++++++++++++++++++++++++++++----
+> >  1 file changed, 41 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> > index 27bb6d3..1bb62ca 100644
+> > --- a/drivers/cpufreq/intel_pstate.c
+> > +++ b/drivers/cpufreq/intel_pstate.c
+> > @@ -943,15 +943,46 @@ static bool intel_pstate_no_acpi_pss(void)
+> >  	return true;
+> >  }
+> >  
+> > +static bool intel_pstate_has_acpi_ppc(void)
+> > +{
+> > +	int i;
+> > +
+> > +	for_each_possible_cpu(i) {
+> > +		struct acpi_processor *pr = per_cpu(processors, i);
+> > +
+> > +		if (!pr)
+> > +			continue;
+> > +		if (acpi_has_method(pr->handle, "_PPC"))
+> > +			return true;
+> > +	}
+> > +	return false;
+> > +}
+> > +
+> > +enum {
+> > +	PSS,
+> > +	PPC,
+> > +};
+> > +
+> >  struct hw_vendor_info {
+> >  	u16  valid;
+> >  	char oem_id[ACPI_OEM_ID_SIZE];
+> >  	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
+> > +	int  oem_pwr_table;
+> >  };
+> >  
+> >  /* Hardware vendor-specific info that has its own power management modes */
+> >  static struct hw_vendor_info vendor_info[] = {
+> > -	{1, "HP    ", "ProLiant"},
+> > +	{1, "HP    ", "ProLiant", PSS},
+> > +	{1, "ORACLE", "X4-2    ", PPC},
+> > +	{1, "ORACLE", "X4-2L   ", PPC},
+> > +	{1, "ORACLE", "X4-2B   ", PPC},
+> > +	{1, "ORACLE", "X3-2    ", PPC},
+> > +	{1, "ORACLE", "X3-2L   ", PPC},
+> > +	{1, "ORACLE", "X3-2B   ", PPC},
+> > +	{1, "ORACLE", "X4470M2 ", PPC},
+> > +	{1, "ORACLE", "X4270M3 ", PPC},
+> > +	{1, "ORACLE", "X4270M2 ", PPC},
+> > +	{1, "ORACLE", "X4170M2 ", PPC},
+> >  	{0, "", ""},
+> >  };
+> >  
+> > @@ -966,15 +997,21 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+> >  
+> >  	for (v_info = vendor_info; v_info->valid; v_info++) {
+> >  		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+> > -		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
+> > -		    intel_pstate_no_acpi_pss())
+> > -			return true;
+> > +			!strncmp(hdr.oem_table_id, v_info->oem_table_id,
+> > +						ACPI_OEM_TABLE_ID_SIZE))
+> > +			switch (v_info->oem_pwr_table) {
+> > +			case PSS:
+> > +				return intel_pstate_no_acpi_pss();
+> > +			case PPC:
+> > +				return intel_pstate_has_acpi_ppc();
+> > +			}
+> >  	}
+> >  
+> >  	return false;
+> >  }
+> >  #else /* CONFIG_ACPI not enabled */
+> >  static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
+> > +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+> >  #endif /* CONFIG_ACPI */
+> >  
+> >  static int __init intel_pstate_init(void)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Wed, Dec 03, 2014 at 03:02:24AM +0100, Rafael J. Wysocki wrote:
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
->=20
-> Do that for the omap_ssi driver.
->=20
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-Acked-By: Sebastian Reichel <sre@kernel.org>
-
--- Sebastian
-
---k+w/mQv8wyuph6w0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUfm37AAoJENju1/PIO/qaZBQP/1W0BOz17Rq63nUFxXXBqJUo
-8/Xr5Jteme/iS7VbjK30ya1Dv7bogM2gTJOo+BNILVhb3L8rZQilsC+CyPNUubtd
-lmccFgtSeusC0X956oZ5w7N9C+mN+qYrOXlby+/5qvLUuxTHBHKVS6tJPJOBPFGh
-WsCKFDWte1P/Yzqh8baxXdjLa6ul4FEF+U7eBcfqyf/2va/6xPvG6q1zIBuX1O+j
-fO7nsO1biGvyFXgTLsuwU2CKETdULlzjI/SAJgRfifwCdtoQ+U9hNI/aYovrbkpy
-ys/KjBhDlzL6BP+R1zxpS4QBOThLf8+9UXceuCuxIF5s3qamBDyI+MN6+HgHVl7n
-Kxb8/HcCWgYclB/RHPBMl7nFqnbhhmdw7kDWqaekVOYGHjkEJa5DTKHN2ubqXHmX
-K5HrPs6gpuD4BcXnana52hgVSrBCdh+jPlQz5SDzJtlR+daFzTuIt/T08yBXkpkT
-o2mDsMIxshHxlhr2DNJM5reN/nmQdv+WPJ7kB7B7hlLRpTskXo+O+q3YVsbjvu4U
-E0ZaxUmQD5uyZK9R1w3+rKh56r5Hh/Y1LdbId66zLxQ5DXCWv2Iq+eblSdSaQ9q6
-fIAY9M+ZW2U24ux7dVF8vr6GC579Lx85nrKeondrW1evc/YxXE82JXXf8zScJJFv
-NAzsH0mA64IWOLBCTOHX
-=jA9Q
------END PGP SIGNATURE-----
-
---k+w/mQv8wyuph6w0--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
