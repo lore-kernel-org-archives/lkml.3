@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaLCLmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:42:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54669 "EHLO mx2.suse.de"
+	id S1753497AbaLCLnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:43:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54703 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523AbaLCL1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:36 -0500
+	id S1752071AbaLCL1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:34 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 019/101] crypto: caam - remove duplicated sg copy functions
-Date: Wed,  3 Dec 2014 12:25:41 +0100
-Message-Id: <e5fbc698350a42a56f5c165dbb6283d69b65d3f3.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 062/101] netfilter: nfnetlink_log: fix maximum packet length logged to userspace
+Date: Wed,  3 Dec 2014 12:26:24 +0100
+Message-Id: <45ebf3641319166e3a6c468eeeac48aa4d6d567d.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -23,176 +22,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Florian Westphal <fw@strlen.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 307fd543f3d23f8f56850eca1b27b1be2fe71017 upstream.
+commit c1e7dc91eed0ed1a51c9b814d648db18bf8fc6e9 upstream.
 
-Replace equivalent (and partially incorrect) scatter-gather functions
-with ones from crypto-API.
+don't try to queue payloads > 0xffff - NLA_HDRLEN, it does not work.
+The nla length includes the size of the nla struct, so anything larger
+results in u16 integer overflow.
 
-The replacement is motivated by page-faults in sg_copy_part triggered
-by successive calls to crypto_hash_update. The following fault appears
-after calling crypto_ahash_update twice, first with 13 and then
-with 285 bytes:
+This patch is similar to
+9cefbbc9c8f9abe (netfilter: nfnetlink_queue: cleanup copy_range usage).
 
-Unable to handle kernel paging request for data at address 0x00000008
-Faulting instruction address: 0xf9bf9a8c
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in: tcrypt(+) caamhash caam_jr caam tls
-CPU: 6 PID: 1497 Comm: cryptomgr_test Not tainted
-3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2 #75
-task: e9308530 ti: e700e000 task.ti: e700e000
-NIP: f9bf9a8c LR: f9bfcf28 CTR: c0019ea0
-REGS: e700fb80 TRAP: 0300   Not tainted
-(3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2)
-MSR: 00029002 <CE,EE,ME>  CR: 44f92024  XER: 20000000
-DEAR: 00000008, ESR: 00000000
-
-GPR00: f9bfcf28 e700fc30 e9308530 e70b1e55 00000000 ffffffdd e70b1e54 0bebf888
-GPR08: 902c7ef5 c0e771e2 00000002 00000888 c0019ea0 00000000 00000000 c07a4154
-GPR16: c08d0000 e91a8f9c 00000001 e98fb400 00000100 e9c83028 e70b1e08 e70b1d48
-GPR24: e992ce10 e70b1dc8 f9bfe4f4 e70b1e55 ffffffdd e70b1ce0 00000000 00000000
-NIP [f9bf9a8c] sg_copy+0x1c/0x100 [caamhash]
-LR [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-Call Trace:
-[e700fc30] [f9bf9c50] sg_copy_part+0xe0/0x160 [caamhash] (unreliable)
-[e700fc50] [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
-[e700fcb0] [f954e19c] crypto_tls_genicv+0x13c/0x300 [tls]
-[e700fd10] [f954e65c] crypto_tls_encrypt+0x5c/0x260 [tls]
-[e700fd40] [c02250ec] __test_aead.constprop.9+0x2bc/0xb70
-[e700fe40] [c02259f0] alg_test_aead+0x50/0xc0
-[e700fe60] [c02241e4] alg_test+0x114/0x2e0
-[e700fee0] [c022276c] cryptomgr_test+0x4c/0x60
-[e700fef0] [c004f658] kthread+0x98/0xa0
-[e700ff40] [c000fd04] ret_from_kernel_thread+0x5c/0x64
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Cristian Stoica <cristian.stoica@freescale.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/crypto/caam/caamhash.c   | 22 ++++++++++++++--------
- drivers/crypto/caam/sg_sw_sec4.h | 38 --------------------------------------
- 2 files changed, 14 insertions(+), 46 deletions(-)
+ net/netfilter/nfnetlink_log.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
-index e732bd962e98..af351f478b14 100644
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -832,8 +832,9 @@ static int ahash_update_ctx(struct ahash_request *req)
- 					   edesc->sec4_sg + sec4_sg_src_index,
- 					   chained);
- 			if (*next_buflen) {
--				sg_copy_part(next_buf, req->src, to_hash -
--					     *buflen, req->nbytes);
-+				scatterwalk_map_and_copy(next_buf, req->src,
-+							 to_hash - *buflen,
-+							 *next_buflen, 0);
- 				state->current_buf = !state->current_buf;
- 			}
- 		} else {
-@@ -866,7 +867,8 @@ static int ahash_update_ctx(struct ahash_request *req)
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = last_buflen;
- 	}
-@@ -1213,8 +1215,9 @@ static int ahash_update_no_ctx(struct ahash_request *req)
- 		src_map_to_sec4_sg(jrdev, req->src, src_nents,
- 				   edesc->sec4_sg + 1, chained);
- 		if (*next_buflen) {
--			sg_copy_part(next_buf, req->src, to_hash - *buflen,
--				    req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src,
-+						 to_hash - *buflen,
-+						 *next_buflen, 0);
- 			state->current_buf = !state->current_buf;
- 		}
+diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
+index 65791530f460..39010fc1e9c0 100644
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -45,7 +45,8 @@
+ #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
+ #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
+ #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
+-#define NFULNL_COPY_RANGE_MAX	0xFFFF	/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++/* max packet size is limited by 16-bit struct nfattr nfa_len field */
++#define NFULNL_COPY_RANGE_MAX	(0xFFFF - NLA_HDRLEN)
  
-@@ -1245,7 +1248,8 @@ static int ahash_update_no_ctx(struct ahash_request *req)
- 			kfree(edesc);
- 		}
- 	} else if (*next_buflen) {
--		sg_copy(buf + *buflen, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
-+					 req->nbytes, 0);
- 		*buflen = *next_buflen;
- 		*next_buflen = 0;
- 	}
-@@ -1402,7 +1406,8 @@ static int ahash_update_first(struct ahash_request *req)
- 		}
+ #define PRINTR(x, args...)	do { if (net_ratelimit()) \
+ 				     printk(x, ## args); } while (0);
+@@ -255,6 +256,8 @@ nfulnl_set_mode(struct nfulnl_instance *inst, u_int8_t mode,
  
- 		if (*next_buflen)
--			sg_copy_part(next_buf, req->src, to_hash, req->nbytes);
-+			scatterwalk_map_and_copy(next_buf, req->src, to_hash,
-+						 *next_buflen, 0);
+ 	case NFULNL_COPY_PACKET:
+ 		inst->copy_mode = mode;
++		if (range == 0)
++			range = NFULNL_COPY_RANGE_MAX;
+ 		inst->copy_range = min_t(unsigned int,
+ 					 range, NFULNL_COPY_RANGE_MAX);
+ 		break;
+@@ -681,8 +684,7 @@ nfulnl_log_packet(struct net *net,
+ 		break;
  
- 		sh_len = desc_len(sh_desc);
- 		desc = edesc->hw_desc;
-@@ -1435,7 +1440,8 @@ static int ahash_update_first(struct ahash_request *req)
- 		state->update = ahash_update_no_ctx;
- 		state->finup = ahash_finup_no_ctx;
- 		state->final = ahash_final_no_ctx;
--		sg_copy(next_buf, req->src, req->nbytes);
-+		scatterwalk_map_and_copy(next_buf, req->src, 0,
-+					 req->nbytes, 0);
- 	}
- #ifdef DEBUG
- 	print_hex_dump(KERN_ERR, "next buf@"__stringify(__LINE__)": ",
-diff --git a/drivers/crypto/caam/sg_sw_sec4.h b/drivers/crypto/caam/sg_sw_sec4.h
-index e0037c8ee243..ce28a563effc 100644
---- a/drivers/crypto/caam/sg_sw_sec4.h
-+++ b/drivers/crypto/caam/sg_sw_sec4.h
-@@ -116,41 +116,3 @@ static int dma_unmap_sg_chained(struct device *dev, struct scatterlist *sg,
- 	}
- 	return nents;
- }
--
--/* Copy from len bytes of sg to dest, starting from beginning */
--static inline void sg_copy(u8 *dest, struct scatterlist *sg, unsigned int len)
--{
--	struct scatterlist *current_sg = sg;
--	int cpy_index = 0, next_cpy_index = current_sg->length;
--
--	while (next_cpy_index < len) {
--		memcpy(dest + cpy_index, (u8 *) sg_virt(current_sg),
--		       current_sg->length);
--		current_sg = scatterwalk_sg_next(current_sg);
--		cpy_index = next_cpy_index;
--		next_cpy_index += current_sg->length;
--	}
--	if (cpy_index < len)
--		memcpy(dest + cpy_index, (u8 *) sg_virt(current_sg),
--		       len - cpy_index);
--}
--
--/* Copy sg data, from to_skip to end, to dest */
--static inline void sg_copy_part(u8 *dest, struct scatterlist *sg,
--				      int to_skip, unsigned int end)
--{
--	struct scatterlist *current_sg = sg;
--	int sg_index, cpy_index;
--
--	sg_index = current_sg->length;
--	while (sg_index <= to_skip) {
--		current_sg = scatterwalk_sg_next(current_sg);
--		sg_index += current_sg->length;
--	}
--	cpy_index = sg_index - to_skip;
--	memcpy(dest, (u8 *) sg_virt(current_sg) +
--	       current_sg->length - cpy_index, cpy_index);
--	current_sg = scatterwalk_sg_next(current_sg);
--	if (end - sg_index)
--		sg_copy(dest + cpy_index, current_sg, end - sg_index);
--}
+ 	case NFULNL_COPY_PACKET:
+-		if (inst->copy_range == 0
+-		    || inst->copy_range > skb->len)
++		if (inst->copy_range > skb->len)
+ 			data_len = skb->len;
+ 		else
+ 			data_len = inst->copy_range;
 -- 
 2.1.3
 
