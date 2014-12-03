@@ -1,76 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390AbaLCCEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:04:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58895 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750886AbaLCCEM (ORCPT
+	id S1751556AbaLCCEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:04:20 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41720 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaLCCER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:04:12 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Brian Norris <computersforpeace@gmail.com>, ntrrgc@gmail.com,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / video: update the condition to check if a device is in _DOD list
-Date: Wed, 03 Dec 2014 03:25:36 +0100
-Message-ID: <2890155.GWLpTipCZ8@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <547A6F75.6050806@intel.com>
-References: <542A4949.2020208@intel.com> <20141129173447.GA3608@norris-Latitude-E6410> <547A6F75.6050806@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 2 Dec 2014 21:04:17 -0500
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>
+Cc: dev@codyps.com, peterz@infradead.org, hbabu@us.ibm.com,
+        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v5 0/6]: Make 24x7 and GPCI events available in sysfs
+Date: Tue,  2 Dec 2014 18:03:49 -0800
+Message-Id: <1417572235-8197-1-git-send-email-sukadev@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120302-0025-0000-0000-0000069349B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 30, 2014 09:14:29 AM Aaron Lu wrote:
-> On 11/30/2014 01:34 AM, Brian Norris wrote:
-> > Tested-by: Brian Norris <computersforpeace@gmail.com>
-> 
-> Thanks for the test! Updated patch with changelog:
-> 
-> From 0b11bb529245ddceb69eb558477b9b4a81208f4b Mon Sep 17 00:00:00 2001
-> From: Aaron Lu <aaron.lu@intel.com>
-> Date: Sun, 30 Nov 2014 09:01:15 +0800
-> Subject: [PATCH] ACPI / video: update the condition to check if a device is in _DOD list
-> 
-> Commit 0b8db271f159 ("ACPI / video: check _DOD list when creating
-> backlight devices") checks if the video device is in the bind devices
-> list to decide if we should create backlight device for it, that causes
-> problem for one Dell Latitude E6410, where none of the video output
-> devices are properly bound due to the way how we did the comparing
-> between its _ADR and the _DOD's values. Solve this problem by comparing
-> the lower 12 bits of both the device's _ADR and the _DOD's values instead
-> of relying on bind result.
-> 
-> Fixes: 0b8db271f159 ("ACPI / video: check _DOD list when creating backlight devices")
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> Tested-by: Brian Norris <computersforpeace@gmail.com>
+The current support for the 24x7 and GPCI counters in the kernel requires
+users to specify the domain and offset of the event numerically, which is
+obviously hard to use:
 
-Queued up as a fix for 3.18.
+    perf stat -C 0 -e	\
+        'hv_24x7/domain=2,offset=0xd58,starting_index=0,lpar=0xffffffff/' \
+	sleep 1
 
-> ---
->  drivers/acpi/video.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index 41e6b977ceb2..185a57d13723 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -1164,7 +1164,8 @@ static bool acpi_video_device_in_dod(struct acpi_video_device *device)
->  		return true;
->  
->  	for (i = 0; i < video->attached_count; i++) {
-> -		if (video->attached_array[i].bind_info == device)
-> +		if ((video->attached_array[i].value.int_val & 0xfff) ==
-> +		    (device->device_id & 0xfff))
->  			return true;
->  	}
->  
-> 
+This patchset exports the 24x7 and GPCI counters info in sysfs so users can
+specify the events by name:
+
+    $ cd /sys/bus/event_source/devices/hv_24x7/events
+
+    $ cat HPM_CS_FROM_L4_LDATA__PHYS_CORE
+    domain=0x2,offset=0xd58,starting_index=$core,lpar=0x0
+
+    $ cat HPM_TLBIE__VCPU_HOME_CHIP
+    domain=0x4,offset=0x358,starting_index=$vcpu,lpar=$sibling_guest_id
+
+    perf stat -C 0 -e \
+        'hv_24x7/HPM_CS_FROM_L4_LDATA__PHYS_CORE,starting_index=0'
+        sleep 1
+
+This patchset adds the kernel support to export events in sysfs.  A follow-on
+patchset will add support to the perf tool to parse the event parameters like
+'lpar=$sibling_guest_id' and display them via 'perf list'.
+
+Changelog[v5]
+	- [Jiri Olsa, Peter Zijlstra] Use '$arg' notation rather than ?
+	  to indicate event parameters.
+	- [Michael Ellerman] Separate the kernel and tool patches in the
+	  patchset into different patchsets.
+
+Changelog[v4]
+	- [Jiri Olsa Rebase to perf/core tree to fix small merge conflict.
+
+Changelog[v3]
+        - [Jiri Olsa] Changed the event parameters are specified. If
+          event file specifes 'param=val' make the usage 'param=123'
+          rather than 'val=123'. (patch 1,2/10)
+        - Shortened event names using "PHYS" and "VCPU" (patch 4/10)
+        - Print help message if invalid parameter is specified or required
+          parameter is missing.
+        - Moved 3 patches that are unrelated to parametrized events into
+          a separate patchset.
+        - Reordered patches so code changes come first.
+
+Changelog[v2]
+        - [Joe Perches, David Laight] Use beNN_to_cpu() instead of guessing
+          the size from type.
+        - Use kmem_cache_free() to free page allocated with kmem_cache_alloc().
+        - Rebase to recent kernel
+
+
+Cody P Schafer (6):
+  perf: provide sysfs_show for struct perf_pmu_events_attr
+  perf: add PMU_EVENT_ATTR_STRING() helper
+  powerpc/perf/hv-24x7: parse catalog and populate sysfs with events
+  powerpc/perf/{hv-gpci, hv-common}: generate requests with counters
+    annotated
+  powerpc/perf/hv-gpci: add the remaining gpci requests
+  powerpc/perf/hv-24x7: Document sysfs event description entries
+
+ .../testing/sysfs-bus-event_source-devices-hv_24x7 |  22 +
+ arch/powerpc/perf/hv-24x7-catalog.h                |  25 +
+ arch/powerpc/perf/hv-24x7-domains.h                |  28 +
+ arch/powerpc/perf/hv-24x7.c                        | 787 ++++++++++++++++++++-
+ arch/powerpc/perf/hv-24x7.h                        |  12 +-
+ arch/powerpc/perf/hv-common.c                      |  10 +-
+ arch/powerpc/perf/hv-gpci-requests.h               | 262 +++++++
+ arch/powerpc/perf/hv-gpci.c                        |   8 +
+ arch/powerpc/perf/hv-gpci.h                        |  37 +-
+ arch/powerpc/perf/req-gen/_begin.h                 |  13 +
+ arch/powerpc/perf/req-gen/_clear.h                 |   5 +
+ arch/powerpc/perf/req-gen/_end.h                   |   4 +
+ arch/powerpc/perf/req-gen/_request-begin.h         |  15 +
+ arch/powerpc/perf/req-gen/_request-end.h           |   8 +
+ arch/powerpc/perf/req-gen/perf.h                   | 155 ++++
+ include/linux/perf_event.h                         |  10 +
+ kernel/events/core.c                               |   8 +
+ 17 files changed, 1365 insertions(+), 44 deletions(-)
+ create mode 100644 arch/powerpc/perf/hv-24x7-domains.h
+ create mode 100644 arch/powerpc/perf/hv-gpci-requests.h
+ create mode 100644 arch/powerpc/perf/req-gen/_begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_clear.h
+ create mode 100644 arch/powerpc/perf/req-gen/_end.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-end.h
+ create mode 100644 arch/powerpc/perf/req-gen/perf.h
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
