@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaLCCVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:21:13 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48959 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaLCCVK (ORCPT
+	id S1751490AbaLCCWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:22:36 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:49940 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaLCCWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:21:10 -0500
-Message-ID: <547E738E.3060600@linux.vnet.ibm.com>
-Date: Tue, 02 Dec 2014 21:21:02 -0500
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 2 Dec 2014 21:22:33 -0500
 MIME-Version: 1.0
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-CC: christophe.ricard@gmail.com, josh.triplett@intel.com,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Arthur <will.c.arthur@intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v8 6/8] tpm: TPM 2.0 baseline support
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417559480-13757-7-git-send-email-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <1417559480-13757-7-git-send-email-jarkko.sakkinen@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120302-8236-0000-0000-0000076864D4
+In-Reply-To: <20141202170037.GG29748@ZenIV.linux.org.uk>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	<20141202170037.GG29748@ZenIV.linux.org.uk>
+Date: Wed, 3 Dec 2014 13:22:33 +1100
+Message-ID: <CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 05:31 PM, Jarkko Sakkinen wrote:
-> +
-> +#define TPM2_STARTUP_IN_SIZE \
-> +	(sizeof(struct tpm_input_header) + \
-> +	 sizeof(struct tpm2_pcr_read_in))
-> +
-> +static const struct tpm_input_header tpm2_startup_header = {
-> +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> +	.length = cpu_to_be32(TPM2_STARTUP_IN_SIZE),
-> +	.ordinal = cpu_to_be32(TPM2_CC_STARTUP)
-> +};
-> +
+On Wed, Dec 3, 2014 at 4:00 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Dec 02, 2014 at 03:35:18PM +1100, Alex Dubov wrote:
+>> +
+>> +     if (rc < 0)
+>> +             __close_fd(dst_files, s_info.si_int);
 >
-[...]
-> +
-> +#define TPM2_PCR_READ_IN_SIZE \
-> +	(sizeof(struct tpm_input_header) + \
-> +	 sizeof(struct tpm2_pcr_read_in))
-> +
-> +static const struct tpm_input_header tpm2_pcrread_header = {
-> +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> +	.length = cpu_to_be32(TPM2_PCR_READ_IN_SIZE),
-> +	.ordinal = cpu_to_be32(TPM2_CC_PCR_READ)
-> +};
-> +
+> Oh, lovely...  And we are guaranteed that it still the same file, because...?
 >
-[...]
-> +static const struct tpm_input_header tpm2_pcrextend_header = {
-> +	.tag = cpu_to_be16(TPM2_ST_SESSIONS),
-> +	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-> +			      sizeof(struct tpm2_pcr_extend_in)),
-> +	.ordinal = cpu_to_be32(TPM2_CC_PCR_EXTEND)
-> +};
+> Not to mention anything else, this stuff violates the assumption used in a lot
+> of places - that the *only* way for a process to modify a descriptor table is
+> to have a reference to it obtained by something that had it as its current
+> descriptor table and not dropped since then.  The way you do it might actually
+> turn out to be OK, but there's no way I'll take that without detailed analysis;
+> start with refcounting of struct file, for one thing - it does rely on the
+> assumption above in non-trivial ways.
 
+Ok, I see the problem here. This indeed requires further thought.
 
-really just a nit: also use a #define here
+> And that's aside of the points other folks had brought up.
 
+Yours is the first insightful message in this thread. Some of the
+other commenters exhibited an unfortunate lack of understanding,
+regarding what signals are and what they can be useful for.
 
+Unless, of course, I have missed something important.
 
-> +static const struct tpm_input_header tpm2_getrandom_header = {
-> +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> +	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-> +			      sizeof(struct tpm2_get_random_in)),
-> +	.ordinal = cpu_to_be32(TPM2_CC_GET_RANDOM)
-> +};
-> +
-also here
-
-> +
-> +#define TPM2_GET_TPM_PT_IN_SIZE \
-> +	(sizeof(struct tpm_input_header) + \
-> +	 sizeof(struct tpm2_get_tpm_pt_in))
-> +
-> +static const struct tpm_input_header tpm2_get_tpm_pt_header = {
-> +	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-> +	.length = cpu_to_be32(TPM2_GET_TPM_PT_IN_SIZE),
-> +	.ordinal = cpu_to_be32(TPM2_CC_GET_CAPABILITY)
-> +};
-> +
-
-
-Otherwise it looks good now.
-
-    Stefan
-
+On a less related note, I hope you will agree that the simpler
+mechanism for this very in-demand feature is long overdue on Linux
+(every man and his dog are passing fds around these days).
