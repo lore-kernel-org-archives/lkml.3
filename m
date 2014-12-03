@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaLCNlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:41:47 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:50066 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194AbaLCNlp (ORCPT
+	id S1752947AbaLCNmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:42:00 -0500
+Received: from xavier.telenet-ops.be ([195.130.132.52]:38330 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914AbaLCNl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:41:45 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: rkrcmar@redhat.com, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH 2/2] KVM: cpuid: set CPUID(EAX=0xd,ECX=1).EBX correctly
-Date: Wed,  3 Dec 2014 14:40:30 +0100
-Message-Id: <1417614030-1692-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1417614030-1692-1-git-send-email-pbonzini@redhat.com>
-References: <1417614030-1692-1-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 3 Dec 2014 08:41:57 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v6 2/7] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev() for pm_clk setup
+Date: Wed,  3 Dec 2014 14:41:42 +0100
+Message-Id: <1417614107-5985-3-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417614107-5985-1-git-send-email-geert+renesas@glider.be>
+References: <1417614107-5985-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the size of the XSAVES area.  This completes guest support
-for XSAVES (with no support yet for supervisor states, i.e. XSS == 0
-always in guests for now).
+Use the just introduced genpd attach/detach callbacks to register the
+devices' module clocks, instead of doing it directly, to make it
+DT-proof.
 
-Suggested-by: Radim Krčmář <rkrcmar@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 ---
- arch/x86/kvm/cpuid.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+v6:
+  - No changes,
+v5:
+  - Update for {at,de}tach_dev() taking a generic_pm_domain pointer
+    again,
+v4:
+  - Add Reviewed-by,
+  - Add missing pm_clk_create()/pm_clk_destroy() calls,
+  - Update for attach_dev() returning an error code again,
+v3:
+  - Update for callback signature changes,
+v2:
+  - New.
+---
+ arch/arm/mach-shmobile/pm-rmobile.c | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 2c561dba81c0..646e6e830ac3 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -23,7 +23,7 @@
- #include "mmu.h"
- #include "trace.h"
+diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
+index 717e6413d29cb998..168046c355fc8368 100644
+--- a/arch/arm/mach-shmobile/pm-rmobile.c
++++ b/arch/arm/mach-shmobile/pm-rmobile.c
+@@ -101,6 +101,36 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
+ 	return true;
+ }
  
--static u32 xstate_required_size(u64 xstate_bv)
-+static u32 xstate_required_size(u64 xstate_bv, bool compacted)
- {
- 	int feature_bit = 0;
- 	u32 ret = XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET;
-@@ -31,9 +31,10 @@ static u32 xstate_required_size(u64 xstate_bv)
- 	xstate_bv &= XSTATE_EXTEND_MASK;
- 	while (xstate_bv) {
- 		if (xstate_bv & 0x1) {
--		        u32 eax, ebx, ecx, edx;
-+		        u32 eax, ebx, ecx, edx, offset;
- 		        cpuid_count(0xD, feature_bit, &eax, &ebx, &ecx, &edx);
--			ret = max(ret, eax + ebx);
-+			offset = compacted ? ret : ebx;
-+			ret = max(ret, offset + eax);
- 		}
- 
- 		xstate_bv >>= 1;
-@@ -87,9 +88,13 @@ int kvm_update_cpuid(struct kvm_vcpu *vcpu)
- 			(best->eax | ((u64)best->edx << 32)) &
- 			kvm_supported_xcr0();
- 		vcpu->arch.guest_xstate_size = best->ebx =
--			xstate_required_size(vcpu->arch.xcr0);
-+			xstate_required_size(vcpu->arch.xcr0, false);
- 	}
- 
-+	best = kvm_find_cpuid_entry(vcpu, 0xD, 1);
-+	if (best && (best->eax & F(XSAVES)))
-+		best->ebx = xstate_required_size(vcpu->arch.xcr0, true);
++static int rmobile_pd_attach_dev(struct generic_pm_domain *domain,
++				 struct device *dev)
++{
++	int error;
 +
- 	/*
- 	 * The existing code assumes virtual address is 48-bit in the canonical
- 	 * address checks; exit if it is ever changed.
++	error = pm_clk_create(dev);
++	if (error) {
++		dev_err(dev, "pm_clk_create failed %d\n", error);
++		return error;
++	}
++
++	error = pm_clk_add(dev, NULL);
++	if (error) {
++		dev_err(dev, "pm_clk_add failed %d\n", error);
++		goto fail;
++	}
++
++	return 0;
++
++fail:
++	pm_clk_destroy(dev);
++	return error;
++}
++
++static void rmobile_pd_detach_dev(struct generic_pm_domain *domain,
++				  struct device *dev)
++{
++	pm_clk_destroy(dev);
++}
++
+ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+ {
+ 	struct generic_pm_domain *genpd = &rmobile_pd->genpd;
+@@ -112,6 +142,8 @@ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+ 	genpd->dev_ops.active_wakeup	= rmobile_pd_active_wakeup;
+ 	genpd->power_off		= rmobile_pd_power_down;
+ 	genpd->power_on			= rmobile_pd_power_up;
++	genpd->attach_dev		= rmobile_pd_attach_dev;
++	genpd->detach_dev		= rmobile_pd_detach_dev;
+ 	__rmobile_pd_power_up(rmobile_pd, false);
+ }
+ 
+@@ -130,8 +162,6 @@ void rmobile_add_device_to_domain_td(const char *domain_name,
+ 	struct device *dev = &pdev->dev;
+ 
+ 	__pm_genpd_name_add_device(domain_name, dev, td);
+-	if (pm_clk_no_clocks(dev))
+-		pm_clk_add(dev, NULL);
+ }
+ 
+ void rmobile_add_devices_to_domains(struct pm_domain_device data[],
 -- 
-1.8.3.1
+1.9.1
 
