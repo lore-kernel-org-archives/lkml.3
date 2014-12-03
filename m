@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaLCVmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:42:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33310 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaLCVlI (ORCPT
+	id S1752594AbaLCVnD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:43:03 -0500
+Received: from na6sys009bog005.obsmtp.com ([74.125.150.50]:45753 "HELO
+	na6sys009bog005.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751639AbaLCVm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:41:08 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v5 4/9] xen/pciback: Print out the domain owning the device.
-Date: Wed,  3 Dec 2014 16:40:29 -0500
-Message-Id: <1417642834-20350-5-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
-References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 3 Dec 2014 16:42:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALnjE+pNbwtGPsHfTJ0FXxdSpXT=AKgtfHPqT5matCx+PGcXbA@mail.gmail.com>
+References: <1417575363-13770-1-git-send-email-joestringer@nicira.com> <CALnjE+pNbwtGPsHfTJ0FXxdSpXT=AKgtfHPqT5matCx+PGcXbA@mail.gmail.com>
+From: Joe Stringer <joestringer@nicira.com>
+Date: Wed, 3 Dec 2014 13:42:38 -0800
+Message-ID: <CANr6G5xWMYv2=z7TES+pYqHDqxFmrzP+RpXfUDC6qUL_yqkJEQ@mail.gmail.com>
+Subject: Re: [PATCHv11 net-next 1/2] openvswitch: Refactor ovs_nla_fill_match().
+To: Pravin Shelar <pshelar@nicira.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had been printing it only if the device was built with
-debug enabled. But this information is useful in the field
-to troubleshoot.
+On 3 December 2014 at 11:37, Pravin Shelar <pshelar@nicira.com> wrote:
+> On Tue, Dec 2, 2014 at 6:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>> diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+>> index 332b5a0..b2a3796 100644
+>> --- a/net/openvswitch/datapath.c
+>> +++ b/net/openvswitch/datapath.c
+>> @@ -462,10 +462,8 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
+>>                              0, upcall_info->cmd);
+>>         upcall->dp_ifindex = dp_ifindex;
+>>
+>> -       nla = nla_nest_start(user_skb, OVS_PACKET_ATTR_KEY);
+>> -       err = ovs_nla_put_flow(key, key, user_skb);
+>> +       err = ovs_nla_put_flow(key, key, OVS_PACKET_ATTR_KEY, false, user_skb);
+>
+> We need different name here, since it does not operate on flow. maybe
+> __ovs_nla_put_key(). we can move the function definition to
+> flow_netlink.h
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
----
- drivers/xen/xen-pciback/xenbus.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-index eeee499..fe17c80 100644
---- a/drivers/xen/xen-pciback/xenbus.c
-+++ b/drivers/xen/xen-pciback/xenbus.c
-@@ -247,7 +247,7 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
- 	if (err)
- 		goto out;
- 
--	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
-+	dev_info(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
- 	if (xen_register_device_domain_owner(dev,
- 					     pdev->xdev->otherend_id) != 0) {
- 		dev_err(&dev->dev, "Stealing ownership from dom%d.\n",
--- 
-1.9.3
-
+OK sure. I'll fix this up for the next version.
