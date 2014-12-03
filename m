@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaLCIXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:23:08 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53560 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaLCIXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:23:06 -0500
-Date: Wed, 3 Dec 2014 09:22:49 +0100
-From: Sam van Kampen <sam@tehsvk.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: line6: fix parentheses around macro in usbdefs.h
-Message-ID: <20141203082249.GA18890@nsa.gov>
+	id S1752005AbaLCIYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:24:01 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26804 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371AbaLCIYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 03:24:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
+   d="scan'208";a="641739796"
+From: Jani Nikula <jani.nikula@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the drm tree with the drm-intel-fixes tree
+In-Reply-To: <20141203132708.7423b7f8@canb.auug.org.au>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <20141203132708.7423b7f8@canb.auug.org.au>
+User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 03 Dec 2014 10:24:12 +0200
+Message-ID: <87d281nntf.fsf@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From a9deb1763d3f23a3b005e63fdc896c6d903097d1 Mon Sep 17 00:00:00 2001
-From: Sam van Kampen <sam@tehsvk.net>
-Date: Wed, 3 Dec 2014 09:05:51 +0100
-Subject: [PATCH] Staging: line6: fix parentheses around macro in usbdefs.h
+On Wed, 03 Dec 2014, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Dave,
+>
+> Today's linux-next merge of the drm tree got a conflict in
+> drivers/gpu/drm/i915/intel_display.c between commit b68362278af9
+> ("drm/i915: More cautious with pch fifo underruns") from the
+> drm-intel-fixes tree and commit a72e4c9f9a11 ("drm/i915: Use dev_priv
+> in public intel_fifo_underrun.c functions") from the drm tree.
+>
+> I fixed it up (I used the drm tree version) and can carry the fix as
+> necessary (no action is required).
 
-This patch fixes the error "Macros with complex values should be enclosed in
-parentheses", as reported by checkpatch.pl.
+b68362278af9 removes two lines of code; these should be removed in the
+resolved version too.
 
-Signed-off-by: Sam van Kampen <sam@tehsvk.net>
----
- drivers/staging/line6/usbdefs.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+BR,
+Jani.
 
-diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
-index 2d1cc47..48958b5 100644
---- a/drivers/staging/line6/usbdefs.h
-+++ b/drivers/staging/line6/usbdefs.h
-@@ -40,7 +40,7 @@
- #define LINE6_DEVID_TONEPORT_UX2  0x4142
- #define LINE6_DEVID_VARIAX        0x534d
- 
--#define LINE6_BIT(x) LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x
-+#define LINE6_BIT(x) (LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x)
- 
- enum {
- 	LINE6_INDEX_BASSPODXT,
+
 -- 
-2.0.4
-
+Jani Nikula, Intel Open Source Technology Center
