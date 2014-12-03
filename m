@@ -1,100 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaLCVnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:43:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33303 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaLCVlH (ORCPT
+	id S1752647AbaLCVn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:43:57 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:38136 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaLCVny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:41:07 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v5 7/9] xen/pciback: Restore configuration space when detaching from a guest.
-Date: Wed,  3 Dec 2014 16:40:32 -0500
-Message-Id: <1417642834-20350-8-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
-References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 3 Dec 2014 16:43:54 -0500
+From: Jamie Lawler <jamie.lawler@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: octeon: Added several blank lines after declarations
+Date: Wed,  3 Dec 2014 21:43:51 +0000
+Message-Id: <1417643031-26190-1-git-send-email-jamie.lawler@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit "xen/pciback: Don't deadlock when unbinding." was using
-the version of pci_reset_function which would lock the device lock.
-That is no good as we can dead-lock. As such we swapped to using
-the lock-less version and requiring that the callers
-of 'pcistub_put_pci_dev' take the device lock. And as such
-this bug got exposed.
+Hi,
+I've added blank lines after several declarations that were
+previously missing them, reducing the number of warnings from
+checkpatch.pl.
 
-Using the lock-less version is  OK, except that we tried to
-use 'pci_restore_state' after the lock-less version of
-__pci_reset_function_locked - which won't work as 'state_saved'
-is set to false. Said 'state_saved' is a toggle boolean that
-is to be used by the sequence of a) pci_save_state/pci_restore_state
-or b) pci_load_and_free_saved_state/pci_restore_state. We don't
-want to use a) as the guest might have messed up the PCI
-configuration space and we want it to revert to the state
-when the PCI device was binded to us. Therefore we pick
-b) to restore the configuration space.
+Regards,
+Jamie Lawler
 
-We restore from our 'golden' version of PCI configuration space, when an:
- - Device is unbinded from pciback
- - Device is detached from a guest.
-
-Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jamie Lawler <jamie.lawler@gmail.com>
 ---
-v2: Always FLR reset
----
- drivers/xen/xen-pciback/pci_stub.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/staging/octeon/ethernet-rx.c |  4 ++++
+ drivers/staging/octeon/ethernet-tx.c | 11 +++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 843a2ba..8580e53 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
- 	 */
- 	__pci_reset_function_locked(dev);
- 	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
--		dev_dbg(&dev->dev, "Could not reload PCI state\n");
-+		dev_info(&dev->dev, "Could not reload PCI state\n");
- 	else
- 		pci_restore_state(dev);
- 
-@@ -257,6 +257,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index b2b6c3c..758b4d9 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -84,6 +84,7 @@ static int cvm_irq_cpu;
+ static void cvm_oct_enable_napi(void *_)
  {
- 	struct pcistub_device *psdev, *found_psdev = NULL;
- 	unsigned long flags;
-+	struct xen_pcibk_dev_data *dev_data;
-+	int ret;
+ 	int cpu = smp_processor_id();
++
+ 	napi_schedule(&cvm_oct_napi[cpu].napi);
+ }
  
- 	spin_lock_irqsave(&pcistub_devices_lock, flags);
+@@ -169,6 +170,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+ 		int interface = cvmx_helper_get_interface_num(work->ipprt);
+ 		int index = cvmx_helper_get_interface_index_num(work->ipprt);
+ 		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
++
+ 		gmxx_rxx_frm_ctl.u64 =
+ 		    cvmx_read_csr(CVMX_GMXX_RXX_FRM_CTL(index, interface));
+ 		if (gmxx_rxx_frm_ctl.s.pre_chk == 0) {
+@@ -272,6 +274,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 		did_work_request = 0;
+ 		if (work == NULL) {
+ 			union cvmx_pow_wq_int wq_int;
++
+ 			wq_int.u64 = 0;
+ 			wq_int.s.iq_dis = 1 << pow_receive_group;
+ 			wq_int.s.wq_int = 1 << pow_receive_group;
+@@ -295,6 +298,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 			union cvmx_pow_wq_int_cntx counts;
+ 			int backlog;
+ 			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
++
+ 			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
+ 			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
+ 			if (backlog > budget * cores_in_use && napi != NULL)
+diff --git a/drivers/staging/octeon/ethernet-tx.c b/drivers/staging/octeon/ethernet-tx.c
+index 4e54d85..b7a7854 100644
+--- a/drivers/staging/octeon/ethernet-tx.c
++++ b/drivers/staging/octeon/ethernet-tx.c
+@@ -77,6 +77,7 @@ static DECLARE_TASKLET(cvm_oct_tx_cleanup_tasklet, cvm_oct_tx_do_cleanup, 0);
+ static inline int32_t cvm_oct_adjust_skb_to_free(int32_t skb_to_free, int fau)
+ {
+ 	int32_t undo;
++
+ 	undo = skb_to_free > 0 ? MAX_SKB_TO_FREE : skb_to_free +
+ 						   MAX_SKB_TO_FREE;
+ 	if (undo > 0)
+@@ -89,6 +90,7 @@ static inline int32_t cvm_oct_adjust_skb_to_free(int32_t skb_to_free, int fau)
+ static void cvm_oct_kick_tx_poll_watchdog(void)
+ {
+ 	union cvmx_ciu_timx ciu_timx;
++
+ 	ciu_timx.u64 = 0;
+ 	ciu_timx.s.one_shot = 1;
+ 	ciu_timx.s.len = cvm_oct_tx_poll_interval;
+@@ -118,9 +120,11 @@ static void cvm_oct_free_tx_skbs(struct net_device *dev)
+ 		total_freed += skb_to_free;
+ 		if (skb_to_free > 0) {
+ 			struct sk_buff *to_free_list = NULL;
++
+ 			spin_lock_irqsave(&priv->tx_free_list[qos].lock, flags);
+ 			while (skb_to_free > 0) {
+ 				struct sk_buff *t;
++
+ 				t = __skb_dequeue(&priv->tx_free_list[qos]);
+ 				t->next = to_free_list;
+ 				to_free_list = t;
+@@ -131,6 +135,7 @@ static void cvm_oct_free_tx_skbs(struct net_device *dev)
+ 			/* Do the actual freeing outside of the lock. */
+ 			while (to_free_list) {
+ 				struct sk_buff *t = to_free_list;
++
+ 				to_free_list = to_free_list->next;
+ 				dev_kfree_skb_any(t);
+ 			}
+@@ -258,6 +263,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			    cvmx_read_csr(CVMX_GMXX_PRTX_CFG(index, interface));
+ 			if (gmx_prt_cfg.s.duplex == 0) {
+ 				int add_bytes = 64 - skb->len;
++
+ 				if ((skb_tail_pointer(skb) + add_bytes) <=
+ 				    skb_end_pointer(skb))
+ 					memset(__skb_put(skb, add_bytes), 0,
+@@ -289,6 +295,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		CVM_OCT_SKB_CB(skb)[0] = hw_buffer.u64;
+ 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+ 			struct skb_frag_struct *fs = skb_shinfo(skb)->frags + i;
++
+ 			hw_buffer.s.addr = XKPHYS_TO_PHYS(
+ 				(u64)(page_address(fs->page.p) +
+ 				fs->page_offset));
+@@ -495,6 +502,7 @@ skip_xmit:
  
-@@ -280,8 +282,18 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	 */
- 	device_lock_assert(&dev->dev);
- 	__pci_reset_function_locked(dev);
--	pci_restore_state(dev);
+ 	while (skb_to_free > 0) {
+ 		struct sk_buff *t = __skb_dequeue(&priv->tx_free_list[qos]);
++
+ 		t->next = to_free_list;
+ 		to_free_list = t;
+ 		skb_to_free--;
+@@ -505,6 +513,7 @@ skip_xmit:
+ 	/* Do the actual freeing outside of the lock. */
+ 	while (to_free_list) {
+ 		struct sk_buff *t = to_free_list;
++
+ 		to_free_list = to_free_list->next;
+ 		dev_kfree_skb_any(t);
+ 	}
+@@ -550,6 +559,7 @@ int cvm_oct_xmit_pow(struct sk_buff *skb, struct net_device *dev)
  
-+	dev_data = pci_get_drvdata(dev);
-+	ret = pci_load_saved_state(dev, dev_data->pci_saved_state);
-+	if (!ret) {
-+		/*
-+		 * The usual sequence is pci_save_state & pci_restore_state
-+		 * but the guest might have messed the configuration space up.
-+		 * Use the initial version (when device was bound to us).
-+		 */
-+		pci_restore_state(dev);
-+	} else
-+		dev_info(&dev->dev, "Could not reload PCI state\n");
- 	/* This disables the device. */
- 	xen_pcibk_reset_device(dev);
- 
+ 	/* Get a work queue entry */
+ 	cvmx_wqe_t *work = cvmx_fpa_alloc(CVMX_FPA_WQE_POOL);
++
+ 	if (unlikely(work == NULL)) {
+ 		printk_ratelimited("%s: Failed to allocate a work queue entry\n",
+ 				   dev->name);
+@@ -713,6 +723,7 @@ static void cvm_oct_tx_do_cleanup(unsigned long arg)
+ 	for (port = 0; port < TOTAL_NUMBER_OF_PORTS; port++) {
+ 		if (cvm_oct_device[port]) {
+ 			struct net_device *dev = cvm_oct_device[port];
++
+ 			cvm_oct_free_tx_skbs(dev);
+ 		}
+ 	}
 -- 
-1.9.3
+2.1.0
 
