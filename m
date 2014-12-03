@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaLCSTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 13:19:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaLCSTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 13:19:34 -0500
-Date: Wed, 3 Dec 2014 13:19:22 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, rgb@redhat.com, eparis@redhat.com
-Subject: audit: rcu_read_lock() used illegally while idle
-Message-ID: <20141203181922.GA26916@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	paulmck@linux.vnet.ibm.com, rgb@redhat.com, eparis@redhat.com
+	id S1751466AbaLCSYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 13:24:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47330 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaLCSYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 13:24:08 -0500
+Date: Wed, 3 Dec 2014 18:23:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrew Jackson <Andrew.Jackson@arm.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Message-ID: <20141203182351.GF7712@sirena.org.uk>
+References: <547F3CAC.9050105@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+GIKAiFp5Dbav/rq"
 Content-Disposition: inline
+In-Reply-To: <547F3CAC.9050105@arm.com>
+X-Cookie: Celebrity voices impersonated.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/5] ASoC: dwc: Add devicetree support for Designware I2S
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure why this only just started complaining, because this code
-hasn't changed in years, but I don't recall seeing this before.
-This gets spewed during bootup since I put 3.18-rc7 on my firewall.
-Previously it was running rc4 where I didn't see this.
 
-Did something in RCU change recently ?
+--+GIKAiFp5Dbav/rq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.18.0-rc7+ #93 Not tainted
--------------------------------
-include/linux/rcupdate.h:883 rcu_read_lock() used illegally while idle!
+On Wed, Dec 03, 2014 at 04:39:08PM +0000, Andrew Jackson wrote:
 
-other info that might help us debug this:
+> Convert to driver to use either platform_data or device-tree for configur=
+ation
+> of the device.  When using device-tree, the I2S block's configuration is =
+read
+> from the relevant registers: this reduces the amount of information requi=
+red in
+> the device tree.
 
+This really needs to be split into two or more patches, there's a whole
+bunch of refactoring to support this DT stuff which should be separate
+=66rom the DT addition itself.  Right now it's hard to tell what each
+individual bit of the code is supposed to be doing, the patch is far too
+large and doing far too many individual things.
 
-RCU used illegally from idle CPU!
-rcu_scheduler_active = 1, debug_locks = 0
-RCU used illegally from extended quiescent state!
-1 lock held by systemd-sysctl/557:
- #0:  (rcu_read_lock){......}, at: [<ffffffff890f1320>] audit_filter_type+0x0/0x240
+> +	if (dev->using_pd) {
+> +		ret =3D dev->i2s_clk_cfg(config);
+> +		if (ret < 0) {
+> +			dev_err(dev->dev, "runtime audio clk config fail\n");
+> +			return ret;
+> +		}
+> +	} else {
+> +		u32	bitclk;
 
-stack backtrace:
-CPU: 0 PID: 557 Comm: systemd-sysctl Not tainted 3.18.0-rc7+ #93
- 0000000000000000 0000000063c50efc ffff88021f51fd28 ffffffff895abec3
- 0000000000000000 ffff880234758000 ffff88021f51fd58 ffffffff890a5280
- ffff880221d9c548 00007fd651f320d0 0000000000000514 00000000ffff9012
-Call Trace:
- [<ffffffff895abec3>] dump_stack+0x4e/0x68
- [<ffffffff890a5280>] lockdep_rcu_suspicious+0xf0/0x110
- [<ffffffff890f150e>] audit_filter_type+0x1ee/0x240
- [<ffffffff890f1320>] ? audit_filter_user+0x340/0x340
- [<ffffffff890ecd39>] audit_log_start+0x49/0x4a0
- [<ffffffff8908f4f5>] ? local_clock+0x25/0x30
- [<ffffffff890a397f>] ? lock_release_holdtime.part.30+0xf/0x190
- [<ffffffff890f1973>] audit_log_exit+0x53/0xcf0
- [<ffffffff8908f4f5>] ? local_clock+0x25/0x30
- [<ffffffff890a397f>] ? lock_release_holdtime.part.30+0xf/0x190
- [<ffffffff895b4f0c>] ? sysret_signal+0x5/0x43
- [<ffffffff890f4a65>] __audit_syscall_exit+0x245/0x2a0
- [<ffffffff895b4f61>] sysret_audit+0x17/0x21
+Having this whole separate path for using platform data feels icky, we
+don't want to have completely separate flows like this.  Checking for
+the callbacks being there is probably fine but just having totally
+separate code paths is a bit icky.
 
+--+GIKAiFp5Dbav/rq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUf1U2AAoJECTWi3JdVIfQ8tcH/AkmB70sD7ZWq+QCDY9tjJOO
+l6DNCLlshYInmUDMDPPMn/w0k9vy0S4wv8waOTgYgyugy8LuXMqHr/Q5HArIqkdo
+57E9cA5zhFX6NPQWXhtOArS1npHFSCDvCjo6SOFBy13w6xj39RuAnvgRHT63A6nf
+Ce5Q8bo+ujItwXvogSBnmXO8dPFVnH4z4mwdqDXDYTD+jRc7U368fz1xjUhrbbvT
+936UdZQcJlL/F63MddT3M5mt9ovb/On+SJO5IcHO1ndZ+zwDoHfODOPC/UgxFpVY
+0ULU7UWiU40+9+XgXsrMRD/YtUZWtLx7y8oADiQWQejBMtEJWvbrkIrRqQY7GL0=
+=nw9H
+-----END PGP SIGNATURE-----
+
+--+GIKAiFp5Dbav/rq--
