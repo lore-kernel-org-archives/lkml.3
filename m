@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaLCLh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:37:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54702 "EHLO mx2.suse.de"
+	id S1753382AbaLCLjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:39:08 -0500
+Received: from mout.web.de ([212.227.15.4]:58824 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752470AbaLCL1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:43 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Panu Matilainen <pmatilai@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 091/101] ipv4: Fix incorrect error code when adding an unreachable route
-Date: Wed,  3 Dec 2014 12:26:53 +0100
-Message-Id: <8cdc2cb0cfeeeac2fe600431fe7f41847c61f6f9.1417605922.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-References: <cover.1417605922.git.jslaby@suse.cz>
+	id S1753343AbaLCLjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:39:05 -0500
+Message-ID: <547EF64B.1080403@users.sourceforge.net>
+Date: Wed, 03 Dec 2014 12:38:51 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: ALSA: ctxfi: Delete an unnecessary check before kfree()
+References: <5307CAA2.8060406@users.sourceforge.net>	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>	<530A086E.8010901@users.sourceforge.net>	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>	<530A72AA.3000601@users.sourceforge.net>	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>	<530B5FB6.6010207@users.sourceforge.net>	<alpine.DEB.2.10.1402241710370.2074@hadrien>	<530C5E18.1020800@users.sourceforge.net>	<alpine.DEB.2.10.1402251014170.2080@hadrien>	<530CD2C4.4050903@users.sourceforge.net>	<alpine.DEB.2.10.1402251840450.7035@hadrien>	<530CF8FF.8080600@users.sourceforge.net>	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	<530DD06F.4090703@users.sourceforge.net>	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<547E2612.6010304@users.sourceforge.net> <s5hvblt6xav.wl-tiwai@suse.de>
+In-Reply-To: <s5hvblt6xav.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:vbNV8o+ilkbQh6LTGwJFqxDs8JrIRdFQCaSGkKN0srli0sPVNfL
+ KGPOyyCN/bU0EIzup/IYxjMNUpWJdfhLjSCUCM2m6yWijqwQWWwrNOK1dydHNIEAyAR+CJh
+ T1PC9YHZT8wpWVp3mPeQid+f+Hbc6fyQzg/TweOXKlTmossaE83ppGoAPbewOB65gIUmSj3
+ khnhgiOCWQiRPIrKLPVsg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Panu Matilainen <pmatilai@redhat.com>
+>>   Deletion of an unnecessary check before the function call "kfree"
+>>   One function call less in get_daio_rsc() after error detection
+> 
+> In these cases, the changes aren't so straightforward, and they don't
+> improve the readability.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+How do you prefer to improve the affected source code here?
 
-===============
-
-[ Upstream commit 49dd18ba4615eaa72f15c9087dea1c2ab4744cf5 ]
-
-Trying to add an unreachable route incorrectly returns -ESRCH if
-if custom FIB rules are present:
-
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: Network is unreachable
-[root@localhost ~]# ip rule add to 55.66.77.88 table 200
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: No such process
-[root@localhost ~]#
-
-Commit 83886b6b636173b206f475929e58fac75c6f2446 ("[NET]: Change "not found"
-return value for rule lookup") changed fib_rules_lookup()
-to use -ESRCH as a "not found" code internally, but for user space it
-should be translated into -ENETUNREACH. Handle the translation centrally in
-ipv4-specific fib_lookup(), leaving the DECnet case alone.
-
-On a related note, commit b7a71b51ee37d919e4098cd961d59a883fd272d8
-("ipv4: removed redundant conditional") removed a similar translation from
-ip_route_input_slow() prematurely AIUI.
-
-Fixes: b7a71b51ee37 ("ipv4: removed redundant conditional")
-Signed-off-by: Panu Matilainen <pmatilai@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv4/fib_rules.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/net/ipv4/fib_rules.c b/net/ipv4/fib_rules.c
-index f2e15738534d..8f7bd56955b0 100644
---- a/net/ipv4/fib_rules.c
-+++ b/net/ipv4/fib_rules.c
-@@ -62,6 +62,10 @@ int __fib_lookup(struct net *net, struct flowi4 *flp, struct fib_result *res)
- 	else
- 		res->tclassid = 0;
- #endif
-+
-+	if (err == -ESRCH)
-+		err = -ENETUNREACH;
-+
- 	return err;
- }
- EXPORT_SYMBOL_GPL(__fib_lookup);
--- 
-2.1.3
+Regards,
+Markus
 
