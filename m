@@ -1,181 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933619AbaLCAEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 19:04:55 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46520 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722AbaLCAEy (ORCPT
+	id S933490AbaLCAGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 19:06:51 -0500
+Received: from mail-bl2on0144.outbound.protection.outlook.com ([65.55.169.144]:22304
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932722AbaLCAGu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 19:04:54 -0500
-From: Jason Wilkes <letshaveanadventure@gmail.com>
-To: hare@suse.de
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, letshaveanadventure@gmail.com
-Subject: [PATCH] drivers: scsi: aic7xxx: Fix positive error codes.
-Date: Tue,  2 Dec 2014 16:03:04 -0800
-Message-Id: <1417564984-6941-1-git-send-email-letshaveanadventure@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Tue, 2 Dec 2014 19:06:50 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Jeff Leung <jleung@v10networks.ca>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/1] X86: Mark the Hyper-V clocksource as being continuous
+Thread-Topic: [PATCH 1/1] X86: Mark the Hyper-V clocksource as being
+ continuous
+Thread-Index: AQHQDos/PK3eN3W9k0ulFthqgd8G05x8+ngAgAABYnA=
+Date: Wed, 3 Dec 2014 00:06:46 +0000
+Message-ID: <BY2PR0301MB0711D77DC4E020F9824BC9D7A07B0@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417568621-23143-1-git-send-email-kys@microsoft.com>
+ <A70AC0C1B7E7FD478A6BF19705461AA01109C0@IMBER.smb.curriegrad2004.ca>
+In-Reply-To: <A70AC0C1B7E7FD478A6BF19705461AA01109C0@IMBER.smb.curriegrad2004.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;
+x-forefront-prvs: 0414DF926F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(189002)(199003)(13464003)(51704005)(50986999)(54356999)(76176999)(68736005)(15202345003)(19580395003)(19580405001)(4396001)(86612001)(95666004)(54606007)(122556002)(97736003)(120916001)(62966003)(77156002)(74316001)(76576001)(107046002)(46102003)(2501002)(33656002)(2656002)(31966008)(87936001)(20776003)(64706001)(106116001)(101416001)(106356001)(99396003)(105586002)(92726001)(92566001)(86362001)(2201001)(15975445006)(99286002)(21056001)(40100003)(54206007)(921003)(3826002)(1121003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0694;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note:
-There are more instances of the problem described below, but I
-thought I'd explain the first one in detail, to make sure it's
-worth fixing the others (and to make sure I didn't do anything
-stupid, which I may have. I'm new to this :-). Alright, here we go!
 
-A few drivers seem to return positive error codes internally, in
-order to signal something to a static function in the same driver.
-(see, for example, drivers/staging/lustre/lnet/lnet/lib-move.c)
-That's unusual, but seems okay as long as they're consistent between
-return codes and return code checks. However, a problem might arise
-if +ERRORCODE rather than -ERRORCODE is returned to other layers
-of the kernel (e.g., to the driver core). Let's do some exploring...
 
-Here's a function that returns +ENOMEM
-FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-FUNC: aic7770_map_registers
+> -----Original Message-----
+> From: Jeff Leung [mailto:jleung@v10networks.ca]
+> Sent: Tuesday, December 2, 2014 3:58 PM
+> To: KY Srinivasan; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> hpa@zytor.com
+> Cc: stable@vger.kernel.org
+> Subject: RE: [PATCH 1/1] X86: Mark the Hyper-V clocksource as being
+> continuous
+> 
+> Does this mean that host-to guest timesync now works properly with Linux
+> guests?
+> 
+> -- Jeff
 
-int
-aic7770_map_registers(struct ahc_softc *ahc, u_int port)
-{
-... (clipped for brevity) ..
+Jeff,
 
-	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
-		return (ENOMEM);
+We have had the Hyper-V clocksource for sometime now and this patch just marks this clocksource
+as being continuous. Nothing has changed with regards to timesynch.
 
-... (clipped for brevity) ..
-}
+Regards,
 
-This may not be a problem, unless we're passing the value
-outside the current module. So who calls this function?
-$ grep -r -C20 aic7770_map_registers
+K. Y 
 
-Looks like it's only ever called in:
-FILE: drivers/scsi/aic7xxx/aic7770.c
-FUNC: aic7770_config
-
-int aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
-{
-... (code and stuff) ...
-
-	error = aic7770_map_registers(ahc, io);
-	if (error != 0)
-		return (error);
-
-... (code and stuff) ...
-}
-
-Hmm... Let's see who calls this guy.
-$ grep -r -C20 aic7770_config
-
-This too is only called once, in:
-FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-FUNC: aic7770_probe
-
-static int
-aic7770_probe(struct device *dev)
-{
-... (blah blah blah) ...
-
-	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
-			       eisaBase);
-	if (error != 0) {
-		ahc->bsh.ioport = 0;
-		ahc_free(ahc);
-		return (error);
-	}
-
-... (blah blah blah) ...
-}
-
-Same deal as before. Okay, so who calls aic7770_probe?
-
-Well, as expected, no one calls it, at least not by name.
-It's just the .probe function in the following struct:
-
-FILE: drivers/scsi/aic7xxx/aic7770_osm.c
-
-static struct eisa_driver aic7770_driver = {
-	.id_table	= aic7770_ids,
-	.driver = {
-		.name   = "aic7xxx",
-		.probe  = aic7770_probe,
-		.remove = aic7770_remove,
-	}
-};
-
-So the return code *is* being passed to another layer of the kernel,
-in which case it should probably be negative.
-
-There are lots of similar examples in the same driver. I'd be happy
-to fix them up, but I thought I should send this patch first, to make
-sure I'm not doing anything obviously wrong.
-
-Ooh! One more thing, just to be safe. Above, I assumed that grepping
-the kernel tree would give us all the places where an identifier shows
-up, but maybe this driver does something clever with the preprocessor.
-
-$ grep -r '##' drivers/scsi/aic7xxx/ || cowsay hooray
- ________
-< hooray >
- --------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
-
-Okay good, so there shouldn't be any ## magic messing with our greps.
-Alright, I guess I should send this patch off now. Thanks for reading,
-and apologies in advance if I'm a moron :-)
-
-Signed-off-by: Jason Wilkes <letshaveanadventure@gmail.com>
----
- drivers/scsi/aic7xxx/aic7770.c     | 2 +-
- drivers/scsi/aic7xxx/aic7770_osm.c | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/scsi/aic7xxx/aic7770.c b/drivers/scsi/aic7xxx/aic7770.c
-index 5000bd6..cecdea9 100644
---- a/drivers/scsi/aic7xxx/aic7770.c
-+++ b/drivers/scsi/aic7xxx/aic7770.c
-@@ -171,7 +171,7 @@ aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
- 		break;
- 	default:
- 		printk("aic7770_config: invalid irq setting %d\n", intdef);
--		return (ENXIO);
-+		return -ENXIO;
- 	}
- 
- 	if ((intdef & EDGE_TRIG) != 0)
-diff --git a/drivers/scsi/aic7xxx/aic7770_osm.c b/drivers/scsi/aic7xxx/aic7770_osm.c
-index 3d401d0..50f030d 100644
---- a/drivers/scsi/aic7xxx/aic7770_osm.c
-+++ b/drivers/scsi/aic7xxx/aic7770_osm.c
-@@ -51,7 +51,7 @@ aic7770_map_registers(struct ahc_softc *ahc, u_int port)
- 	 * Lock out other contenders for our i/o space.
- 	 */
- 	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
--		return (ENOMEM);
-+		return -ENOMEM;
- 	ahc->tag = BUS_SPACE_PIO;
- 	ahc->bsh.ioport = port;
- 	return (0);
-@@ -87,10 +87,10 @@ aic7770_probe(struct device *dev)
- 	sprintf(buf, "ahc_eisa:%d", eisaBase >> 12);
- 	name = kstrdup(buf, GFP_ATOMIC);
- 	if (name == NULL)
--		return (ENOMEM);
-+		return -ENOMEM;
- 	ahc = ahc_alloc(&aic7xxx_driver_template, name);
- 	if (ahc == NULL)
--		return (ENOMEM);
-+		return -ENOMEM;
- 	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
- 			       eisaBase);
- 	if (error != 0) {
--- 
-2.1.3
+> 
+> > -----Original Message-----
+> > From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org]
+> > On Behalf Of K. Y. Srinivasan
+> > Sent: Tuesday, December 2, 2014 17:04
+> > To: x86@kernel.org; gregkh@linuxfoundation.org;
+> linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com; tglx@linutronix.de; hpa@zytor.com
+> > Cc: K. Y. Srinivasan; stable@vger.kernel.org
+> > Subject: [PATCH 1/1] X86: Mark the Hyper-V clocksource as being
+> continuous
+> >
+> > The clocksource based on Hyper-V per-partition reference count MSR is
+> continuous. Mark
+> > it accordingly.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > cc: stable@vger.kernel.org
+> > ---
+> >  arch/x86/kernel/cpu/mshyperv.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/cpu/mshyperv.c
+> b/arch/x86/kernel/cpu/mshyperv.c index
+> > a450373..939155f 100644
+> > --- a/arch/x86/kernel/cpu/mshyperv.c
+> > +++ b/arch/x86/kernel/cpu/mshyperv.c
+> > @@ -107,6 +107,7 @@ static struct clocksource hyperv_cs = {
+> >  	.rating		= 400, /* use this when running on Hyperv*/
+> >  	.read		= read_hv_clock,
+> >  	.mask		= CLOCKSOURCE_MASK(64),
+> > +	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+> >  };
+> >
+> >  static void __init ms_hyperv_init_platform(void)
+> > --
+> > 1.7.4.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in the body of a
+> > message to majordomo@vger.kernel.org More majordomo info at
+> > http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
