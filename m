@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaLCEh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 23:37:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48864 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaLCEhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 23:37:55 -0500
-Message-ID: <547E939F.40106@suse.com>
-Date: Wed, 03 Dec 2014 05:37:51 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751554AbaLCEjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 23:39:08 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58107 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaLCEjG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 23:39:06 -0500
+Message-ID: <547E93E3.70209@hitachi.com>
+Date: Wed, 03 Dec 2014 13:38:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: Joerg Roedel <jroedel@suse.de>, kvm@vger.kernel.org,
-        Davidlohr Bueso <dbueso@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
-        Olaf Hering <ohering@suse.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private hypercall
- when non CONFIG_PREEMPT
-References: <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com> <20141201223611.GM25677@wotan.suse.de> <547D9E56.50708@citrix.com> <20141203022833.GS25677@wotan.suse.de>
-In-Reply-To: <20141203022833.GS25677@wotan.suse.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Wang Nan <wangnan0@huawei.com>
+Cc: tixy@linaro.org, linux@arm.linux.org.uk, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Re: [PATCH v11 1/7] ARM: probes: move all probe code to dedicate
+ directory
+References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com> <1417423695-47521-1-git-send-email-wangnan0@huawei.com> <547D471B.2070908@hitachi.com> <547D9308.8080403@huawei.com>
+In-Reply-To: <547D9308.8080403@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 03:28 AM, Luis R. Rodriguez wrote:
-> On Tue, Dec 02, 2014 at 11:11:18AM +0000, David Vrabel wrote:
->> On 01/12/14 22:36, Luis R. Rodriguez wrote:
->>>
->>> Then I do agree its a fair analogy (and find this obviously odd that how
->>> widespread cond_resched() is), we just don't have an equivalent for IRQ
->>> context, why not avoid the special check then and use this all the time in the
->>> middle of a hypercall on the return from an interrupt (e.g., the timer
->>> interrupt)?
+(2014/12/02 19:23), Wang Nan wrote:
+> On 2014/12/2 12:59, Masami Hiramatsu wrote:
+>> (2014/12/01 17:48), Wang Nan wrote:
+>>> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
+>>> King suggest to move all probe related code to arch/arm/probes. This
+>>> patch do the work. Due to dependency on 'arch/arm/kernel/patch.h', this
+>>> patch also move patch.h to 'arch/arm/include/asm/patch.h', and related
+>>> '#include' directive are also midified to '#include <asm/patch.h>'.
 >>
->> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
->
-> OK thanks! That explains why we need some asm code but in that submission you
-> still also had used is_preemptible_hypercall(regs) and in the new
-> implementation you use a CPU variable xen_in_preemptible_hcall prior to calling
-> preempt_schedule_irq(). I believe you added the CPU variable because
-> preempt_schedule_irq() will preempt first without any checks if it should, I'm
-> asking why not do something like cond_resched_irq() where we check with
-> should_resched() prior to preempting and that way we can avoid having to use
-> the CPU variable?
+>> Moving is good to me, but renaming files are also required I think.
+>>
+>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>> ---
+>>>  arch/arm/Makefile                                |  1 +
+>>>  arch/arm/{kernel => include/asm}/patch.h         |  0
+>>>  arch/arm/kernel/Makefile                         | 16 ++--------------
+>>>  arch/arm/kernel/jump_label.c                     |  2 +-
+>>>  arch/arm/kernel/patch.c                          |  3 +--
+>>>  arch/arm/probes/Makefile                         | 15 +++++++++++++++
+>>>  arch/arm/{kernel => probes}/kprobes-arm.c        |  0
+>>>  arch/arm/{kernel => probes}/kprobes-common.c     |  0
+>>>  arch/arm/{kernel => probes}/kprobes-test-arm.c   |  0
+>>>  arch/arm/{kernel => probes}/kprobes-test-thumb.c |  0
+>>>  arch/arm/{kernel => probes}/kprobes-test.c       |  0
+>>>  arch/arm/{kernel => probes}/kprobes-test.h       |  0
+>>>  arch/arm/{kernel => probes}/kprobes-thumb.c      |  0
+>>>  arch/arm/{kernel => probes}/kprobes.c            |  2 +-
+>>>  arch/arm/{kernel => probes}/kprobes.h            |  0
+>>>  arch/arm/{kernel => probes}/probes-arm.c         |  0
+>>>  arch/arm/{kernel => probes}/probes-arm.h         |  0
+>>>  arch/arm/{kernel => probes}/probes-thumb.c       |  0
+>>>  arch/arm/{kernel => probes}/probes-thumb.h       |  0
+>>>  arch/arm/{kernel => probes}/probes.c             |  0
+>>>  arch/arm/{kernel => probes}/probes.h             |  0
+>>>  arch/arm/{kernel => probes}/uprobes-arm.c        |  0
+>>>  arch/arm/{kernel => probes}/uprobes.c            |  0
+>>>  arch/arm/{kernel => probes}/uprobes.h            |  0
+>>
+>> As I did on x86, these would be better renamed as expressing what they do.
+>> I guess most of the files may have emulate-*.c or decode-*.c :)
+>>
+>> Thank you,
+>>
+> 
+> OK. I posted another patch in this thread. The directory tree is as follow:
+> 
+> arch/arm/probes/
+> |-- Makefile
+> |-- decode-arm.c
+> |-- decode-arm.h
+> |-- decode-thumb.c
+> |-- decode-thumb.h
+> |-- decode.c
+> |-- decode.h
+> |-- kprobes
+> |   |-- actions-arm.c
+> |   |-- actions-common.c
+> |   |-- actions-thumb.c
+> |   |-- kprobes.c
+> |   |-- kprobes.h
+> |   |-- test-arm.c
+> |   |-- test-core.c
+> |   |-- test-core.h
+> |   `-- test-thumb.c
+> `-- uprobes
+>     |-- actions-arm.c
+>     |-- uprobes.c
+>     `-- uprobes.h
+> 
+> 2 directories, 19 files
+> 
+> What do you think?
 
-Because that could preempt at any asynchronous interrupt making the
-no-preempt kernel fully preemptive. How would you know you are just
-doing a critical hypercall which should be preempted?
+Yeah, that looks better :)
 
-Juergen
+Btw, if you introduce probes/{kprobes,uprobes}/, *probes.c should be core.c too,
+since the directories already show its name. And also, both dirs should have its
+own Makefile.
+
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
