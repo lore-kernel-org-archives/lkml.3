@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaLCNBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:01:42 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:40158 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751061AbaLCNBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:01:41 -0500
-Date: Wed, 3 Dec 2014 14:01:36 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Tim Bird <tim.bird@sonymobile.com>, Shuah Khan <shuahkh@osg.samsung.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
-Message-ID: <20141203140136.12997331@free-electrons.com>
-In-Reply-To: <1417578191.16722.11.camel@concordia>
-References: <547E854E.5060101@sonymobile.com>
-	<1417578191.16722.11.camel@concordia>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752351AbaLCNDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:03:09 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:36009 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444AbaLCNDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:03:07 -0500
+Message-ID: <1417611812.30615.28.camel@mm-sol.com>
+Subject: Re: [PATCH v2 7/7] pinctrl: qcom-spmi-gpio: Migrate to
+ pinconf-generic
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Date: Wed, 03 Dec 2014 15:03:32 +0200
+In-Reply-To: <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
+References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
+	 <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.7-fta1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael, Tim,
 
-On Wed, 03 Dec 2014 14:43:11 +1100, Michael Ellerman wrote:
-
-> > diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
-> > new file mode 100644
-> > index 0000000..47f8e9c
-> > --- /dev/null
-> > +++ b/tools/testing/selftests/size/Makefile
-> > @@ -0,0 +1,15 @@
-> > +#ifndef CC
-> > +	CC = $(CROSS_COMPILE)gcc
-> > +#endif
+On Thu, 2014-11-27 at 17:26 -0800, Soren Brinkmann wrote:
+> Instead of the driver caring about implementation details like device
+> tree, just provide information about driver specific pinconf parameters
+> to pinconf-generic which takes care of parsing the DT.
 > 
-> I think the following is preferable:
+> Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
+> ---
+> This is compile tested only. So, it's likely that it needs more tweaking
+> to make it actually work on HW. But it illustrates the potential
+> benefits of the pinconf-generic changes in this series.
+> ---
+>  drivers/pinctrl/qcom/pinctrl-spmi-gpio.c | 125 +++----------------------------
+>  1 file changed, 11 insertions(+), 114 deletions(-)
 > 
->   CC := $(CROSS_COMPILE)$(CC)
+> diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+> index b863b5080890..2db85e53ef73 100644
+> --- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+> +++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+> @@ -131,14 +131,14 @@ struct pmic_gpio_state {
+>         struct gpio_chip chip;
+>  };
+> 
+> -struct pmic_gpio_bindings {
+> -       const char*property;
+> -       unsigned      param;
+> +static const struct pinconf_generic_dt_params pmic_gpio_bindings[] = {
+> +       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP,0},
+> +       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH,0},
+>  };
+> 
+> -static struct pmic_gpio_bindings pmic_gpio_bindings[] = {
+> -       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP},
+> -       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH},
+> +static const struct pin_config_item pmic_conf_items[] = {
+> +       PCONFDUMP(PMIC_GPIO_CONF_PULL_UP,  "pull-up-strength", NULL, true),
 
-It is even more necessary that #ifndef and #endif don't exist in make.
-They are just comments, and therefore, ignored. Seems like Tim does too
-much C :-)
+s/pull-up-strength/qcom,pull-up-strength/
 
-Best regards,
+> +       PCONFDUMP(PMIC_GPIO_CONF_STRENGTH, "drive-strength", NULL, true),
+>  };
+> 
 
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+
+
+I am not happy that we have to define the same think two times.
+
+Regards,
+Ivan
