@@ -1,269 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaLCJBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:01:23 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50288 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaLCJBT (ORCPT
+	id S1751737AbaLCJEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:04:34 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:48689 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaLCJEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:01:19 -0500
-From: Alex Dubov <alex.dubov@gmail.com>
-X-Google-Original-From: Alex Dubov <oakad@yahoo.com>
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, corbet@lwn.net, richardcochran@gmail.com,
-        Alex Dubov <oakad@yahoo.com>
-Subject: [PATCH] syscall: introduce sendfd() syscall (v.2)
-Date: Wed,  3 Dec 2014 20:00:55 +1100
-Message-Id: <1417597255-32530-2-git-send-email-oakad@yahoo.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
-References: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+	Wed, 3 Dec 2014 04:04:25 -0500
+MIME-Version: 1.0
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Wed, 3 Dec 2014 13:04:03 +0400
+Message-ID: <CACT4Y+aUYGCsqGWWJEG2KHXc_Heq6k1=yPuA+7qrRbB+jsRC6A@mail.gmail.com>
+Subject: Out-of-bounds access in __do_proc_doulongvec_minmax
+To: Andrew Morton <akpm@linux-foundation.org>, Nadia.Derbey@bull.net,
+        aquini@redhat.com, davidlohr@hp.com, Joe Perches <joe@perches.com>,
+        manfred@colorfullife.com, avagin@openvz.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kostya Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        kasan-dev <kasan-dev@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Present patch introduces exceptionally easy to use, low latency and low
-overhead mechanism for transferring file descriptors between cooperating
-processes:
+Hi,
 
-    int sendfd(pid_t pid, int sig, int fd)
+I am working on AddressSanitizer, a fast memory error detector for kernel:
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
-Given a target process pid, the sendfd() will queue a real-time signal for
-delivery to task referenced by pid. If signal can be delivered to destination
-tasks and it chooses to collect the associated signal info, a new file
-descriptor will be created on its behalf, pointing to file originally referred
-by fd (the value of newly created file descriptor will be communicated as
-integer payload within the siginfo data).
+Here is a bug report that I've got while running trinity:
 
-Signed-off-by: Alex Dubov <oakad@yahoo.com>
----
- arch/x86/syscalls/syscall_32.tbl   |  2 +
- arch/x86/syscalls/syscall_64.tbl   |  1 +
- include/asm-generic/siginfo.h      |  1 +
- include/linux/syscalls.h           |  1 +
- include/uapi/asm-generic/siginfo.h |  1 +
- init/Kconfig                       | 11 +++++
- kernel/signal.c                    | 89 ++++++++++++++++++++++++++++++++++++++
- kernel/sys_ni.c                    |  3 ++
- 8 files changed, 109 insertions(+)
+==================================================================
+BUG: AddressSanitizer: out of bounds access in
+__do_proc_doulongvec_minmax+0x8a0/0x9a0 at addr ffffffff83980960
+Read of size 8 by task trinity-c14/6919
+Out-of-bounds access to the global variable 'zero'
+[ffffffff83980960-ffffffff83980964) defined at ipc/ipc_sysctl.c:158
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index 9fe1b5d..e2782bd 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -364,3 +364,5 @@
- 355	i386	getrandom		sys_getrandom
- 356	i386	memfd_create		sys_memfd_create
- 357	i386	bpf			sys_bpf
-+358	i386	sendfd			sys_sendfd
-+
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 281150b..4d6b55d 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -328,6 +328,7 @@
- 319	common	memfd_create		sys_memfd_create
- 320	common	kexec_file_load		sys_kexec_file_load
- 321	common	bpf			sys_bpf
-+322	common	sendfd			sys_sendfd
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
-index 3d1a3af..c8af06f 100644
---- a/include/asm-generic/siginfo.h
-+++ b/include/asm-generic/siginfo.h
-@@ -12,6 +12,7 @@
- #define __SI_RT		(5 << 16)
- #define __SI_MESGQ	(6 << 16)
- #define __SI_SYS	(7 << 16)
-+#define __SI_FILEP	(8 << 16)
- #define __SI_CODE(T,N)	((T) | ((N) & 0xffff))
- 
- struct siginfo;
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index bda9b81..1871b72f 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -877,4 +877,5 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
- asmlinkage long sys_getrandom(char __user *buf, size_t count,
- 			      unsigned int flags);
- asmlinkage long sys_bpf(int cmd, union bpf_attr *attr, unsigned int size);
-+asmlinkage long sys_sendfd(pid_t pid, int sig, int fd);
- #endif
-diff --git a/include/uapi/asm-generic/siginfo.h b/include/uapi/asm-generic/siginfo.h
-index ba5be7f..a92e38e 100644
---- a/include/uapi/asm-generic/siginfo.h
-+++ b/include/uapi/asm-generic/siginfo.h
-@@ -148,6 +148,7 @@ typedef struct siginfo {
- #define __SI_RT		0
- #define __SI_MESGQ	0
- #define __SI_SYS	0
-+#define __SI_FILEP	0
- #define __SI_CODE(T,N)	(N)
- #endif
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index 2081a4d..6a62a44 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1505,6 +1505,17 @@ config SIGNALFD
- 
- 	  If unsure, say Y.
- 
-+config SENDFD
-+	bool "Enable sendfd() system call" if EXPERT
-+	default y
-+	help
-+	  Enable the sendfd() system call that allows rapid duplication
-+	  of file descriptor across process boundaries. The target process
-+	  will receive a duplicate file descriptor delivered with one of
-+	  Posix.1b real-time signals.
-+
-+	  If unsure, say Y.
-+
- config TIMERFD
- 	bool "Enable timerfd() system call" if EXPERT
- 	select ANON_INODES
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 8f0876f..299ee9c 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -35,6 +35,11 @@
- #include <linux/cn_proc.h>
- #include <linux/compiler.h>
- 
-+#ifdef CONFIG_SENDFD
-+#include <linux/file.h>
-+#include <linux/fdtable.h>
-+#endif
-+
- #define CREATE_TRACE_POINTS
- #include <trace/events/signal.h>
- 
-@@ -394,8 +399,15 @@ __sigqueue_alloc(int sig, struct task_struct *t, gfp_t flags, int override_rlimi
- 
- static void __sigqueue_free(struct sigqueue *q)
- {
-+	if (q->info.si_code == __SI_FILEP) {
-+		fput((struct file *)q->info.si_ptr);
-+		q->info.si_code = 0;
-+		q->info.si_ptr = NULL;
-+	}
-+
- 	if (q->flags & SIGQUEUE_PREALLOC)
- 		return;
-+
- 	atomic_dec(&q->user->sigpending);
- 	free_uid(q->user);
- 	kmem_cache_free(sigqueue_cachep, q);
-@@ -543,6 +555,44 @@ unblock_all_signals(void)
- 	spin_unlock_irqrestore(&current->sighand->siglock, flags);
- }
- 
-+#ifdef CONFIG_SENDFD
-+
-+/*
-+ * sendfd_copy_install can only be reached from collect_signal(), that is from
-+ * signalfd_read or sigtimedwait. This means that receiver took explicit steps
-+ * to recover the siginfo and will be aware that it received a new fd.
-+ *
-+ * This also means we are not in the signal context, so no problems invoking
-+ * a variety of dupfd().
-+ *
-+ * If user neglects to recover the siginfo, the reference count on the passed
-+ * struct file will be invariably decremented in sigqueue_free.
-+ */
-+static void sendfd_copy_install(siginfo_t *dst, siginfo_t const *src)
-+{
-+	int fd = __alloc_fd(
-+		current->files, 0, rlimit(RLIMIT_NOFILE), O_CLOEXEC
-+	);
-+	struct file *f = (struct file *)src->si_ptr;
-+
-+	dst->si_signo = src->si_signo;
-+	dst->si_code = __SI_RT;
-+	dst->si_pid = src->si_pid;
-+	dst->si_uid = src->si_uid;
-+
-+	if (fd >= 0) {
-+		get_file(f);
-+		__fd_install(current->files, fd, f);
-+		dst->si_errno = 0;
-+		dst->si_int = fd;
-+	} else {
-+		dst->si_errno = fd;
-+		dst->si_int = -1;
-+	}
-+}
-+
-+#endif /* CONFIG_SENDFD */
-+
- static void collect_signal(int sig, struct sigpending *list, siginfo_t *info)
- {
- 	struct sigqueue *q, *first = NULL;
-@@ -564,7 +614,15 @@ static void collect_signal(int sig, struct sigpending *list, siginfo_t *info)
- 	if (first) {
- still_pending:
- 		list_del_init(&first->list);
-+#ifdef CONFIG_SENDFD
-+		if (first->info.si_code != __SI_FILEP)
-+			copy_siginfo(info, &first->info);
-+		else
-+			sendfd_copy_install(info, &first->info);
-+#else
- 		copy_siginfo(info, &first->info);
-+#endif /* CONFIG_SENDFD */
-+
- 		__sigqueue_free(first);
- 	} else {
- 		/*
-@@ -3664,3 +3722,34 @@ kdb_send_sig_info(struct task_struct *t, struct siginfo *info)
- 		kdb_printf("Signal %d is sent to process %d.\n", sig, t->pid);
- }
- #endif	/* CONFIG_KGDB_KDB */
-+
-+#ifdef CONFIG_SENDFD
-+
-+SYSCALL_DEFINE3(sendfd, pid_t, pid, int, sig, int, fd)
-+{
-+	struct siginfo s_info = {
-+		.si_signo = sig,
-+		.si_errno = 0,
-+		.si_code = __SI_FILEP
-+	};
-+	int rc = 0;
-+
-+	if ((sig < SIGRTMIN) || (sig > SIGRTMAX))
-+		return -EINVAL;
-+
-+	s_info.si_pid = task_pid_vnr(current);
-+	s_info.si_uid = from_kuid_munged(current_user_ns(), current_uid());
-+	s_info.si_ptr = fget(fd);
-+
-+	if (!s_info.si_ptr)
-+		return -EBADF;
-+
-+	rc = kill_pid_info(sig, &s_info, find_vpid(pid));
-+
-+	if (rc < 0)
-+		fput((struct file *)s_info.si_ptr);
-+
-+	return rc;
-+}
-+
-+#endif /* CONFIG_SENDFD */
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 02aa418..353cddb 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -224,3 +224,6 @@ cond_syscall(sys_seccomp);
- 
- /* access BPF programs and maps */
- cond_syscall(sys_bpf);
-+
-+/* send file descriptor to another process */
-+cond_syscall(sys_sendfd);
--- 
-1.8.3.2
+CPU: 1 PID: 6919 Comm: trinity-c14 Not tainted 3.18.0-rc1+ #50
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+ 0000000000000001 ffff8800b68cf418 ffffffff82c2d3ae 0000000000000000
+ ffff8800b68cf4c0 ffff8800b68cf4a8 ffffffff813eaa81 ffffffff0000000c
+ ffff88010b003600 ffff8800b68cf479 0000000000000296 0000000000000000
+Call Trace:
+ [<ffffffff813ead71>] __asan_report_load8_noabort+0x51/0x70
+mm/kasan/report.c:248
+ [<ffffffff810cc3e0>] __do_proc_doulongvec_minmax+0x8a0/0x9a0
+kernel/sysctl.c:2284
+ [<     inlined    >] proc_doulongvec_minmax+0x50/0x80
+do_proc_doulongvec_minmax kernel/sysctl.c:2322
+ [<ffffffff810cc530>] proc_doulongvec_minmax+0x50/0x80 kernel/sysctl.c:2345
+ [<ffffffff813c9e5a>] hugetlb_sysctl_handler_common+0x12a/0x3c0
+mm/hugetlb.c:2270
+ [<ffffffff813cb45c>] hugetlb_mempolicy_sysctl_handler+0x1c/0x20
+mm/hugetlb.c:2293
+ [<ffffffff8153e6e9>] proc_sys_call_handler+0x179/0x1f0
+fs/proc/proc_sysctl.c:506
+ [<ffffffff8153e76f>] proc_sys_write+0xf/0x20 fs/proc/proc_sysctl.c:524
+ [<ffffffff813f1563>] __kernel_write+0x123/0x440 fs/read_write.c:502
+ [<ffffffff8147ebaa>] write_pipe_buf+0x14a/0x1d0 fs/splice.c:1074
+ [<     inlined    >] __splice_from_pipe+0x22e/0x6f0
+splice_from_pipe_feed fs/splice.c:769
+ [<ffffffff8147dbde>] __splice_from_pipe+0x22e/0x6f0 fs/splice.c:886
+ [<ffffffff81483211>] splice_from_pipe+0xc1/0x110 fs/splice.c:921
+ [<ffffffff81483298>] default_file_splice_write+0x18/0x50 fs/splice.c:1086
+ [<     inlined    >] direct_splice_actor+0x104/0x1c0 do_splice_from
+fs/splice.c:1128
+ [<ffffffff8147cfc4>] direct_splice_actor+0x104/0x1c0 fs/splice.c:1284
+ [<ffffffff8147e5ba>] splice_direct_to_actor+0x24a/0x6f0 fs/splice.c:1237
+ [<ffffffff81483424>] do_splice_direct+0x154/0x270 fs/splice.c:1327
+ [<ffffffff813f3bfb>] do_sendfile+0x5fb/0x1260 fs/read_write.c:1266
+ [<     inlined    >] SyS_sendfile64+0xfa/0x100 SYSC_sendfile64
+fs/read_write.c:1327
+ [<ffffffff813f6bea>] SyS_sendfile64+0xfa/0x100 fs/read_write.c:1313
+ [<ffffffff82c464f9>] ia32_do_call+0x13/0x13 arch/x86/ia32/ia32entry.S:444
+Memory state around the buggy address:
+ ffffffff83980680: 04 f8 f8 f8 f8 f8 f8 f8 02 f8 f8 f8 f8 f8 f8 f8
+ ffffffff83980700: 00 f8 f8 f8 f8 f8 f8 f8 00 f8 f8 f8 f8 f8 f8 f8
+ ffffffff83980780: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 00 00 00 00
+ ffffffff83980800: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 04 f8 f8 f8
+ ffffffff83980880: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
+>ffffffff83980900: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
+                                                       ^
+ ffffffff83980980: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 00
+ ffffffff83980a00: 02 f8 f8 f8 f8 f8 f8 f8 00 00 00 00 00 00 00 00
+ ffffffff83980a80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ ffffffff83980b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ ffffffff83980b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+==================================================================
 
+The core creates ctl_table as:
+
+static int zero;
+static int one = 1;
+static int int_max = INT_MAX;
+static struct ctl_table ipc_kern_table[] = {
+{
+...
+  {
+    .procname = "shm_rmid_forced",
+    .data = &init_ipc_ns.shm_rmid_forced,
+    .maxlen = sizeof(init_ipc_ns.shm_rmid_forced),
+    .mode = 0644,
+    .proc_handler = proc_ipc_dointvec_minmax_orphans,
+    .extra1 = &zero,
+    .extra2 = &one,
+  },
+
+But later extra1/2 are casted to *unsigned long**:
+
+static int __do_proc_doulongvec_minmax(void *data, struct ctl_table
+*table, int write, ...
+{
+  ...
+  min = (unsigned long *) table->extra1;
+  max = (unsigned long *) table->extra2;
+
+This leads to bogus bounds check for the sysctl value.
+
+The bug is added in commit:
+
+commit 9eefe520c814f6f62c5d36a2ddcd3fb99dfdb30e
+Author: Nadia Derbey <Nadia.Derbey@bull.net>
+Date:   Fri Jul 25 01:48:08 2008 -0700
+
+Later zero and one were used in a bunch of other ctl_table's.
