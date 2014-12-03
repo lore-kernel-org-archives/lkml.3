@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274AbaLCOti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:49:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46880 "EHLO bear.ext.ti.com"
+	id S1751337AbaLCOvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:51:48 -0500
+Received: from omr2.cc.vt.edu ([198.82.141.100]:39823 "EHLO omr2.cc.vt.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaLCOtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:49:36 -0500
-Date: Wed, 3 Dec 2014 08:49:34 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-CC: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/5] i2c: omap: add trace
-Message-ID: <20141203144934.GB16138@saruman>
-Reply-To: <balbi@ti.com>
-References: <1417617242-16869-1-git-send-email-al.kochet@gmail.com>
- <1417617242-16869-6-git-send-email-al.kochet@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1SQmhf2mF2YjsYvc"
-Content-Disposition: inline
-In-Reply-To: <1417617242-16869-6-git-send-email-al.kochet@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750975AbaLCOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:51:46 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Jason Wang <jasowang@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next Problems with VPN tunnel - no packets sent
+In-Reply-To: Your message of "Wed, 03 Dec 2014 03:20:19 +0008."
+             <1417576339.19959.0@smtp.corp.redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <17929.1417552899@turing-police.cc.vt.edu>
+            <1417576339.19959.0@smtp.corp.redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1417618280_7177P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 03 Dec 2014 09:51:20 -0500
+Message-ID: <7763.1417618280@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1SQmhf2mF2YjsYvc
+--==_Exmh_1417618280_7177P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 03, 2014 at 06:34:02PM +0400, Alexander Kochetkov wrote:
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-omap.c |   45 +++++++++++++++++++++++++++++++++++=
-+++---
->  1 file changed, 42 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 66506db..d2dfabe 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -283,6 +283,23 @@ static inline u16 omap_i2c_read_reg(struct omap_i2c_=
-dev *i2c_dev, int reg)
->  				(i2c_dev->regs[reg] << i2c_dev->reg_shift));
->  }
-> =20
-> +#ifdef dev_dbg
-> +#undef dev_dbg
-> +#endif
-> +#define dev_dbg dev_info
-> +
-> +static inline void omap_i2c_dump_state(const char *func, int line,
-> +	struct omap_i2c_dev *dev, const char *msg)
-> +{
-> +	dev_dbg(dev->dev, "%s: STAT=3D0x%04x; IE=3D0x%04x; CON=3D0x%04x; (%s:%d=
-)\n",
-> +		msg,
-> +		omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG),
-> +		omap_i2c_read_reg(dev, OMAP_I2C_IE_REG),
-> +		omap_i2c_read_reg(dev, OMAP_I2C_CON_REG),
-> +		func, line);
-> +}
-> +#define OMAP_I2C_DUMP_STATE(dev, msg) omap_i2c_dump_state(__func__, __LI=
-NE__, (dev), (msg))
+On Wed, 03 Dec 2014 03:20:19 +0008, Jason Wang said:
 
-NAK, if you want to add traces, use, well, tracepoints :-) It makes no
-sense to hack stuff like this.
+> > Still broken in next-20141201, and bisection fingers this commit:
+> >
+> > commit e0b46d0ee9c240c7430a47e9b0365674d4a04522
+> > Author: Herbert Xu <herbert@gondor.apana.org.au>
+> > Date:   Fri Nov 7 21:22:23 2014 +0800
+> >
+> >     tun: Use iovec iterators
 
---=20
-balbi
+> > What's the best way to proceed?
+>
+> See another fixes from Herbert, it probably fixes your issue:
+>
+> http://marc.info/?l=linux-netdev&m=141734182302021&w=2
 
---1SQmhf2mF2YjsYvc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Unfortunately, I'm still seeing the same behavior with that patch
+applied to next-20141201....
+
+
+--==_Exmh_1417618280_7177P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-iQIcBAEBAgAGBQJUfyL+AAoJEIaOsuA1yqREDKoP/RA9tGIAPVcWPHlAj6dfMt/g
-3yq8M6K973pshjmuTt4V7+EwvJvzdSqSJq6/j5OhVdh13TjMJzzDV7khgbu0LSqg
-mBsh43anc/T2Quga0ibuMk3SzcxtZ3fn4074sBXD00E14SxrUglAqj17wL2QJb/q
-vLfHUTv5MtYybwIUdG25INbWPRnXuV2a3hfWuK+Z24zrcEwtGeNNlQLymjumCBUT
-S1WRX5R3JLvPnydOz2+F6yrigUUblw0Fcpdm45jfsgUN1o9TJW2UsE36tCb6Ug/v
-wntZk8yP2eY8v/C73s6c+TcU0PevOgpSrffpx8EVca95QYSEm3308rgI8VHy/qQp
-KCgIvF25MKpOolrqmY2E/DXGyiSy1Nn0t61WLzsgVhZCtVpH/m8L0CI6MoT7kHTg
-8ODghLdaI5N1RLfJrtsL1AjV8aGrQweD3AC6NlkWKLSTIEYIHSaOS0oB1v4I2er8
-ZAlHfrxD9uLn1d2B/cajDpcvdBzh7YV+SNd82mAx/vFHd/b0BidhaPjHl40T/PCq
-KQaHdTNNjY5zUXoD2IAqCtSfrkstsyb2iKcsvTm76u+xqOJYyZdRMpGiEqj3zxMl
-2s7JxIP2iWiwtzLK02s9Lws4XES1iy6SRsne+xVV4dwNwifdnR9KrlDDwZ4aaqDp
-zqHV/RP1hRvOIguMIDZ3
-=NdNE
+iQIVAwUBVH8jaAdmEQWDXROgAQJW0g/+MHfjfND4Q6yMqjZuKgLMT28bkumu1d6s
+nuL9xlBTkX/uXBtKVlki5+ndfGPqitBnFvWG/HoxKMQzarpYEY89j/4s+iAWt/fl
+MPay2LEoFsJPfoCMR1VfXZ9uEvEDk1Wx+StitBcdCqFCbeS9KmvlJk5Qmw92VE5Y
+MElHT7kEcQRwTXRYqfTQyR+orf5Tnc4CE9k5rXWfXiC/owaXQ8771M1qOuvldRAX
+Bogwc9raddYwvJRpJe2BDMdlfmptirnDcRCNUxe1yUoA5YEK0VCR0blQ2KT8/XlE
+uKJu/Zwx7WTb/Ww5Mr1Nk2J2agyB1oJ06YR2J87EF37eWwOJOOXoNcHKUoScxZSZ
+u//A5R5h9EqY+kCTKqzq+h9T3uMyAQ3HUKHZYKnKMtPd14XTyVUMZaCzRFDfI9FE
+qqC5atdaHJvKiLE/R+JACvscxX+gf1rmCkXx/IA+woP0/S1/e/yy623DXZ70nlbV
+dnrBSrO5z/VJPVOpIuvQhnN9p6HBBBizbwMfTOl/GdU7+2SLzrtDE0eggeErPvky
+oep3vM6Z+BCdvBJVdscKkA7/BLM+kgSq9IBIeOPRUdfSqhq1yMLGW2cMBm14rK1g
+uRXvar+VnCFGtp3reiaAPNfdhTELhW3zepqZHlWa3HvH0zabP7e1LMoC+gre0EuT
+dWgTzpCzHTc=
+=Y47g
 -----END PGP SIGNATURE-----
 
---1SQmhf2mF2YjsYvc--
+--==_Exmh_1417618280_7177P--
