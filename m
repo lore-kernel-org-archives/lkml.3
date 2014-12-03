@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaLCOCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:02:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32966 "EHLO mx1.redhat.com"
+	id S1752796AbaLCOCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:02:42 -0500
+Received: from tex.lwn.net ([70.33.254.29]:35910 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaLCOCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:02:35 -0500
-Date: Wed, 3 Dec 2014 16:02:28 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC 1/2] virtio_balloon: convert to virtio 1.0 endian-ness
-Message-ID: <20141203140228.GA12370@redhat.com>
-References: <1417520617-2135-1-git-send-email-mst@redhat.com>
- <20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
+	id S1752709AbaLCOCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:02:39 -0500
+Date: Wed, 3 Dec 2014 09:02:37 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: update headers_install.txt document
+Message-ID: <20141203090237.62787e98@lwn.net>
+In-Reply-To: <1417589141-14814-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1417589141-14814-1-git-send-email-yamada.m@jp.panasonic.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 07:39:30PM +0100, Cornelia Huck wrote:
-> On Tue, 2 Dec 2014 13:44:06 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > balloon device is not part of virtio 1.0 spec.  Still, it's easy enough
-> > to make it handle endian-ness exactly as other virtio 1.0 devices: what
-> > we gain from this, is that there's no need to special-case it in virtio
-> > core.
-> 
-> Well, the balloon is weird in a number of ways, including its always
-> little-endian config space.
+On Wed,  3 Dec 2014 15:45:41 +0900
+Masahiro Yamada <yamada.m@jp.panasonic.com> wrote:
 
-Hmm yes, I forgot about that.
-
-> But I'm not quite sure the spec covers this?
-
-The spec does not cover balloon.  It merely includes a reference section
-about legacy balloon device.  What to do when that device sets VERSION_1
-is really up to us.
-
-Patchset v8 simply makes balloon tell core it's legacy_only.
-This is I guess fine as far as it goes.
-I was still looking for the best way that involves minimal noise
-in core. This looked like the best way: change 4 lines,
-and drop all special casing in core, but given the config space
-endian-ness mess, I'm not sure anymore.
-I guess we'll just stick to what v8 does for now.
-
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/uapi/linux/virtio_balloon.h | 5 +++--
-> >  drivers/virtio/virtio_balloon.c     | 4 ++--
-> >  2 files changed, 5 insertions(+), 4 deletions(-)
-> > 
+> The arch header directories "include/asm-*" were moved long ago.
+> Now we should check the existence of arch/*/include/uapi/asm/Kbuild
+> to see if an architecture supports the headers installation.
+> (Actually, "um" is the only architecture that does not have it.)
 > 
-> >  struct virtio_balloon_stat {
-> > -	__u16 tag;
-> > -	__u64 val;
-> > +	__virtio16 tag;
-> > +	__virtio64 val;
-> >  } __attribute__((packed));
-> 
-> Would the respective fields in the spec need updating? While it is
-> actually talking about legacy requirements, the fields are not
-> specified as __virtio{16,64}.
-> 
-> Also, is changing the stat fields enough? I've not looked into balloon
-> operation, but does the payload need some endianess conversion as well?
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+
+So please forgive me if I seem overly difficult and fussy, but...  while
+I'm all for fancy shell one-liners, wouldn't it be more straightforward,
+in this case, to simply say in the documentation that all architectures
+other than um have support?
+
+Thanks,
+
+jon
