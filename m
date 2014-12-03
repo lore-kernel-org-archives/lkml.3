@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaLCJqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:46:36 -0500
-Received: from lucky1.263xmail.com ([211.157.147.132]:36408 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaLCJqd (ORCPT
+	id S1751920AbaLCJtT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:49:19 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:33135 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaLCJtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:46:33 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: l.stach@pengutronix.de
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <d4dd3d10ea0311aad39646314c7cd0ac>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547EDBEE.70700@rock-chips.com>
-Date: Wed, 03 Dec 2014 17:46:22 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Dec 2014 04:49:17 -0500
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Mark Rutland <mark.rutland@arm.com>, heiko@sntech.de, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, ykk@rock-chips.com,
-        devel@driverdev.osuosl.org, Pawel Moll <pawel.moll@arm.com>,
-        linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
-        devicetree@vger.kernel.org, Zubair.Kakakhel@imgtec.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Sean Paul <seanpaul@chromium.org>, rmk+kernel@arm.linux.org.uk,
-        mark.yao@rock-chips.com, fabio.estevam@freescale.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, djkurtz@google.com,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        vladimir_zapolskiy@mentor.com, Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v15 06/12] dt-bindings: add document for dw_hdmi
-References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com> <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com> <1417544629.3411.15.camel@pengutronix.de>
-In-Reply-To: <1417544629.3411.15.camel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <547EAC4E.1090902@mentor.com>
+References: <547C41C0.9090000@mentor.com>
+	<CAPDyKFpdJCRCtJe8EHGtYHhSk+ont2pzkidx=GbAay1BT8=5eQ@mail.gmail.com>
+	<547C5787.3060205@mentor.com>
+	<CAPDyKFpOio0soa6OnmAv2AKDJ65WOdFhrRrKQuzek=JstUzX-Q@mail.gmail.com>
+	<547EAC4E.1090902@mentor.com>
+Date: Wed, 3 Dec 2014 10:49:16 +0100
+Message-ID: <CAPDyKFrRTtL5qaywTh8o0sq80rEvSC2G7HLauDBqjP4OOYLsDg@mail.gmail.com>
+Subject: Re: [Patch] Improve error handling in allocation of bounce buffers in mmc_init_queue
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Bhuvanesh <bhuvanesh_surachari@mentor.com>
+Cc: Chris Ball <chris@printf.net>, Mike Snitzer <snitzer@redhat.com>,
+        Jens Axboe <axboe@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Joe Perches <joe@perches.com>, harish_kandiga@mentor.com,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 December 2014 at 07:23, Bhuvanesh <bhuvanesh_surachari@mentor.com> wrote:
+> Hi,
+>
+>   Thanks for guiding. I read through Documentation/SubmittingPatches.
+> Fixed the warnings given by checkpatch. Kindly review the updated patch.
 
-On 2014年12月03日 02:23, Philipp Zabel wrote:
-> Hi Andy,
->
-> Am Dienstag, den 02.12.2014, 15:42 +0800 schrieb Andy Yan:
->> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->> new file mode 100644
->> index 0000000..107c1ca
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->> @@ -0,0 +1,40 @@
->> +DesignWare HDMI bridge bindings
->> +
->> +Required properities:
->> +- compatible: platform specific such as:
->> +   * "fsl,imx6q-hdmi"
->> +   * "fsl,imx6dl-hdmi"
->> +   * "rockchip,rk3288-dw-hdmi"
-> I think we should add a common compatible value "snps,dw-hdmi-tx" here:
->
-> 	compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx";
->
->> +- reg: Physical base address and length of the controller's registers.
->> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-> Better make ddc-i2c-bus optional, see the other thread about the ddc i2c
-> master.
-     I have the same idea too, but the patch about ddc i2c master has not
-  landed yet,  can we change the ddc-i2c-bus to optional  after the ddc 
-i2c master
-  patch land?
->> +- interrupts: The HDMI interrupt number
->> +
->> +Optional properties
->> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
->> +
->> +Example:
->> +	hdmi: hdmi@0120000 {
->> +		compatible = "fsl,imx6q-hdmi";
->> +		reg = <0x00120000 0x9000>;
->> +		interrupts = <0 115 0x04>;
->> +		gpr = <&gpr>;
->> +		clocks = <&clks 123>, <&clks 124>;
->> +		clock-names = "iahb", "isfr";
->> +		ddc-i2c-bus = <&i2c2>;
->> +
->> +		port@0 {
->> +			reg = <0>;
->> +
->> +			hdmi_mux_0: endpoint {
->> +				remote-endpoint = <&ipu1_di0_hdmi>;
->> +			};
->> +		};
->> +
->> +		port@1 {
->> +			reg = <1>;
->> +
->> +			hdmi_mux_1: endpoint {
->> +				remote-endpoint = <&ipu1_di1_hdmi>;
->> +			};
->> +		};
->> +	};
-> regards
-> Philipp
->
->
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
->
->
->
+Could you also resend it as a separate patch, not replying to this email thread.
 
+Kind regards
+Uffe
 
+>
+> From 7ea020e32e1fbe4d05d104e31815d908af92f2a5 Mon Sep 17 00:00:00 2001
+> From: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
+> Date: Mon, 1 Dec 2014 02:23:02 -0500
+> Subject: [PATCH] mmc: queue:Improve error handling during allocation of
+>  bounce buffers.
+>
+> Allocation of previous bounce buffer in mmc_init_queue when the current
+> bounce buffer allocation fails was leading to a crash later in
+> __blk_segment_map_sg. Error handling is improved by allocating previous
+> bounce buffer only if the current bounce buffer allocation succeeds.
+>
+> Signed-off-by: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
+> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
+> ---
+>  drivers/mmc/card/queue.c |   16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index cfa6110..236d194 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -232,13 +232,15 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+>                         if (!mqrq_cur->bounce_buf) {
+>                                 pr_warn("%s: unable to allocate bounce cur buffer\n",
+>                                         mmc_card_name(card));
+> -                       }
+> -                       mqrq_prev->bounce_buf = kmalloc(bouncesz, GFP_KERNEL);
+> -                       if (!mqrq_prev->bounce_buf) {
+> -                               pr_warn("%s: unable to allocate bounce prev buffer\n",
+> -                                       mmc_card_name(card));
+> -                               kfree(mqrq_cur->bounce_buf);
+> -                               mqrq_cur->bounce_buf = NULL;
+> +                       } else {
+> +                               mqrq_prev->bounce_buf =
+> +                                               kmalloc(bouncesz, GFP_KERNEL);
+> +                               if (!mqrq_prev->bounce_buf) {
+> +                                       pr_warn("%s: unable to allocate bounce prev buffer\n",
+> +                                               mmc_card_name(card));
+> +                                       kfree(mqrq_cur->bounce_buf);
+> +                                       mqrq_cur->bounce_buf = NULL;
+> +                               }
+>                         }
+>                 }
+>
+> --
+> 1.7.9.5
+>
+>
+>
+> Thank you,
+> Regards,
+> Bhuvanesh
+>
+> On 12/02/2014 05:01 PM, Ulf Hansson wrote:
+>> On 1 December 2014 at 12:56, Bhuvanesh <bhuvanesh_surachari@mentor.com> wrote:
+>>> Hi,
+>>>
+>>>   Please find the patch inline.
+>>
+>> Apparently you didn't read /Documentation/SubmittingPatches.
+>>
+>> If you want me to review, please follow that guide. For example, I
+>> expect you to run checkpatch.
+>>
+>> Kind regards
+>> Uffe
+>>
