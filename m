@@ -1,86 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaLCTXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:23:31 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:39001 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaLCTX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:23:29 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "open list\:ARM\/Rockchip SoC..." 
-	<linux-rockchip@lists.infradead.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Tony Xie <xxx@rock-chips.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 0/4] This suspend patch is only support cut off the power of cpu and some external
-References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
-	<7htx1f409k.fsf@deeprootsystems.com>
-	<CAD=FV=V2go5BMFbiFKu73_aVz5ck949W-kJQ6WLkAQRPJbjPVA@mail.gmail.com>
-	<CAD=FV=XuQk17CTNKJY++J+w9Ab9_OUX0ca0A99m7yKPAWSs2=w@mail.gmail.com>
-	<7hmw763kql.fsf@deeprootsystems.com> <547F1639.3030102@rock-chips.com>
-Date: Wed, 03 Dec 2014 11:23:26 -0800
-In-Reply-To: <547F1639.3030102@rock-chips.com> (Chris Zhong's message of "Wed,
-	03 Dec 2014 21:55:05 +0800")
-Message-ID: <7hiohszgep.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752042AbaLCTYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:24:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27924 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937AbaLCTYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 14:24:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,509,1413270000"; 
+   d="scan'208";a="618052561"
+From: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] [LBR] Dump LBRs on Exception
+Thread-Topic: [PATCH v2] [LBR] Dump LBRs on Exception
+Thread-Index: AQHQClAp6CYIYedu6ESpcFdbEVpmDZx0+/cAgAAJTYCAAK9oAIAAcvIAgATcELCAAbVxAIAABnsAgAAERoCAAWYk4A==
+Date: Wed, 3 Dec 2014 18:25:29 +0000
+Message-ID: <65CD3FC07F3BF942ABE211646D72D770356ECDFD@IRSMSX110.ger.corp.intel.com>
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
+ <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+ <alpine.DEB.2.11.1411271609510.3961@nanos>
+ <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
+ <65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com>
+ <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
+ <65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
+ <CALCETrWxXm_Cvu+3dakCFX1GSN2KcaoxC+qbTr8Z7ha2CtEEXw@mail.gmail.com>
+ <alpine.DEB.2.11.1412022044410.16275@nanos>
+ <CALCETrW1hsmUrrG9KzfAujFuGcF1g1b8m++hJkxSGxketobUHw@mail.gmail.com>
+In-Reply-To: <CALCETrW1hsmUrrG9KzfAujFuGcF1g1b8m++hJkxSGxketobUHw@mail.gmail.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB3JOQHH028590
 
-Chris Zhong <zyw@rock-chips.com> writes:
+> From: Andy Lutomirski [mailto:luto@amacapital.net]
+> Sent: Tuesday, December 2, 2014 9:12 PM
+> To: Thomas Gleixner
+> Cc: Berthier, Emmanuel; H. Peter Anvin; X86 ML; Jarzmik, Robert; LKML
+> Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+> 
+> On Tue, Dec 2, 2014 at 11:56 AM, Thomas Gleixner <tglx@linutronix.de>
+> wrote:
+> > On Tue, 2 Dec 2014, Andy Lutomirski wrote:
+> >> TBH, I'm wondering whether this is actually a good idea.  It might be
+> >> more valuable and less scary to try to make this work for BUG instead.
+> >> To get the most impact, it might be worth allocating a new exception
+> >> vector for BUG and using 'int 0xwhatever', and the prologue to that
+> >> could read out all the MSRs without any branches.
+> >
+> > BUG is pretty uninteresting. We usually know how we got there. Now
+> > where LBR might be useful is if you have stack corruption and branch
+> > into nirvana or access random crap via a few hoops. There the LBR data
+> > might help, because the corrupted stack does not tell anything.
 
-[...]
+Right, I remember some strange Panic where the register content was not coherent with the EIP.
+That's what I call "jump into space".
 
-> I have test these patches on evb board base on next-20141128 with a
-> defconfig[0], and with u-boot[1].
-> As Doug said, we need below 3 patches for resume.
->
-> 1.https://patchwork.kernel.org/patch/5051881/  - clocksource:
->    arch_timer: Allow the device tree to specify uninitialized timer
->    registers
->
-> 2.https://patchwork.kernel.org/patch/5363671/  - clocksource:
->    arch_timer: Fix code to use physical timers when requested
->
-> 3.https://patchwork.kernel.org/patch/5382141/  - ARM: dts: rk3288: add
->    arm,cpu-registers-not-fw-configured
->
->
-> And it will auto wakeup, as Heiko said in v8.  
+> > So yes, this is a corner case debugging scenario, but given the
+> > complexity of coordination with perf and the possible intrusiveness in
+> > the low level entry path, we really need to see a few real world
+> > examples where this helps, aside of the constructed case.
 
-OK, with your series plus those 3 patches on top of next-20141128, I'm
-now seeing it auto-wakeup, either with multi_v7_defconfig or Heiko's
-rk3288_defconfig.
+Here is such "jump into space":
 
-> But I have never notice before, since the u-boot never enable edp, and
-> I use the coreboot with edp display.  Actually it is a bug in rk3288,
-> the rk3288 have not 27Mhz clock source, but the edp initially set to
-> this non-existent clock. At this time, edp is working on a unknown
-> state, and it always bring a interrupt, this interrupt avoid system
-> enter suspend. 
+<1>[  533.394885] BUG: unable to handle kernel paging request at c12329c0
+<1>[  533.394930] IP: [<c12329ed>] s0ix_complete+0x2d/0x30
+<4>[  533.394973] *pde = 362c8063 *pte = 01232161 
+<4>[  533.395001] Oops: 0003 [#1] PREEMPT SMP 
+<4>[  533.395030] Modules linked in: atomisp lm3554 mt9m114 ov8830 tty_hci wl12xx_sdio(O) wl12xx(O) mac80211(O) cfg80211(O) compat(O) rmi4(C) st_drv videobuf_vmalloc videobuf_core matrix(C) sgx(C)
+<4>[  533.395120] 
+<4>[  533.395135] Pid: 0, comm: swapper/1 Tainted: G         C O 3.4.21-183401-g34a7d6b #1 Intel Corporation CloverTrail/FFRD
+<4>[  533.395165] EIP: 0060:[<c12329ed>] EFLAGS: 00011ed6 CPU: 1
+<4>[  533.395184] EIP is at s0ix_complete+0x2d/0x30
+<4>[  533.395198] EAX: c12329c0 EBX: c1d120a0 ECX: 00000001 EDX: 00000000
+<4>[  533.395211] ESI: e0d26b2b EDI: 12e6492c EBP: f60a9eec ESP: f60a9ef0
+<4>[  533.395225]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+<4>[  533.395239] CR0: 8005003b CR2: c12329c0 CR3: 01dfe000 CR4: 000007d0
+<4>[  533.395253] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+<4>[  533.395265] DR6: ffff0ff0 DR7: 00000400
+<0>[  533.395279] Process swapper/1 (pid: 0, ti=f60a8000 task=f607b520 task.ti=f60a8000)
+<0>[  533.395290] Stack:
+<4>[  533.395299]  c1230b36 f60a9f40 c153d73a 00000767 f60a9f10 c123b908 f60a9f0c 00000000
+<4>[  533.395342]  00000052 00000006 f67eb45c 00000001 00000007 00000000 c1d120a0 00000052
+<4>[  533.395384]  00000001 c1d120a0 00000214 f67eb45c f60a9f50 c174ccd5 fffffff0 00000001
+<0>[  533.395427] Call Trace:
+<4>[  533.395445]  [<c1230b36>] pmu_set_s0ix_complete+0x16/0x20
+<4>[  533.395468]  [<c153d73a>] ? soc_s0ix_idle+0x13a/0x4b0
+<4>[  533.395488]  [<c123b908>] ? ns_to_timespec+0x28/0x40
+<4>[  533.395510]  [<c174ccd5>] ? cpuidle_enter+0x15/0x20
+<4>[  533.395529]  [<c174d2ef>] ? cpuidle_idle_call+0x9f/0x320
+<4>[  533.395549]  [<c1209795>] ? cpu_idle+0x75/0xd0
+<4>[  533.395569]  [<c19955bd>] ? start_secondary+0x23c/0x23e
+<0>[  533.395583] Code: e5 3e 8d 74 26 00 a1 44 91 e0 c1 8b 90 38 0a 00 00 85 d2 75 02 5d c3 8b 90 34 1d 00 00 31 c0 89 42 58 5d c3 8d 76 00 8d bc 27 00 <00> 00 00 55 89 e5 53 3e 8d 74 26 00 89 c1 31 c0 83 f9 3f 77 24 
+<0>[  533.395862] EIP: [<c12329ed>] s0ix_complete+0x2d/0x30 SS:ESP 0068:f60a9ef0
+<4>[  533.395888] CR2: 00000000c12329c0
 
-I see, good find!
+Analysis:
 
-> So if we want to enter suspend normally, the
-> edp_24m_sel(bit 15) of CRU_CLKSEL28_CON(0xff7600d0) must be set to 1.
+After replaying the game with T32 in normal situation and comparing the snapshots,  it appears that to get the same call stack, we come from pmu_set_s0ix_complete():
 
-I didn't try your u-boot fix, but it sounds like there should be a kernel
-fix for this.  Why doesn't the disabling of unused clocks put the EDP
-into a safe/disabled state?
+                    |void pmu_set_s0ix_complete(void)
+                437 |{
+                438 |        if (pmu_ops->set_s0ix_complete)
+   NP:0000:C1230B28 |A14071E0C1                mov        eax,[0xC1E07140]   ; eax,pmu_ops
+   NP:0000:C1230B2D |8B401C                    mov        eax,[eax+0x1C]
+   NP:0000:C1230B30 |85C0                      test       eax,eax
+   NP:0000:C1230B32 |7402                      je         0xC1230B36
+                439 |                pmu_ops->set_s0ix_complete();
+   NP:0000:C1230B34 |FFD0                      call       eax
+                440 |}
+   NP:0000:C1230B36 |5D                        pop        ebp
+   NP:0000:C1230B37 |C3                        ret
 
-Kevin
+and we have not yet executed the beginning of s0ix_complete() as EBP is not yet stored in the stack and EAX has not be modified:
 
+                   |void s0ix_complete(void)
+               257 |{
+  NP:0000:C12329C0 |55______________s0ix_com.:push_______ebp
+  NP:0000:C12329C1 |89E5                      mov        ebp,esp
+  NP:0000:C12329C3 |3E8D742600                lea        esi,ds:[esi+0x0]
+                   |
+                   |void s0ix_complete(void)
+               257 |{
+               258 |        if (unlikely(mid_pmu_cxt->s0ix_entered))
+  NP:0000:C12329C8 |A14471E0C1                mov        eax,[0xC1E07144]   ; eax,mid_pmu_cxt
+  NP:0000:C12329CD |8B90380A0000              mov        edx,[eax+0xA38]
+  NP:0000:C12329D3 |85D2                      test       edx,edx
+  NP:0000:C12329D5 |7502                      jne        0xC12329D9
+               260 |}
+  NP:0000:C12329D7 |5D                        pop        ebp
+  NP:0000:C12329D8 |C3                        ret
+               259 |                writel(0, &mid_pmu_cxt->pmu_reg->pm_msic);
+  NP:0000:C12329D9 |8B90341D0000              mov        edx,[eax+0x1D34]
+                63 |build_mmio_write(writel, "l", unsigned int, "r", :"memory")
+  NP:0000:C12329DF |31C0                      xor        eax,eax
+  NP:0000:C12329E1 |894258                    mov        [edx+0x58],eax
+               260 |}
+  NP:0000:C12329E4 |5D                        pop        ebp
+  NP:0000:C12329E5 |C3                        ret
+  NP:0000:C12329E6 |8D7600                    lea        esi,[esi+0x0]
+  NP:0000:C12329E9 |8DBC2700000000            lea        edi,[edi+0x0]
+
+So, the execution of "call eax" has jumped directly to eax+2d.
+
+> One option would be to treat this as the debugging feature that it is.
+
+Agree.
+
+> Don't change the exception entry code at all.  Instead add a run-time switch
+> that will ask perf to set up the LBR stuff appropriately and will change the IDT
+> entries to stubs that first use rdmsr to copy all the LBRs to some per-cpu, per-
+> vector area and then jump to the real entry point.
+> 
+> Yes, performance will suck, and there will be some artifacts if the exception
+> nests inside itself before reporting the error (which can happen for page
+> faults, I think), but this isn't the end of the world if it's an opt-in feature.
+> 
+> And the whole pile of rdmsrs can be generated at run-time to match the
+> running CPU.
+
+The final patch will bypass the new code in case of UserSpace page fault, so performance impact will be very low.
+LBRs copy takes much more time than LBR stop/start.
+
+The simple is the better:
+
+.macro STOP_LBR
+#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+	testl $3,CS(%rsp)		/* Kernel Space? */
+	jnz 1f
+	testl $3, PER_CPU_VAR(lbr_dump_state) /* Disabled? */
+	jnz 1f
+	push %rax
+	push %rcx
+	push %rdx
+	movl $MSR_IA32_DEBUGCTLMSR, %ecx
+	rdmsr
+	and $~1, %eax	/* Disable LBR recording */
+	wrmsr
+	pop %rdx
+	pop %rcx
+	pop %rax
+1:
+#endif
+.endm
+
+Thx,
+
+Emmanuel.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
