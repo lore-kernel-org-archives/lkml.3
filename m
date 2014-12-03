@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaLCJtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:49:19 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:33135 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaLCJtR (ORCPT
+	id S1752023AbaLCJvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:51:07 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:49518 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaLCJvC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:49:17 -0500
+	Wed, 3 Dec 2014 04:51:02 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lyra Zhang <zhang.lyra@gmail.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
+        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        Wei Qiao =?utf-8?B?KOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+Date: Wed, 03 Dec 2014 10:50:17 +0100
+Message-ID: <3212776.kDbe7yX4eX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAfSe-u+g0mYGi9Adrd+YwwZ=q0-s79yCg_paB1UAVqFoufXEA@mail.gmail.com>
+References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com> <54761BFC.4020705@ti.com> <CAAfSe-u+g0mYGi9Adrd+YwwZ=q0-s79yCg_paB1UAVqFoufXEA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <547EAC4E.1090902@mentor.com>
-References: <547C41C0.9090000@mentor.com>
-	<CAPDyKFpdJCRCtJe8EHGtYHhSk+ont2pzkidx=GbAay1BT8=5eQ@mail.gmail.com>
-	<547C5787.3060205@mentor.com>
-	<CAPDyKFpOio0soa6OnmAv2AKDJ65WOdFhrRrKQuzek=JstUzX-Q@mail.gmail.com>
-	<547EAC4E.1090902@mentor.com>
-Date: Wed, 3 Dec 2014 10:49:16 +0100
-Message-ID: <CAPDyKFrRTtL5qaywTh8o0sq80rEvSC2G7HLauDBqjP4OOYLsDg@mail.gmail.com>
-Subject: Re: [Patch] Improve error handling in allocation of bounce buffers in mmc_init_queue
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Bhuvanesh <bhuvanesh_surachari@mentor.com>
-Cc: Chris Ball <chris@printf.net>, Mike Snitzer <snitzer@redhat.com>,
-        Jens Axboe <axboe@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Joe Perches <joe@perches.com>, harish_kandiga@mentor.com,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:seEjlq4/vOV+Iw7pQsJtFN1lFi7+eGd5v37XbTojfoo
+ 5o36cXBabzdNhfHSwivxD+KeKG2mYm+syWXW/k2M+JakIT9Pj9
+ F66CLsBGQH/hn9BUXiX3i/8cCM8b78dkzdJLL9hmYCj478jX6K
+ prKH9So0KnPfakXN4/oI0I7cUxLcBoRVH41xq0oZZXc2w+VpR9
+ hoCacZoMJnXnRmiuwEUC94jKsc1cFo5wFeFFLI9sRKoYWXlqRF
+ M3aH8wUWXhtnbBAlDTKQ3/vvk3z3Dcy1Sx1/fB2f64gCWf8thp
+ OADaq2enwkDRY2bnMf44vZjSFMWivsn62VQ0sOGoA9DwDFoitk
+ L/Bf7z7+lVj8C6+RY3CI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 December 2014 at 07:23, Bhuvanesh <bhuvanesh_surachari@mentor.com> wrote:
-> Hi,
->
->   Thanks for guiding. I read through Documentation/SubmittingPatches.
-> Fixed the warnings given by checkpatch. Kindly review the updated patch.
+On Wednesday 03 December 2014 17:17:13 Lyra Zhang wrote:
 
-Could you also resend it as a separate patch, not replying to this email thread.
+> 2014-11-27 2:29 GMT+08:00 Murali Karicheri <m-karicheri2@ti.com>:
+> > How about sorting this includes? asm/irq.h go first followed linux/ in alphabatical order?
+>
+> There are a few compile warnings if I moved asm/irq.h to the top of
+> all included files.
 
-Kind regards
-Uffe
+The order that Murali meant is
 
->
-> From 7ea020e32e1fbe4d05d104e31815d908af92f2a5 Mon Sep 17 00:00:00 2001
-> From: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
-> Date: Mon, 1 Dec 2014 02:23:02 -0500
-> Subject: [PATCH] mmc: queue:Improve error handling during allocation of
->  bounce buffers.
->
-> Allocation of previous bounce buffer in mmc_init_queue when the current
-> bounce buffer allocation fails was leading to a crash later in
-> __blk_segment_map_sg. Error handling is improved by allocating previous
-> bounce buffer only if the current bounce buffer allocation succeeds.
->
-> Signed-off-by: Bhuvanesh Surachari <bhuvanesh_surachari@mentor.com>
-> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
-> ---
->  drivers/mmc/card/queue.c |   16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-> index cfa6110..236d194 100644
-> --- a/drivers/mmc/card/queue.c
-> +++ b/drivers/mmc/card/queue.c
-> @@ -232,13 +232,15 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
->                         if (!mqrq_cur->bounce_buf) {
->                                 pr_warn("%s: unable to allocate bounce cur buffer\n",
->                                         mmc_card_name(card));
-> -                       }
-> -                       mqrq_prev->bounce_buf = kmalloc(bouncesz, GFP_KERNEL);
-> -                       if (!mqrq_prev->bounce_buf) {
-> -                               pr_warn("%s: unable to allocate bounce prev buffer\n",
-> -                                       mmc_card_name(card));
-> -                               kfree(mqrq_cur->bounce_buf);
-> -                               mqrq_cur->bounce_buf = NULL;
-> +                       } else {
-> +                               mqrq_prev->bounce_buf =
-> +                                               kmalloc(bouncesz, GFP_KERNEL);
-> +                               if (!mqrq_prev->bounce_buf) {
-> +                                       pr_warn("%s: unable to allocate bounce prev buffer\n",
-> +                                               mmc_card_name(card));
-> +                                       kfree(mqrq_cur->bounce_buf);
-> +                                       mqrq_cur->bounce_buf = NULL;
-> +                               }
->                         }
->                 }
->
-> --
-> 1.7.9.5
->
->
->
-> Thank you,
-> Regards,
-> Bhuvanesh
->
-> On 12/02/2014 05:01 PM, Ulf Hansson wrote:
->> On 1 December 2014 at 12:56, Bhuvanesh <bhuvanesh_surachari@mentor.com> wrote:
->>> Hi,
->>>
->>>   Please find the patch inline.
->>
->> Apparently you didn't read /Documentation/SubmittingPatches.
->>
->> If you want me to review, please follow that guide. For example, I
->> expect you to run checkpatch.
->>
->> Kind regards
->> Uffe
->>
+- first all linux/*.h headers, sorted alphabetically
+- then all asm/*.h headers, again sorted alphabetically
+
+This is the recommended style in general.
+
+> Warning details are below:
+> 
+> In file included from drivers/tty/serial/sprd_serial.c:14:0:
+> ./arch/arm64/include/asm/irq.h:6:39: warning: ‘struct pt_regs’
+> declared inside parameter list [enabled by default]
+>  extern void (*handle_arch_irq)(struct pt_regs *);
+>                                        ^
+> ./arch/arm64/include/asm/irq.h:6:39: warning: its scope is only this
+> definition or declaration, which is probably not what you want
+> [enabled by default]
+> ./arch/arm64/include/asm/irq.h:8:54: warning: ‘struct pt_regs’
+> declared inside parameter list [enabled by default]
+>  extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+> 
+
+I would consider this a (minor) bug in asm/irq.h. If you don't mind,
+please submit a patch to add a line with 'struct pt_regs;' to
+asm/irq.h.
+
+	Arnd
