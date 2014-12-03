@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaLCMr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 07:47:29 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:44982 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLCMr1 (ORCPT
+	id S1752349AbaLCMtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 07:49:05 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:20722 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaLCMtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 07:47:27 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-34-547f065cff4d
-Message-id: <547F065A.5030505@samsung.com>
-Date: Wed, 03 Dec 2014 13:47:22 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>, Inki Dae <inki.dae@samsung.com>,
-        Tobias Jakobi <Liquid.Acid@gmx.net>, Daniel Drake <drake@endlessm.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v2 2/7] ARM: Exynos: add support for sub-power domains
-References: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
- <1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
- <CAMuHMdWjZTRVrdcdu2toj9FYi5gOgw_Hf23SRh=9-QKwQDJy0g@mail.gmail.com>
-In-reply-to: <CAMuHMdWjZTRVrdcdu2toj9FYi5gOgw_Hf23SRh=9-QKwQDJy0g@mail.gmail.com>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xK7oxbPUhBt1/jCxurTvHatFwNcTi
-	0fzHzBbPbu1lsph0fwKLRf/j18wWmx5fY7W4vGsOm8WM8/uYLLp+/mSzWLT1C7vFql1/GC2O
-	rw134PVY9D3LY+esu+weizftZ/PYtKqTzePOtT1sHocOdzB6bF5S79G3ZRWjx+dNcgGcUVw2
-	Kak5mWWpRfp2CVwZh1onshccEqs4dvsUewNjm2AXIyeHhICJxNxvp9ghbDGJC/fWs3UxcnEI
-	CSxllJhy5Q07hPOJUWL9n21MIFW8AloSJ7+/YAaxWQRUJdbses0KYrMJGEp0ve1iA7FFBWIk
-	Fi9czQxRLyjxY/I9li5GDg4RAV2JOT+ZQGYyC+xkkVg/pR2sV1jAS+LRzwtgtpDASUaJ5xNM
-	QGxOgWCJU8vmgu1lFjCT+PLyMCuELS+xec1b5gmMArOQrJiFpGwWkrIFjMyrGEVTS5MLipPS
-	c430ihNzi0vz0vWS83M3MUJi6OsOxqXHrA4xCnAwKvHwOryrCRFiTSwrrsw9xCjBwawkwvvs
-	W12IEG9KYmVValF+fFFpTmrxIUYmDk6pBkYGNf/UDbcPezxs/J74ok6jSDc/8JFp4On+HTbf
-	slk4fKdMWfM3QOWaZr73aTcePdlXLNwpukG3mts/FP+brtBoui9L/Yqad4ncpAbua64xN8p3
-	ruE8+1if5QzjlEtJH00chbpeCS5TelV6VHfBDDsBJuW0g8eu3CpWK6iadeV5x4K7rTdMKpVY
-	ijMSDbWYi4oTATxBFqp/AgAA
+	Wed, 3 Dec 2014 07:49:04 -0500
+X-IronPort-AV: E=Sophos;i="5.07,507,1413270000"; 
+   d="scan'208";a="52324509"
+Message-ID: <547F06BC.8060000@broadcom.com>
+Date: Wed, 3 Dec 2014 13:49:00 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Jeremiah Mahler <jmmahler@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the net-next
+ tree
+References: <20141201181933.6dfaad66@canb.auug.org.au> <547C19ED.10201@broadcom.com> <20141203083655.GA5418@hudson.localdomain> <20141203105148.GA7633@hudson.localdomain>
+In-Reply-To: <20141203105148.GA7633@hudson.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 2014-12-03 13:36, Geert Uytterhoeven wrote:
-> Hi Marek,
+On 12/03/14 11:51, Jeremiah Mahler wrote:
+> On Wed, Dec 03, 2014 at 12:36:55AM -0800, Jeremiah Mahler wrote:
+>> all,
+>>
+>> On Mon, Dec 01, 2014 at 08:34:05AM +0100, Arend van Spriel wrote:
+>>> On 01-12-14 08:19, Stephen Rothwell wrote:
+>>>> Hi Greg,
+>>>>
+>>>> Today's linux-next merge of the driver-core tree got a conflict in
+>>>> drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
+>>>> ("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
+>>>> ("ath9k: restart hardware after noise floor calibration failure") and
+>>>> 325e18817668 ("ath9k: fix misc debugfs when not using chan context")
+>>>> from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
+>>>> for ath9k debugfs files") from the driver-core tree.
+>>>>
+>>>> I fixed it up (see below) and can carry the fix as necessary (no action
+>>>> is required).
+>>>>
+>>>> Greg, I am not sure why those 2 commits are even in your tree.  Do they
+>>>> depend on something else in your tree?
+>>>
+>>> They do. The three commits below are related:
+>>>
+>>> d32394f ath: ath9k: use debugfs_create_devm_seqfile() helper for
+>>> seq_file entrie
+>>> 631bee2 ath: use seq_file api for ath9k debugfs files
+>>> 98210b7 debugfs: add helper function to create device related seq_file
+>>>
+>>> The ath patches were made to provide example of using the new helper
+>>> function and get some idea about code savings. Greg and John discussed
+>>> who would take them. I noticed other ath changes in net-next so I kinda
+>>> expected this email ;-)
+>>>
+>>> Regards,
+>>> Arend
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>> I just ran in to a problem with one of these commits.
+>>
+>> On an Acer C720 laptop if a suspend is performed the screen freezes,
+>> the machine locks up, and according to the indicator lights it does
+>> not enter suspend.  A hard reset is required to get it running again.
+>>
+>> I have bisected the kernel and found that the following is the first bad
+>> commit.
+>>
+>>    commit d32394fae95741d733b174ec1446f27765f80233
+>>    Author: Arend van Spriel<arend@broadcom.com>
+>>    Date:   Sun Nov 9 11:32:00 2014 +0100
+>>
+>>        ath: ath9k: use debugfs_create_devm_seqfile() helper for seq_file
+>>    entries
+>>
+>>        Use the helper to get rid of the file operations per debugfs file.
+>>    The
+>>        struct ath9k_softc pointer is set as device driver data to be
+>>    obtained
+>>        in the seq_file read operation.
+>>
+>>        Signed-off-by: Arend van Spriel<arend@broadcom.com>
+>>        Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>
+>> Let me know if I can do anything else to help.
+>>
+>> --
+>> - Jeremiah Mahler
 >
-> On Wed, Dec 3, 2014 at 1:33 PM, Marek Szyprowski
-> <m.szyprowski@samsung.com> wrote:
->> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->> index abde1ea8a119..b884358ebb1a 100644
->> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
->> @@ -22,6 +22,8 @@ Optional Properties:
->>          - pclkN, clkN: Pairs of parent of input clock and input clock to the
->>                  devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
->>                  are supported currently.
->> +- samsung,power-domain: phandle to a master power domain that the given domain
->> +                      is a part of
-> For new DTSes I'd recommend using the generic "power-domains" only.
+> I took a look at the patch that is causing this problem (d32394fae95).
+> My config negates everything in the patch except for a one line change
+> to ath9k/pci.c.  If I remove this change (shown below) the problem goes
+> away.
 
-I think that some consistency in dts style will be really an added 
-value. In my opinion for
-all existing DTSes we should keep using 'samsung,power-domain' (even for 
-defining a parent
-power domains) and for all new DTSes, the generic 'power-domains' 
-binding should be used.
+Ok. But then it will likely crash when you cat one of the changed 
+debugfs files. Guess this commit needs to be reverted entirely.
 
-> Or do you already have a DTS where tv-power-domain@10023C20 uses
-> "samsung,power-domain" in the wild?
+Regards,
+Arend
 
-Not yet. We only used in private repositories, which can be changed.
-
+> diff --git a/drivers/net/wireless/ath/ath9k/pci.c
+> b/drivers/net/wireless/ath/ath9k/pci.c
+> index 90c9e3c..c018dea 100644
+> --- a/drivers/net/wireless/ath/ath9k/pci.c
+> +++ b/drivers/net/wireless/ath/ath9k/pci.c
+> @@ -856,7 +856,6 @@ static int ath_pci_probe(struct pci_dev *pdev, const
+> struct pci_device_id *id)
+>          sc = hw->priv;
+>          sc->hw = hw;
+>          sc->dev =&pdev->dev;
+> -       dev_set_drvdata(sc->dev, sc);
+>          sc->mem = pcim_iomap_table(pdev)[0];
+>          sc->driver_data = id->driver_data;
 >
->>   Node of a device using power domains must have a samsung,power-domain property
->>   defined with a phandle to respective power domain.
->> diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
->> index 20f267121b3e..fa9a47ddad81 100644
->> --- a/arch/arm/mach-exynos/pm_domains.c
->> +++ b/arch/arm/mach-exynos/pm_domains.c
->> @@ -108,7 +108,7 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
->>   static __init int exynos4_pm_init_power_domain(void)
->>   {
->>          struct platform_device *pdev;
->> -       struct device_node *np;
->> +       struct device_node *np, *master_np;
->>
->>          for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
->>                  struct exynos_pm_domain *pd;
->> @@ -159,6 +159,15 @@ no_clk:
->>
->>                  pm_genpd_init(&pd->pd, NULL, !on);
->>                  of_genpd_add_provider_simple(np, &pd->pd);
->> +
->> +               /* make master and slave hierarchy */
->> +               master_np = of_parse_phandle(np, "samsung,power-domain", 0);
->> +               if (!master_np)
->> +                       master_np = of_parse_phandle(np, "power-domains", 0);
->> +               if (master_np) {
->> +                       pm_genpd_add_subdomain_names(master_np->name, np->name);
->> +                       of_node_put(master_np);
->> +               }
->>
-
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
 
