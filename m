@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaLCVMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:12:41 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:41964 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLCVMj (ORCPT
+	id S1751891AbaLCVPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:15:03 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:37188 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390AbaLCVPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:12:39 -0500
-Date: Wed, 3 Dec 2014 13:12:37 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: akpm@linux-foundation.org, Dmitry Vyukov <dvyukov@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Nadia.Derbey@bull.net, aquini@redhat.com, davidlohr@hp.com,
-        Joe Perches <joe@perches.com>, manfred@colorfullife.com,
-        avagin@openvz.org, LKML <linux-kernel@vger.kernel.org>,
-        Kostya Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        kasan-dev <kasan-dev@googlegroups.com>
-Subject: Re: [PATCH] kernel: sysctl: use 'unsigned long' type for 'zero'
- variable
-In-Reply-To: <1417610481-11590-1-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.10.1412031311360.28360@chino.kir.corp.google.com>
-References: <547F0486.7020400@samsung.com> <1417610481-11590-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 3 Dec 2014 16:15:01 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.11.1412032141040.16275@nanos>
+References: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+	<20141201230339.GA20487@ret.masoncoding.com>
+	<1417529606.3924.26.camel@maggy.simpson.net>
+	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+	<1417540493.21136.3@mail.thefacebook.com>
+	<20141203184111.GA32005@redhat.com>
+	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+	<20141203190045.GB32005@redhat.com>
+	<CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
+	<CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
+	<20141203200906.GA3118@redhat.com>
+	<CA+55aFxLmBjTOdGu3TFzTJ-ym7TVLDBt79BKqU-vZbX4CvSGog@mail.gmail.com>
+	<alpine.DEB.2.11.1412032141040.16275@nanos>
+Date: Wed, 3 Dec 2014 13:14:59 -0800
+X-Google-Sender-Auth: oTtyknS64OInXcYwYcjsG8dnGiA
+Message-ID: <CA+55aFw8L06BxpsVnbdiNaU2WSFo=tafND25uV_SHUig=CC1AA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Andrey Ryabinin wrote:
+On Wed, Dec 3, 2014 at 12:55 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> But it's always negative, which means HPET is always ahead of
+> TSC. That excludes pretty much the clocksource watchdog starvation
+> issue which results in TSC being ahead of HPET due to a HPET
+> wraparound (which takes ~300s).
 
-> 
-> Commit ed4d4902ebdd ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity") replaced
-> 'unsigned long hugetlb_zero' with 'int zero' leading to out-of-bounds access
-> in proc_doulongvec_minmax():
-> 
-> 	==================================================================
-> 	BUG: AddressSanitizer: out of bounds access in
-> 	__do_proc_doulongvec_minmax+0x8a0/0x9a0 at addr ffffffff83980960
-> 	Read of size 8 by task trinity-c14/6919
-> 	Out-of-bounds access to the global variable 'zero'
-> 	[ffffffff83980960-ffffffff83980964) defined at ipc/ipc_sysctl.c:158
-> 
-> 	CPU: 1 PID: 6919 Comm: trinity-c14 Not tainted 3.18.0-rc1+ #50
-> 	Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> 	 0000000000000001 ffff8800b68cf418 ffffffff82c2d3ae 0000000000000000
-> 	 ffff8800b68cf4c0 ffff8800b68cf4a8 ffffffff813eaa81 ffffffff0000000c
-> 	 ffff88010b003600 ffff8800b68cf479 0000000000000296 0000000000000000
-> 	Call Trace:
-> 	 [<ffffffff813ead71>] __asan_report_load8_noabort+0x51/0x70
-> 	mm/kasan/report.c:248
-> 	 [<ffffffff810cc3e0>] __do_proc_doulongvec_minmax+0x8a0/0x9a0
-> 	kernel/sysctl.c:2284
-> 	 [<     inlined    >] proc_doulongvec_minmax+0x50/0x80
-> 	do_proc_doulongvec_minmax kernel/sysctl.c:2322
-> 	 [<ffffffff810cc530>] proc_doulongvec_minmax+0x50/0x80 kernel/sysctl.c:2345
-> 	 [<ffffffff813c9e5a>] hugetlb_sysctl_handler_common+0x12a/0x3c0
-> 	mm/hugetlb.c:2270
-> 	 [<ffffffff813cb45c>] hugetlb_mempolicy_sysctl_handler+0x1c/0x20
-> 	mm/hugetlb.c:2293
-> 	 [<ffffffff8153e6e9>] proc_sys_call_handler+0x179/0x1f0
-> 	fs/proc/proc_sysctl.c:506
-> 	 [<ffffffff8153e76f>] proc_sys_write+0xf/0x20 fs/proc/proc_sysctl.c:524
-> 	 [<ffffffff813f1563>] __kernel_write+0x123/0x440 fs/read_write.c:502
-> 	 [<ffffffff8147ebaa>] write_pipe_buf+0x14a/0x1d0 fs/splice.c:1074
-> 	 [<     inlined    >] __splice_from_pipe+0x22e/0x6f0
-> 	splice_from_pipe_feed fs/splice.c:769
-> 	 [<ffffffff8147dbde>] __splice_from_pipe+0x22e/0x6f0 fs/splice.c:886
-> 	 [<ffffffff81483211>] splice_from_pipe+0xc1/0x110 fs/splice.c:921
-> 	 [<ffffffff81483298>] default_file_splice_write+0x18/0x50 fs/splice.c:1086
-> 	 [<     inlined    >] direct_splice_actor+0x104/0x1c0 do_splice_from
-> 	fs/splice.c:1128
-> 	 [<ffffffff8147cfc4>] direct_splice_actor+0x104/0x1c0 fs/splice.c:1284
-> 	 [<ffffffff8147e5ba>] splice_direct_to_actor+0x24a/0x6f0 fs/splice.c:1237
-> 	 [<ffffffff81483424>] do_splice_direct+0x154/0x270 fs/splice.c:1327
-> 	 [<ffffffff813f3bfb>] do_sendfile+0x5fb/0x1260 fs/read_write.c:1266
-> 	 [<     inlined    >] SyS_sendfile64+0xfa/0x100 SYSC_sendfile64
-> 	fs/read_write.c:1327
-> 	 [<ffffffff813f6bea>] SyS_sendfile64+0xfa/0x100 fs/read_write.c:1313
-> 	 [<ffffffff82c464f9>] ia32_do_call+0x13/0x13 arch/x86/ia32/ia32entry.S:444
-> 	Memory state around the buggy address:
-> 	 ffffffff83980680: 04 f8 f8 f8 f8 f8 f8 f8 02 f8 f8 f8 f8 f8 f8 f8
-> 	 ffffffff83980700: 00 f8 f8 f8 f8 f8 f8 f8 00 f8 f8 f8 f8 f8 f8 f8
-> 	 ffffffff83980780: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 00 00 00 00
-> 	 ffffffff83980800: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 04 f8 f8 f8
-> 	 ffffffff83980880: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
-> 	>ffffffff83980900: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
-> 	                                                       ^
-> 	 ffffffff83980980: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 00
-> 	 ffffffff83980a00: 02 f8 f8 f8 f8 f8 f8 f8 00 00 00 00 00 00 00 00
-> 	 ffffffff83980a80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	 ffffffff83980b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	 ffffffff83980b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	==================================================================
-> 
-> Use the 'unsigned long' type for 'zero' variable to fix this.
-> Changing type to 'unsigned long' shouldn't affect any other users
-> of this variable.
-> 
-> Reported-by: Dmitry Vyukov <dvyukov@google.com>
-> Fixes: ed4d4902ebdd ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity")
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  kernel/sysctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 15f2511..45c45c9 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -120,7 +120,7 @@ static int sixty = 60;
->  
->  static int __maybe_unused neg_one = -1;
->  
-> -static int zero;
-> +static unsigned long zero;
->  static int __maybe_unused one = 1;
->  static int __maybe_unused two = 2;
->  static int __maybe_unused four = 4;
+Still, I'd be more likely to trust the TSC than the HPET on modern
+machines.. And DaveJ's machine isn't some old one.
 
-__do_proc_doulongvec_minmax() casts both extra1 and extra2 to unsigned 
-long *, so this is appropriate.
+Of course, there's always BIOS games. Can we read the TSC offset
+register and check it being constant (modulo sleep events)?
 
-Acked-by: David Rientjes <rientjes@google.com>
+                     Linus
