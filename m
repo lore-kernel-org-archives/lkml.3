@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaLCFqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 00:46:49 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:60979 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaLCFqr (ORCPT
+	id S1751363AbaLCFtj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 00:49:39 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:32120 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaLCFti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 00:46:47 -0500
-Message-ID: <547EA3B0.6040309@linux.vnet.ibm.com>
-Date: Wed, 03 Dec 2014 11:16:24 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 3 Dec 2014 00:49:38 -0500
+Message-ID: <547EA45F.6060600@huawei.com>
+Date: Wed, 3 Dec 2014 13:49:19 +0800
+From: Wang Weidong <wangweidong1@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-CC: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
-        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
-        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
-        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
-        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com
-Subject: Re: [PATCH V6 9/9] selftests: Make GIT ignore all binaries in powerpc
- test suite
-References: <1417507013-11948-1-git-send-email-khandual@linux.vnet.ibm.com> <1417507013-11948-10-git-send-email-khandual@linux.vnet.ibm.com> <547E039F.7070509@osg.samsung.com>
-In-Reply-To: <547E039F.7070509@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <guohanjun@huawei.com>
+Subject: Re: [PATCH 0/2] fix some problems for cpufreq
+References: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com>	<2248504.pAVebap2qN@vostro.rjw.lan>	<547923F2.6000701@huawei.com>	<4004530.x5fm24OG42@vostro.rjw.lan>	<547AD41F.7030907@huawei.com> <CAKohpomMWj8QRW5eYdTGXT+HEZpSA6AV5C6mUzYyC1N1fWV7vg@mail.gmail.com>
+In-Reply-To: <CAKohpomMWj8QRW5eYdTGXT+HEZpSA6AV5C6mUzYyC1N1fWV7vg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120305-0029-0000-0000-000000BC2D74
+X-Originating-IP: [10.177.18.75]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 11:53 PM, Shuah Khan wrote:
-> On 12/02/2014 12:56 AM, Anshuman Khandual wrote:
->> > This patch includes all of the powerpc test binaries into the
->> > .gitignore file listing in their respective directories. This
->> > will make sure that GIT ignores all of these test binaries while
->> > displaying status.
->> > 
->> > Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->> > ---
->> >  .../testing/selftests/powerpc/copyloops/.gitignore |  4 ++++
->> >  tools/testing/selftests/powerpc/mm/.gitignore      |  1 +
->> >  tools/testing/selftests/powerpc/pmu/.gitignore     |  3 +++
->> >  tools/testing/selftests/powerpc/pmu/ebb/.gitignore | 22 ++++++++++++++++++++++
->> >  .../selftests/powerpc/primitives/.gitignore        |  1 +
->> >  5 files changed, 31 insertions(+)
->> >  create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
->> >  create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
->> >  create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
->> >  create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
->> >  create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
->> > 
-> Creating a single .gitignore at tools/testing/selftests/powerpc will
-> make this simpler without having to add one .gitignore for each
-> directory underneath.
-
-Sure, will do.
-
+On 2014/12/2 12:38, Viresh Kumar wrote:
+> On 30 November 2014 at 13:53, Wang Weidong <wangweidong1@huawei.com> wrote:
+>> No, there are not utilities and scripts relying on it.
 > 
-> Thanks for taking on the task to add .gitignore for all powerpc
-> binaries.
+> How can you be so sure about it ? There might be scripts/utils you
+> aren't aware of
+> and are depending on this..
+> 
+>> I just confuse that:
+>> If the policy->min and policy-max is changed while it shows all available freqs
+>> though scaling_available_frequencies. I can't set all freq-steps, only [policy->min, policy->max].
+>> why should it show all the available freqs.
+> 
+> That's not the only purpose of those frequencies there. It shows list
+> of all possible
+> frequencies. Now, there can be issues if those lists are updated.
+> 
+> Suppose somebody just played with the min/max frequency, now how would anybody
+> come to know about the frequencies available above/below the
+> user-max/min frequency?
+> 
+> So as you mentioned in your example above: User space would never know about
+> 
+> 1.05 Ghz and 2.3GHz anymore.. Unless you remember it or save it somewhere.
+> 
+
+Nice, Thanks for your reply.
+
+Got it.
+
+Wang,
+Regards
+
+>> Although, it doesn't impact on us. So just ignore the patch#2. :)
+> 
+> Probably yes.
+> 
+> 
 
 
