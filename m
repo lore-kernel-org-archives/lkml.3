@@ -1,89 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaLCLtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:49:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39370 "EHLO bear.ext.ti.com"
+	id S1753785AbaLCLt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:49:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54702 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430AbaLCLtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:49:45 -0500
-Message-ID: <547EF8CC.9030502@ti.com>
-Date: Wed, 3 Dec 2014 13:49:32 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
-References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi"
+	id S1752285AbaLCL1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:21 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 056/101] NFSv4.1: nfs41_clear_delegation_stateid shouldn't trust NFS_DELEGATED_STATE
+Date: Wed,  3 Dec 2014 12:26:18 +0100
+Message-Id: <eac34ad1b7643c51d9b4b96a2c6e034f49c7b7be.1417605922.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
+References: <cover.1417605922.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-On 27/11/14 00:07, Lad, Prabhakar wrote:
-> this patch fixes following build warning:
-> drivers/video/fbdev/vt8623fb.c: In function =E2=80=98vt8623_pci_probe=E2=
-=80=99:
-> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from in=
-teger of different size [-Wint-to-pointer-cast]
->   par->state.vgabase =3D (void __iomem *) vga_res.start;
->                        ^
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  drivers/video/fbdev/vt8623fb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt862=
-3fb.c
-> index 5c7cbc6..ea7f056 100644
-> --- a/drivers/video/fbdev/vt8623fb.c
-> +++ b/drivers/video/fbdev/vt8623fb.c
-> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, co=
-nst struct pci_device_id *id)
-> =20
->  	pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
-> =20
-> -	par->state.vgabase =3D (void __iomem *) vga_res.start;
-> +	par->state.vgabase =3D (void __iomem *) (unsigned long) vga_res.start=
-;
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This does look quite ugly... Where does the warning come from in the
-first place. Isn't vga_res.start (resource_size_t) the size of a pointer?=
+===============
 
+commit 0c116cadd94b16b30b1dd90d38b2784d9b39b01a upstream.
 
- Tomi
+This patch removes the assumption made previously, that we only need to
+check the delegation stateid when it matches the stateid on a cached
+open.
 
+If we believe that we hold a delegation for this file, then we must assume
+that its stateid may have been revoked or expired too. If we don't test it
+then our state recovery process may end up caching open/lock state in a
+situation where it should not.
+We therefore rename the function nfs41_clear_delegation_stateid as
+nfs41_check_delegation_stateid, and change it to always run through the
+delegation stateid test and recovery process as outlined in RFC5661.
 
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/nfs/nfs4proc.c | 42 +++++++++++++++++-------------------------
+ 1 file changed, 17 insertions(+), 25 deletions(-)
 
---g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 9dcfa4248c59..759875038791 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2049,45 +2049,37 @@ static int nfs40_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
+ }
+ 
+ #if defined(CONFIG_NFS_V4_1)
+-static void nfs41_clear_delegation_stateid(struct nfs4_state *state)
++static void nfs41_check_delegation_stateid(struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(state->inode);
+-	nfs4_stateid *stateid = &state->stateid;
++	nfs4_stateid stateid;
+ 	struct nfs_delegation *delegation;
+-	struct rpc_cred *cred = NULL;
+-	int status = -NFS4ERR_BAD_STATEID;
+-
+-	/* If a state reset has been done, test_stateid is unneeded */
+-	if (test_bit(NFS_DELEGATED_STATE, &state->flags) == 0)
+-		return;
++	struct rpc_cred *cred;
++	int status;
+ 
+ 	/* Get the delegation credential for use by test/free_stateid */
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(state->inode)->delegation);
+-	if (delegation != NULL &&
+-	    nfs4_stateid_match(&delegation->stateid, stateid)) {
+-		cred = get_rpccred(delegation->cred);
+-		rcu_read_unlock();
+-		status = nfs41_test_stateid(server, stateid, cred);
+-		trace_nfs4_test_delegation_stateid(state, NULL, status);
+-	} else
++	if (delegation == NULL) {
+ 		rcu_read_unlock();
++		return;
++	}
++
++	nfs4_stateid_copy(&stateid, &delegation->stateid);
++	cred = get_rpccred(delegation->cred);
++	rcu_read_unlock();
++	status = nfs41_test_stateid(server, &stateid, cred);
++	trace_nfs4_test_delegation_stateid(state, NULL, status);
+ 
+ 	if (status != NFS_OK) {
+ 		/* Free the stateid unless the server explicitly
+ 		 * informs us the stateid is unrecognized. */
+ 		if (status != -NFS4ERR_BAD_STATEID)
+-			nfs41_free_stateid(server, stateid, cred);
+-		nfs_remove_bad_delegation(state->inode);
+-
+-		write_seqlock(&state->seqlock);
+-		nfs4_stateid_copy(&state->stateid, &state->open_stateid);
+-		write_sequnlock(&state->seqlock);
+-		clear_bit(NFS_DELEGATED_STATE, &state->flags);
++			nfs41_free_stateid(server, &stateid, cred);
++		nfs_finish_clear_delegation_stateid(state);
+ 	}
+ 
+-	if (cred != NULL)
+-		put_rpccred(cred);
++	put_rpccred(cred);
+ }
+ 
+ /**
+@@ -2131,7 +2123,7 @@ static int nfs41_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
+ {
+ 	int status;
+ 
+-	nfs41_clear_delegation_stateid(state);
++	nfs41_check_delegation_stateid(state);
+ 	status = nfs41_check_open_stateid(state);
+ 	if (status != NFS_OK)
+ 		status = nfs4_open_expired(sp, state);
+-- 
+2.1.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUfvjSAAoJEPo9qoy8lh71fgIP/2borca8+dBmssVIMsPucCq4
-o90sbaCYwJNvHxN15JNejczx82Tswm962D8LhkqGkaJa1Dslv8NcQvvgdiP/QE9S
-66wmZGvi+sNHk5/rlTBmU30vF3d3M4Ito8upuWsIsWlK34PGleZ+TLoHCIuh/NHK
-FMqqZzoUyoDEDV/8hdJqEw0FHD+kGceJ75U+SCEbSJ74AVCQr4xVa8RBZRBZZ6XK
-zIFmug7RsAMeFzMBNy4wXnBwulGYzGV06u/NfyYJa2ZTll7OCnD1V2MKwSFaKZww
-y9JI+FDc/0LVQy1nyxciv2TSreeJ7fS1W15E5tw53gBB396KDytRN3WBLMu1gfng
-2vwshLYR8wGkZFkq81CUBvxFyk7miR99qKOy0zPyb23cxK0YQLFDFKHO6xnbkNsb
-RrweQ782pq5YDW1OrNO0Q1g6moIUGTn5Fa09ULnCrrlNC4crXthdy2XS0DMxXA8s
-UkZ/PJbgqYqfh1/qPFAkAsmyTim/tbdjcgudavJJh69Wn4WsUe037ahLYP+v2Ltg
-Td4+E9tuyN9DQ9zddQ4xIQse2RbF211Zqzz0B9Yb2b+H0DJTt0cS7RqtGDbgxlpK
-noYp8KGtyzOdMtZF4B3NCjTVOzsrWj0QPl6kxUADyIssiMpUd/jaiC8EqL+/aXnT
-B0J/S0QMsEBMCz9uKyn2
-=jaBs
------END PGP SIGNATURE-----
-
---g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi--
