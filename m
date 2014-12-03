@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaLCHu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:50:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5524 "EHLO mga11.intel.com"
+	id S1752493AbaLCHvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:51:04 -0500
+Received: from mga01.intel.com ([192.55.52.88]:2631 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357AbaLCHu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:50:56 -0500
+	id S1752357AbaLCHvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:51:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852523"
+   d="scan'208";a="631852605"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
         joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
         kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 22/25] KVM: Change NDST field after vCPU scheduling
-Date: Wed,  3 Dec 2014 15:39:51 +0800
-Message-Id: <1417592394-24343-23-git-send-email-feng.wu@intel.com>
+Subject: [v2 25/25] iommu/vt-d: Add a command line parameter for VT-d posted-interrupts
+Date: Wed,  3 Dec 2014 15:39:54 +0800
+Message-Id: <1417592394-24343-26-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
 References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
@@ -25,51 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the NDST filed of Posted-Interrupts
-Descriptor after vCPU is scheduled to another physical
-CPU.
+Enable VT-d Posted-Interrtups and add a command line
+parameter for it.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 ---
- arch/x86/kvm/vmx.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt |    1 +
+ drivers/iommu/irq_remapping.c       |   12 ++++++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index a1966b9..e71bf3b 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1906,6 +1906,31 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 		vmcs_writel(HOST_IA32_SYSENTER_ESP, sysenter_esp); /* 22.2.3 */
- 		vmx->loaded_vmcs->cpu = cpu;
- 	}
-+
-+	if (irq_remapping_cap(IRQ_POSTING_CAP) && (vcpu->cpu != cpu)) {
-+		struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
-+		struct pi_desc old, new;
-+		unsigned int dest;
-+
-+		memset(&old, 0, sizeof(old));
-+		memset(&new, 0, sizeof(new));
-+
-+		pi_set_sn(pi_desc);
-+
-+		do {
-+			old.control = new.control = pi_desc->control;
-+
-+			dest = cpu_physical_id(cpu);
-+
-+			if (x2apic_enabled())
-+				new.ndst = dest;
-+			else
-+				new.ndst = (dest << 8) & 0xFF00;
-+
-+		} while (cmpxchg(&pi_desc->control, old.control,
-+				new.control) != old.control);
-+		pi_clear_sn(pi_desc);
-+	}
- }
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 838f377..324b790 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1453,6 +1453,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			nosid	disable Source ID checking
+ 			no_x2apic_optout
+ 				BIOS x2APIC opt-out request will be ignored
++			nopost	disable Interrupt Posting
  
- static void vmx_vcpu_put(struct kvm_vcpu *vcpu)
+ 	iomem=		Disable strict checking of access to MMIO memory
+ 		strict	regions from userspace.
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index b008663..aa3cd23 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -24,7 +24,7 @@ int irq_remap_broken;
+ int disable_sourceid_checking;
+ int no_x2apic_optout;
+ 
+-int disable_irq_post = 1;
++int disable_irq_post = 0;
+ 
+ static struct irq_remap_ops *remap_ops;
+ 
+@@ -59,14 +59,18 @@ static __init int setup_irqremap(char *str)
+ 		return -EINVAL;
+ 
+ 	while (*str) {
+-		if (!strncmp(str, "on", 2))
++		if (!strncmp(str, "on", 2)) {
+ 			disable_irq_remap = 0;
+-		else if (!strncmp(str, "off", 3))
++			disable_irq_post = 0;
++		} else if (!strncmp(str, "off", 3)) {
+ 			disable_irq_remap = 1;
+-		else if (!strncmp(str, "nosid", 5))
++			disable_irq_post = 1;
++		} else if (!strncmp(str, "nosid", 5))
+ 			disable_sourceid_checking = 1;
+ 		else if (!strncmp(str, "no_x2apic_optout", 16))
+ 			no_x2apic_optout = 1;
++		else if (!strncmp(str, "nopost", 6))
++			disable_irq_post = 1;
+ 
+ 		str += strcspn(str, ",");
+ 		while (*str == ',')
 -- 
 1.7.1
 
