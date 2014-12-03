@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaLCBed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:34:33 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:65095 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730AbaLCBeb (ORCPT
+	id S1751450AbaLCBep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:34:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59788 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751110AbaLCBen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:34:31 -0500
+	Tue, 2 Dec 2014 20:34:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] i2c-hid / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Wed, 03 Dec 2014 02:56:07 +0100
+Message-ID: <3331107.SjqxFqQlza@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20141203013105.GA21642@kroah.com>
-References: <1417533075-687-1-git-send-email-paul@mybb.com>
-	<20141203004852.GA15236@kroah.com>
-	<CAO7UptcspiZCNi8smcmhOWM9Rdn+QYHPJYmZb90A-_3sJ4wYqQ@mail.gmail.com>
-	<20141203013105.GA21642@kroah.com>
-Date: Tue, 2 Dec 2014 19:34:30 -0600
-Message-ID: <CAO7Uptf=ThowWRogXcktj7wEK-3rTGOxNMb37YGWC-s5F6W9kQ@mail.gmail.com>
-Subject: Re: [PATCH] Staging: ft1000: fix spaces around comparisons in ft1000_debug.c
-From: Paul H <paul@mybboard.net>
-To: Greg KH <greg@kroah.com>
-Cc: Paul H <paul@mybb.com>, Belisko Marek <marek.belisko@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well shoot, please ignore what I just sent in then, I thought I had it.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
--Paul
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-On Tue, Dec 2, 2014 at 7:31 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Dec 02, 2014 at 07:10:41PM -0600, Paul H wrote:
->> A tutorial I read suggested using a different branch for applying the
->> patches; I named it "fix-spaces".  It would appear it is mistaken
->> then?
->
-> You have to make your patch against the linux-next tree, not Linus's
-> tree, so as to not duplicate other people's work that has already been
-> accepted.
->
-> You can name your branch whatever you want to, that doesn't matter :)
->
-> greg k-h
+Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/hid/i2c-hid/i2c-hid.c.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
+
+Please let me know if it is OK to take this one into linux-pm.
+
+---
+ drivers/hid/i2c-hid/i2c-hid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-pm/drivers/hid/i2c-hid/i2c-hid.c
+===================================================================
+--- linux-pm.orig/drivers/hid/i2c-hid/i2c-hid.c
++++ linux-pm/drivers/hid/i2c-hid/i2c-hid.c
+@@ -1095,7 +1095,7 @@ static int i2c_hid_resume(struct device
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int i2c_hid_runtime_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+
