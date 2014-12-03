@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaLCJkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:40:10 -0500
-Received: from bes.se.axis.com ([195.60.68.10]:54458 "EHLO bes.se.axis.com"
+	id S1752288AbaLCJms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:42:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39283 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035AbaLCJcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:32:03 -0500
-Message-ID: <1417599104.10996.16.camel@lnxlarper.se.axis.com>
-Subject: Re: [PATCH] Revert "MIPS: Remove race window in page fault handling"
-From: Lars Persson <lars.persson@axis.com>
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "paul.burton@imgtec.com" <paul.burton@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "blogic@openwrt.org" <blogic@openwrt.org>,
-        "markos.chandras@imgtec.com" <markos.chandras@imgtec.com>
-Date: Wed, 3 Dec 2014 10:31:44 +0100
-In-Reply-To: <20141203032542.15388.17340.stgit@linux-yegoshin>
-References: <20141203032542.15388.17340.stgit@linux-yegoshin>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1751736AbaLCJmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 04:42:47 -0500
+Date: Wed, 3 Dec 2014 11:42:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Pankaj Gupta <pagupta@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
+        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v3 net-next 1/2] net: allow large number of rx queues
+Message-ID: <20141203094224.GB9487@redhat.com>
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
+ <1417591177-7985-2-git-send-email-pagupta@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417591177-7985-2-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leonid
-
-First let me describe the mechanism of this race condition, which was a
-fault in the kernel's MIPS architecture code. Specifically in its
-implementation of lazy dcache flushing. AFAIK, it would only hit on
-systems where the pagein code path writes to the page from the CPU.
-
-The order of calls is:
-flush_dcache_page() (from the FS's readpage)
-set_pte_at()
-update_mmu_cache()
-
-The thread number one has executed the set_pte_at() when thread number
-two hits the same page. It finds a valid PTE and proceeds to execute
-code from a page that is not yet flushed to the point of I/D coherency.
-That flush would happen in update_mmu_cache().
-
-My patch does increase number of cache flushes for CoW yes and there
-could be an optimization opportunity by playing tricks with the pte_t to
-include information about executability of the mapping. 
-
-Reverting the patch is a big no-no, then we go back to a state of
-undefined CPU behavior.
-
-- Lars
-
-
-On Wed, 2014-12-03 at 04:25 +0100, Leonid Yegoshin wrote:
-> This reverts commit 64f23ab30b1fec86b91a48bf1f088840e5299971
-> (commit 2a4a8b1e5d9d343e13ff22e19af7b353f7b52d6f in Linux 'master')
+On Wed, Dec 03, 2014 at 12:49:36PM +0530, Pankaj Gupta wrote:
+> netif_alloc_rx_queues() uses kcalloc() to allocate memory
+> for "struct netdev_queue *_rx" array.
+> If we are doing large rx queue allocation kcalloc() might
+> fail, so this patch does a fallback to vzalloc().
+> Similar implementation is done for tx queue allocation in
+> netif_alloc_netdev_queues().
 > 
-> Unfortunately the original commit effectively kills Imagination MIPS CPUs
-> performance because it enforces page cache flush each time then PTE is changed
-> for our CPUs. Basically - each CoW, each process start, each library attachment
-> or detachment. And it happens even in "fully-coherent" systems (in MIPS sense -
-> we have non coherent I-cache). Last tendency for increasing page size to 16K-64K
-> even exaggerate the performance loss.
+> We avoid failure of high order memory allocation
+> with the help of vzalloc(), this allows us to do large
+> rx and tx queue allocation which in turn helps us to
+> increase the number of queues in tun.
 > 
-> Original commit discussion says:
+> As vmalloc() adds overhead on a critical network path,
+> __GFP_REPEAT flag is used with kzalloc() to do this fallback
+> only when really needed.
 > 
->     Kernel call stacks showed one thread handling an illegal instruction
->     exception while another thread was somewhere around the
->     set_pte_at/update_mmu_cache calls for the same page.
+> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+> Reviewed-by: David Gibson <dgibson@redhat.com>
+> ---
+>  net/core/dev.c | 19 +++++++++++++------
+>  1 file changed, 13 insertions(+), 6 deletions(-)
 > 
-> If this is taken correct then it points to a major problem unrelated to MIPS -
-> if by chance a first thread hits the page just before set_pte_at then it should
-> get a non-present PTE: set_pte_at with _PAGE_PRESENT/_PAGE_VALID flags can be
-> used only on "disactivated" PTE, after pte_clear* functions, effectively -
-> non-present, non-valid. And application can get SIGSEGV. It is a major race
-> condition and kernel should not offer it to applications. And in my
-> understanding set_pte_at is used in cases then page is available after kernel
-> finishes page handling, at least in theory.
-> 
-> Test note: I ran MIPS 1004K with 8 VPEs on 4 cores around 1.5 month on SOAK test
-> and never seen that problem on 3.10 kernel.
-> 
-> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index e916ba8..abe9560 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -6059,17 +6059,25 @@ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
+>  EXPORT_SYMBOL(netif_stacked_transfer_operstate);
 >  
+>  #ifdef CONFIG_SYSFS
+> +static void netif_free_rx_queues(struct net_device *dev)
+> +{
+> +	kvfree(dev->_rx);
+> +}
+> +
+
+I would just open-code this.
+
+>  static int netif_alloc_rx_queues(struct net_device *dev)
+>  {
+>  	unsigned int i, count = dev->num_rx_queues;
+>  	struct netdev_rx_queue *rx;
+> +	size_t sz = count * sizeof(*rx);
+>  
+>  	BUG_ON(count < 1);
+>  
+> -	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
+> -	if (!rx)
+> -		return -ENOMEM;
+> -
+> +	rx = kzalloc(sz, GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
+> +	if (!rx) {
+> +		rx = vzalloc(sz);
+> +		if (!rx)
+> +			return -ENOMEM;
+> +	}
+>  	dev->_rx = rx;
+>  
+>  	for (i = 0; i < count; i++)
+> @@ -6698,9 +6706,8 @@ void free_netdev(struct net_device *dev)
+>  
+>  	netif_free_tx_queues(dev);
+>  #ifdef CONFIG_SYSFS
+> -	kfree(dev->_rx);
+> +	netif_free_rx_queues(dev);
+>  #endif
+> -
+
+and I think it's nicer with the empty line.
+
+>  	kfree(rcu_dereference_protected(dev->ingress_queue, 1));
+>  
+>  	/* Flush device addresses */
+> -- 
+> 1.8.3.1
 > 
-
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
