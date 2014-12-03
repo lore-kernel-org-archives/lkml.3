@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaLCQcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:32:01 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:35747 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaLCQb7 (ORCPT
+	id S1752458AbaLCQdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:33:54 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36036 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751371AbaLCQdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:31:59 -0500
-Message-ID: <547F3AFC.2050400@atmel.com>
-Date: Wed, 3 Dec 2014 17:31:56 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 3 Dec 2014 11:33:52 -0500
+Date: Wed, 3 Dec 2014 16:33:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v16 03/12] drm: imx: imx-hdmi: convert imx-hdmi to
+ drm_bridge mode
+Message-ID: <20141203163318.GH11285@n2100.arm.linux.org.uk>
+References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
+ <1417620566-30496-1-git-send-email-andy.yan@rock-chips.com>
+ <20141203153847.GC11285@n2100.arm.linux.org.uk>
+ <547F3495.9070206@rock-chips.com>
+ <20141203161122.GF11285@n2100.arm.linux.org.uk>
+ <547F3A9F.30701@rock-chips.com>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Olof Johansson" <olof@lixom.net>, <arm@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 5/8] ARM: at91/clocksource: remove !DT PIT initializations
-References: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com> <60ebb777ae686d2a8c6820f9c891d9a0dd0fd03d.1417541118.git.nicolas.ferre@atmel.com>
-In-Reply-To: <60ebb777ae686d2a8c6820f9c891d9a0dd0fd03d.1417541118.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <547F3A9F.30701@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/12/2014 18:27, Nicolas Ferre a �crit :
-> From: Arnd Bergmann <arnd@arndb.de>
+On Thu, Dec 04, 2014 at 12:30:23AM +0800, Andy Yan wrote:
 > 
-> As AT91 !DT code is now removed, cleanup the PIT clocksource driver.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> [nicolas.ferre@atmel.com: split patch]
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> On 2014年12月04日 00:11, Russell King - ARM Linux wrote:
+> >I meant that imx_hdmi_bind should be passed these, so that it needs to
+> >know nothing about the struct device beyond the generic device structure.
+> >In other words, the dw-hdmi core should not assume that the struct device
+> >is part of a platform device.
+> >
+>    if so, how about the device tree properties  ddc-i2c-bus, reg-io-width,
+> iahb, isfr,
+>   they are all found by device?
 
-Hi Daniel,
-
-I plan to take this patch with me in a "cleanup" series and send it to
-arm-soc soon. Do you think you can add your Acked-by tag?
-
-I verified and there is no modification between Linus' tree and
-linux-next: it should not conflict with anything queued on your side.
-
-Bye,
-
-> ---
->  arch/arm/mach-at91/generic.h          |  2 --
->  drivers/clocksource/timer-atmel-pit.c | 32 --------------------------------
->  2 files changed, 34 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index 8527e8bd675f..d53324210adf 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -31,8 +31,6 @@ extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
->  
->   /* Timer */
->  extern void at91rm9200_timer_init(void);
-> -extern void at91sam926x_ioremap_pit(u32 addr);
-> -extern void at91sam926x_pit_init(int irq);
->  
->  /* idle */
->  extern void at91sam9_idle(void);
-> diff --git a/drivers/clocksource/timer-atmel-pit.c b/drivers/clocksource/timer-atmel-pit.c
-> index d5289098b3df..b5b4d4585c9a 100644
-> --- a/drivers/clocksource/timer-atmel-pit.c
-> +++ b/drivers/clocksource/timer-atmel-pit.c
-> @@ -262,35 +262,3 @@ static void __init at91sam926x_pit_dt_init(struct device_node *node)
->  }
->  CLOCKSOURCE_OF_DECLARE(at91sam926x_pit, "atmel,at91sam9260-pit",
->  		       at91sam926x_pit_dt_init);
-> -
-> -static void __iomem *pit_base_addr;
-> -
-> -void __init at91sam926x_pit_init(int irq)
-> -{
-> -	struct pit_data *data;
-> -
-> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
-> -	if (!data)
-> -		panic(pr_fmt("Unable to allocate memory\n"));
-> -
-> -	data->base = pit_base_addr;
-> -
-> -	data->mck = clk_get(NULL, "mck");
-> -	if (IS_ERR(data->mck))
-> -		panic(pr_fmt("Unable to get mck clk\n"));
-> -
-> -	data->irq = irq;
-> -
-> -	at91sam926x_pit_common_init(data);
-> -}
-> -
-> -void __init at91sam926x_ioremap_pit(u32 addr)
-> -{
-> -	if (of_have_populated_dt())
-> -		return;
-> -
-> -	pit_base_addr = ioremap(addr, 16);
-> -
-> -	if (!pit_base_addr)
-> -		panic(pr_fmt("Impossible to ioremap PIT\n"));
-> -}
-> 
-
+If the device has a device tree node associated with it, it will have a
+non-NULL dev->of_node - which is part of the generic device structure.
 
 -- 
-Nicolas Ferre
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
