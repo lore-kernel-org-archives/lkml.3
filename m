@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaLCXo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:44:29 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:43316 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaLCXo1 (ORCPT
+	id S1752523AbaLCXoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:44:30 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:64192 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846AbaLCXo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 18:44:27 -0500
 From: David Daney <ddaney.cavm@gmail.com>
@@ -19,50 +19,50 @@ Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, Zubair.Kakakhel@imgtec.com,
         linux-kernel@vger.kernel.org, markos.chandras@imgtec.com,
         dengcheng.zhu@imgtec.com, manuel.lauss@gmail.com,
         lars.persson@axis.com, David Daney <david.daney@cavium.com>
-Subject: [PATCH 0/3] MIPS: Get ready for non-executable stack.
-Date: Wed,  3 Dec 2014 15:44:15 -0800
-Message-Id: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 1/3] MIPS: Add FPU emulator counter for non-FPU instructions emulated.
+Date: Wed,  3 Dec 2014 15:44:16 -0800
+Message-Id: <1417650258-2811-2-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Currently the MIPS FPU emulator uses eXecute Out of Line (XOL) on the
-stack to handle instructions in the delay slots of FPU branches.
-Because of this MIPS cannot have a non-executable stack.
+Used in follow-on patch, the counter is called "insn_emul".
 
-A previous patch set from Leonid Yegoshin attempts to address the
-problem by moving the XOL location to a thread private mapping of a
-dedicated page.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/include/asm/fpu_emulator.h | 1 +
+ arch/mips/math-emu/me-debugfs.c      | 1 +
+ 2 files changed, 2 insertions(+)
 
-I present here an alternative: Add an instruction set emulator and use
-it to execute the FPU delay slot instructions.  The benefit of this
-approach is that we don't have to allocate a page per user-space
-thread for XOL, and we keep the TLB handling code slightly simpler as
-a result.
-
-Currently this is a proof of concept, as it doesn't yet handle MIPS64
-nor microMIPS instructions.  But it is sufficient to run the entire
-Debian distribution on a FPU-less CPU.
-
-Comments welcome.
-
-David Daney (3):
-  MIPS: Add FPU emulator counter for non-FPU instructions emulated.
-  MIPS: Add full ISA emulator.
-  MIPS: Use full instruction emulation for FPU emulator delay slot
-    emulation.
-
- arch/mips/include/asm/fpu_emulator.h |   1 +
- arch/mips/kernel/Makefile            |   3 +-
- arch/mips/kernel/insn-emul.c         | 815 +++++++++++++++++++++++++++++++++++
- arch/mips/math-emu/cp1emu.c          |  13 +-
- arch/mips/math-emu/me-debugfs.c      |   1 +
- 5 files changed, 830 insertions(+), 3 deletions(-)
- create mode 100644 arch/mips/kernel/insn-emul.c
-
+diff --git a/arch/mips/include/asm/fpu_emulator.h b/arch/mips/include/asm/fpu_emulator.h
+index 6370c82..bd5b63f 100644
+--- a/arch/mips/include/asm/fpu_emulator.h
++++ b/arch/mips/include/asm/fpu_emulator.h
+@@ -45,6 +45,7 @@ struct mips_fpu_emulator_stats {
+ 	unsigned long ieee754_zerodiv;
+ 	unsigned long ieee754_invalidop;
+ 	unsigned long ds_emul;
++	unsigned long insn_emul;
+ };
+ 
+ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
+diff --git a/arch/mips/math-emu/me-debugfs.c b/arch/mips/math-emu/me-debugfs.c
+index f308e0f..93fc155 100644
+--- a/arch/mips/math-emu/me-debugfs.c
++++ b/arch/mips/math-emu/me-debugfs.c
+@@ -62,6 +62,7 @@ do {									\
+ 	FPU_STAT_CREATE(ieee754_zerodiv);
+ 	FPU_STAT_CREATE(ieee754_invalidop);
+ 	FPU_STAT_CREATE(ds_emul);
++	FPU_STAT_CREATE(insn_emul);
+ 
+ 	return 0;
+ }
 -- 
 1.7.11.7
 
