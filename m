@@ -1,182 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaLCDXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 22:23:10 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:33821 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaLCDXI (ORCPT
+	id S1751654AbaLCDZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 22:25:49 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:10225 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaLCDZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 22:23:08 -0500
-Message-ID: <547E81F8.3000701@huawei.com>
-Date: Wed, 3 Dec 2014 11:22:32 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 2 Dec 2014 22:25:48 -0500
+Subject: [PATCH] Revert "MIPS: Remove race window in page fault handling"
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+To: <linux-mips@linux-mips.org>, <james.hogan@imgtec.com>,
+        <keescook@chromium.org>, <paul.burton@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
+        <lars.persson@axis.com>, <manuel.lauss@gmail.com>,
+        <pbonzini@redhat.com>, <akpm@linux-foundation.org>,
+        <blogic@openwrt.org>, <markos.chandras@imgtec.com>
+Date: Tue, 2 Dec 2014 19:25:42 -0800
+Message-ID: <20141203032542.15388.17340.stgit@linux-yegoshin>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com>	 <1417423751-47872-1-git-send-email-wangnan0@huawei.com> <1417545498.2430.10.camel@linaro.org>
-In-Reply-To: <1417545498.2430.10.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/3 2:38, Jon Medhurst (Tixy) wrote:
-> On Mon, 2014-12-01 at 16:49 +0800, Wang Nan wrote:
->> This patch introduce kprobeopt for ARM 32.
->>
->> Limitations:
->>  - Currently only kernel compiled with ARM ISA is supported.
->>
->>  - Offset between probe point and optinsn slot must not larger than
->>    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->>    things complex. Futher patch can make such optimization.
->>
->> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
->> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
->> replace probed instruction by a 'b', branch to trampoline code and then
->> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
->> to execute kprobe handler. It also emulate/simulate replaced instruction.
->>
->> When unregistering kprobe, the deferred manner of unoptimizer may leave
->> branch instruction before optimizer is called. Different from x86_64,
->> which only copy the probed insn after optprobe_template_end and
->> reexecute them, this patch call singlestep to emulate/simulate the insn
->> directly. Futher patch can optimize this behavior.
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
->> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
->> Cc: Will Deacon <will.deacon@arm.com>
->>
->> ---
->>
-> [...]
-> 
->> v10 -> v11:
->>   - Move to arch/arm/probes/, insn.h is moved to arch/arm/include/asm.
->>   - Code cleanup.
->>   - Bugfix based on Tixy's test result:
->>     - Trampoline deal with ARM -> Thumb transision instructions and
->>       AEABI stack alignment requirement correctly.
->>     - Trampoline code buffer should start at 4 byte aligned address.
->>       We enforces it in this series by using macro to wrap 'code' var.
-> 
-> I'm wondering if this alignment is needed. I'm not familiar with the
-> Linux memory code but following it through...
-> 
-> - kernel/kprobes.c allocates memory for the instruction slots using
-> module_alloc()
-> 
-> - module_alloc calls __vmalloc_node_range and passes in an alignment of
-> 1 byte however...
-> 
-> - __vmalloc_node_range has the comment "Allocate enough pages to cover
-> @size from the page level allocator". And it rounds size up to one page
-> and calls  __get_vm_area_node which also makes sure the size is page
-> aligned and also allocates a guard page afterwards.
-> 
-> So it looks to me as though allocated memory would always be page
-> aligned.
-> 
-> Another reason why I think this must be true is that module_alloc seems
-> to be used to allocate memory for loading modules to (see move_module in
-> kernel/module.c) and that code doesn't seem to align things.
-> 
-> Though, as I already said, I'm not familiar with this code so could well
-> have missed something. And the thing that is giving me most worries is
-> that all the vmalloc code takes an alignment value in bytes.
-> 
-> Anyway, I'll comment on this patch on the assumption that alignment is
-> needed...
-> 
+This reverts commit 64f23ab30b1fec86b91a48bf1f088840e5299971
+(commit 2a4a8b1e5d9d343e13ff22e19af7b353f7b52d6f in Linux 'master')
 
-Thanks for your comments.
+Unfortunately the original commit effectively kills Imagination MIPS CPUs
+performance because it enforces page cache flush each time then PTE is changed
+for our CPUs. Basically - each CoW, each process start, each library attachment
+or detachment. And it happens even in "fully-coherent" systems (in MIPS sense -
+we have non coherent I-cache). Last tendency for increasing page size to 16K-64K
+even exaggerate the performance loss.
 
-By checking code in mm/vmalloc.c I find that, although the algorithm it uses is possible
-to get unaligned addresses, all users of alloc_vmap_area() allocate full pages, and
-no-page-aligned allocation is forbidden from the first version on that functon.
-Therefore, alignment requirements less than PAGE_SIZE is actually meanless.
-Although module_alloc() requires only 1-byte alignment, it will get a page aligned address.
+Original commit discussion says:
 
-It is true for all architectures except cris, on which use module_alloc() simple kmalloc()
-However, it doesn't support kprobes so we don't need to care about it.
+    Kernel call stacks showed one thread handling an illegal instruction
+    exception while another thread was somewhere around the
+    set_pte_at/update_mmu_cache calls for the same page.
 
-I'll remove the alignment tricks in the next version of code.
+If this is taken correct then it points to a major problem unrelated to MIPS -
+if by chance a first thread hits the page just before set_pte_at then it should
+get a non-present PTE: set_pte_at with _PAGE_PRESENT/_PAGE_VALID flags can be
+used only on "disactivated" PTE, after pte_clear* functions, effectively -
+non-present, non-valid. And application can get SIGSEGV. It is a major race
+condition and kernel should not offer it to applications. And in my
+understanding set_pte_at is used in cases then page is available after kernel
+finishes page handling, at least in theory.
 
-> [...]
+Test note: I ran MIPS 1004K with 8 VPEs on 4 cores around 1.5 month on SOAK test
+and never seen that problem on 3.10 kernel.
 
->> +			/*
->> +			 * AEABI require a 8-bytes alignment stack. If
->> +			 * SP % 8 == 4, we alloc another 4 bytes here.
->> +			 */
->> +			"	tst	sp, #4\n"
->> +			"	subne	sp, #4\n"
->> +			"	blx	r2\n"
->> +
->> +			/*
->> +			 * Here is a trick: the called handler should
->> +			 * return its second param by r0, which is
->> +			 * happens to be SP before the above AEABI
->> +			 * adjustment. Therefore, we don't need to save
->> +			 * and check whether we have done the above
->> +			 * adjustment. See optimized_callback().
->> +			 */
->> +			"	mov	sp, r0\n"
-> 
-> I think this trick is a bit too tricky :-) and might cause unnecessary
-> problems for someone in the future. How about replacing the above 4
-> instruction with these 4 instead...
-> 
-> 			"	and	r4, sp, #4\n"
-> 			"	sub	sp, sp, r4\n"
-> 			"	blx	r2\n"
-> 			"	add	sp, sp, r4\n"
-> 
-> and that actually makes things slightly faster as optimized_callback no
-> longer needs to return a value.
-> 
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+---
+ arch/mips/include/asm/pgtable.h |    8 +++++---
+ arch/mips/mm/cache.c            |   27 ++++++++-------------------
+ 2 files changed, 13 insertions(+), 22 deletions(-)
 
-Your code is better. AAPCS requires subroutines must preserve the contents of
-the registers r4-r8, r10-r11, so we can use them freely in our asm code.
-
-> 
->> +			"	ldr	r1, [sp, #64]\n"
->> +			"	tst	r1, #"__stringify(PSR_T_BIT)"\n"
->> +			"	ldrne	r2, [sp, #60]\n"
->> +			"	orrne	r2, #1\n"
->> +			"	strne	r2, [sp, #60] @ set bit0 of PC for thumb\n"
->> +			"	msr	cpsr_cxsf, r1\n"
->> +			"	ldmia	sp, {r0 - r15}\n"
->> +			".global optprobe_template_val\n"
->> +			"optprobe_template_val:\n"
->> +			"1:	.long 0\n"
->> +			".global optprobe_template_call\n"
->> +			"optprobe_template_call:\n"
->> +			"2:	.long 0\n"
->> +			".global optprobe_template_end\n"
->> +			"optprobe_template_end:\n");
->> +
-> 
-> [...]
-> 
->> +int arch_prepare_optimized_kprobe(struct optimized_kprobe *op, struct kprobe *orig)
->> +{
->> +	kprobe_opcode_t *code_unaligned;
-> 
-> kprobe_opcode_t is a u32 and the ABI and compiler expect this to be
-> aligned, so best use a void * instead.
->
-
-It is the return value of get_optinsn_slot() and should be that type. However
-I'll remove these unaligned things.
-
-[...]
+diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
+index d6d1928539b1..cd5fbf42b864 100644
+--- a/arch/mips/include/asm/pgtable.h
++++ b/arch/mips/include/asm/pgtable.h
+@@ -122,9 +122,6 @@ do {									\
+ 	}								\
+ } while(0)
+ 
+-extern void set_pte_at(struct mm_struct *mm, unsigned long addr, pte_t *ptep,
+-	pte_t pteval);
+-
+ #if defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32)
+ 
+ #define pte_none(pte)		(!(((pte).pte_low | (pte).pte_high) & ~_PAGE_GLOBAL))
+@@ -148,6 +145,7 @@ static inline void set_pte(pte_t *ptep, pte_t pte)
+ 		}
+ 	}
+ }
++#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
+ 
+ static inline void pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
+ {
+@@ -185,6 +183,7 @@ static inline void set_pte(pte_t *ptep, pte_t pteval)
+ 	}
+ #endif
+ }
++#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
+ 
+ static inline void pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
+ {
+@@ -401,12 +400,15 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+ 
+ extern void __update_tlb(struct vm_area_struct *vma, unsigned long address,
+ 	pte_t pte);
++extern void __update_cache(struct vm_area_struct *vma, unsigned long address,
++	pte_t pte);
+ 
+ static inline void update_mmu_cache(struct vm_area_struct *vma,
+ 	unsigned long address, pte_t *ptep)
+ {
+ 	pte_t pte = *ptep;
+ 	__update_tlb(vma, address, pte);
++	__update_cache(vma, address, pte);
+ }
+ 
+ static inline void update_mmu_cache_pmd(struct vm_area_struct *vma,
+diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+index 7e3ea7766822..f7b91d3a371d 100644
+--- a/arch/mips/mm/cache.c
++++ b/arch/mips/mm/cache.c
+@@ -119,36 +119,25 @@ void __flush_anon_page(struct page *page, unsigned long vmaddr)
+ 
+ EXPORT_SYMBOL(__flush_anon_page);
+ 
+-static void mips_flush_dcache_from_pte(pte_t pteval, unsigned long address)
++void __update_cache(struct vm_area_struct *vma, unsigned long address,
++	pte_t pte)
+ {
+ 	struct page *page;
+-	unsigned long pfn = pte_pfn(pteval);
++	unsigned long pfn, addr;
++	int exec = (vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc;
+ 
++	pfn = pte_pfn(pte);
+ 	if (unlikely(!pfn_valid(pfn)))
+ 		return;
+-
+ 	page = pfn_to_page(pfn);
+ 	if (page_mapping(page) && Page_dcache_dirty(page)) {
+-		unsigned long page_addr = (unsigned long) page_address(page);
+-
+-		if (!cpu_has_ic_fills_f_dc ||
+-		    pages_do_alias(page_addr, address & PAGE_MASK))
+-			flush_data_cache_page(page_addr);
++		addr = (unsigned long) page_address(page);
++		if (exec || pages_do_alias(addr, address & PAGE_MASK))
++			flush_data_cache_page(addr);
+ 		ClearPageDcacheDirty(page);
+ 	}
+ }
+ 
+-void set_pte_at(struct mm_struct *mm, unsigned long addr,
+-        pte_t *ptep, pte_t pteval)
+-{
+-        if (cpu_has_dc_aliases || !cpu_has_ic_fills_f_dc) {
+-                if (pte_present(pteval))
+-                        mips_flush_dcache_from_pte(pteval, addr);
+-        }
+-
+-        set_pte(ptep, pteval);
+-}
+-
+ unsigned long _page_cachable_default;
+ EXPORT_SYMBOL(_page_cachable_default);
+ 
 
