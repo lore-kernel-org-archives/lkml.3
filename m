@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaLCMjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 07:39:09 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:49639 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaLCMjH (ORCPT
+	id S1752651AbaLCMj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 07:39:29 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48819 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaLCMj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 07:39:07 -0500
-X-IronPort-AV: E=Sophos;i="5.07,507,1413270000"; 
-   d="scan'208";a="52152486"
-Message-ID: <547F0465.407@broadcom.com>
-Date: Wed, 3 Dec 2014 13:39:01 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Coccinelle <cocci@systeme.lip6.fr>, <backports@vger.kernel.org>,
-        "Johannes Berg" <johannes@sipsolutions.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [patch] CodingStyle: add some more error handling guidelines
-References: <20141202085950.GA13434@mwanda> <547F0297.6030202@users.sourceforge.net>
-In-Reply-To: <547F0297.6030202@users.sourceforge.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Dec 2014 07:39:27 -0500
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: minchan@kernel.org, ngupta@vflare.org
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>
+Subject: [PATCH] zram: use DEVICE_ATTR_[RW|RO|WO] to define zram sys device attribute
+Date: Wed,  3 Dec 2014 20:38:52 +0800
+Message-Id: <1417610332-11191-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/14 13:31, SF Markus Elfring wrote:
->> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
->> index 9f28b14..9c8a234 100644
->> --- a/Documentation/CodingStyle
->> +++ b/Documentation/CodingStyle
->> @@ -392,7 +392,12 @@ The goto statement comes in handy when a function exits from multiple
->>   locations and some common work such as cleanup has to be done.  If there is no
->>   cleanup needed then just return directly.
->>
->> -The rationale is:
->> +Choose label names which say what the goto does or why the goto exists.  An
->> +[...]  Avoid
->> +using GW-BASIC names like "err1:" and "err2:".  Also don't name them after the
->> +goto location like "err_kmalloc_failed:"
->
-> I find this documentation approach not safe and clear enough so far.
->
-> * How should the reference to an other programming language help in the understanding
->    of the recommended naming convention for jump labels?
->
-> * To which source code place should the word "location" refer to?
->    - jump source
->    - jump target
+In current zram, we use DEVICE_ATTR() to define sys device attributes.
+SO, we need to set (S_IRUGO | S_IWUSR) permission and other
+arguments manually.
+Linux kernel has already provided macro DEVICE_ATTR_[RW|RO|WO] to define
+sys device attribute. It is simple and readable.
 
-I think you digested the paragraph in too small bits. The term "goto 
-location" looks synonymous to "jump source" to me.
+This patch uses kernel defined macro DEVICE_ATTR_[RW|RO|WO] to define
+zram device attribute.
 
-Regards,
-Arend
+Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+---
+ drivers/block/zram/zram_drv.c |   28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
 
-> Regards,
-> Markus
-> --
-> To unsubscribe from this list: send the line "unsubscribe backports" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 8eb0d85..53fbd61 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -44,15 +44,14 @@ static const char *default_compressor = "lzo";
+ static unsigned int num_devices = 1;
+ 
+ #define ZRAM_ATTR_RO(name)						\
+-static ssize_t zram_attr_##name##_show(struct device *d,		\
++static ssize_t name##_show(struct device *d,		\
+ 				struct device_attribute *attr, char *b)	\
+ {									\
+ 	struct zram *zram = dev_to_zram(d);				\
+ 	return scnprintf(b, PAGE_SIZE, "%llu\n",			\
+ 		(u64)atomic64_read(&zram->stats.name));			\
+ }									\
+-static struct device_attribute dev_attr_##name =			\
+-	__ATTR(name, S_IRUGO, zram_attr_##name##_show, NULL);
++static DEVICE_ATTR_RO(name);
+ 
+ static inline int init_done(struct zram *zram)
+ {
+@@ -994,20 +993,15 @@ static const struct block_device_operations zram_devops = {
+ 	.owner = THIS_MODULE
+ };
+ 
+-static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
+-		disksize_show, disksize_store);
+-static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+-static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+-static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+-static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+-static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
+-		mem_limit_store);
+-static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
+-		mem_used_max_store);
+-static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+-		max_comp_streams_show, max_comp_streams_store);
+-static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+-		comp_algorithm_show, comp_algorithm_store);
++static DEVICE_ATTR_RW(disksize);
++static DEVICE_ATTR_RO(initstate);
++static DEVICE_ATTR_WO(reset);
++static DEVICE_ATTR_RO(orig_data_size);
++static DEVICE_ATTR_RO(mem_used_total);
++static DEVICE_ATTR_RW(mem_limit);
++static DEVICE_ATTR_RW(mem_used_max);
++static DEVICE_ATTR_RW(max_comp_streams);
++static DEVICE_ATTR_RW(comp_algorithm);
+ 
+ ZRAM_ATTR_RO(num_reads);
+ ZRAM_ATTR_RO(num_writes);
+-- 
+1.7.9.5
 
