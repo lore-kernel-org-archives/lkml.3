@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaLCQdy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:33:54 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36036 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751371AbaLCQdw (ORCPT
+	id S1752091AbaLCQjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:39:24 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:42719 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751518AbaLCQjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:33:52 -0500
-Date: Wed, 3 Dec 2014 16:33:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v16 03/12] drm: imx: imx-hdmi: convert imx-hdmi to
- drm_bridge mode
-Message-ID: <20141203163318.GH11285@n2100.arm.linux.org.uk>
-References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
- <1417620566-30496-1-git-send-email-andy.yan@rock-chips.com>
- <20141203153847.GC11285@n2100.arm.linux.org.uk>
- <547F3495.9070206@rock-chips.com>
- <20141203161122.GF11285@n2100.arm.linux.org.uk>
- <547F3A9F.30701@rock-chips.com>
+	Wed, 3 Dec 2014 11:39:22 -0500
+Message-ID: <547F3C8C.5000607@arm.com>
+Date: Wed, 03 Dec 2014 16:38:36 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <547F3A9F.30701@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: [PATCH 0/5] ASoC: dwc: Add device tree support to designware I2S
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:30:23AM +0800, Andy Yan wrote:
-> 
-> On 2014年12月04日 00:11, Russell King - ARM Linux wrote:
-> >I meant that imx_hdmi_bind should be passed these, so that it needs to
-> >know nothing about the struct device beyond the generic device structure.
-> >In other words, the dw-hdmi core should not assume that the struct device
-> >is part of a platform device.
-> >
->    if so, how about the device tree properties  ddc-i2c-bus, reg-io-width,
-> iahb, isfr,
->   they are all found by device?
+This patch set extends the DesignWare I2S driver to provide device
+tree support and fixes a couple of small faults.
 
-If the device has a device tree node associated with it, it will have a
-non-NULL dev->of_node - which is part of the generic device structure.
+Andrew Jackson (5):
+  ASoC: dwc: Allocate resources with devm_ioremap_resource
+  ASoC: dwc: Don't allow negative use counts
+  ASoC: dwc: Iterate over all channels
+  ASoC: dwc: Add devicetree support for Designware I2S
+  ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+ .../devicetree/bindings/sound/designware-i2s.txt   |   32 ++
+ sound/soc/dwc/Kconfig                              |    1 +
+ sound/soc/dwc/designware_i2s.c                     |  313 ++++++++++++++------
+ 3 files changed, 260 insertions(+), 86 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/designware-i2s.txt
