@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687AbaLCAMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 19:12:32 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:33421 "EHLO
+	id S933670AbaLCAMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 19:12:31 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:33422 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933411AbaLCAMY (ORCPT
+	with ESMTP id S933319AbaLCAMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Dec 2014 19:12:24 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -15,155 +15,106 @@ To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH 04/12] irqchip: nvic: support routable irq domain ops
-Date: Wed,  3 Dec 2014 01:12:03 +0100
-Message-Id: <1417565531-4507-5-git-send-email-stefan@agner.ch>
+Subject: [PATCH 00/12] ARM: vf610m4: Add Vybrid Cortex-M4 support
+Date: Wed,  3 Dec 2014 01:11:59 +0100
+Message-Id: <1417565531-4507-1-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417565531-4507-1-git-send-email-stefan@agner.ch>
-References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for routable irq domain ops like the GIC interrupt
-controller provides. This is useful for asymmetrical multi-
-processor SoCs, such as Freescale Vybrid (VF6xx) which have
-a Cortex-M4 alongside a Cortex-A5 and a interrupt router to
-route the peripheral interrupts between them.
+This is the second version (first was RFC) of this patchset. It
+contains feedback from RFC and mainly grew by the support for the
+interrupt router which is part of the MSCM IP contained in Vybrid.
+MSCM provides a simple router for the pheriperal interrupts which
+allows to select which CPU should receive a certain interrupt.
+Hence it is crucrial for Linux. Right now, the boot loader enables
+all interrupts for the Cortex-A5. To make Linux on Cortex-M4
+working, the interrupts of the peripherals have been manually
+remapped. A proper driver would automate this, along with a "poor
+mans resource controller" (WARN_ON when the interrupt is routed).
+This IP appears only to be part of Vybrid, the somewhat similar
+SoC i.MX6SoloX does not contain this IP, hence I made it rather
+Vybrid specific.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/irqchip/irq-nvic.c       | 70 +++++++++++++++++++++++++++++++++++++++-
- include/linux/irqchip/arm-nvic.h | 25 ++++++++++++++
- 2 files changed, 94 insertions(+), 1 deletion(-)
+I think some patches are already merge ready (unified addruart),
+while some need likely more discussion (NVIC irq router support,
+MSCM stuff).
+
+Especially I did not solved the multiplatform problem. Arnd, I
+read your patches and started to think about it, but I'm not sure
+I'm the right person doing that since my view of the ARM world
+is still rather limited... But for Vybrid, it would be very useful
+and simplify Kconfig (would avoid the additional arch ARCH_MXCM4).
+
+With the m4boot utility (https://github.com/falstaff84/m4boot), a
+XIP kernel image with its dtb and a initramfs, the Cortex-M4 can
+be booted on a mainline kernel using:
+
+./m4boot xipImage initramfs.cpio.lzo vf610m4-colibri.dtb
+
+(some U-Boot fiddling needed, ask for details if you really want
+to test that)
+
+Changes since RFC:
+- Unified addruart calls for MMU/!MMU
+- Add MSCM support along with routable IRQ support in NVIC
+- Rebased on Shawns for-next tree which made some changes
+  obsolete (mainly the Vybrid SoC device tree files in for-next
+  are already prepared for Cortex-M4 support)
+- Removed SRC_GPR3 hack, this is now part of a mini boot-loader:
+  https://github.com/falstaff84/vf610m4bootldr
+
+Stefan Agner (12):
+  ARM: dts: vf610: add routable-irqs property for gic node
+  ARM: dts: vf610: add Miscellaneous System Control Module (MSCM)
+  irqchip: gic: define register_routable_domain_ops conditional
+  irqchip: nvic: support routable irq domain ops
+  irqchip: nvic: increase number of external interrupts to 112
+  ARM: imx: add support for MSCM interrupt router
+  Documentation: dt: imx: add MSCM documentation
+  clocksource: add dependencies for Vybrid pit clocksource
+  ARM: unify MMU/!MMU addruart calls
+  ARM: vf610m4: add new machine and SoC for Vybrid on Cortex-M4
+  ARM: dts: add support for Vybrid running on Cortex-M4
+  ARM: vf610m4: add defconfig for Linux on Vybrids Cortex-M4
+
+ .../bindings/arm/freescale/fsl,vf610-mscm.txt      |  14 ++
+ arch/arm/Kconfig                                   |  12 ++
+ arch/arm/Kconfig.debug                             |   4 +-
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/vf500.dtsi                       |   1 +
+ arch/arm/boot/dts/vf610m4-colibri.dts              |  52 ++++++++
+ arch/arm/boot/dts/vf610m4.dtsi                     |  33 +++++
+ arch/arm/boot/dts/vfxxx.dtsi                       |   5 +
+ arch/arm/configs/vf610m4_defconfig                 |  49 +++++++
+ arch/arm/include/debug/efm32.S                     |   2 +-
+ arch/arm/kernel/debug.S                            |   2 +-
+ arch/arm/kernel/entry-v7m.S                        |   6 +-
+ arch/arm/mach-imx/Kconfig                          |  27 ++++
+ arch/arm/mach-imx/Makefile                         |   2 +
+ arch/arm/mach-imx/Makefile.boot                    |   0
+ arch/arm/mach-imx/common.h                         |   1 +
+ arch/arm/mach-imx/mach-vf610.c                     |   7 +
+ arch/arm/mach-imx/mach-vf610m4.c                   |  31 +++++
+ arch/arm/mach-imx/mscm-vf610.c                     | 141 +++++++++++++++++++++
+ drivers/clocksource/Kconfig                        |   2 +
+ drivers/irqchip/irq-nvic.c                         |  72 ++++++++++-
+ drivers/mmc/host/Kconfig                           |   2 +-
+ drivers/pinctrl/freescale/Kconfig                  |   2 +-
+ include/linux/irqchip/arm-gic.h                    |   3 +
+ include/linux/irqchip/arm-nvic.h                   |  25 ++++
+ 26 files changed, 487 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+ create mode 100644 arch/arm/boot/dts/vf610m4-colibri.dts
+ create mode 100644 arch/arm/boot/dts/vf610m4.dtsi
+ create mode 100644 arch/arm/configs/vf610m4_defconfig
+ create mode 100644 arch/arm/mach-imx/Makefile.boot
+ create mode 100644 arch/arm/mach-imx/mach-vf610m4.c
+ create mode 100644 arch/arm/mach-imx/mscm-vf610.c
  create mode 100644 include/linux/irqchip/arm-nvic.h
 
-diff --git a/drivers/irqchip/irq-nvic.c b/drivers/irqchip/irq-nvic.c
-index 4ff0805..dbfb5be 100644
---- a/drivers/irqchip/irq-nvic.c
-+++ b/drivers/irqchip/irq-nvic.c
-@@ -40,6 +40,7 @@
- #define NVIC_MAX_IRQ		((NVIC_MAX_BANKS - 1) * 32 + 16)
- 
- static struct irq_domain *nvic_irq_domain;
-+const struct irq_domain_ops *nvic_routable_irq_domain_ops;
- 
- asmlinkage void __exception_irq_entry
- nvic_handle_irq(irq_hw_number_t hwirq, struct pt_regs *regs)
-@@ -49,6 +50,73 @@ nvic_handle_irq(irq_hw_number_t hwirq, struct pt_regs *regs)
- 	handle_IRQ(irq, regs);
- }
- 
-+static int nvic_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+				irq_hw_number_t hw)
-+{
-+	int ret;
-+
-+	ret = irq_map_generic_chip(d, irq, hw);
-+
-+	if (IS_ERR_VALUE(ret))
-+		return ret;
-+
-+	return nvic_routable_irq_domain_ops->map(d, irq, hw);
-+}
-+
-+static void nvic_irq_domain_unmap(struct irq_domain *d, unsigned int irq)
-+{
-+	nvic_routable_irq_domain_ops->unmap(d, irq);
-+}
-+
-+static int nvic_irq_domain_xlate(struct irq_domain *d,
-+				 struct device_node *controller,
-+				 const u32 *intspec, unsigned int intsize,
-+				 unsigned long *out_hwirq,
-+				 unsigned int *out_type)
-+{
-+	*out_hwirq = intspec[0];
-+	*out_type = IRQ_TYPE_NONE;
-+
-+	return nvic_routable_irq_domain_ops->xlate(d, controller, intspec,
-+						  intsize, out_hwirq, out_type);
-+}
-+
-+struct irq_domain_ops nvic_irq_domain_ops = {
-+	.map	= nvic_irq_domain_map,
-+	.unmap	= nvic_irq_domain_unmap,
-+	.xlate	= nvic_irq_domain_xlate,
-+};
-+
-+/* Default functions for routable irq domain */
-+static int nvic_routable_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+			      irq_hw_number_t hw)
-+{
-+	return 0;
-+}
-+
-+static void nvic_routable_irq_domain_unmap(struct irq_domain *d,
-+					  unsigned int irq)
-+{
-+}
-+
-+static int nvic_routable_irq_domain_xlate(struct irq_domain *d,
-+				struct device_node *controller,
-+				const u32 *intspec, unsigned int intsize,
-+				unsigned long *out_hwirq,
-+				unsigned int *out_type)
-+{
-+	return 0;
-+}
-+
-+static const struct irq_domain_ops nvic_default_routable_irq_domain_ops = {
-+	.map = nvic_routable_irq_domain_map,
-+	.unmap = nvic_routable_irq_domain_unmap,
-+	.xlate = nvic_routable_irq_domain_xlate,
-+};
-+
-+const struct irq_domain_ops *nvic_routable_irq_domain_ops =
-+					&nvic_default_routable_irq_domain_ops;
-+
- static int __init nvic_of_init(struct device_node *node,
- 			       struct device_node *parent)
- {
-@@ -70,7 +138,7 @@ static int __init nvic_of_init(struct device_node *node,
- 		irqs = NVIC_MAX_IRQ;
- 
- 	nvic_irq_domain =
--		irq_domain_add_linear(node, irqs, &irq_generic_chip_ops, NULL);
-+		irq_domain_add_linear(node, irqs, &nvic_irq_domain_ops, NULL);
- 	if (!nvic_irq_domain) {
- 		pr_warn("Failed to allocate irq domain\n");
- 		return -ENOMEM;
-diff --git a/include/linux/irqchip/arm-nvic.h b/include/linux/irqchip/arm-nvic.h
-new file mode 100644
-index 0000000..0e92a14
---- /dev/null
-+++ b/include/linux/irqchip/arm-nvic.h
-@@ -0,0 +1,25 @@
-+/*
-+ *  include/linux/irqchip/arm-nvic.h
-+ *
-+ *  Copyright (C) 2014 Stefan Agner
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __LINUX_IRQCHIP_ARM_NVIC_H
-+#define __LINUX_IRQCHIP_ARM_NVIC_H
-+
-+#ifndef __ASSEMBLY__
-+
-+#ifdef CONFIG_ARM_NVIC
-+extern const struct irq_domain_ops *nvic_routable_irq_domain_ops;
-+static inline void __init register_routable_domain_ops
-+					(const struct irq_domain_ops *ops)
-+{
-+		nvic_routable_irq_domain_ops = ops;
-+}
-+#endif /* CONFIG_ARM_NVIC */
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* __LINUX_IRQCHIP_ARM_NVIC_H */
 -- 
 2.1.3
 
