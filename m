@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaLCLnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:43:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54668 "EHLO mx2.suse.de"
+	id S1753188AbaLCLnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:43:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54704 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518AbaLCL1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752520AbaLCL1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:35 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Florian Westphal <fw@strlen.de>,
+Cc: linux-kernel@vger.kernel.org, Houcheng Lin <houcheng@gmail.com>,
+        Florian Westphal <fw@strlen.de>,
         Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 061/101] netfilter: nf_log: account for size of NLMSG_DONE attribute
-Date: Wed,  3 Dec 2014 12:26:23 +0100
-Message-Id: <131172845aa2c804ffa9423455aee585061ea35e.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 063/101] netfilter: nf_log: release skbuff on nlmsg put failure
+Date: Wed,  3 Dec 2014 12:26:25 +0100
+Message-Id: <37bdac282ed1d1f2641ba9063f50cf42bcb94dc4.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,53 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Westphal <fw@strlen.de>
+From: Houcheng Lin <houcheng@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9dfa1dfe4d5e5e66a991321ab08afe69759d797a upstream.
+commit b51d3fa364885a2c1e1668f88776c67c95291820 upstream.
 
-We currently neither account for the nlattr size, nor do we consider
-the size of the trailing NLMSG_DONE when allocating nlmsg skb.
+The kernel should reserve enough room in the skb so that the DONE
+message can always be appended.  However, in case of e.g. new attribute
+erronously not being size-accounted for, __nfulnl_send() will still
+try to put next nlmsg into this full skbuf, causing the skb to be stuck
+forever and blocking delivery of further messages.
 
-This can result in nflog to stop working, as __nfulnl_send() re-tries
-sending forever if it failed to append NLMSG_DONE (which will never
-work if buffer is not large enough).
+Fix issue by releasing skb immediately after nlmsg_put error and
+WARN() so we can track down the cause of such size mismatch.
 
-Reported-by: Houcheng Lin <houcheng@gmail.com>
+[ fw@strlen.de: add tailroom/len info to WARN ]
+
+Signed-off-by: Houcheng Lin <houcheng@gmail.com>
 Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/netfilter/nfnetlink_log.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/netfilter/nfnetlink_log.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
-index d92cc317bf8b..65791530f460 100644
+index 39010fc1e9c0..09172d7abee2 100644
 --- a/net/netfilter/nfnetlink_log.c
 +++ b/net/netfilter/nfnetlink_log.c
-@@ -651,7 +651,8 @@ nfulnl_log_packet(struct net *net,
- 		+ nla_total_size(sizeof(u_int32_t))	/* gid */
- 		+ nla_total_size(plen)			/* prefix */
- 		+ nla_total_size(sizeof(struct nfulnl_msg_packet_hw))
--		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp));
-+		+ nla_total_size(sizeof(struct nfulnl_msg_packet_timestamp))
-+		+ nla_total_size(sizeof(struct nfgenmsg));	/* NLMSG_DONE */
+@@ -348,26 +348,25 @@ nfulnl_alloc_skb(u32 peer_portid, unsigned int inst_size, unsigned int pkt_size)
+ 	return skb;
+ }
  
- 	if (in && skb_mac_header_was_set(skb)) {
- 		size +=   nla_total_size(skb->dev->hard_header_len)
-@@ -694,8 +695,7 @@ nfulnl_log_packet(struct net *net,
- 		goto unlock_and_release;
+-static int
++static void
+ __nfulnl_send(struct nfulnl_instance *inst)
+ {
+-	int status = -1;
+-
+ 	if (inst->qlen > 1) {
+ 		struct nlmsghdr *nlh = nlmsg_put(inst->skb, 0, 0,
+ 						 NLMSG_DONE,
+ 						 sizeof(struct nfgenmsg),
+ 						 0);
+-		if (!nlh)
++		if (WARN_ONCE(!nlh, "bad nlskb size: %u, tailroom %d\n",
++			      inst->skb->len, skb_tailroom(inst->skb))) {
++			kfree_skb(inst->skb);
+ 			goto out;
++		}
  	}
+-	status = nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
+-				   MSG_DONTWAIT);
+-
++	nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
++			  MSG_DONTWAIT);
++out:
+ 	inst->qlen = 0;
+ 	inst->skb = NULL;
+-out:
+-	return status;
+ }
  
--	if (inst->skb &&
--	    size > skb_tailroom(inst->skb) - sizeof(struct nfgenmsg)) {
-+	if (inst->skb && size > skb_tailroom(inst->skb)) {
- 		/* either the queue len is too high or we don't have
- 		 * enough room in the skb left. flush to userspace. */
- 		__nfulnl_flush(inst);
+ static void
 -- 
 2.1.3
 
