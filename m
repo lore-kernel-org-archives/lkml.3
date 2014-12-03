@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaLCP3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:29:23 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:47414 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaLCP3V (ORCPT
+	id S1752063AbaLCP3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:29:51 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:63853 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaLCP3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:29:21 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <f9a94888e953171ddd9ec9ff814aa5e6>
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v16 02/12] drm: imx: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Wed,  3 Dec 2014 23:28:53 +0800
-Message-Id: <1417620533-30450-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
+	Wed, 3 Dec 2014 10:29:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABgxDoKJbhXCwvLbruKLSn5L-3vkma7Bct56nLtQR4_tu24QSQ@mail.gmail.com>
+References: <20141203152733.20ab945f@canb.auug.org.au> <CABgxDoKJbhXCwvLbruKLSn5L-3vkma7Bct56nLtQR4_tu24QSQ@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 3 Dec 2014 15:29:29 +0000
+X-Google-Sender-Auth: iT-fOg5OBjMQ8kYj1-dO-6zeZug
+Message-ID: <CACxGe6vpHS3gtLrhbgobOieUWHEOrUynGa+PfDOKfL_Yi7BavQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the devicetree tree with the
+ regulator tree
+To: Romain Perier <romain.perier@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
+On Wed, Dec 3, 2014 at 7:02 AM, Romain Perier <romain.perier@gmail.com> wrote:
+> Hi,
+>
+> My part looks good and unchanged (first commit), however I would
+> prefer a confirmation from Grant about the full merge.
+>
+> Thanks,
+> Romain
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Looks okay to me.
 
----
+g.
 
-Changes in v16: None
-Changes in v15: None
-Changes in v14: None
-Changes in v13: None
-Changes in v12:
-- refactor of_node_put(ddc_node)
-
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
-
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index 7fd90ae..7a54d20 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -1611,10 +1611,12 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		of_node_put(ddc_node);
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			return -EPROBE_DEFER;
-+		}
- 
--		of_node_put(ddc_node);
- 	} else {
- 		dev_dbg(hdmi->dev, "no ddc property found\n");
- 	}
--- 
-1.9.1
-
-
+>
+> 2014-12-03 5:27 GMT+01:00 Stephen Rothwell <sfr@canb.auug.org.au>:
+>> Hi Grant,
+>>
+>> Today's linux-next merge of the devicetree tree got a conflict in
+>> include/linux/of.h between commit 8f73110f6bac ("of: Rename
+>> "poweroff-source" property to "system-power-controller"") from the pm
+>> tree and commit 7518b5890d8a ("of/overlay: Introduce DT overlay
+>> support") from the devicetree tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>>
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+>> diff --cc include/linux/of.h
+>> index b47096730dc5,aa01cf5852f8..000000000000
+>> --- a/include/linux/of.h
+>> +++ b/include/linux/of.h
+>> @@@ -23,7 -23,7 +23,8 @@@
+>>   #include <linux/spinlock.h>
+>>   #include <linux/topology.h>
+>>   #include <linux/notifier.h>
+>>  +#include <linux/property.h>
+>> + #include <linux/list.h>
+>>
+>>   #include <asm/byteorder.h>
+>>   #include <asm/errno.h>
+>> @@@ -108,27 -111,18 +114,27 @@@ static inline struct device_node *of_no
+>>   static inline void of_node_put(struct device_node *node) { }
+>>   #endif /* !CONFIG_OF_DYNAMIC */
+>>
+>>  -#ifdef CONFIG_OF
+>>  -
+>>   /* Pointer for first entry in chain of all nodes. */
+>> - extern struct device_node *of_allnodes;
+>> + extern struct device_node *of_root;
+>>   extern struct device_node *of_chosen;
+>>   extern struct device_node *of_aliases;
+>>   extern struct device_node *of_stdout;
+>>   extern raw_spinlock_t devtree_lock;
+>>
+>>  +#ifdef CONFIG_OF
+>>  +static inline bool is_of_node(struct fwnode_handle *fwnode)
+>>  +{
+>>  +      return fwnode && fwnode->type == FWNODE_OF;
+>>  +}
+>>  +
+>>  +static inline struct device_node *of_node(struct fwnode_handle *fwnode)
+>>  +{
+>>  +      return fwnode ? container_of(fwnode, struct device_node, fwnode) : NULL;
+>>  +}
+>>  +
+>>   static inline bool of_have_populated_dt(void)
+>>   {
+>> -       return of_allnodes != NULL;
+>> +       return of_root != NULL;
+>>   }
+>>
+>>   static inline bool of_node_is_root(const struct device_node *node)
+>> @@@ -956,14 -959,33 +992,44 @@@ static inline int of_reconfig_get_state
+>>   extern int of_resolve_phandles(struct device_node *tree);
+>>
+>>   /**
+>>  + * of_device_is_system_power_controller - Tells if system-power-controller is found for device_node
+>>  + * @np: Pointer to the given device_node
+>>  + *
+>>  + * return true if present false otherwise
+>>  + */
+>>  +static inline bool of_device_is_system_power_controller(const struct device_node *np)
+>>  +{
+>>  +      return of_property_read_bool(np, "system-power-controller");
+>>  +}
+>>  +
+>> ++/**
+>> +  * Overlay support
+>> +  */
+>> +
+>> + #ifdef CONFIG_OF_OVERLAY
+>> +
+>> + /* ID based overlays; the API for external users */
+>> + int of_overlay_create(struct device_node *tree);
+>> + int of_overlay_destroy(int id);
+>> + int of_overlay_destroy_all(void);
+>> +
+>> + #else
+>> +
+>> + static inline int of_overlay_create(struct device_node *tree)
+>> + {
+>> +       return -ENOTSUPP;
+>> + }
+>> +
+>> + static inline int of_overlay_destroy(int id)
+>> + {
+>> +       return -ENOTSUPP;
+>> + }
+>> +
+>> + static inline int of_overlay_destroy_all(void)
+>> + {
+>> +       return -ENOTSUPP;
+>> + }
+>> +
+>> + #endif
+>> +
+>>   #endif /* _LINUX_OF_H */
