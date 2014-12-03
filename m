@@ -1,140 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaLCB5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:57:48 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61146 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751244AbaLCB5q (ORCPT
+	id S1751405AbaLCB6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:58:07 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:55201 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaLCB6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:57:46 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kristen Carlson Accardi <kristen@linux.intel.com>
-Cc: Ethan Zhao <ethan.zhao@oracle.com>, dirk.j.brandewie@intel.com,
-        linda.knippers@hp.com, viresh.kumar@linaro.org, corbet@lwn.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH 1/2 V6] intel_pstate: skip this driver if Sun server has _PPC method
-Date: Wed, 03 Dec 2014 03:19:10 +0100
-Message-ID: <20270069.XOrGjO4EFd@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141202102231.32b43385@kcaccard-desk.amr.corp.intel.com>
-References: <1417401128-32086-1-git-send-email-ethan.zhao@oracle.com> <20141202102231.32b43385@kcaccard-desk.amr.corp.intel.com>
+	Tue, 2 Dec 2014 20:58:04 -0500
+Subject: [PATCH v3 0/3] Series short description
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+To: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
+        <geert+renesas@glider.be>, <david.daney@cavium.com>,
+        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
+        <davidlohr@hp.com>, <macro@linux-mips.org>, <chenhc@lemote.com>,
+        <cl@linux.com>, <mingo@kernel.org>, <richard@nod.at>,
+        <zajec5@gmail.com>, <james.hogan@imgtec.com>, <keescook@chromium.org>,
+        <tj@kernel.org>, <alex@alex-smith.me.uk>, <pbonzini@redhat.com>,
+        <blogic@openwrt.org>, <paul.burton@imgtec.com>,
+        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
+        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
+        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
+        <lars.persson@axis.com>
+Date: Tue, 2 Dec 2014 17:57:59 -0800
+Message-ID: <20141203015537.13886.50830.stgit@linux-yegoshin>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 02, 2014 10:22:31 AM Kristen Carlson Accardi wrote:
-> On Mon, 1 Dec 2014 11:32:08 +0900
-> Ethan Zhao <ethan.zhao@oracle.com> wrote:
-> 
-> > Oracle Sun X86 servers have dynamic power capping capability that works via
-> > ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-> > enabled.
-> > 
-> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> > Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> > Tested-by: Linda Knippers <linda.knippers@hp.com>
-> 
-> Acked-by: Kristen Carlson Accardi <kristen@linux.intel.com>
+The following series implements an executable stack protection in MIPS.
 
-Patch queued up for 3.19-rc1, thanks!
+It sets up a per-thread 'VDSO' page and appropriate TLB support.
+Page is set write-protected from user and is maintained via kernel VA.
+MIPS FPU emulation is shifted to new page and stack is relieved for
+execute protection as is as all data pages in default setup during ELF
+binary initialization. The real protection is controlled by GLIBC and
+it can do stack protected now as it is done in other architectures and
+I learned today that GLIBC team is ready for this.
 
-> > ---
-> >   v2: fix break HP Proliant issue.
-> >   v3: expand the hardware vendor list.
-> >   v4: refine code.
-> >   v5v6: change enum PCC to PPC.
-> > 
-> >  drivers/cpufreq/intel_pstate.c | 45 ++++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 41 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> > index 27bb6d3..1bb62ca 100644
-> > --- a/drivers/cpufreq/intel_pstate.c
-> > +++ b/drivers/cpufreq/intel_pstate.c
-> > @@ -943,15 +943,46 @@ static bool intel_pstate_no_acpi_pss(void)
-> >  	return true;
-> >  }
-> >  
-> > +static bool intel_pstate_has_acpi_ppc(void)
-> > +{
-> > +	int i;
-> > +
-> > +	for_each_possible_cpu(i) {
-> > +		struct acpi_processor *pr = per_cpu(processors, i);
-> > +
-> > +		if (!pr)
-> > +			continue;
-> > +		if (acpi_has_method(pr->handle, "_PPC"))
-> > +			return true;
-> > +	}
-> > +	return false;
-> > +}
-> > +
-> > +enum {
-> > +	PSS,
-> > +	PPC,
-> > +};
-> > +
-> >  struct hw_vendor_info {
-> >  	u16  valid;
-> >  	char oem_id[ACPI_OEM_ID_SIZE];
-> >  	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
-> > +	int  oem_pwr_table;
-> >  };
-> >  
-> >  /* Hardware vendor-specific info that has its own power management modes */
-> >  static struct hw_vendor_info vendor_info[] = {
-> > -	{1, "HP    ", "ProLiant"},
-> > +	{1, "HP    ", "ProLiant", PSS},
-> > +	{1, "ORACLE", "X4-2    ", PPC},
-> > +	{1, "ORACLE", "X4-2L   ", PPC},
-> > +	{1, "ORACLE", "X4-2B   ", PPC},
-> > +	{1, "ORACLE", "X3-2    ", PPC},
-> > +	{1, "ORACLE", "X3-2L   ", PPC},
-> > +	{1, "ORACLE", "X3-2B   ", PPC},
-> > +	{1, "ORACLE", "X4470M2 ", PPC},
-> > +	{1, "ORACLE", "X4270M3 ", PPC},
-> > +	{1, "ORACLE", "X4270M2 ", PPC},
-> > +	{1, "ORACLE", "X4170M2 ", PPC},
-> >  	{0, "", ""},
-> >  };
-> >  
-> > @@ -966,15 +997,21 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
-> >  
-> >  	for (v_info = vendor_info; v_info->valid; v_info++) {
-> >  		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-> > -		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
-> > -		    intel_pstate_no_acpi_pss())
-> > -			return true;
-> > +			!strncmp(hdr.oem_table_id, v_info->oem_table_id,
-> > +						ACPI_OEM_TABLE_ID_SIZE))
-> > +			switch (v_info->oem_pwr_table) {
-> > +			case PSS:
-> > +				return intel_pstate_no_acpi_pss();
-> > +			case PPC:
-> > +				return intel_pstate_has_acpi_ppc();
-> > +			}
-> >  	}
-> >  
-> >  	return false;
-> >  }
-> >  #else /* CONFIG_ACPI not enabled */
-> >  static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-> > +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
-> >  #endif /* CONFIG_ACPI */
-> >  
-> >  static int __init intel_pstate_init(void)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Note: actual execute-protection depends from HW capability, of course.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This patch is required for MIPS32/64 R2 emulation on MIPS R6 architecture.
+Without it 'ssh-keygen' crashes pretty fast on attempt to execute instruction
+in stack.
+
+v2 changes:
+    - Added an optimization during mmap switch - doesn't switch if the same
+      thread is rescheduled and other threads don't intervene (Peter Zijlstra)
+    - Fixed uMIPS support (Paul Burton)
+    - Added unwinding of VDSO emulation stack at signal handler invocation,
+      hiding an emulation page (Andy Lutomirski note in other patch comments)
+
+V3 change: heavy preemption friendly.
+
+---
+
+Leonid Yegoshin (3):
+      MIPS: mips_flush_cache_range is added
+      MIPS: Setup an instruction emulation in VDSO protected page instead of user stack
+      MIPS: set stack/data protection as non-executable
+
+
+ arch/mips/include/asm/cacheflush.h   |    3 +
+ arch/mips/include/asm/fpu_emulator.h |    2 
+ arch/mips/include/asm/mmu.h          |    3 +
+ arch/mips/include/asm/page.h         |    2 
+ arch/mips/include/asm/processor.h    |    2 
+ arch/mips/include/asm/switch_to.h    |   14 +++
+ arch/mips/include/asm/thread_info.h  |    3 +
+ arch/mips/include/asm/tlbmisc.h      |    1 
+ arch/mips/include/asm/vdso.h         |    3 +
+ arch/mips/kernel/process.c           |    7 ++
+ arch/mips/kernel/signal.c            |    4 +
+ arch/mips/kernel/vdso.c              |   43 +++++++++-
+ arch/mips/math-emu/cp1emu.c          |    8 +-
+ arch/mips/math-emu/dsemul.c          |  153 ++++++++++++++++++++++++++++------
+ arch/mips/mm/c-octeon.c              |    8 ++
+ arch/mips/mm/c-r3k.c                 |    8 ++
+ arch/mips/mm/c-r4k.c                 |   43 ++++++++++
+ arch/mips/mm/c-tx39.c                |    9 ++
+ arch/mips/mm/cache.c                 |    4 +
+ arch/mips/mm/fault.c                 |    5 +
+ arch/mips/mm/tlb-r4k.c               |   42 +++++++++
+ 21 files changed, 335 insertions(+), 32 deletions(-)
+
+--
+Signature
