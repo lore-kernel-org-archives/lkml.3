@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaLCAnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 19:43:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47130 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaLCAmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 19:42:50 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/2] mm: fadvise: Document the fadvise(FADV_DONTNEED) behaviour for partial pages
-Date: Wed,  3 Dec 2014 00:42:46 +0000
-Message-Id: <1417567367-9298-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1417567367-9298-1-git-send-email-mgorman@suse.de>
-References: <1417567367-9298-1-git-send-email-mgorman@suse.de>
+	id S1751302AbaLCAsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 19:48:40 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:35108 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaLCAsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 19:48:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417449619-24896-9-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com> <1417449619-24896-9-git-send-email-mst@redhat.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 3 Dec 2014 00:48:06 +0000
+Message-ID: <CA+V-a8tiJ8+2W4gc06_iBkhhk75n+3ZVXcjJbxDYQ2Eqc3G+nQ@mail.gmail.com>
+Subject: Re: [PATCH v8 08/50] virtio: memory access APIs
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        David Drysdale <drysdale@google.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-api <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A random seek IO benchmark appeared to regress because of a change to
-readahead but the real problem was the benchmark. To ensure the IO request
-accesssed disk, it used fadvise(FADV_DONTNEED) on a block boundary (512K)
-but the hint is ignored by the kernel. This is correct but not necessarily
-obvious behaviour.  As much as I dislike comment patches, the explanation
-for this behaviour predates current git history. Clarify why it behaves
-like this in case someone "fixes" fadvise or readahead for the wrong reasons.
+Hi Michael,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/fadvise.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Thanks for the patch.
 
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 3bcfd81d..c908c72 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -117,7 +117,11 @@ SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
- 			__filemap_fdatawrite_range(mapping, offset, endbyte,
- 						   WB_SYNC_NONE);
- 
--		/* First and last FULL page! */
-+		/*
-+		 * First and last FULL page! Partial pages are deliberately
-+		 * preserved on the expectation that it is better to preserve
-+		 * needed memory than to discard unneeded memory.
-+		 */
- 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
- 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
- 
--- 
-2.1.2
+On Mon, Dec 1, 2014 at 4:03 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> virtio 1.0 makes all memory structures LE, so
+[Snip]
+> +/*
+> + * Low-level memory accessors for handling virtio in modern little endian and in
+> + * compatibility native endian format.
+> + */
+> +
+> +static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
+> +{
+> +       if (little_endian)
+> +               return le16_to_cpu((__force __le16)val);
+> +       else
+> +               return (__force u16)val;
+> +}
+> +
+> +static inline __virtio16 __cpu_to_virtio16(bool little_endian, u16 val)
+> +{
+> +       if (little_endian)
+> +               return (__force __virtio16)cpu_to_le16(val);
+> +       else
+> +               return (__force __virtio16)val;
+> +}
+> +
+> +static inline u32 __virtio32_to_cpu(bool little_endian, __virtio32 val)
+> +{
+> +       if (little_endian)
+> +               return le32_to_cpu((__force __le32)val);
+> +       else
+> +               return (__force u32)val;
+> +}
+> +
+> +static inline __virtio32 __cpu_to_virtio32(bool little_endian, u32 val)
+> +{
+> +       if (little_endian)
+> +               return (__force __virtio32)cpu_to_le32(val);
+> +       else
+> +               return (__force __virtio32)val;
+> +}
+> +
+> +static inline u64 __virtio64_to_cpu(bool little_endian, __virtio64 val)
+> +{
+> +       if (little_endian)
+> +               return le64_to_cpu((__force __le64)val);
+> +       else
+> +               return (__force u64)val;
+> +}
+> +
+> +static inline __virtio64 __cpu_to_virtio64(bool little_endian, u64 val)
+> +{
+> +       if (little_endian)
+> +               return (__force __virtio64)cpu_to_le64(val);
+> +       else
+> +               return (__force __virtio64)val;
+> +}
+> +
 
+Nitpicking, could remove the else for the all above functions and
+align the return appropriately ?
+
+Apart from that patch looks good.
+
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+
+Thanks,
+--Prabhakar Lad
