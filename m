@@ -1,213 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaLCUoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:44:34 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42954 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751349AbaLCUoa (ORCPT
+	id S1752547AbaLCUp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:45:59 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:60907 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbaLCUoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:44:30 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 06/11] memory: atmel-ebi: add DT bindings documentation
-Date: Wed,  3 Dec 2014 21:44:10 +0100
-Message-Id: <1417639455-17410-7-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 3 Dec 2014 15:44:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141203152147.2ca6c6fd@tlielax.poochiereds.net>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141203121118.21a32fe1@notabene.brown>
+	<20141202202946.1e0f399b@tlielax.poochiereds.net>
+	<20141203155649.GB5013@htj.dyndns.org>
+	<20141203110405.5ecc85df@tlielax.poochiereds.net>
+	<20141203140202.7865bedb@tlielax.poochiereds.net>
+	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
+	<20141203142034.5c14529d@tlielax.poochiereds.net>
+	<CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>
+	<20141203152147.2ca6c6fd@tlielax.poochiereds.net>
+Date: Wed, 3 Dec 2014 15:44:31 -0500
+Message-ID: <CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based nfsd
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EBI (External Bus Interface) is used to access external peripherals
-(NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-Each device is assigned a CS line and an address range and can have its
-own configuration (timings, access mode, bus width, ...).
-This driver provides a generic DT binding to configure a device according
-to its requirements.
-For specific device controllers (like the NAND one) the SMC timings
-should be configured by the controller driver through the matrix and smc
-syscon regmaps.
+On Wed, Dec 3, 2014 at 3:21 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> On Wed, 3 Dec 2014 14:59:43 -0500
+> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+>
+>> On Wed, Dec 3, 2014 at 2:20 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+>> > On Wed, 3 Dec 2014 14:08:01 -0500
+>> > Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+>> >> Which workqueue are you using? Since the receive code is non-blocking,
+>> >> I'd expect you might be able to use rpciod, for the initial socket
+>> >> reads, but you wouldn't want to use that for the actual knfsd
+>> >> processing.
+>> >>
+>> >
+>> > I'm using the same (nfsd) workqueue for everything. The workqueue
+>> > isn't really the bottleneck though, it's the work_struct.
+>> >
+>> > Basically, the problem is that the work_struct in the svc_xprt was
+>> > remaining busy for far too long. So, even though the XPT_BUSY bit had
+>> > cleared, the work wouldn't get picked up again until the previous
+>> > workqueue job had returned.
+>> >
+>> > With the change I made today, I just added a new work_struct to
+>> > svc_rqst and queue that to the same workqueue to do svc_process as soon
+>> > as the receive is done. That means though that each RPC ends up waiting
+>> > in the queue twice (once to do the receive and once to process the
+>> > RPC), and I think that's probably the reason for the performance delta.
+>>
+>> Why would the queuing latency still be significant now?
+>>
+>
+> That, I'm not clear on yet and that may not be why this is slower. But,
+> I was seeing slightly faster performance with reads before I made
+> today's changes. If changing how these jobs get queued doesn't help the
+> performance, then I'll have to look elsewhere...
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++++++++++++++++++
- 1 file changed, 155 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+Do you have a good method for measuring that latency? If the queuing
+latency turns out to depend on the execution latency for each job,
+then perhaps running the message receives on a separate low latency
+queue could help (hence the suggestion to use rpciod).
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-new file mode 100644
-index 0000000..3749ea1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-@@ -0,0 +1,155 @@
-+* Device tree bindings for Atmel EBI
-+
-+The External Bus Interface (EBI) controller is a bus where you can connect
-+asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
-+The EBI provides a glue-less interface to asynchronous memories though the SMC
-+(Static Memory Controller).
-+Synchronous memories (and some asynchronous memories like NANDs) can be
-+attached to specialized controllers which are responsible for configuring the
-+bus appropriately according to the connected device.
-+In the other hand, the bus interface can be automated for simple asynchronous
-+devices.
-+
-+Required properties:
-+
-+- compatible:		"atmel,at91sam9260-ebi"
-+			"atmel,at91sam9261-ebi"
-+			"atmel,at91sam9263-ebi0"
-+			"atmel,at91sam9263-ebi1"
-+			"atmel,at91sam9g45-ebi"
-+			"atmel,at91sam9x5-ebi"
-+			"atmel,sama5d3-ebi"
-+
-+- reg:			Contains offset/length value for EBI memory mapping.
-+			This property might contain several entries if the EBI
-+			memory range is not contiguous
-+
-+- #address-cells:	Must be 2.
-+			The first cell encodes the CS.
-+			The second cell encode the offset into the CS memory
-+			range.
-+
-+- #size-cells:		Must be set to 1.
-+
-+- ranges:		Encodes CS to memory region association.
-+
-+- clocks:		Clock feeding the EBI controller.
-+			See clock-bindings.txt
-+
-+Child chip-select (cs) nodes contain the memory devices nodes connected to
-+such as NOR (e.g. cfi-flash) and NAND.
-+There might be board specific devices like FPGAs.
-+You'll define you device requirements in these child nodes.
-+
-+Required child cs node properties:
-+
-+- #address-cells:	Must be 2.
-+
-+- #size-cells:		Must be 1.
-+
-+- ranges:		Empty property indicating that child nodes can inherit
-+			memory layout.
-+
-+Optional child cs node properties:
-+- atmel,generic-dev		boolean property specifying if the device is
-+				a generic device.
-+				The following properties are only parsed if
-+				this property is present.
-+				Specialized devices are attached to specialized
-+				controllers which are responsible for
-+				configuring the bus appropriately.
-+				Here are some examples of specialized
-+				controllers: NAND, CompactFlash, SDR-SDRAM.
-+
-+- atmel,bus-width:		width of the asynchronous device's data bus
-+				8, 16 or 32.
-+				8 if not present.
-+
-+- atmel,byte-access-type	"write" or "select" (see Atmel datasheet).
-+				"select" if not present.
-+
-+- atmel,read-mode		"nrd" or "ncs".
-+				"ncs" is not present.
-+
-+- atmel,write-mode		"nwe" or "ncs".
-+				"ncs" is not present.
-+
-+- atmel,exnw-mode		"disabled", "frozen" or "ready".
-+				"disabled" if not present.
-+
-+- atmel,page-mode		enable page mode if present. The provided value
-+				defines the page size (supported values: 4, 8,
-+				16 and 32).
-+
-+Optional device timings expressed in nanoseconds (if the property is not
-+present 0 is assumed):
-+
-+- atmel,ncs-rd-setup-ns
-+- atmel,nrd-setup-ns
-+- atmel,ncs-wr-setup-ns
-+- atmel,nwe-setup-ns
-+- atmel,ncs-rd-pulse-ns
-+- atmel,nrd-pulse-ns
-+- atmel,ncs-wr-pulse-ns
-+- atmel,nwe-pulse-ns
-+- atmel,nwe-cycle-ns
-+- atmel,nrd-cycle-ns
-+- atmel,tdf-ns
-+
-+- atmel,tdf-optimized		data float optimized mode. If present the data
-+				float time is optimized depending on the next
-+				device being accessed (next device setup
-+				time is substracted to the current devive data
-+				float time).
-+
-+
-+
-+Example:
-+
-+	ebi: ebi@10000000 {
-+		compatible = "atmel,sama5d3-ebi", "simple-bus";
-+		#address-cells = <2>;
-+		#size-cells = <1>;
-+		atmel,smc = <&hsmc>;
-+		atmel,matrix = <&matrix>;
-+		reg = <0x10000000 0x10000000
-+		       0x40000000 0x30000000>;
-+		ranges = <0x0 0x0 0x10000000 0x10000000
-+			  0x1 0x0 0x40000000 0x10000000
-+			  0x2 0x0 0x50000000 0x10000000
-+			  0x3 0x0 0x60000000 0x10000000>;
-+		clocks = <&mck>;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_ebi_addr>;
-+
-+		cs@0 {
-+			#address-cells = <2>;
-+			#size-cells = <1>;
-+			ranges;
-+			atmel,generic-dev;
-+			atmel,read-mode = "nrd";
-+			atmel,write-mode = "nwe";
-+			atmel,bus-width = <16>;
-+			atmel,ncs-rd-setup-ns = <0>;
-+			atmel,ncs-wr-setup-ns = <0>;
-+			atmel,nwe-setup-ns = <8>;
-+			atmel,nrd-setup-ns = <16>;
-+			atmel,ncs-rd-pulse-ns = <84>;
-+			atmel,ncs-wr-pulse-ns = <84>;
-+			atmel,nrd-pulse-ns = <76>;
-+			atmel,nwe-pulse-ns = <76>;
-+			atmel,nrd-cycle-ns = <107>;
-+			atmel,nwe-cycle-ns = <84>;
-+			atmel,tdf-ns = <16>;
-+
-+			nor: flash@0,0 {
-+				compatible = "cfi-flash";
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+				reg = <0x0 0x0 0x1000000>;
-+				bank-width = <2>;
-+			};
-+		};
-+	};
-+
 -- 
-1.9.1
+Trond Myklebust
 
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
