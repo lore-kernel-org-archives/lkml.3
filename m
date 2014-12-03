@@ -1,129 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaLCJec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:34:32 -0500
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:38890 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751866AbaLCJe3 (ORCPT
+	id S1752590AbaLCJeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:34:50 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:63625 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaLCJer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:34:29 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1543:1593:1594:1605:1711:1730:1747:1777:1792:2393:2553:2559:2562:2895:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:4605:5007:6261:6690:7576:7875:7903:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12740:13161:13229:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ball84_26dc745781605
-X-Filterd-Recvd-Size: 4295
-Date: Wed, 3 Dec 2014 04:34:23 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alexei Starovoitov <ast@plumgrid.com>
-Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
-Message-ID: <20141203043423.6c7e4524@gandalf.local.home>
-In-Reply-To: <547ED753.3060508@hitachi.com>
-References: <20141203031334.174087814@goodmis.org>
-	<20141203032106.156623189@goodmis.org>
-	<547ED753.3060508@hitachi.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Dec 2014 04:34:47 -0500
+From: Dudley Du <dudley.dulixin@gmail.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudley.dulixin@gmail.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v12 17/19] input: cyapa: add read sensors raw data debugfs interface support
+Date: Wed,  3 Dec 2014 17:30:23 +0800
+Message-Id: <1417599025-21681-18-git-send-email-dudley.dulixin@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
+References: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Dec 2014 18:26:43 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Add read sensors' raw data from trackpad device interface supported in cyapa
+driver through debugfs raw_data interface.
+Through this interface, user can read difference count map of each sensors
+directly from trackpad device (some customers want). And it's useful to help
+users to find out the root cause when there is performance gap happened.
+TEST=test on Chromebooks.
 
-> (2014/12/03 12:13), Steven Rostedt wrote:
-> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > 
-> > Add a test to test the event filter logic. It currently tests the
-> > following filters against sched:sched_switch event.
-> > 
-> >    ( prev_pid != 0 )
-> >    ( prev_pid == 0 )
-> >    ( prev_pid < 100 )
-> >    ( prev_pid <= $$ )
-> >    ( prev_pid > 100 )
-> >    ( prev_pid >= $$ )
-> >   ! ( prev_pid != 0 )
-> >   ! ( prev_pid == 0 )
-> >   ! ( prev_pid < 100 )
-> >   ! ( prev_pid <= $$ )
-> >   ! ( prev_pid > 100 )
-> >   ! ( prev_pid >= $$ )
-> >    ( prev_pid != 0 && next_pid > 10 )
-> >    ( prev_pid != 0 || next_pid > 10 )
-> >   ! ( prev_pid != 0 && next_pid > 10 )
-> >   ! ( prev_pid != 0 || next_pid > 10 )
-> >    ( prev_pid & 1 )
-> >    ( prev_pid & 2 )
-> >    ( prev_pid & 4 )
-> >    ( prev_pid & 8 )
-> >    ( prev_pid & 16 )
-> >   ! ( prev_pid & 1 )
-> >   ! ( prev_pid & 2 )
-> >   ! ( prev_pid & 4 )
-> >   ! ( prev_pid & 8 )
-> >   ! ( prev_pid & 16 )
-> >    ( next_comm ~ "ftrace-test-fil" )
-> >    ( next_comm != "ftrace-test-fil" )
-> >   ! ( next_comm ~ "ftrace-test-fil" )
-> >   ! ( next_comm != "ftrace-test-fil" )
-> > 
-> 
-> Hmm, this uses some bash-only syntax, here is the result of checkbashisms.
-> 
-> # checkbashisms tools/testing/selftests/ftrace/test.d/ftrace/filter.tc
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 70 (should be 'b = a'):
->             if [ "$not" == '!' ]; then
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 99 (should be 'b = a'):
->             if [ "$not" == '!' ]; then
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 137 (let ...):
->     let x=1
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 148 (let ...):
->             let val="$pid & $x"
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 155 (should be 'b = a'):
->             elif [ "$not" == '!' ]; then
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 160 (let ...):
->         let x="$x << 1"
-> possible bashism in tools/testing/selftests/ftrace/test.d/ftrace/filter.tc line 182 (should be 'b = a'):
->             if [ "$not" == '!' ]; then
-> 
-> to allow run this on busybox or dash, we'd better clean it.
+Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+---
+ drivers/input/mouse/cyapa.c | 90 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/input/mouse/cyapa.h |  4 ++
+ 2 files changed, 94 insertions(+)
 
-Do you know how to fix this?
-
-> 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> [...]
-> > +# Test more complex compares (&& and !!)
-> > +test_cmp2 -ne 0 -a -gt 10 "!= 0" "> 10" "&&" ''
-> > +test_cmp2 -ne 0 -o -gt 10 "!= 0" "> 10" "||" ''
-> 
-> This might better be
-> test_cmp2 -ne 0 -a -gt 10 "!= 0" "&&" "> 10" ''
-> test_cmp2 -ne 0 -o -gt 10 "!= 0" "||" "> 10" ''
-> 
-> :-)
-
-Sure.
-
-OK, I'll hold off on sending this patch then till 3.20.
-
-I'll still add the update to the kernel for 3.19, but the testing for
-it needs work. It passes my test suite, but I don't know how to handle
-the busybox limitations.
-
--- Steve
-
-> 
-> > +
-> > +test_cmp2 -ne 0 -a -gt 10 "!= 0" "> 10" "&&" '!'
-> > +test_cmp2 -ne 0 -o -gt 10 "!= 0" "> 10" "||" '!'
-> 
-> Thank you,
-> 
-> 
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index d6eb3f2..09111ed 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -34,6 +34,7 @@
+ #define CYAPA_ADAPTER_FUNC_BOTH   3
+ 
+ #define CYAPA_DEBUGFS_READ_FW	"read_fw"
++#define CYAPA_DEBUGFS_RAW_DATA	"raw_data"
+ #define CYAPA_FW_NAME		"cyapa.bin"
+ 
+ const char unique_str[] = "CYTRA";
+@@ -726,6 +727,91 @@ static const struct file_operations cyapa_read_fw_fops = {
+ 	.read = cyapa_debugfs_read_fw
+ };
+ 
++static int cyapa_debugfs_raw_data_open(struct inode *inode, struct file *file)
++{
++	struct cyapa *cyapa = inode->i_private;
++	int error;
++
++	if (!cyapa)
++		return -ENODEV;
++
++	/* Start to be supported after Gen5 trackpad devices. */
++	if (cyapa->gen < CYAPA_GEN5)
++		return -ENOTSUPP;
++
++	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
++	if (error)
++		return error;
++
++	if (!get_device(&cyapa->client->dev)) {
++		error = -ENODEV;
++		goto out;
++	}
++
++	file->private_data = cyapa;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		goto out;
++
++	if (cyapa->ops->read_raw_data) {
++		cyapa_enable_irq_for_cmd(cyapa);
++		error = cyapa->ops->read_raw_data(cyapa);
++		cyapa_disable_irq_for_cmd(cyapa);
++	} else {
++		error = -EPERM;
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++out:
++	mutex_unlock(&cyapa->debugfs_mutex);
++	return error;
++}
++
++static int cyapa_debugfs_raw_data_release(struct inode *inode,
++				struct file *file)
++{
++	struct cyapa *cyapa = file->private_data;
++	int error;
++
++	if (!cyapa)
++		return 0;
++
++	error = mutex_lock_interruptible(&cyapa->debugfs_mutex);
++	if (error)
++		return error;
++	file->private_data = NULL;
++	put_device(&cyapa->client->dev);
++	mutex_unlock(&cyapa->debugfs_mutex);
++
++	return 0;
++}
++
++static ssize_t cyapa_debugfs_read_raw_data(struct file *file,
++				     char __user *buffer,
++				     size_t count, loff_t *ppos)
++{
++	struct cyapa *cyapa = file->private_data;
++
++	if (*ppos >= cyapa->tp_raw_data_size)
++		return 0;
++
++	if (count + *ppos > cyapa->tp_raw_data_size)
++		count = cyapa->tp_raw_data_size - *ppos;
++
++	if (copy_to_user(buffer, &cyapa->tp_raw_data[*ppos], count))
++		return -EFAULT;
++
++	*ppos += count;
++	return count;
++}
++
++static const struct file_operations cyapa_read_raw_data_fops = {
++	.open = cyapa_debugfs_raw_data_open,
++	.release = cyapa_debugfs_raw_data_release,
++	.read = cyapa_debugfs_read_raw_data
++};
++
+ static int cyapa_debugfs_init(struct cyapa *cyapa)
+ {
+ 	struct device *dev = &cyapa->client->dev;
+@@ -744,6 +830,10 @@ static int cyapa_debugfs_init(struct cyapa *cyapa)
+ 	debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_dev,
+ 			    cyapa, &cyapa_read_fw_fops);
+ 
++	if (cyapa->gen >= CYAPA_GEN5)
++		debugfs_create_file(CYAPA_DEBUGFS_RAW_DATA, S_IRUSR,
++			cyapa->dentry_dev, cyapa, &cyapa_read_raw_data_fops);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 8aa51af..93dfe86 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -187,6 +187,7 @@ struct cyapa_dev_ops {
+ 			struct device_attribute *, const char *, size_t);
+ 
+ 	int (*read_fw)(struct cyapa *);
++	int (*read_raw_data)(struct cyapa *);
+ 
+ 	int (*initialize)(struct cyapa *cyapa);
+ 
+@@ -307,6 +308,9 @@ struct cyapa {
+ 	struct cyapa_tsg_bin_image_head fw_img_head;
+ 	u8 *fw_image;
+ 	size_t fw_image_size;
++	/* Buffer to store sensors' raw data */
++	u8 *tp_raw_data;
++	size_t tp_raw_data_size;
+ 
+ 	const struct cyapa_dev_ops *ops;
+ 
+-- 
+1.9.1
 
