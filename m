@@ -1,115 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaLCQVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:21:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaLCQVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:21:21 -0500
-Date: Wed, 3 Dec 2014 08:21:20 -0800
-From: Greg KH <greg@kroah.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Jeremiah Mahler <jmmahler@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- net-next tree
-Message-ID: <20141203162120.GA5411@kroah.com>
-References: <20141201181933.6dfaad66@canb.auug.org.au>
- <547C19ED.10201@broadcom.com>
- <20141203083655.GA5418@hudson.localdomain>
- <20141203105148.GA7633@hudson.localdomain>
- <547F06BC.8060000@broadcom.com>
+	id S1753602AbaLCQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:22:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33853 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898AbaLCQWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:22:07 -0500
+Message-ID: <547F38AD.9050103@suse.de>
+Date: Wed, 03 Dec 2014 17:22:05 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547F06BC.8060000@broadcom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jason Wilkes <letshaveanadventure@gmail.com>
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: scsi: aic7xxx: Fix positive error codes.
+References: <1417564984-6941-1-git-send-email-letshaveanadventure@gmail.com>
+In-Reply-To: <1417564984-6941-1-git-send-email-letshaveanadventure@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 01:49:00PM +0100, Arend van Spriel wrote:
-> On 12/03/14 11:51, Jeremiah Mahler wrote:
-> >On Wed, Dec 03, 2014 at 12:36:55AM -0800, Jeremiah Mahler wrote:
-> >>all,
-> >>
-> >>On Mon, Dec 01, 2014 at 08:34:05AM +0100, Arend van Spriel wrote:
-> >>>On 01-12-14 08:19, Stephen Rothwell wrote:
-> >>>>Hi Greg,
-> >>>>
-> >>>>Today's linux-next merge of the driver-core tree got a conflict in
-> >>>>drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
-> >>>>("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
-> >>>>("ath9k: restart hardware after noise floor calibration failure") and
-> >>>>325e18817668 ("ath9k: fix misc debugfs when not using chan context")
-> >>>>from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
-> >>>>for ath9k debugfs files") from the driver-core tree.
-> >>>>
-> >>>>I fixed it up (see below) and can carry the fix as necessary (no action
-> >>>>is required).
-> >>>>
-> >>>>Greg, I am not sure why those 2 commits are even in your tree.  Do they
-> >>>>depend on something else in your tree?
-> >>>
-> >>>They do. The three commits below are related:
-> >>>
-> >>>d32394f ath: ath9k: use debugfs_create_devm_seqfile() helper for
-> >>>seq_file entrie
-> >>>631bee2 ath: use seq_file api for ath9k debugfs files
-> >>>98210b7 debugfs: add helper function to create device related seq_file
-> >>>
-> >>>The ath patches were made to provide example of using the new helper
-> >>>function and get some idea about code savings. Greg and John discussed
-> >>>who would take them. I noticed other ath changes in net-next so I kinda
-> >>>expected this email ;-)
-> >>>
-> >>>Regards,
-> >>>Arend
-> >>>--
-> >>>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>>the body of a message to majordomo@vger.kernel.org
-> >>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >>I just ran in to a problem with one of these commits.
-> >>
-> >>On an Acer C720 laptop if a suspend is performed the screen freezes,
-> >>the machine locks up, and according to the indicator lights it does
-> >>not enter suspend.  A hard reset is required to get it running again.
-> >>
-> >>I have bisected the kernel and found that the following is the first bad
-> >>commit.
-> >>
-> >>   commit d32394fae95741d733b174ec1446f27765f80233
-> >>   Author: Arend van Spriel<arend@broadcom.com>
-> >>   Date:   Sun Nov 9 11:32:00 2014 +0100
-> >>
-> >>       ath: ath9k: use debugfs_create_devm_seqfile() helper for seq_file
-> >>   entries
-> >>
-> >>       Use the helper to get rid of the file operations per debugfs file.
-> >>   The
-> >>       struct ath9k_softc pointer is set as device driver data to be
-> >>   obtained
-> >>       in the seq_file read operation.
-> >>
-> >>       Signed-off-by: Arend van Spriel<arend@broadcom.com>
-> >>       Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> >>
-> >>Let me know if I can do anything else to help.
-> >>
-> >>--
-> >>- Jeremiah Mahler
-> >
-> >I took a look at the patch that is causing this problem (d32394fae95).
-> >My config negates everything in the patch except for a one line change
-> >to ath9k/pci.c.  If I remove this change (shown below) the problem goes
-> >away.
+On 12/03/2014 01:03 AM, Jason Wilkes wrote:
+> Note:
+> There are more instances of the problem described below, but I
+> thought I'd explain the first one in detail, to make sure it's
+> worth fixing the others (and to make sure I didn't do anything
+> stupid, which I may have. I'm new to this :-). Alright, here we go!
 > 
-> Ok. But then it will likely crash when you cat one of the changed debugfs
-> files. Guess this commit needs to be reverted entirely.
+> A few drivers seem to return positive error codes internally, in
+> order to signal something to a static function in the same driver.
+> (see, for example, drivers/staging/lustre/lnet/lnet/lib-move.c)
+> That's unusual, but seems okay as long as they're consistent between
+> return codes and return code checks. However, a problem might arise
+> if +ERRORCODE rather than -ERRORCODE is returned to other layers
+> of the kernel (e.g., to the driver core). Let's do some exploring...
+> 
+> Here's a function that returns +ENOMEM
+> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
+> FUNC: aic7770_map_registers
+> 
+> int
+> aic7770_map_registers(struct ahc_softc *ahc, u_int port)
+> {
+> ... (clipped for brevity) ..
+> 
+> 	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
+> 		return (ENOMEM);
+> 
+> ... (clipped for brevity) ..
+> }
+> 
+> This may not be a problem, unless we're passing the value
+> outside the current module. So who calls this function?
+> $ grep -r -C20 aic7770_map_registers
+> 
+> Looks like it's only ever called in:
+> FILE: drivers/scsi/aic7xxx/aic7770.c
+> FUNC: aic7770_config
+> 
+> int aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
+> {
+> ... (code and stuff) ...
+> 
+> 	error = aic7770_map_registers(ahc, io);
+> 	if (error != 0)
+> 		return (error);
+> 
+> ... (code and stuff) ...
+> }
+> 
+> Hmm... Let's see who calls this guy.
+> $ grep -r -C20 aic7770_config
+> 
+> This too is only called once, in:
+> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
+> FUNC: aic7770_probe
+> 
+> static int
+> aic7770_probe(struct device *dev)
+> {
+> ... (blah blah blah) ...
+> 
+> 	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
+> 			       eisaBase);
+> 	if (error != 0) {
+> 		ahc->bsh.ioport = 0;
+> 		ahc_free(ahc);
+> 		return (error);
+> 	}
+> 
+> ... (blah blah blah) ...
+> }
+> 
+> Same deal as before. Okay, so who calls aic7770_probe?
+> 
+> Well, as expected, no one calls it, at least not by name.
+> It's just the .probe function in the following struct:
+> 
+> FILE: drivers/scsi/aic7xxx/aic7770_osm.c
+> 
+> static struct eisa_driver aic7770_driver = {
+> 	.id_table	= aic7770_ids,
+> 	.driver = {
+> 		.name   = "aic7xxx",
+> 		.probe  = aic7770_probe,
+> 		.remove = aic7770_remove,
+> 	}
+> };
+> 
+> So the return code *is* being passed to another layer of the kernel,
+> in which case it should probably be negative.
+> 
+> There are lots of similar examples in the same driver. I'd be happy
+> to fix them up, but I thought I should send this patch first, to make
+> sure I'm not doing anything obviously wrong.
+> 
+> Ooh! One more thing, just to be safe. Above, I assumed that grepping
+> the kernel tree would give us all the places where an identifier shows
+> up, but maybe this driver does something clever with the preprocessor.
+> 
+> $ grep -r '##' drivers/scsi/aic7xxx/ || cowsay hooray
+>  ________
+> < hooray >
+>  --------
+>         \   ^__^
+>          \  (oo)\_______
+>             (__)\       )\/\
+>                 ||----w |
+>                 ||     ||
+> 
+> Okay good, so there shouldn't be any ## magic messing with our greps.
+> Alright, I guess I should send this patch off now. Thanks for reading,
+> and apologies in advance if I'm a moron :-)
+> 
+> Signed-off-by: Jason Wilkes <letshaveanadventure@gmail.com>
+> ---
+>  drivers/scsi/aic7xxx/aic7770.c     | 2 +-
+>  drivers/scsi/aic7xxx/aic7770_osm.c | 6 +++---
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/scsi/aic7xxx/aic7770.c b/drivers/scsi/aic7xxx/aic7770.c
+> index 5000bd6..cecdea9 100644
+> --- a/drivers/scsi/aic7xxx/aic7770.c
+> +++ b/drivers/scsi/aic7xxx/aic7770.c
+> @@ -171,7 +171,7 @@ aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
+>  		break;
+>  	default:
+>  		printk("aic7770_config: invalid irq setting %d\n", intdef);
+> -		return (ENXIO);
+> +		return -ENXIO;
+>  	}
+>  
+>  	if ((intdef & EDGE_TRIG) != 0)
+> diff --git a/drivers/scsi/aic7xxx/aic7770_osm.c b/drivers/scsi/aic7xxx/aic7770_osm.c
+> index 3d401d0..50f030d 100644
+> --- a/drivers/scsi/aic7xxx/aic7770_osm.c
+> +++ b/drivers/scsi/aic7xxx/aic7770_osm.c
+> @@ -51,7 +51,7 @@ aic7770_map_registers(struct ahc_softc *ahc, u_int port)
+>  	 * Lock out other contenders for our i/o space.
+>  	 */
+>  	if (!request_region(port, AHC_EISA_IOSIZE, "aic7xxx"))
+> -		return (ENOMEM);
+> +		return -ENOMEM;
+>  	ahc->tag = BUS_SPACE_PIO;
+>  	ahc->bsh.ioport = port;
+>  	return (0);
+> @@ -87,10 +87,10 @@ aic7770_probe(struct device *dev)
+>  	sprintf(buf, "ahc_eisa:%d", eisaBase >> 12);
+>  	name = kstrdup(buf, GFP_ATOMIC);
+>  	if (name == NULL)
+> -		return (ENOMEM);
+> +		return -ENOMEM;
+>  	ahc = ahc_alloc(&aic7xxx_driver_template, name);
+>  	if (ahc == NULL)
+> -		return (ENOMEM);
+> +		return -ENOMEM;
+>  	error = aic7770_config(ahc, aic7770_ident_table + edev->id.driver_data,
+>  			       eisaBase);
+>  	if (error != 0) {
+> 
+Looks okay so far, but have you validated all callers to ensure they
+use the new syntax?
 
-What commit, d32394fae95741d733b174ec1446f27765f80233?
+Cheers,
 
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
