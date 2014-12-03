@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaLCR75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:59:57 -0500
-Received: from mail-by2on0071.outbound.protection.outlook.com ([207.46.100.71]:33096
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750730AbaLCR7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:59:55 -0500
-Date: Wed, 3 Dec 2014 09:59:50 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-rockchip@lists.infradead.org>, <linux-sh@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: Re: [PATCH v2 0/7] Pinctrl support for Zynq
-References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
- <1417611103.30615.25.camel@mm-sol.com>
+	id S1751894AbaLCSAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 13:00:21 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39502 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaLCSAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 13:00:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417611103.30615.25.camel@mm-sol.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21148.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <d1b90be2a67942e8a058e27b4cd38e66@BY2FFO11FD036.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(53754006)(51704005)(377424004)(24454002)(189002)(164054003)(199003)(15975445006)(21056001)(85202003)(77156002)(108616004)(31966008)(107046002)(64706001)(104016003)(53416004)(85182001)(6806004)(110136001)(46102003)(99396003)(120916001)(54356999)(47776003)(102836001)(74316001)(87936001)(20776003)(92566001)(4396001)(44976005)(86362001)(19580395003)(106466001)(50986999)(23676002)(50466002)(95666004)(83506001)(62966003)(76176999)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB062;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB062;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB062;
-X-Forefront-PRVS: 0414DF926F
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB062;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <547F3A57.7000106@sonymobile.com>
+References: <547E854E.5060101@sonymobile.com>
+	<1417578191.16722.11.camel@concordia>
+	<547F3A57.7000106@sonymobile.com>
+Date: Wed, 3 Dec 2014 19:00:16 +0100
+X-Google-Sender-Auth: YmOgHKBzOKi-AHbK8W9f5acVgpc
+Message-ID: <CAMuHMdVk9QLDRYDs3q7=51=qTMNRY+MQVhkqGE25XqYOkLbCxg@mail.gmail.com>
+Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tim Bird <tim.bird@sonymobile.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 02:51PM +0200, Ivan T. Ivanov wrote:
-> 
-> On Thu, 2014-11-27 at 17:26 -0800, Soren Brinkmann wrote:
-> > Hi all,
-> > 
-> > here is v2 of this series. 
-> 
-> Which tree did you use as a base for these patches?
-> Tried with pinctrl/devel and linus/master didn't apply.
+On Wed, Dec 3, 2014 at 5:29 PM, Tim Bird <tim.bird@sonymobile.com> wrote:
+>>> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+>>> new file mode 100644
+>>> index 0000000..47f8e9c
+>>> --- /dev/null
+>>> +++ b/tools/testing/selftests/size/Makefile
+>>> @@ -0,0 +1,15 @@
+>>> +#ifndef CC
+>>> +    CC = $(CROSS_COMPILE)gcc
+>>> +#endif
+>>
+>> I think the following is preferable:
+>>
+>>   CC := $(CROSS_COMPILE)$(CC)
+>>
+>>
+>> It allows optionally setting a custom CC, as well as optionally CROSS_COMPILE.
+>
+> I'm not sure I follow this.
+>
+> If CC is unset, you get only the CROSS_COMPILE prefix.
+> If CC is set to e.g. 'gcc', then you get a nicely formatted toolchain string.
+> But if CC already has the prefix applied, then this will result in
+>   having it duplicated, which surely won't work correctly.
+>
+> In the long run, I would hope that a higher level Makefile or environment setting
+> will be setting the toolchain string appropriately (as well as handling build flags)
+> which is why I wanted to use an ifndef (which Thomas correctly pointed out is just
+> wrong).
+>
+> Actually, after getting this tiny program accepted, my next task was working on a
+> proper fix for handling cross compilation in a more generic (not case-by-case) way.
+>
+> CROSS_COMPILE prefix usage looks a bit uncoordinated in the tools directory, but most
+> tests seem to be favoring $(CROSS_COMPILE)gcc.
+>
+>  $ cd tools ; mgrep CROSS
 
-It's supposed to be pinctrl/devel. And that seems to be mostly true. I
-just saw there are two rockchip patches in my branch which shouldn't be.
-Guess some rebase went wrong (or the devel branch was rewritten?).
-I pushed the series here:
-https://github.com/sorenb-xlnx/linux-xlnx/commits/pinctrl
+[...]
 
-	Thanks,
-	Sören
+> I agree it's desirable not to hardcode gcc, but we seem to be doing it all over
+> the place already.
+
+Seems like it's time to start integrating the tests with the regular Kbuild
+system, which handles cross-compilation fine...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
