@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaLCC1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:27:21 -0500
-Received: from ozlabs.org ([103.22.144.67]:56957 "EHLO ozlabs.org"
+	id S1751592AbaLCC2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:28:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47919 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009AbaLCC1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:27:20 -0500
-Date: Wed, 3 Dec 2014 13:27:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        <intel-gfx@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: linux-next: manual merge of the drm tree with the drm-intel-fixes
- tree
-Message-ID: <20141203132708.7423b7f8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751043AbaLCC2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 21:28:36 -0500
+Date: Wed, 3 Dec 2014 03:28:33 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Juergen Gross <jgross@suse.com>, Joerg Roedel <jroedel@suse.de>,
+        kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
+        Olaf Hering <ohering@suse.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
+	hypercall when non CONFIG_PREEMPT
+Message-ID: <20141203022833.GS25677@wotan.suse.de>
+References: <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com> <20141201223611.GM25677@wotan.suse.de> <547D9E56.50708@citrix.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/F2uXJoqt_JDbq8onwOe7Skf"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547D9E56.50708@citrix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F2uXJoqt_JDbq8onwOe7Skf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 02, 2014 at 11:11:18AM +0000, David Vrabel wrote:
+> On 01/12/14 22:36, Luis R. Rodriguez wrote:
+> > 
+> > Then I do agree its a fair analogy (and find this obviously odd that how
+> > widespread cond_resched() is), we just don't have an equivalent for IRQ
+> > context, why not avoid the special check then and use this all the time in the
+> > middle of a hypercall on the return from an interrupt (e.g., the timer
+> > interrupt)?
+> 
+> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
 
-Hi Dave,
+OK thanks! That explains why we need some asm code but in that submission you
+still also had used is_preemptible_hypercall(regs) and in the new
+implementation you use a CPU variable xen_in_preemptible_hcall prior to calling
+preempt_schedule_irq(). I believe you added the CPU variable because
+preempt_schedule_irq() will preempt first without any checks if it should, I'm
+asking why not do something like cond_resched_irq() where we check with
+should_resched() prior to preempting and that way we can avoid having to use
+the CPU variable?
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit b68362278af9
-("drm/i915: More cautious with pch fifo underruns") from the
-drm-intel-fixes tree and commit a72e4c9f9a11 ("drm/i915: Use dev_priv
-in public intel_fifo_underrun.c functions") from the drm tree.
-
-I fixed it up (I used the drm tree version) and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/F2uXJoqt_JDbq8onwOe7Skf
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUfnUEAAoJEMDTa8Ir7ZwVCHoQAJHPp/kxcBac8+toI7ZQLwQc
-tN5dOzKsuIW20Xr4CRndJUP2j7ZkpRSKTkBHGt8Td23fm9u3r1ys2kUJJKNYzuTb
-BD56QJMWrC4Um7l/kjE8/p1wy+7aIwM4iZXCkJlvX9xsOfqwfJKN4q6vEvsJ6ZoX
-2864VDBgwgfFVeWLqNzepOz2GxyaflsiFBUyPvsnbz8VXuW4BFXZzZXcwLb5y1Ek
-6pM0fsC5tbBpOq8pcli71rFIMFGEZW25dV6mVd/cGVdHJkekgM0OrmaXe90+8XPk
-UT88XsSIe+WnkjJtYtuNAzXrTuPKj7c0ieLJg/tM8Yd9XT+bOisScnQjxFP5a9Su
-166du6f6cuqjujfP+4b3VvySCezkFRM/JgMpkK98qOkJgkTxt2IdZ6tHJcaSG6Zq
-+onmMHbIBK3KzSeYFuUu5aMab6NXf1mJ+RSL8zc0ymx1Mpd5jPI3Vz3TCKgfAYBJ
-Rt+/6iPs5EZy/y5n2cYqzIgUH/xBGO34uLW2Fp0ixzfD20ZWsL1ClxAYsXKqj7Um
-vikTJQB+Ukl/jWBcMdRwINRNp0RNFnyXtTp+JY4A2fRKKCCpCQbdpMK6/s1Ctarh
-2CRzRa6ge8Yhi6Rv1d0aYTltxXtm/B2fO37APH3QMMXdqaDNIB0ow7JDjWgsTDsW
-Tgl8PIJdGyhdqaFmrdNo
-=EX4d
------END PGP SIGNATURE-----
-
---Sig_/F2uXJoqt_JDbq8onwOe7Skf--
+  Luis
