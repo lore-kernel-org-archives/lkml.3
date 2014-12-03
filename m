@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933611AbaLEDMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 22:12:00 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:53101 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaLEDL5 (ORCPT
+	id S933630AbaLEDMj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:12:39 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40085 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378AbaLEDMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 22:11:57 -0500
-From: Ashley Lai <ashley@ashleylai.com>
-X-Google-Original-From: Ashley Lai <alai@ant>
-Date: Thu, 4 Dec 2014 21:11:55 -0600 (CST)
-To: Joe Perches <joe@perches.com>
-cc: Ashley Lai <ashleydlai@gmail.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tpm_ibmvtpm: Update email address in maintainers
- list and ibmvtpm driver
-In-Reply-To: <1417744666.2721.33.camel@perches.com>
-Message-ID: <alpine.DEB.2.10.1412042111250.13729@ant>
-References: <1417742242-13016-1-git-send-email-ashleydlai@gmail.com> <1417744666.2721.33.camel@perches.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 4 Dec 2014 22:12:38 -0500
+Date: Wed, 3 Dec 2014 05:19:07 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] toshiba_acpi: Change notify funtion to handle
+ more events
+Message-ID: <20141203131907.GF75099@vmdeb7>
+References: <1417675325-14921-1-git-send-email-coproscefalo@gmail.com>
+ <1417675325-14921-3-git-send-email-coproscefalo@gmail.com>
+ <20141203131240.GD75099@vmdeb7>
+ <CAGdLNWFpvSLZorQ6WNpEBZ+rkxcP7CR0vxtW4ugmyxojNRWLVg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGdLNWFpvSLZorQ6WNpEBZ+rkxcP7CR0vxtW4ugmyxojNRWLVg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joe.  I just resubmitted.
+On Thu, Dec 04, 2014 at 08:10:49PM -0700, Azael Avalos wrote:
+> Hi Darren,
+> 
+> 2014-12-03 6:12 GMT-07:00 Darren Hart <dvhart@infradead.org>:
+> > On Wed, Dec 03, 2014 at 11:42:04PM -0700, Azael Avalos wrote:
+> >> @@ -1971,41 +2008,22 @@ error:
+> >>  static void toshiba_acpi_notify(struct acpi_device *acpi_dev, u32 event)
+> >>  {
+> >>       struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
+> >> -     u32 hci_result, value;
+> >> -     int retries = 3;
+> >> -     int scancode;
+> >> -
+> >> -     if (event != 0x80)
+> >> -             return;
+> >> +     int ret;
+> >
+> >   CC      drivers/platform/x86/toshiba_acpi.o
+> > drivers/platform/x86/toshiba_acpi.c: In function ‘toshiba_acpi_notify’:
+> > drivers/platform/x86/toshiba_acpi.c:2012:6: warning: unused variable ‘ret’ [-Wunused-variable]
+> >     int ret;
+> >           ^
+> >
+> > Please compile check each patch.
+> 
+> Sorry about that, was a left over from the split.
+> Want me to send a V3? I can send them in few minutes.
 
---Ashley
+Yes please.
 
-On Thu, 4 Dec 2014, Joe Perches wrote:
-
-> On Thu, 2014-12-04 at 19:17 -0600, Ashley Lai wrote:
->> Added myself as a maintainer for the IBM vtpm driver and removed myself
->> from the tpm maintainer list. Also, updated the tpm_ibmvtpm driver with
->> my current email address.
-> []
->> diff --git a/MAINTAINERS b/MAINTAINERS
-> []
->> @@ -9297,13 +9297,19 @@ F:	drivers/media/usb/tm6000/
->>
->>  TPM DEVICE DRIVER
->>  M:	Peter Huewe <peterhuewe@gmx.de>
->> -M:	Ashley Lai <ashley@ashleylai.com>
->>  M:	Marcel Selhorst <tpmdd@selhorst.net>
->>  W:	http://tpmdd.sourceforge.net
->>  L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
->>  S:	Maintained
->>  F:	drivers/char/tpm/
->>
->> +IBM VTPM DEVICE DRIVER
->> +M:	Ashley Lai <ashleydlai@gmail.com>
->> +W:	http://tpmdd.sourceforge.net
->> +L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
->> +S:	Maintained
->> +F:	drivers/char/tpm/tpm_ibmvtpm*
->> +
->
-> Please keep this file sections in alphabetical order
->
->
+-- 
+Darren Hart
+Intel Open Source Technology Center
