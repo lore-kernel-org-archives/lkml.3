@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaLCT7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:59:46 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:37301 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaLCT7o (ORCPT
+	id S1751948AbaLCUAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:00:42 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40856 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751110AbaLCUAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:59:44 -0500
+	Wed, 3 Dec 2014 15:00:40 -0500
+Date: Wed, 3 Dec 2014 14:59:58 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <1417636798.11261.1@mail.thefacebook.com>
+In-Reply-To: <20141203190045.GB32005@redhat.com>
+References: <547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+	<20141201230339.GA20487@ret.masoncoding.com>
+	<1417529606.3924.26.camel@maggy.simpson.net>
+	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+	<1417540493.21136.3@mail.thefacebook.com>
+	<20141203184111.GA32005@redhat.com>
+	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+	<20141203190045.GB32005@redhat.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-In-Reply-To: <20141203142034.5c14529d@tlielax.poochiereds.net>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141203121118.21a32fe1@notabene.brown>
-	<20141202202946.1e0f399b@tlielax.poochiereds.net>
-	<20141203155649.GB5013@htj.dyndns.org>
-	<20141203110405.5ecc85df@tlielax.poochiereds.net>
-	<20141203140202.7865bedb@tlielax.poochiereds.net>
-	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
-	<20141203142034.5c14529d@tlielax.poochiereds.net>
-Date: Wed, 3 Dec 2014 14:59:43 -0500
-Message-ID: <CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based nfsd
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-03_08:2014-12-03,2014-12-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=120.659590407225
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412030173
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 2:20 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
-> On Wed, 3 Dec 2014 14:08:01 -0500
-> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
->> Which workqueue are you using? Since the receive code is non-blocking,
->> I'd expect you might be able to use rpciod, for the initial socket
->> reads, but you wouldn't want to use that for the actual knfsd
->> processing.
->>
->
-> I'm using the same (nfsd) workqueue for everything. The workqueue
-> isn't really the bottleneck though, it's the work_struct.
->
-> Basically, the problem is that the work_struct in the svc_xprt was
-> remaining busy for far too long. So, even though the XPT_BUSY bit had
-> cleared, the work wouldn't get picked up again until the previous
-> workqueue job had returned.
->
-> With the change I made today, I just added a new work_struct to
-> svc_rqst and queue that to the same workqueue to do svc_process as soon
-> as the receive is done. That means though that each RPC ends up waiting
-> in the queue twice (once to do the receive and once to process the
-> RPC), and I think that's probably the reason for the performance delta.
-
-Why would the queuing latency still be significant now?
-
-> What I think I'm going to do on the next pass is have the job that
-> enqueues the xprt instead try to find an svc_rqst. If it finds it,
-> then it can go ahead and queue the work struct in it to do the receive
-> and processing in a single go.
->
-> If it can't find one, it'll queue the xprt's work to allocate one and
-> then queue that to do all of the work as before. That will likely
-> penalize the case where there isn't an available svc_rqst, but in the
-> common case that there is one it should go quickly.
 
 
--- 
-Trond Myklebust
+On Wed, Dec 3, 2014 at 2:00 PM, Dave Jones <davej@redhat.com> wrote:
+> On Wed, Dec 03, 2014 at 10:45:57AM -0800, Linus Torvalds wrote:
+>  > On Wed, Dec 3, 2014 at 10:41 AM, Dave Jones <davej@redhat.com> 
+> wrote:
+>  > >
+>  > > I've been stuck on this kernel for a few days now trying to 
+> prove it
+>  > > good/bad one way or the other, and I'm leaning towards good, 
+> given
+>  > > that it recovers, even though the traces look similar.
+>  >
+>  > Ugh. But this does *not* happen with 3.16, right? Even the 
+> non-fatal case?
+> 
+> correct. at least not in any of the runs that I did to date.
+> 
+>  > If so, I'd be inclined to call it "bad". But there might well be 
+> two
+>  > bugs: one that makes that NMI watchdog trigger, and another one 
+> that
+>  > then makes it be a hard lockup. I'd think it would be good to 
+> figure
+>  > out the "NMI watchdog starts triggering" one first, though.
+> 
+> I think you're right.
+> 
+> So right after sending my last mail, I rebooted, and restarted the run
+> on the same kernel again.
+> 
+> As I was writing this mail, this happened.
+> 
+> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! 
+> [trinity-c178:20182]
+> 
+> and that's all that made it over the console. I couldn't log in via 
+> ssh,
+> and thought "ah-ha, so it IS bad".  I walked over to reboot it, and
+> found I could actually log in on the console. check out this dmesg..
+> 
+> [  503.683055] Clocksource tsc unstable (delta = -95946009388 ns)
+> [  503.692038] Switched to clocksource hpet
+> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! 
+> [trinity-c178:20182]
 
-Linux NFS client maintainer, PrimaryData
+Neat.  We often see switching to hpet on boxes as they are diving into 
+softlockup pain, but it's not usually before the softlockups.
 
-trond.myklebust@primarydata.com
+Are you configured for CONFIG_NOHZ_FULL?
+
+I'd love to blame the only commit to kernel/smp.c between 3.16 and 3.17
+
+commit 478850160636c4f0b2558451df0e42f8c5a10939
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Thu May 8 01:37:48 2014 +0200
+
+    irq_work: Implement remote queueing
+
+You've also mentioned a few times where messages stopped hitting the 
+console?
+
+
+commit 5874af2003b1aaaa053128d655710140e3187226
+Author: Jan Kara <jack@suse.cz>
+Date:   Wed Aug 6 16:09:10 2014 -0700
+
+    printk: enable interrupts before calling 
+console_trylock_for_printk()
+
+-chris
+
