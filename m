@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaLCO3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:29:32 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633AbaLCO3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:29:31 -0500
-Message-ID: <547F1E46.9050607@nod.at>
-Date: Wed, 03 Dec 2014 15:29:26 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753083AbaLCOaD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:30:03 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:43650 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504AbaLCOaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:30:00 -0500
+Date: Wed, 3 Dec 2014 15:30:29 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout
+ correctly
+Message-ID: <20141203143029.GF32117@phenom.ffwll.local>
+Mail-Followup-To: John Stultz <john.stultz@linaro.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20141202163506.GG18921@nuc-i3427.alporthouse.com>
+ <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
 MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: iio: dht11 Updates
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F0CFE.4010107@nod.at> <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.12.2014 um 15:08 schrieb Harald Geyer:
-> Richard Weinberger writes:
->> Harald,
->>
->> Am 03.12.2014 um 13:18 schrieb Harald Geyer:
->>> Hi Richard,
->>>
->>> thanks for all the work you put into this!
->>>
->>> Richard Weinberger writes:
->>>> I have also a question on your driver. Why you increment
->>>> DHT11_DATA_BIT_LOW/timeres by one in the ambiguity check?
->>>>
->>>>         threshold = DHT11_DATA_BIT_HIGH / timeres;
->>>>         if (DHT11_DATA_BIT_LOW/timeres + 1 >= threshold)
->>>>                 pr_err("dht11: WARNING: decoding ambiguous\n");
->>>
->>> This is to take ambiguity of when the bit started relativ to the
->>> clock ticks into account. For example with common 32kHz clocks:
->>> DHT11_DATA_BIT_LOW / timeres = 0
->>> DHT11_DATA_BIT_HIGH / timeres = 2
->>> but since the bit might not start at a clock tick the actual t of
->>> a low bit can be either 0 or 1 while the actual t of a high bit
->>> can be either 2 or 3.
->>>
->>> This case is fine.
->>>
->>> But if we had a 38kHz clock:
->>> DHT11_DATA_BIT_LOW / timeres = 1    t can be 1 or 2
->>> DHT11_DATA_BIT_HIGH / timeres = 2   t can be 2 or 3
->>> so we have an ambiguity. The ambiguity could be removed by a smarter
->>> decoder, that looks at the t of other bits, but I'm not going to do
->>> that unless somebody is promising to test it on affected hardware.
->>>
->>> Feel free to add some comment about this to the code.
->>
->> Will do, thanks a lot for the explanation.
->>
->> I was asking because I see the "dht11: WARNING: decoding ambiguous"
->> very often. (with and without my patches)
+On Tue, Dec 02, 2014 at 08:54:13AM -0800, John Stultz wrote:
+> On Tue, Dec 2, 2014 at 8:35 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
+> >> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
+> >> +{
+> >> +     u64 usecs = div_u64(m + 999, 1000);
+> >> +     unsigned long j = usecs_to_jiffies(usecs);
+> >> +
+> >> +     return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+> >
+> > Or more concisely and review friendly:
+> >
+> > static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
+> > {
+> >         return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
+> > }
 > 
-> Yes, your patches shouldn't have any effect on this.
-> "very often" in the sense of "not always"? This would be very surprising,
-> because this would involve variable length clock ticks, i think.
+> Yea. This looks much nicer. Seems generic enough it might be better
+> added next to nsec_to_jiffies64() in kernel/time/time.c or jiffies.h
+> rather then in a driver header.
 
-It happens around 33% of all reads.
-BTW: I'm using the DHT22's on my Beaglebone Black.
-So the board should be "sane".
-But I'll test them on another board too, just to be sure...
-
-> I guess we should include timeres into the warning message.
-
-I'll add some diagnose printk()s to find out.
-
-Thanks,
-//richard
+Ok, that needs an EXPORT_SYMBOL for nsecs_to_jiffies64. Can I count your
+"Yea" above as an ack for adding that and pulling it in through
+drm-intel.git?
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
