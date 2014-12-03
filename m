@@ -1,114 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaLCTPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:15:06 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56567 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaLCTPE (ORCPT
+	id S1751592AbaLCTUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:20:39 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:35925 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaLCTUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:15:04 -0500
-Date: Wed, 3 Dec 2014 11:14:46 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-Message-ID: <20141203191446.GD9845@roeck-us.net>
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
- <201411291849.44032@pali>
- <20141129175152.GA32510@kroah.com>
- <201411291904.07644@pali>
- <1417526599.15239.7.camel@chaos.site>
- <547DCC15.70300@roeck-us.net>
- <20141203100928.14d23c9f@endymion.delvare>
+	Wed, 3 Dec 2014 14:20:38 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Wed, 3 Dec 2014 14:20:34 -0500
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Jeff Layton <jeff.layton@primarydata.com>, Tejun Heo <tj@kernel.org>,
+        NeilBrown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
+ workqueue-based nfsd
+Message-ID: <20141203142034.5c14529d@tlielax.poochiereds.net>
+In-Reply-To: <CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141203121118.21a32fe1@notabene.brown>
+	<20141202202946.1e0f399b@tlielax.poochiereds.net>
+	<20141203155649.GB5013@htj.dyndns.org>
+	<20141203110405.5ecc85df@tlielax.poochiereds.net>
+	<20141203140202.7865bedb@tlielax.poochiereds.net>
+	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141203100928.14d23c9f@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.547F6136.01EC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 10:09:28AM +0100, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Tue, 02 Dec 2014 06:26:29 -0800, Guenter Roeck wrote:
-> > On 12/02/2014 05:23 AM, Jean Delvare wrote:
-> > > Ultimately /proc/i8k should be killed altogether and every function
-> > > should use the appropriate standard interface. But I don't have any Dell
-> > > laptop around so I won't go into that myself.
+On Wed, 3 Dec 2014 14:08:01 -0500
+Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+
+> On Wed, Dec 3, 2014 at 2:02 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> > On Wed, 3 Dec 2014 11:04:05 -0500
+> > Jeff Layton <jlayton@primarydata.com> wrote:
 > >
-> > The only function not covered by hwmon, as far as I can see, is reading
-> > the "Fn key" status, whatever that is, and reporting the power status
-> > (AC or battery).
-> > 
-> > The first seems to be covered by the already existing dell drivers in
-> > platform/x86. The latter must be covered as well; Linux does
-> > display the correct power status on all my Dell laptops.
+> >> On Wed, 3 Dec 2014 10:56:49 -0500
+> >> Tejun Heo <tj@kernel.org> wrote:
+> >>
+> >> > Hello, Neil, Jeff.
+> >> >
+> >> > On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
+> >> > > That's a good point. I had originally thought that max_active on an
+> >> > > unbound workqueue would be the number of concurrent jobs that could run
+> >> > > across all the CPUs, but now that I look I'm not sure that's really
+> >> > > the case.
+> >> >
+> >> > @max_active is a per-pool number.  By default, unbound wqs use
+> >> > per-node pools, so @max_active would be per-node.  Currently,
+> >> > @max_active is mostly meant as a protection against run-away
+> >> > workqueues creating crazy number of workers, which has been enough for
+> >> > the existing wq users.  *Maybe* it makes sense to make it actually
+> >> > mean maximum concurrency which would prolly involve aggregated per-cpu
+> >> > distribution mechanism so that we don't end up inc'ing and dec'ing the
+> >> > same counter from all CPUs on each work item execution.
+> >> >
+> >> > However, I do agree with Neil that making it user configurable is
+> >> > almost always painful.  It's usually a question without a good answer
+> >> > and the same value may behave differently depending on a lot of
+> >> > implementation details and a better approach, probably, is to use
+> >> > @max_active as the last resort protection mechanism while providing
+> >> > automatic throttling of in-flight work items which is meaningful for
+> >> > the specific use cases.
+> >> >
+> >> > > I've heard random grumblings from various people in the past that
+> >> > > workqueues have significant latency, but this is the first time I've
+> >> > > really hit it in practice. If we can get this fixed, then that may be a
+> >> > > significant perf win for all workqueue users. For instance, rpciod in
+> >> > > the NFS client is all workqueue-based. Getting that latency down could
+> >> > > really help things.
+> >> > >
+> >> > > I'm currently trying to roll up a kernel module for benchmarking the
+> >> > > workqueue dispatching code in the hopes that we can use that to help
+> >> > > nail it down.
+> >> >
+> >> > Definitely, there were some reportings but nothing really got tracked
+> >> > down properly.  It'd be awesome to actually find out where the latency
+> >> > is coming from.
+> >> >
+> >> > Thanks!
+> >> >
+> >>
+> >> I think I might have figured this out (and before I go any farther
+> >> allow me to say <facepalm>), thanks to the workqueue tracepoints in the
+> >> code. What I noticed is that when things are fairly idle, the work is
+> >> picked up quickly, but once things get busy it takes a lot longer.
+> >>
+> >> I think that the issue is in the design of the workqueue-based nfsd
+> >> code. In particular, I attached a work_struct to the svc_xprt which is
+> >> limiting the code to only process one RPC at a time for a xprt, from
+> >> beginning to end.
+> >>
+> >> So, even if we requeue that work after the receive phase is done, the
+> >> workqueue won't pick it up again until the thing is processed and the
+> >> reply is sent.
+> >>
+> >> What I think I need to do is to do the receive phase using the
+> >> work_struct attached to the xprt, and then do the rest of the
+> >> processing from the context of a different work_struct (possibly one
+> >> attached to the svc_rqst), which should free up the xprt's work_struct
+> >> sooner.
+> >>
+> >> I'm going to work on changing that today and see if it improves things.
+> >>
+> >> Thanks for the help so far!
+> >
+> > Yes! That does help. The new workqueue based code is a little (a few
+> > percent?) slower than the thread-based code across the board. I suspect
+> > that's due to the fact that I'm having to queue each RPC to the
+> > workqueue twice (once for the receive and once to do the processing).
+> >
+> > I suspect that I can remedy that, but I'll have to think about the best
+> > way to do it.
+> >
 > 
-> How old are they? The i8k driver is ancestral, so I could imagine that
-> i8k is the only way to report power status on very old Dell laptop
-> models. Or maybe not, I just don't know.
+> Which workqueue are you using? Since the receive code is non-blocking,
+> I'd expect you might be able to use rpciod, for the initial socket
+> reads, but you wouldn't want to use that for the actual knfsd
+> processing.
 > 
-> > Changing the ABI is not supposed to happen, so I am not sure if we can
-> > just drop the /proc interface.
-> 
-> Dropping deprecated interfaces after a transition period is not so
-> uncommon. AFAIK the proc interface of i8k is only used by the i8kutils
-> user-space package, which FWIW is no longer part of openSUSE. The
 
-It is still in Ubuntu 14.04.
+I'm using the same (nfsd) workqueue for everything. The workqueue
+isn't really the bottleneck though, it's the work_struct.
 
-> dell-laptop and dell-wmi drivers are almost 6 years old, that looks
-> like an already very comfortable transition period to me.
-> 
-Hi Jean,
+Basically, the problem is that the work_struct in the svc_xprt was
+remaining busy for far too long. So, even though the XPT_BUSY bit had
+cleared, the work wouldn't get picked up again until the previous
+workqueue job had returned.
 
-Fine with me. My oldest laptop is about 10 years old.
+With the change I made today, I just added a new work_struct to
+svc_rqst and queue that to the same workqueue to do svc_process as soon
+as the receive is done. That means though that each RPC ends up waiting
+in the queue twice (once to do the receive and once to process the
+RPC), and I think that's probably the reason for the performance delta.
 
-> That being said, that's only my opinion and I'm not going to fight for
-> this. If the hwmon interface is moved to dell-laptop and i8k is killed,
-> I'm happy. If the i8k driver is moved to drivers/hwmon and stripped
-> down, I'm happy. But if none of this happens, I don't really care, to
-> be honest.
-> 
-I am all for getting rid of it, question is only how to do it,
-and if it really can be done.
+What I think I'm going to do on the next pass is have the job that
+enqueues the xprt instead try to find an svc_rqst. If it finds it,
+then it can go ahead and queue the work struct in it to do the receive
+and processing in a single go.
 
-A quick glance into Lauchpad shows that i8kutils is still maintained
-and used, including the sometimes dirty tricks it provides. 
+If it can't find one, it'll queue the xprt's work to allocate one and
+then queue that to do all of the work as before. That will likely
+penalize the case where there isn't an available svc_rqst, but in the
+common case that there is one it should go quickly.
 
-Guenter
+Thanks!
+-- 
+Jeff Layton <jlayton@primarydata.com>
