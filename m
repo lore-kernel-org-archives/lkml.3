@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaLCUUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:20:39 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1752129AbaLCUVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:21:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40051 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892AbaLCUUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:20:37 -0500
-Message-ID: <547F7092.8080001@nod.at>
-Date: Wed, 03 Dec 2014 21:20:34 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1750893AbaLCUVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 15:21:02 -0500
+Date: Wed, 3 Dec 2014 15:19:47 -0500
+From: Dave Jones <davej@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        rgb@redhat.com, eparis@redhat.com, fweisbec@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: audit: rcu_read_lock() used illegally while idle
+Message-ID: <20141203201947.GA4931@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andy Lutomirski <luto@amacapital.net>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>, rgb@redhat.com,
+	eparis@redhat.com, fweisbec@gmail.com,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Oleg Nesterov <oleg@redhat.com>
+References: <20141203181922.GA26916@redhat.com>
+ <20141203192919.GP25340@linux.vnet.ibm.com>
+ <547F6D60.5050007@amacapital.net>
 MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: iio: dht11 Updates
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547F6D60.5050007@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harald,
+On Wed, Dec 03, 2014 at 12:06:56PM -0800, Andy Lutomirski wrote:
+ 
+ > >> Did something in RCU change recently ?
+ > > 
+ > > Not since -rc1, as far as I know, anyway.
+ > 
+ > I have patches to delete this whole fscking sysret fast but not really
+ > fast path.  I'll resend them for 3.19.  In the mean time, can you test
+ > this patch by itself:
+ > 
+ > https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/entry&id=1072a16a8d4ad1b11b8062f76e3236b9771b0fb6
 
-Am 03.12.2014 um 13:18 schrieb Harald Geyer:
-> Hi Richard,
-> 
-> thanks for all the work you put into this!
-> 
-> Richard Weinberger writes:
->> Please see my current patches for your driver.
->> As discussed in an earlier mail I'm testing with the DHT22 sensor only.
->> With the IRQ changes I see 84 edges.
-> 
-> This still surprises me. With the IRQ changes I would expect the
-> preamble to be 2 edges only. I must be missing something. Can you
-> explain this to me?
+With that applied, I no longer see the trace.
 
-Did some more tests.
-With my IRQ changes applied I get as stated 84 edges,
-without I get 85. So we're only losing one edge.
+thanks,
 
-Of course if we're too slow with registering the IRQ we'll lose
-more edges and the results renders unusable.
+	Dave
 
-Thanks,
-//richard
