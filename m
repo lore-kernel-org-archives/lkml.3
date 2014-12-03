@@ -1,82 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaLCTZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:25:32 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:61182 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730AbaLCTZb (ORCPT
+	id S1751916AbaLCT22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:28:28 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42714 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751050AbaLCT20 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:25:31 -0500
+	Wed, 3 Dec 2014 14:28:26 -0500
+Date: Wed, 3 Dec 2014 20:28:21 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v3 06/11] memory: atmel-ebi: add DT bindings
+ documentation
+Message-ID: <20141203202821.6d15af88@bbrezillon>
+In-Reply-To: <547F24B6.8070504@atmel.com>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417429647-3419-7-git-send-email-boris.brezillon@free-electrons.com>
+	<547F24B6.8070504@atmel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141203190045.GB32005@redhat.com>
-References: <547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141203190045.GB32005@redhat.com>
-Date: Wed, 3 Dec 2014 11:25:29 -0800
-X-Google-Sender-Auth: GoqMWJnJ9-umPFWbq-UEN7v1DlY
-Message-ID: <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 11:00 AM, Dave Jones <davej@redhat.com> wrote:
->
-> So right after sending my last mail, I rebooted, and restarted the run
-> on the same kernel again.
->
-> As I was writing this mail, this happened.
->
-> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! [trinity-c178:20182]
->
-> and that's all that made it over the console. I couldn't log in via ssh,
-> and thought "ah-ha, so it IS bad".  I walked over to reboot it, and
-> found I could actually log in on the console. check out this dmesg..
->
-> [  503.683055] Clocksource tsc unstable (delta = -95946009388 ns)
-> [  503.692038] Switched to clocksource hpet
-> [  524.420897] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! [trinity-c178:20182]
+On Wed, 3 Dec 2014 15:56:54 +0100
+Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-Interesting. That whole NMI watchdog thing happens pretty much 22s
-after the "TSC unstable" message.
+> Le 01/12/2014 11:27, Boris Brezillon a écrit :
+> > The EBI (External Bus Interface) is used to access external peripherals
+> > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+> > Each device is assigned a CS line and an address range and can have its
+> > own configuration (timings, access mode, bus width, ...).
+> > This driver provides a generic DT binding to configure a device according
+> > to its requirements.
+> > For specific device controllers (like the NAND one) the SMC timings
+> > should be configured by the controller driver through the matrix and smc
+> > syscon regmaps.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >  .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++++++++++++++++++
+> >  1 file changed, 155 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > new file mode 100644
+> > index 0000000..3749ea1
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > @@ -0,0 +1,155 @@
+> > +* Device tree bindings for Atmel EBI
+> > +
+> > +The External Bus Interface (EBI) controller is a bus where you can connect
+> > +asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
+> > +The EBI provides a glue-less interface to asynchronous memories though the SMC
+> > +(Static Memory Controller).
+> > +Synchronous memories (and some asynchronous memories like NANDs) can be
+> > +attached to specialized controllers which are responsible for configuring the
+> > +bus appropriately according to the connected device.
+> > +In the other hand, the bus interface can be automated for simple asynchronous
+> > +devices.
+> > +
+> > +Required properties:
+> > +
+> > +- compatible:		"atmel,at91sam9260-ebi"
+> > +			"atmel,at91sam9261-ebi"
+> > +			"atmel,at91sam9263-ebi0"
+> > +			"atmel,at91sam9263-ebi1"
+> 
+> Ditto: 9263 twice.
 
-Have you ever seen that TSC issue before? The watchdog relies on
-comparing get_timestamp() differences, so if the timestamp was
-incorrect...
+Actually that's not a duplicated compatible (see the ebi0/ebi1 at the
+end): sam9263 embeds 2 EBIs, and they have different numbers of chip
+selects, hence the different compatible string.
 
-Maybe that whole "clocksource_watchdog()" is bogus. That delta is
-about 96 seconds, sounds very odd. I'm not seeing how the TSC could
-actually scew up that badly, so I'd almost be more likely to blame the
-"watchdog" clock.
+I'll add an "atmel,at91sam9rl-ebi" string.
 
-I don't know. This piece of code:
+> 
+> > +			"atmel,at91sam9g45-ebi"
+> > +			"atmel,at91sam9x5-ebi"
+> > +			"atmel,sama5d3-ebi"
+> > +
+> > +- reg:			Contains offset/length value for EBI memory mapping.
+> > +			This property might contain several entries if the EBI
+> > +			memory range is not contiguous
+> > +
+> > +- #address-cells:	Must be 2.
+> > +			The first cell encodes the CS.
+> > +			The second cell encode the offset into the CS memory
+> > +			range.
+> > +
+> > +- #size-cells:		Must be set to 1.
+> > +
+> > +- ranges:		Encodes CS to memory region association.
+> > +
+> > +- clocks:		Clock feeding the EBI controller.
+> > +			See clock-bindings.txt
+> > +
+> > +Child chip-select (cs) nodes contain the memory devices nodes connected to
+> > +such as NOR (e.g. cfi-flash) and NAND.
+> > +There might be board specific devices like FPGAs.
+> > +You'll define you device requirements in these child nodes.
+> > +
+> > +Required child cs node properties:
+> > +
+> > +- #address-cells:	Must be 2.
+> > +
+> > +- #size-cells:		Must be 1.
+> > +
+> > +- ranges:		Empty property indicating that child nodes can inherit
+> > +			memory layout.
+> > +
+> > +Optional child cs node properties:
+> > +- atmel,generic-dev		boolean property specifying if the device is
+> > +				a generic device.
+> > +				The following properties are only parsed if
+> > +				this property is present.
+> > +				Specialized devices are attached to specialized
+> > +				controllers which are responsible for
+> > +				configuring the bus appropriately.
+> > +				Here are some examples of specialized
+> > +				controllers: NAND, CompactFlash, SDR-SDRAM.
+> > +
+> > +- atmel,bus-width:		width of the asynchronous device's data bus
+> > +				8, 16 or 32.
+> > +				8 if not present.
+> > +
+> > +- atmel,byte-access-type	"write" or "select" (see Atmel datasheet).
+> > +				"select" if not present.
+> > +
+> > +- atmel,read-mode		"nrd" or "ncs".
+> > +				"ncs" is not present.
+> > +
+> > +- atmel,write-mode		"nwe" or "ncs".
+> > +				"ncs" is not present.
+> > +
+> > +- atmel,exnw-mode		"disabled", "frozen" or "ready".
+> > +				"disabled" if not present.
+> > +
+> > +- atmel,page-mode		enable page mode if present. The provided value
+> > +				defines the page size (supported values: 4, 8,
+> > +				16 and 32).
+> > +
+> > +Optional device timings expressed in nanoseconds (if the property is not
+> > +present 0 is assumed):
+> > +
+> > +- atmel,ncs-rd-setup-ns
+> > +- atmel,nrd-setup-ns
+> > +- atmel,ncs-wr-setup-ns
+> > +- atmel,nwe-setup-ns
+> > +- atmel,ncs-rd-pulse-ns
+> > +- atmel,nrd-pulse-ns
+> > +- atmel,ncs-wr-pulse-ns
+> > +- atmel,nwe-pulse-ns
+> > +- atmel,nwe-cycle-ns
+> > +- atmel,nrd-cycle-ns
+> > +- atmel,tdf-ns
+> > +
+> > +- atmel,tdf-optimized		data float optimized mode. If present the data
+> > +				float time is optimized depending on the next
+> > +				device being accessed (next device setup
+> > +				time is substracted to the current devive data
+> 
+> Typo: subtract, device
 
-        delta = clocksource_delta(wdnow, cs->wd_last, watchdog->mask);
+Yep, I'll those typos.
 
-makes no sense to me. Shouldn't it be
 
-        delta = clocksource_delta(wdnow, watchdog->wd_last, watchdog->mask);
 
-Thomas? John?
 
-                  Linus
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
