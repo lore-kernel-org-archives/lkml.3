@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaLCRGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:06:18 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:58928 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaLCRGP (ORCPT
+	id S1751616AbaLCRGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:06:40 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:41865 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaLCRGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:06:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Mason <mpeg.blue@free.fr>, Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Creating 16 MB super-sections for MMIO
-Date: Wed, 03 Dec 2014 18:06:08 +0100
-Message-ID: <2452742.elcJohDinR@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <547F1C11.5090408@free.fr>
-References: <547D97A5.4090302@free.fr> <20141203103211.GB7373@e104818-lin.cambridge.arm.com> <547F1C11.5090408@free.fr>
+	Wed, 3 Dec 2014 12:06:38 -0500
+Message-ID: <547F431A.5040804@atmel.com>
+Date: Wed, 3 Dec 2014 18:06:34 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:r+ipLw9WE0eo1K0cfk2JJ9xumS0cIe6czXgTLfEVahD
- 3jqIM1X0nz1WFfqRxHy1nzBnlGhxp/HWmZepDN01LNZrG/wgGo
- ySDr4lh771OUpUq/RGX+Dupqj+4dQOb9G3dMVmbs4kb3wk8qOX
- PgNPGXhqn7T0HA9Lhn6VbZgFrX4SpTah3JE4uz9fQ/23eru4Zk
- RkSHBAOagICZ48ViL1iK9sa3SziqKP4TAMtykY5IAAjMFQMANg
- 8tSak/oObvPMWxgrwd7350A0q7U+5l2f8+A6hMqkQpQFuPdj16
- D0CO8dAqxLXb86ZdxEFvqjvqiTytGkhKptlhPWUTsz/vbjoG9F
- XtBRaCd9P4Fv74M7SyfU=
-X-UI-Out-Filterresults: notjunk:1;
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Josh Wu <josh.wu@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/3] ARM: at91: Add Special Function Registers binding
+ documentation
+References: <1417197962-19441-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1417197962-19441-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 15:20:01 Mason wrote:
+Le 28/11/2014 19:06, Alexandre Belloni a écrit :
+> The special function registers gather some registers that allow to tweak
+> features provided by IPs controlled through another register range.
 > 
-> As far as I could tell, Linux does not create a super-section in the
-> case outlined above. Perhaps I misread the source code?
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-I believe you are right, and I also agree that in theory implementing
-what you say (both 64k and 16M mappings) can only help, but it's not
-obvious if this makes a measurable difference in the end.
+I think that you had the Acked-by tag from Boris, hadn't you?
 
-MMIO register accesses are usually slow for other reasons, and
-they tend to be rare, so it's possible that you won't be able
-to ever tell a difference because the MMIO TLB often gets evicted
-by user mappings between accesses to different 1MB sections,
-and the timing difference between a TLB-hot and cold MMIO access
-might not be that great (depending on the latency of a particular
-register).
+> ---
+>  Documentation/devicetree/bindings/arm/atmel-at91.txt | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> index 562cda9d86d9..a6427de45785 100644
+> --- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> +++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> @@ -136,3 +136,20 @@ Example:
+>  		compatible = "atmel,at91sam9260-rstc";
+>  		reg = <0xfffffd00 0x10>;
+>  	};
+> +
+> +Special Function Registers (SFR)
+> +
+> +Special Function Registers (SFR) manage specific aspects of the integrated
+> +memory, bridge implementations, processor and other functionality not controlled
+> +elsewhere.
+> +
+> +required properties:
+> +- compatible: Should be "atmel,<chip>-sfr", "syscon".
+> +  <chip> can be "at91sam9260", "at91sam9rl" or "at91sam9x5".
 
-I don't think there would be any objections to doing superpage
-or supersection mappings for early page tables if you can show
-any benefit whatsoever, but it may be hard to come up with a
-scenario where it's actually measurable.
+Well, in the following patches you are adding "atmel,sama5d3-sfr" and
+"atmel,sama5d4-sfr" so I suspect more chips must be added here...
 
-	Arnd
+> +- reg: Should contain registers location and length
+> +
+> +	sfr@f0038000 {
+> +		compatible = "atmel,sama5d3-sfr", "syscon";
+> +		reg = <0xf0038000 0x4000>;
+> +	};
+> +
+
+Otherwise, it looks okay.
+
+Bye,
+-- 
+Nicolas Ferre
