@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaLCLt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:49:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54664 "EHLO mx2.suse.de"
+	id S1753354AbaLCLtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:49:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39370 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422AbaLCL1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:21 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Heinz Mauelshagen <heinzm@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 048/101] dm raid: ensure superblock's size matches device's logical block size
-Date: Wed,  3 Dec 2014 12:26:10 +0100
-Message-Id: <e90b799e47a5d3923e58d8cc11bdff39117580c3.1417605922.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-References: <cover.1417605922.git.jslaby@suse.cz>
+	id S1752430AbaLCLtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:49:45 -0500
+Message-ID: <547EF8CC.9030502@ti.com>
+Date: Wed, 3 Dec 2014 13:49:32 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
+References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+--g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 27/11/14 00:07, Lad, Prabhakar wrote:
+> this patch fixes following build warning:
+> drivers/video/fbdev/vt8623fb.c: In function =E2=80=98vt8623_pci_probe=E2=
+=80=99:
+> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from in=
+teger of different size [-Wint-to-pointer-cast]
+>   par->state.vgabase =3D (void __iomem *) vga_res.start;
+>                        ^
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/video/fbdev/vt8623fb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt862=
+3fb.c
+> index 5c7cbc6..ea7f056 100644
+> --- a/drivers/video/fbdev/vt8623fb.c
+> +++ b/drivers/video/fbdev/vt8623fb.c
+> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, co=
+nst struct pci_device_id *id)
+> =20
+>  	pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
+> =20
+> -	par->state.vgabase =3D (void __iomem *) vga_res.start;
+> +	par->state.vgabase =3D (void __iomem *) (unsigned long) vga_res.start=
+;
 
-===============
+This does look quite ugly... Where does the warning come from in the
+first place. Isn't vga_res.start (resource_size_t) the size of a pointer?=
 
-commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
 
-The dm-raid superblock (struct dm_raid_superblock) is padded to 512
-bytes and that size is being used to read it in from the metadata
-device into one preallocated page.
+ Tomi
 
-Reading or writing this on a 512-byte sector device works fine but on
-a 4096-byte sector device this fails.
 
-Set the dm-raid superblock's size to the logical block size of the
-metadata device, because IO at that size is guaranteed too work.  Also
-add a size check to avoid silent partial metadata loss in case the
-superblock should ever grow past the logical block size or PAGE_SIZE.
 
-[includes pointer math fix from Dan Carpenter]
-Reported-by: "Liuhua Wang" <lwang@suse.com>
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/md/dm-raid.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+--g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
-index 4880b69e2e9e..59715389b3cf 100644
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -785,8 +785,7 @@ struct dm_raid_superblock {
- 	__le32 layout;
- 	__le32 stripe_sectors;
- 
--	__u8 pad[452];		/* Round struct to 512 bytes. */
--				/* Always set to 0 when writing. */
-+	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
- } __packed;
- 
- static int read_disk_sb(struct md_rdev *rdev, int size)
-@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mddev, struct md_rdev *rdev)
- 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
- 			failed_devices |= (1ULL << i);
- 
--	memset(sb, 0, sizeof(*sb));
-+	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
- 
- 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
- 	sb->features = cpu_to_le32(0);	/* No features yet */
-@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rdev, struct md_rdev *refdev)
- 	uint64_t events_sb, events_refsb;
- 
- 	rdev->sb_start = 0;
--	rdev->sb_size = sizeof(*sb);
-+	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
-+	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
-+		DMERR("superblock size of a logical block is no longer valid");
-+		return -EINVAL;
-+	}
- 
- 	ret = read_disk_sb(rdev, rdev->sb_size);
- 	if (ret)
--- 
-2.1.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUfvjSAAoJEPo9qoy8lh71fgIP/2borca8+dBmssVIMsPucCq4
+o90sbaCYwJNvHxN15JNejczx82Tswm962D8LhkqGkaJa1Dslv8NcQvvgdiP/QE9S
+66wmZGvi+sNHk5/rlTBmU30vF3d3M4Ito8upuWsIsWlK34PGleZ+TLoHCIuh/NHK
+FMqqZzoUyoDEDV/8hdJqEw0FHD+kGceJ75U+SCEbSJ74AVCQr4xVa8RBZRBZZ6XK
+zIFmug7RsAMeFzMBNy4wXnBwulGYzGV06u/NfyYJa2ZTll7OCnD1V2MKwSFaKZww
+y9JI+FDc/0LVQy1nyxciv2TSreeJ7fS1W15E5tw53gBB396KDytRN3WBLMu1gfng
+2vwshLYR8wGkZFkq81CUBvxFyk7miR99qKOy0zPyb23cxK0YQLFDFKHO6xnbkNsb
+RrweQ782pq5YDW1OrNO0Q1g6moIUGTn5Fa09ULnCrrlNC4crXthdy2XS0DMxXA8s
+UkZ/PJbgqYqfh1/qPFAkAsmyTim/tbdjcgudavJJh69Wn4WsUe037ahLYP+v2Ltg
+Td4+E9tuyN9DQ9zddQ4xIQse2RbF211Zqzz0B9Yb2b+H0DJTt0cS7RqtGDbgxlpK
+noYp8KGtyzOdMtZF4B3NCjTVOzsrWj0QPl6kxUADyIssiMpUd/jaiC8EqL+/aXnT
+B0J/S0QMsEBMCz9uKyn2
+=jaBs
+-----END PGP SIGNATURE-----
+
+--g7gO4FJfvImpV03dqt41AfEwxnwtX7ELi--
