@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaLCLhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:37:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54635 "EHLO mx2.suse.de"
+	id S1753299AbaLCLh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:37:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54661 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaLCL1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:42 -0500
+	id S1752633AbaLCL1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:44 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Alan Cox <alan@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 080/101] parport: Add support for the WCH353 1S/1P multi-IO card
-Date: Wed,  3 Dec 2014 12:26:42 +0100
-Message-Id: <8d6960fa02a523485d20ae8bd4bf3b6731f00937.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 078/101] pcmcia: pxa2xx: fix logic for lubbock
+Date: Wed,  3 Dec 2014 12:26:40 +0100
+Message-Id: <2948ce57731969aa662e0192d2df0749f1f21462.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -26,122 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit feb5814254094c306429fe6d7b9c534fa0250f4c upstream.
+commit f1674f213ec81c55c909bb6805d3502b5883754d upstream.
 
-This Multi-IO card has one serial 16550-like and one parallel port connector.
-Here's the lspci output, after this commit is applied:
+The lubbock platform uses the sa1111 companion chip with a pxa250
+CPU, which means it requires both the PCMCIA_SA1111 and the
+PCMCIA_PXA2XX code to be built into the kernel. Unfortunately,
+the Makefile and Kconfig don't agree on how this is accomplished,
+leading to a situation where you get this link error when building
+a lubbock kernel with PCMCIA_SA1111 enabled but PCMCIA_PXA2XX
+disabled:
 
-03:07.0 Serial controller: Device 4348:5053 (rev 10) (prog-if 02 [16550])
-	Subsystem: Device 4348:5053
-	Control: I/O+ Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Interrupt: pin A routed to IRQ 21
-	Region 0: I/O ports at cf00 [size=8]
-	Region 1: I/O ports at ce00 [size=8]
-	Kernel driver in use: parport_serial
-	Kernel modules: 8250_pci, parport_serial
+ERROR: "pxa2xx_configure_sockets" [drivers/pcmcia/sa1111_cs.ko] undefined!
+ERROR: "pxa2xx_drv_pcmcia_ops" [drivers/pcmcia/sa1111_cs.ko] undefined!
+ERROR: "pxa2xx_drv_pcmcia_add_one" [drivers/pcmcia/sa1111_cs.ko] undefined!
 
-This commit adds an entry with the device ID to the blacklist declared in
-8250_pci to prevent the driver from taking ownership. Also, and as was done
-for the 2S/1P variant, add a quirk to skip autodetection and set the correct
-type to 16550A clone.
+This patch changes the Kconfig code to disallow that particular
+configuration.
 
-Proper entries are added to parport_serial, to support the device parallel
-and serial ports.
-
-Cc: Gianluca Anzolin <gianluca@sottospazio.it>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/parport/parport_serial.c   |  9 +++++++++
- drivers/tty/serial/8250/8250_pci.c | 10 ++++++++++
- 2 files changed, 19 insertions(+)
+ drivers/pcmcia/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/parport/parport_serial.c b/drivers/parport/parport_serial.c
-index 1b8bdb7e9bf4..72b73657576b 100644
---- a/drivers/parport/parport_serial.c
-+++ b/drivers/parport/parport_serial.c
-@@ -62,6 +62,7 @@ enum parport_pc_pci_cards {
- 	timedia_9079a,
- 	timedia_9079b,
- 	timedia_9079c,
-+	wch_ch353_1s1p,
- 	wch_ch353_2s1p,
- 	sunix_2s1p,
- };
-@@ -148,6 +149,7 @@ static struct parport_pc_pci cards[] = {
- 	/* timedia_9079a */             { 1, { { 2, 3 }, } },
- 	/* timedia_9079b */             { 1, { { 2, 3 }, } },
- 	/* timedia_9079c */             { 1, { { 2, 3 }, } },
-+	/* wch_ch353_1s1p*/             { 1, { { 1, -1}, } },
- 	/* wch_ch353_2s1p*/             { 1, { { 2, -1}, } },
- 	/* sunix_2s1p */                { 1, { { 3, -1 }, } },
- };
-@@ -253,6 +255,7 @@ static struct pci_device_id parport_serial_pci_tbl[] = {
- 	{ 0x1409, 0x7168, 0x1409, 0xd079, 0, 0, timedia_9079c },
- 
- 	/* WCH CARDS */
-+	{ 0x4348, 0x5053, PCI_ANY_ID, PCI_ANY_ID, 0, 0, wch_ch353_1s1p},
- 	{ 0x4348, 0x7053, 0x4348, 0x3253, 0, 0, wch_ch353_2s1p},
- 
- 	/*
-@@ -479,6 +482,12 @@ static struct pciserial_board pci_parport_serial_boards[] = {
- 		.base_baud	= 921600,
- 		.uart_offset	= 8,
- 	},
-+	[wch_ch353_1s1p] = {
-+		.flags          = FL_BASE0|FL_BASE_BARS,
-+		.num_ports      = 1,
-+		.base_baud      = 115200,
-+		.uart_offset    = 8,
-+	},
- 	[wch_ch353_2s1p] = {
- 		.flags          = FL_BASE0|FL_BASE_BARS,
- 		.num_ports      = 2,
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 6d402cf84cf1..ee1f7c52bd52 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1558,6 +1558,7 @@ pci_wch_ch353_setup(struct serial_private *priv,
- #define PCI_DEVICE_ID_WCH_CH352_2S	0x3253
- #define PCI_DEVICE_ID_WCH_CH353_4S	0x3453
- #define PCI_DEVICE_ID_WCH_CH353_2S1PF	0x5046
-+#define PCI_DEVICE_ID_WCH_CH353_1S1P	0x5053
- #define PCI_DEVICE_ID_WCH_CH353_2S1P	0x7053
- #define PCI_VENDOR_ID_AGESTAR		0x5372
- #define PCI_DEVICE_ID_AGESTAR_9375	0x6872
-@@ -2159,6 +2160,14 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= pci_omegapci_setup,
- 	},
-+	/* WCH CH353 1S1P card (16550 clone) */
-+	{
-+		.vendor         = PCI_VENDOR_ID_WCH,
-+		.device         = PCI_DEVICE_ID_WCH_CH353_1S1P,
-+		.subvendor      = PCI_ANY_ID,
-+		.subdevice      = PCI_ANY_ID,
-+		.setup          = pci_wch_ch353_setup,
-+	},
- 	/* WCH CH353 2S1P card (16550 clone) */
- 	{
- 		.vendor         = PCI_VENDOR_ID_WCH,
-@@ -3228,6 +3237,7 @@ static const struct pci_device_id blacklist[] = {
- 
- 	/* multi-io cards handled by parport_serial */
- 	{ PCI_DEVICE(0x4348, 0x7053), }, /* WCH CH353 2S1P */
-+	{ PCI_DEVICE(0x4348, 0x5053), }, /* WCH CH353 1S1P */
- };
- 
- /*
+diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
+index 0c657d6af03d..51cf8083b299 100644
+--- a/drivers/pcmcia/Kconfig
++++ b/drivers/pcmcia/Kconfig
+@@ -202,6 +202,7 @@ config PCMCIA_SA1111
+ 	depends on ARM && SA1111 && PCMCIA
+ 	select PCMCIA_SOC_COMMON
+ 	select PCMCIA_SA11XX_BASE if ARCH_SA1100
++	select PCMCIA_PXA2XX if ARCH_LUBBOCK && SA1111
+ 	help
+ 	  Say Y  here to include support for SA1111-based PCMCIA or CF
+ 	  sockets, found on the Jornada 720, Graphicsmaster and other
+@@ -217,7 +218,6 @@ config PCMCIA_PXA2XX
+ 		    || ARCOM_PCMCIA || ARCH_PXA_ESERIES || MACH_STARGATE2 \
+ 		    || MACH_VPAC270 || MACH_BALLOON3 || MACH_COLIBRI \
+ 		    || MACH_COLIBRI320 || MACH_H4700)
+-	select PCMCIA_SA1111 if ARCH_LUBBOCK && SA1111
+ 	select PCMCIA_SOC_COMMON
+ 	help
+ 	  Say Y here to include support for the PXA2xx PCMCIA controller
 -- 
 2.1.3
 
