@@ -1,173 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaLCR3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:29:22 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:52275 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaLCR3U (ORCPT
+	id S1751535AbaLCR3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:29:54 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47281 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaLCR3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:29:20 -0500
-From: Rob Ward <robert.ward114@googlemail.com>
-X-Google-Original-From: Rob Ward <rob@rob-thinkpad>
-Date: Wed, 3 Dec 2014 17:29:06 +0000 (GMT)
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Rob Ward <robert.ward114@googlemail.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: char: mem: Make /dev/mem an optional device
-In-Reply-To: <89216621.RaKMSXnzQp@wuerfel>
-Message-ID: <alpine.DEB.2.10.1412031659170.7838@rob-thinkpad>
-References: <alpine.DEB.2.10.1412030818030.7838@rob-thinkpad> <89216621.RaKMSXnzQp@wuerfel>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 3 Dec 2014 12:29:52 -0500
+Date: Wed, 3 Dec 2014 17:29:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrew Jackson <Andrew.Jackson@arm.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Message-ID: <20141203172928.GD7712@sirena.org.uk>
+References: <547F3CA5.2010500@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zQ8NwhwM3vlijoHM"
+Content-Disposition: inline
+In-Reply-To: <547F3CA5.2010500@arm.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] ASoC: dwc: Iterate over all channels
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+--zQ8NwhwM3vlijoHM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, 3 Dec 2014, Arnd Bergmann wrote:
+On Wed, Dec 03, 2014 at 04:39:01PM +0000, Andrew Jackson wrote:
 
-> On Wednesday 03 December 2014 08:21:04 Rob Ward wrote:
-> > From ecd3ac31f6be2372d2beac0cc4831e74aeae75d2 Mon Sep 17 00:00:00 2001
-> > From: Rob Ward <robert.ward114@googlemail.com>
-> > Date: Wed, 5 Nov 2014 19:13:53 +0000
-> > Subject: [PATCH] drivers: char: mem: Make /dev/mem an optional device
-> 
-> Please leave out these headers from the email. If you use git-send-email,
-> it will work the right way, but for regular email clients you need to
-> remove them manually.
+> +	/* Iterate over set of channels - independently controlled.
+> +	 */
+> +	do {
+> +		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+> +			i2s_write_reg(dev->i2s_base, TCR(ch_reg),
+> +				      xfer_resolution);
+> +			i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
+> +			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+> +			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
+> +			i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
+> +		} else {
+> +			i2s_write_reg(dev->i2s_base, RCR(ch_reg),
+> +				      xfer_resolution);
+> +			i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
+> +			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+> +			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
+> +			i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
+> +		}
+> +	} while (ch_reg-- > 0);
 
-Apologies, I will remove them in the future, I really should get 
-send-email setup :-)
-> 
-> > Adds Kconfig option CONFIG_DEVMEM that allows the
-> > /dev/mem device to be disabled.
-> > 
-> > Option defaults to /dev/mem enabled.
-> 
-> Please explain the purpose of this. Are you doing this for security
-> considerations, for space savings, or something else.
-> 
-For the most part as a security consideration but a ever so 
-slightly smaller kernel may be a nice side effect.
+The normal way to write an iteration would be with a for loop - why are
+we not doing that?
 
-> If you are worried about security, please explain the possible attack
-> vector you are closing, if you want to save kernel text size, show
-> how much you save. It also helps to show a guess of what might break
-> if you turn it off.
+Also I see that you've not sent these as a single thread - please use
+--thread.
 
-The aim is to reduce the potential methods of attack, having access
-to areas of memory via a device makes reading potentially important data 
-from RAM very easy, this change doesn't stop this but does make it harder 
-than opening a file.
+--zQ8NwhwM3vlijoHM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Additionally many platforms(MIPS as an example) do not restict the area of 
-RAM that can be accessed at all. /dev/mem works out which areas of memory 
-can be read using the range_is_allowed() function in drivers/char/mem.c 
-which in turn determines what can be read based on the config option 
-CONFIG_STRICT_DEVMEM which if enabled calls devmem_is_allowed implemented
-per platform.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-devmem_is_allowed is not implemented on several platforms and the
-default is to allow access to any location.
+iQEcBAEBAgAGBQJUf0h4AAoJECTWi3JdVIfQKLoH/jI01C2bJv35idBSukiQiqZY
+DYsbEZn5V8adHt6SH77H6LjKuHVah0T7AkZgCgKvRDGGXHOQvND2mmpRBfAAozI1
+194oO+CZ/pcsDkw58J98pcjG3MJz3BUeGilePxfIaQ4OdgDSVO1ToREUpMki6SNJ
+Z0qRpBmLofP71cAQmPKi7qNOs0twVWxn49bs1oDy44tuLwb2/4erzYRc96xMnT8g
+ocCGgDlcSFoU3+ZZmKXMwjO5TZFV4g2XzCJCttk5C9oof9ktI/qvALLfKeRaCYO7
+PrODbwGdPgV3yVflm8yj2pjt4hEGw+h89mYF9zsdED99HjC/rucm/0Ix3LEPHwM=
+=uwx3
+-----END PGP SIGNATURE-----
 
-x86 and others do have restrictions implemented, usually based on
-areas that bios places data etc.
-
-On "secure" and embedded systems access to /dev/mem is not usually needed
-and so disabling it is a desirable feature and prevents the need to 
-implement custom restrictions.
-> 
-> > Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
-> > ---
-> >  drivers/char/Kconfig |  9 +++++++++
-> >  drivers/char/mem.c   | 19 ++++++++++++++++++-
-> >  2 files changed, 27 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-> > index efefd12..a4af822 100644
-> > --- a/drivers/char/Kconfig
-> > +++ b/drivers/char/Kconfig
-> > @@ -6,6 +6,15 @@ menu "Character devices"
-> >  
-> >  source "drivers/tty/Kconfig"
-> >  
-> > +config DEVMEM
-> > +	bool "/dev/mem virtual device support"
-> > +	default y
-> 
-> Should this be
-> 
-> 	bool "/dev/mem virtual device support" if EXPERT
-> 
-> so normal users don't accidentally disable it?
-
-It would be nice to keep this in sync with DEVKMEM as
-well, would a follow up change to implement this for kmem
-to keep in sync be acceptable?
-
-> 
-> > diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-> > index 524b707..feadc87 100644
-> > --- a/drivers/char/mem.c
-> > +++ b/drivers/char/mem.c
-> > @@ -92,6 +92,7 @@ void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
-> >   * This funcion reads the *physical* memory. The f_pos points directly to the
-> >   * memory location.
-> >   */
-> > +#ifdef CONFIG_DEVMEM
-> >  static ssize_t read_mem(struct file *file, char __user *buf,
-> >  			size_t count, loff_t *ppos)
-> >  {
-> > @@ -216,6 +217,7 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
-> >  	*ppos += written;
-> >  	return written;
-> >  }
-> > +#endif
-> 
-> Adding a lot of #ifdef isn't nice, there are better ways to achieve the
-> same.
-> 
-> > +#ifdef CONFIG_DEVMEM
-> >  static const struct file_operations mem_fops = {
-> >  	.llseek		= memory_lseek,
-> >  	.read		= read_mem,
-> > @@ -720,6 +734,7 @@ static const struct file_operations mem_fops = {
-> >  	.open		= open_mem,
-> >  	.get_unmapped_area = get_unmapped_area_mem,
-> >  };
-> > +#endif
-> 
-> I would probably do it here an leave the mem_fops visible to the compiler
-> but mark it as '__maybe_unused' to avoid the warning when the reference below
-> is not there.
->
-I will modify to implement this way.
- 
-> >  #ifdef CONFIG_DEVKMEM
-> >  static const struct file_operations kmem_fops = {
-> > @@ -782,7 +797,9 @@ static const struct memdev {
-> >  	const struct file_operations *fops;
-> >  	struct backing_dev_info *dev_info;
-> >  } devlist[] = {
-> > +#ifdef CONFIG_DEVMEM
-> >  	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi },
-> > +#endif
-> >  #ifdef CONFIG_DEVKMEM
-> >  	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi },
-> >  #endif
-> 
-> To keep it in sync with kmem, I would then submit a cleanup patch to
-> do the same for kmem_fops and replace the other #ifdef lines with
-> __maybe_unused statement for kmem_fops.
-> 
-Will do
-
-> 	Arnd
-> 
-
-Cheers,
-
-Rob Ward
+--zQ8NwhwM3vlijoHM--
