@@ -1,141 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaLCNwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:52:39 -0500
-Received: from blu004-omc1s28.hotmail.com ([65.55.116.39]:53023 "EHLO
-	BLU004-OMC1S28.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074AbaLCNwi (ORCPT
+	id S1752572AbaLCNyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:54:11 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:56731 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaLCNyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:52:38 -0500
-X-TMN: [TSjH1f1q/MgF8z++I3W5kGuaIANPPEr1]
-X-Originating-Email: [seancleator@hotmail.co.uk]
-Message-ID: <BLU436-SMTP26EFE4C56ADB4FB217BA7EE97B0@phx.gbl>
-From: Sean Cleator <seancleator@hotmail.co.uk>
-To: gregkh@linuxfoundation.org
-CC: Lior Dotan <liodot@gmail.com>, Christopher Harrer <charrer@alacritech.com>,
-        David Matlack <matlackdavid@gmail.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Joe Perches <joe@perches.com>,
-        Sean Cleator <seancleator@hotmail.co.uk>,
-        Vincent Heuken <me@vincentheuken.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: slicoss: Fix long line issues in slicoss.c 
-Date: Wed, 3 Dec 2014 13:53:18 +0000
-X-Mailer: git-send-email 2.1.3
-X-OriginalArrivalTime: 03 Dec 2014 13:52:35.0800 (UTC) FILETIME=[64B8E580:01D00F00]
+	Wed, 3 Dec 2014 08:54:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1655942.O63mJN07or@vostro.rjw.lan>
+References: <1655942.O63mJN07or@vostro.rjw.lan>
+Date: Wed, 3 Dec 2014 14:54:07 +0100
+Message-ID: <CACRpkdYt7fSbve9oYsThuBAN_bnKQ+yOmV4kr6PhUpnKHuoXBg@mail.gmail.com>
+Subject: Re: [PATCH] gpio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A patch to the slicoss.c file to fix some of the long line issues found by the
-checkpath.pl tool
- 
-Signed-off-by: Sean Cleator <seancleator@hotmail.co.uk>
+On Wed, Dec 3, 2014 at 2:50 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 
----
- drivers/staging/slicoss/slicoss.c | 39 ++++++++++++++++++++++++++-------------
- 1 file changed, 26 insertions(+), 13 deletions(-)
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+>
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/gpio/gpio-omap.c.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+>
+> Please let me know if it is OK to take this one into linux-pm.
 
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index 56ca3b6..4df4a7e 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -498,12 +498,14 @@ static int slic_card_download(struct adapter *adapter)
- 			slic_reg32_write(&slic_regs->slic_wcs,
- 					 baseaddress + codeaddr, FLUSH);
- 			/* Write out instruction to low addr */
--			slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
-+			slic_reg32_write(&slic_regs->slic_wcs,
-+					instruction, FLUSH);
- 			instruction = *(u32 *)(fw->data + index);
- 			index += 4;
- 
- 			/* Write out instruction to high addr */
--			slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
-+			slic_reg32_write(&slic_regs->slic_wcs,
-+					instruction, FLUSH);
- 			instruction = *(u32 *)(fw->data + index);
- 			index += 4;
- 		}
-@@ -1533,14 +1535,18 @@ retry_rcvqfill:
- 				dev_err(dev, "%s: LOW 32bits PHYSICAL ADDRESS == 0\n",
- 					__func__);
- 				dev_err(dev, "skb[%p] PROBLEM\n", skb);
--				dev_err(dev, "         skbdata[%p]\n", skb->data);
-+				dev_err(dev, "         skbdata[%p]\n",
-+						skb->data);
- 				dev_err(dev, "         skblen[%x]\n", skb->len);
- 				dev_err(dev, "         paddr[%p]\n", paddr);
- 				dev_err(dev, "         paddrl[%x]\n", paddrl);
- 				dev_err(dev, "         paddrh[%x]\n", paddrh);
--				dev_err(dev, "         rcvq->head[%p]\n", rcvq->head);
--				dev_err(dev, "         rcvq->tail[%p]\n", rcvq->tail);
--				dev_err(dev, "         rcvq->count[%x]\n", rcvq->count);
-+				dev_err(dev, "         rcvq->head[%p]\n",
-+						rcvq->head);
-+				dev_err(dev, "         rcvq->tail[%p]\n",
-+						rcvq->tail);
-+				dev_err(dev, "         rcvq->count[%x]\n",
-+						rcvq->count);
- 				dev_err(dev, "SKIP THIS SKB!!!!!!!!\n");
- 				goto retry_rcvqfill;
- 			}
-@@ -1549,14 +1555,18 @@ retry_rcvqfill:
- 				dev_err(dev, "%s: LOW 32bits PHYSICAL ADDRESS == 0\n",
- 					__func__);
- 				dev_err(dev, "skb[%p] PROBLEM\n", skb);
--				dev_err(dev, "         skbdata[%p]\n", skb->data);
-+				dev_err(dev, "         skbdata[%p]\n",
-+						skb->data);
- 				dev_err(dev, "         skblen[%x]\n", skb->len);
- 				dev_err(dev, "         paddr[%p]\n", paddr);
- 				dev_err(dev, "         paddrl[%x]\n", paddrl);
- 				dev_err(dev, "         paddrh[%x]\n", paddrh);
--				dev_err(dev, "         rcvq->head[%p]\n", rcvq->head);
--				dev_err(dev, "         rcvq->tail[%p]\n", rcvq->tail);
--				dev_err(dev, "         rcvq->count[%x]\n", rcvq->count);
-+				dev_err(dev, "         rcvq->head[%p]\n",
-+						rcvq->head);
-+				dev_err(dev, "         rcvq->tail[%p]\n",
-+						rcvq->tail);
-+				dev_err(dev, "         rcvq->count[%x]\n",
-+						rcvq->count);
- 				dev_err(dev, "GIVE TO CARD ANYWAY\n");
- 			}
- #endif
-@@ -1885,7 +1895,8 @@ static void slic_xmit_fail(struct adapter *adapter,
- 			break;
- 		case XMIT_FAIL_HOSTCMD_FAIL:
- 			dev_err(&adapter->netdev->dev,
--				"xmit_start skb[%p] type[%x] No host commands available\n", skb, skb->pkt_type);
-+				"xmit_start skb[%p] type[%x] No host commands available\n",
-+				skb, skb->pkt_type);
- 			break;
- 		}
- 	}
-@@ -2097,7 +2108,8 @@ static void slic_interrupt_card_up(u32 isr, struct adapter *adapter,
- 				}
- 			} else if (isr & ISR_XDROP) {
- 				dev_err(&dev->dev,
--						"isr & ISR_ERR [%x] ISR_XDROP\n", isr);
-+						"isr & ISR_ERR [%x] ISR_XDROP\n",
-+						isr);
- 			} else {
- 				dev_err(&dev->dev,
- 						"isr & ISR_ERR [%x]\n",
-@@ -2341,7 +2353,8 @@ static int slic_if_init(struct adapter *adapter)
- 				 SLIC_GET_ADDR_LOW(&pshmem->isr), FLUSH);
- #else
- 		slic_reg32_write(&slic_regs->slic_addr_upper, 0, DONT_FLUSH);
--		slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr, FLUSH);
-+		slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr,
-+				FLUSH);
- #endif
- 		spin_unlock_irqrestore(&adapter->bit64reglock.lock,
- 					adapter->bit64reglock.flags);
--- 
-2.1.3
+Go ahead. Should be no collissions.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
