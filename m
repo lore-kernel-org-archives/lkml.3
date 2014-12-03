@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaLCNH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:07:57 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:59532 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaLCNH4 (ORCPT
+	id S1752212AbaLCNKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:10:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56335 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaLCNKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:07:56 -0500
-Date: Wed, 3 Dec 2014 14:07:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] oom: don't assume that a coredumping thread will
- exit soon
-Message-ID: <20141203130751.GC23236@dhcp22.suse.cz>
-References: <20141127230349.GA25075@redhat.com>
- <20141127230405.GA25093@redhat.com>
- <20141202091947.GB27014@dhcp22.suse.cz>
- <20141202175041.GA20314@redhat.com>
- <20141202183130.GM27014@dhcp22.suse.cz>
- <20141202191622.GA24313@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202191622.GA24313@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Dec 2014 08:10:40 -0500
+Message-ID: <1417612197.5124.12.camel@pengutronix.de>
+Subject: Re: [PATCH v15 12/12] drm: bridge/dw_hdmi: add rockchip rk3288
+ support
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Date: Wed, 03 Dec 2014 14:09:57 +0100
+In-Reply-To: <547F02CF.9010804@rock-chips.com>
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
+			 <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com>
+		 <1417515882.3411.8.camel@pengutronix.de> <547DB1ED.7000409@rock-chips.com>
+	 <1417525257.3411.12.camel@pengutronix.de> <547F02CF.9010804@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02-12-14 20:16:22, Oleg Nesterov wrote:
-> On 12/02, Michal Hocko wrote:
+Hi Andy,
+
+Am Mittwoch, den 03.12.2014, 20:32 +0800 schrieb Andy Yan:
+> > My question is not about the available gates at the SoC level, but about
+> > the actual clock inputs from point of view of the HDMI TX IP.
 > >
-> > On Tue 02-12-14 18:50:41, Oleg Nesterov wrote:
-> > > On 12/02, Michal Hocko wrote:
-> > > >
-> > > > I guess the patch as is makes sense and it is an improvement. We need
-> > > > to call the helper in mem_cgroup_out_of_memory as well, though.
-> > >
-> > > Yes, but can't we do this in a separate patch?
-> >
-> > I would prefer if it was in the same patch because we might be facing
-> > the same problem in memcg as with the global case. And worse, smaller
-> > limit tend to trigger corner cases more often than the global case.
+> > It could be that the hdmi_ctrl_clk gates all inputs to the module and
+> > bus clocks together. If so, you could just reuse "isfr" and "iahb" and
+> > set it to the same clock. If not, we'd need to think of something else.
+> > Unfortunately I don't have any Synopsys documentation of the HDMI TX at
+> > that level.
 > 
-> OK, I'll do V2...
-> 
-> But let me explain why I thought about another patch. I do not want
-> to export task_will_free_mem(). If nothing else, its name matches the
-> current "quickly exit and free its memory" comments but not the reality.
+>     After confirming with the IC designer, we finally make clear that
+>     Rockchip RK3288 almost use the same clock design with imx:
+>     clk-----iahbclk, used for hdmi module and bus
+>     hdcp_clk-----isfrclk, used for hdcp and i2cm
+>     cecclk -----cecclk, but this clk can be gated on rockchip, this is 
+> different with imx,
+>     but we don't handle the cec stuff now. So i will try to reuse the 
+> imx clk binds. do you
+>    think that is ok?
 
-Yes, the name suggests much more than what it does.
+Thank you for taking the time to verify this. So we should move the
+clock handling out of the soc specific parts into the common driver and
+reuse the existing clock bindings ("iahb", "isfr").
+I'd suggest to add the "cec" clock now to the binding document as an
+optional clock, then you can already specify it in the rockchip dtsi.
 
-> An exiting thread won't free the memory (ignoring task_struct/etc) if
-> the process is multithreaded.
-> 
-> I'd rather add another helper for oom_kill.c and memcontrol.c which does
-> 
-> 	if (fatal_signal_pending(current) || task_will_free_mem(current)) {
-> 		set_thread_flag(TIF_MEMDIE);
-> 		return true;
-> 	}
-> 
-> 	return false;
-> 
-> This way the patch could document that fatal_signal_pending() is not
-> exactly right as we discussed, and then we can improve this helper.
-> 
-> But OK, probably this helper doesn't really make sense, and I can not
-> invent the good name for it ;)
+regards
+Philipp
 
-I've failed to come up with a better name as well. The code duplication
-is not nice either so I guess it would be better to keep the helper
-localt to mm/oom_kill.c and have it open coded in mm/memcontro.c. Git
-blame will still tell us all the motivation if they are in the single
-patch.
-
-> > > try_charge() plays with TIF_MEMDIE/PF_EXITING too, but probably this
-> > > is fine.
-> >
-> > try_charge is OK because this is from the time when the allocation has
-> > been already done and we just decide to bypass the charge.
-> 
-> Yes, thanks, this was my vague understanding but I wasn't sure. However,
-> I am not sure that PF_EXITING check is 100% right (again, this can only
-> mean that a single thread from a thread group exits), but I do not
-> understand this code and I agree this is another story in any case.
-
-See d8dc595ce390 "memcg: do not hang on OOM when killed by userspace OOM
-access to memory reserves" for more details.
-
--- 
-Michal Hocko
-SUSE Labs
