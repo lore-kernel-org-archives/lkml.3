@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaLCUD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:03:56 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:57696 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaLCUDy (ORCPT
+	id S1752060AbaLCUEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:04:43 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:61053 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183AbaLCUEl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:03:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] optimize ktime_divns for constant divisors
-Date: Wed, 03 Dec 2014 21:03:48 +0100
-Message-ID: <3913269.qTFsa05Ysv@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr>
-References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:r88vzSr25LewZgNmCI5IdPIQeNMY7D74eZnLp1OLlk/k6t6xrbX
- QWIf3F0I8OBoSTM+rbYgClCNCKWDEgwHlvdBBSwVWhgGb0bLD+X9wAAoIKW4mpRVg1EEqZK
- 9D2YQRivIWwiFveL6BttMo9uFjsPn6vRe8t7cP3A16tzjl73mouKfZPuQz2zj+aOod95uKk
- ajqfwoESihz/im6SGxe1A==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 3 Dec 2014 15:04:41 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: Question about patch "i2c: omap: resize fifos before each message"
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141203193826.GK16138@saruman>
+Date: Wed, 3 Dec 2014 23:04:37 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7EACB0B2-7079-4FEB-8009-58682730F8A6@gmail.com>
+References: <A20987D6-DEEC-488D-9655-36A4D186599B@gmail.com> <20141203154936.GF16138@saruman> <8C51B585-BFD6-48CC-A2C4-EB88CB820426@gmail.com> <20141203174938.GJ16138@saruman> <7602A84A-43B2-4C22-ACFA-FEA0640A6B7D@gmail.com> <20141203193826.GK16138@saruman>
+To: balbi@ti.com
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 14:43:06 Nicolas Pitre wrote:
-> At least on ARM, do_div() is optimized to turn constant divisors into
-> an inline multiplication by the reciprocal value at compile time. 
-> However this optimization is missed entirely whenever ktime_divns() is
-> used and the slow out-of-line division code is used all the time.
+
+03 дек. 2014 г., в 22:38, Felipe Balbi <balbi@ti.com> написал(а):
+
+> then handle slave interrupts :-) But handle them so that it won't race
+> with a master transfer request. Moving omap_i2c_xfer() inside the IRQ
+> handler isn't the best way to do it, however.
+
+I do that with care :)
+
+Currently, only 'resize fifo' and 'clear fifo' is the one thing what must 
+be moved into ISR (I'll check is it possible or late). 
+Because I can't ask ISR to generate interrupt to start master transfer.
+I thought about that without luck.
+I have to write to CON register. I can lock xfer for short time to
+check STAT (for AAS) and either write CON or flag to start master after
+slave complete.
+
+'clear fifo' must be done in response to NACK. TRM states this[1]"
+"TX and RX FIFOs must be cleared (the I2Ci.I2C_BUF[6] TXFIFO_CLR
+and I2Ci.I2C_BUF[14] RXFIFO_CLR bits are set to 1)."
+
+'resize fifo' could be avoided at all, but, it so nice feature.
+
+And yes, if we could utilize full fifo to send message, we could set
+threshold to message size and get only RRDY at the end.
+
+If message size is greater than fifo size, we want to use double
+buffer scheme to minimize ISR latencies.
+
+But now, variable 'fifo_size' is set to half of IP real fifo size.
+And for messages with fifo_size/2 ... fifo_size we use drainig
+feature (get RDR, XRD). While we could receive only one IRQ.
+I'll fix that.
+
+>> And, I'll try to move fifo threshold init code into ISR. Don't see
+>> something wrong.
 > 
-> Let ktime_divns() use do_div() inline whenever the divisor is constant
-> and small enough.  This will make things like ktime_to_us() and 
-> ktime_to_ms() much faster.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> I wouldn't do that. It's just too late... look, IRQs won't fire until
+> I2C_CON is setup to start a transfer (transmit or receive), you *must*
+> resize FIFO before starting a transfer otherwise, well, you know...
+Looks, like RRDY is fired after simple compare with threshold.
+I'll check is this possible (but, that doesn't cover into TRM).
+Or may be it is late to change it.
 
-Very cool. I've been thinking about doing something similar for the
-general case but couldn't get the math to work.
-
-Can you think of an architecture-independent way to ktime_to_sec,
-ktime_to_ms, and ktime_to_us efficiently based on what you did for
-the ARM do_div implementation?
-
-	Arnd
+[1] AM-DM37x Multimedia Device Silicon Revision 1.x  - sprugn4r,
+     p. 2796, Table 17-9. HS I2C Interrupt Events
