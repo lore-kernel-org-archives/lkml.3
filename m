@@ -1,270 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaLCUJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:09:08 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54880 "EHLO mail.eperm.de"
+	id S1752512AbaLCUKC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:10:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054AbaLCUHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:07:46 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: herbert@gondor.apana.org.au
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: [PATCH v4 4/5] crypto: AF_ALG: add random number generator support
-Date: Wed, 03 Dec 2014 20:59:01 +0100
-Message-ID: <1480776.TeURZV8VLa@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <2105559.EmODblLYuY@tachyon.chronox.de>
-References: <2105559.EmODblLYuY@tachyon.chronox.de>
+	id S1751482AbaLCUKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 15:10:00 -0500
+Date: Wed, 3 Dec 2014 15:09:06 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141203200906.GA3118@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <john.stultz@linaro.org>
+References: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+ <20141201230339.GA20487@ret.masoncoding.com>
+ <1417529606.3924.26.camel@maggy.simpson.net>
+ <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+ <1417540493.21136.3@mail.thefacebook.com>
+ <20141203184111.GA32005@redhat.com>
+ <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+ <20141203190045.GB32005@redhat.com>
+ <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
+ <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the random number generator support for AF_ALG.
+On Wed, Dec 03, 2014 at 11:48:55AM -0800, Linus Torvalds wrote:
+ > On Wed, Dec 3, 2014 at 11:25 AM, Linus Torvalds
+ > <torvalds@linux-foundation.org> wrote:
+ > >
+ > > I don't know. This piece of code:
+ > >
+ > >         delta = clocksource_delta(wdnow, cs->wd_last, watchdog->mask);
+ > >
+ > > makes no sense to me.
+ > 
+ > Yeah, no, I see what's up. I missed that whole wd_last vs cs_last
+ > pairing. I guess that part is all good. There are other crazy issues
+ > in there, though, like the double test of 'watchdog_reset_pending'. So
+ > I still wonder, though, since that odd 96-second delta is just insane
+ > and makes no sense from a TSC standpoint (it's closer to a 32-bit
+ > overflow of a hpet counter, but that sounds off too).
 
-A random number generator's purpose is to generate data without
-requiring the caller to provide any data. Therefore, the AF_ALG
-interface handler for RNGs only implements a callback handler for
-recvmsg.
+fwiw, there's quite a bit of variance in the delta that seems to show up.
 
-The following parameters provided with a recvmsg are processed by the
-RNG callback handler:
-
-	* sock - to resolve the RNG context data structure accessing the
-	  RNG instance private to the socket
-
-	* len - this parameter allows userspace callers to specify how
-	  many random bytes the RNG shall produce and return. As the
-	  kernel context for the RNG allocates a buffer of 128 bytes to
-	  store random numbers before copying them to userspace, the len
-	  parameter is checked that it is not larger than 128. If a
-	  caller wants more random numbers, a new request for recvmsg
-	  shall be made.
-
-The size of 128 bytes is chose because of the following considerations:
-
-	* to increase the memory footprint of the kernel too much (note,
-	  that would be 128 bytes per open socket)
-
-	* 128 is divisible by any typical cryptographic block size an
-	  RNG may have
-
-	* A request for random numbers typically only shall supply small
-	  amount of data like for keys or IVs that should only require
-	  one invocation of the recvmsg function.
-
-Note, during instantiation of the RNG, the code checks whether the RNG
-implementation requires seeding. If so, the RNG is seeded with output
-from get_random_bytes.
-
-A fully working example using all aspects of the RNG interface is
-provided at http://www.chronox.de/libkcapi.html
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/algif_rng.c | 186 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 186 insertions(+)
- create mode 100644 crypto/algif_rng.c
-
-diff --git a/crypto/algif_rng.c b/crypto/algif_rng.c
-new file mode 100644
-index 0000000..fc25869
---- /dev/null
-+++ b/crypto/algif_rng.c
-@@ -0,0 +1,186 @@
-+/*
-+ * algif_rng: User-space interface for random number generators
-+ *
-+ * This file provides the user-space API for random number generators.
-+ *
-+ * Copyright (C) 2014, Stephan Mueller <smueller@chronox.de>
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ * 1. Redistributions of source code must retain the above copyright
-+ *    notice, and the entire permission notice in its entirety,
-+ *    including the disclaimer of warranties.
-+ * 2. Redistributions in binary form must reproduce the above copyright
-+ *    notice, this list of conditions and the following disclaimer in the
-+ *    documentation and/or other materials provided with the distribution.
-+ * 3. The name of the author may not be used to endorse or promote
-+ *    products derived from this software without specific prior
-+ *    written permission.
-+ *
-+ * ALTERNATIVELY, this product may be distributed under the terms of
-+ * the GNU General Public License, in which case the provisions of the GPL2
-+ * are required INSTEAD OF the above restrictions.  (This clause is
-+ * necessary due to a potential bad interaction between the GPL and
-+ * the restrictions contained in a BSD-style copyright.)
-+ *
-+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
-+ * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
-+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-+ * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
-+ * DAMAGE.
-+ */
-+
-+#include <linux/module.h>
-+#include <crypto/rng.h>
-+#include <linux/random.h>
-+#include <crypto/if_alg.h>
-+#include <linux/net.h>
-+#include <net/sock.h>
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Stephan Mueller <smueller@chronox.de>");
-+MODULE_DESCRIPTION("User-space interface for random number generators");
-+
-+struct rng_ctx {
-+#define MAXSIZE 128
-+	u8 result[MAXSIZE];
-+	unsigned int len;
-+	struct crypto_rng *drng;
-+};
-+
-+static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
-+		       struct msghdr *msg, size_t len, int flags)
-+{
-+	struct sock *sk = sock->sk;
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct rng_ctx *ctx = ask->private;
-+	int err = -EFAULT;
-+
-+	if (len == 0)
-+		return 0;
-+	if (len > MAXSIZE)
-+		len = MAXSIZE;
-+
-+	lock_sock(sk);
-+	len = crypto_rng_get_bytes(ctx->drng, ctx->result, len);
-+	if (len < 0)
-+		goto unlock;
-+
-+	err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
-+	memzero_explicit(ctx->result, len);
-+
-+unlock:
-+	release_sock(sk);
-+
-+	return err ? err : len;
-+}
-+
-+static struct proto_ops algif_rng_ops = {
-+	.family		=	PF_ALG,
-+
-+	.connect	=	sock_no_connect,
-+	.socketpair	=	sock_no_socketpair,
-+	.getname	=	sock_no_getname,
-+	.ioctl		=	sock_no_ioctl,
-+	.listen		=	sock_no_listen,
-+	.shutdown	=	sock_no_shutdown,
-+	.getsockopt	=	sock_no_getsockopt,
-+	.mmap		=	sock_no_mmap,
-+	.bind		=	sock_no_bind,
-+	.accept		=	sock_no_accept,
-+	.setsockopt	=	sock_no_setsockopt,
-+	.poll		=	sock_no_poll,
-+	.sendmsg	=	sock_no_sendmsg,
-+	.sendpage	=	sock_no_sendpage,
-+
-+	.release	=	af_alg_release,
-+	.recvmsg	=	rng_recvmsg,
-+};
-+
-+static void *rng_bind(const char *name, u32 type, u32 mask)
-+{
-+	return crypto_alloc_rng(name, type, mask);
-+}
-+
-+static void rng_release(void *private)
-+{
-+	crypto_free_rng(private);
-+}
-+
-+static void rng_sock_destruct(struct sock *sk)
-+{
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct rng_ctx *ctx = ask->private;
-+
-+	memzero_explicit(ctx->result, sizeof(ctx->result));
-+	sock_kfree_s(sk, ctx, ctx->len);
-+	af_alg_release_parent(sk);
-+}
-+
-+static int rng_accept_parent(void *private, struct sock *sk)
-+{
-+	struct rng_ctx *ctx;
-+	struct alg_sock *ask = alg_sk(sk);
-+	unsigned int len = sizeof(*ctx);
-+	int seedsize = crypto_rng_seedsize(private);
-+	int ret = -ENOMEM;
-+
-+	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
-+	if (!ctx)
-+		return -ENOMEM;
-+	memset(ctx->result, 0, sizeof(ctx->result));
-+
-+	ctx->len = len;
-+
-+	if (seedsize) {
-+		u8 *buf = kmalloc(seedsize, GFP_KERNEL);
-+		if (!buf)
-+			goto err;
-+		get_random_bytes(buf, seedsize);
-+		ret = crypto_rng_reset(private, buf, len);
-+		kzfree(buf);
-+		if (ret)
-+			goto err;
-+	}
-+
-+	ctx->drng = private;
-+	ask->private = ctx;
-+	sk->sk_destruct = rng_sock_destruct;
-+
-+	return 0;
-+
-+err:
-+	sock_kfree_s(sk, ctx, len);
-+	return ret;
-+}
-+
-+static const struct af_alg_type algif_type_rng = {
-+	.bind		=	rng_bind,
-+	.release	=	rng_release,
-+	.accept		=	rng_accept_parent,
-+	.ops		=	&algif_rng_ops,
-+	.name		=	"rng",
-+	.owner		=	THIS_MODULE
-+};
-+
-+static int __init rng_init(void)
-+{
-+	return af_alg_register_type(&algif_type_rng);
-+}
-+
-+void __exit rng_exit(void)
-+{
-+	int err = af_alg_unregister_type(&algif_type_rng);
-+	BUG_ON(err);
-+}
-+
-+module_init(rng_init);
-+module_exit(rng_exit);
--- 
-2.1.0
+Clocksource tsc unstable (delta = -1010986453 ns) 
+Clocksource tsc unstable (delta = -112130224777 ns) 
+Clocksource tsc unstable (delta = -154880389323 ns) 
+Clocksource tsc unstable (delta = -165033940543 ns) 
+Clocksource tsc unstable (delta = -16610147135 ns) 
+Clocksource tsc unstable (delta = -169783264218 ns) 
+Clocksource tsc unstable (delta = -183044061613 ns) 
+Clocksource tsc unstable (delta = -188697049603 ns) 
+Clocksource tsc unstable (delta = -190100649573 ns) 
+Clocksource tsc unstable (delta = -192732788150 ns) 
+Clocksource tsc unstable (delta = -211622574067 ns) 
+Clocksource tsc unstable (delta = -219378634234 ns) 
+Clocksource tsc unstable (delta = -226609871873 ns) 
+Clocksource tsc unstable (delta = -228355467642 ns) 
+Clocksource tsc unstable (delta = -233950238702 ns) 
+Clocksource tsc unstable (delta = -243666538341 ns) 
+Clocksource tsc unstable (delta = -251535074315 ns) 
+Clocksource tsc unstable (delta = -26880030622 ns) 
+Clocksource tsc unstable (delta = -37899993747 ns) 
+Clocksource tsc unstable (delta = -50471031780 ns) 
+Clocksource tsc unstable (delta = -6821168015 ns) 
+Clocksource tsc unstable (delta = -7067883139 ns)
+Clocksource tsc unstable (delta = -76682050692 ns) 
+Clocksource tsc unstable (delta = -8296489689 ns) 
+Clocksource tsc unstable (delta = -88373866635 ns) 
+Clocksource tsc unstable (delta = -89099193219 ns) 
+Clocksource tsc unstable (delta = -95946009388 ns) 
 
 
+(sort -u'ed post grep, the ordering here doesn't mean anything)
+
+	Dave
