@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaLCJvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:51:07 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:49518 "EHLO
+	id S1752092AbaLCJwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:52:04 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:57575 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaLCJvC convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751609AbaLCJwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:51:02 -0500
+	Wed, 3 Dec 2014 04:52:01 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Lyra Zhang <zhang.lyra@gmail.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
-        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
-        Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        Wei Qiao =?utf-8?B?KOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
-Date: Wed, 03 Dec 2014 10:50:17 +0100
-Message-ID: <3212776.kDbe7yX4eX@wuerfel>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        alexander.stein@systec-electronic.com
+Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+Date: Wed, 03 Dec 2014 10:51:53 +0100
+Message-ID: <4810522.t9QFQYHtHI@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAfSe-u+g0mYGi9Adrd+YwwZ=q0-s79yCg_paB1UAVqFoufXEA@mail.gmail.com>
-References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com> <54761BFC.4020705@ti.com> <CAAfSe-u+g0mYGi9Adrd+YwwZ=q0-s79yCg_paB1UAVqFoufXEA@mail.gmail.com>
+In-Reply-To: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:seEjlq4/vOV+Iw7pQsJtFN1lFi7+eGd5v37XbTojfoo
- 5o36cXBabzdNhfHSwivxD+KeKG2mYm+syWXW/k2M+JakIT9Pj9
- F66CLsBGQH/hn9BUXiX3i/8cCM8b78dkzdJLL9hmYCj478jX6K
- prKH9So0KnPfakXN4/oI0I7cUxLcBoRVH41xq0oZZXc2w+VpR9
- hoCacZoMJnXnRmiuwEUC94jKsc1cFo5wFeFFLI9sRKoYWXlqRF
- M3aH8wUWXhtnbBAlDTKQ3/vvk3z3Dcy1Sx1/fB2f64gCWf8thp
- OADaq2enwkDRY2bnMf44vZjSFMWivsn62VQ0sOGoA9DwDFoitk
- L/Bf7z7+lVj8C6+RY3CI=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:X/B/ylGVzmzbFJ8Q/pVYj4Q+8fPIfV0vwEIkR4gIsKV
+ IX8emR5B7gFyxgFv29RNlPOyhLD+bo++IZ10/SY3RKlSK8RYaX
+ OHLb/jAjkn1eq9FOzG9LGnJVVBFYmpl4LYhKlDS3HhkDGvJRce
+ xtk34ao9hKNFeU5QWlPcnsvFdme0S85j63fnlApn/48ZJB07L7
+ 7y7KAWEqdqgxv5/qOrkGP2/i2C93dVahvhs0vYyhc/o2DLopOr
+ 40jSRxMOJrnt8qoV31gc0WoWjgpHwHHzprrIddsX0u/R/KRur4
+ V/v3bmsvg6AtkEqpNDu23u2rnhyGL2UOaIFl7RZJU5exHjHERD
+ bK4P8HJaexCSAPslv8H8=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 17:17:13 Lyra Zhang wrote:
-
-> 2014-11-27 2:29 GMT+08:00 Murali Karicheri <m-karicheri2@ti.com>:
-> > How about sorting this includes? asm/irq.h go first followed linux/ in alphabatical order?
->
-> There are a few compile warnings if I moved asm/irq.h to the top of
-> all included files.
-
-The order that Murali meant is
-
-- first all linux/*.h headers, sorted alphabetically
-- then all asm/*.h headers, again sorted alphabetically
-
-This is the recommended style in general.
-
-> Warning details are below:
+On Wednesday 03 December 2014 17:15:58 Xiubo Li wrote:
+> Framebuffer driver for the Freescale SoC Display Controller.
 > 
-> In file included from drivers/tty/serial/sprd_serial.c:14:0:
-> ./arch/arm64/include/asm/irq.h:6:39: warning: ‘struct pt_regs’
-> declared inside parameter list [enabled by default]
->  extern void (*handle_arch_irq)(struct pt_regs *);
->                                        ^
-> ./arch/arm64/include/asm/irq.h:6:39: warning: its scope is only this
-> definition or declaration, which is probably not what you want
-> [enabled by default]
-> ./arch/arm64/include/asm/irq.h:8:54: warning: ‘struct pt_regs’
-> declared inside parameter list [enabled by default]
->  extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
 > 
+> Change in V2:
+> - Use the native-mode timing as default.
+> - Add to_fsl_private().
 
-I would consider this a (minor) bug in asm/irq.h. If you don't mind,
-please submit a patch to add a line with 'struct pt_regs;' to
-asm/irq.h.
+<standard reply>
+
+We try to not have any new framebuffer drivers. Please consider making
+this a DRM/KMS driver instead.
+
+</standard reply>
 
 	Arnd
