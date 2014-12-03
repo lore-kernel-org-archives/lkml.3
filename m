@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaLCQPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:15:22 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40562 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaLCQPU (ORCPT
+	id S1753539AbaLCQOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:14:34 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:26299 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaLCQIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:15:20 -0500
-Date: Wed, 3 Dec 2014 11:14:52 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Andrey Skvortsov <andrej.skvortzov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b43-dev <b43-dev@lists.infradead.org>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
-Message-ID: <20141203161452.GD2896@tuxdriver.com>
-References: <20141201111125.GA11974@localhost.localdomain>
- <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
- <20141201221023.79ffb40d@wiggum>
- <20141202200129.GA4580@crion89>
- <20141202211211.7e08b935@wiggum>
- <547E3BF5.5060201@lwfinger.net>
- <20141203161855.50951aa8@wiggum>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141203161855.50951aa8@wiggum>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Dec 2014 11:08:45 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-94-547f3569e6e8
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+To: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, Jacek Anaszewski <j.anaszewski@samsung.com>,
+        devicetree@vger.kernel.org
+Subject: [PATCH/RFC v9 09/19] of: Add Skyworks Solutions, Inc. vendor prefix
+Date: Wed, 03 Dec 2014 17:06:44 +0100
+Message-id: <1417622814-10845-10-git-send-email-j.anaszewski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd1M0/oQg53tFhYbZ6xntTi6cyKT
+	xfwj51gt+t8sZLU492olo0Xv1eeMFmeb3rBbXN41h81i65t1jBY9G7ayWiy9fpHJ4u6po2wW
+	E6avZbFo3XuE3WL3rqesFofftLNanNm/ks1B0GPNvDWMHpf7epk8ds66y+6xcvkXNo/DXxey
+	eGxa1cnmsWf+D1aPvi2rGD1WrP7O7vF5k1wAVxSXTUpqTmZZapG+XQJXxvmH6gUHOSomrvvM
+	2MC4hr2LkZNDQsBEouXraxYIW0ziwr31bCC2kMB0RonVp527GLmA7HYmiZd/fzKDJNgEDCV+
+	vnjN1MXIwSEiEC1x6Vg9SA2zwF0miXkbvjGC1AgL+EicePSHFcRmEVCVWHpzIdgCXgFPiUUn
+	P7GA9EoIKEjMmWQDEuYECj/9cZ8dJCwk4CFxcKL/BEbeBYwMqxhFUwuSC4qT0nMN9YoTc4tL
+	89L1kvNzNzGCg/yZ1A7GlQ0WhxgFOBiVeHgt4upChFgTy4orcw8xSnAwK4nwPvsGFOJNSays
+	Si3Kjy8qzUktPsQozcGiJM5742ZuiJBAemJJanZqakFqEUyWiYNTqoGx7rjmlsw9Z4OKq6XT
+	+jviecQ6l8We3BKzRCnB5kXnEe5u0wpNt9Wx3BnCpQE768TeBh35xrm17XyuYqOHy74n0of2
+	ZEWVTb+7sf3XwiqFF23ql2Z/uKTI8W2ipNum1YE3JmUf91GfsPhgW9n9pi+5RzpzzJbNdL/7
+	rlHYdG1qr85V3nfvisSVWIozEg21mIuKEwHkkK9LbgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 04:18:55PM +0100, Michael Büsch wrote:
-> On Tue, 02 Dec 2014 16:23:49 -0600
-> Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> 
-> > On 12/02/2014 02:12 PM, Michael Büsch wrote:
-> > > On Tue, 2 Dec 2014 23:01:29 +0300
-> > > Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
-> > >
-> > >> On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael Büsch wrote:
-> > >>> On Mon,  1 Dec 2014 23:46:38 +0300
-> > >>> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
-> > >>>
-> > >>>> Wake On Lan was not working on laptop DELL Vostro 1500.
-> > >>>> If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blinked.
-> > >>>> But the laptop could not be woken up with the Magic Packet. The reason for
-> > >>>> that was that PCIE was not enabled as a system wakeup source and
-> > >>>> therefore the host PCI bridge was not powered up in suspend mode.
-> > >>>> PCIE was not enabled in suspend by PM because no child devices were
-> > >>>> registered as wakeup source during suspend process.
-> > >>>> On laptop BCM4401 is connected through the SSB bus, that is connected to the
-> > >>>> PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
-> > >>>> and did not forward wakeup settings to their parents.
-> > >>>> To fix that B44 driver enables PM wakeup and registers new wakeup source
-> > >>>> using device_set_wakeup_enable(). Wakeup is automatically reported to the parent SSB
-> > >>>> bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI bridge, if there is any
-> > >>>> child devices with enabled wakeup functionality. All other steps are
-> > >>>> done by PM core code.
-> > >>>
-> > >>> Thanks, this looks good.
-> > >>> I assume you tested this (I currently don't have a device to test this).
-> > >>
-> > >> Sure, I've tested it. WOL from suspend is working and after resume from hibernate Ethernet is working too.
-> > >
-> > > That sounds good, indeed.
-> > > I'd still prefer, if someone with b43 (wireless) would test it, too.
-> > 
-> > I did a partial test with my PowerBook G4. With the patch installed, it would 
-> > both suspend and hibernate, but WOL would be impossible. This computer uses a 
-> > PCMCIA version of the BCM4318, and power is turned off to the PCMCIA card when 
-> > suspended or hibernating.
-> 
-> Thanks for testing.
-> 
-> John, can you take this one? Or do we need to split the b44 part out?
-> I added my Signed-off.
+Use "skyworks" as the vendor prefix for the Skyworks Solutions, Inc.
 
-Um, sure...3.19 is OK I presume?
+Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: <devicetree@vger.kernel.org>
+---
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
 
-John
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index c177cd7..3006825 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -137,6 +137,7 @@ ricoh	Ricoh Co. Ltd.
+ rockchip	Fuzhou Rockchip Electronics Co., Ltd
+ samsung	Samsung Semiconductor
+ sandisk	Sandisk Corporation
++skyworks	Skyworks Solutions, Inc.
+ sbs	Smart Battery System
+ schindler	Schindler
+ seagate	Seagate Technology PLC
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.9.5
+
