@@ -1,137 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaLCLf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:35:59 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:39290 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753097AbaLCLcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:32:16 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 02/11] usb: gadget: at91_udc: Drop uclk clock
-Date: Wed,  3 Dec 2014 12:32:01 +0100
-Message-Id: <1417606330-17753-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1752975AbaLCLb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:31:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54707 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120AbaLCL1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:47 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 096/101] fix O_SYNC|O_APPEND syncing the wrong range on write()
+Date: Wed,  3 Dec 2014 12:26:58 +0100
+Message-Id: <79a423edd0ce526b6a28fd1fed4478d0ecda03e0.1417605922.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
+In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
+References: <cover.1417605922.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that at91 system clocks forward set_rate request to their parent we
-can remove the uclk clock and directly call clk_set_rate on fclk.
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit d311d79de305f1ada47cadd672e6ed1b28a949eb upstream.
+
+It actually goes back to 2004 ([PATCH] Concurrent O_SYNC write support)
+when sync_page_range() had been introduced; generic_file_write{,v}() correctly
+synced
+	pos_after_write - written .. pos_after_write - 1
+but generic_file_aio_write() synced
+	pos_before_write .. pos_before_write + written - 1
+instead.  Which is not the same thing with O_APPEND, obviously.
+A couple of years later correct variant had been killed off when
+everything switched to use of generic_file_aio_write().
+
+All users of generic_file_aio_write() are affected, and the same bug
+has been copied into other instances of ->aio_write().
+
+The fix is trivial; the only subtle point is that generic_write_sync()
+ought to be inlined to avoid calculations useless for the majority of
+calls.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/gadget/udc/at91_udc.c | 27 +++------------------------
- drivers/usb/gadget/udc/at91_udc.h |  2 +-
- 2 files changed, 4 insertions(+), 25 deletions(-)
+ fs/cifs/file.c     |  4 ++--
+ fs/ext4/file.c     |  2 +-
+ fs/ntfs/file.c     |  2 +-
+ fs/sync.c          | 17 -----------------
+ fs/xfs/xfs_file.c  |  2 +-
+ include/linux/fs.h |  8 +++++++-
+ mm/filemap.c       |  4 ++--
+ 7 files changed, 14 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/usb/gadget/udc/at91_udc.c b/drivers/usb/gadget/udc/at91_udc.c
-index ca6a4b8..4ecb576 100644
---- a/drivers/usb/gadget/udc/at91_udc.c
-+++ b/drivers/usb/gadget/udc/at91_udc.c
-@@ -870,8 +870,6 @@ static void clk_on(struct at91_udc *udc)
- 		return;
- 	udc->clocked = 1;
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index a2793c93d6ed..f9715276a257 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2590,8 +2590,8 @@ cifs_writev(struct kiocb *iocb, const struct iovec *iov,
+ 	if (rc > 0) {
+ 		ssize_t err;
  
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_enable(udc->uclk);
- 	clk_enable(udc->iclk);
- 	clk_enable(udc->fclk);
- }
-@@ -884,8 +882,6 @@ static void clk_off(struct at91_udc *udc)
- 	udc->gadget.speed = USB_SPEED_UNKNOWN;
- 	clk_disable(udc->fclk);
- 	clk_disable(udc->iclk);
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_disable(udc->uclk);
- }
- 
- /*
-@@ -1768,25 +1764,17 @@ static int at91udc_probe(struct platform_device *pdev)
- 	/* get interface and function clocks */
- 	udc->iclk = clk_get(dev, "pclk");
- 	udc->fclk = clk_get(dev, "hclk");
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		udc->uclk = clk_get(dev, "usb_clk");
--	if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk) ||
--	    (IS_ENABLED(CONFIG_COMMON_CLK) && IS_ERR(udc->uclk))) {
-+	if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
- 		DBG("clocks missing\n");
- 		retval = -ENODEV;
- 		goto fail1;
+-		err = generic_write_sync(file, pos, rc);
+-		if (err < 0 && rc > 0)
++		err = generic_write_sync(file, iocb->ki_pos - rc, rc);
++		if (err < 0)
+ 			rc = err;
  	}
  
- 	/* don't do anything until we have both gadget driver and VBUS */
--	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
--		clk_set_rate(udc->uclk, 48000000);
--		retval = clk_prepare(udc->uclk);
--		if (retval)
--			goto fail1;
--	}
-+	clk_set_rate(udc->fclk, 48000000);
- 	retval = clk_prepare(udc->fclk);
- 	if (retval)
--		goto fail1a;
-+		goto fail1;
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 1b890101397b..7b316011bfef 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -152,7 +152,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (ret > 0) {
+ 		ssize_t err;
  
- 	retval = clk_prepare_enable(udc->iclk);
- 	if (retval)
-@@ -1860,12 +1848,7 @@ fail1c:
- 	clk_unprepare(udc->iclk);
- fail1b:
- 	clk_unprepare(udc->fclk);
--fail1a:
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_unprepare(udc->uclk);
- fail1:
--	if (IS_ENABLED(CONFIG_COMMON_CLK) && !IS_ERR(udc->uclk))
--		clk_put(udc->uclk);
- 	if (!IS_ERR(udc->fclk))
- 		clk_put(udc->fclk);
- 	if (!IS_ERR(udc->iclk))
-@@ -1911,15 +1894,11 @@ static int __exit at91udc_remove(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	release_mem_region(res->start, resource_size(res));
- 
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_unprepare(udc->uclk);
- 	clk_unprepare(udc->fclk);
- 	clk_unprepare(udc->iclk);
- 
- 	clk_put(udc->iclk);
- 	clk_put(udc->fclk);
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_put(udc->uclk);
- 
- 	return 0;
+-		err = generic_write_sync(file, pos, ret);
++		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+ 		if (err < 0 && ret > 0)
+ 			ret = err;
+ 	}
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index a0b2f345da2b..86ddab916b66 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -2133,7 +2133,7 @@ static ssize_t ntfs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	ret = ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 	if (ret > 0) {
+-		int err = generic_write_sync(file, pos, ret);
++		int err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+ 		if (err < 0)
+ 			ret = err;
+ 	}
+diff --git a/fs/sync.c b/fs/sync.c
+index 905f3f6b3d85..354831ddf54b 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -219,23 +219,6 @@ SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
+ 	return do_fsync(fd, 1);
  }
-diff --git a/drivers/usb/gadget/udc/at91_udc.h b/drivers/usb/gadget/udc/at91_udc.h
-index 0175246..e647d1c 100644
---- a/drivers/usb/gadget/udc/at91_udc.h
-+++ b/drivers/usb/gadget/udc/at91_udc.h
-@@ -126,7 +126,7 @@ struct at91_udc {
- 	unsigned			active_suspend:1;
- 	u8				addr;
- 	struct at91_udc_data		board;
--	struct clk			*iclk, *fclk, *uclk;
-+	struct clk			*iclk, *fclk;
- 	struct platform_device		*pdev;
- 	struct proc_dir_entry		*pde;
- 	void __iomem			*udp_baseaddr;
+ 
+-/**
+- * generic_write_sync - perform syncing after a write if file / inode is sync
+- * @file:	file to which the write happened
+- * @pos:	offset where the write started
+- * @count:	length of the write
+- *
+- * This is just a simple wrapper about our general syncing function.
+- */
+-int generic_write_sync(struct file *file, loff_t pos, loff_t count)
+-{
+-	if (!(file->f_flags & O_DSYNC) && !IS_SYNC(file->f_mapping->host))
+-		return 0;
+-	return vfs_fsync_range(file, pos, pos + count - 1,
+-			       (file->f_flags & __O_SYNC) ? 0 : 1);
+-}
+-EXPORT_SYMBOL(generic_write_sync);
+-
+ /*
+  * sys_sync_file_range() permits finely controlled syncing over a segment of
+  * a file in the range offset .. (offset+nbytes-1) inclusive.  If nbytes is
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index d56b136e68fe..aa606453a0f8 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -811,7 +811,7 @@ xfs_file_aio_write(
+ 		XFS_STATS_ADD(xs_write_bytes, ret);
+ 
+ 		/* Handle various SYNC-type writes */
+-		err = generic_write_sync(file, pos, ret);
++		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+ 		if (err < 0)
+ 			ret = err;
+ 	}
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 164d2a91667f..6535d5af027e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2217,7 +2217,13 @@ extern int filemap_fdatawrite_range(struct address_space *mapping,
+ extern int vfs_fsync_range(struct file *file, loff_t start, loff_t end,
+ 			   int datasync);
+ extern int vfs_fsync(struct file *file, int datasync);
+-extern int generic_write_sync(struct file *file, loff_t pos, loff_t count);
++static inline int generic_write_sync(struct file *file, loff_t pos, loff_t count)
++{
++	if (!(file->f_flags & O_DSYNC) && !IS_SYNC(file->f_mapping->host))
++		return 0;
++	return vfs_fsync_range(file, pos, pos + count - 1,
++			       (file->f_flags & __O_SYNC) ? 0 : 1);
++}
+ extern void emergency_sync(void);
+ extern void emergency_remount(void);
+ #ifdef CONFIG_BLOCK
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b012daefc2d7..e94c70380deb 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2723,8 +2723,8 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (ret > 0) {
+ 		ssize_t err;
+ 
+-		err = generic_write_sync(file, pos, ret);
+-		if (err < 0 && ret > 0)
++		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
++		if (err < 0)
+ 			ret = err;
+ 	}
+ 	return ret;
 -- 
-1.9.1
+2.1.3
 
