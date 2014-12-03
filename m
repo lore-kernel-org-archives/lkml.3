@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaLCJwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:52:04 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:57575 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaLCJwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:52:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
-        alexander.stein@systec-electronic.com
-Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Date: Wed, 03 Dec 2014 10:51:53 +0100
-Message-ID: <4810522.t9QFQYHtHI@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1752145AbaLCJwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:52:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074AbaLCJwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 04:52:30 -0500
+Date: Wed, 3 Dec 2014 11:52:10 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Pankaj Gupta <pagupta@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
+        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
+ tun.
+Message-ID: <20141203095210.GC9487@redhat.com>
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
+ <1417591177-7985-3-git-send-email-pagupta@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:X/B/ylGVzmzbFJ8Q/pVYj4Q+8fPIfV0vwEIkR4gIsKV
- IX8emR5B7gFyxgFv29RNlPOyhLD+bo++IZ10/SY3RKlSK8RYaX
- OHLb/jAjkn1eq9FOzG9LGnJVVBFYmpl4LYhKlDS3HhkDGvJRce
- xtk34ao9hKNFeU5QWlPcnsvFdme0S85j63fnlApn/48ZJB07L7
- 7y7KAWEqdqgxv5/qOrkGP2/i2C93dVahvhs0vYyhc/o2DLopOr
- 40jSRxMOJrnt8qoV31gc0WoWjgpHwHHzprrIddsX0u/R/KRur4
- V/v3bmsvg6AtkEqpNDu23u2rnhyGL2UOaIFl7RZJU5exHjHERD
- bK4P8HJaexCSAPslv8H8=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417591177-7985-3-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 17:15:58 Xiubo Li wrote:
-> Framebuffer driver for the Freescale SoC Display Controller.
+On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
+> Networking under kvm works best if we allocate a per-vCPU RX and TX
+> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
 > 
+> It is now safe to increase the maximum number of queues.
+> Preceding patche: 'net: allow large number of rx queues'
+
+s/patche/patch/
+
+> made sure this won't cause failures due to high order memory
+> allocations. Increase it to 256: this is the max number of vCPUs
+> KVM supports.
 > 
-> Change in V2:
-> - Use the native-mode timing as default.
-> - Add to_fsl_private().
+> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> Reviewed-by: David Gibson <dgibson@redhat.com>
 
-<standard reply>
+Hmm it's kind of nasty that each tun device is now using x16 memory.
+Maybe we should look at using a flex array instead, and removing the
+limitation altogether (e.g. make it INT_MAX)?
 
-We try to not have any new framebuffer drivers. Please consider making
-this a DRM/KMS driver instead.
 
-</standard reply>
+> ---
+>  drivers/net/tun.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index e3fa65a..a19dc5f8 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -113,10 +113,11 @@ struct tap_filter {
+>  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
+>  };
+>  
+> -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues allocated for
+> - * the netdevice to be fit in one page. So we can make sure the success of
+> - * memory allocation. TODO: increase the limit. */
+> -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
+> +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
+> + * to max number of vCPUS in guest. Also, we are making sure here
+> + * queue memory allocation do not fail.
 
-	Arnd
+It's not queue memory allocation anymore, is it?
+I would say "
+This also helps the tfiles field fit in 4K, so the whole tun
+device only needs an order-1 allocation.
+"
+
+> + */
+> +#define MAX_TAP_QUEUES 256
+>  #define MAX_TAP_FLOWS  4096
+>  
+>  #define TUN_FLOW_EXPIRE (3 * HZ)
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
