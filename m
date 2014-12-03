@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaLCNiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:38:20 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:47135 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaLCNiS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:38:18 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Pavel Machek <pavel@ucw.cz>,
-        linux-input@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Side effect of pressing special keys
-Date: Wed, 03 Dec 2014 14:38:15 +0100
-Message-ID: <2102451.ffMsF9xTEG@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0-rc7+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <201412031424.12142@pali>
-References: <201411231441.17592@pali> <20141203131254.GB20212@khazad-dum.debian.net> <201412031424.12142@pali>
+	id S1752715AbaLCNiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:38:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59053 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752213AbaLCNit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:38:49 -0500
+Date: Wed, 3 Dec 2014 14:38:27 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [PATCH 0/8] perf buildid-cache: Add clean command
+Message-ID: <20141203133826.GB29325@krava.brq.redhat.com>
+References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
+ <20141201222919.GC6774@redhat.com>
+ <20141202122518.GA7744@krava.brq.redhat.com>
+ <20141202141028.GD6774@redhat.com>
+ <CAM9d7cihz5Ywf_129=sm0EOpwRQBdoDA9sHn+TA0EfmhTU1Tmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM9d7cihz5Ywf_129=sm0EOpwRQBdoDA9sHn+TA0EfmhTU1Tmw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 14:24:11 Pali Rohár wrote:
-> On Wednesday 03 December 2014 14:12:54 Henrique de Moraes
+On Wed, Dec 03, 2014 at 05:13:06PM +0900, Namhyung Kim wrote:
+> Hi Arnaldo and Jiri,
 > 
-> Holschuh wrote:
-> > On Wed, 03 Dec 2014, Pali Rohár wrote:
-> > > Ok, and what about KEY_KBDILLUMTOGGLE when bios also handle
-> > > keyboard backlight level? Should be this key filtered too?
-> > 
-> > IME, heck yes.
-> > 
-> > If you ever make the mistake of sending to userspace something
-> > the BIOS/kernel already reacted to, they will find a way to
-> > loop it back to you and cause all sort of issues.
+> On Tue, Dec 2, 2014 at 11:10 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Tue, Dec 02, 2014 at 01:25:18PM +0100, Jiri Olsa escreveu:
+> >> On Mon, Dec 01, 2014 at 08:29:19PM -0200, Arnaldo Carvalho de Melo wrote:
+> >
+> >> SNIP
+> >
+> >> > [acme@sandy wb]$
+> >
+> >> > If we keep the way it is, I think it would be clearer to add a -l/--list
+> >> > command and that would:
+> >
+> >> >   perf buildid-cache --list  # list all the files in the cache
+> >> >   perf buildid-cache --list 3d  # list 3 days old files
+> >> >   perf buildid-cache --list +3d  # list files 3 days or more older
+> >> >   perf buildid-cache --list -3d  # list files up to 3 days old
+> >
+> >> ok, I was up to old files (and big files) removal only.. not sure
+> >> the other way will be actually needed.. but it's easy enought to
+> >> add
+> >
+> > Right, I was thinking something along the lines of checking how much
+> > space would be needed if I wanted to keep X days of cache, not how much
+> > space I would free if I purged files older than Y days.
 > 
-> Ok, I think same. In KDE4 I see some loop/noop operation when new
-> dell keyboard backlight driver is used. Key KEY_KBDILLUMTOGGLE
-> cause that BIOS change brightness and also KDE4 see it and change
-> it too...
-> 
-> Similar problem there is with KEY_WLAN and NetworkManager.
-> 
-> Gabriele, can you create patch which disable both KEY_WLAN and
-> KEY_KBDILLUMTOGGLE in dell-wmi.c driver?
+> Btw, which timestamp do you use for the checking?  It'd be great if we
+> can use atime but some system might use the noatime..
 
-KEY_KBDILLUMTOGGLE is actually disabled already, but KEY_WLAN (which
-I guess it should changed to KEY_RFKILL now that it exists) isn't, so
-I will submit a patch. The comment above it in dell-wmi.c makes me think
-that for all the systems the BIOS does everything and not only mine.
+I used atime.. will need to check, I wasnt aware of this
 
-Gabriele
+SNIP
+
+> >
+> >> >
+> >> > > Remove and display items bigger than 200M
+> >> > >   $ perf buildid-cache clean -r -a 200M
+> >
+> >> > But yeah, perhaps we could switch to having subcommands and add:
+> >
+> >> >   perf buildid-cache [add|remove|update|list]
+> >
+> >> > What do you think?
+> >
+> >> yep, those commands seem nicer..
+> >
+> >> let's see of there're other comments and I'll come up with
+> >> new interface after..
+> 
+> I also like the subcommand style..  What about git-like format to
+> specify time range?
+> 
+> perf buildid-cache list --since '3 days ago'
+> perf buildidi-cache remove --before '1 month ago'
+
+yea, thats more readable, I'll check git sources.. hopefully they use
+this in some steal-able way ;-)
+
+jirka
