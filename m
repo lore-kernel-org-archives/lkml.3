@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaLCNA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:00:56 -0500
-Received: from mout.web.de ([212.227.15.4]:58093 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031AbaLCNAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:00:54 -0500
-Message-ID: <547F0977.7090908@users.sourceforge.net>
-Date: Wed, 03 Dec 2014 14:00:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752237AbaLCNBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:01:42 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:40158 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751061AbaLCNBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:01:41 -0500
+Date: Wed, 3 Dec 2014 14:01:36 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Tim Bird <tim.bird@sonymobile.com>, Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
+Message-ID: <20141203140136.12997331@free-electrons.com>
+In-Reply-To: <1417578191.16722.11.camel@concordia>
+References: <547E854E.5060101@sonymobile.com>
+	<1417578191.16722.11.camel@concordia>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Julia Lawall <julia.lawall@lip6.fr>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Coccinelle <cocci@systeme.lip6.fr>, backports@vger.kernel.org,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [patch] CodingStyle: add some more error handling guidelines
-References: <20141202085950.GA13434@mwanda> <547F0297.6030202@users.sourceforge.net> <20141203124511.GR5048@mwanda>
-In-Reply-To: <20141203124511.GR5048@mwanda>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:QIsSIcCOoePhlhdUucuClEUYDuQVAvWTpfjeV0blJLGQOU93GTz
- W/xyMc3rjcsN5uTTHz3pE+d01lKV3T7s5Mxqn5e556tpctdfxttdlIAGoSj9a+PfZTxJowT
- oLkUQB5wLSZo5iGUfOhsxuGHg7crxulhX+rAZziyKdgMD+eYfKy5LApAiguTvNLyiD4yejr
- nkRjc+Y4otPo2KKvLnSKg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> * To which source code place should the word "location" refer to?
->>   - jump source
->>   - jump target
+Michael, Tim,
+
+On Wed, 03 Dec 2014 14:43:11 +1100, Michael Ellerman wrote:
+
+> > diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+> > new file mode 100644
+> > index 0000000..47f8e9c
+> > --- /dev/null
+> > +++ b/tools/testing/selftests/size/Makefile
+> > @@ -0,0 +1,15 @@
+> > +#ifndef CC
+> > +	CC = $(CROSS_COMPILE)gcc
+> > +#endif
 > 
-> jump target.
+> I think the following is preferable:
+> 
+>   CC := $(CROSS_COMPILE)$(CC)
 
-Thanks for the clarification of your intention.
+It is even more necessary that #ifndef and #endif don't exist in make.
+They are just comments, and therefore, ignored. Seems like Tim does too
+much C :-)
 
-I wonder then why I got the feedback "That is a useless thing to do."
-from you yesterday.
-I hope that we can still clarify our different opinions about specific
-implementation details in constructive ways.
+Best regards,
 
-Regards,
-Markus
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
