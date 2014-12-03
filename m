@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaLCLiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:38:17 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51678 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaLCLiO (ORCPT
+	id S1753081AbaLCLiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:38:21 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:49727 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaLCLiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:38:14 -0500
-MIME-Version: 1.0
-X-Originating-IP: [95.23.62.239]
-In-Reply-To: <1655942.O63mJN07or@vostro.rjw.lan>
-References: <1655942.O63mJN07or@vostro.rjw.lan>
-Date: Wed, 3 Dec 2014 12:38:12 +0100
-Message-ID: <CABxcv=n-ADTXRaS6_K=B7UZEi9aCysNgS9yMs8jiZWY-2yqRLQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux GPIO List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Dec 2014 06:38:17 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] blk-mq: prevent unmapped hw queue from being scheduled
+Date: Wed,  3 Dec 2014 19:38:04 +0800
+Message-Id: <1417606684-20907-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rafael,
+When one hardware queue has no mapped software queues, it
+shouldn't have been scheduled. Otherwise WARNING or OOPS
+can triggered.
 
-On Wed, Dec 3, 2014 at 2:50 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
->
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/gpio/gpio-omap.c.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
+blk_mq_hw_queue_mapped() helper is introduce for fixing
+the problem.
 
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ block/blk-mq.c |    8 ++++++--
+ block/blk-mq.h |    5 +++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
->
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
->
-> Please let me know if it is OK to take this one into linux-pm.
->
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index c95abc6..c916ad0 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -599,7 +599,7 @@ static void blk_mq_rq_timer(unsigned long priv)
+ 		 * If not software queues are currently mapped to this
+ 		 * hardware queue, there's nothing to check
+ 		 */
+-		if (!hctx->nr_ctx || !hctx->tags)
++		if (!blk_mq_hw_queue_mapped(hctx))
+ 			continue;
+ 
+ 		blk_mq_tag_busy_iter(hctx, blk_mq_check_expired, &data);
+@@ -819,7 +819,8 @@ static int blk_mq_hctx_next_cpu(struct blk_mq_hw_ctx *hctx)
+ 
+ void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
+ {
+-	if (unlikely(test_bit(BLK_MQ_S_STOPPED, &hctx->state)))
++	if (unlikely(test_bit(BLK_MQ_S_STOPPED, &hctx->state) ||
++	    !blk_mq_hw_queue_mapped(hctx)))
+ 		return;
+ 
+ 	if (!async) {
+@@ -926,6 +927,9 @@ static void blk_mq_delay_work_fn(struct work_struct *work)
+ 
+ void blk_mq_delay_queue(struct blk_mq_hw_ctx *hctx, unsigned long msecs)
+ {
++	if (unlikely(!blk_mq_hw_queue_mapped(hctx)))
++		return;
++
+ 	kblockd_schedule_delayed_work_on(blk_mq_hctx_next_cpu(hctx),
+ 			&hctx->delay_work, msecs_to_jiffies(msecs));
+ }
+diff --git a/block/blk-mq.h b/block/blk-mq.h
+index d567d52..206230e 100644
+--- a/block/blk-mq.h
++++ b/block/blk-mq.h
+@@ -115,4 +115,9 @@ static inline void blk_mq_set_alloc_data(struct blk_mq_alloc_data *data,
+ 	data->hctx = hctx;
+ }
+ 
++static inline bool blk_mq_hw_queue_mapped(struct blk_mq_hw_ctx *hctx)
++{
++	return hctx->nr_ctx && hctx->tags;
++}
++
+ #endif
+-- 
+1.7.9.5
 
-AFAICT there isn't another patch for gpio-omap on this cycle so I'm OK
-if you take this through linux-pm.
-
-Best regards,
-Javier
