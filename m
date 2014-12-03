@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaLCLxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:53:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39520 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389AbaLCLxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:53:45 -0500
-Message-ID: <547EF9C2.60106@ti.com>
-Date: Wed, 3 Dec 2014 13:53:38 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Quentin Lambert <lambert.quentin@gmail.com>,
-        Thomas Winischhofer <thomas@winischhofer.net>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Converting int usage to bool
-References: <20141127104133.GA5051@wrath>
-In-Reply-To: <20141127104133.GA5051@wrath>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="Il5MoGSHs36JbqMLbsEESBmaj3750TQse"
+	id S1753032AbaLCLyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:54:09 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:42920 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaLCLyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:54:05 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: tj@kernel.org
+Cc: lizefan@huawei.com, corbet@lwn.net, trivial@kernel.org,
+        cgroups@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH 1/2] cgroups: Documentation: fix wrong cgroupfs paths
+Date: Wed,  3 Dec 2014 20:53:44 +0900
+Message-Id: <1417607625-2775-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Il5MoGSHs36JbqMLbsEESBmaj3750TQse
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Few paths used as example to describe cgroupfs usage have been wrong
+from f6e07d38078e ("Documentation: update cgroupfs mount point") by
+mistake. This patch fix those trivial wrong paths.
 
-On 27/11/14 12:41, Quentin Lambert wrote:
-> The following semantic patch was used to find
-> functions and variables declared as int but
-> used as boolean. The patch resulted in a
-> significant number of false positive that I
-> have ignored.
->=20
-> I am not hyper confident about the modification
-> I made to the functions. Some of them seem to
-> have quite significant side effects, which is not
-> necesserarily intended from a boolean function.
-> In particular both *_rwtest functions write data.
-> Moreover sisfb_find_host_bridge name may suggest
-> more than a boolean return.
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ Documentation/cgroups/cgroups.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I don't think I'm going to apply based on the above. I do like bools
-where a boolean value is used, but changing it like this to a single
-fbdev driver.. Well, I don't really see much benefit in this patch, and
-there's a possibility for regressions.
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index 10c949b..f935fac 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -312,10 +312,10 @@ the "cpuset" cgroup subsystem, the steps are something like:
+  2) mkdir /sys/fs/cgroup/cpuset
+  3) mount -t cgroup -ocpuset cpuset /sys/fs/cgroup/cpuset
+  4) Create the new cgroup by doing mkdir's and write's (or echo's) in
+-    the /sys/fs/cgroup virtual file system.
++    the /sys/fs/cgroup/cpuset virtual file system.
+  5) Start a task that will be the "founding father" of the new job.
+  6) Attach that task to the new cgroup by writing its PID to the
+-    /sys/fs/cgroup/cpuset/tasks file for that cgroup.
++    /sys/fs/cgroup/cpuset tasks file for that cgroup.
+  7) fork, exec or clone the job tasks from this founding father task.
+ 
+ For example, the following sequence of commands will setup a cgroup
+-- 
+1.9.1
 
- Tomi
-
-
-
---Il5MoGSHs36JbqMLbsEESBmaj3750TQse
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUfvnDAAoJEPo9qoy8lh71Wl8P/0jBeENpJLhDbG4G572QarhN
-AziXFgxaULZWi+2atxW5lcI3D3Rca9i6Rb/NDWNrRQtomuha5Tm3mSS1DA5LIb+u
-XpAj788GvsMShIFqEvon6zhdfzOguBDPk6gi6IH0Tj6QteCkAiv+45scTMNu/sZk
-/iACZlIcjcBpG4e+lG9Kq0NKN4hadEmnTbuWKT0qalGQnqDYs+z63UND30b6hgYT
-ssvhWttXZ2RauP/zKO5U+b1GsIqJehYwZMwjs2tiiccg3truYwknSsSXOiqN8fcB
-IhOt8Aexpvf3a9UEUROKwyyFbH0mb6/f0klkIn/nUeMG5RIaqrSdS+BLtodoyBUj
-3fRV+hucLW3LoGOnjdl6wTZQ8ezi7jgYNparwcZgb3SSATr87AqTh6mqRM46A3PT
-/udlDMJsgcs65IL0gixPiZN+t/uInNvCRlKpgygOLr+CkIBp8LXdzJjCIDotkB2X
-RbBPOdcAuhUZrfr5mdkpr7wDL0Z0UN96/xn4wODmvoc0MkDm9SqSiczaUjJIUIOV
-3nxfv/iYzh4+0WlzsilbLTnLMoazcKXKsk7ETT78AuXjydHJRTXDOXv/NqV+2kHW
-MLn8sR6ztT06lJ3cwdumtpYaiq6OU9eBd8J3RpOLk0TB1Zi4VFdQqRzXF5YnkSv0
-QQ/Gi6/yXmWIHNSApcla
-=eMHP
------END PGP SIGNATURE-----
-
---Il5MoGSHs36JbqMLbsEESBmaj3750TQse--
