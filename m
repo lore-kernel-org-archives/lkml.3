@@ -1,21 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678AbaLCG6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 01:58:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49810 "EHLO mx2.suse.de"
+	id S1751884AbaLCG74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 01:59:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49824 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaLCG6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 01:58:45 -0500
-Date: Wed, 03 Dec 2014 07:58:43 +0100
-Message-ID: <s5hsigx6wyk.wl-tiwai@suse.de>
+	id S1751819AbaLCG7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 01:59:55 -0500
+Date: Wed, 03 Dec 2014 07:59:53 +0100
+Message-ID: <s5hr3wh6wwm.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jaroslav Kysela <perex@perex.cz>, Benoit Taine <benoit.taine@lip6.fr>,
-        Bjorn Helgaas <bhelgaas@google.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: azt3328.c:  Cleaning up function that are not used anywhere
-In-Reply-To: <1417561690-27471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1417561690-27471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jaroslav Kysela <perex@perex.cz>,
+        Johannes Berg <johannes@sipsolutions.net>, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] ALSA: i2sbus: Deletion of unnecessary checks before the function call "release_and_free_resource"
+In-Reply-To: <547E356D.9050609@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	<530A086E.8010901@users.sourceforge.net>
+	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<547E356D.9050609@users.sourceforge.net>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,48 +43,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed,  3 Dec 2014 00:08:09 +0100,
-Rickard Strandqvist wrote:
+At Tue, 02 Dec 2014 22:55:57 +0100,
+SF Markus Elfring wrote:
 > 
-> Remove function snd_azf3328_codec_outl() that is not used anywhere.
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 2 Dec 2014 22:50:24 +0100
+> 
+> The release_and_free_resource() function tests whether its argument is NULL
+> and then returns immediately. Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
-This is a small inliner and no problem to keep it.  Removing it breaks
-the code balance, and one would have to re-add it if 32bit register
-address is needed in the future patch.
+Thanks, applied.
 
-
-thanks,
 
 Takashi
 
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  sound/pci/azt3328.c |    9 ---------
->  1 file changed, 9 deletions(-)
+>  sound/aoa/soundbus/i2sbus/core.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 > 
-> diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
-> index 5a69e26..82da7b9 100644
-> --- a/sound/pci/azt3328.c
-> +++ b/sound/pci/azt3328.c
-> @@ -379,15 +379,6 @@ snd_azf3328_codec_inw(const struct snd_azf3328_codec_data *codec, unsigned reg)
->  }
->  
->  static inline void
-> -snd_azf3328_codec_outl(const struct snd_azf3328_codec_data *codec,
-> -		       unsigned reg,
-> -		       u32 value
-> -)
-> -{
-> -	outl(value, codec->io_base + reg);
-> -}
-> -
-> -static inline void
->  snd_azf3328_codec_outl_multi(const struct snd_azf3328_codec_data *codec,
->  			     unsigned reg, const void *buffer, int count
->  )
+> diff --git a/sound/aoa/soundbus/i2sbus/core.c b/sound/aoa/soundbus/i2sbus/core.c
+> index a80d5ea..4e2b4fb 100644
+> --- a/sound/aoa/soundbus/i2sbus/core.c
+> +++ b/sound/aoa/soundbus/i2sbus/core.c
+> @@ -79,8 +79,7 @@ static void i2sbus_release_dev(struct device *dev)
+>   	if (i2sdev->out.dbdma) iounmap(i2sdev->out.dbdma);
+>   	if (i2sdev->in.dbdma) iounmap(i2sdev->in.dbdma);
+>  	for (i = aoa_resource_i2smmio; i <= aoa_resource_rxdbdma; i++)
+> -		if (i2sdev->allocated_resource[i])
+> -			release_and_free_resource(i2sdev->allocated_resource[i]);
+> +		release_and_free_resource(i2sdev->allocated_resource[i]);
+>  	free_dbdma_descriptor_ring(i2sdev, &i2sdev->out.dbdma_ring);
+>  	free_dbdma_descriptor_ring(i2sdev, &i2sdev->in.dbdma_ring);
+>  	for (i = aoa_resource_i2smmio; i <= aoa_resource_rxdbdma; i++)
+> @@ -323,8 +322,7 @@ static int i2sbus_add_dev(struct macio_dev *macio,
+>  	if (dev->out.dbdma) iounmap(dev->out.dbdma);
+>  	if (dev->in.dbdma) iounmap(dev->in.dbdma);
+>  	for (i=0;i<3;i++)
+> -		if (dev->allocated_resource[i])
+> -			release_and_free_resource(dev->allocated_resource[i]);
+> +		release_and_free_resource(dev->allocated_resource[i]);
+>  	mutex_destroy(&dev->lock);
+>  	kfree(dev);
+>  	return 0;
 > -- 
-> 1.7.10.4
+> 2.1.3
 > 
