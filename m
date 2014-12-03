@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaLCO1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:27:42 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34648 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaLCO1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:27:40 -0500
-Date: Wed, 3 Dec 2014 15:27:27 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC 1/2] virtio_balloon: convert to virtio 1.0
- endian-ness
-Message-ID: <20141203152727.5b4d3e34.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141203140228.GA12370@redhat.com>
-References: <1417520617-2135-1-git-send-email-mst@redhat.com>
-	<20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
-	<20141203140228.GA12370@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752969AbaLCO3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:29:32 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752633AbaLCO3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:29:31 -0500
+Message-ID: <547F1E46.9050607@nod.at>
+Date: Wed, 03 Dec 2014 15:29:26 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Harald Geyer <harald@ccbib.org>
+CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F0CFE.4010107@nod.at> <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at>
+In-Reply-To: <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120314-0041-0000-0000-000002592558
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 16:02:28 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Am 03.12.2014 um 15:08 schrieb Harald Geyer:
+> Richard Weinberger writes:
+>> Harald,
+>>
+>> Am 03.12.2014 um 13:18 schrieb Harald Geyer:
+>>> Hi Richard,
+>>>
+>>> thanks for all the work you put into this!
+>>>
+>>> Richard Weinberger writes:
+>>>> I have also a question on your driver. Why you increment
+>>>> DHT11_DATA_BIT_LOW/timeres by one in the ambiguity check?
+>>>>
+>>>>         threshold = DHT11_DATA_BIT_HIGH / timeres;
+>>>>         if (DHT11_DATA_BIT_LOW/timeres + 1 >= threshold)
+>>>>                 pr_err("dht11: WARNING: decoding ambiguous\n");
+>>>
+>>> This is to take ambiguity of when the bit started relativ to the
+>>> clock ticks into account. For example with common 32kHz clocks:
+>>> DHT11_DATA_BIT_LOW / timeres = 0
+>>> DHT11_DATA_BIT_HIGH / timeres = 2
+>>> but since the bit might not start at a clock tick the actual t of
+>>> a low bit can be either 0 or 1 while the actual t of a high bit
+>>> can be either 2 or 3.
+>>>
+>>> This case is fine.
+>>>
+>>> But if we had a 38kHz clock:
+>>> DHT11_DATA_BIT_LOW / timeres = 1    t can be 1 or 2
+>>> DHT11_DATA_BIT_HIGH / timeres = 2   t can be 2 or 3
+>>> so we have an ambiguity. The ambiguity could be removed by a smarter
+>>> decoder, that looks at the t of other bits, but I'm not going to do
+>>> that unless somebody is promising to test it on affected hardware.
+>>>
+>>> Feel free to add some comment about this to the code.
+>>
+>> Will do, thanks a lot for the explanation.
+>>
+>> I was asking because I see the "dht11: WARNING: decoding ambiguous"
+>> very often. (with and without my patches)
+> 
+> Yes, your patches shouldn't have any effect on this.
+> "very often" in the sense of "not always"? This would be very surprising,
+> because this would involve variable length clock ticks, i think.
 
-> On Tue, Dec 02, 2014 at 07:39:30PM +0100, Cornelia Huck wrote:
-> > On Tue, 2 Dec 2014 13:44:06 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > balloon device is not part of virtio 1.0 spec.  Still, it's easy enough
-> > > to make it handle endian-ness exactly as other virtio 1.0 devices: what
-> > > we gain from this, is that there's no need to special-case it in virtio
-> > > core.
-> > 
-> > Well, the balloon is weird in a number of ways, including its always
-> > little-endian config space.
-> 
-> Hmm yes, I forgot about that.
-> 
-> > But I'm not quite sure the spec covers this?
-> 
-> The spec does not cover balloon.  It merely includes a reference section
-> about legacy balloon device.  What to do when that device sets VERSION_1
-> is really up to us.
-> 
-> Patchset v8 simply makes balloon tell core it's legacy_only.
-> This is I guess fine as far as it goes.
-> I was still looking for the best way that involves minimal noise
-> in core. This looked like the best way: change 4 lines,
-> and drop all special casing in core, but given the config space
-> endian-ness mess, I'm not sure anymore.
-> I guess we'll just stick to what v8 does for now.
+It happens around 33% of all reads.
+BTW: I'm using the DHT22's on my Beaglebone Black.
+So the board should be "sane".
+But I'll test them on another board too, just to be sure...
 
-I don't think the legacy_only approach is so bad, let's keep it for now.
+> I guess we should include timeres into the warning message.
 
+I'll add some diagnose printk()s to find out.
+
+Thanks,
+//richard
