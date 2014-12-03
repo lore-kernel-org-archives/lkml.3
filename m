@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaLCGqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 01:46:00 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:42034 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869AbaLCGp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 01:45:58 -0500
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Jonathan Corbet <corbet@lwn.net>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Michal Marek <mmarek@suse.cz>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: update headers_install.txt document
-Date: Wed,  3 Dec 2014 15:45:41 +0900
-Message-Id: <1417589141-14814-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751518AbaLCGsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 01:48:30 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:55075 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaLCGs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 01:48:28 -0500
+Message-ID: <1417589306.5303.120.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alex Dubov <alex.dubov@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Date: Tue, 02 Dec 2014 22:48:26 -0800
+In-Reply-To: <CAPs88r_5GYAmWhW9rwj8c6oAjy8RZYih2mBubgvqRXfcgiUzYw@mail.gmail.com>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	 <1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	 <1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
+	 <1417534380.5303.64.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAPs88r-jZ5FvCHQjArKXhpX1YRg3O4NdUFtLizraF6nZ9SjFKw@mail.gmail.com>
+	 <1417538574.5303.69.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAPs88r_5GYAmWhW9rwj8c6oAjy8RZYih2mBubgvqRXfcgiUzYw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arch header directories "include/asm-*" were moved long ago.
-Now we should check the existence of arch/*/include/uapi/asm/Kbuild
-to see if an architecture supports the headers installation.
-(Actually, "um" is the only architecture that does not have it.)
+On Wed, 2014-12-03 at 13:11 +1100, Alex Dubov wrote:
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
+> Kindly enlighten me, how are you going to use any file descriptor in a
+> 128 threads program in a scalable way (socket and all)? How this
+> approach will be different when using signalfd()?
 
- Documentation/kbuild/headers_install.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thats the point : use one different channel (AF_UNIX socket, or AF_INET
+listener...) per thread.
 
-diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
-index 951eb9f..8e668d4 100644
---- a/Documentation/kbuild/headers_install.txt
-+++ b/Documentation/kbuild/headers_install.txt
-@@ -31,7 +31,7 @@ current architecture.  The linux/asm directory of the exported kernel headers
- is platform-specific, to see a complete list of supported architectures use
- the command:
- 
--  ls -d include/asm-* | sed 's/.*-//'
-+  for i in arch/*; do [ -e $i/include/uapi/asm/Kbuild ] && basename $i; done
- 
- INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
- "./usr/include".
--- 
-1.9.1
+Each thread uses epoll() on a private epoll fd, and a dedicated channel
+to get fds from other processes.
+
+Sharing a signalfd() would be terrible, like using accept() on a single
+listener socket :(
+
+Your proposed interface, being tied to legacy signal(s), do not allow
+for many multiple channels.
+
+Sorry, but using signals is simply a no go for me.
+
 
