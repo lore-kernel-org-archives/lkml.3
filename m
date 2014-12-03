@@ -1,250 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaLCPe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:34:56 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:41283 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751370AbaLCPex convert rfc822-to-8bit (ORCPT
+	id S1752197AbaLCPfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:35:23 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:40269 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaLCPfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:34:53 -0500
-Date: Wed, 3 Dec 2014 16:34:49 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
+	Wed, 3 Dec 2014 10:35:21 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <99cd3793ce8e67dc57a6f00628fedf86>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 06/11] memory: atmel-ebi: add DT bindings
- documentation
-Message-ID: <20141203163449.3ca4f43b@bbrezillon>
-In-Reply-To: <547F2918.3070803@atmel.com>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417429647-3419-7-git-send-email-boris.brezillon@free-electrons.com>
-	<547F24B6.8070504@atmel.com>
-	<547F2918.3070803@atmel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>,
+        Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v16 09/12] drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
+Date: Wed,  3 Dec 2014 23:34:48 +0800
+Message-Id: <1417620888-30781-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 16:15:36 +0100
-Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+HDMI_IH_I2CMPHY_STAT0 is a clear on write register, which indicates i2cm
+operation status(i2c transfer done or error), every hdmi phy register
+configuration must check this register to make sure the configuration
+has complete. But the indication bit should be cleared after check, otherwise
+the corresponding bit will hold on forever, this may give a wrong signal for
+next check.
 
-> Le 03/12/2014 15:56, Nicolas Ferre a écrit :
-> > Le 01/12/2014 11:27, Boris Brezillon a écrit :
-> >> The EBI (External Bus Interface) is used to access external peripherals
-> >> (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> >> Each device is assigned a CS line and an address range and can have its
-> >> own configuration (timings, access mode, bus width, ...).
-> >> This driver provides a generic DT binding to configure a device according
-> >> to its requirements.
-> >> For specific device controllers (like the NAND one) the SMC timings
-> >> should be configured by the controller driver through the matrix and smc
-> >> syscon regmaps.
-> >>
-> >> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> >> ---
-> >>  .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++++++++++++++++++
-> >>  1 file changed, 155 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> >> new file mode 100644
-> >> index 0000000..3749ea1
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> >> @@ -0,0 +1,155 @@
-> >> +* Device tree bindings for Atmel EBI
-> >> +
-> >> +The External Bus Interface (EBI) controller is a bus where you can connect
-> >> +asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
-> >> +The EBI provides a glue-less interface to asynchronous memories though the SMC
-> >> +(Static Memory Controller).
-> >> +Synchronous memories (and some asynchronous memories like NANDs) can be
-> >> +attached to specialized controllers which are responsible for configuring the
-> >> +bus appropriately according to the connected device.
-> >> +In the other hand, the bus interface can be automated for simple asynchronous
-> >> +devices.
-> >> +
-> >> +Required properties:
-> >> +
-> >> +- compatible:		"atmel,at91sam9260-ebi"
-> >> +			"atmel,at91sam9261-ebi"
-> >> +			"atmel,at91sam9263-ebi0"
-> >> +			"atmel,at91sam9263-ebi1"
-> > 
-> > Ditto: 9263 twice.
-> > 
-> >> +			"atmel,at91sam9g45-ebi"
-> >> +			"atmel,at91sam9x5-ebi"
-> >> +			"atmel,sama5d3-ebi"
-> >> +
-> >> +- reg:			Contains offset/length value for EBI memory mapping.
-> >> +			This property might contain several entries if the EBI
-> >> +			memory range is not contiguous
-> >> +
-> >> +- #address-cells:	Must be 2.
-> >> +			The first cell encodes the CS.
-> >> +			The second cell encode the offset into the CS memory
-> >> +			range.
-> >> +
-> >> +- #size-cells:		Must be set to 1.
-> >> +
-> >> +- ranges:		Encodes CS to memory region association.
-> >> +
-> >> +- clocks:		Clock feeding the EBI controller.
-> >> +			See clock-bindings.txt
-> >> +
-> >> +Child chip-select (cs) nodes contain the memory devices nodes connected to
-> >> +such as NOR (e.g. cfi-flash) and NAND.
-> >> +There might be board specific devices like FPGAs.
-> >> +You'll define you device requirements in these child nodes.
-> >> +
-> >> +Required child cs node properties:
-> >> +
-> >> +- #address-cells:	Must be 2.
-> >> +
-> >> +- #size-cells:		Must be 1.
-> >> +
-> >> +- ranges:		Empty property indicating that child nodes can inherit
-> >> +			memory layout.
-> >> +
-> >> +Optional child cs node properties:
-> >> +- atmel,generic-dev		boolean property specifying if the device is
-> >> +				a generic device.
-> 
-> Well... no real information, specify right here what a "generic device" is.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+---
 
-I do not describe what a generic device is, but the description of a
-specialized device is given just below.
+Changes in v16: None
+Changes in v15: None
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
 
-Maybe I haven't chosen the appropriate word here.
-The datasheet gives the following description:
+ drivers/gpu/drm/bridge/dw_hdmi.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-
-> 
-> >> +				The following properties are only parsed if
-> >> +				this property is present.
-> >> +				Specialized devices are attached to specialized
-> >> +				controllers which are responsible for
-> >> +				configuring the bus appropriately.
-> >> +				Here are some examples of specialized
-> >> +				controllers: NAND, CompactFlash, SDR-SDRAM.
-> >> +
-> >> +- atmel,bus-width:		width of the asynchronous device's data bus
-> >> +				8, 16 or 32.
-> >> +				8 if not present.
-> >> +
-> >> +- atmel,byte-access-type	"write" or "select" (see Atmel datasheet).
-> >> +				"select" if not present.
-> >> +
-> >> +- atmel,read-mode		"nrd" or "ncs".
-> >> +				"ncs" is not present.
-> >> +
-> >> +- atmel,write-mode		"nwe" or "ncs".
-> >> +				"ncs" is not present.
-> >> +
-> >> +- atmel,exnw-mode		"disabled", "frozen" or "ready".
-> >> +				"disabled" if not present.
-> >> +
-> >> +- atmel,page-mode		enable page mode if present. The provided value
-> >> +				defines the page size (supported values: 4, 8,
-> >> +				16 and 32).
-> >> +
-> >> +Optional device timings expressed in nanoseconds (if the property is not
-> >> +present 0 is assumed):
-> >> +
-> >> +- atmel,ncs-rd-setup-ns
-> >> +- atmel,nrd-setup-ns
-> >> +- atmel,ncs-wr-setup-ns
-> >> +- atmel,nwe-setup-ns
-> >> +- atmel,ncs-rd-pulse-ns
-> >> +- atmel,nrd-pulse-ns
-> >> +- atmel,ncs-wr-pulse-ns
-> >> +- atmel,nwe-pulse-ns
-> >> +- atmel,nwe-cycle-ns
-> >> +- atmel,nrd-cycle-ns
-> >> +- atmel,tdf-ns
-> >> +
-> >> +- atmel,tdf-optimized		data float optimized mode. If present the data
-> >> +				float time is optimized depending on the next
-> >> +				device being accessed (next device setup
-> >> +				time is substracted to the current devive data
-> > 
-> > Typo: subtract, device
-> > 
-> >> +				float time).
-> >> +
-> >> +
-> >> +
-> >> +Example:
-> >> +
-> >> +	ebi: ebi@10000000 {
-> >> +		compatible = "atmel,sama5d3-ebi", "simple-bus";
-> >> +		#address-cells = <2>;
-> >> +		#size-cells = <1>;
-> >> +		atmel,smc = <&hsmc>;
-> >> +		atmel,matrix = <&matrix>;
-> >> +		reg = <0x10000000 0x10000000
-> >> +		       0x40000000 0x30000000>;
-> >> +		ranges = <0x0 0x0 0x10000000 0x10000000
-> >> +			  0x1 0x0 0x40000000 0x10000000
-> >> +			  0x2 0x0 0x50000000 0x10000000
-> >> +			  0x3 0x0 0x60000000 0x10000000>;
-> >> +		clocks = <&mck>;
-> >> +
-> >> +		pinctrl-names = "default";
-> >> +		pinctrl-0 = <&pinctrl_ebi_addr>;
-> >> +
-> >> +		cs@0 {
-> >> +			#address-cells = <2>;
-> >> +			#size-cells = <1>;
-> >> +			ranges;
-> >> +			atmel,generic-dev;
-> >> +			atmel,read-mode = "nrd";
-> >> +			atmel,write-mode = "nwe";
-> >> +			atmel,bus-width = <16>;
-> >> +			atmel,ncs-rd-setup-ns = <0>;
-> >> +			atmel,ncs-wr-setup-ns = <0>;
-> >> +			atmel,nwe-setup-ns = <8>;
-> >> +			atmel,nrd-setup-ns = <16>;
-> >> +			atmel,ncs-rd-pulse-ns = <84>;
-> >> +			atmel,ncs-wr-pulse-ns = <84>;
-> >> +			atmel,nrd-pulse-ns = <76>;
-> >> +			atmel,nwe-pulse-ns = <76>;
-> >> +			atmel,nrd-cycle-ns = <107>;
-> >> +			atmel,nwe-cycle-ns = <84>;
-> >> +			atmel,tdf-ns = <16>;
-> >> +
-> >> +			nor: flash@0,0 {
-> >> +				compatible = "cfi-flash";
-> >> +				#address-cells = <1>;
-> >> +				#size-cells = <1>;
-> >> +				reg = <0x0 0x0 0x1000000>;
-> >> +				bank-width = <2>;
-> >> +			};
-> >> +		};
-> >> +	};
-> >> +
-> >>
-> > 
-> > 
-> 
-> 
-
-
-
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index e3999da..e53dae0 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -666,11 +666,15 @@ static inline void hdmi_phy_test_dout(struct dw_hdmi *hdmi,
+ 
+ static bool hdmi_phy_wait_i2c_done(struct dw_hdmi *hdmi, int msec)
+ {
+-	while ((hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
++	u32 val;
++
++	while ((val = hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
+ 		if (msec-- == 0)
+ 			return false;
+ 		udelay(1000);
+ 	}
++	hdmi_writeb(hdmi, val, HDMI_IH_I2CMPHY_STAT0);
++
+ 	return true;
+ }
+ 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.1
+
+
