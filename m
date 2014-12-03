@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaLCTiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:38:54 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:62013 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaLCTiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:38:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141203192024.GL7712@sirena.org.uk>
-References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
- <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com> <1417591118-18695-3-git-send-email-jay.xu@rock-chips.com>
- <20141203192024.GL7712@sirena.org.uk>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Wed, 3 Dec 2014 11:38:13 -0800
-X-Google-Sender-Auth: mmNRRiFBv4eTCw9WeQ7to4s_mRw
-Message-ID: <CAPz6YkXRmRzYpW7xuDsq69A9H-Qm2-j6t-a+B1w9+OLOPf_YnA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] ASoC: rockchip: i2s: add support for grabbing
- output clock to codec
-To: Mark Brown <broonie@kernel.org>
-Cc: Jianqun Xu <jay.xu@rock-chips.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        perex@perex.cz, tiwai@suse.de,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        alsa-devel@alsa-project.org,
+	id S1752111AbaLCTjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:39:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37788 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349AbaLCTjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 14:39:49 -0500
+Date: Wed, 3 Dec 2014 20:39:47 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, Joerg Roedel <jroedel@suse.de>,
+        kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-rockchip@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
+        Olaf Hering <ohering@suse.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
+	hypercall when non CONFIG_PREEMPT
+Message-ID: <20141203193947.GD25677@wotan.suse.de>
+References: <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com> <20141201223611.GM25677@wotan.suse.de> <547D9E56.50708@citrix.com> <20141203022833.GS25677@wotan.suse.de> <547E939F.40106@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547E939F.40106@suse.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 11:20 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Dec 03, 2014 at 03:18:38PM +0800, Jianqun Xu wrote:
->> From: Sonny Rao <sonnyrao@chromium.org>
+On Wed, Dec 03, 2014 at 05:37:51AM +0100, Juergen Gross wrote:
+> On 12/03/2014 03:28 AM, Luis R. Rodriguez wrote:
+>> On Tue, Dec 02, 2014 at 11:11:18AM +0000, David Vrabel wrote:
+>>> On 01/12/14 22:36, Luis R. Rodriguez wrote:
+>>>>
+>>>> Then I do agree its a fair analogy (and find this obviously odd that how
+>>>> widespread cond_resched() is), we just don't have an equivalent for IRQ
+>>>> context, why not avoid the special check then and use this all the time in the
+>>>> middle of a hypercall on the return from an interrupt (e.g., the timer
+>>>> interrupt)?
+>>>
+>>> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
 >>
->> We need to claim the clock which is driving the codec so that when we enable
->> clock gating, we continue to clock the codec when needed.  I make this an
->> optional clock since there might be some applications where we don't need it
->> but can still use the I2S block.
+>> OK thanks! That explains why we need some asm code but in that submission you
+>> still also had used is_preemptible_hypercall(regs) and in the new
+>> implementation you use a CPU variable xen_in_preemptible_hcall prior to calling
+>> preempt_schedule_irq(). I believe you added the CPU variable because
+>> preempt_schedule_irq() will preempt first without any checks if it should, I'm
+>> asking why not do something like cond_resched_irq() where we check with
+>> should_resched() prior to preempting and that way we can avoid having to use
+>> the CPU variable?
 >
-> I would expect that the clock for the CODEC should be managed by the
-> CODEC if at all possible - that seems more logical than having the CPU
-> I2S controller request and manage it if it's a separate clock.  Why add
-> this to the CPU side driver?
+> Because that could preempt at any asynchronous interrupt making the
+> no-preempt kernel fully preemptive. 
 
-It's a good question.  Right now the way I'm running this stuff we're
-mostly setting all the i2s the clock rates from the codec driver, but
-I think this isn't the correct way to go, and the i2s driver needs to
-set it's rate based on the hw params, but that isn't happening (yet).
+OK yeah I see. That still doesn't negate the value of using something
+like cond_resched_irq() with a should_resched() on only critical hypercalls.
+The current implementation (patch by David) forces preemption without
+checking for should_resched() so it would preempt unnecessarily at least
+once.
 
-This output clock has a mux and can either be a fixed 12Mhz output or
-can be derived from the same fractional divider which drives the i2s
-block.   I thought it was simpler to keep them all the same, but need
-to put ownership in the i2s in anticipation of the i2s driver setting
-it's own clock rate.
+> How would you know you are just
+> doing a critical hypercall which should be preempted?
 
-If you think this is an implementation detail and this output clock
-should just be owned by the codec driver, even though I'm guessing it
-will just have to be the same as i2s, then I think we can drop this
-and make sure simple card (or whatever other codec driver) claims this
-clock.
+You would not, you're right. I was just trying to see if we could generalize
+an API for this to avoid having users having to create their own CPU variables
+but this all seems very specialized as we want to use this on the timer
+so if we do generalize a cond_resched_irq() perhaps the documentation can
+warn about this type of case or abuse.
 
-
->
-> We've not always done this for older systems due to the lack of a usable
-> clock API but that's starting to be addressed.
+  Luis
