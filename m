@@ -1,110 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaLCKL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:11:57 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35413 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751843AbaLCKLz (ORCPT
+	id S1752020AbaLCKNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:13:38 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54863 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaLCKNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:11:55 -0500
-Date: Wed, 3 Dec 2014 10:11:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Lyra Zhang <zhang.lyra@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Mark Brown <broonie@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        Wei Qiao =?utf-8?B?KOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Orson Zhai <orsonzhai@gmail.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        Mark Brown <broonie@kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-Message-ID: <20141203101109.GB11285@n2100.arm.linux.org.uk>
-References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <54761BFC.4020705@ti.com>
- <CAAfSe-u+g0mYGi9Adrd+YwwZ=q0-s79yCg_paB1UAVqFoufXEA@mail.gmail.com>
- <3212776.kDbe7yX4eX@wuerfel>
+	Wed, 3 Dec 2014 05:13:33 -0500
+Date: Wed, 3 Dec 2014 11:13:29 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        linux-api@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        zhangyanfei@cn.fujitsu.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH v17 1/7] mm: support madvise(MADV_FREE)
+Message-ID: <20141203101329.GB23236@dhcp22.suse.cz>
+References: <1413799924-17946-1-git-send-email-minchan@kernel.org>
+ <1413799924-17946-2-git-send-email-minchan@kernel.org>
+ <20141127144725.GB19157@dhcp22.suse.cz>
+ <20141130235652.GA10333@bbox>
+ <20141202100125.GD27014@dhcp22.suse.cz>
+ <20141203000026.GA30217@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3212776.kDbe7yX4eX@wuerfel>
+In-Reply-To: <20141203000026.GA30217@bbox>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 10:50:17AM +0100, Arnd Bergmann wrote:
-> On Wednesday 03 December 2014 17:17:13 Lyra Zhang wrote:
-> 
-> > 2014-11-27 2:29 GMT+08:00 Murali Karicheri <m-karicheri2@ti.com>:
-> > > How about sorting this includes? asm/irq.h go first followed linux/ in alphabatical order?
-> >
-> > There are a few compile warnings if I moved asm/irq.h to the top of
-> > all included files.
-> 
-> The order that Murali meant is
-> 
-> - first all linux/*.h headers, sorted alphabetically
-> - then all asm/*.h headers, again sorted alphabetically
-> 
-> This is the recommended style in general.
-> 
-> > Warning details are below:
+On Wed 03-12-14 09:00:26, Minchan Kim wrote:
+> On Tue, Dec 02, 2014 at 11:01:25AM +0100, Michal Hocko wrote:
+> > On Mon 01-12-14 08:56:52, Minchan Kim wrote:
+> > [...]
+> > > From 2edd6890f92fa4943ce3c452194479458582d88c Mon Sep 17 00:00:00 2001
+> > > From: Minchan Kim <minchan@kernel.org>
+> > > Date: Mon, 1 Dec 2014 08:53:55 +0900
+> > > Subject: [PATCH] madvise.2: Document MADV_FREE
+> > > 
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > ---
+> > >  man2/madvise.2 | 13 +++++++++++++
+> > >  1 file changed, 13 insertions(+)
+> > > 
+> > > diff --git a/man2/madvise.2 b/man2/madvise.2
+> > > index 032ead7..33aa936 100644
+> > > --- a/man2/madvise.2
+> > > +++ b/man2/madvise.2
+> > > @@ -265,6 +265,19 @@ file (see
+> > >  .BR MADV_DODUMP " (since Linux 3.4)"
+> > >  Undo the effect of an earlier
+> > >  .BR MADV_DONTDUMP .
+> > > +.TP
+> > > +.BR MADV_FREE " (since Linux 3.19)"
+> > > +Gives the VM system the freedom to free pages, and tells the system that
+> > > +information in the specified page range is no longer important.
+> > > +This is an efficient way of allowing
+> > > +.BR malloc (3)
 > > 
-> > In file included from drivers/tty/serial/sprd_serial.c:14:0:
-> > ./arch/arm64/include/asm/irq.h:6:39: warning: ‘struct pt_regs’
-> > declared inside parameter list [enabled by default]
-> >  extern void (*handle_arch_irq)(struct pt_regs *);
-> >                                        ^
-> > ./arch/arm64/include/asm/irq.h:6:39: warning: its scope is only this
-> > definition or declaration, which is probably not what you want
-> > [enabled by default]
-> > ./arch/arm64/include/asm/irq.h:8:54: warning: ‘struct pt_regs’
-> > declared inside parameter list [enabled by default]
-> >  extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
-> > 
+> > This might be rather misleading. Only some malloc implementations are
+> > using this feature (jemalloc, right?). So either be specific about which
+> > implementation or do not add it at all.
 > 
-> I would consider this a (minor) bug in asm/irq.h. If you don't mind,
-> please submit a patch to add a line with 'struct pt_regs;' to
-> asm/irq.h.
+> Make sense. I don't think it's a good idea to say specific example
+> in man page, which is rather arguable and limit the idea.
+> 
+> > 
+> > > +to free pages anywhere in the address space, while keeping the address space
+> > > +valid. The next time that the page is referenced, the page might be demand
+> > > +zeroed, or might contain the data that was there before the MADV_FREE call.
+> > > +References made to that address space range will not make the VM system page the
+> > > +information back in from backing store until the page is modified again.
+> > 
+> > I am not sure I understand the last sentence. So say I did MADV_FREE and
+> > the reclaim has dropped that page. I know that the file backed mappings
+> > are not supported yet but assume they were for a second... Now, I do
+> > read from that location again what is the result?
+> 
+> Zero page.
 
-A better question is: why is a modern driver using asm/irq.h in the
-first place.
+OK, it felt strange at first but now that I am thinking about it some
+more it starts making sense. So the semantic is: Either zero page
+(disconnected from the backing store) or the original content after
+madvise(MADV_FREE). The page gets connected to the backing store after
+it gets modified again. If this is the case then the sentence in the man
+page makes perfect sense.
 
-We used to include that file when platforms defined IRQ numbers
-statically, but modern platforms don't do that, so it shouldn't be
-required anymore.
+What made me confused was that I expected file backed pages would get a
+fresh page from the origin but this would be awkward I guess. 
+
+> > If we consider anon mappings then the backing store is misleading as
+> > well because memory was dropped and so always newly allocated.
+> 
+> When I read the sentence at first, I thought backing store means swap
+> so I don't have any trouble to understand it. But I agree your opinion.
+> Target for man page is not a kernel developer but application developer.
+> 
+> > I would rather drop the whole sentence and rather see an explanation
+> > what is the difference between to MADV_DONT_NEED.
+> > "
+> > Unlike MADV_DONT_NEED the memory is freed lazily e.g. when the VM system
+> > is under memory pressure.
+> > "
+> 
+> It's a good idea but I don't think it's enough. At least we should explan
+> cancel of delay free logic(ie, write). So, How about this?
+> 
+> MADV_FREE " (since Linux 3.19)"
+> 
+> Gives the VM system the freedom to free pages, and tells the system that
+> it's okay to free pages if the VM system has reasons(e.g., memory pressure).
+> So, it looks like delayed MADV_DONTNEED.
+> The next time that the page is referenced, the page might be demand
+> zeroed if the VM system freed the page. Otherwise, it might contain the data
+> that was there before the MADV_FREE call if the VM system didn't free the page.
+> New write in the page after the MADV_FREE call makes the VM system not free
+> the page any more.
+
+Dunno, I guess the original content was slightly better. Or the
+following wording from UNIX man pages is even more descriptive
+(http://www.lehman.cuny.edu/cgi-bin/man-cgi?madvise+3)
+"
+Tell the kernel that contents in the specified address range are no
+longer important and the range will be overwritten. When there is
+demand for memory, the system will free pages associated with the
+specified address range. In this instance, the next time a page in the
+address range is referenced, it will contain all zeroes.  Otherwise,
+it will con- tain the data that was there prior to the MADV_FREE
+call. References made to the address range will not make the system read
+from backing store (swap space) until the page is modified again.
+
+This value cannot be used on mappings that have underlying file objects.
+"
+
+I would just clarify the last sentence with addition
+(MAP_PRIVATE|MAP_ANONYMOUS mappings in this implementation). The
+difference to MADV_DONTNEED is more complicated now so I wouldn't make
+the text even more confusing.
+
+Anyway the confusion started on my end so feel free to stick with the
+BSD wording (modulo malloc note which is really confusing as the default
+glibc allocator doesn't do that AFAIK).
+
+> It works only with private anonymous pages (see mmap(2)).
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Michal Hocko
+SUSE Labs
