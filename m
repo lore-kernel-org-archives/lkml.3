@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaLCHvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:51:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2631 "EHLO mga01.intel.com"
+	id S1752540AbaLCHwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:52:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:15093 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431AbaLCHu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:50:57 -0500
+	id S1752416AbaLCHuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:50:55 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852546"
+   d="scan'208";a="631852505"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
         joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
         kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 23/25] KVM: Add the handler for Wake-up Vector
-Date: Wed,  3 Dec 2014 15:39:52 +0800
-Message-Id: <1417592394-24343-24-git-send-email-feng.wu@intel.com>
+Subject: [v2 21/25] KVM: Update Posted-Interrupts descriptor during vCPU scheduling
+Date: Wed,  3 Dec 2014 15:39:50 +0800
+Message-Id: <1417592394-24343-22-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
 References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
@@ -25,217 +25,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When vCPU is blocked and an external interrupts from assigned
-devices is delivered to it, VT-d Posted-Interrupts mechanism
-will deliver an interrupt to the associated physical CPU with
-Wake-up Vector. In its handler, we find the destination vCPU
-and wake up it.
+Update Posted-Interrupts descriptor according to the
+following rules:
+- Before vCPU block, set 'NV' to POSTED_INTR_WAKEUP_VECTOR
+- After vCPU block, set 'NV' back to POSTED_INTR_VECTOR
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +
- arch/x86/kvm/vmx.c              |   52 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/x86.c              |   22 +++++++++++-----
- include/linux/kvm_host.h        |    3 ++
- virt/kvm/kvm_main.c             |    3 ++
- 5 files changed, 75 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    5 ++
+ arch/x86/kvm/vmx.c              |   83 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kvm/x86.c              |   16 +++++++
+ virt/kvm/kvm_main.c             |   11 +++++
+ 4 files changed, 115 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 2fd85a5..76fc32d 100644
+index 6878429..2fd85a5 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -101,6 +101,8 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
+@@ -775,6 +775,8 @@ struct kvm_x86_ops {
  
- #define ASYNC_PF_PER_VCPU 64
- 
-+extern void (*wakeup_handler_callback)(void);
-+
- enum kvm_reg {
- 	VCPU_REGS_RAX = 0,
- 	VCPU_REGS_RCX = 1,
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index e71bf3b..dc6fd84 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -822,6 +822,13 @@ static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
- static DEFINE_PER_CPU(struct list_head, loaded_vmcss_on_cpu);
- static DEFINE_PER_CPU(struct desc_ptr, host_gdt);
- 
-+/*
-+ * We maintian a per-CPU linked-list of VCPU, so in wakeup_handler() we
-+ * can find which VCPU should be waken up.
-+ */
-+static DEFINE_PER_CPU(struct list_head, blocked_vcpu_on_cpu);
-+static DEFINE_PER_CPU(spinlock_t, blocked_vcpu_on_cpu_lock);
-+
- static unsigned long *vmx_io_bitmap_a;
- static unsigned long *vmx_io_bitmap_b;
- static unsigned long *vmx_msr_bitmap_legacy;
-@@ -2813,6 +2820,8 @@ static int hardware_enable(void)
- 		return -EBUSY;
- 
- 	INIT_LIST_HEAD(&per_cpu(loaded_vmcss_on_cpu, cpu));
-+	INIT_LIST_HEAD(&per_cpu(blocked_vcpu_on_cpu, cpu));
-+	spin_lock_init(&per_cpu(blocked_vcpu_on_cpu_lock, cpu));
- 
- 	/*
- 	 * Now we can enable the vmclear operation in kdump
-@@ -9177,6 +9186,7 @@ static int vmx_vcpu_pre_block(struct kvm_vcpu *vcpu)
- 	struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
- 	struct pi_desc old;
- 	struct pi_desc new;
-+	unsigned long flags;
- 
- 	if (!irq_remapping_cap(IRQ_POSTING_CAP))
- 		return 0;
-@@ -9216,9 +9226,22 @@ static int vmx_vcpu_pre_block(struct kvm_vcpu *vcpu)
- 
- 		/* set 'NV' to 'wakeup vector' */
- 		new.nv = POSTED_INTR_WAKEUP_VECTOR;
-+
-+		/*
-+		 * We should save physical cpu id here, vcpu->cpu may
-+		 * be changed due to preemption, in that case, this
-+		 * do-while loop will run again.
-+		 */
-+		vcpu->wakeup_cpu = vcpu->cpu;
- 	} while (cmpxchg(&pi_desc->control, old.control, new.control)
- 			!= old.control);
- 
-+	spin_lock_irqsave(&per_cpu(blocked_vcpu_on_cpu_lock,
-+			vcpu->wakeup_cpu), flags);
-+	list_add_tail(&vcpu->blocked_vcpu_list,
-+			&per_cpu(blocked_vcpu_on_cpu, vcpu->wakeup_cpu));
-+	spin_unlock_irqrestore(&per_cpu(blocked_vcpu_on_cpu_lock,
-+			vcpu->wakeup_cpu), flags);
- 	return 0;
- }
- 
-@@ -9228,6 +9251,7 @@ static void vmx_vcpu_post_block(struct kvm_vcpu *vcpu)
- 	struct pi_desc old;
- 	struct pi_desc new;
- 	unsigned int dest = 0;
-+	unsigned long flags;
- 
- 	if (!irq_remapping_cap(IRQ_POSTING_CAP))
- 		return;
-@@ -9249,6 +9273,13 @@ static void vmx_vcpu_post_block(struct kvm_vcpu *vcpu)
- 	} while (cmpxchg(&pi_desc->control, old.control, new.control)
- 			!= old.control);
- 
-+	spin_lock_irqsave(&per_cpu(blocked_vcpu_on_cpu_lock,
-+				vcpu->wakeup_cpu), flags);
-+	list_del(&vcpu->blocked_vcpu_list);
-+	spin_unlock_irqrestore(&per_cpu(blocked_vcpu_on_cpu_lock,
-+				vcpu->wakeup_cpu), flags);
-+	vcpu->wakeup_cpu = -1;
-+
- 	pi_clear_sn(pi_desc);
- }
- 
-@@ -9366,6 +9397,25 @@ static struct kvm_x86_ops vmx_x86_ops = {
- 	.vcpu_post_block = vmx_vcpu_post_block,
+ 	void (*sched_in)(struct kvm_vcpu *kvm, int cpu);
+ 	u64 (*get_pi_desc_addr)(struct kvm_vcpu *vcpu);
++	int (*vcpu_pre_block)(struct kvm_vcpu *vcpu);
++	void (*vcpu_post_block)(struct kvm_vcpu *vcpu);
  };
  
-+/*
-+ * Handler for POSTED_INTERRUPT_WAKEUP_VECTOR.
-+ */
-+void wakeup_handler(void)
+ struct kvm_arch_async_pf {
+@@ -1100,4 +1102,7 @@ void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
+ bool kvm_find_dest_vcpu(struct kvm *kvm, struct kvm_lapic_irq *irq,
+ 			struct kvm_vcpu **dest_vcpu);
+ 
++int kvm_arch_vcpu_pre_block(struct kvm_vcpu *vcpu);
++void kvm_arch_vcpu_post_block(struct kvm_vcpu *vcpu);
++
+ #endif /* _ASM_X86_KVM_HOST_H */
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 81f239b..a1966b9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -9147,6 +9147,86 @@ static void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
+ 		shrink_ple_window(vcpu);
+ }
+ 
++static int vmx_vcpu_pre_block(struct kvm_vcpu *vcpu)
 +{
-+	struct kvm_vcpu *vcpu;
-+	int cpu = smp_processor_id();
++	struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
++	struct pi_desc old;
++	struct pi_desc new;
 +
-+	spin_lock(&per_cpu(blocked_vcpu_on_cpu_lock, cpu));
-+	list_for_each_entry(vcpu, &per_cpu(blocked_vcpu_on_cpu, cpu),
-+			blocked_vcpu_list) {
-+		struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
++	if (!irq_remapping_cap(IRQ_POSTING_CAP))
++		return 0;
 +
-+		if (pi_test_on(pi_desc) == 1)
-+			kvm_vcpu_kick(vcpu);
-+	}
-+	spin_unlock(&per_cpu(blocked_vcpu_on_cpu_lock, cpu));
++	memset(&old, 0, sizeof(old));
++	memset(&new, 0, sizeof(new));
++
++	do {
++		old.control = new.control = pi_desc->control;
++
++		/*
++		 * A posted-interrupt happened in the one of the
++		 * following two cases:
++		 * 1. After the latest pir-to-virr sync operation
++		 * in kvm_arch_vcpu_runnable() function
++		 * 2. In this do-while() loop, a posted-interrupt
++		 * occurs.
++		 *
++		 * For either of above cases, we should not block
++		 * the VCPU.
++		 */
++		if (pi_test_on(pi_desc) == 1) {
++			/*
++			 * Need to set this flag, then the inject will
++			 * be synced from PIR to vIRR before VM-ENTRY.
++			 * In fact, for guest IPI case, in function
++			 * vmx_deliver_posted_interrupt(), this flags
++			 * has already been set, but if the interrupt
++			 * is injected by VT-d PI hardware, we need
++			 * to set this.
++			 */
++			kvm_make_request(KVM_REQ_EVENT, vcpu);
++			return 1;
++		}
++
++		pi_clear_sn(&new);
++
++		/* set 'NV' to 'wakeup vector' */
++		new.nv = POSTED_INTR_WAKEUP_VECTOR;
++	} while (cmpxchg(&pi_desc->control, old.control, new.control)
++			!= old.control);
++
++	return 0;
 +}
 +
- static int __init vmx_init(void)
- {
- 	int r, i, msr;
-@@ -9480,6 +9530,8 @@ static int __init vmx_init(void)
- 
- 	update_ple_window_actual_max();
- 
-+	wakeup_handler_callback = wakeup_handler;
++static void vmx_vcpu_post_block(struct kvm_vcpu *vcpu)
++{
++	struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
++	struct pi_desc old;
++	struct pi_desc new;
++	unsigned int dest = 0;
 +
- 	return 0;
++	if (!irq_remapping_cap(IRQ_POSTING_CAP))
++		return;
++
++	pi_set_sn(pi_desc);
++
++	do {
++		old.control = new.control = pi_desc->control;
++
++		dest = cpu_physical_id(vcpu->cpu);
++
++		if (x2apic_enabled())
++			new.ndst = dest;
++		else
++			new.ndst = (dest << 8) & 0xFF00;
++
++		/* set 'NV' to 'notification vector' */
++		new.nv = POSTED_INTR_VECTOR;
++	} while (cmpxchg(&pi_desc->control, old.control, new.control)
++			!= old.control);
++
++	pi_clear_sn(pi_desc);
++}
++
+ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.cpu_has_kvm_support = cpu_has_kvm_support,
+ 	.disabled_by_bios = vmx_disabled_by_bios,
+@@ -9256,6 +9336,9 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.sched_in = vmx_sched_in,
  
- out7:
+ 	.get_pi_desc_addr = vmx_get_pi_desc_addr,
++
++	.vcpu_pre_block = vmx_vcpu_pre_block,
++	.vcpu_post_block = vmx_vcpu_post_block,
+ };
+ 
+ static int __init vmx_init(void)
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9706984..37dd307 100644
+index 0033df3..9706984 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -6152,6 +6152,21 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			kvm_vcpu_reload_apic_access_page(vcpu);
- 	}
+@@ -7731,6 +7731,22 @@ bool kvm_arch_has_noncoherent_dma(struct kvm *kvm)
+ }
+ EXPORT_SYMBOL_GPL(kvm_arch_has_noncoherent_dma);
  
-+	/*
-+	 * Since posted-interrupts can be set by VT-d HW now, in this
-+	 * case, KVM_REQ_EVENT is not set. We move the following
-+	 * operations out of the if statement.
-+	 */
-+	if (kvm_lapic_enabled(vcpu)) {
-+		/*
-+		 * Update architecture specific hints for APIC
-+		 * virtual interrupt delivery.
-+		 */
-+		if (kvm_x86_ops->hwapic_irr_update)
-+			kvm_x86_ops->hwapic_irr_update(vcpu,
-+				kvm_lapic_find_highest_irr(vcpu));
-+	}
++int kvm_arch_vcpu_pre_block(struct kvm_vcpu *vcpu)
++{
++	if (kvm_x86_ops->vcpu_pre_block)
++		return kvm_x86_ops->vcpu_pre_block(vcpu);
 +
- 	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
- 		kvm_apic_accept_events(vcpu);
- 		if (vcpu->arch.mp_state == KVM_MP_STATE_INIT_RECEIVED) {
-@@ -6168,13 +6183,6 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			kvm_x86_ops->enable_irq_window(vcpu);
- 
- 		if (kvm_lapic_enabled(vcpu)) {
--			/*
--			 * Update architecture specific hints for APIC
--			 * virtual interrupt delivery.
--			 */
--			if (kvm_x86_ops->hwapic_irr_update)
--				kvm_x86_ops->hwapic_irr_update(vcpu,
--					kvm_lapic_find_highest_irr(vcpu));
- 			update_cr8_intercept(vcpu);
- 			kvm_lapic_sync_to_vapic(vcpu);
- 		}
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 8d06678..a1cb764 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -239,6 +239,9 @@ struct kvm_vcpu {
- 	unsigned long requests;
- 	unsigned long guest_debug;
- 
-+	int wakeup_cpu;
-+	struct list_head blocked_vcpu_list;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_arch_vcpu_pre_block);
 +
- 	struct mutex mutex;
- 	struct kvm_run *run;
- 
++void kvm_arch_vcpu_post_block(struct kvm_vcpu *vcpu)
++{
++	if (kvm_x86_ops->vcpu_post_block)
++		kvm_x86_ops->vcpu_post_block(vcpu);
++}
++EXPORT_SYMBOL_GPL(kvm_arch_vcpu_post_block);
++
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 1be1a45..fb3e504 100644
+index 25ffac9..1be1a45 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -224,6 +224,9 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
- 	init_waitqueue_head(&vcpu->wq);
- 	kvm_async_pf_vcpu_init(vcpu);
+@@ -1754,7 +1754,18 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+ 		if (signal_pending(current))
+ 			break;
  
-+	vcpu->wakeup_cpu = -1;
-+	INIT_LIST_HEAD(&vcpu->blocked_vcpu_list);
++#ifdef CONFIG_X86
++		if (kvm_arch_vcpu_pre_block(vcpu) == 1) {
++			kvm_make_request(KVM_REQ_UNHALT, vcpu);
++			break;
++		}
++#endif
 +
- 	page = alloc_page(GFP_KERNEL | __GFP_ZERO);
- 	if (!page) {
- 		r = -ENOMEM;
+ 		schedule();
++
++#ifdef CONFIG_X86
++		kvm_arch_vcpu_post_block(vcpu);
++#endif
+ 	}
+ 
+ 	finish_wait(&vcpu->wq, &wait);
 -- 
 1.7.1
 
