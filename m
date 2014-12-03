@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaLCHP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:15:29 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:42895 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaLCHP1 (ORCPT
+	id S1751807AbaLCHUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:20:05 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:59738 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaLCHUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:15:27 -0500
-Message-ID: <1417590925.5303.127.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next] r8152: reduce memory copy for rx
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Date: Tue, 02 Dec 2014 23:15:25 -0800
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2ED360A@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-105-Taiwan-albertk@realtek.com>
-	 <1417586858.5303.118.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <0835B3720019904CB8F7AA43166CEEB2ED360A@RTITMBSV03.realtek.com.tw>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Dec 2014 02:20:01 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: lgirdwood@gmail.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <00c818d4850f980e32e9a198831dbf9a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Jianqun Xu <jay.xu@rock-chips.com>
+To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        sonnyrao@chromium.org, heiko@sntech.de
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, Jianqun Xu <jay.xu@rock-chips.com>
+Subject: [PATCH v2 0/2] ASoC: rockchip: i2s: driver could output "i2s-clk-out" optionally
+Date: Wed,  3 Dec 2014 15:18:36 +0800
+Message-Id: <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
+References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 07:05 +0000, Hayes Wang wrote:
-> Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-> > Sent: Wednesday, December 03, 2014 2:08 PM
-> [...]
-> > Better performance for what workload exactly ?
-> 
-> I test it by using Chariot with 4 Tx and 4 Rx.
-> It has about 4% improvement.
-> 
+Clock generate unit in rockchip SoCs could generate clock named "i2s-clk-out"
+separate from clock named "i2s-hclk", which is for i2s controller.
 
-Have you tried using more concurrent RX flows, in a possibly lossy
-environment (so that TCP is forced to queue packets in out of order
-queue) ?
+Since there may not need the "i2s-clk-out" outside, we make it optional in
+driver, that could be decided in dts by add "i2s-clk-out" or not.
 
-> > cloning in rx path has many drawbacks, with skb->truesize 
-> > being usually wrong.
-> 
-> Excuse me. I find the skb_clone() would copy the
-> truesize from original skb. Do you mean the value
-> may not be suitable for the cloned skb?
+Tested on devices based on rk3288 with max98090 codec.
 
-With cloning, (skb->len / skb->truesize) will eventually be very very
-small, forcing TCP stack to perform collapses (copies !!!) under
-pressure.
+Jianqun Xu (1):
+  ASoC: dt-bindings: rockchip-i2s: add an optional property
+    "i2s_clk_out"
 
-> 
-> Could other method do the same thing? Or, do you
-> think keeping the original one is better?
+Sonny Rao (1):
+  ASoC: rockchip: i2s: add support for grabbing output clock to codec
 
+ Documentation/devicetree/bindings/sound/rockchip-i2s.txt |  8 ++++++--
+ sound/soc/rockchip/rockchip_i2s.c                        | 13 +++++++++++++
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
-skb cloning prevents GRO and TCP coalescing from working.
+--
+changes since v1:
+- rework with patches commit message, reference to old commit message of the
+same related files.
+- generate patch again by apply sonny's patch
+- fix blank line in driver, suggested by Heiko and Doug, so add my owner
+singed-off-by
 
-netfilter might also be forced to copy whole frame in case a mangle is
-needed (eg with NAT ...)
-
-I would rather try to implement GRO, and/or using fragments instead of
-pure linear skbs.
-
-(skb->head would be around 128 or 256 bytes, and you attach to skb the
-frame as a page fragment)
-
+1.9.1
 
 
