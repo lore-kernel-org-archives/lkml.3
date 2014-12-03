@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaLCLlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:41:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54685 "EHLO mx2.suse.de"
+	id S1752566AbaLCL1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:27:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54686 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaLCL1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:39 -0500
+	id S1752474AbaLCL10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:26 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 076/101] pcmcia: at91_cf: fix deferred probe from __init
-Date: Wed,  3 Dec 2014 12:26:38 +0100
-Message-Id: <ae04c8258c710aefb297b079a84ccbec318822d4.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 035/101] drm/radeon: make sure mode init is complete in bandwidth_update
+Date: Wed,  3 Dec 2014 12:25:57 +0100
+Message-Id: <30c45d8c1094fa14ef7180bbd5cf3af33b49f1c8.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -24,69 +22,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 16a7c7cfd21cca8a260b63467e4f5c6a6d548b09 upstream.
+commit 8efe82ca908400785253c8f0dfcf301e6bd93488 upstream.
 
-Move probe out of __init section and don't use platform_driver_probe
-which cannot be used with deferred probing.
+The power management code calls into the display code for
+certain things.  If certain power management sysfs attributes
+are called before the driver has finished initializing all of
+the hardware we can run into problems with uninitialized
+modesetting state.  Add a check to make sure modesetting
+init has completed to the bandwidth update callbacks to
+fix this.  Can be triggered by the tlp and laptop start
+up scripts depending on the timing.
 
-Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
-this driver might return -EPROBE_DEFER if a gpio_request fails.
+bugs:
+https://bugzilla.kernel.org/show_bug.cgi?id=83611
+https://bugs.freedesktop.org/show_bug.cgi?id=85771
 
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/pcmcia/at91_cf.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/cik.c       | 3 +++
+ drivers/gpu/drm/radeon/evergreen.c | 3 +++
+ drivers/gpu/drm/radeon/r100.c      | 3 +++
+ drivers/gpu/drm/radeon/rs600.c     | 3 +++
+ drivers/gpu/drm/radeon/rs690.c     | 3 +++
+ drivers/gpu/drm/radeon/rv515.c     | 3 +++
+ drivers/gpu/drm/radeon/si.c        | 3 +++
+ 7 files changed, 21 insertions(+)
 
-diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index b8f5acf02261..de24232c5191 100644
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -245,7 +245,7 @@ static int at91_cf_dt_init(struct platform_device *pdev)
- }
- #endif
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 8cefe1cf7df7..0fc5fd6b3b41 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -8105,6 +8105,9 @@ void dce8_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
--static int __init at91_cf_probe(struct platform_device *pdev)
-+static int at91_cf_probe(struct platform_device *pdev)
- {
- 	struct at91_cf_socket	*cf;
- 	struct at91_cf_data	*board = pdev->dev.platform_data;
-@@ -354,7 +354,7 @@ fail0a:
- 	return status;
- }
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
  
--static int __exit at91_cf_remove(struct platform_device *pdev)
-+static int at91_cf_remove(struct platform_device *pdev)
- {
- 	struct at91_cf_socket	*cf = platform_get_drvdata(pdev);
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 7ca58fc7a1c6..9e726f2d2e75 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2312,6 +2312,9 @@ void evergreen_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
-@@ -404,14 +404,13 @@ static struct platform_driver at91_cf_driver = {
- 		.owner		= THIS_MODULE,
- 		.of_match_table = of_match_ptr(at91_cf_dt_ids),
- 	},
--	.remove		= __exit_p(at91_cf_remove),
-+	.probe		= at91_cf_probe,
-+	.remove		= at91_cf_remove,
- 	.suspend	= at91_cf_suspend,
- 	.resume		= at91_cf_resume,
- };
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
  
--/*--------------------------------------------------------------------------*/
--
--module_platform_driver_probe(at91_cf_driver, at91_cf_probe);
-+module_platform_driver(at91_cf_driver);
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index d71333033b2b..f98dcbeb9a72 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3189,6 +3189,9 @@ void r100_bandwidth_update(struct radeon_device *rdev)
+ 	uint32_t pixel_bytes1 = 0;
+ 	uint32_t pixel_bytes2 = 0;
  
- MODULE_DESCRIPTION("AT91 Compact Flash Driver");
- MODULE_AUTHOR("David Brownell");
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled) {
+diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
+index e0daa4fdb073..bbe84591f159 100644
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -826,6 +826,9 @@ void rs600_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d2mode_priority_a_cnt;
+ 	/* FIXME: implement full support */
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index 3c38f0af78fb..d33b4ad39b25 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -585,6 +585,9 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d1mode_priority_b_cnt;
+ 	u32 d2mode_priority_a_cnt, d2mode_priority_b_cnt;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 873eb4b193b4..9de81c5487e9 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1279,6 +1279,9 @@ void rv515_bandwidth_update(struct radeon_device *rdev)
+ 	struct drm_display_mode *mode0 = NULL;
+ 	struct drm_display_mode *mode1 = NULL;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 53769e9cf595..50482e763d80 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2230,6 +2230,9 @@ void dce6_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
 -- 
 2.1.3
 
