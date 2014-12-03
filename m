@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaLCJJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:09:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51813 "EHLO mx2.suse.de"
+	id S1751792AbaLCJLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:11:41 -0500
+Received: from mout.web.de ([212.227.15.3]:63871 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaLCJJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:09:32 -0500
-Date: Wed, 3 Dec 2014 10:09:28 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Pali =?UTF-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-Message-ID: <20141203100928.14d23c9f@endymion.delvare>
-In-Reply-To: <547DCC15.70300@roeck-us.net>
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
-	<201411291849.44032@pali>
-	<20141129175152.GA32510@kroah.com>
-	<201411291904.07644@pali>
-	<1417526599.15239.7.camel@chaos.site>
-	<547DCC15.70300@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1750845AbaLCJLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 04:11:39 -0500
+Message-ID: <547ED391.1050507@users.sourceforge.net>
+Date: Wed, 03 Dec 2014 10:10:41 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Kevin Hilman <khilman@deeprootsystems.com>,
+        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: ARM: DaVinci: Deletion of an unnecessary check before the function
+ call "__clk_disable"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547EC6B8.6000001@users.sourceforge.net>
+In-Reply-To: <547EC6B8.6000001@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ZRW62UWrEgR4QCZ5VC9osnBSaczgVh+8cs9Qp0Zj7OdBTtuL16T
+ R7YDT1iHM7Mgg74QTEbITrSn1w057klHuDOxumPPzDkduZjmlYa6VlogBH0RPfNsvYiSlTX
+ P8DjWLvqfP5owFjJh6vI82/A7fmnn59GdMP7MolaWRXNVvL3uyqQx22Yx1QBK+YtEDZFCqp
+ pavtNihmXfSZd6tQaPBhw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+> The __clk_disable() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 
-On Tue, 02 Dec 2014 06:26:29 -0800, Guenter Roeck wrote:
-> On 12/02/2014 05:23 AM, Jean Delvare wrote:
-> > Ultimately /proc/i8k should be killed altogether and every function
-> > should use the appropriate standard interface. But I don't have any Dell
-> > laptop around so I won't go into that myself.
->
-> The only function not covered by hwmon, as far as I can see, is reading
-> the "Fn key" status, whatever that is, and reporting the power status
-> (AC or battery).
-> 
-> The first seems to be covered by the already existing dell drivers in
-> platform/x86. The latter must be covered as well; Linux does
-> display the correct power status on all my Dell laptops.
+I was a bit too quick to send you this notification. I stumbled once more
+on the detail that my source code analysis approach is incomplete for
+static functions so far.
 
-How old are they? The i8k driver is ancestral, so I could imagine that
-i8k is the only way to report power status on very old Dell laptop
-models. Or maybe not, I just don't know.
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/arm/mach-davinci/clock.c?id=a7ca2bcf2d2ef15c343a12f2a4c2e06380a0f495#n47
+https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/drivers/clk/clk.c?id=4dc7ed32f398fa76b9e1d243a852420b1dad0150#n846
 
-> Changing the ABI is not supposed to happen, so I am not sure if we can
-> just drop the /proc interface.
+I would like to apologise for confusion I introduced here.
 
-Dropping deprecated interfaces after a transition period is not so
-uncommon. AFAIK the proc interface of i8k is only used by the i8kutils
-user-space package, which FWIW is no longer part of openSUSE. The
-dell-laptop and dell-wmi drivers are almost 6 years old, that looks
-like an already very comfortable transition period to me.
+Regards,
+Markus
 
-That being said, that's only my opinion and I'm not going to fight for
-this. If the hwmon interface is moved to dell-laptop and i8k is killed,
-I'm happy. If the i8k driver is moved to drivers/hwmon and stripped
-down, I'm happy. But if none of this happens, I don't really care, to
-be honest.
-
--- 
-Jean Delvare
-SUSE L3 Support
