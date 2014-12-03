@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaLCQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:01:09 -0500
-Received: from mout.web.de ([212.227.17.11]:55572 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaLCQBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:01:07 -0500
-Message-ID: <547F33AC.50002@users.sourceforge.net>
-Date: Wed, 03 Dec 2014 17:00:44 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752186AbaLCQBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:01:43 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:44659 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaLCQBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:01:41 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: galak@codeaurora.org
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <ea2cbc05e1a3a80794a1154849ed237c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547F33D5.2000905@rock-chips.com>
+Date: Thu, 04 Dec 2014 00:01:25 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Coccinelle <cocci@systeme.lip6.fr>, backports@vger.kernel.org,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: [patch] CodingStyle: add some more error handling guidelines
-References: <20141202085950.GA13434@mwanda> <547F0297.6030202@users.sourceforge.net> <20141203124511.GR5048@mwanda> <547F0977.7090908@users.sourceforge.net> <20141203132002.GT5048@mwanda> <547F0F2A.3060708@users.sourceforge.net> <547F1942.5060502@broadcom.com>
-In-Reply-To: <547F1942.5060502@broadcom.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:a3KXUwfNusSYGa4+WA1GSWoXAuJ7y0/3XFrBNealyxzn+6vuiFn
- cWpGGjXvoBTHJ1lgV4ZM7GQdPyPcpglm9VPYavF0+AfA+bBHCy/5FlFBsuy4mqm0wIgiJMa
- QRNI+7vfCr/CuC8ydChmop07yHCSL6v1sc9tRedXfYHfYCa04hZlQgTu5Yo/fMUAIB4E4MT
- IxfGzJb649/T3CvlXXjiw==
-X-UI-Out-Filterresults: notjunk:1;
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v16 05/12] drm: imx: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
+References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com> <1417620732-30593-1-git-send-email-andy.yan@rock-chips.com> <20141203154503.GD11285@n2100.arm.linux.org.uk>
+In-Reply-To: <20141203154503.GD11285@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Which name pattern do you find more appropriate in such
->> an use case?
-> 
-> I think Dan wants the label to be descriptive about the tasks
-> needed in the exception handling itself.
+Hi Russell:
 
-I would usually prefer also such a target-oriented labelling
-for the affected identifiers.
-How are the chances to express an expectation in this direction
-unambiguously for the proposed coding style update?
+On 2014年12月03日 23:45, Russell King - ARM Linux wrote:
+> On Wed, Dec 03, 2014 at 11:32:12PM +0800, Andy Yan wrote:
+>> diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
+>> index 884923f..26162ef 100644
+>> --- a/drivers/gpu/drm/bridge/Kconfig
+>> +++ b/drivers/gpu/drm/bridge/Kconfig
+>> @@ -3,3 +3,8 @@ config DRM_PTN3460
+>>   	depends on DRM
+>>   	select DRM_KMS_HELPER
+>>   	---help---
+>> +
+>> +config DRM_DW_HDMI
+>> +	bool "Synopsys DesignWare High-Definition Multimedia Interface"
+>> +	depends on DRM
+>> +	select DRM_KMS_HELPER
+> ...
+>> diff --git a/drivers/gpu/drm/imx/Kconfig b/drivers/gpu/drm/imx/Kconfig
+>> index 82fb758..7070077 100644
+>> --- a/drivers/gpu/drm/imx/Kconfig
+>> +++ b/drivers/gpu/drm/imx/Kconfig
+>> @@ -48,6 +48,7 @@ config DRM_IMX_IPUV3
+>>   
+>>   config DRM_IMX_HDMI
+>>   	tristate "Freescale i.MX DRM HDMI"
+>> +	select DRM_DW_HDMI
+>>   	depends on DRM_IMX
+>>   	help
+>>   	  Choose this if you want to use HDMI on i.MX6.
+> I'd recommend that if you want to select DRM_DW_HDMI, then don't give
+> DRM_DW_HDMI a prompt message.  I assume you're going to do something
+> similar with your Rockchip driver too - in which case DRM_DW_HDMI is
+> really about building a library module.
+   Do you mean I just neet to do like bellow?
+
++
++config DRM_DW_HDMI
++	bool
++	depends on DRM
++	select DRM_KMS_HELPER
 
 
-> This makes sense as the exception handling steps may be reused
-> for different failures in the code.
 
-I would stress a different reason from my point of view.
-
-Regards,
-Markus
