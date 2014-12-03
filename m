@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaLCMdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 07:33:49 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43398 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173AbaLCMdi (ORCPT
+	id S1752730AbaLCMeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 07:34:08 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:25792 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbaLCMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 07:33:38 -0500
-Date: Wed, 3 Dec 2014 13:33:36 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Miguel Oliveira <cmroliv@gmail.com>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: patch "staging: remove nokia_hp4p driver
-Message-ID: <20141203123336.GA31708@amd>
-References: <14094295422869@kroah.com>
- <20140830213022.GA17147@amd>
- <20140830220417.GA15000@kroah.com>
- <20140830224430.GA19622@amd>
- <B39194F7-2057-4D14-A3F7-EB6E73BF84F8@holtmann.org>
- <20140831095147.GB24601@amd>
- <4CA4FD0A-C167-4A12-A137-766CB3A2D5D5@holtmann.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA4FD0A-C167-4A12-A137-766CB3A2D5D5@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Dec 2014 07:34:04 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-6a-547f033a0f93
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        Inki Dae <inki.dae@samsung.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
+        Daniel Drake <drake@endlessm.com>, Andrzej Hajda <a.hajda@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH v2 2/7] ARM: Exynos: add support for sub-power domains
+Date: Wed, 03 Dec 2014 13:33:44 +0100
+Message-id: <1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
+References: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xq7pWzPUhBgdmGFjcWneO1aLhaojF
+	o/mPmS2e3drLZDHp/gQWi/7Hr5ktNj2+xmpxedccNosZ5/cxWXT9/MlmsfbIXXaLRVu/sFus
+	2vWH0eL42nAHPo9F37M8ds66y+6xeNN+No9NqzrZPO5c28PmcehwB6PH5iX1Hn1bVjF6fN4k
+	F8AZxWWTkpqTWZZapG+XwJVxf+151oK/ghWnl1c0MP7g62Lk5JAQMJFYP283O4QtJnHh3nq2
+	LkYuDiGBpYwSEzuvsEI4fUwSt24/ZwWpYhMwlOh628UGYosIZEv8+DaZBaSIWWALs8TcW//A
+	RgkLuEns2PMNzGYRUJVYfnE7cxcjBwevgIfEj70xENvkJP6/XMEEYnMKuEg83fOEBcQWEnCW
+	+LV2H/sERt4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJC9+sOxqXHrA4xCnAwKvHw
+	OryrCRFiTSwrrsw9xCjBwawkwvvsW12IEG9KYmVValF+fFFpTmrxIUYmDk6pBkYhnjgZlhr5
+	k85T025nxz+vnqx74vqGoEnrpxzfd3L1DZlF/xYs5Kg5v7Jvq5SbKddz9qBTWZebGJbfyDte
+	1WJcbiy5NO2A/67zdX+tLnfNCBTPvnGhWjNhxuL3vv5hYZ9ml8xPFtuvufPk7ynmyZFsN+Yv
+	qWFNvSreusByWqVFO0vdOoM17u5KLMUZiYZazEXFiQCuP+nuOwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This patch adds support for making one power domain a sub-domain of
+other domain. This is useful for modeling power dependences for devices
+like TV Mixer or Camera ISP, which needs to have more than one power
+domain enabled to be operational.
 
-> > "These are a lot of public functions. Are they all really needed or can
-> > the code be done smart."
-> > 
-> > in TODO file.
-> 
-> so what about all the other really major details that needed fixing. I mean anybody who was compiling for OMAP platform could have fixed the tons and tons of inlines quickly.
-> 
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ Documentation/devicetree/bindings/arm/exynos/power_domain.txt |  2 ++
+ arch/arm/mach-exynos/pm_domains.c                             | 11 ++++++++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-Do you have n900 nearby? You are welcome to try...
-
-Unfortunately, it is not exactly easy. v3.18 with USB patch works with
-nfsroot, which makes development possible (good).
-
-Some core (or omap) change broke h4p between 3.15 and 3.16. Bisect
-will not be fun, I suspect.
-
-> > (Also hopefully get some testing from
-> > n900 community; code is more
-> > visible in staging).
-> 
-> The problem is that they are testing the wrong thing. And lets face it, we already knew this driver works since Nokia shipped it in products.
->
-
-Except that it does not :-(. Apparently not even place in staging was
-enough to get regular testing... but at least it will help bisect.
-
-> > I attempted hdev->setup conversion, but could not figure it out till
-> > now. Clearly it needs to be done.
-> > 
-> > For doing that, it would be good to have userland to work with, and
-> > yes it takes time. (Debugging on 4" screen sucks.)
-> 
-> Actually hdev->setup does not need any userland. As long as request_firmware() works, you are just fine. And since the driver already uses that in the first place, I assume it works.
-> 
-
-Without working serial port, you can't really debug without
-userland. Not on machine that lacks shift-pgup.
-
-									Pavel
-
+diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+index abde1ea8a119..b884358ebb1a 100644
+--- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
++++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+@@ -22,6 +22,8 @@ Optional Properties:
+ 	- pclkN, clkN: Pairs of parent of input clock and input clock to the
+ 		devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
+ 		are supported currently.
++- samsung,power-domain: phandle to a master power domain that the given domain
++		       is a part of
+ 
+ Node of a device using power domains must have a samsung,power-domain property
+ defined with a phandle to respective power domain.
+diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+index 20f267121b3e..fa9a47ddad81 100644
+--- a/arch/arm/mach-exynos/pm_domains.c
++++ b/arch/arm/mach-exynos/pm_domains.c
+@@ -108,7 +108,7 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+ static __init int exynos4_pm_init_power_domain(void)
+ {
+ 	struct platform_device *pdev;
+-	struct device_node *np;
++	struct device_node *np, *master_np;
+ 
+ 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+ 		struct exynos_pm_domain *pd;
+@@ -159,6 +159,15 @@ no_clk:
+ 
+ 		pm_genpd_init(&pd->pd, NULL, !on);
+ 		of_genpd_add_provider_simple(np, &pd->pd);
++
++		/* make master and slave hierarchy */
++		master_np = of_parse_phandle(np, "samsung,power-domain", 0);
++		if (!master_np)
++			master_np = of_parse_phandle(np, "power-domains", 0);
++		if (master_np) {
++			pm_genpd_add_subdomain_names(master_np->name, np->name);
++			of_node_put(master_np);
++		}
+ 	}
+ 
+ 	return 0;
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.2
+
