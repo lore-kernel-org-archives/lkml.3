@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaLCJPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:15:38 -0500
-Received: from smtprelay0048.hostedemail.com ([216.40.44.48]:33893 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750855AbaLCJPf (ORCPT
+	id S1751834AbaLCJQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:16:37 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:62802 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaLCJQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:15:35 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3867:3868:3870:3871:3872:3874:4321:4362:4385:4605:5007:6261:7576:7875:7903:9040:10004:10400:10402:10407:10848:10967:11026:11232:11658:11914:12049:12296:12438:12517:12519:12555:12740:14096:14097:19901:19997:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shop19_137f87c380145
-X-Filterd-Recvd-Size: 2896
-Date: Wed, 3 Dec 2014 04:15:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: byungchul.park@lge.com
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH v6] tracing: add additional marks to signal very large
- time
-Message-ID: <20141203041533.6ce4f9d0@gandalf.local.home>
-In-Reply-To: <1416789259-24038-1-git-send-email-byungchul.park@lge.com>
-References: <1416789259-24038-1-git-send-email-byungchul.park@lge.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 3 Dec 2014 04:16:35 -0500
+Date: Wed, 3 Dec 2014 14:45:01 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Fred Chou <fred.chou.nd@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: rt8192u: fix sparse warnings in r8192U_core.c
+Message-ID: <20141203091501.GA2714@sudip-PC>
+References: <1417588229-9552-1-git-send-email-fred.chou.nd@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417588229-9552-1-git-send-email-fred.chou.nd@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 09:34:19 +0900
-byungchul.park@lge.com wrote:
+On Wed, Dec 03, 2014 at 02:30:29PM +0800, Fred Chou wrote:
+> From: Fred Chou <fred.chou.nd@gmail.com>
+> 
+> v2: alignment to match open parenthesis
 
-> From: Byungchul Park <byungchul.park@lge.com>
-> 
-> Currently, function graph tracer prints "!" or "+" just before
-> function execution time to signal a function overhead, depending
-> on the time. And some tracers tracing latency also print "!" or
-> "+" just after time to signal overhead, depending on the interval
-> between events. Even it is usually enough to do that, we sometimes
-> need to be signaled for bigger execution time than 100 micro seconds.
-> 
-> For example, I used function graph tracer to detect if there is
-> any case that exit_mm() takes too much time. I did following steps
-> in /sys/kernel/debug/tracing. It was easier to detect very big
-> excution time with patched kernel than with original kernel.
-> 
-> $ echo exit_mm > set_graph_function
-> $ echo function_graph > current_tracer
-> $ echo > trace
-> $ cat trace_pipe > $LOGFILE
->  ... (do something and terminate logging)
-> $ grep "\\$" $LOGFILE
->  3) $ 22082032 us |                      } /* kernel_map_pages */
->  3) $ 22082040 us |                    } /* free_pages_prepare */
->  3) $ 22082113 us |                  } /* free_hot_cold_page */
->  3) $ 22083455 us |                } /* free_hot_cold_page_list */
->  3) $ 22083895 us |              } /* release_pages */
->  3) $ 22177873 us |            } /* free_pages_and_swap_cache */
->  3) $ 22178929 us |          } /* unmap_single_vma */
->  3) $ 22198885 us |        } /* unmap_vmas */
->  3) $ 22206949 us |      } /* exit_mmap */
->  3) $ 22207659 us |    } /* mmput */
->  3) $ 22207793 us |  } /* exit_mm */
-> 
-> And then, it was easy to find out that a schedule-out occured by
-> sub_preempt_count() within kernel_map_pages().
-> 
-> To detect very large function exection time caused by either problematic
-> function implementation or scheduling issues, this patch can be useful.
-> 
-> Signed-off-by: Byungchul Park <byungchul.park@lge.com>
+this should not come in commit log, this should go as a comment below the ---
 
-Looks good!
+and this patch is not applying to next-20141201, maybe in staging-testing
 
-Thanks,
+> 
+> Fixed the following warnings in sparse:
+> drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
+>  	symbol 'dump_eprom' was not declared.
+> 	Should it be static?
+> drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
+>  	symbol 'ComputeTxTime' was not declared.
+> 	Should it be static?
+> drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
+> 	symbol 'txqueue2outpipe' was not declared.
+> 	Should it be static?
+> drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
+> 	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
+> 	Should it be static?
+> 
+> Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
+> ---
+>  drivers/staging/rtl8192u/r8192U_core.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+> index 7640386..6b647ad 100644
+> --- a/drivers/staging/rtl8192u/r8192U_core.c
+> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+> @@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
+>  
+>  
+>  /* this is only for debug */
+> -void dump_eprom(struct net_device *dev)
+> +static void dump_eprom(struct net_device *dev)
+>  {
+>  	int i;
+>  	for (i = 0; i < 63; i++)
+> @@ -1486,7 +1486,7 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
+>  
+>  u16 N_DBPSOfRate(u16 DataRate);
+>  
+> -u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+> +static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+>  		  	  u8 bShortPreamble)
+u missed this alignment
 
--- Steve
+thanks
+sudip
+>  {
+>  	u16	FrameTime;
+> @@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
+>  	return N_DBPS;
+>  }
+>  
+> -unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
+> +static unsigned int txqueue2outpipe(struct r8192_priv *priv,
+> +				     unsigned int tx_queue)
+>  {
+>  	if (tx_queue >= 9) {
+>  		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
+> @@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
+>  
+>  }
+>  
+> -u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
+> +static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
+> +					 bool bIsRxAggrSubframe)
+>  {
+>  #ifdef USB_RX_AGGREGATION_SUPPORT
+>  	if (bIsRxAggrSubframe)
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
