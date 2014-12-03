@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaLCL1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:27:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54634 "EHLO mx2.suse.de"
+	id S1752778AbaLCL2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:28:41 -0500
+Received: from sauhun.de ([89.238.76.85]:50479 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596AbaLCL1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:41 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sergei Antonov <saproj@gmail.com>,
-        Anton Altaparmakov <aia21@cam.ac.uk>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 087/101] hfsplus: emit proper file type from readdir
-Date: Wed,  3 Dec 2014 12:26:49 +0100
-Message-Id: <f96abf0060149fbc2093c2de7f4dae9fbff20694.1417605922.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-References: <cover.1417605922.git.jslaby@suse.cz>
+	id S1751991AbaLCL2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:28:39 -0500
+Date: Wed, 3 Dec 2014 12:28:30 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, michal.simek@xilinx.com,
+        soren.brinkmann@xilinx.com, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, vishnum@xilinx.com
+Subject: Re: [PATCH 2/4] i2c: cadence: Set the hardware time-out register to
+ maximum value
+Message-ID: <20141203112830.GD1039@katana>
+References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
+ <1417514749-24319-3-git-send-email-harinik@xilinx.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zbGR4y+acU1DwHSi"
+Content-Disposition: inline
+In-Reply-To: <1417514749-24319-3-git-send-email-harinik@xilinx.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Antonov <saproj@gmail.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--zbGR4y+acU1DwHSi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============
+On Tue, Dec 02, 2014 at 03:35:47PM +0530, Harini Katakam wrote:
+> From: Vishnu Motghare <vishnum@xilinx.com>
+>=20
+> Cadence I2C controller has bug wherein it generates invalid read transact=
+ions
+> after time-out in master receiver mode. This driver does not use the HW
+> timeout and this interrupt is disabled but the feature itself cannot be
+> disabled. Hence, this patch writes the maximum value (0xFF) to this regis=
+ter.
+> This is one of the workarounds to this bug and it will not avoid the issue
+> completely but reduce the chances of error.
 
-commit 97a62eaefdc196969e9d3857f65fc8a90ee1fe3c upstream.
+This is a good description and should be in a comment in the driver.
 
-hfsplus_readdir() incorrectly returned DT_REG for symbolic links and
-special files.  Return DT_REG, DT_LNK, DT_FIFO, DT_CHR, DT_BLK, DT_SOCK,
-or DT_UNKNOWN according to mode field in catalog record.  Programs
-relying on information from readdir will now work correctly with HFS+.
+>=20
+> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> ---
+>  drivers/i2c/busses/i2c-cadence.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-ca=
+dence.c
+> index e54899e..8065205 100644
+> --- a/drivers/i2c/busses/i2c-cadence.c
+> +++ b/drivers/i2c/busses/i2c-cadence.c
+> @@ -111,6 +111,8 @@
+>  #define CDNS_I2C_DIVA_MAX	4
+>  #define CDNS_I2C_DIVB_MAX	64
+> =20
+> +#define CDNS_I2C_TIMEOUT_MAX	0xFF
+> +
+>  #define cdns_i2c_readreg(offset)       readl_relaxed(id->membase + offse=
+t)
+>  #define cdns_i2c_writereg(val, offset) writel_relaxed(val, id->membase +=
+ offset)
+> =20
+> @@ -858,6 +860,8 @@ static int cdns_i2c_probe(struct platform_device *pde=
+v)
+>  		goto err_clk_dis;
+>  	}
+> =20
+> +	cdns_i2c_writereg(CDNS_I2C_TIMEOUT_MAX, CDNS_I2C_TIME_OUT_OFFSET);
+> +
+>  	dev_info(&pdev->dev, "%u kHz mmio %08lx irq %d\n",
+>  		 id->i2c_clk / 1000, (unsigned long)r_mem->start, id->irq);
+> =20
+> --=20
+> 1.7.9.5
+>=20
 
-Signed-off-by: Sergei Antonov <saproj@gmail.com>
-Cc: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/hfsplus/dir.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+--zbGR4y+acU1DwHSi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
-index 4a4fea002673..64112185f47c 100644
---- a/fs/hfsplus/dir.c
-+++ b/fs/hfsplus/dir.c
-@@ -212,13 +212,31 @@ static int hfsplus_readdir(struct file *file, struct dir_context *ctx)
- 				    be32_to_cpu(entry.folder.id), DT_DIR))
- 				break;
- 		} else if (type == HFSPLUS_FILE) {
-+			u16 mode;
-+			unsigned type = DT_UNKNOWN;
-+
- 			if (fd.entrylength < sizeof(struct hfsplus_cat_file)) {
- 				pr_err("small file entry\n");
- 				err = -EIO;
- 				goto out;
- 			}
-+
-+			mode = be16_to_cpu(entry.file.permissions.mode);
-+			if (S_ISREG(mode))
-+				type = DT_REG;
-+			else if (S_ISLNK(mode))
-+				type = DT_LNK;
-+			else if (S_ISFIFO(mode))
-+				type = DT_FIFO;
-+			else if (S_ISCHR(mode))
-+				type = DT_CHR;
-+			else if (S_ISBLK(mode))
-+				type = DT_BLK;
-+			else if (S_ISSOCK(mode))
-+				type = DT_SOCK;
-+
- 			if (!dir_emit(ctx, strbuf, len,
--				    be32_to_cpu(entry.file.id), DT_REG))
-+				      be32_to_cpu(entry.file.id), type))
- 				break;
- 		} else {
- 			pr_err("bad catalog entry type\n");
--- 
-2.1.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUfvPeAAoJEBQN5MwUoCm2BlIQAIyiQ/Cl6ZY9TjwtUoS+uq3R
+xJR0pS+CzzWlC9zv7YTATu9FyngTpTOM9f0sWjpPWQ03hLxkrouZoyqk3wXR2xpa
+hLVvYOekLia6eSmI25Xr9/tsKsS6QN4ToQbTvB2T7fcphcRAsQPdUm7O9f62D8SA
+nvAvH9qalBL82P4qA0K3YYBHU/y9PUx7TkCT8c6otPb2C5lSSb9HY9PSAvwbJgii
+aDwHuJfT8w3e+1JeCtpk2PDvx/NuLCv1s1KCWGi6IRcPvAEhVDsb+B6lsaKg/h8U
+Ycooe2IyDrF6bAtjrTAFITDAFS+4j8eAXQJ+8NKxCAVJSw+zIgYuTMtvq0QrUmmy
+jaNtaq1M+5w5pbpsMPx2fIRe9yCgWXf1/t/dYkPxDKsvVvpcRnAaAdadsqhldIsx
+4aJcMFFA41IgPqR0lpEaVotint/ahCjh9LUHldRiKfytfIY7LvZEpJ8EaxVdf/r5
+FbBVdMra4WkV35bPaX91uFb1PwDvOaWW6VkryAsmBhaQZTh68VS4xy3Ft6zxxwXz
+w2Rabclu3mmQQL7puQeaxHqDql2Hv9oaXA2qmixvtflX2rth+6rRQW0S9y1uahkN
+ZKFyTwKCzQaWK/RwPySG+9xJocdFwddJvsIAaiu0P1qEqIFArBo/ok7iB1XTJ7oF
+h8xXeWqvjmGPWOFCBTfc
+=HoJW
+-----END PGP SIGNATURE-----
+
+--zbGR4y+acU1DwHSi--
