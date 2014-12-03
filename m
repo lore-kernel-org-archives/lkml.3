@@ -1,131 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaLCNFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:05:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845AbaLCNFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:05:54 -0500
-Date: Wed, 3 Dec 2014 11:04:54 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: akpm@linux-foundation.org, Dmitry Vyukov <dvyukov@google.com>,
-        David Rientjes <rientjes@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Nadia.Derbey@bull.net, davidlohr@hp.com, Joe Perches <joe@perches.com>,
-        manfred@colorfullife.com, avagin@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kostya Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        kasan-dev <kasan-dev@googlegroups.com>
-Subject: Re: [PATCH] kernel: sysctl: use 'unsigned long' type for 'zero'
- variable
-Message-ID: <20141203130352.GA1742@x61.redhat.com>
-References: <547F0486.7020400@samsung.com>
- <1417610481-11590-1-git-send-email-a.ryabinin@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417610481-11590-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752649AbaLCNGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:06:40 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:34364 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593AbaLCNGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:06:38 -0500
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Subject: [PATCH v4 2/3] hwmon: ina2xx: allow to change the averaging rate at run-time
+Date: Wed,  3 Dec 2014 14:06:10 +0100
+Message-Id: <1417611971-10360-3-git-send-email-bgolaszewski@baylibre.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417611971-10360-1-git-send-email-bgolaszewski@baylibre.com>
+References: <1417611971-10360-1-git-send-email-bgolaszewski@baylibre.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 03:41:21PM +0300, Andrey Ryabinin wrote:
-> 
-> Commit ed4d4902ebdd ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity") replaced
-> 'unsigned long hugetlb_zero' with 'int zero' leading to out-of-bounds access
-> in proc_doulongvec_minmax():
-> 
-> 	==================================================================
-> 	BUG: AddressSanitizer: out of bounds access in
-> 	__do_proc_doulongvec_minmax+0x8a0/0x9a0 at addr ffffffff83980960
-> 	Read of size 8 by task trinity-c14/6919
-> 	Out-of-bounds access to the global variable 'zero'
-> 	[ffffffff83980960-ffffffff83980964) defined at ipc/ipc_sysctl.c:158
-> 
-> 	CPU: 1 PID: 6919 Comm: trinity-c14 Not tainted 3.18.0-rc1+ #50
-> 	Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> 	 0000000000000001 ffff8800b68cf418 ffffffff82c2d3ae 0000000000000000
-> 	 ffff8800b68cf4c0 ffff8800b68cf4a8 ffffffff813eaa81 ffffffff0000000c
-> 	 ffff88010b003600 ffff8800b68cf479 0000000000000296 0000000000000000
-> 	Call Trace:
-> 	 [<ffffffff813ead71>] __asan_report_load8_noabort+0x51/0x70
-> 	mm/kasan/report.c:248
-> 	 [<ffffffff810cc3e0>] __do_proc_doulongvec_minmax+0x8a0/0x9a0
-> 	kernel/sysctl.c:2284
-> 	 [<     inlined    >] proc_doulongvec_minmax+0x50/0x80
-> 	do_proc_doulongvec_minmax kernel/sysctl.c:2322
-> 	 [<ffffffff810cc530>] proc_doulongvec_minmax+0x50/0x80 kernel/sysctl.c:2345
-> 	 [<ffffffff813c9e5a>] hugetlb_sysctl_handler_common+0x12a/0x3c0
-> 	mm/hugetlb.c:2270
-> 	 [<ffffffff813cb45c>] hugetlb_mempolicy_sysctl_handler+0x1c/0x20
-> 	mm/hugetlb.c:2293
-> 	 [<ffffffff8153e6e9>] proc_sys_call_handler+0x179/0x1f0
-> 	fs/proc/proc_sysctl.c:506
-> 	 [<ffffffff8153e76f>] proc_sys_write+0xf/0x20 fs/proc/proc_sysctl.c:524
-> 	 [<ffffffff813f1563>] __kernel_write+0x123/0x440 fs/read_write.c:502
-> 	 [<ffffffff8147ebaa>] write_pipe_buf+0x14a/0x1d0 fs/splice.c:1074
-> 	 [<     inlined    >] __splice_from_pipe+0x22e/0x6f0
-> 	splice_from_pipe_feed fs/splice.c:769
-> 	 [<ffffffff8147dbde>] __splice_from_pipe+0x22e/0x6f0 fs/splice.c:886
-> 	 [<ffffffff81483211>] splice_from_pipe+0xc1/0x110 fs/splice.c:921
-> 	 [<ffffffff81483298>] default_file_splice_write+0x18/0x50 fs/splice.c:1086
-> 	 [<     inlined    >] direct_splice_actor+0x104/0x1c0 do_splice_from
-> 	fs/splice.c:1128
-> 	 [<ffffffff8147cfc4>] direct_splice_actor+0x104/0x1c0 fs/splice.c:1284
-> 	 [<ffffffff8147e5ba>] splice_direct_to_actor+0x24a/0x6f0 fs/splice.c:1237
-> 	 [<ffffffff81483424>] do_splice_direct+0x154/0x270 fs/splice.c:1327
-> 	 [<ffffffff813f3bfb>] do_sendfile+0x5fb/0x1260 fs/read_write.c:1266
-> 	 [<     inlined    >] SyS_sendfile64+0xfa/0x100 SYSC_sendfile64
-> 	fs/read_write.c:1327
-> 	 [<ffffffff813f6bea>] SyS_sendfile64+0xfa/0x100 fs/read_write.c:1313
-> 	 [<ffffffff82c464f9>] ia32_do_call+0x13/0x13 arch/x86/ia32/ia32entry.S:444
-> 	Memory state around the buggy address:
-> 	 ffffffff83980680: 04 f8 f8 f8 f8 f8 f8 f8 02 f8 f8 f8 f8 f8 f8 f8
-> 	 ffffffff83980700: 00 f8 f8 f8 f8 f8 f8 f8 00 f8 f8 f8 f8 f8 f8 f8
-> 	 ffffffff83980780: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 00 00 00 00
-> 	 ffffffff83980800: 00 00 00 00 00 00 00 00 f8 f8 f8 f8 04 f8 f8 f8
-> 	 ffffffff83980880: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
-> 	>ffffffff83980900: f8 f8 f8 f8 04 f8 f8 f8 f8 f8 f8 f8 04 f8 f8 f8
-> 	                                                       ^
-> 	 ffffffff83980980: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 00
-> 	 ffffffff83980a00: 02 f8 f8 f8 f8 f8 f8 f8 00 00 00 00 00 00 00 00
-> 	 ffffffff83980a80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	 ffffffff83980b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	 ffffffff83980b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 	==================================================================
-> 
-> Use the 'unsigned long' type for 'zero' variable to fix this.
-> Changing type to 'unsigned long' shouldn't affect any other users
-> of this variable.
-> 
-> Reported-by: Dmitry Vyukov <dvyukov@google.com>
-> Fixes: ed4d4902ebdd ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity")
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  kernel/sysctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 15f2511..45c45c9 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -120,7 +120,7 @@ static int sixty = 60;
->  
->  static int __maybe_unused neg_one = -1;
->  
-> -static int zero;
-> +static unsigned long zero;
->  static int __maybe_unused one = 1;
->  static int __maybe_unused two = 2;
->  static int __maybe_unused four = 4;
-> -- 
-> 2.2.0
-> 
-Acked-by: Rafael Aquini <aquini@redhat.com>
+The averaging rate of ina226 is hardcoded to 16 in the driver.
+
+Make it modifiable at run-time via a new sysfs attribute.
+
+Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+---
+ drivers/hwmon/ina2xx.c | 125 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 122 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 309bfdb..9826c69 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -67,6 +67,15 @@
+ /* default shunt resistance */
+ #define INA2XX_RSHUNT_DEFAULT		10000
+ 
++/* bit masks for the averaging setting in the configuration register */
++#define INA226_AVG_RD_MASK		0x0E00
++#define INA226_AVG_WR_MASK		0xF1FF
++
++#define INA226_READ_AVG(reg) ((reg & INA226_AVG_RD_MASK) >> 9)
++
++/* common attrs, ina226 attrs and NULL */
++#define INA2XX_MAX_ATTRIBUTE_GROUPS	3
++
+ enum ina2xx_ids { ina219, ina226 };
+ 
+ struct ina2xx_config {
+@@ -88,6 +97,7 @@ struct ina2xx_data {
+ 	unsigned long last_updated;
+ 
+ 	int kind;
++	const struct attribute_group *groups[INA2XX_MAX_ATTRIBUTE_GROUPS];
+ 	u16 regs[INA2XX_MAX_REGISTERS];
+ 
+ 	long rshunt;
+@@ -114,11 +124,43 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	},
+ };
+ 
++/*
++ * Available averaging rates for ina226. The indices correspond with
++ * the bit values expected by the chip (according to the ina226 datasheet,
++ * table 3 AVG bit settings, found at
++ * http://www.ti.com/lit/ds/symlink/ina226.pdf.
++ */
++static const int ina226_avg_tab[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
++
+ static u16 ina2xx_calibration_val(const struct ina2xx_data *data)
+ {
+ 	return data->config->calibration_factor / data->rshunt;
+ }
+ 
++static int ina226_avg_bits(int avg)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ina226_avg_tab); i++) {
++		if (avg == ina226_avg_tab[i])
++			return i;
++	}
++
++	return -EINVAL;
++}
++
++static int ina226_avg_val(int bits)
++{
++	/*
++	 * Value read from the config register should be correct, but do check
++	 * the boundary just in case.
++	 */
++	if (bits >= ARRAY_SIZE(ina226_avg_tab))
++		return -ENODEV;
++
++	return ina226_avg_tab[bits];
++}
++
+ static struct ina2xx_data *ina2xx_update_device(struct device *dev)
+ {
+ 	struct ina2xx_data *data = dev_get_drvdata(dev);
+@@ -231,6 +273,63 @@ static ssize_t ina2xx_set_shunt(struct device *dev,
+ 	return count;
+ }
+ 
++static ssize_t ina226_show_avg(struct device *dev,
++			       struct device_attribute *da, char *buf)
++{
++	struct ina2xx_data *data = ina2xx_update_device(dev);
++	int avg, i, written = 0;
++	const char *fmt;
++
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	avg = ina226_avg_val(INA226_READ_AVG(data->regs[INA2XX_CONFIG]));
++	if (avg < 0)
++		return avg;
++
++	for (i = 0; i < ARRAY_SIZE(ina226_avg_tab); i++) {
++		if (avg == ina226_avg_tab[i])
++			fmt = "\t[%d]";
++		else
++			fmt = "\t%d";
++
++		written += snprintf(buf + written, PAGE_SIZE - written,
++				    fmt, ina226_avg_tab[i]);
++	}
++	written += snprintf(buf + written, PAGE_SIZE - written, "\n");
++
++	return written;
++}
++
++static ssize_t ina226_set_avg(struct device *dev,
++			      struct device_attribute *da,
++			      const char *buf, size_t count)
++{
++	struct ina2xx_data *data = ina2xx_update_device(dev);
++	long val;
++	int status, avg;
++	u16 conf;
++
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	status = kstrtol(buf, 10, &val);
++	if (status < 0)
++		return status;
++
++	avg = ina226_avg_bits(val);
++	if (avg < 0)
++		return avg;
++
++	mutex_lock(&data->update_lock);
++	conf = (data->regs[INA2XX_CONFIG] & INA226_AVG_WR_MASK) | (avg << 9);
++	status = i2c_smbus_write_word_swapped(data->client,
++					      INA2XX_CONFIG, conf);
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
+ /* shunt voltage */
+ static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, ina2xx_show_value, NULL,
+ 			  INA2XX_SHUNT_VOLTAGE);
+@@ -252,6 +351,10 @@ static SENSOR_DEVICE_ATTR(shunt_resistor, S_IRUGO | S_IWUSR,
+ 			  ina2xx_show_value, ina2xx_set_shunt,
+ 			  INA2XX_CALIBRATION);
+ 
++/* averaging rate */
++static SENSOR_DEVICE_ATTR(avg_rate, S_IRUGO | S_IWUSR,
++			  ina226_show_avg, ina226_set_avg, 0);
++
+ /* pointers to created device attributes */
+ static struct attribute *ina2xx_attrs[] = {
+ 	&sensor_dev_attr_in0_input.dev_attr.attr,
+@@ -261,7 +364,19 @@ static struct attribute *ina2xx_attrs[] = {
+ 	&sensor_dev_attr_shunt_resistor.dev_attr.attr,
+ 	NULL,
+ };
+-ATTRIBUTE_GROUPS(ina2xx);
++
++static const struct attribute_group ina2xx_group = {
++	.attrs = ina2xx_attrs,
++};
++
++static struct attribute *ina226_attrs[] = {
++	&sensor_dev_attr_avg_rate.dev_attr.attr,
++	NULL,
++};
++
++static const struct attribute_group ina226_group = {
++	.attrs = ina226_attrs,
++};
+ 
+ static int ina2xx_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+@@ -272,7 +387,7 @@ static int ina2xx_probe(struct i2c_client *client,
+ 	struct ina2xx_data *data;
+ 	struct device *hwmon_dev;
+ 	u32 val;
+-	int ret;
++	int ret, group = 0;
+ 
+ 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
+ 		return -ENODEV;
+@@ -323,8 +438,12 @@ static int ina2xx_probe(struct i2c_client *client,
+ 	data->client = client;
+ 	mutex_init(&data->update_lock);
+ 
++	data->groups[group++] = &ina2xx_group;
++	if (data->kind == ina226)
++		data->groups[group++] = &ina226_group;
++
+ 	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
+-							   data, ina2xx_groups);
++							   data, data->groups);
+ 	if (IS_ERR(hwmon_dev))
+ 		return PTR_ERR(hwmon_dev);
+ 
+-- 
+2.1.3
+
