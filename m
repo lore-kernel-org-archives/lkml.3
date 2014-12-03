@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaLCCd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:33:56 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:62977 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaLCCdy (ORCPT
+	id S1751852AbaLCCeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:34:31 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:63118 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaLCCea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:33:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <1655942.O63mJN07or@vostro.rjw.lan>
-References: <1655942.O63mJN07or@vostro.rjw.lan>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 3 Dec 2014 11:33:33 +0900
-Message-ID: <CAAVeFuKHYnPgCLFC+0QjYGyPxJ3fddGJkvmUk+=L0TZqsprXWQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-omap@vger.kernel.org,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 21:34:30 -0500
+From: Paul Hedman <paul@mybboard.net>
+X-Google-Original-From: Paul Hedman <paul@mybb.com>
+To: paul@mybb.com, greg@kroah.com, Larry.Finger@lwfinger.net,
+        florian.c.schilhabel@googlemail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8712: Fixes brace coding style in rtl871x_sta_mgt.c
+Date: Tue,  2 Dec 2014 20:34:13 -0600
+Message-Id: <1417574053-5831-1-git-send-email-paul@mybb.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 10:50 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
->
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/gpio/gpio-omap.c.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch fixes a brace warning in rtl871x_sta_mgt.c found
+by the checkpatch.pl tool.
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Paul Hedman <paul@mybb.com>
+---
+ drivers/staging/rtl8712/rtl871x_sta_mgt.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/staging/rtl8712/rtl871x_sta_mgt.c b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+index 4c9b98e..de8acc1 100644
+--- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
++++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+@@ -83,9 +83,8 @@ static void mfree_all_stainfo(struct sta_priv *pstapriv)
+ 	spin_lock_irqsave(&pstapriv->sta_hash_lock, irqL);
+ 	phead = &pstapriv->free_sta_queue.queue;
+ 	plist = phead->next;
+-	while ((end_of_queue_search(phead, plist)) == false) {
++	while ((end_of_queue_search(phead, plist)) == false)
+ 		plist = plist->next;
+-	}
+ 
+ 	spin_unlock_irqrestore(&pstapriv->sta_hash_lock, irqL);
+ }
+-- 
+2.1.0
+
