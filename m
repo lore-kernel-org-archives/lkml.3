@@ -1,129 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaLCNLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:11:10 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447AbaLCNLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:11:09 -0500
-Message-ID: <547F0BE5.2050808@nod.at>
-Date: Wed, 03 Dec 2014 14:11:01 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+	id S1752328AbaLCNNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:13:14 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59907 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845AbaLCNNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:13:11 -0500
+X-Sasl-enc: MFCCqAQxjD4q5pelX/fGlGjt1sz+mi9xbrlD8TF8rqbD 1417612386
+Date: Wed, 3 Dec 2014 11:12:54 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] iio: dht11: Logging updates
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <1417563176-31972-4-git-send-email-richard@nod.at> <E1Xw9W8-0001Db-9a@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1Xw9W8-0001Db-9a@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: Re: Side effect of pressing special keys
+Message-ID: <20141203131254.GB20212@khazad-dum.debian.net>
+References: <201411231441.17592@pali>
+ <20141203124042.GA504@amd>
+ <201412031346.13297@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201412031346.13297@pali>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.12.2014 um 13:58 schrieb Harald Geyer:
-> Richard Weinberger writes:
->> Currently the driver uses pr_* and dev_* functions.
->> Change all logging functions to dev_* style to be consistent
->> and have the correct device prefix in all messages.
-> 
-> Yes, actually this was on purpose:
-> The dev_ messages are really about something wrong with the device.
-> Ie if something goes wrong with one device but could perfectly work
-> with some other device.
-> The pr_ messages OTOH are about something wrong with clock resolution,
-> etc that would affect any DHT11 sensor on the system. Ideally we would
-> notice these things during probe() and just return with an error there.
-> Right now we aren't as clever as that, so we just log an error message
-> about the driver, when actually we are reading the device.
-> 
-> That said, I don't have strong feelings about this. If you want to
-> change this, I won't object. However if you really want to fix this,
-> then the proper thing would be to check for this conditions in
-> probe().
+On Wed, 03 Dec 2014, Pali Rohár wrote:
+> Ok, and what about KEY_KBDILLUMTOGGLE when bios also handle 
+> keyboard backlight level? Should be this key filtered too?
 
-Currently we get log messages of style:
-"iio iio:deviceX: foo bar"
-and:
-"dht11 <name in DT>: foo bar"
+IME, heck yes.
 
-I really favorite "dht11 <name in DT".
-In my device tree every senor has a sane name and log messages look like:
-"dht11 toiletten sensor: invalid checksum"
+If you ever make the mistake of sending to userspace something the
+BIOS/kernel already reacted to, they will find a way to loop it back to you
+and cause all sort of issues.
 
-
->> This change set also adds new messages to diagnose issues.
-> 
-> Comment below.
-> 
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  drivers/iio/humidity/dht11.c | 16 ++++++++++------
->>  1 file changed, 10 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
->> index 0023699..fbcd7cb 100644
->> --- a/drivers/iio/humidity/dht11.c
->> +++ b/drivers/iio/humidity/dht11.c
->> @@ -96,20 +96,22 @@ static int dht11_decode(struct dht11 *dht11, int offset)
->>  			timeres = t;
->>  	}
->>  	if (2*timeres > DHT11_DATA_BIT_HIGH) {
->> -		pr_err("dht11: timeresolution %d too bad for decoding\n",
->> +		dev_err(dht11->dev, "timeresolution %d too bad for decoding\n",
->>  			timeres);
->>  		return -EIO;
->>  	}
->>  	threshold = DHT11_DATA_BIT_HIGH / timeres;
->>  	if (DHT11_DATA_BIT_LOW/timeres + 1 >= threshold)
->> -		pr_err("dht11: WARNING: decoding ambiguous\n");
->> +		dev_err(dht11->dev, "decoding ambiguous\n");
->>  
->>  	/* scale down with timeres and check validity */
->>  	for (i = 0; i < DHT11_BITS_PER_READ; ++i) {
->>  		t = dht11->edges[offset + 2*i + 2].ts -
->>  			dht11->edges[offset + 2*i + 1].ts;
->> -		if (!dht11->edges[offset + 2*i + 1].value)
->> -			return -EIO;  /* lost synchronisation */
->> +		if (!dht11->edges[offset + 2*i + 1].value) {
->> +			dev_err(dht11->dev, "lost synchronisation\n");
->> +			return -EIO;
->> +		}
-> 
-> Are you sure this warrants a log message? I don't think this provides
-> much information. The userspace application should just try reading
-> the sensor again.
-> 
-> We could do someting smart and try to recover from such errors, but
-> ultimately userspace will need to deal with failed sensor communication
-> anyway, so I don't see the point.
-
-The sensors are rather flaky and if they go nuts the user/developer maybe wants
-to know why.
->From a plain EIO she has no chance to find out. He'll have to add printk()s by hand
-to find out.
-With a log message one can start digging into the issue.
-
->>  		timing[i] = t / timeres;
->>  	}
->>  
->> @@ -119,8 +121,10 @@ static int dht11_decode(struct dht11 *dht11, int offset)
->>  	temp_dec = dht11_decode_byte(&timing[24], threshold);
->>  	checksum = dht11_decode_byte(&timing[32], threshold);
->>  
->> -	if (((hum_int + hum_dec + temp_int + temp_dec) & 0xff) != checksum)
->> +	if (((hum_int + hum_dec + temp_int + temp_dec) & 0xff) != checksum) {
->> +		dev_err(dht11->dev, "invalid checksum\n");
->>  		return -EIO;
->> +	}
-> 
-> Same thing here.
-
-Same here.
-I had some wiring issues with my sensors and wanted to know from where the EIO comes.
-
-Thanks,
-//richard
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
