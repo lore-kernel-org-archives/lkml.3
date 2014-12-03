@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaLCFzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 00:55:09 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:42591 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaLCFzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 00:55:07 -0500
-Date: Tue, 2 Dec 2014 21:54:44 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-input@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ferruh Yigit <fery@cypress.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] input / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Message-ID: <20141203055444.GA7411@dtor-glaptop>
-References: <8119438.MdkFLx3Wvh@vostro.rjw.lan>
+	id S1751614AbaLCF6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 00:58:00 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52030 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaLCF57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 00:57:59 -0500
+Message-ID: <547EA65C.2010605@ti.com>
+Date: Wed, 3 Dec 2014 11:27:48 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8119438.MdkFLx3Wvh@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the usb tree
+References: <20141201191923.6366f9b5@canb.auug.org.au> <20141202181230.GD11700@kroah.com>
+In-Reply-To: <20141202181230.GD11700@kroah.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 03:09:10AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
-> 
-> The alternative of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME may be
-> replaced with CONFIG_PM too.
-> 
-> Make these changes in 2 files under drivers/input/.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Greg,
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+On Tuesday 02 December 2014 11:42 PM, Greg KH wrote:
+> On Mon, Dec 01, 2014 at 07:19:23PM +1100, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> After merging the usb tree, today's linux-next build (arm
+>> multi_v7_defconfig) failed like this:
+>>
+>> arch/arm/mach-omap2/twl-common.c:94:21: error: array type has incomplete element type
+>>  struct phy_consumer consumers[] = {
+>>                      ^
+>>
+>> Caused by commit dbc98635e0d4 ("phy: remove the old lookup method").
+>>
+>> I have used the usb tree from next-20141128 for today.
+> 
+> Ick, Heikki and Kishon, do you want me to just revert this patch?  How
+> did you test it?
 
-> ---
-> 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
-> 
-> Please let me know if it is OK to take this one into linux-pm.
+I've resent the patch "arm: omap3: twl: remove usb phy init data" which is
+needed to get rid of this error.
 
-Yeah, it should be fine.
+This patch was part of the original series sent by Heikki but I couldn't merge
+it since I didn't get Ack from tony since it touched arch/arm/mach-omap2/ file.
+And I clearly missed the build failure report from fengguang. Sorry.
 
-> 
-> ---
->  drivers/input/keyboard/samsung-keypad.c  |    2 +-
->  drivers/input/touchscreen/cyttsp4_core.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> Index: linux-pm/drivers/input/keyboard/samsung-keypad.c
-> ===================================================================
-> --- linux-pm.orig/drivers/input/keyboard/samsung-keypad.c
-> +++ linux-pm/drivers/input/keyboard/samsung-keypad.c
-> @@ -463,7 +463,7 @@ static int samsung_keypad_remove(struct
->  	return 0;
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static int samsung_keypad_runtime_suspend(struct device *dev)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
-> Index: linux-pm/drivers/input/touchscreen/cyttsp4_core.c
-> ===================================================================
-> --- linux-pm.orig/drivers/input/touchscreen/cyttsp4_core.c
-> +++ linux-pm/drivers/input/touchscreen/cyttsp4_core.c
-> @@ -1716,7 +1716,7 @@ static void cyttsp4_free_si_ptrs(struct
->  	kfree(si->btn_rec_data);
->  }
->  
-> -#if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
-> +#ifdef CONFIG_PM
->  static int cyttsp4_core_sleep(struct cyttsp4 *cd)
->  {
->  	int rc;
-> 
-
--- 
-Dmitry
+Thanks
+Kishon
