@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaLCNKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:10:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56335 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaLCNKk (ORCPT
+	id S1752366AbaLCNKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:10:48 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:48266 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaLCNKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:10:40 -0500
-Message-ID: <1417612197.5124.12.camel@pengutronix.de>
-Subject: Re: [PATCH v15 12/12] drm: bridge/dw_hdmi: add rockchip rk3288
- support
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Date: Wed, 03 Dec 2014 14:09:57 +0100
-In-Reply-To: <547F02CF.9010804@rock-chips.com>
-References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
-			 <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com>
-		 <1417515882.3411.8.camel@pengutronix.de> <547DB1ED.7000409@rock-chips.com>
-	 <1417525257.3411.12.camel@pengutronix.de> <547F02CF.9010804@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 3 Dec 2014 08:10:45 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-0f-547f0bd25c26
+Message-id: <547F0B6B.3030206@samsung.com>
+Date: Wed, 03 Dec 2014 15:08:59 +0200
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
+Cc: zohar@linux.vnet.ibm.com, james.l.morris@oracle.com, serge@hallyn.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RESEND PATCH] ima: Fix build failure on powerpc when TCG_IBMVTPM
+ dependencies are not met
+References: <1417586690-11521-1-git-send-email-mpe@ellerman.id.au>
+In-reply-to: <1417586690-11521-1-git-send-email-mpe@ellerman.id.au>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xq7qXuOtDDDad57Poexxk8XLGPHaL
+	y7vmsFl86HnEZrGl4RCbxfkL59gtPq2YxOzA7rHoZQOLx7XdkR4PDm1m8di94DOTx8ent1g8
+	Pm+SC2CL4rJJSc3JLEst0rdL4MpY1HqCvWAWV8Wi/S9ZGhgXcHQxcnBICJhI/Ftg3sXICWSK
+	SVy4t54NxBYSWMoo8e9UUhcjF5DdyCTRues4G4Qzi1Fi8on7YFW8AloSy7fuZgaxWQRUJSZf
+	OsYOYrMJ6ElsaP4BZosKREhcWTOHEaJeUOLH5HssILaIgLtE29vP7CBDmQVmMkqcePYRbKiw
+	QKZE14KZUGc4ScybtBWsmVPAWeLc4anMIFczAy24f1ELJMwsIC+xec1bZohyVYnutWvZIL5R
+	lDg9+RzzBEbhWUhWz0LonoWkewEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkIj5soNx
+	8TGrQ4wCHIxKPLwKU+pChFgTy4orcw8xSnAwK4nwPvsGFOJNSaysSi3Kjy8qzUktPsTIxMEp
+	1cDYuvZH3NTY15xJjH/MvEUm3l8wf1f7pz+8GxafaEhZ8n1uXq1L62/WRTrBW7dvb1TOi+wK
+	F3JXvaezas2zqHVHvsVv7Sw64Ked8H/lmVfqagqfwqdXH/q3eNIkxSxBhSm7nee1nCn6qz99
+	+8dSmcjJH4yM/N8+F7j66+gk3nq959vnVJdfDBW0UGIpzkg01GIuKk4EALSc8C12AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Hello,
 
-Am Mittwoch, den 03.12.2014, 20:32 +0800 schrieb Andy Yan:
-> > My question is not about the available gates at the SoC level, but about
-> > the actual clock inputs from point of view of the HDMI TX IP.
-> >
-> > It could be that the hdmi_ctrl_clk gates all inputs to the module and
-> > bus clocks together. If so, you could just reuse "isfr" and "iahb" and
-> > set it to the same clock. If not, we'd need to think of something else.
-> > Unfortunately I don't have any Synopsys documentation of the HDMI TX at
-> > that level.
-> 
->     After confirming with the IC designer, we finally make clear that
->     Rockchip RK3288 almost use the same clock design with imx:
->     clk-----iahbclk, used for hdmi module and bus
->     hdcp_clk-----isfrclk, used for hdcp and i2cm
->     cecclk -----cecclk, but this clk can be gated on rockchip, this is 
-> different with imx,
->     but we don't handle the cec stuff now. So i will try to reuse the 
-> imx clk binds. do you
->    think that is ok?
+Yes, we will pick it up.
 
-Thank you for taking the time to verify this. So we should move the
-clock handling out of the soc specific parts into the common driver and
-reuse the existing clock bindings ("iahb", "isfr").
-I'd suggest to add the "cec" clock now to the binding document as an
-optional clock, then you can already specify it in the rockchip dtsi.
+Thanks,
+Dmitry
 
-regards
-Philipp
+On 03/12/14 08:04, Michael Ellerman wrote:
+> On powerpc we can end up with IMA=y and PPC_PSERIES=n which leads to:
+>
+>   warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES)
+>   tpm_ibmvtpm.c:(.text+0x14f3e8): undefined reference to `.plpar_hcall_norets'
+>
+> I'm not sure why IMA needs to select those user-visible symbols, but if
+> it must then the simplest fix is to just express the proper dependencies
+> on the select.
+>
+> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+> ---
+>  security/integrity/ima/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>
+> Could someone please pick this up?
+>
+> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+> index e099875643c5..b51668d04f9d 100644
+> --- a/security/integrity/ima/Kconfig
+> +++ b/security/integrity/ima/Kconfig
+> @@ -10,7 +10,7 @@ config IMA
+>  	select CRYPTO_HASH_INFO
+>  	select TCG_TPM if HAS_IOMEM && !UML
+>  	select TCG_TIS if TCG_TPM && X86
+> -	select TCG_IBMVTPM if TCG_TPM && PPC64
+> +	select TCG_IBMVTPM if TCG_TPM && PPC_PSERIES
+>  	help
+>  	  The Trusted Computing Group(TCG) runtime Integrity
+>  	  Measurement Architecture(IMA) maintains a list of hash
 
