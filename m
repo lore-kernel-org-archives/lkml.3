@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaLCXtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:49:47 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56193 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaLCXtq (ORCPT
+	id S1752641AbaLCXty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:49:54 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:34019 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbaLCXtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:49:46 -0500
-Date: Thu, 4 Dec 2014 00:49:29 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-15?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141203232115.GA13266@redhat.com>
-Message-ID: <alpine.DEB.2.11.1412040043170.16275@nanos>
-References: <20141203184111.GA32005@redhat.com> <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com> <20141203190045.GB32005@redhat.com> <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com> <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
- <20141203200906.GA3118@redhat.com> <CA+55aFxLmBjTOdGu3TFzTJ-ym7TVLDBt79BKqU-vZbX4CvSGog@mail.gmail.com> <alpine.DEB.2.11.1412032141040.16275@nanos> <CA+55aFw8L06BxpsVnbdiNaU2WSFo=tafND25uV_SHUig=CC1AA@mail.gmail.com> <alpine.DEB.2.11.1412032249050.16275@nanos>
- <20141203232115.GA13266@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 3 Dec 2014 18:49:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+In-Reply-To: <1417642834-20350-7-git-send-email-konrad.wilk@oracle.com>
+References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com> <1417642834-20350-7-git-send-email-konrad.wilk@oracle.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 3 Dec 2014 16:49:30 -0700
+Message-ID: <CAErSpo62D02fh-AmLC4N7OUK0yYN89X_FuZNqXsv4AfYUTj5eg@mail.gmail.com>
+Subject: Re: [PATCH v5 6/9] PCI: Expose pci_load_saved_state for public consumption.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Dave Jones wrote:
-> On Wed, Dec 03, 2014 at 11:19:11PM +0100, Thomas Gleixner wrote:
->  > On Wed, 3 Dec 2014, Linus Torvalds wrote:
->  > > On Wed, Dec 3, 2014 at 12:55 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->  > > >
->  > > > But it's always negative, which means HPET is always ahead of
->  > > > TSC. That excludes pretty much the clocksource watchdog starvation
->  > > > issue which results in TSC being ahead of HPET due to a HPET
->  > > > wraparound (which takes ~300s).
->  > > 
->  > > Still, I'd be more likely to trust the TSC than the HPET on modern
->  > > machines.. And DaveJ's machine isn't some old one.
->  > 
->  > Well, that does not explain the softlock watchdog which is solely
->  > relying on the TSC.
->  > 
->  > > Of course, there's always BIOS games. Can we read the TSC offset
->  > > register and check it being constant (modulo sleep events)?
->  > 
->  > The kernel does not touch it. Here is a untested hack to verify it on
->  > every local apic timer interrupt. Not nice, but simple :)
->  
->  > +			pr_err("TSC adjustment on cpu %d changed %llu -> %llu\n",
->  > +			       cpu,
->  > +			       (unsigned long long) __this_cpu_read(tsc_adjust),
->  > +			       (unsigned long long) adj);
-> 
-> I just got 
-> 
-> [ 1472.614433] Clocksource tsc unstable (delta = -26373048906 ns)
-> 
-> without any sign of the pr_err above.
+On Wed, Dec 3, 2014 at 2:40 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> We have the pci_load_and_free_saved_state, and pci_store_saved_state
+> but are missing the functionality to just load the state
+> multiple times in the PCI device without having to free/save
+> the state.
+>
+> This patch makes it possible to use this function.
+>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Bah. Would have been too simple ....
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Could you please run Ingos time-warp test on that machine for a while?
+I assume you'll merge this whole series through your tree.  Let me
+know if you want me to do anything else.
 
-   http://people.redhat.com/mingo/time-warp-test/time-warp-test.c
-
-Please change:
-
-- #define TEST_CLOCK 0
-+ #define TEST_CLOCK 1
-
-I'll dig further into the time/clocksource whatever related changes
-post 3.16
-
-Thanks,
-
-	tglx
+> ---
+>  drivers/pci/pci.c   | 5 +++--
+>  include/linux/pci.h | 2 ++
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 625a4ac..f00a9d6 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1142,8 +1142,8 @@ EXPORT_SYMBOL_GPL(pci_store_saved_state);
+>   * @dev: PCI device that we're dealing with
+>   * @state: Saved state returned from pci_store_saved_state()
+>   */
+> -static int pci_load_saved_state(struct pci_dev *dev,
+> -                               struct pci_saved_state *state)
+> +int pci_load_saved_state(struct pci_dev *dev,
+> +                        struct pci_saved_state *state)
+>  {
+>         struct pci_cap_saved_data *cap;
+>
+> @@ -1171,6 +1171,7 @@ static int pci_load_saved_state(struct pci_dev *dev,
+>         dev->state_saved = true;
+>         return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(pci_load_saved_state);
+>
+>  /**
+>   * pci_load_and_free_saved_state - Reload the save state pointed to by state,
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 5be8db4..08088cb1 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1003,6 +1003,8 @@ void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
+>  int pci_save_state(struct pci_dev *dev);
+>  void pci_restore_state(struct pci_dev *dev);
+>  struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
+> +int pci_load_saved_state(struct pci_dev *dev,
+> +                        struct pci_saved_state *state);
+>  int pci_load_and_free_saved_state(struct pci_dev *dev,
+>                                   struct pci_saved_state **state);
+>  struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
+> --
+> 1.9.3
+>
