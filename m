@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaLCTnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:43:11 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:36748 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaLCTnJ (ORCPT
+	id S1751291AbaLCTpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:45:15 -0500
+Received: from na6sys009bog019.obsmtp.com ([74.125.150.78]:38499 "HELO
+	na6sys009bog019.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750833AbaLCTpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:43:09 -0500
-Date: Wed, 3 Dec 2014 14:43:06 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] optimize ktime_divns for constant divisors
-Message-ID: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Wed, 3 Dec 2014 14:45:13 -0500
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Dec 2014 14:45:12 EST
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CANr6G5z-kokWkBs3bb=bXrBmBUhaqHKH1QfeXycFWxSNf00qFw@mail.gmail.com>
+References: <1417575363-13770-1-git-send-email-joestringer@nicira.com>
+	<1417575363-13770-2-git-send-email-joestringer@nicira.com>
+	<CANr6G5z-kokWkBs3bb=bXrBmBUhaqHKH1QfeXycFWxSNf00qFw@mail.gmail.com>
+Date: Wed, 3 Dec 2014 11:45:12 -0800
+Message-ID: <CALnjE+qfdFu4Vv3RaUmOtXuvrY+_iCFLNDXhFu2+zDHBJx0L0A@mail.gmail.com>
+Subject: Re: [PATCHv11 net-next 2/2] openvswitch: Add support for unique flow IDs.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        Linux Netdev List <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least on ARM, do_div() is optimized to turn constant divisors into
-an inline multiplication by the reciprocal value at compile time. 
-However this optimization is missed entirely whenever ktime_divns() is
-used and the slow out-of-line division code is used all the time.
+On Wed, Dec 3, 2014 at 10:47 AM, Joe Stringer <joestringer@nicira.com> wrote:
+> I forgot to mention that this is the first post based against net-next.
+>
+> On 2 December 2014 at 18:56, Joe Stringer <joestringer@nicira.com> wrote:
+>> <....snip...>
+>> diff --git a/net/openvswitch/flow.h b/net/openvswitch/flow.h
+>> index a8b30f3..7f31dbf 100644
+>> --- a/net/openvswitch/flow.h
+>> +++ b/net/openvswitch/flow.h
+>> @@ -197,6 +197,13 @@ struct sw_flow_match {
+>>         struct sw_flow_mask *mask;
+>>  };
+>>
+>> +#define MAX_UFID_LENGTH 256
+>> +
+>> +struct sw_flow_id {
+>> +       u32 ufid_len;
+>> +       u32 ufid[MAX_UFID_LENGTH / 4];
+>> +};
+>> +
+>>  struct sw_flow_actions {
+>>         struct rcu_head rcu;
+>>         u32 actions_len;
+>
+> Pravin, I changed the 'struct sw_flow_id' to the above after feedback
+> from the previous round, but it doesn't seem quite right. Is this what
+> you meant? Given that current ovs-vswitchd userspace only generates
+> 128bit UFIDs, it seems wasteful to be allocating so much for this. Did
+> you have in mind for this to be united with the unmasked_key?
 
-Let ktime_divns() use do_div() inline whenever the divisor is constant
-and small enough.  This will make things like ktime_to_us() and 
-ktime_to_ms() much faster.
-
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index c9d645ad98..411dd8bfe5 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -166,7 +166,17 @@ static inline bool ktime_before(const ktime_t cmp1, const ktime_t cmp2)
- }
- 
- #if BITS_PER_LONG < 64
--extern u64 ktime_divns(const ktime_t kt, s64 div);
-+extern u64 __ktime_divns(const ktime_t kt, s64 div);
-+static inline u64 ktime_divns(const ktime_t kt, s64 div)
-+{
-+	if (__builtin_constant_p(div) && !(div >> 32)) {
-+		u64 ns = kt.tv64;
-+		do_div(ns, div);
-+		return ns;
-+	} else {
-+		return __ktime_divns(kt, div);
-+	}
-+}
- #else /* BITS_PER_LONG < 64 */
- # define ktime_divns(kt, div)		(u64)((kt).tv64 / (div))
- #endif
-diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index 37e50aadd4..890535c41c 100644
---- a/kernel/time/hrtimer.c
-+++ b/kernel/time/hrtimer.c
-@@ -266,7 +266,7 @@ lock_hrtimer_base(const struct hrtimer *timer, unsigned long *flags)
- /*
-  * Divide a ktime value by a nanosecond value
-  */
--u64 ktime_divns(const ktime_t kt, s64 div)
-+u64 __ktime_divns(const ktime_t kt, s64 div)
- {
- 	u64 dclc;
- 	int sft = 0;
-@@ -282,7 +282,7 @@ u64 ktime_divns(const ktime_t kt, s64 div)
- 
- 	return dclc;
- }
--EXPORT_SYMBOL_GPL(ktime_divns);
-+EXPORT_SYMBOL_GPL(__ktime_divns);
- #endif /* BITS_PER_LONG >= 64 */
- 
- /*
+I am fine with 128bits of ufid, we can extend it later if we need it.
+But what do you mean by united unmasked key? Can you define the struct
+here?
