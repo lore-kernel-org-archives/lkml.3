@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094AbaLCL7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:59:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54626 "EHLO mx2.suse.de"
+	id S1754115AbaLCL7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:59:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54669 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306AbaLCL1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:11 -0500
+	id S1752265AbaLCL1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:09 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <idryomov@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 028/101] libceph: do not crash on large auth tickets
-Date: Wed,  3 Dec 2014 12:25:50 +0100
-Message-Id: <8ad766627efd7296267b8ddb231d990f84c90bdd.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 013/101] sparc64: Fix crashes in schizo_pcierr_intr_other().
+Date: Wed,  3 Dec 2014 12:25:35 +0100
+Message-Id: <80059d68eda6b553d0e6e730bfb37e3c2700ce84.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,387 +22,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilya Dryomov <idryomov@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aaef31703a0cf6a733e651885bfb49edc3ac6774 upstream.
+[ Upstream commit 7da89a2a3776442a57e918ca0b8678d1b16a7072 ]
 
-Large (greater than 32k, the value of PAGE_ALLOC_COSTLY_ORDER) auth
-tickets will have their buffers vmalloc'ed, which leads to the
-following crash in crypto:
+Meelis Roos reports crashes during bootup on a V480 that look like
+this:
 
-[   28.685082] BUG: unable to handle kernel paging request at ffffeb04000032c0
-[   28.686032] IP: [<ffffffff81392b42>] scatterwalk_pagedone+0x22/0x80
-[   28.686032] PGD 0
-[   28.688088] Oops: 0000 [#1] PREEMPT SMP
-[   28.688088] Modules linked in:
-[   28.688088] CPU: 0 PID: 878 Comm: kworker/0:2 Not tainted 3.17.0-vm+ #305
-[   28.688088] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[   28.688088] Workqueue: ceph-msgr con_work
-[   28.688088] task: ffff88011a7f9030 ti: ffff8800d903c000 task.ti: ffff8800d903c000
-[   28.688088] RIP: 0010:[<ffffffff81392b42>]  [<ffffffff81392b42>] scatterwalk_pagedone+0x22/0x80
-[   28.688088] RSP: 0018:ffff8800d903f688  EFLAGS: 00010286
-[   28.688088] RAX: ffffeb04000032c0 RBX: ffff8800d903f718 RCX: ffffeb04000032c0
-[   28.688088] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff8800d903f750
-[   28.688088] RBP: ffff8800d903f688 R08: 00000000000007de R09: ffff8800d903f880
-[   28.688088] R10: 18df467c72d6257b R11: 0000000000000000 R12: 0000000000000010
-[   28.688088] R13: ffff8800d903f750 R14: ffff8800d903f8a0 R15: 0000000000000000
-[   28.688088] FS:  00007f50a41c7700(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-[   28.688088] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   28.688088] CR2: ffffeb04000032c0 CR3: 00000000da3f3000 CR4: 00000000000006b0
-[   28.688088] Stack:
-[   28.688088]  ffff8800d903f698 ffffffff81392ca8 ffff8800d903f6e8 ffffffff81395d32
-[   28.688088]  ffff8800dac96000 ffff880000000000 ffff8800d903f980 ffff880119b7e020
-[   28.688088]  ffff880119b7e010 0000000000000000 0000000000000010 0000000000000010
-[   28.688088] Call Trace:
-[   28.688088]  [<ffffffff81392ca8>] scatterwalk_done+0x38/0x40
-[   28.688088]  [<ffffffff81392ca8>] scatterwalk_done+0x38/0x40
-[   28.688088]  [<ffffffff81395d32>] blkcipher_walk_done+0x182/0x220
-[   28.688088]  [<ffffffff813990bf>] crypto_cbc_encrypt+0x15f/0x180
-[   28.688088]  [<ffffffff81399780>] ? crypto_aes_set_key+0x30/0x30
-[   28.688088]  [<ffffffff8156c40c>] ceph_aes_encrypt2+0x29c/0x2e0
-[   28.688088]  [<ffffffff8156d2a3>] ceph_encrypt2+0x93/0xb0
-[   28.688088]  [<ffffffff8156d7da>] ceph_x_encrypt+0x4a/0x60
-[   28.688088]  [<ffffffff8155b39d>] ? ceph_buffer_new+0x5d/0xf0
-[   28.688088]  [<ffffffff8156e837>] ceph_x_build_authorizer.isra.6+0x297/0x360
-[   28.688088]  [<ffffffff8112089b>] ? kmem_cache_alloc_trace+0x11b/0x1c0
-[   28.688088]  [<ffffffff8156b496>] ? ceph_auth_create_authorizer+0x36/0x80
-[   28.688088]  [<ffffffff8156ed83>] ceph_x_create_authorizer+0x63/0xd0
-[   28.688088]  [<ffffffff8156b4b4>] ceph_auth_create_authorizer+0x54/0x80
-[   28.688088]  [<ffffffff8155f7c0>] get_authorizer+0x80/0xd0
-[   28.688088]  [<ffffffff81555a8b>] prepare_write_connect+0x18b/0x2b0
-[   28.688088]  [<ffffffff81559289>] try_read+0x1e59/0x1f10
+====================
+[   61.300577] PCI: Scanning PBM /pci@9,600000
+[   61.304867] schizo f009b070: PCI host bridge to bus 0003:00
+[   61.310385] pci_bus 0003:00: root bus resource [io  0x7ffe9000000-0x7ffe9ffffff] (bus address [0x0000-0xffffff])
+[   61.320515] pci_bus 0003:00: root bus resource [mem 0x7fb00000000-0x7fbffffffff] (bus address [0x00000000-0xffffffff])
+[   61.331173] pci_bus 0003:00: root bus resource [bus 00]
+[   61.385344] Unable to handle kernel NULL pointer dereference
+[   61.390970] tsk->{mm,active_mm}->context = 0000000000000000
+[   61.396515] tsk->{mm,active_mm}->pgd = fff000b000002000
+[   61.401716]               \|/ ____ \|/
+[   61.401716]               "@'/ .. \`@"
+[   61.401716]               /_| \__/ |_\
+[   61.401716]                  \__U_/
+[   61.416362] swapper/0(0): Oops [#1]
+[   61.419837] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1-00422-g2cc9188-dirty #24
+[   61.427975] task: fff000b0fd8e9c40 ti: fff000b0fd928000 task.ti: fff000b0fd928000
+[   61.435426] TSTATE: 0000004480e01602 TPC: 00000000004455e4 TNPC: 00000000004455e8 Y: 00000000    Not tainted
+[   61.445230] TPC: <schizo_pcierr_intr+0x104/0x560>
+[   61.449897] g0: 0000000000000000 g1: 0000000000000000 g2: 0000000000a10f78 g3: 000000000000000a
+[   61.458563] g4: fff000b0fd8e9c40 g5: fff000b0fdd82000 g6: fff000b0fd928000 g7: 000000000000000a
+[   61.467229] o0: 000000000000003d o1: 0000000000000000 o2: 0000000000000006 o3: fff000b0ffa5fc7e
+[   61.475894] o4: 0000000000060000 o5: c000000000000000 sp: fff000b0ffa5f3c1 ret_pc: 00000000004455cc
+[   61.484909] RPC: <schizo_pcierr_intr+0xec/0x560>
+[   61.489500] l0: fff000b0fd8e9c40 l1: 0000000000a20800 l2: 0000000000000000 l3: 000000000119a430
+[   61.498164] l4: 0000000001742400 l5: 00000000011cfbe0 l6: 00000000011319c0 l7: fff000b0fd8ea348
+[   61.506830] i0: 0000000000000000 i1: fff000b0fdb34000 i2: 0000000320000000 i3: 0000000000000000
+[   61.515497] i4: 00060002010b003f i5: 0000040004e02000 i6: fff000b0ffa5f481 i7: 00000000004a9920
+[   61.524175] I7: <handle_irq_event_percpu+0x40/0x140>
+[   61.529099] Call Trace:
+[   61.531531]  [00000000004a9920] handle_irq_event_percpu+0x40/0x140
+[   61.537681]  [00000000004a9a58] handle_irq_event+0x38/0x80
+[   61.543145]  [00000000004ac77c] handle_fasteoi_irq+0xbc/0x200
+[   61.548860]  [00000000004a9084] generic_handle_irq+0x24/0x40
+[   61.554500]  [000000000042be0c] handler_irq+0xac/0x100
+====================
 
-This is because we set up crypto scatterlists as if all buffers were
-kmalloc'ed.  Fix it.
+The problem is that pbm->pci_bus->self is NULL.
 
-Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
+This code is trying to go through the standard PCI config space
+interfaces to read the PCI controller's PCI_STATUS register.
+
+This doesn't work, because we more often than not do not enumerate
+the PCI controller as a bonafide PCI device during the OF device
+node scan.  Therefore bus->self remains NULL.
+
+Existing common code for PSYCHO and PSYCHO-like PCI controllers
+handles this properly, by doing the config space access directly.
+
+Do the same here, pbm->pci_ops->{read,write}().
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ceph/crypto.c | 169 ++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 132 insertions(+), 37 deletions(-)
+ arch/sparc/kernel/pci_schizo.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/ceph/crypto.c b/net/ceph/crypto.c
-index 6e7a236525b6..06f19b9e159a 100644
---- a/net/ceph/crypto.c
-+++ b/net/ceph/crypto.c
-@@ -89,11 +89,82 @@ static struct crypto_blkcipher *ceph_crypto_alloc_cipher(void)
- 
- static const u8 *aes_iv = (u8 *)CEPH_AES_IV;
- 
-+/*
-+ * Should be used for buffers allocated with ceph_kvmalloc().
-+ * Currently these are encrypt out-buffer (ceph_buffer) and decrypt
-+ * in-buffer (msg front).
-+ *
-+ * Dispose of @sgt with teardown_sgtable().
-+ *
-+ * @prealloc_sg is to avoid memory allocation inside sg_alloc_table()
-+ * in cases where a single sg is sufficient.  No attempt to reduce the
-+ * number of sgs by squeezing physically contiguous pages together is
-+ * made though, for simplicity.
-+ */
-+static int setup_sgtable(struct sg_table *sgt, struct scatterlist *prealloc_sg,
-+			 const void *buf, unsigned int buf_len)
-+{
-+	struct scatterlist *sg;
-+	const bool is_vmalloc = is_vmalloc_addr(buf);
-+	unsigned int off = offset_in_page(buf);
-+	unsigned int chunk_cnt = 1;
-+	unsigned int chunk_len = PAGE_ALIGN(off + buf_len);
-+	int i;
-+	int ret;
-+
-+	if (buf_len == 0) {
-+		memset(sgt, 0, sizeof(*sgt));
-+		return -EINVAL;
-+	}
-+
-+	if (is_vmalloc) {
-+		chunk_cnt = chunk_len >> PAGE_SHIFT;
-+		chunk_len = PAGE_SIZE;
-+	}
-+
-+	if (chunk_cnt > 1) {
-+		ret = sg_alloc_table(sgt, chunk_cnt, GFP_NOFS);
-+		if (ret)
-+			return ret;
-+	} else {
-+		WARN_ON(chunk_cnt != 1);
-+		sg_init_table(prealloc_sg, 1);
-+		sgt->sgl = prealloc_sg;
-+		sgt->nents = sgt->orig_nents = 1;
-+	}
-+
-+	for_each_sg(sgt->sgl, sg, sgt->orig_nents, i) {
-+		struct page *page;
-+		unsigned int len = min(chunk_len - off, buf_len);
-+
-+		if (is_vmalloc)
-+			page = vmalloc_to_page(buf);
-+		else
-+			page = virt_to_page(buf);
-+
-+		sg_set_page(sg, page, len, off);
-+
-+		off = 0;
-+		buf += len;
-+		buf_len -= len;
-+	}
-+	WARN_ON(buf_len != 0);
-+
-+	return 0;
-+}
-+
-+static void teardown_sgtable(struct sg_table *sgt)
-+{
-+	if (sgt->orig_nents > 1)
-+		sg_free_table(sgt);
-+}
-+
- static int ceph_aes_encrypt(const void *key, int key_len,
- 			    void *dst, size_t *dst_len,
- 			    const void *src, size_t src_len)
+diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
+index 8f76f23dac38..f9c6813c132d 100644
+--- a/arch/sparc/kernel/pci_schizo.c
++++ b/arch/sparc/kernel/pci_schizo.c
+@@ -581,7 +581,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
  {
--	struct scatterlist sg_in[2], sg_out[1];
-+	struct scatterlist sg_in[2], prealloc_sg;
-+	struct sg_table sg_out;
- 	struct crypto_blkcipher *tfm = ceph_crypto_alloc_cipher();
- 	struct blkcipher_desc desc = { .tfm = tfm, .flags = 0 };
- 	int ret;
-@@ -109,16 +180,18 @@ static int ceph_aes_encrypt(const void *key, int key_len,
+ 	unsigned long csr_reg, csr, csr_error_bits;
+ 	irqreturn_t ret = IRQ_NONE;
+-	u16 stat;
++	u32 stat;
  
- 	*dst_len = src_len + zero_padding;
- 
--	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	sg_init_table(sg_in, 2);
- 	sg_set_buf(&sg_in[0], src, src_len);
- 	sg_set_buf(&sg_in[1], pad, zero_padding);
--	sg_init_table(sg_out, 1);
--	sg_set_buf(sg_out, dst, *dst_len);
-+	ret = setup_sgtable(&sg_out, &prealloc_sg, dst, *dst_len);
-+	if (ret)
-+		goto out_tfm;
-+
-+	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	iv = crypto_blkcipher_crt(tfm)->iv;
- 	ivsize = crypto_blkcipher_ivsize(tfm);
--
- 	memcpy(iv, aes_iv, ivsize);
-+
- 	/*
- 	print_hex_dump(KERN_ERR, "enc key: ", DUMP_PREFIX_NONE, 16, 1,
- 		       key, key_len, 1);
-@@ -127,16 +200,22 @@ static int ceph_aes_encrypt(const void *key, int key_len,
- 	print_hex_dump(KERN_ERR, "enc pad: ", DUMP_PREFIX_NONE, 16, 1,
- 			pad, zero_padding, 1);
- 	*/
--	ret = crypto_blkcipher_encrypt(&desc, sg_out, sg_in,
-+	ret = crypto_blkcipher_encrypt(&desc, sg_out.sgl, sg_in,
- 				     src_len + zero_padding);
--	crypto_free_blkcipher(tfm);
--	if (ret < 0)
-+	if (ret < 0) {
- 		pr_err("ceph_aes_crypt failed %d\n", ret);
-+		goto out_sg;
-+	}
- 	/*
- 	print_hex_dump(KERN_ERR, "enc out: ", DUMP_PREFIX_NONE, 16, 1,
- 		       dst, *dst_len, 1);
- 	*/
--	return 0;
-+
-+out_sg:
-+	teardown_sgtable(&sg_out);
-+out_tfm:
-+	crypto_free_blkcipher(tfm);
-+	return ret;
- }
- 
- static int ceph_aes_encrypt2(const void *key, int key_len, void *dst,
-@@ -144,7 +223,8 @@ static int ceph_aes_encrypt2(const void *key, int key_len, void *dst,
- 			     const void *src1, size_t src1_len,
- 			     const void *src2, size_t src2_len)
- {
--	struct scatterlist sg_in[3], sg_out[1];
-+	struct scatterlist sg_in[3], prealloc_sg;
-+	struct sg_table sg_out;
- 	struct crypto_blkcipher *tfm = ceph_crypto_alloc_cipher();
- 	struct blkcipher_desc desc = { .tfm = tfm, .flags = 0 };
- 	int ret;
-@@ -160,17 +240,19 @@ static int ceph_aes_encrypt2(const void *key, int key_len, void *dst,
- 
- 	*dst_len = src1_len + src2_len + zero_padding;
- 
--	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	sg_init_table(sg_in, 3);
- 	sg_set_buf(&sg_in[0], src1, src1_len);
- 	sg_set_buf(&sg_in[1], src2, src2_len);
- 	sg_set_buf(&sg_in[2], pad, zero_padding);
--	sg_init_table(sg_out, 1);
--	sg_set_buf(sg_out, dst, *dst_len);
-+	ret = setup_sgtable(&sg_out, &prealloc_sg, dst, *dst_len);
-+	if (ret)
-+		goto out_tfm;
-+
-+	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	iv = crypto_blkcipher_crt(tfm)->iv;
- 	ivsize = crypto_blkcipher_ivsize(tfm);
--
- 	memcpy(iv, aes_iv, ivsize);
-+
- 	/*
- 	print_hex_dump(KERN_ERR, "enc  key: ", DUMP_PREFIX_NONE, 16, 1,
- 		       key, key_len, 1);
-@@ -181,23 +263,30 @@ static int ceph_aes_encrypt2(const void *key, int key_len, void *dst,
- 	print_hex_dump(KERN_ERR, "enc  pad: ", DUMP_PREFIX_NONE, 16, 1,
- 			pad, zero_padding, 1);
- 	*/
--	ret = crypto_blkcipher_encrypt(&desc, sg_out, sg_in,
-+	ret = crypto_blkcipher_encrypt(&desc, sg_out.sgl, sg_in,
- 				     src1_len + src2_len + zero_padding);
--	crypto_free_blkcipher(tfm);
--	if (ret < 0)
-+	if (ret < 0) {
- 		pr_err("ceph_aes_crypt2 failed %d\n", ret);
-+		goto out_sg;
-+	}
- 	/*
- 	print_hex_dump(KERN_ERR, "enc  out: ", DUMP_PREFIX_NONE, 16, 1,
- 		       dst, *dst_len, 1);
- 	*/
--	return 0;
-+
-+out_sg:
-+	teardown_sgtable(&sg_out);
-+out_tfm:
-+	crypto_free_blkcipher(tfm);
-+	return ret;
- }
- 
- static int ceph_aes_decrypt(const void *key, int key_len,
- 			    void *dst, size_t *dst_len,
- 			    const void *src, size_t src_len)
- {
--	struct scatterlist sg_in[1], sg_out[2];
-+	struct sg_table sg_in;
-+	struct scatterlist sg_out[2], prealloc_sg;
- 	struct crypto_blkcipher *tfm = ceph_crypto_alloc_cipher();
- 	struct blkcipher_desc desc = { .tfm = tfm };
- 	char pad[16];
-@@ -209,16 +298,16 @@ static int ceph_aes_decrypt(const void *key, int key_len,
- 	if (IS_ERR(tfm))
- 		return PTR_ERR(tfm);
- 
--	crypto_blkcipher_setkey((void *)tfm, key, key_len);
--	sg_init_table(sg_in, 1);
- 	sg_init_table(sg_out, 2);
--	sg_set_buf(sg_in, src, src_len);
- 	sg_set_buf(&sg_out[0], dst, *dst_len);
- 	sg_set_buf(&sg_out[1], pad, sizeof(pad));
-+	ret = setup_sgtable(&sg_in, &prealloc_sg, src, src_len);
-+	if (ret)
-+		goto out_tfm;
- 
-+	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	iv = crypto_blkcipher_crt(tfm)->iv;
- 	ivsize = crypto_blkcipher_ivsize(tfm);
--
- 	memcpy(iv, aes_iv, ivsize);
- 
- 	/*
-@@ -227,12 +316,10 @@ static int ceph_aes_decrypt(const void *key, int key_len,
- 	print_hex_dump(KERN_ERR, "dec  in: ", DUMP_PREFIX_NONE, 16, 1,
- 		       src, src_len, 1);
- 	*/
--
--	ret = crypto_blkcipher_decrypt(&desc, sg_out, sg_in, src_len);
--	crypto_free_blkcipher(tfm);
-+	ret = crypto_blkcipher_decrypt(&desc, sg_out, sg_in.sgl, src_len);
- 	if (ret < 0) {
- 		pr_err("ceph_aes_decrypt failed %d\n", ret);
--		return ret;
-+		goto out_sg;
+ 	csr_reg = pbm->pbm_regs + SCHIZO_PCI_CTRL;
+ 	csr = upa_readq(csr_reg);
+@@ -617,7 +617,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 			       pbm->name);
+ 		ret = IRQ_HANDLED;
  	}
- 
- 	if (src_len <= *dst_len)
-@@ -250,7 +337,12 @@ static int ceph_aes_decrypt(const void *key, int key_len,
- 	print_hex_dump(KERN_ERR, "dec out: ", DUMP_PREFIX_NONE, 16, 1,
- 		       dst, *dst_len, 1);
- 	*/
--	return 0;
-+
-+out_sg:
-+	teardown_sgtable(&sg_in);
-+out_tfm:
-+	crypto_free_blkcipher(tfm);
-+	return ret;
- }
- 
- static int ceph_aes_decrypt2(const void *key, int key_len,
-@@ -258,7 +350,8 @@ static int ceph_aes_decrypt2(const void *key, int key_len,
- 			     void *dst2, size_t *dst2_len,
- 			     const void *src, size_t src_len)
- {
--	struct scatterlist sg_in[1], sg_out[3];
-+	struct sg_table sg_in;
-+	struct scatterlist sg_out[3], prealloc_sg;
- 	struct crypto_blkcipher *tfm = ceph_crypto_alloc_cipher();
- 	struct blkcipher_desc desc = { .tfm = tfm };
- 	char pad[16];
-@@ -270,17 +363,17 @@ static int ceph_aes_decrypt2(const void *key, int key_len,
- 	if (IS_ERR(tfm))
- 		return PTR_ERR(tfm);
- 
--	sg_init_table(sg_in, 1);
--	sg_set_buf(sg_in, src, src_len);
- 	sg_init_table(sg_out, 3);
- 	sg_set_buf(&sg_out[0], dst1, *dst1_len);
- 	sg_set_buf(&sg_out[1], dst2, *dst2_len);
- 	sg_set_buf(&sg_out[2], pad, sizeof(pad));
-+	ret = setup_sgtable(&sg_in, &prealloc_sg, src, src_len);
-+	if (ret)
-+		goto out_tfm;
- 
- 	crypto_blkcipher_setkey((void *)tfm, key, key_len);
- 	iv = crypto_blkcipher_crt(tfm)->iv;
- 	ivsize = crypto_blkcipher_ivsize(tfm);
--
- 	memcpy(iv, aes_iv, ivsize);
- 
- 	/*
-@@ -289,12 +382,10 @@ static int ceph_aes_decrypt2(const void *key, int key_len,
- 	print_hex_dump(KERN_ERR, "dec   in: ", DUMP_PREFIX_NONE, 16, 1,
- 		       src, src_len, 1);
- 	*/
--
--	ret = crypto_blkcipher_decrypt(&desc, sg_out, sg_in, src_len);
--	crypto_free_blkcipher(tfm);
-+	ret = crypto_blkcipher_decrypt(&desc, sg_out, sg_in.sgl, src_len);
- 	if (ret < 0) {
- 		pr_err("ceph_aes_decrypt failed %d\n", ret);
--		return ret;
-+		goto out_sg;
+-	pci_read_config_word(pbm->pci_bus->self, PCI_STATUS, &stat);
++	pbm->pci_ops->read(pbm->pci_bus, 0, PCI_STATUS, 2, &stat);
+ 	if (stat & (PCI_STATUS_PARITY |
+ 		    PCI_STATUS_SIG_TARGET_ABORT |
+ 		    PCI_STATUS_REC_TARGET_ABORT |
+@@ -625,7 +625,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 		    PCI_STATUS_SIG_SYSTEM_ERROR)) {
+ 		printk("%s: PCI bus error, PCI_STATUS[%04x]\n",
+ 		       pbm->name, stat);
+-		pci_write_config_word(pbm->pci_bus->self, PCI_STATUS, 0xffff);
++		pbm->pci_ops->write(pbm->pci_bus, 0, PCI_STATUS, 2, 0xffff);
+ 		ret = IRQ_HANDLED;
  	}
- 
- 	if (src_len <= *dst1_len)
-@@ -324,7 +415,11 @@ static int ceph_aes_decrypt2(const void *key, int key_len,
- 		       dst2, *dst2_len, 1);
- 	*/
- 
--	return 0;
-+out_sg:
-+	teardown_sgtable(&sg_in);
-+out_tfm:
-+	crypto_free_blkcipher(tfm);
-+	return ret;
- }
- 
- 
+ 	return ret;
 -- 
 2.1.3
 
