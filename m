@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaLCOvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:51:48 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:39823 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaLCOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:51:46 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Jason Wang <jasowang@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next Problems with VPN tunnel - no packets sent
-In-Reply-To: Your message of "Wed, 03 Dec 2014 03:20:19 +0008."
-             <1417576339.19959.0@smtp.corp.redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <17929.1417552899@turing-police.cc.vt.edu>
-            <1417576339.19959.0@smtp.corp.redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1417618280_7177P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 03 Dec 2014 09:51:20 -0500
-Message-ID: <7763.1417618280@turing-police.cc.vt.edu>
+	id S1751367AbaLCOw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:52:26 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:54243 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaLCOwY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:52:24 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC 5/5] i2c: omap: add trace
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141203144934.GB16138@saruman>
+Date: Wed, 3 Dec 2014 17:52:18 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2E40A984-A6AA-4D17-AB1D-725004EF845F@gmail.com>
+References: <1417617242-16869-1-git-send-email-al.kochet@gmail.com> <1417617242-16869-6-git-send-email-al.kochet@gmail.com> <20141203144934.GB16138@saruman>
+To: balbi@ti.com
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1417618280_7177P
-Content-Type: text/plain; charset=us-ascii
 
-On Wed, 03 Dec 2014 03:20:19 +0008, Jason Wang said:
+03 дек. 2014 г., в 17:49, Felipe Balbi <balbi@ti.com> написал(а):
 
-> > Still broken in next-20141201, and bisection fingers this commit:
-> >
-> > commit e0b46d0ee9c240c7430a47e9b0365674d4a04522
-> > Author: Herbert Xu <herbert@gondor.apana.org.au>
-> > Date:   Fri Nov 7 21:22:23 2014 +0800
-> >
-> >     tun: Use iovec iterators
+> NAK, if you want to add traces, use, well, tracepoints :-) It makes no
+> sense to hack stuff like this.
 
-> > What's the best way to proceed?
->
-> See another fixes from Herbert, it probably fixes your issue:
->
-> http://marc.info/?l=linux-netdev&m=141734182302021&w=2
+It's for testing only the problem reported not for upstream :)
+The hack stuff like this is to allow for me to see what happens on the Tony's board.
+I don't have omap2430 board.
 
-Unfortunately, I'm still seeing the same behavior with that patch
-applied to next-20141201....
+Regards,
+Alexander.
 
-
---==_Exmh_1417618280_7177P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVH8jaAdmEQWDXROgAQJW0g/+MHfjfND4Q6yMqjZuKgLMT28bkumu1d6s
-nuL9xlBTkX/uXBtKVlki5+ndfGPqitBnFvWG/HoxKMQzarpYEY89j/4s+iAWt/fl
-MPay2LEoFsJPfoCMR1VfXZ9uEvEDk1Wx+StitBcdCqFCbeS9KmvlJk5Qmw92VE5Y
-MElHT7kEcQRwTXRYqfTQyR+orf5Tnc4CE9k5rXWfXiC/owaXQ8771M1qOuvldRAX
-Bogwc9raddYwvJRpJe2BDMdlfmptirnDcRCNUxe1yUoA5YEK0VCR0blQ2KT8/XlE
-uKJu/Zwx7WTb/Ww5Mr1Nk2J2agyB1oJ06YR2J87EF37eWwOJOOXoNcHKUoScxZSZ
-u//A5R5h9EqY+kCTKqzq+h9T3uMyAQ3HUKHZYKnKMtPd14XTyVUMZaCzRFDfI9FE
-qqC5atdaHJvKiLE/R+JACvscxX+gf1rmCkXx/IA+woP0/S1/e/yy623DXZ70nlbV
-dnrBSrO5z/VJPVOpIuvQhnN9p6HBBBizbwMfTOl/GdU7+2SLzrtDE0eggeErPvky
-oep3vM6Z+BCdvBJVdscKkA7/BLM+kgSq9IBIeOPRUdfSqhq1yMLGW2cMBm14rK1g
-uRXvar+VnCFGtp3reiaAPNfdhTELhW3zepqZHlWa3HvH0zabP7e1LMoC+gre0EuT
-dWgTzpCzHTc=
-=Y47g
------END PGP SIGNATURE-----
-
---==_Exmh_1417618280_7177P--
