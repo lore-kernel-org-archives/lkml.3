@@ -1,226 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaLCO5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:57:00 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:17982 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaLCO46 (ORCPT
+	id S1751659AbaLCPHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:07:31 -0500
+Received: from smtp-out-200.synserver.de ([212.40.185.200]:1073 "EHLO
+	smtp-out-200.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaLCPHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:56:58 -0500
-Message-ID: <547F24B6.8070504@atmel.com>
-Date: Wed, 3 Dec 2014 15:56:54 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 06/11] memory: atmel-ebi: add DT bindings documentation
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-7-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1417429647-3419-7-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Wed, 3 Dec 2014 10:07:30 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 31773
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] microblaze: Fix mmap for cache coherent memory
+Date: Wed,  3 Dec 2014 16:07:28 +0100
+Message-Id: <1417619248-20365-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/12/2014 11:27, Boris Brezillon a écrit :
-> The EBI (External Bus Interface) is used to access external peripherals
-> (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> Each device is assigned a CS line and an address range and can have its
-> own configuration (timings, access mode, bus width, ...).
-> This driver provides a generic DT binding to configure a device according
-> to its requirements.
-> For specific device controllers (like the NAND one) the SMC timings
-> should be configured by the controller driver through the matrix and smc
-> syscon regmaps.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->  .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++++++++++++++++++
->  1 file changed, 155 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> new file mode 100644
-> index 0000000..3749ea1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
-> @@ -0,0 +1,155 @@
-> +* Device tree bindings for Atmel EBI
-> +
-> +The External Bus Interface (EBI) controller is a bus where you can connect
-> +asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
-> +The EBI provides a glue-less interface to asynchronous memories though the SMC
-> +(Static Memory Controller).
-> +Synchronous memories (and some asynchronous memories like NANDs) can be
-> +attached to specialized controllers which are responsible for configuring the
-> +bus appropriately according to the connected device.
-> +In the other hand, the bus interface can be automated for simple asynchronous
-> +devices.
-> +
-> +Required properties:
-> +
-> +- compatible:		"atmel,at91sam9260-ebi"
-> +			"atmel,at91sam9261-ebi"
-> +			"atmel,at91sam9263-ebi0"
-> +			"atmel,at91sam9263-ebi1"
+When running in non-cache coherent configuration the memory that was
+allocated with dma_alloc_coherent() has a custom mapping and so there is no
+1-to-1 relationship between the kernel virtual address and the PFN. This
+means that virt_to_pfn() will not work correctly for those addresses and the
+default mmap implementation in the form of dma_common_mmap() will map some
+random, but not the requested, memory area.
 
-Ditto: 9263 twice.
+Fix this by providing a custom mmap implementation that looks up the PFN
+from the page table rather than using virt_to_pfn.
 
-> +			"atmel,at91sam9g45-ebi"
-> +			"atmel,at91sam9x5-ebi"
-> +			"atmel,sama5d3-ebi"
-> +
-> +- reg:			Contains offset/length value for EBI memory mapping.
-> +			This property might contain several entries if the EBI
-> +			memory range is not contiguous
-> +
-> +- #address-cells:	Must be 2.
-> +			The first cell encodes the CS.
-> +			The second cell encode the offset into the CS memory
-> +			range.
-> +
-> +- #size-cells:		Must be set to 1.
-> +
-> +- ranges:		Encodes CS to memory region association.
-> +
-> +- clocks:		Clock feeding the EBI controller.
-> +			See clock-bindings.txt
-> +
-> +Child chip-select (cs) nodes contain the memory devices nodes connected to
-> +such as NOR (e.g. cfi-flash) and NAND.
-> +There might be board specific devices like FPGAs.
-> +You'll define you device requirements in these child nodes.
-> +
-> +Required child cs node properties:
-> +
-> +- #address-cells:	Must be 2.
-> +
-> +- #size-cells:		Must be 1.
-> +
-> +- ranges:		Empty property indicating that child nodes can inherit
-> +			memory layout.
-> +
-> +Optional child cs node properties:
-> +- atmel,generic-dev		boolean property specifying if the device is
-> +				a generic device.
-> +				The following properties are only parsed if
-> +				this property is present.
-> +				Specialized devices are attached to specialized
-> +				controllers which are responsible for
-> +				configuring the bus appropriately.
-> +				Here are some examples of specialized
-> +				controllers: NAND, CompactFlash, SDR-SDRAM.
-> +
-> +- atmel,bus-width:		width of the asynchronous device's data bus
-> +				8, 16 or 32.
-> +				8 if not present.
-> +
-> +- atmel,byte-access-type	"write" or "select" (see Atmel datasheet).
-> +				"select" if not present.
-> +
-> +- atmel,read-mode		"nrd" or "ncs".
-> +				"ncs" is not present.
-> +
-> +- atmel,write-mode		"nwe" or "ncs".
-> +				"ncs" is not present.
-> +
-> +- atmel,exnw-mode		"disabled", "frozen" or "ready".
-> +				"disabled" if not present.
-> +
-> +- atmel,page-mode		enable page mode if present. The provided value
-> +				defines the page size (supported values: 4, 8,
-> +				16 and 32).
-> +
-> +Optional device timings expressed in nanoseconds (if the property is not
-> +present 0 is assumed):
-> +
-> +- atmel,ncs-rd-setup-ns
-> +- atmel,nrd-setup-ns
-> +- atmel,ncs-wr-setup-ns
-> +- atmel,nwe-setup-ns
-> +- atmel,ncs-rd-pulse-ns
-> +- atmel,nrd-pulse-ns
-> +- atmel,ncs-wr-pulse-ns
-> +- atmel,nwe-pulse-ns
-> +- atmel,nwe-cycle-ns
-> +- atmel,nrd-cycle-ns
-> +- atmel,tdf-ns
-> +
-> +- atmel,tdf-optimized		data float optimized mode. If present the data
-> +				float time is optimized depending on the next
-> +				device being accessed (next device setup
-> +				time is substracted to the current devive data
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ arch/microblaze/include/asm/pgtable.h |  1 +
+ arch/microblaze/kernel/dma.c          | 26 ++++++++++++++++++++++++++
+ arch/microblaze/mm/consistent.c       | 23 ++++++++++++++++++-----
+ 3 files changed, 45 insertions(+), 5 deletions(-)
 
-Typo: subtract, device
-
-> +				float time).
-> +
-> +
-> +
-> +Example:
-> +
-> +	ebi: ebi@10000000 {
-> +		compatible = "atmel,sama5d3-ebi", "simple-bus";
-> +		#address-cells = <2>;
-> +		#size-cells = <1>;
-> +		atmel,smc = <&hsmc>;
-> +		atmel,matrix = <&matrix>;
-> +		reg = <0x10000000 0x10000000
-> +		       0x40000000 0x30000000>;
-> +		ranges = <0x0 0x0 0x10000000 0x10000000
-> +			  0x1 0x0 0x40000000 0x10000000
-> +			  0x2 0x0 0x50000000 0x10000000
-> +			  0x3 0x0 0x60000000 0x10000000>;
-> +		clocks = <&mck>;
-> +
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_ebi_addr>;
-> +
-> +		cs@0 {
-> +			#address-cells = <2>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +			atmel,generic-dev;
-> +			atmel,read-mode = "nrd";
-> +			atmel,write-mode = "nwe";
-> +			atmel,bus-width = <16>;
-> +			atmel,ncs-rd-setup-ns = <0>;
-> +			atmel,ncs-wr-setup-ns = <0>;
-> +			atmel,nwe-setup-ns = <8>;
-> +			atmel,nrd-setup-ns = <16>;
-> +			atmel,ncs-rd-pulse-ns = <84>;
-> +			atmel,ncs-wr-pulse-ns = <84>;
-> +			atmel,nrd-pulse-ns = <76>;
-> +			atmel,nwe-pulse-ns = <76>;
-> +			atmel,nrd-cycle-ns = <107>;
-> +			atmel,nwe-cycle-ns = <84>;
-> +			atmel,tdf-ns = <16>;
-> +
-> +			nor: flash@0,0 {
-> +				compatible = "cfi-flash";
-> +				#address-cells = <1>;
-> +				#size-cells = <1>;
-> +				reg = <0x0 0x0 0x1000000>;
-> +				bank-width = <2>;
-> +			};
-> +		};
-> +	};
-> +
-> 
-
-
+diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/include/asm/pgtable.h
+index 95cef0b..df19d0c 100644
+--- a/arch/microblaze/include/asm/pgtable.h
++++ b/arch/microblaze/include/asm/pgtable.h
+@@ -565,6 +565,7 @@ void consistent_free(size_t size, void *vaddr);
+ void consistent_sync(void *vaddr, size_t size, int direction);
+ void consistent_sync_page(struct page *page, unsigned long offset,
+ 	size_t size, int direction);
++unsigned long consistent_virt_to_pfn(void *vaddr);
+ 
+ void setup_memory(void);
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
+index 4633c36..4822367 100644
+--- a/arch/microblaze/kernel/dma.c
++++ b/arch/microblaze/kernel/dma.c
+@@ -154,9 +154,35 @@ dma_direct_sync_sg_for_device(struct device *dev,
+ 			__dma_sync(sg->dma_address, sg->length, direction);
+ }
+ 
++int dma_direct_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++			     void *cpu_addr, dma_addr_t handle, size_t size,
++			     struct dma_attrs *attrs)
++{
++	unsigned long user_count = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++	unsigned long count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	unsigned long off = vma->vm_pgoff;
++	unsigned long pfn;
++
++	if (!IS_ENABLED(CONFIG_MMU))
++		return -ENXIO;
++
++	if (off >= count || user_count > (count - off))
++		return -ENXIO;
++
++#ifdef NOT_COHERENT_CACHE
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++	pfn = consistent_virt_to_pfn(cpu_addr);
++#else
++	pfn = virt_to_pfn(cpu_addr);
++#endif
++	return remap_pfn_range(vma, vma->vm_start, pfn + off,
++			       vma->vm_end - vma->vm_start, vma->vm_page_prot);
++}
++
+ struct dma_map_ops dma_direct_ops = {
+ 	.alloc		= dma_direct_alloc_coherent,
+ 	.free		= dma_direct_free_coherent,
++	.mmap		= dma_direct_mmap_coherent,
+ 	.map_sg		= dma_direct_map_sg,
+ 	.dma_supported	= dma_direct_dma_supported,
+ 	.map_page	= dma_direct_map_page,
+diff --git a/arch/microblaze/mm/consistent.c b/arch/microblaze/mm/consistent.c
+index e10ad93..f358cd2 100644
+--- a/arch/microblaze/mm/consistent.c
++++ b/arch/microblaze/mm/consistent.c
+@@ -156,6 +156,23 @@ void *consistent_alloc(gfp_t gfp, size_t size, dma_addr_t *dma_handle)
+ }
+ EXPORT_SYMBOL(consistent_alloc);
+ 
++static pte_t *consistent_virt_to_pte(void *vaddr)
++{
++	unsigned long addr = (unsigned long)vaddr;
++
++	return pte_offset_kernel(pmd_offset(pgd_offset_k(addr), addr), addr);
++}
++
++unsigned long consistent_virt_to_pfn(void *vaddr)
++{
++	pte_t *ptep = consistent_virt_to_pte(vaddr);
++
++	if (pte_none(*ptep) || !pte_present(*ptep))
++		return 0;
++
++	return pte_pfn(*ptep);
++}
++
+ /*
+  * free page(s) as defined by the above mapping.
+  */
+@@ -181,13 +198,9 @@ void consistent_free(size_t size, void *vaddr)
+ 	} while (size -= PAGE_SIZE);
+ #else
+ 	do {
+-		pte_t *ptep;
++		pte_t *ptep = consistent_virt_to_pte(vaddr);
+ 		unsigned long pfn;
+ 
+-		ptep = pte_offset_kernel(pmd_offset(pgd_offset_k(
+-						(unsigned int)vaddr),
+-					(unsigned int)vaddr),
+-				(unsigned int)vaddr);
+ 		if (!pte_none(*ptep) && pte_present(*ptep)) {
+ 			pfn = pte_pfn(*ptep);
+ 			pte_clear(&init_mm, (unsigned int)vaddr, ptep);
 -- 
-Nicolas Ferre
+1.8.0
+
