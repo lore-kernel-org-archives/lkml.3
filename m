@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaLCKKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:10:33 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3928 "EHLO mga01.intel.com"
+	id S1751812AbaLCKLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:11:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaLCKKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:10:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="424479651"
-Date: Wed, 3 Dec 2014 12:10:26 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [PATCH v8 0/8] TPM 2.0 support
-Message-ID: <20141203101026.GA14038@intel.com>
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <201412022355.34544.PeterHuewe@gmx.de>
+	id S1750840AbaLCKLk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 05:11:40 -0500
+Date: Wed, 3 Dec 2014 11:11:37 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Pali =?UTF-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+Message-ID: <20141203111137.46165136@endymion.delvare>
+In-Reply-To: <1417598726.14672.6.camel@Pali-Nokia-N900>
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
+	<201411291849.44032@pali>
+	<20141129175152.GA32510@kroah.com>
+	<201411291904.07644@pali>
+	<1417526599.15239.7.camel@chaos.site>
+	<547DCC15.70300@roeck-us.net>
+	<20141203100928.14d23c9f@endymion.delvare>
+	<1417598726.14672.6.camel@Pali-Nokia-N900>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412022355.34544.PeterHuewe@gmx.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 11:55:34PM +0100, Peter Hüwe wrote:
-> Hi Jarkko,
-> 
-> 
-> Am Dienstag, 2. Dezember 2014, 23:31:12 schrieb Jarkko Sakkinen:
-> > This patch set enables TPM2 protocol and provides drivers for FIFO and
-> > CRB interfaces. This patch set does not export any sysfs attributes for
-> > TPM 2.0 because existing sysfs attributes have three non-trivial issues:
-> > 
-> 
-> 
-> which tree are you basing your patches against?
-> Can you use 
-> https://github.com/PeterHuewe/linux-tpmdd for-james
->  please?
+On Wed, 03 Dec 2014 10:25:26 +0100, Pali RohÃ¡r wrote:
+> Anyway, what does i8k mean? That dell interface is somehow called DELLDIAG, so I do not know what i8k means...
 
-Yes, just started preparing v9, will be ready in few hours. My apologies
-for the compilications!
+I think i8k stands for "Inspiron 8000", most likely the first model
+supported by that driver:
+http://www.dell.com/support/home/us/en/19/product-support/product/inspiron-8000/manuals
 
-> Thanks,
-> Peter
-
-/Jarkko
+-- 
+Jean Delvare
+SUSE L3 Support
