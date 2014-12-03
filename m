@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaLCJms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 04:42:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736AbaLCJmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 04:42:47 -0500
-Date: Wed, 3 Dec 2014 11:42:24 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Pankaj Gupta <pagupta@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
-        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH v3 net-next 1/2] net: allow large number of rx queues
-Message-ID: <20141203094224.GB9487@redhat.com>
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
- <1417591177-7985-2-git-send-email-pagupta@redhat.com>
+	id S1752362AbaLCJne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 04:43:34 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:40610 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaLCJnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 04:43:32 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: l.stach@pengutronix.de
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <f815395be09710401e38b5c589770516>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547EDB3B.9010907@rock-chips.com>
+Date: Wed, 03 Dec 2014 17:43:23 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417591177-7985-2-git-send-email-pagupta@redhat.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Mark Rutland <mark.rutland@arm.com>, heiko@sntech.de, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, ykk@rock-chips.com,
+        devel@driverdev.osuosl.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>, rmk+kernel@arm.linux.org.uk,
+        jay.xu@rock-chips.com, devicetree@vger.kernel.org,
+        Zubair.Kakakhel@imgtec.com, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Sean Paul <seanpaul@chromium.org>, Dave Airlie <airlied@redhat.com>,
+        mark.yao@rock-chips.com, fabio.estevam@freescale.com,
+        Josh Boyer <jwboyer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, djkurtz@google.com,
+        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
+        vladimir_zapolskiy@mentor.com, Lucas Stach <l.stach@pengutronix.de>
+Subject: Re: [PATCH v15 06/12] dt-bindings: add document for dw_hdmi
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com> <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com> <1417544629.3411.15.camel@pengutronix.de> <547E5F51.2090800@rock-chips.com> <1417598398.5124.2.camel@pengutronix.de>
+In-Reply-To: <1417598398.5124.2.camel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 12:49:36PM +0530, Pankaj Gupta wrote:
-> netif_alloc_rx_queues() uses kcalloc() to allocate memory
-> for "struct netdev_queue *_rx" array.
-> If we are doing large rx queue allocation kcalloc() might
-> fail, so this patch does a fallback to vzalloc().
-> Similar implementation is done for tx queue allocation in
-> netif_alloc_netdev_queues().
-> 
-> We avoid failure of high order memory allocation
-> with the help of vzalloc(), this allows us to do large
-> rx and tx queue allocation which in turn helps us to
-> increase the number of queues in tun.
-> 
-> As vmalloc() adds overhead on a critical network path,
-> __GFP_REPEAT flag is used with kzalloc() to do this fallback
-> only when really needed.
-> 
-> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
-> Reviewed-by: David Gibson <dgibson@redhat.com>
-> ---
->  net/core/dev.c | 19 +++++++++++++------
->  1 file changed, 13 insertions(+), 6 deletions(-)
-> 
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index e916ba8..abe9560 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -6059,17 +6059,25 @@ void netif_stacked_transfer_operstate(const struct net_device *rootdev,
->  EXPORT_SYMBOL(netif_stacked_transfer_operstate);
->  
->  #ifdef CONFIG_SYSFS
-> +static void netif_free_rx_queues(struct net_device *dev)
-> +{
-> +	kvfree(dev->_rx);
-> +}
-> +
+Hi Philipp:
+On 2014年12月03日 17:19, Philipp Zabel wrote:
+> Hi Andy,
+>
+> Am Mittwoch, den 03.12.2014, 08:54 +0800 schrieb Andy Yan:
+>>>> +Required properities:
+>>>> +- compatible: platform specific such as:
+>>>> +   * "fsl,imx6q-hdmi"
+>>>> +   * "fsl,imx6dl-hdmi"
+>>>> +   * "rockchip,rk3288-dw-hdmi"
+>>> I think we should add a common compatible value "snps,dw-hdmi-tx" here:
+>>>
+>>> 	compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx";
+>>>
+>>        How about "snps,dw-hdmi", because the driver is not only about
+>>     hdmi tx, but also include hdmi phy.
+> Synopsys call the whole module
+> "DesignWare HDMI Transmitter (TX) IP Solution":
+>
+> https://www.synopsys.com/dw/ipdir.php?ds=dwc_hdmi_14_csds_tx
+> https://www.synopsys.com/dw/ipdir.php?ds=dwc_hdmi_20_csds_tx
+>
+> That includes the PHY. I'd prefer keeping the -tx in there to
+> differentiate from a possible future "snps,dw-hdmi-rx":
+>
+> https://www.synopsys.com/dw/ipdir.php?ds=dwc_hdmi_14_csds_rx
+> https://www.synopsys.com/dw/ipdir.php?ds=dwc_hdmi_20_csds_rx
 
-I would just open-code this.
+   Ok, I will add the compatible "snps, dw-hdmi-tx",
+    So do I need to add this value to imx6dl.dtsi?
+>>         If we add such compatible value, do we have to implement another
+>>      platform driver like dw_hdmi-pltfm.c with the
+>> compatible="snps,dw-hdmi" ,
+>>      or just include the compatible value in dw_hdmi-imx.c and
+>> dw_hdmi-rockchip.c?
+> That common compatible doesn't have to be used by any driver. It's just
+> there to show these are the same/similar IP core.
+> If a common driver without any SoC specific knowledge could be written,
+> that one would match against the common compatible.
+>
+> regards
+> Philipp
+>
+>
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
+>
+>
+>
 
->  static int netif_alloc_rx_queues(struct net_device *dev)
->  {
->  	unsigned int i, count = dev->num_rx_queues;
->  	struct netdev_rx_queue *rx;
-> +	size_t sz = count * sizeof(*rx);
->  
->  	BUG_ON(count < 1);
->  
-> -	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
-> -	if (!rx)
-> -		return -ENOMEM;
-> -
-> +	rx = kzalloc(sz, GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
-> +	if (!rx) {
-> +		rx = vzalloc(sz);
-> +		if (!rx)
-> +			return -ENOMEM;
-> +	}
->  	dev->_rx = rx;
->  
->  	for (i = 0; i < count; i++)
-> @@ -6698,9 +6706,8 @@ void free_netdev(struct net_device *dev)
->  
->  	netif_free_tx_queues(dev);
->  #ifdef CONFIG_SYSFS
-> -	kfree(dev->_rx);
-> +	netif_free_rx_queues(dev);
->  #endif
-> -
 
-and I think it's nicer with the empty line.
-
->  	kfree(rcu_dereference_protected(dev->ingress_queue, 1));
->  
->  	/* Flush device addresses */
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
