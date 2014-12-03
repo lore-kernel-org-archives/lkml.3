@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaLCVld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:41:33 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51735 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaLCVlb (ORCPT
+	id S1752216AbaLCVlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:41:12 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33273 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaLCVlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:41:31 -0500
-Date: Wed, 3 Dec 2014 13:41:28 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- net-next tree
-Message-ID: <20141203214128.GB8974@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org
-References: <20141201181933.6dfaad66@canb.auug.org.au>
- <547C19ED.10201@broadcom.com>
- <20141203083655.GA5418@hudson.localdomain>
- <20141203105148.GA7633@hudson.localdomain>
- <547F06BC.8060000@broadcom.com>
- <20141203210659.GA8974@hudson.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141203210659.GA8974@hudson.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Dec 2014 16:41:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Subject: [PATCH v5] Fixes for PCI backend for 3.19. 
+Date: Wed,  3 Dec 2014 16:40:25 -0500
+Message-Id: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.9.3
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 01:06:59PM -0800, Jeremiah Mahler wrote:
-> Arend,
-> 
-> On Wed, Dec 03, 2014 at 01:49:00PM +0100, Arend van Spriel wrote:
-> > On 12/03/14 11:51, Jeremiah Mahler wrote:
-> > >On Wed, Dec 03, 2014 at 12:36:55AM -0800, Jeremiah Mahler wrote:
-> > >>all,
-> > >>
-> > >>On Mon, Dec 01, 2014 at 08:34:05AM +0100, Arend van Spriel wrote:
-> > >>>On 01-12-14 08:19, Stephen Rothwell wrote:
-> > >>>>Hi Greg,
-> > >>>>
-[...]
-> > >
-> > >I took a look at the patch that is causing this problem (d32394fae95).
-> > >My config negates everything in the patch except for a one line change
-> > >to ath9k/pci.c.  If I remove this change (shown below) the problem goes
-> > >away.
-> > 
-> > Ok. But then it will likely crash when you cat one of the changed debugfs
-> > files. Guess this commit needs to be reverted entirely.
-> > 
-> 
-> On my machine ATH9K_DEBUFS is disabled so none of that code is used.
-> 
-> I can try enabling it and see if a cat will crash it.
-> 
 
-With ATH9K_DEBUGFS enabled, cat works fine on the files that were
-changed.
+Since v4 (http://lists.xen.org/archives/html/xen-devel/2014-11/msg02130.html):
+ - Per David's review altered one of the patches.
+v3 (https://lkml.org/lkml/2014/7/8/533):
+ - Epic discussion.
 
-/sys/kernel/debug/ieee80211/phy0/ath9k/
-  dma
-  interrupt
-  xmit
-  queues
+These patches fix some issues with PCI back and also add proper
+bus/slot reset.
 
-> > Regards,
-> > Arend
-> > 
-[...]
-> 
-> -- 
-> - Jeremiah Mahler
 
--- 
-- Jeremiah Mahler
+ Documentation/ABI/testing/sysfs-driver-pciback |  12 ++
+ drivers/pci/pci.c                              |   5 +-
+ drivers/xen/xen-pciback/passthrough.c          |  14 +-
+ drivers/xen/xen-pciback/pci_stub.c             | 236 +++++++++++++++++++++----
+ drivers/xen/xen-pciback/pciback.h              |   7 +-
+ drivers/xen/xen-pciback/vpci.c                 |  14 +-
+ drivers/xen/xen-pciback/xenbus.c               |   4 +-
+ include/linux/device.h                         |   5 +
+ include/linux/pci.h                            |   2 +
+ 9 files changed, 254 insertions(+), 45 deletions(-)
+
+
+Jan Beulich (1):
+      xen-pciback: drop SR-IOV VFs when PF driver unloads
+
+Konrad Rzeszutek Wilk (8):
+      xen/pciback: Don't deadlock when unbinding.
+      driver core: Provide an wrapper around the mutex to do lockdep warnings
+      xen/pciback: Include the domain id if removing the device whilst still in use
+      xen/pciback: Print out the domain owning the device.
+      xen/pciback: Remove tons of dereferences
+      PCI: Expose pci_load_saved_state for public consumption.
+      xen/pciback: Restore configuration space when detaching from a guest.
+      xen/pciback: Implement PCI reset slot or bus with 'do_flr' SysFS attribute
+
