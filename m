@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaLCVdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:33:38 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:49502 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaLCVdg (ORCPT
+	id S1752218AbaLCVds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 16:33:48 -0500
+Received: from blu004-omc1s21.hotmail.com ([65.55.116.32]:53581 "EHLO
+	BLU004-OMC1S21.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752156AbaLCVdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:33:36 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, tony@atomide.com, bcousson@baylibre.com,
-        hns@goldelico.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v4 0/3] omapdss: Add video output support for gta04
-Date: Wed,  3 Dec 2014 22:33:19 +0100
-Message-Id: <1417642402-20538-1-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 3 Dec 2014 16:33:46 -0500
+X-TMN: [PN3gQqYE+aVAfckKTDq55lGxEah220vu]
+X-Originating-Email: [seancleator@hotmail.co.uk]
+Message-ID: <BLU437-SMTP3735424C7098C20996EFF8E97B0@phx.gbl>
+From: Sean Cleator <seancleator@hotmail.co.uk>
+To: lidza.louina@gmail.com, markh@compro.net
+CC: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sean Cleator <seancleator@hotmail.co.uk>
+Subject: [PATCH v2] Staging: dgnc: Fix long line coding style issues in dgnc_cls.h
+Date: Wed, 3 Dec 2014 21:30:17 +0000
+X-Mailer: git-send-email 2.1.3
+X-OriginalArrivalTime: 03 Dec 2014 21:33:44.0296 (UTC) FILETIME=[D06E5680:01D00F40]
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes from v3:
-- use GPL v2 instead GPL
-- fix wrong gpios property name in doc and DT
-- set gpio to NULL if invalid
-- drop unnecessary header
+A patch to fix the rest of the long line warnings in the dgnc_cls.h file
+found by the checkpatch.pl tool
 
-changes from v2:
-- rename amplifier-opa362.c to encoder-opa362
-- drop inversion handlign from driver
-- add ti,invert-polarity to venc node
+Signed-off-by: Sean Cleator <seancleator@hotmail.co.uk>
+---
+ drivers/staging/dgnc/dgnc_cls.h | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-I also drop devconf1 handling patches because discussion how to
-properly implement is not yet finished and this part is independent
-from video driver.
-
-changes from v1:
-- fix opa362 compilation error
-- fix opa362 DT documentation
-- move devconf1 definition to omap3.dtsi
-Marek Belisko (3):
-  video: omapdss: Add opa362 driver
-  Documentation: DT: Add documentation for ti,opa362 bindings
-  arm: dts: omap3-gta04: Add handling for tv output
-
- .../devicetree/bindings/video/ti,opa362.txt        |  38 +++
- arch/arm/boot/dts/omap3-gta04.dtsi                 |  49 ++++
- drivers/video/fbdev/omap2/displays-new/Kconfig     |   6 +
- drivers/video/fbdev/omap2/displays-new/Makefile    |   1 +
- .../fbdev/omap2/displays-new/encoder-opa362.c      | 285 +++++++++++++++++++++
- 5 files changed, 379 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/ti,opa362.txt
- create mode 100644 drivers/video/fbdev/omap2/displays-new/encoder-opa362.c
-
+diff --git a/drivers/staging/dgnc/dgnc_cls.h b/drivers/staging/dgnc/dgnc_cls.h
+index 465d79a..ee7814b 100644
+--- a/drivers/staging/dgnc/dgnc_cls.h
++++ b/drivers/staging/dgnc/dgnc_cls.h
+@@ -36,9 +36,12 @@
+  ************************************************************************/
+ 
+ struct cls_uart_struct {
+-	u8 txrx;		/* WR  RHR/THR - Holding Reg */
++	u8 txrx;	/* WR  RHR/THR - Holding Reg */
+ 	u8 ier;		/* WR  IER - Interrupt Enable Reg */
+-	u8 isr_fcr;		/* WR  ISR/FCR - Interrupt Status Reg/Fifo Control Reg */
++	u8 isr_fcr;	/*
++			 * WR  ISR/FCR - Interrupt Status Reg/Fifo
++			 * Control Reg
++			 */
+ 	u8 lcr;		/* WR  LCR - Line Control Reg */
+ 	u8 mcr;		/* WR  MCR - Modem Control Reg */
+ 	u8 lsr;		/* WR  LSR - Line Status Reg */
+@@ -61,8 +64,9 @@ struct cls_uart_struct {
+ #define UART_16654_FCR_RXTRIGGER_56	0x80
+ #define UART_16654_FCR_RXTRIGGER_60     0xC0
+ 
+-#define UART_IIR_CTSRTS			0x20	/* Received CTS/RTS change of state */
+-#define UART_IIR_RDI_TIMEOUT		0x0C    /* Receiver data TIMEOUT */
++/* Received CTS/RTS change of state */
++#define UART_IIR_CTSRTS			0x20
++#define UART_IIR_RDI_TIMEOUT		0x0C	/* Receiver data TIMEOUT */
+ 
+ /*
+  * These are the EXTENDED definitions for the Exar 654's Interrupt
+@@ -74,8 +78,10 @@ struct cls_uart_struct {
+ #define UART_EXAR654_EFR_RTSDTR   0x40    /* Auto RTS/DTR Flow Control Enable */
+ #define UART_EXAR654_EFR_CTSDSR   0x80    /* Auto CTS/DSR Flow COntrol Enable */
+ 
+-#define UART_EXAR654_XOFF_DETECT  0x1     /* Indicates whether chip saw an incoming XOFF char  */
+-#define UART_EXAR654_XON_DETECT   0x2     /* Indicates whether chip saw an incoming XON char */
++/* Indicates whether chip saw an incoming XOFF char */
++#define UART_EXAR654_XOFF_DETECT  0x1
++/* Indicates whether chip saw an incoming XON char */
++#define UART_EXAR654_XON_DETECT   0x2
+ 
+ #define UART_EXAR654_IER_XOFF     0x20    /* Xoff Interrupt Enable */
+ #define UART_EXAR654_IER_RTSDTR   0x40    /* Output Interrupt Enable */
 -- 
-1.9.1
+2.1.3
 
