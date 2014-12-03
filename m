@@ -1,73 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaLCP4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:56:55 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:41828 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaLCP4x (ORCPT
+	id S1752292AbaLCP55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:57:57 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:29386 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaLCP5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:56:53 -0500
-Date: Wed, 3 Dec 2014 10:56:49 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: NeilBrown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
- nfsd
-Message-ID: <20141203155649.GB5013@htj.dyndns.org>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
- <20141203121118.21a32fe1@notabene.brown>
- <20141202202946.1e0f399b@tlielax.poochiereds.net>
+	Wed, 3 Dec 2014 10:57:55 -0500
+Message-ID: <547F32FF.7000005@atmel.com>
+Date: Wed, 3 Dec 2014 16:57:51 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202202946.1e0f399b@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v3 01/11] mfd: syscon: Add atmel-matrix registers definition
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-2-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1417429647-3419-2-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Neil, Jeff.
-
-On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
-> That's a good point. I had originally thought that max_active on an
-> unbound workqueue would be the number of concurrent jobs that could run
-> across all the CPUs, but now that I look I'm not sure that's really
-> the case.
-
-@max_active is a per-pool number.  By default, unbound wqs use
-per-node pools, so @max_active would be per-node.  Currently,
-@max_active is mostly meant as a protection against run-away
-workqueues creating crazy number of workers, which has been enough for
-the existing wq users.  *Maybe* it makes sense to make it actually
-mean maximum concurrency which would prolly involve aggregated per-cpu
-distribution mechanism so that we don't end up inc'ing and dec'ing the
-same counter from all CPUs on each work item execution.
-
-However, I do agree with Neil that making it user configurable is
-almost always painful.  It's usually a question without a good answer
-and the same value may behave differently depending on a lot of
-implementation details and a better approach, probably, is to use
-@max_active as the last resort protection mechanism while providing
-automatic throttling of in-flight work items which is meaningful for
-the specific use cases.
-
-> I've heard random grumblings from various people in the past that
-> workqueues have significant latency, but this is the first time I've
-> really hit it in practice. If we can get this fixed, then that may be a
-> significant perf win for all workqueue users. For instance, rpciod in
-> the NFS client is all workqueue-based. Getting that latency down could
-> really help things.
+Le 01/12/2014 11:27, Boris Brezillon a écrit :
+> AT91 SoCs have a memory range reserved for internal bus configuration.
+> Expose those registers so that drivers can make use of the matrix syscon
+> declared in at91 DTs.
 > 
-> I'm currently trying to roll up a kernel module for benchmarking the
-> workqueue dispatching code in the hopes that we can use that to help
-> nail it down.
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/linux/mfd/syscon/atmel-matrix.h | 114 ++++++++++++++++++++++++++++++++
+>  1 file changed, 114 insertions(+)
+>  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+> 
+> diff --git a/include/linux/mfd/syscon/atmel-matrix.h b/include/linux/mfd/syscon/atmel-matrix.h
+> new file mode 100644
+> index 0000000..d0da495
+> --- /dev/null
+> +++ b/include/linux/mfd/syscon/atmel-matrix.h
+> @@ -0,0 +1,114 @@
+> +/*
+> + *  Copyright (C) 2014 Atmel Corporation.
+> + *
+> + * Memory Controllers (MATRIX, EBI) - System peripherals registers.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
+> +#define _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
+> +
+> +#define AT91SAM9260_MATRIX_MCFG_OFF	0x00
+> +#define AT91SAM9260_MATRIX_SCFG_OFF	0x40
+> +#define AT91SAM9260_MATRIX_PRS_OFF	0x80
+> +#define AT91SAM9260_MATRIX_MRCR_OFF	0x100
+> +#define AT91SAM9260_MATRIX_EBICSA_OFF	0x11c
+> +
+> +#define AT91SAM9261_MATRIX_MRCR_OFF	0x0
+> +#define AT91SAM9261_MATRIX_SCFG_OFF	0x4
+> +#define AT91SAM9261_MATRIX_TCR_OFF	0x24
+> +#define AT91SAM9261_MATRIX_EBICSA_OFF	0x30
+> +#define AT91SAM9261_MATRIX_USBPUCR_OFF	0x34
+> +
+> +#define AT91SAM9263_MATRIX_MCFG_OFF	0x00
+> +#define AT91SAM9263_MATRIX_SCFG_OFF	0x40
+> +#define AT91SAM9263_MATRIX_PRS_OFF	0x80
+> +#define AT91SAM9263_MATRIX_MRCR_OFF	0x100
+> +#define AT91SAM9263_MATRIX_TCR_OFF	0x114
+> +#define AT91SAM9263_MATRIX_EBI0CSA_OFF	0x120
+> +#define AT91SAM9263_MATRIX_EBI1CSA_OFF	0x124
+> +
+> +#define AT91SAM9G45_MATRIX_MCFG_OFF	0x00
+> +#define AT91SAM9G45_MATRIX_SCFG_OFF	0x40
+> +#define AT91SAM9G45_MATRIX_PRS_OFF	0x80
+> +#define AT91SAM9G45_MATRIX_MRCR_OFF	0x100
+> +#define AT91SAM9G45_MATRIX_TCR_OFF	0x110
+> +#define AT91SAM9G45_MATRIX_DDRMPR_OFF	0x118
+> +#define AT91SAM9G45_MATRIX_EBICSA_OFF	0x128
+> +
+> +#define AT91SAM9N12_MATRIX_MCFG_OFF	0x00
+> +#define AT91SAM9N12_MATRIX_SCFG_OFF	0x40
+> +#define AT91SAM9N12_MATRIX_PRS_OFF	0x80
+> +#define AT91SAM9N12_MATRIX_MRCR_OFF	0x100
+> +#define AT91SAM9N12_MATRIX_EBICSA_OFF	0x118
+> +
+> +#define AT91SAM9X5_MATRIX_MCFG_OFF	0x00
+> +#define AT91SAM9X5_MATRIX_SCFG_OFF	0x40
+> +#define AT91SAM9X5_MATRIX_PRS_OFF	0x80
+> +#define AT91SAM9X5_MATRIX_MRCR_OFF	0x100
+> +#define AT91SAM9X5_MATRIX_EBICSA_OFF	0x120
+> +
+> +#define SAMA5D3_MATRIX_MCFG_OFF		0x00
+> +#define SAMA5D3_MATRIX_SCFG_OFF		0x40
+> +#define SAMA5D3_MATRIX_PRS_OFF		0x80
+> +#define SAMA5D3_MATRIX_MRCR_OFF		0x100
+> +
+> +#define AT91_MATRIX_MCFG(o, x)		((o) + ((x) * 0x4))
+> +#define AT91_MATRIX_ULBT		(7 << 0)
+> +#define AT91_MATRIX_ULBT_INFINITE	(0 << 0)
+> +#define AT91_MATRIX_ULBT_SINGLE		(1 << 0)
+> +#define AT91_MATRIX_ULBT_FOUR		(2 << 0)
+> +#define AT91_MATRIX_ULBT_EIGHT		(3 << 0)
+> +#define AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
+> +
+> +#define AT91_MATRIX_SCFG(o, x)		((o) + ((x) * 0x4))
+> +#define AT91_MATRIX_SLOT_CYCLE		(0xff <<  0)
+> +#define AT91_MATRIX_DEFMSTR_TYPE	(3 << 16)
+> +#define AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+> +#define AT91_MATRIX_DEFMSTR_TYPE_LAST	(1 << 16)
+> +#define AT91_MATRIX_DEFMSTR_TYPE_FIXED	(2 << 16)
+> +#define AT91_MATRIX_FIXED_DEFMSTR	(7 << 18)
+> +#define AT91_MATRIX_ARBT		(3 << 24)
+> +#define AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
+> +#define AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
+> +
+> +#define AT91_MATRIX_TCR(o)		(o)
+> +#define AT91_MATRIX_ITCM_SIZE		(0xf << 0)
+> +#define AT91_MATRIX_ITCM_0		(0 << 0)
+> +#define AT91_MATRIX_ITCM_16		(5 << 0)
+> +#define AT91_MATRIX_ITCM_32		(6 << 0)
+> +#define AT91_MATRIX_ITCM_64		(7 << 0)
+> +#define	AT91_MATRIX_DTCM_SIZE		(0xf << 4)
+> +#define	AT91_MATRIX_DTCM_0		(0 << 4)
+> +#define	AT91_MATRIX_DTCM_16		(5 << 4)
+> +#define AT91_MATRIX_DTCM_32		(6 << 4)
+> +#define AT91_MATRIX_DTCM_64		(7 << 4)
+> +
+> +#define AT91_MATRIX_PRAS(o, x)		((o) + ((x) * 0x8))
+> +#define AT91_MATRIX_PRBS(o, x)		((o) + ((x) * 0x8) + 0x4)
+> +#define AT91_MATRIX_MPR_MSK(x)		(3 << ((x) * 0x4))
+> +
+> +#define AT91_MATRIX_MRC(o)		(o)
+> +#define AT91_MATRIX_RCB(x)		BIT(x)
+> +
+> +#define AT91_MATRIX_EBICSA(o)		(o)
+> +#define AT91_MATRIX_CSA(cs, val)	(val << (cs))
+> +#define AT91_MATRIX_DBPUC		BIT(8)
+> +#define AT91_MATRIX_DBPDC		BIT(9)
+> +#define AT91_MATRIX_VDDIOMSEL		BIT(16)
+> +#define AT91_MATRIX_VDDIOMSEL_1_8V	(0 << 16)
+> +#define AT91_MATRIX_VDDIOMSEL_3_3V	(1 << 16)
+> +#define AT91_MATRIX_EBI_IOSR		BIT(17)
+> +#define AT91_MATRIX_DDR_IOSR		BIT(18)
+> +#define AT91_MATRIX_NFD0_SELECT		BIT(24)
+> +#define AT91_MATRIX_DDR_MP_EN		BIT(25)
+> +#define AT91_MATRIX_EBI_NUM_CS		8
+> +
+> +#define AT91_MATRIX_WPMR(o)		(o)
+> +#define AT91_MATRIX_WPSR(o)		(o)
+> +
+> +#endif /* _LINUX_MFD_SYSCON_ATMEL_MATRIX_H */
+> 
 
-Definitely, there were some reportings but nothing really got tracked
-down properly.  It'd be awesome to actually find out where the latency
-is coming from.
+General comment on the register descriptions of this series:
+please be consistent:
+1/ use BIT(x) marco *or* (1 << 16) not both
+2/ use GENMASK(x,y) macro *or* (3 << 16) not both
+3/ SAMA5D3_MATRIX_SCFG_OFF <== what is the meaning of _OFF offset of the
+register? if it's not used in a macro (and a macro is not desirable),
+please remove this suffix.
+4/ same for the suffix _OFFSET in the SMC register definition file
+5/ same for the _SHFT suffix in SMC register definition file
+6/ what is the purpose of these macros? #defineAT91_MATRIX_WPMR(o) (o)
 
-Thanks!
-
+Thanks, bye.
 -- 
-tejun
+Nicolas Ferre
