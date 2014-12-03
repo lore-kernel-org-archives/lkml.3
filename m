@@ -1,92 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaLCB3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:29:09 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54591 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750730AbaLCB3G (ORCPT
+	id S1751316AbaLCBaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:30:12 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:44531 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaLCBaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:29:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Javier Martinez Canillas <javier@dowhile0.org>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-omap@vger.kernel.org,
-        linux-gpio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] gpio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Wed, 03 Dec 2014 02:50:30 +0100
-Message-ID: <1655942.O63mJN07or@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Tue, 2 Dec 2014 20:30:10 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 2 Dec 2014 20:29:46 -0500
+To: NeilBrown <neilb@suse.de>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
+ workqueue-based nfsd
+Message-ID: <20141202202946.1e0f399b@tlielax.poochiereds.net>
+In-Reply-To: <20141203121118.21a32fe1@notabene.brown>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141203121118.21a32fe1@notabene.brown>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/qcs07EqwRnzZJw3h_o_dnIh"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+--Sig_/qcs07EqwRnzZJw3h_o_dnIh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+On Wed, 3 Dec 2014 12:11:18 +1100
+NeilBrown <neilb@suse.de> wrote:
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/gpio/gpio-omap.c.
+> On Tue,  2 Dec 2014 13:24:09 -0500 Jeff Layton <jlayton@primarydata.com>
+> wrote:
+>=20
+> > tl;dr: this code works and is much simpler than the dedicated thread
+> >        pool, but there are some latencies in the workqueue code that
+> >        seem to keep it from being as fast as it could be.
+> >=20
+> > This patchset is a little skunkworks project that I've been poking at
+> > for the last few weeks. Currently nfsd uses a dedicated thread pool to
+> > handle RPCs, but that requires maintaining a rather large swath of
+> > "fiddly" code to handle the threads and transports.
+> >=20
+> > This patchset represents an alternative approach, which makes nfsd use
+> > workqueues to do its bidding rather than a dedicated thread pool. When a
+> > transport needs to do work, we simply queue it to the workqueue in
+> > softirq context and let it service the transport.
+> >=20
+> > The current draft is runtime-switchable via a new sunrpc pool_mode
+> > module parameter setting. When that's set to "workqueue", nfsd will use
+> > a workqueue-based service. One of the goals of this patchset was to
+> > *not* need to change any userland code, so starting it up using rpc.nfsd
+> > still works as expected. The only real difference is that the nfsdfs
+> > "threads" file is reinterpreted as the "max_active" value for the
+> > workqueue.
+>=20
+> Hi Jeff,
+>  I haven't looked very closely at the code, but in principal I think this=
+ is
+>  an excellent idea.  Having to set a number of threads manually was never
+>  nice as it is impossible to give sensible guidance on what an appropriate
+>  number is.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Yes, this should be a lot more "dynamic" in principle. A lightly-used
+nfs server using workqueues should really not consume much at all in
+the way of resources.
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+>  Tying max_active to "threads" doesn't really make sense I think.
+>  "max_active" is a per-cpu number and I think the only meaningful numbers=
+ are
+>  "1" (meaning concurrent works might mutually deadlock) or infinity (whic=
+h is
+>  approximated as 512).  I would just ignore the "threads" number when
+>  workqueues are used.... or maybe enable workqueues when "auto" is writte=
+n to
+>  "threads"??
+>=20
 
-Please let me know if it is OK to take this one into linux-pm.
+That's a good point. I had originally thought that max_active on an
+unbound workqueue would be the number of concurrent jobs that could run
+across all the CPUs, but now that I look I'm not sure that's really
+the case.
 
----
- drivers/gpio/gpio-omap.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Certainly, not bounding this at all has some appeal, but having some
+limit here does help put an upper bound on the size of the svc_rqst
+cache.
 
-Index: linux-pm/drivers/gpio/gpio-omap.c
-===================================================================
---- linux-pm.orig/drivers/gpio/gpio-omap.c
-+++ linux-pm/drivers/gpio/gpio-omap.c
-@@ -1259,7 +1259,7 @@ static int omap_gpio_probe(struct platfo
- 
- #ifdef CONFIG_ARCH_OMAP2PLUS
- 
--#if defined(CONFIG_PM_RUNTIME)
-+#if defined(CONFIG_PM)
- static void omap_gpio_restore_context(struct gpio_bank *bank);
- 
- static int omap_gpio_runtime_suspend(struct device *dev)
-@@ -1440,7 +1440,7 @@ static int omap_gpio_runtime_resume(stru
- 
- 	return 0;
- }
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- void omap2_gpio_prepare_for_idle(int pwr_mode)
- {
-@@ -1468,7 +1468,7 @@ void omap2_gpio_resume_after_idle(void)
- 	}
- }
- 
--#if defined(CONFIG_PM_RUNTIME)
-+#if defined(CONFIG_PM)
- static void omap_gpio_init_context(struct gpio_bank *p)
- {
- 	struct omap_gpio_reg_offs *regs = p->regs;
-@@ -1525,7 +1525,7 @@ static void omap_gpio_restore_context(st
- 	writel_relaxed(bank->context.irqenable2,
- 				bank->base + bank->regs->irqenable2);
- }
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- #else
- #define omap_gpio_runtime_suspend NULL
- #define omap_gpio_runtime_resume NULL
+I'll definitely give that some thought.
 
+>  Using a shrinker to manage the allocation and freeing of svc_rqst is a
+>  really good idea.  It will put pressure on the effective number of threa=
+ds
+>  when needed, but will not artificially constrain things.
+>=20
+
+That's my hope. We might also consider reaping idle rqsts ourselves
+as needed somehow, but for now I decided not to worry about it until we
+see whether this is really viable or not.
+
+>  The combination of workqueue and shrinker seems like a perfect match for
+>  nfsd.
+>=20
+>  I hope you can work out the latency issues!
+>=20
+> Thanks,
+> NeilBrown
+
+I've heard random grumblings from various people in the past that
+workqueues have significant latency, but this is the first time I've
+really hit it in practice. If we can get this fixed, then that may be a
+significant perf win for all workqueue users. For instance, rpciod in
+the NFS client is all workqueue-based. Getting that latency down could
+really help things.
+
+I'm currently trying to roll up a kernel module for benchmarking the
+workqueue dispatching code in the hopes that we can use that to help
+nail it down.
+
+Thanks for having a look!
+--=20
+Jeff Layton <jlayton@primarydata.com>
+
+--Sig_/qcs07EqwRnzZJw3h_o_dnIh
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUfmeKAAoJEAAOaEEZVoIVjYoQAJnTRdXHEmaeppeYf8YB1rYi
+P4w/hWCUmKCUkHtRg6wkn9R8tXLaXogbbNpUCz477zxB3J36nbPiS84gpHLWv99n
+iE4AoA+eWkL4q6enMDaKSSF72rhLPyxDi5DNOXKGEEMkej7ZSCLPxG85CnHO6w2E
+yVwijSKhCyTqYU9IpQhGzRHSUkJB6a1OpUCm7aZrRZ23aPl+o4nqnHHurYeN+hDL
+yX0Q17PaEMfUZI0pTaSVt+SbZtJCP7bjsfE5zQyQofjp5MnApKZqAkpdlumyo31o
+PUltFasRUleU1OffqrlC3e5tl8lKDtNvQSo5vmNN9JEFKryntSDPLnNzxPbIDMtu
+GXTKQ0fcCN5qMeMmlBFFKw8ILTV9iYMAR5TLFJFF2bsdPKj9C7ULzLbK6aQ63PuR
+jtfXg/ldJBt4VC+V4uq3yWNYU25/Wsea31OtcLgcwOwVWNaj37vkS7IqnELGBX2H
+MOOnNjlfyw+zxjSYB7fpElA/5jPzY6a0IGcGLgXW0FT91T/RUntnQmU8kynVkspc
+8P54aPGVBFgQeoGGBOo64SM7dTLz4lLWI4tzxFKVyzf4+Mw3X75Z8StPea57CyZe
+JTli4/3Ihk4nPZImBlFd1hhRGHU3ofQ0zbnGqux/hZ1V9ju4AwpnIWmBFM7R1WAx
+rL3arkC+P45N0gzShSxq
+=f5Mw
+-----END PGP SIGNATURE-----
+
+--Sig_/qcs07EqwRnzZJw3h_o_dnIh--
