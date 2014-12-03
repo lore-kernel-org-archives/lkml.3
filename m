@@ -1,104 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaLCXiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:38:55 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:63080 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254AbaLCXiv (ORCPT
+	id S1752417AbaLCXk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:40:56 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36474 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751302AbaLCXkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:38:51 -0500
+	Wed, 3 Dec 2014 18:40:55 -0500
+Date: Wed, 3 Dec 2014 23:40:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        vladimir_zapolskiy@mentor.com, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v16 03/12] drm: imx: imx-hdmi: convert imx-hdmi to
+ drm_bridge mode
+Message-ID: <20141203234000.GJ11285@n2100.arm.linux.org.uk>
+References: <1417620408-30354-1-git-send-email-andy.yan@rock-chips.com>
+ <1417620566-30496-1-git-send-email-andy.yan@rock-chips.com>
+ <20141203153847.GC11285@n2100.arm.linux.org.uk>
+ <547F3495.9070206@rock-chips.com>
+ <20141203161122.GF11285@n2100.arm.linux.org.uk>
+ <547F3A9F.30701@rock-chips.com>
+ <20141203163318.GH11285@n2100.arm.linux.org.uk>
+ <547F40B8.6060706@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <20141203153721.30b32472145aa560921bdc1e@linux-foundation.org>
-References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
- <alpine.DEB.2.11.1410291908290.5308@nanos> <CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com>
- <20141110.211319.1983610686941713044.davem@davemloft.net> <5461EA6B.9020305@nod.at>
- <CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com> <20141203153721.30b32472145aa560921bdc1e@linux-foundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Dec 2014 15:38:29 -0800
-Message-ID: <CALCETrVk0EBL0vk8kjOhjkMAOaxXukCdSptzfHU=g1s7JChXiQ@mail.gmail.com>
-Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct task_struct
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <547F40B8.6060706@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 3:37 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 1 Dec 2014 06:55:01 -0800 Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Tue, Nov 11, 2014 at 2:52 AM, Richard Weinberger <richard@nod.at> wrote:
->> > Am 11.11.2014 um 03:13 schrieb David Miller:
->> >> From: Andy Lutomirski <luto@amacapital.net>
->> >> Date: Mon, 10 Nov 2014 14:03:23 -0800
->> >>
->> >>> On Wed, Oct 29, 2014 at 11:12 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> >>>> On Wed, 29 Oct 2014, Andy Lutomirski wrote:
->> >>>>
->> >>>>> If an attacker can cause a controlled kernel stack overflow,
->> >>>>> overwriting the restart block is a very juicy exploit target.
->> >>>>> Moving the restart block to struct task_struct prevents this
->> >>>>> exploit.
->> >>>>>
->> >>>>> Note that there are other fields in thread_info that are also easy
->> >>>>> targets, at least on some architectures.
->> >>>>>
->> >>>>> It's also a decent simplification, since the restart code is more or
->> >>>>> less identical on all architectures.
->> >>>>
->> >>>> I think that's the most important change. Moving common stuff into
->> >>>> common code. The side effect of slightly reducing the attack surface
->> >>>> is nice, but as Al pointed out not really the big win here.
->> >>>
->> >>> Having gotten exactly zero feedback from any arch maintainer outside
->> >>> of x86, am I supposed to pester people further?
->> >>
->> >> No objections wrt. sparc and if things break I'll help fix it.
->> >
->> > Same for UML.
->> > Acked-by: Richard Weinberger <richard@nod.at>
->>
->> akpm, do you consider this appropriate for either 3.19 or 3.20?  If
->> so, can you add it to the appropriate part of -mm?
->
-> Yes, I can grab it.  Probably for .20, as the lag times for exposing
-> issues in obscures architectures are lengthy.
->
-> One clarification:
->
-> : If an attacker can cause a controlled kernel stack overflow,
-> : overwriting the restart block is a very juicy exploit target.
->
-> This is because the thread_info actually resides in the memory which
-> was allocated for the kernel stack, yes?  Whereas the task_struct is
-> separately allocated and is harder to find?
+On Thu, Dec 04, 2014 at 12:56:24AM +0800, Andy Yan wrote:
+> Hi Russell:
+> On 2014年12月04日 00:33, Russell King - ARM Linux wrote:
+> >On Thu, Dec 04, 2014 at 12:30:23AM +0800, Andy Yan wrote:
+> >>On 2014年12月04日 00:11, Russell King - ARM Linux wrote:
+> >>>I meant that imx_hdmi_bind should be passed these, so that it needs to
+> >>>know nothing about the struct device beyond the generic device structure.
+> >>>In other words, the dw-hdmi core should not assume that the struct device
+> >>>is part of a platform device.
+> >>>
+> >>    if so, how about the device tree properties  ddc-i2c-bus, reg-io-width,
+> >>iahb, isfr,
+> >>   they are all found by device?
+> >If the device has a device tree node associated with it, it will have a
+> >non-NULL dev->of_node - which is part of the generic device structure.
+> >
+>   so , I just need get the resource and irq number in the
+> dw_hdmi-imx/rockchip ,than
+>   pass them to imx_hdmi_bind, as the properties ddc-i2c-bus, reg-io-width,
+> iahb,isfr, they
+>   are still can be handled in imx_hdmi_bind ?
 
-Yes, exactly.
+Basically, what I'm suggesting is just this change to imx_hdmi_bind():
 
->
-> Spelling this out in the changelog would be useful for the ignorant and
-> the forgetful ;)
+ int imx_hdmi_bind(struct device *dev, struct device *master,
+		  void *data, struct drm_encoder *encoder,
++		  const struct resource *iores, int irq,
+		  const struct imx_hdmi_plat_data *plat_data)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+...
+	}
 
-Want a new version, or will you fix it up yourself?
+-	irq = platform_get_irq(pdev, 0);
+	if (irq < 0)
+		return irq;
+...
+		return ret;
 
-Thanks,
-Andy
+-	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	hdmi->regs = devm_ioremap_resource(dev, iores);
+	if (IS_ERR(hdmi->regs))
 
->
-> : Moving the restart block to struct task_struct prevents this
-> : exploit.
->
->
-
-
+and supplying those as arguments from the caller.
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
