@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaLCUkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:40:47 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:54727 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751178AbaLCUkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 15:40:46 -0500
-Date: Wed, 3 Dec 2014 14:40:49 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Fabian Frederick <fabf@skynet.be>, Ingo Molnar <mingo@kernel.org>,
-        Alex Thorlton <athorlton@sgi.com>, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [BUG] Possible locking issues in stop_machine code on 6k core machine
-Message-ID: <20141203204048.GJ4720@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751862AbaLCUoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:44:24 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42874 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750855AbaLCUoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 15:44:22 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface) driver
+Date: Wed,  3 Dec 2014 21:44:04 +0100
+Message-Id: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey guys,                                                                                                                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                          
-While working to get our newly upgraded 6k core machine online, we've                                                                                                                                                                                                                                                                                                                     
-discovered a few possible locking issues in the stop_machine code that                                                                                                                                                                                                                                                                                                                    
-we're trying to get sorted out.  (We think) the problems we're seeing                                                                                                                                                                                                                                                                                                                     
-stem from possible interaction between stop_cpus and stop_one_cpu.  The                                                                                                                                                                                                                                                                                                                   
-issue presents as a deadlock, and seems to only show itself                                                                                                                                                                                                                                                                                                                               
-intermittently.                                                                                                                                                                                                                                                                                                                                                                           
-                                                                                                                                                                                                                                                                                                                                                                                          
-After quite a bit of debugging we think we've narrowed the issue down to                                                                                                                                                                                                                                                                                                                  
-the fact that stop_one_cpu does not respect many of the locks that are                                                                                                                                                                                                                                                                                                                    
-taken in the stop_cpus code path.  For reference the stop_cpus code path                                                                                                                                                                                                                                                                                                                  
-takes the stop_cpus_mutex, then stop_cpus_lock, and then takes each                                                                                                                                                                                                                                                                                                                       
-cpu's stopper->lock.  stop_one_cpu seems to rely solely on the                                                                                                                                                                                                                                                                                                                            
-stopper->lock.                                                                                                                                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                                                                                                                          
-What appears to be happening to cause our deadlock is, stop_cpus works                                                                                                                                                                                                                                                                                                                    
-its way down to queue_stop_cpus_work, which tells each cpu's stopper                                                                                                                                                                                                                                                                                                                      
-task to wake up, take its lock, and do its work.  As the loop that does                                                                                                                                                                                                                                                                                                                   
-this progresses, the lowest numbered cpus complete their work, and are                                                                                                                                                                                                                                                                                                                    
-allowed to go on about their business.  The problem occurs when one of                                                                                                                                                                                                                                                                                                                    
-these lower numbered cpus calls stop_one_cpu, targeting one of the                                                                                                                                                                                                                                                                                                                        
-higher numbered cpus, which the stop_cpus loop has not yet reached.  If                                                                                                                                                                                                                                                                                                                   
-this happens, that higher numbered cpu's completion variable will get                                                                                                                                                                                                                                                                                                                     
-stomped on, and the wait_for_completion in the stop_cpus code path will                                                                                                                                                                                                                                                                                                                   
-never return.                                                                                                                                                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                                                                                                                                                                          
-A quick example: CPU 0 calls stop_cpus, which will hit all 6,000 cores.                                                                                                                                                                                                                                                                                                                   
-CPU 50 completes its stopper work, and at some point in the near future                                                                                                                                                                                                                                                                                                                   
-calls stop_one_cpu on CPU 5000.  This clobbers CPU 5000's pointer to the                                                                                                                                                                                                                                                                                                                  
-cpu_stop_done struct set up in queue_stop_cpus_work, meaning that, once                                                                                                                                                                                                                                                                                                                   
-CPU 5000 completes its work, it won't be able to decrement the nr_todo                                                                                                                                                                                                                                                                                                                    
-for the correct cpu_stop_done struct, and CPU 0's wait_for_completion                                                                                                                                                                                                                                                                                                                     
-will never return.                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                          
-Again, much of this is semi-educated guesswork, put together based on                                                                                                                                                                                                                                                                                                                     
-information gathered from examining lots of debug output, in an attempt                                                                                                                                                                                                                                                                                                                   
-to spot the problem.  We're fairly certain that we've pinned down our                                                                                                                                                                                                                                                                                                                     
-issue, but we'd like to ask those who are more knowledgeable of these                                                                                                                                                                                                                                                                                                                     
-code paths to weigh in their opinions here.                                                                                                                                                                                                                                                                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                                          
-We'd really appreciate any help that anyone can offer.  Thanks!                                                                                                                                                                                                                                                                                                                           
-                                                                                                                                                                                                                                                                                                                                                                                          
-- Alex
+The EBI (External Bus Interface) is used to access external peripherals
+(NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+Each device is assigned a CS line and an address range and can have its
+own configuration (timings, access mode, bus width, ...).
+This driver provides a generic DT binding to configure a device according
+to its requirements.
+For specific device controllers (like the NAND one) the SMC timings
+should be configured by the controller driver through the matrix and
+smc syscon regmaps.
+
+The first 4 patches introduce 2 syscon devices needed to configure the
+EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
+patches declares the EBI related nodes in sama5d3 dts[i] files.
+
+Changes since v4:
+- fix inconsistencies in SMC and MATRIX registers definition
+- add missing compatible strings for at91sam9rl SoC
+- fix DT bindings documentation
+- replace "atmel,generic-dev" property by "atmel,specialized-logic"
+
+Changes since v3:
+- added AT91_MATRIX_USBPUCR_PUON definition
+- removed useless macros (those directly returning SoC specific register
+  offsets)
+- use syscon_regmap_lookup_by_phandle instead of of_parse_phandle +
+  syscon_node_to_regmap
+- drop AT91_EBICSA_REGFIELD and AT91_MULTI_EBICSA_REGFIELD macros
+
+Changes since v2:
+- minor fixes int DT bindings doc
+- fix SMC macros
+- make use of SMC macros defined in include/linux/mfd/syscon/atmel-smc.h
+
+Changes since v1:
+- almost everything :-)
+
+Boris Brezillon (11):
+  mfd: syscon: Add atmel-matrix registers definition
+  mfd: syscon: Add Atmel Matrix bus DT binding documentation
+  mfd: syscon: Add atmel-smc registers definition
+  mfd: syscon: Add Atmel SMC binding doc
+  memory: add Atmel EBI (External Bus Interface) driver
+  memory: atmel-ebi: add DT bindings documentation
+  ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or
+    sama5d3
+  ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
+  ARM: at91/dt: add matrix node in sama5d3 dtsi
+  ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
+  ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
+
+ .../bindings/memory-controllers/atmel-ebi.txt      | 155 ++++++
+ .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
+ .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |  93 ++++
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |  33 ++
+ arch/arm/mach-at91/Kconfig                         |   2 +
+ drivers/memory/Kconfig                             |  11 +
+ drivers/memory/Makefile                            |   1 +
+ drivers/memory/atmel-ebi.c                         | 579 +++++++++++++++++++++
+ include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
+ include/linux/mfd/syscon/atmel-smc.h               | 173 ++++++
+ 11 files changed, 1207 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
+ create mode 100644 drivers/memory/atmel-ebi.c
+ create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+ create mode 100644 include/linux/mfd/syscon/atmel-smc.h
+
+-- 
+1.9.1
+
