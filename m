@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaLCLrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:47:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54685 "EHLO mx2.suse.de"
+	id S1753123AbaLCLrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:47:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343AbaLCL12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:28 -0500
+	id S1752500AbaLCL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 070/101] net: sctp: fix panic on duplicate ASCONF chunks
-Date: Wed,  3 Dec 2014 12:26:32 +0100
-Message-Id: <a723db0be941b8aebaa1a98b33d17a91b16603e4.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Helge Deller <deller@gmx.de>,
+        John David Anglin <dave.anglin@bell.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 044/101] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
+Date: Wed,  3 Dec 2014 12:26:06 +0100
+Message-Id: <e29a7bc42c8ce108b2ffc70a0467c05faea8cc8e.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -24,102 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Helge Deller <deller@gmx.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b69040d8e39f20d5215a03502a8e8b4c6ab78395 upstream.
+commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
 
-When receiving a e.g. semi-good formed connection scan in the
-form of ...
+Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
+layer. The problem was found with the debian procenv package, which called
+	shmctl(0, SHM_INFO, &info);
+in which the shmctl syscall then overwrote parts of the surrounding areas on
+the stack on which the info variable was stored and thus lead to a segfault
+later on.
 
-  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
-  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
-  ---------------- ASCONF_a; ASCONF_b ----------------->
+Additionally fix the definition of struct shminfo64 to use unsigned longs like
+the other architectures. This has no impact on userspace since we only have a
+32bit userspace up to now.
 
-... where ASCONF_a equals ASCONF_b chunk (at least both serials
-need to be equal), we panic an SCTP server!
-
-The problem is that good-formed ASCONF chunks that we reply with
-ASCONF_ACK chunks are cached per serial. Thus, when we receive a
-same ASCONF chunk twice (e.g. through a lost ASCONF_ACK), we do
-not need to process them again on the server side (that was the
-idea, also proposed in the RFC). Instead, we know it was cached
-and we just resend the cached chunk instead. So far, so good.
-
-Where things get nasty is in SCTP's side effect interpreter, that
-is, sctp_cmd_interpreter():
-
-While incoming ASCONF_a (chunk = event_arg) is being marked
-!end_of_packet and !singleton, and we have an association context,
-we do not flush the outqueue the first time after processing the
-ASCONF_ACK singleton chunk via SCTP_CMD_REPLY. Instead, we keep it
-queued up, although we set local_cork to 1. Commit 2e3216cd54b1
-changed the precedence, so that as long as we get bundled, incoming
-chunks we try possible bundling on outgoing queue as well. Before
-this commit, we would just flush the output queue.
-
-Now, while ASCONF_a's ASCONF_ACK sits in the corked outq, we
-continue to process the same ASCONF_b chunk from the packet. As
-we have cached the previous ASCONF_ACK, we find it, grab it and
-do another SCTP_CMD_REPLY command on it. So, effectively, we rip
-the chunk->list pointers and requeue the same ASCONF_ACK chunk
-another time. Since we process ASCONF_b, it's correctly marked
-with end_of_packet and we enforce an uncork, and thus flush, thus
-crashing the kernel.
-
-Fix it by testing if the ASCONF_ACK is currently pending and if
-that is the case, do not requeue it. When flushing the output
-queue we may relink the chunk for preparing an outgoing packet,
-but eventually unlink it when it's copied into the skb right
-before transmission.
-
-Joint work with Vlad Yasevich.
-
-Fixes: 2e3216cd54b1 ("sctp: Follow security requirement of responding with 1 packet")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/net/sctp/sctp.h | 5 +++++
- net/sctp/associola.c    | 2 ++
- 2 files changed, 7 insertions(+)
+ arch/parisc/include/uapi/asm/shmbuf.h | 25 +++++++++----------------
+ arch/parisc/kernel/syscall_table.S    |  8 ++++----
+ 2 files changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
-index 3794c5ad20fe..3848934ab162 100644
---- a/include/net/sctp/sctp.h
-+++ b/include/net/sctp/sctp.h
-@@ -454,6 +454,11 @@ static inline void sctp_assoc_pending_pmtu(struct sock *sk, struct sctp_associat
- 	asoc->pmtu_pending = 0;
- }
+diff --git a/arch/parisc/include/uapi/asm/shmbuf.h b/arch/parisc/include/uapi/asm/shmbuf.h
+index 0a3eada1863b..f395cde7b593 100644
+--- a/arch/parisc/include/uapi/asm/shmbuf.h
++++ b/arch/parisc/include/uapi/asm/shmbuf.h
+@@ -36,23 +36,16 @@ struct shmid64_ds {
+ 	unsigned int		__unused2;
+ };
  
-+static inline bool sctp_chunk_pending(const struct sctp_chunk *chunk)
-+{
-+	return !list_empty(&chunk->list);
-+}
-+
- /* Walk through a list of TLV parameters.  Don't trust the
-  * individual parameter lengths and instead depend on
-  * the chunk length to indicate when to stop.  Make sure
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index ad5cd6f20e78..737050f1b2b2 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1645,6 +1645,8 @@ struct sctp_chunk *sctp_assoc_lookup_asconf_ack(
- 	 * ack chunk whose serial number matches that of the request.
- 	 */
- 	list_for_each_entry(ack, &asoc->asconf_ack_list, transmitted_list) {
-+		if (sctp_chunk_pending(ack))
-+			continue;
- 		if (ack->subh.addip_hdr->serial == serial) {
- 			sctp_chunk_hold(ack);
- 			return ack;
+-#ifdef CONFIG_64BIT
+-/* The 'unsigned int' (formerly 'unsigned long') data types below will
+- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
+- * a wide kernel, but if some of these values are meant to contain pointers
+- * they may need to be 'long long' instead. -PB XXX FIXME
+- */
+-#endif
+ struct shminfo64 {
+-	unsigned int	shmmax;
+-	unsigned int	shmmin;
+-	unsigned int	shmmni;
+-	unsigned int	shmseg;
+-	unsigned int	shmall;
+-	unsigned int	__unused1;
+-	unsigned int	__unused2;
+-	unsigned int	__unused3;
+-	unsigned int	__unused4;
++	unsigned long	shmmax;
++	unsigned long	shmmin;
++	unsigned long	shmmni;
++	unsigned long	shmseg;
++	unsigned long	shmall;
++	unsigned long	__unused1;
++	unsigned long	__unused2;
++	unsigned long	__unused3;
++	unsigned long	__unused4;
+ };
+ 
+ #endif /* _PARISC_SHMBUF_H */
+diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
+index 10a0c2aad8cf..b24732d1bdbf 100644
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -286,11 +286,11 @@
+ 	ENTRY_COMP(msgsnd)
+ 	ENTRY_COMP(msgrcv)
+ 	ENTRY_SAME(msgget)		/* 190 */
+-	ENTRY_SAME(msgctl)
+-	ENTRY_SAME(shmat)
++	ENTRY_COMP(msgctl)
++	ENTRY_COMP(shmat)
+ 	ENTRY_SAME(shmdt)
+ 	ENTRY_SAME(shmget)
+-	ENTRY_SAME(shmctl)		/* 195 */
++	ENTRY_COMP(shmctl)		/* 195 */
+ 	ENTRY_SAME(ni_syscall)		/* streams1 */
+ 	ENTRY_SAME(ni_syscall)		/* streams2 */
+ 	ENTRY_SAME(lstat64)
+@@ -323,7 +323,7 @@
+ 	ENTRY_SAME(epoll_ctl)		/* 225 */
+ 	ENTRY_SAME(epoll_wait)
+  	ENTRY_SAME(remap_file_pages)
+-	ENTRY_SAME(semtimedop)
++	ENTRY_COMP(semtimedop)
+ 	ENTRY_COMP(mq_open)
+ 	ENTRY_SAME(mq_unlink)		/* 230 */
+ 	ENTRY_COMP(mq_timedsend)
 -- 
 2.1.3
 
