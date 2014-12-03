@@ -1,224 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaLCOPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:15:53 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:61587 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaLCOPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:15:50 -0500
+	id S1752940AbaLCOP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:15:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752813AbaLCOP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:15:56 -0500
+Message-ID: <547F1B00.3030706@redhat.com>
+Date: Wed, 03 Dec 2014 15:15:28 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <3484329.phAPviVnbd@vostro.rjw.lan>
-References: <37310416.jZXoh5nfSC@vostro.rjw.lan>
-	<3484329.phAPviVnbd@vostro.rjw.lan>
-Date: Wed, 3 Dec 2014 15:15:49 +0100
-Message-ID: <CAPDyKFoZmCYYNAGfNzwwEj=jk9wrfCKoxqQ4p=KStADSK1suCg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] PM: Drop the SET_PM_RUNTIME_PM_OPS() macro
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>, minchan@kernel.org,
+        ngupta@vflare.org
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] zram: use DEVICE_ATTR_[RW|RO|WO] to define zram sys device
+ attribute
+References: <1417610332-11191-1-git-send-email-opensource.ganesh@gmail.com>
+In-Reply-To: <1417610332-11191-1-git-send-email-opensource.ganesh@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="LwdosRSQnhntDJPpDbQaNKE5atdEuewOq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 November 2014 at 01:38, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> The SET_PM_RUNTIME_PM_OPS() and SET_RUNTIME_PM_OPS() macros are
-> identical except that one of them is not empty for CONFIG_PM set,
-> while the other one is not empty for CONFIG_PM_RUNTIME set,
-> respectively.
->
-> However, after commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) PM_RUNTIME is always set if PM is set, so one
-> of these macros is now redundant.
->
-> For this reason, drop SET_PM_RUNTIME_PM_OPS() and replace it with
-> SET_RUNTIME_PM_OPS() everywhere.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--LwdosRSQnhntDJPpDbQaNKE5atdEuewOq
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Hi Rafael,
+On 12/03/2014 01:38 PM, Ganesh Mahendran wrote:
+> In current zram, we use DEVICE_ATTR() to define sys device attributes.
+> SO, we need to set (S_IRUGO | S_IWUSR) permission and other
+> arguments manually.
+> Linux kernel has already provided macro DEVICE_ATTR_[RW|RO|WO] to defin=
+e
+> sys device attribute. It is simple and readable.
 
-Apparently, I have queued an mmc patch in my mmc tree, which means one
-mmc driver starts using the SET_PM_RUNTIME_PM_OPS macro. It should
-cause a build error in linux-next with @subject patch.
+It does look cleaner.
 
-I have shared that patch through an immutable branch, I have also
-checked potential conflicts and it shouldn't be any problems to pull
-that in to your tree. Then you can fix $subject patch by also
-converting the mmc driver to use SET_RUNTIME_PM_OPS macro.
+>=20
+> This patch uses kernel defined macro DEVICE_ATTR_[RW|RO|WO] to define
+> zram device attribute.
+>=20
+> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
 
-The branch is available at:
-git://git.linaro.org/people/ulf.hansson/mmc.git mmc_for_linux_pm
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 
-Kind regards
-Uffe
-
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Thanks,
+Jerome
 > ---
->  drivers/amba/bus.c                |    2 +-
->  drivers/dma/ste_dma40.c           |    2 +-
->  drivers/gpio/gpio-zynq.c          |    2 +-
->  drivers/i2c/busses/i2c-hix5hd2.c  |    2 +-
->  drivers/i2c/busses/i2c-nomadik.c  |    2 +-
->  drivers/mmc/host/mmci.c           |    2 +-
->  drivers/mmc/host/sh_mobile_sdhi.c |    2 +-
->  drivers/mmc/host/tmio_mmc.c       |    2 +-
->  drivers/spi/spi-pl022.c           |    2 +-
->  include/linux/pm.h                |   11 +----------
->  10 files changed, 10 insertions(+), 19 deletions(-)
->
-> Index: linux-pm/drivers/amba/bus.c
-> ===================================================================
-> --- linux-pm.orig/drivers/amba/bus.c
-> +++ linux-pm/drivers/amba/bus.c
-> @@ -124,7 +124,7 @@ static const struct dev_pm_ops amba_pm =
->         .thaw           = pm_generic_thaw,
->         .poweroff       = pm_generic_poweroff,
->         .restore        = pm_generic_restore,
-> -       SET_PM_RUNTIME_PM_OPS(
-> +       SET_RUNTIME_PM_OPS(
->                 amba_pm_runtime_suspend,
->                 amba_pm_runtime_resume,
->                 NULL
-> Index: linux-pm/drivers/dma/ste_dma40.c
-> ===================================================================
-> --- linux-pm.orig/drivers/dma/ste_dma40.c
-> +++ linux-pm/drivers/dma/ste_dma40.c
-> @@ -3051,7 +3051,7 @@ static int dma40_runtime_resume(struct d
->
->  static const struct dev_pm_ops dma40_pm_ops = {
->         SET_LATE_SYSTEM_SLEEP_PM_OPS(dma40_suspend, dma40_resume)
-> -       SET_PM_RUNTIME_PM_OPS(dma40_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(dma40_runtime_suspend,
->                                 dma40_runtime_resume,
->                                 NULL)
+>  drivers/block/zram/zram_drv.c |   28 +++++++++++-----------------
+>  1 file changed, 11 insertions(+), 17 deletions(-)
+>=20
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_dr=
+v.c
+> index 8eb0d85..53fbd61 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -44,15 +44,14 @@ static const char *default_compressor =3D "lzo";
+>  static unsigned int num_devices =3D 1;
+> =20
+>  #define ZRAM_ATTR_RO(name)						\
+> -static ssize_t zram_attr_##name##_show(struct device *d,		\
+> +static ssize_t name##_show(struct device *d,		\
+>  				struct device_attribute *attr, char *b)	\
+>  {									\
+>  	struct zram *zram =3D dev_to_zram(d);				\
+>  	return scnprintf(b, PAGE_SIZE, "%llu\n",			\
+>  		(u64)atomic64_read(&zram->stats.name));			\
+>  }									\
+> -static struct device_attribute dev_attr_##name =3D			\
+> -	__ATTR(name, S_IRUGO, zram_attr_##name##_show, NULL);
+> +static DEVICE_ATTR_RO(name);
+> =20
+>  static inline int init_done(struct zram *zram)
+>  {
+> @@ -994,20 +993,15 @@ static const struct block_device_operations zram_=
+devops =3D {
+>  	.owner =3D THIS_MODULE
 >  };
-> Index: linux-pm/drivers/gpio/gpio-zynq.c
-> ===================================================================
-> --- linux-pm.orig/drivers/gpio/gpio-zynq.c
-> +++ linux-pm/drivers/gpio/gpio-zynq.c
-> @@ -578,7 +578,7 @@ static void zynq_gpio_free(struct gpio_c
->
->  static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
->         SET_SYSTEM_SLEEP_PM_OPS(zynq_gpio_suspend, zynq_gpio_resume)
-> -       SET_PM_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend,
->                         zynq_gpio_runtime_resume, NULL)
->  };
->
-> Index: linux-pm/drivers/i2c/busses/i2c-hix5hd2.c
-> ===================================================================
-> --- linux-pm.orig/drivers/i2c/busses/i2c-hix5hd2.c
-> +++ linux-pm/drivers/i2c/busses/i2c-hix5hd2.c
-> @@ -528,7 +528,7 @@ static int hix5hd2_i2c_runtime_resume(st
->  #endif
->
->  static const struct dev_pm_ops hix5hd2_i2c_pm_ops = {
-> -       SET_PM_RUNTIME_PM_OPS(hix5hd2_i2c_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(hix5hd2_i2c_runtime_suspend,
->                               hix5hd2_i2c_runtime_resume,
->                               NULL)
->  };
-> Index: linux-pm/drivers/i2c/busses/i2c-nomadik.c
-> ===================================================================
-> --- linux-pm.orig/drivers/i2c/busses/i2c-nomadik.c
-> +++ linux-pm/drivers/i2c/busses/i2c-nomadik.c
-> @@ -932,7 +932,7 @@ static int nmk_i2c_runtime_resume(struct
->
->  static const struct dev_pm_ops nmk_i2c_pm = {
->         SET_LATE_SYSTEM_SLEEP_PM_OPS(nmk_i2c_suspend_late, nmk_i2c_resume_early)
-> -       SET_PM_RUNTIME_PM_OPS(nmk_i2c_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(nmk_i2c_runtime_suspend,
->                         nmk_i2c_runtime_resume,
->                         NULL)
->  };
-> Index: linux-pm/drivers/mmc/host/mmci.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mmc/host/mmci.c
-> +++ linux-pm/drivers/mmc/host/mmci.c
-> @@ -1843,7 +1843,7 @@ static int mmci_runtime_resume(struct de
->  static const struct dev_pm_ops mmci_dev_pm_ops = {
->         SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
->                                 pm_runtime_force_resume)
-> -       SET_PM_RUNTIME_PM_OPS(mmci_runtime_suspend, mmci_runtime_resume, NULL)
-> +       SET_RUNTIME_PM_OPS(mmci_runtime_suspend, mmci_runtime_resume, NULL)
->  };
->
->  static struct amba_id mmci_ids[] = {
-> Index: linux-pm/drivers/mmc/host/sh_mobile_sdhi.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mmc/host/sh_mobile_sdhi.c
-> +++ linux-pm/drivers/mmc/host/sh_mobile_sdhi.c
-> @@ -375,7 +375,7 @@ static int sh_mobile_sdhi_remove(struct
->  static const struct dev_pm_ops tmio_mmc_dev_pm_ops = {
->         SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
->                         pm_runtime_force_resume)
-> -       SET_PM_RUNTIME_PM_OPS(tmio_mmc_host_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(tmio_mmc_host_runtime_suspend,
->                         tmio_mmc_host_runtime_resume,
->                         NULL)
->  };
-> Index: linux-pm/drivers/mmc/host/tmio_mmc.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mmc/host/tmio_mmc.c
-> +++ linux-pm/drivers/mmc/host/tmio_mmc.c
-> @@ -135,7 +135,7 @@ static int tmio_mmc_remove(struct platfo
->
->  static const struct dev_pm_ops tmio_mmc_dev_pm_ops = {
->         SET_SYSTEM_SLEEP_PM_OPS(tmio_mmc_suspend, tmio_mmc_resume)
-> -       SET_PM_RUNTIME_PM_OPS(tmio_mmc_host_runtime_suspend,
-> +       SET_RUNTIME_PM_OPS(tmio_mmc_host_runtime_suspend,
->                         tmio_mmc_host_runtime_resume,
->                         NULL)
->  };
-> Index: linux-pm/drivers/spi/spi-pl022.c
-> ===================================================================
-> --- linux-pm.orig/drivers/spi/spi-pl022.c
-> +++ linux-pm/drivers/spi/spi-pl022.c
-> @@ -2377,7 +2377,7 @@ static int pl022_runtime_resume(struct d
->
->  static const struct dev_pm_ops pl022_dev_pm_ops = {
->         SET_SYSTEM_SLEEP_PM_OPS(pl022_suspend, pl022_resume)
-> -       SET_PM_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
-> +       SET_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
->  };
->
->  static struct vendor_data vendor_arm = {
-> Index: linux-pm/include/linux/pm.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/pm.h
-> +++ linux-pm/include/linux/pm.h
-> @@ -342,7 +342,7 @@ struct dev_pm_ops {
->  #define SET_LATE_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
->  #endif
->
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  #define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
->         .runtime_suspend = suspend_fn, \
->         .runtime_resume = resume_fn, \
-> @@ -351,15 +351,6 @@ struct dev_pm_ops {
->  #define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
->  #endif
->
-> -#ifdef CONFIG_PM
-> -#define SET_PM_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
-> -       .runtime_suspend = suspend_fn, \
-> -       .runtime_resume = resume_fn, \
-> -       .runtime_idle = idle_fn,
-> -#else
-> -#define SET_PM_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
-> -#endif
-> -
->  /*
->   * Use this if you want to use the same suspend and resume callbacks for suspend
->   * to RAM and hibernation.
->
+> =20
+> -static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
+> -		disksize_show, disksize_store);
+> -static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+> -static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+> -static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL)=
+;
+> -static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL)=
+;
+> -static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
+> -		mem_limit_store);
+> -static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,=
+
+> -		mem_used_max_store);
+> -static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+> -		max_comp_streams_show, max_comp_streams_store);
+> -static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+> -		comp_algorithm_show, comp_algorithm_store);
+> +static DEVICE_ATTR_RW(disksize);
+> +static DEVICE_ATTR_RO(initstate);
+> +static DEVICE_ATTR_WO(reset);
+> +static DEVICE_ATTR_RO(orig_data_size);
+> +static DEVICE_ATTR_RO(mem_used_total);
+> +static DEVICE_ATTR_RW(mem_limit);
+> +static DEVICE_ATTR_RW(mem_used_max);
+> +static DEVICE_ATTR_RW(max_comp_streams);
+> +static DEVICE_ATTR_RW(comp_algorithm);
+> =20
+>  ZRAM_ATTR_RO(num_reads);
+>  ZRAM_ATTR_RO(num_writes);
+>=20
+
+
+
+--LwdosRSQnhntDJPpDbQaNKE5atdEuewOq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUfxsAAAoJEHTzHJCtsuoCWqkH/00PDe6xm9TLSd8HqvgRswP1
+pHrBnZYoFV+wbSoXq1zfDcDrWTihoDtWy3nqsqy/kCkD30oEipqh+J3HXmhxwIzT
+T83wdYtgIXmOrbFDdS56OkbHIdTKrRYh+6Tp+2k8P2ym6HkDJ5tMzS01qr13iyOy
+tokeWIc5O0wndsQQG9rlLhMO+QPQzGd1ufTKzSQ0BeeLigFVPqrh4FvUYkAsCM8L
+0k3xyzSduAeQu1IiEJbvGGeG25u4YmXB2S+iTAOYDui4H1ocXeafPp4JslEhJlpR
+9GXpgEhGLGpwfT9GrfftpZbdeNxVSzOtHprnpe2ZJUDy3+D0Z8t90mKs/EvZhM0=
+=x1NZ
+-----END PGP SIGNATURE-----
+
+--LwdosRSQnhntDJPpDbQaNKE5atdEuewOq--
