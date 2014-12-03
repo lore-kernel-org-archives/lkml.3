@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaLCHwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:52:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:15093 "EHLO mga11.intel.com"
+	id S1752594AbaLCHwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:52:42 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1928 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353AbaLCHuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752401AbaLCHuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 02:50:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852477"
+   d="scan'208";a="631852487"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
         joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
         kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 19/25] KVM: x86: kvm-vfio: VT-d posted-interrupts setup
-Date: Wed,  3 Dec 2014 15:39:48 +0800
-Message-Id: <1417592394-24343-20-git-send-email-feng.wu@intel.com>
+Subject: [v2 20/25] x86, irq: Define a global vector for VT-d Posted-Interrupts
+Date: Wed,  3 Dec 2014 15:39:49 +0800
+Message-Id: <1417592394-24343-21-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
 References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
@@ -25,117 +25,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines macro __KVM_HAVE_ARCH_KVM_VFIO_POSTING and
-implement kvm_arch_vfio_update_pi_irte for x86 architecture.
+Currently, we use a global vector as the Posted-Interrupts
+Notification Event for all the vCPUs in the system. We need
+to introduce another global vector for VT-d Posted-Interrtups,
+which will be used to wakeup the sleep vCPU when an external
+interrupt from a direct-assigned device happens for that vCPU.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +
- arch/x86/kvm/Makefile           |    2 +-
- arch/x86/kvm/kvm_vfio_x86.c     |   68 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 71 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/kvm/kvm_vfio_x86.c
+ arch/x86/include/asm/entry_arch.h  |    2 ++
+ arch/x86/include/asm/hardirq.h     |    1 +
+ arch/x86/include/asm/hw_irq.h      |    2 ++
+ arch/x86/include/asm/irq_vectors.h |    1 +
+ arch/x86/kernel/entry_64.S         |    2 ++
+ arch/x86/kernel/irq.c              |   27 +++++++++++++++++++++++++++
+ arch/x86/kernel/irqinit.c          |    2 ++
+ 7 files changed, 37 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 9b45b78..6878429 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -82,6 +82,8 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
- 		(base_gfn >> KVM_HPAGE_GFN_SHIFT(level));
+diff --git a/arch/x86/include/asm/entry_arch.h b/arch/x86/include/asm/entry_arch.h
+index dc5fa66..27ca0af 100644
+--- a/arch/x86/include/asm/entry_arch.h
++++ b/arch/x86/include/asm/entry_arch.h
+@@ -23,6 +23,8 @@ BUILD_INTERRUPT(x86_platform_ipi, X86_PLATFORM_IPI_VECTOR)
+ #ifdef CONFIG_HAVE_KVM
+ BUILD_INTERRUPT3(kvm_posted_intr_ipi, POSTED_INTR_VECTOR,
+ 		 smp_kvm_posted_intr_ipi)
++BUILD_INTERRUPT3(kvm_posted_intr_wakeup_ipi, POSTED_INTR_WAKEUP_VECTOR,
++		 smp_kvm_posted_intr_wakeup_ipi)
+ #endif
+ 
+ /*
+diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+index 0f5fb6b..9866065 100644
+--- a/arch/x86/include/asm/hardirq.h
++++ b/arch/x86/include/asm/hardirq.h
+@@ -14,6 +14,7 @@ typedef struct {
+ #endif
+ #ifdef CONFIG_HAVE_KVM
+ 	unsigned int kvm_posted_intr_ipis;
++	unsigned int kvm_posted_intr_wakeup_ipis;
+ #endif
+ 	unsigned int x86_platform_ipis;	/* arch dependent */
+ 	unsigned int apic_perf_irqs;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index e7ae6eb..38fac9b 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -29,6 +29,7 @@
+ extern asmlinkage void apic_timer_interrupt(void);
+ extern asmlinkage void x86_platform_ipi(void);
+ extern asmlinkage void kvm_posted_intr_ipi(void);
++extern asmlinkage void kvm_posted_intr_wakeup_ipi(void);
+ extern asmlinkage void error_interrupt(void);
+ extern asmlinkage void irq_work_interrupt(void);
+ 
+@@ -92,6 +93,7 @@ extern void trace_call_function_single_interrupt(void);
+ #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
+ #define trace_reboot_interrupt  reboot_interrupt
+ #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
++#define trace_kvm_posted_intr_wakeup_ipi kvm_posted_intr_wakeup_ipi
+ #endif /* CONFIG_TRACING */
+ 
+ struct irq_domain;
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index b26cb12..dca94f2 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -105,6 +105,7 @@
+ /* Vector for KVM to deliver posted interrupt IPI */
+ #ifdef CONFIG_HAVE_KVM
+ #define POSTED_INTR_VECTOR		0xf2
++#define POSTED_INTR_WAKEUP_VECTOR	0xf1
+ #endif
+ 
+ /*
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index e61c14a..a598447 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -960,6 +960,8 @@ apicinterrupt X86_PLATFORM_IPI_VECTOR \
+ #ifdef CONFIG_HAVE_KVM
+ apicinterrupt3 POSTED_INTR_VECTOR \
+ 	kvm_posted_intr_ipi smp_kvm_posted_intr_ipi
++apicinterrupt3 POSTED_INTR_WAKEUP_VECTOR \
++	kvm_posted_intr_wakeup_ipi smp_kvm_posted_intr_wakeup_ipi
+ #endif
+ 
+ #ifdef CONFIG_X86_MCE_THRESHOLD
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 922d285..47408c3 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -237,6 +237,9 @@ __visible void smp_x86_platform_ipi(struct pt_regs *regs)
  }
  
-+#define __KVM_HAVE_ARCH_KVM_VFIO_POSTING
+ #ifdef CONFIG_HAVE_KVM
++void (*wakeup_handler_callback)(void) = NULL;
++EXPORT_SYMBOL_GPL(wakeup_handler_callback);
 +
- #define SELECTOR_TI_MASK (1 << 2)
- #define SELECTOR_RPL_MASK 0x03
+ /*
+  * Handler for POSTED_INTERRUPT_VECTOR.
+  */
+@@ -256,6 +259,30 @@ __visible void smp_kvm_posted_intr_ipi(struct pt_regs *regs)
  
-diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
-index 25d22b2..8809d58 100644
---- a/arch/x86/kvm/Makefile
-+++ b/arch/x86/kvm/Makefile
-@@ -14,7 +14,7 @@ kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= $(KVM)/assigned-dev.o $(KVM)/iommu.o
- kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(KVM)/async_pf.o
- 
- kvm-y			+= x86.o mmu.o emulate.o i8259.o irq.o lapic.o \
--			   i8254.o cpuid.o pmu.o
-+			   i8254.o cpuid.o pmu.o kvm_vfio_x86.o
- kvm-intel-y		+= vmx.o
- kvm-amd-y		+= svm.o
- 
-diff --git a/arch/x86/kvm/kvm_vfio_x86.c b/arch/x86/kvm/kvm_vfio_x86.c
-new file mode 100644
-index 0000000..c59a31a
---- /dev/null
-+++ b/arch/x86/kvm/kvm_vfio_x86.c
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright (C) 2014 Intel Corporation.
-+ * Authors: Feng Wu <feng.wu@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kvm_host.h>
-+#include <asm/irq_remapping.h>
+ 	set_irq_regs(old_regs);
+ }
 +
 +/*
-+ * kvm_arch_vfio_update_pi_irte - set IRTE for Posted-Interrupts
-+ *
-+ * @kvm: kvm
-+ * @host_irq: host irq of the interrupt
-+ * @guest_irq: gsi of the interrupt
-+ * returns 0 on success, < 0 on failure
++ * Handler for POSTED_INTERRUPT_WAKEUP_VECTOR.
 + */
-+int kvm_arch_vfio_update_pi_irte(struct kvm *kvm, unsigned int host_irq,
-+				 uint32_t guest_irq)
++__visible void smp_kvm_posted_intr_wakeup_ipi(struct pt_regs *regs)
 +{
-+	struct kvm_kernel_irq_routing_entry *e;
-+	struct kvm_irq_routing_table *irq_rt;
-+	struct kvm_lapic_irq irq;
-+	struct kvm_vcpu *vcpu;
-+	struct vcpu_data vcpu_info;
-+	int idx, ret = -EINVAL;
++	struct pt_regs *old_regs = set_irq_regs(regs);
 +
-+	idx = srcu_read_lock(&kvm->irq_srcu);
-+	irq_rt = srcu_dereference(kvm->irq_routing, &kvm->irq_srcu);
-+	BUG_ON(guest_irq >= irq_rt->nr_rt_entries);
++	ack_APIC_irq();
 +
-+	hlist_for_each_entry(e, &irq_rt->map[guest_irq], link) {
-+		if (e->type != KVM_IRQ_ROUTING_MSI)
-+			continue;
-+		/*
-+		 * VT-d PI cannot support posting multicast/broadcast
-+		 * interrupts to a VCPU, we still use interrupt remapping
-+		 * for these kind of interrupts.
-+		 */
++	irq_enter();
 +
-+		kvm_set_msi_irq(e, &irq);
-+		if (!kvm_find_dest_vcpu(kvm, &irq, &vcpu))
-+			continue;
++	exit_idle();
 +
-+		vcpu_info.pi_desc_addr = kvm_x86_ops->get_pi_desc_addr(vcpu);
-+		vcpu_info.vector = irq.vector;
++	inc_irq_stat(kvm_posted_intr_wakeup_ipis);
 +
-+		if (irq_set_vcpu_affinity(host_irq, &vcpu_info) < 0) {
-+			printk(KERN_INFO "%s: failed to update PI IRTE\n",
-+					__func__);
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
++	if (wakeup_handler_callback)
++		wakeup_handler_callback();
 +
-+	ret = 0;
-+out:
-+	srcu_read_unlock(&kvm->irq_srcu, idx);
-+	return ret;
++	irq_exit();
++
++	set_irq_regs(old_regs);
 +}
++
+ #endif
+ 
+ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 70e181e..844673c 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -144,6 +144,8 @@ static void __init apic_intr_init(void)
+ #ifdef CONFIG_HAVE_KVM
+ 	/* IPI for KVM to deliver posted interrupt */
+ 	alloc_intr_gate(POSTED_INTR_VECTOR, kvm_posted_intr_ipi);
++	/* IPI for KVM to deliver interrupt to wake up tasks */
++	alloc_intr_gate(POSTED_INTR_WAKEUP_VECTOR, kvm_posted_intr_wakeup_ipi);
+ #endif
+ 
+ 	/* IPI vectors for APIC spurious and error interrupts */
 -- 
 1.7.1
 
