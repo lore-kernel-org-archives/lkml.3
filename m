@@ -1,90 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaLCWcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 17:32:07 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39625 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaLCWa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 17:30:28 -0500
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH 2/9] mm: replace ACCESS_ONCE with READ_ONCE or barriers
-Date: Wed,  3 Dec 2014 23:30:14 +0100
-Message-Id: <1417645821-54731-3-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
-References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120322-0005-0000-0000-0000025484E0
+	id S1752348AbaLCWcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 17:32:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58743 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375AbaLCWcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 17:32:45 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <BBF8B74B-AECA-4984-81A0-408ED5F8F8C8@oracle.com>
+References: <BBF8B74B-AECA-4984-81A0-408ED5F8F8C8@oracle.com> <20141119122238.26494.23666.stgit@warthog.procyon.org.uk> <20141119122249.26494.25661.stgit@warthog.procyon.org.uk>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: dhowells@redhat.com, Carl Hetherington <cth@carlh.net>,
+        Neil Brown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] KEYS: request_key() should reget expired keys rather than give EKEYEXPIRED
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <15840.1417645918.1@warthog.procyon.org.uk>
+Date: Wed, 03 Dec 2014 22:31:58 +0000
+Message-ID: <15841.1417645918@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+These patches are now upstream.
 
-Let's change the code to access the page table elements with
-READ_ONCE that does implicit scalar accesses.
-
-mm_find_pmd is tricky, because m68k and sparc(32bit) define pmd_t
-as array of longs. This code requires just that the pmd_present
-and pmd_trans_huge check are done on the same value, so a barrier
-is sufficent.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- mm/gup.c    | 2 +-
- mm/memory.c | 2 +-
- mm/rmap.c   | 3 ++-
- 3 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/mm/gup.c b/mm/gup.c
-index cd62c8c..f2305de 100644
---- a/mm/gup.c
-+++ b/mm/gup.c
-@@ -917,7 +917,7 @@ static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
- 
- 	pudp = pud_offset(pgdp, addr);
- 	do {
--		pud_t pud = ACCESS_ONCE(*pudp);
-+		pud_t pud = READ_ONCE(*pudp);
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
-diff --git a/mm/memory.c b/mm/memory.c
-index 3e50383..9e0c84e 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3202,7 +3202,7 @@ static int handle_pte_fault(struct mm_struct *mm,
- 	pte_t entry;
- 	spinlock_t *ptl;
- 
--	entry = ACCESS_ONCE(*pte);
-+	entry = READ_ONCE(*pte);
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 19886fb..1e54274 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -581,7 +581,8 @@ pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address)
- 	 * without holding anon_vma lock for write.  So when looking for a
- 	 * genuine pmde (in which to find pte), test present and !THP together.
- 	 */
--	pmde = ACCESS_ONCE(*pmd);
-+	pmde = *pmd;
-+	barrier();
- 	if (!pmd_present(pmde) || pmd_trans_huge(pmde))
- 		pmd = NULL;
- out:
--- 
-1.9.3
-
+David
