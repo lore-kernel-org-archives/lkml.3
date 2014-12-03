@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaLCRDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:03:18 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:44905 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaLCRDP (ORCPT
+	id S1751608AbaLCREm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:04:42 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:32966 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaLCREl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:03:15 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 1/1] of-unittest: Deletion of an unnecessary check
- =?iso-8859-1?Q?before=0D?= the function call "of_node_put"
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-In-Reply-To: <547DB803.1080406@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	<530A086E.8010901@users.sourceforge.net>
-	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<547DB803.1080406@users.sourceforge.net>
-Date: Wed, 03 Dec 2014 17:03:11 +0000
-Message-Id: <20141203170311.BADB8C40932@trevor.secretlab.ca>
+	Wed, 3 Dec 2014 12:04:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141203155451.GI23236@dhcp22.suse.cz>
+References: <1417560083-27157-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141203152231.GA2822@phnom.home.cmpxchg.org> <20141203155451.GI23236@dhcp22.suse.cz>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Wed, 3 Dec 2014 18:04:18 +0100
+Message-ID: <CAFo99gbCJzErKz2o3WHa8C8OKTaqPq-+iiJhAZOq41F6W5+8YA@mail.gmail.com>
+Subject: Re: [PATCH] mm: memcontrol.c: Cleaning up function that are not used anywhere
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Dec 2014 14:00:51 +0100
-, SF Markus Elfring <elfring@users.sourceforge.net>
- wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Tue, 2 Dec 2014 13:54:00 +0100
-> 
-> The of_node_put() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+2014-12-03 16:54 GMT+01:00 Michal Hocko <mhocko@suse.cz>:
+> On Wed 03-12-14 10:22:31, Johannes Weiner wrote:
+>> On Tue, Dec 02, 2014 at 11:41:23PM +0100, Rickard Strandqvist wrote:
+>> > Remove function mem_cgroup_lru_names_not_uptodate() that is not used anywhere.
+>> >
+>> > This was partially found by using a static code analysis program called cppcheck.
+>> >
+>> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> > ---
+>> >  mm/memcontrol.c |    5 -----
+>> >  1 file changed, 5 deletions(-)
+>> >
+>> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> > index d6ac0e3..5edd1fe 100644
+>> > --- a/mm/memcontrol.c
+>> > +++ b/mm/memcontrol.c
+>> > @@ -4379,11 +4379,6 @@ static int memcg_numa_stat_show(struct seq_file *m, void *v)
+>> >  }
+>> >  #endif /* CONFIG_NUMA */
+>> >
+>> > -static inline void mem_cgroup_lru_names_not_uptodate(void)
+>> > -{
+>> > -   BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+>> > -}
+>>
+>> That assertion doesn't work in an unused function, but we still want
+>> this check.  Please move the BUILD_BUG_ON() to the beginning of
+>> memcg_stat_show() instead.
+>
+> Ohh. I have completely missed the point of the check! Moving the check
+> to memcg_stat_show sounds like a good idea.
+>
+> --
+> Michal Hocko
+> SUSE Labs
 
-Applied, thanks.
+Hi
 
-g.
+Ok, sure I'll fix that!
 
-> ---
->  drivers/of/unittest.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/of/unittest.c b/drivers/of/unittest.c
-> index cc0c5ec..06ebe9d 100644
-> --- a/drivers/of/unittest.c
-> +++ b/drivers/of/unittest.c
-> @@ -486,8 +486,7 @@ static void __init of_selftest_changeset(void)
->  	/* Make sure node names are constructed correctly */
->  	selftest((np = of_find_node_by_path("/testcase-data/changeset/n2/n21")),
->  		 "'%s' not added\n", n21->full_name);
-> -	if (np)
-> -		of_node_put(np);
-> +	of_node_put(np);
->  
->  	mutex_lock(&of_mutex);
->  	selftest(!of_changeset_revert(&chgset), "revert failed\n");
-> -- 
-> 2.1.3
-> 
+It will take a few days before I will have access to my workstation,
+however, but the new patch on the way...
 
+Kind regards
+Rickard Strandqvist
