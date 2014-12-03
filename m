@@ -1,223 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaLCXeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:34:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323AbaLCXeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:34:20 -0500
-Message-ID: <1417649648.2581.32.camel@pluto.fritz.box>
-Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
-From: Ian Kent <ikent@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Benjamin Coddington <bcodding@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Date: Thu, 04 Dec 2014 07:34:08 +0800
-In-Reply-To: <87zjb4k7b6.fsf@x220.int.ebiederm.org>
-References: <20141125005255.4974.54193.stgit@pluto.fritz.box>
-	 <20141125010734.4974.85347.stgit@pluto.fritz.box>
-	 <20141125215248.GA7958@redhat.com> <20141125220637.GA10008@redhat.com>
-	 <87y4qy7wci.fsf@x220.int.ebiederm.org>
-	 <1416956845.2509.38.camel@pluto.fritz.box>
-	 <871toq7tr6.fsf@x220.int.ebiederm.org>
-	 <1416959452.2509.52.camel@pluto.fritz.box>
-	 <87egsq3fna.fsf@x220.int.ebiederm.org>
-	 <alpine.LRH.2.11.1412011607450.2583@sh-el6.eng.rdu2.redhat.com>
-	 <1417563215.2531.25.camel@pluto.fritz.box>
-	 <87zjb4k7b6.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752439AbaLCXhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:37:19 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62725 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLCXhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 18:37:17 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Oleg Nesterov <oleg@redhat.com>,
+        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v2] context_tracking: Restore previous state in schedule_user
+Date: Wed,  3 Dec 2014 15:37:08 -0800
+Message-Id: <e840280bba54050816470caa870bd9f561efc545.1417649608.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <20141203220836.GC31369@lerouge>
+References: <20141203220836.GC31369@lerouge>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 10:49 -0600, Eric W. Biederman wrote:
-> Ian Kent <ikent@redhat.com> writes:
-> 
-> > On Mon, 2014-12-01 at 16:56 -0500, Benjamin Coddington wrote:
-> >> n Tue, 25 Nov 2014, Eric W. Biederman wrote:
-> >> Hi,
-> >> 
-> >> > Ian Kent <ikent@redhat.com> writes:
-> >> >
-> >> > > On Tue, 2014-11-25 at 17:19 -0600, Eric W. Biederman wrote:
-> >> > >> Ian Kent <ikent@redhat.com> writes:
-> >> > >>
-> >> > >> > On Tue, 2014-11-25 at 16:23 -0600, Eric W. Biederman wrote:
-> >> > >> >> Oleg Nesterov <oleg@redhat.com> writes:
-> >> > >> >>
-> >> > >> >> > On 11/25, Oleg Nesterov wrote:
-> >> > >> >> >>
-> >> > >> >> >> Let me first apologize, I didn't actually read this series yet.
-> >> > >> >> >>
-> >> > >> >> >> But I have to admit that so far I do not like this approach...
-> >> > >> >> >> probably I am biased.
-> >> > >> >> >
-> >> > >> >> > Yes.
-> >> > >> >> >
-> >> > >> >> > And I have another concern... this is mostly a feeling, I can be
-> >> > >> >> > easily wrong but:
-> >> > >> >> >
-> >> > >> >> >> On 11/25, Ian Kent wrote:
-> >> > >> >> >> >
-> >> > >> >> >> > +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
-> >> > >> >> >> > +{
-> >> > >> >> >> > +	struct nsproxy *ns = info->data;
-> >> > >> >> >> > +
-> >> > >> >> >> > +	mntns_setfs(ns->mnt_ns);
-> >> > >> >> >>
-> >> > >> >> >> Firstly, it is not clear to me if we should use the caller's ->mnt_ns.
-> >> > >> >> >> Let me remind about the coredump. The dumping task can cloned with
-> >> > >> >> >> CLONE_NEWNS or it cam do unshare(NEWNS)... but OK, I do not understand
-> >> > >> >> >> this enough.
-> >> > >> >> >
-> >> > >> >> > And otoh. If we actually want to use the caller's mnt_ns/namespaces we
-> >> > >> >> > could simply fork/reparent a child which will do execve ?
-> >> > >> >>
-> >> > >> >> That would certainly be a better approach, and roughly equivalent to
-> >> > >> >> what exists here.  That would even ensure we remain in the proper
-> >> > >> >> cgroups, and lsm context.
-> >> > >> >>
-> >> > >> >> The practical problem with the approach presented here is that I can
-> >> > >> >> hijack any user mode helper I wish, and make it run in any executable I
-> >> > >> >> wish as the global root user.
-> >> > >> >>
-> >> > >> >> Ian if we were to merge this I believe you would win the award for
-> >> > >> >> easiest path to a root shell.
-> >> > >> >
-> >> > >> > LOL, OK, so there's a problem with this.
-> >> > >> >
-> >> > >> > But, how should a user mode helper execute within a namespace (or more
-> >> > >> > specifically within a container)?
-> >> > >> >
-> >> > >> > Suppose a user mode helper program scans through the pid list and
-> >> > >> > somehow picks the correct process pid and then does an
-> >> > >> > open()/setns()/execve().
-> >> > >> >
-> >> > >> > Does that then satisfy the requirements?
-> >> > >> > What needs to be done to safely do that in kernel?
-> >> > >> >
-> >> > >> > The other approach I've considered is doing a full open()/setns() in
-> >> > >> > kernel (since the caller already knows its pid) but it sounds like
-> >> > >> > that's not right either.
-> >> > >>
-> >> > >> The approach we agreed upon with the core dump helper was to provide
-> >> > >> enough information that userspace could figure out what was the
-> >> > >> appropriate policy and call nsenter/setns.
-> >> > >
-> >> > > Your recommending I have a look at the core dump helper, that's fine,
-> >> > > I'll do that.
-> >> >
-> >> > I am just describing it because it came up.  Core dumps are a much
-> >> > easier case than nfs.
-> >> >
-> >> > Frankly if we can figure out how to run the user mode helpers from the
-> >> > kernel with an appropriate context and not involve userspace I think
-> >> > that will be better for everyone, as it involves fewer moving parts at
-> >> > the end of the day.
-> >> >
-> >> > >> The only sane approach I can think of in the context of nfs is to fork
-> >> > >> a kernel thread at mount time that has all of the appropriate context
-> >> > >> because it was captured from the privileged mounting process, and use
-> >> > >> that kernel as the equivalent of kthreadd.
-> >> > >>
-> >> > >> There may be some intermediate ground where we capture things or we use
-> >> > >> the init process of the pid namespace (captured at mount time) as our
-> >> > >> template/reference process.
-> >> > >>
-> >> > >> If we are going to set this stuff up in the kernel we need a reference
-> >> > >> process that we can create children of because what is possible with
-> >> > >> respect to containers keeps changing, and it is extremely error prone to
-> >> > >> figure out what all othe crazy little bits are, and to update everything
-> >> > >> every time someone tweaks the kernel's capabilities.  We have kthreadd
-> >> > >> because it was too error prone to scrub a userspace thread of all of the
-> >> > >> userspace bits and make it the equivalent of what kthreadd is today.
-> >> > >>
-> >> > >> Of course it is also rather nice to have something to hang everything
-> >> > >> else on.
-> >> > >>
-> >> > >> In summary we need a reference struct task that is all setup properly
-> >> > >> so that we can create an appropriate kernel thread.
-> >> > >
-> >> > > I'm having trouble understanding what your getting at here but I'm not
-> >> > > that sharp so bear with me.
-> >> > >
-> >> > > When call_usermodehelper() is called it's called from a process that is
-> >> > > within the context within which the execution is required.
-> >> >
-> >> > No it is not.  That is precisely why we have call_usermodehelper instead
-> >> > of just forking and exec'ing something.  The context which triggers the
-> >> > call can be completely different from where you want to run.
-> >> >
-> >> > > So what information do we not have available for setup?
-> >> > >
-> >> > > Are you saying that the problem is that when the user mode helper run
-> >> > > thread is invoked we don't have the information available that was
-> >> > > present when call_usermodehelper() was called and that's where the
-> >> > > challenge lies?
-> >> >
-> >> > That is part of it.
-> >> >
-> >> > However in the context of nfs the correct context is determined at mount
-> >> > time, and so when call_usermodehelper() is invoked the only link to that
-> >> > correct context that we have is the nfs super block.
-> >> >
-> >> > In a pathological case a userspace application can create a new user
-> >> > namespace, and a new mount namespace and completely rearrange the
-> >> > mounts, and deliberately trigger an nfs user mode helper.  If we were to
-> >> > use that applications context it could control which userspace
-> >> > application the kernel invoked.
-> >> 
-> >> Then it seems it would never be safe to try to execve /sbin/request-key
-> >> within the calling process' mnt_ns, so if we want to do some work
-> >> within that namespace the transition to it needs to happen after the
-> >> upcall, after /sbin/request-key calls the appropriate helper.
-> 
-> No.  We never want to do work in the calling process's mnt_ns.
-> We want to work in the mounters mnt_ns which given mount propagation
-> can be something completely and totally different.
-> 
-> >> And instead of transitioning into this context before execve, instead
-> >> pass it along to allow the userspace helper to do setns()..
-> >
-> > I still don't see the difference between, given an appropriate pid,
-> > using the open()/setns() mechanism in kernel similar to nsenter(1). 
-> >
-> > In that case the setup is done before the first exec rather than between
-> > the first and second exec (the one in nsenter). Our other approach
-> > essentially did that but (incorrectly) used the current process pid and
-> > didn't deal with all the namespace types as nsenter does.
-> >
-> > Isn't the real problem getting hold of an appropriate pid to use for the
-> > open/setns that belongs to a process that's still running?
-> > What else is needed, Eric?
-> 
-> Essentially that is the real problem.  Getting ahold of the context of
-> the container in which a filesystem was mounted.
-> 
-> Now it isn't just namespaces but also cgroups and uids and gids and
-> capabilities and process groups and sessions.  There are a whole host of
-> little things that need to be right to run a user mode helper, and
-> in particular to run a user mode helper in a ``container''.
+It appears that some SCHEDULE_USER (asm for schedule_user) callers
+in arch/x86/kernel/entry_64.S are called from RCU kernel context,
+and schedule_user will return in RCU user context.  This causes RCU
+warnings and possible failures.
 
-And I think this is where the confusion starts because ....
+This is intended to be a minimal fix suitable for 3.18.
 
-As it stands (whether executing within a container or not) the mounting
-process is mostly long gone when these calls are made and they are
-executed from the root init context.
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-So doesn't adding a new init context, for example the init context of a
-container, then using that for the template amount to the same thing
-within the container?
+Hi all-
 
-If we accept that then the open/setns is "fairly" straight forward.
+This is intended to be a suitable last-minute fix for the RCU issue that
+Dave saw.
 
-TBH I'm struggling to see where would be different.
+Dave, can you confirm that this fixes it?
 
-Ian
+Frédéric, can you confirm that you think that this will have no effect
+on correct callers of schedule_user and that will do the right thing
+for incorrect callers of schedule_user?
+
+I don't like the x86 asm that calls this at all, and I don't really
+like the fragility of the mechanism is general, but I think that this
+improves the situation enough to avoid problems in the short term.
+
+With the obvious warning added, I get:
+
+[    0.751022] ------------[ cut here ]------------
+[    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
+[    0.753477] Modules linked in:
+[    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
+[    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+[    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
+[    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
+[    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
+[    0.762294] Call Trace:
+[    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
+[    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
+[    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
+[    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
+[    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
+[    0.768011] ---[ end trace 329f34db2b3be966 ]---
+
+So, yes, we have a bug, and this could cause any number of strange
+problems.
+
+Changes from v1:
+ - Added Dave's Tested-by.
+ - Fixed a comment typo.
+
+ kernel/sched/core.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 24beb9bb4c3e..89e7283015a6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
+ 	 * or we have been woken up remotely but the IPI has not yet arrived,
+ 	 * we haven't yet exited the RCU idle mode. Do it here manually until
+ 	 * we find a better solution.
++	 *
++	 * NB: There are buggy callers of this function.  Ideally we
++	 * should warn if prev_state != IN_USER, but that will trigger
++	 * too frequently to make sense yet.
+ 	 */
+-	user_exit();
++	enum ctx_state prev_state = exception_enter();
+ 	schedule();
+-	user_enter();
++	exception_exit(prev_state);
+ }
+ #endif
+ 
+-- 
+1.9.3
 
