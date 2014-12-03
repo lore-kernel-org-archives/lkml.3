@@ -1,185 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaLCP55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:57:57 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:29386 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaLCP5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:57:55 -0500
-Message-ID: <547F32FF.7000005@atmel.com>
-Date: Wed, 3 Dec 2014 16:57:51 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
+	id S1751964AbaLCQBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:01:09 -0500
+Received: from mout.web.de ([212.227.17.11]:55572 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322AbaLCQBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 11:01:07 -0500
+Message-ID: <547F33AC.50002@users.sourceforge.net>
+Date: Wed, 03 Dec 2014 17:00:44 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 01/11] mfd: syscon: Add atmel-matrix registers definition
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-2-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1417429647-3419-2-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+To: Arend van Spriel <arend@broadcom.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Coccinelle <cocci@systeme.lip6.fr>, backports@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [patch] CodingStyle: add some more error handling guidelines
+References: <20141202085950.GA13434@mwanda> <547F0297.6030202@users.sourceforge.net> <20141203124511.GR5048@mwanda> <547F0977.7090908@users.sourceforge.net> <20141203132002.GT5048@mwanda> <547F0F2A.3060708@users.sourceforge.net> <547F1942.5060502@broadcom.com>
+In-Reply-To: <547F1942.5060502@broadcom.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:a3KXUwfNusSYGa4+WA1GSWoXAuJ7y0/3XFrBNealyxzn+6vuiFn
+ cWpGGjXvoBTHJ1lgV4ZM7GQdPyPcpglm9VPYavF0+AfA+bBHCy/5FlFBsuy4mqm0wIgiJMa
+ QRNI+7vfCr/CuC8ydChmop07yHCSL6v1sc9tRedXfYHfYCa04hZlQgTu5Yo/fMUAIB4E4MT
+ IxfGzJb649/T3CvlXXjiw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/12/2014 11:27, Boris Brezillon a écrit :
-> AT91 SoCs have a memory range reserved for internal bus configuration.
-> Expose those registers so that drivers can make use of the matrix syscon
-> declared in at91 DTs.
+>> Which name pattern do you find more appropriate in such
+>> an use case?
 > 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/linux/mfd/syscon/atmel-matrix.h | 114 ++++++++++++++++++++++++++++++++
->  1 file changed, 114 insertions(+)
->  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
-> 
-> diff --git a/include/linux/mfd/syscon/atmel-matrix.h b/include/linux/mfd/syscon/atmel-matrix.h
-> new file mode 100644
-> index 0000000..d0da495
-> --- /dev/null
-> +++ b/include/linux/mfd/syscon/atmel-matrix.h
-> @@ -0,0 +1,114 @@
-> +/*
-> + *  Copyright (C) 2014 Atmel Corporation.
-> + *
-> + * Memory Controllers (MATRIX, EBI) - System peripherals registers.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#ifndef _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
-> +#define _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
-> +
-> +#define AT91SAM9260_MATRIX_MCFG_OFF	0x00
-> +#define AT91SAM9260_MATRIX_SCFG_OFF	0x40
-> +#define AT91SAM9260_MATRIX_PRS_OFF	0x80
-> +#define AT91SAM9260_MATRIX_MRCR_OFF	0x100
-> +#define AT91SAM9260_MATRIX_EBICSA_OFF	0x11c
-> +
-> +#define AT91SAM9261_MATRIX_MRCR_OFF	0x0
-> +#define AT91SAM9261_MATRIX_SCFG_OFF	0x4
-> +#define AT91SAM9261_MATRIX_TCR_OFF	0x24
-> +#define AT91SAM9261_MATRIX_EBICSA_OFF	0x30
-> +#define AT91SAM9261_MATRIX_USBPUCR_OFF	0x34
-> +
-> +#define AT91SAM9263_MATRIX_MCFG_OFF	0x00
-> +#define AT91SAM9263_MATRIX_SCFG_OFF	0x40
-> +#define AT91SAM9263_MATRIX_PRS_OFF	0x80
-> +#define AT91SAM9263_MATRIX_MRCR_OFF	0x100
-> +#define AT91SAM9263_MATRIX_TCR_OFF	0x114
-> +#define AT91SAM9263_MATRIX_EBI0CSA_OFF	0x120
-> +#define AT91SAM9263_MATRIX_EBI1CSA_OFF	0x124
-> +
-> +#define AT91SAM9G45_MATRIX_MCFG_OFF	0x00
-> +#define AT91SAM9G45_MATRIX_SCFG_OFF	0x40
-> +#define AT91SAM9G45_MATRIX_PRS_OFF	0x80
-> +#define AT91SAM9G45_MATRIX_MRCR_OFF	0x100
-> +#define AT91SAM9G45_MATRIX_TCR_OFF	0x110
-> +#define AT91SAM9G45_MATRIX_DDRMPR_OFF	0x118
-> +#define AT91SAM9G45_MATRIX_EBICSA_OFF	0x128
-> +
-> +#define AT91SAM9N12_MATRIX_MCFG_OFF	0x00
-> +#define AT91SAM9N12_MATRIX_SCFG_OFF	0x40
-> +#define AT91SAM9N12_MATRIX_PRS_OFF	0x80
-> +#define AT91SAM9N12_MATRIX_MRCR_OFF	0x100
-> +#define AT91SAM9N12_MATRIX_EBICSA_OFF	0x118
-> +
-> +#define AT91SAM9X5_MATRIX_MCFG_OFF	0x00
-> +#define AT91SAM9X5_MATRIX_SCFG_OFF	0x40
-> +#define AT91SAM9X5_MATRIX_PRS_OFF	0x80
-> +#define AT91SAM9X5_MATRIX_MRCR_OFF	0x100
-> +#define AT91SAM9X5_MATRIX_EBICSA_OFF	0x120
-> +
-> +#define SAMA5D3_MATRIX_MCFG_OFF		0x00
-> +#define SAMA5D3_MATRIX_SCFG_OFF		0x40
-> +#define SAMA5D3_MATRIX_PRS_OFF		0x80
-> +#define SAMA5D3_MATRIX_MRCR_OFF		0x100
-> +
-> +#define AT91_MATRIX_MCFG(o, x)		((o) + ((x) * 0x4))
-> +#define AT91_MATRIX_ULBT		(7 << 0)
-> +#define AT91_MATRIX_ULBT_INFINITE	(0 << 0)
-> +#define AT91_MATRIX_ULBT_SINGLE		(1 << 0)
-> +#define AT91_MATRIX_ULBT_FOUR		(2 << 0)
-> +#define AT91_MATRIX_ULBT_EIGHT		(3 << 0)
-> +#define AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
-> +
-> +#define AT91_MATRIX_SCFG(o, x)		((o) + ((x) * 0x4))
-> +#define AT91_MATRIX_SLOT_CYCLE		(0xff <<  0)
-> +#define AT91_MATRIX_DEFMSTR_TYPE	(3 << 16)
-> +#define AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
-> +#define AT91_MATRIX_DEFMSTR_TYPE_LAST	(1 << 16)
-> +#define AT91_MATRIX_DEFMSTR_TYPE_FIXED	(2 << 16)
-> +#define AT91_MATRIX_FIXED_DEFMSTR	(7 << 18)
-> +#define AT91_MATRIX_ARBT		(3 << 24)
-> +#define AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
-> +#define AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
-> +
-> +#define AT91_MATRIX_TCR(o)		(o)
-> +#define AT91_MATRIX_ITCM_SIZE		(0xf << 0)
-> +#define AT91_MATRIX_ITCM_0		(0 << 0)
-> +#define AT91_MATRIX_ITCM_16		(5 << 0)
-> +#define AT91_MATRIX_ITCM_32		(6 << 0)
-> +#define AT91_MATRIX_ITCM_64		(7 << 0)
-> +#define	AT91_MATRIX_DTCM_SIZE		(0xf << 4)
-> +#define	AT91_MATRIX_DTCM_0		(0 << 4)
-> +#define	AT91_MATRIX_DTCM_16		(5 << 4)
-> +#define AT91_MATRIX_DTCM_32		(6 << 4)
-> +#define AT91_MATRIX_DTCM_64		(7 << 4)
-> +
-> +#define AT91_MATRIX_PRAS(o, x)		((o) + ((x) * 0x8))
-> +#define AT91_MATRIX_PRBS(o, x)		((o) + ((x) * 0x8) + 0x4)
-> +#define AT91_MATRIX_MPR_MSK(x)		(3 << ((x) * 0x4))
-> +
-> +#define AT91_MATRIX_MRC(o)		(o)
-> +#define AT91_MATRIX_RCB(x)		BIT(x)
-> +
-> +#define AT91_MATRIX_EBICSA(o)		(o)
-> +#define AT91_MATRIX_CSA(cs, val)	(val << (cs))
-> +#define AT91_MATRIX_DBPUC		BIT(8)
-> +#define AT91_MATRIX_DBPDC		BIT(9)
-> +#define AT91_MATRIX_VDDIOMSEL		BIT(16)
-> +#define AT91_MATRIX_VDDIOMSEL_1_8V	(0 << 16)
-> +#define AT91_MATRIX_VDDIOMSEL_3_3V	(1 << 16)
-> +#define AT91_MATRIX_EBI_IOSR		BIT(17)
-> +#define AT91_MATRIX_DDR_IOSR		BIT(18)
-> +#define AT91_MATRIX_NFD0_SELECT		BIT(24)
-> +#define AT91_MATRIX_DDR_MP_EN		BIT(25)
-> +#define AT91_MATRIX_EBI_NUM_CS		8
-> +
-> +#define AT91_MATRIX_WPMR(o)		(o)
-> +#define AT91_MATRIX_WPSR(o)		(o)
-> +
-> +#endif /* _LINUX_MFD_SYSCON_ATMEL_MATRIX_H */
-> 
+> I think Dan wants the label to be descriptive about the tasks
+> needed in the exception handling itself.
 
-General comment on the register descriptions of this series:
-please be consistent:
-1/ use BIT(x) marco *or* (1 << 16) not both
-2/ use GENMASK(x,y) macro *or* (3 << 16) not both
-3/ SAMA5D3_MATRIX_SCFG_OFF <== what is the meaning of _OFF offset of the
-register? if it's not used in a macro (and a macro is not desirable),
-please remove this suffix.
-4/ same for the suffix _OFFSET in the SMC register definition file
-5/ same for the _SHFT suffix in SMC register definition file
-6/ what is the purpose of these macros? #defineAT91_MATRIX_WPMR(o) (o)
+I would usually prefer also such a target-oriented labelling
+for the affected identifiers.
+How are the chances to express an expectation in this direction
+unambiguously for the proposed coding style update?
 
-Thanks, bye.
--- 
-Nicolas Ferre
+
+> This makes sense as the exception handling steps may be reused
+> for different failures in the code.
+
+I would stress a different reason from my point of view.
+
+Regards,
+Markus
