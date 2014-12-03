@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaLCO0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:26:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42707 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaLCO0t (ORCPT
+	id S1752846AbaLCO1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:27:42 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34648 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678AbaLCO1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:26:49 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: oded.gabbay@amd.com
-Cc: airlied@linux.ie, alexander.deucher@amd.com, j.glisse@gmail.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        John.Bridgman@amd.com, Andrew.Lewycky@amd.com, joro@8bytes.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] amdkfd: use sizeof(long) granularity for the pasid bitmask
-Date: Wed,  3 Dec 2014 09:26:25 -0500
-Message-Id: <1417616785-5143-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 3 Dec 2014 09:27:40 -0500
+Date: Wed, 3 Dec 2014 15:27:27 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC 1/2] virtio_balloon: convert to virtio 1.0
+ endian-ness
+Message-ID: <20141203152727.5b4d3e34.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141203140228.GA12370@redhat.com>
+References: <1417520617-2135-1-git-send-email-mst@redhat.com>
+	<20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
+	<20141203140228.GA12370@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120314-0041-0000-0000-000002592558
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the bit operations (such as find_first_zero_bit()) read sizeof(long) bytes
-at a time. If we allocated less than sizeof(long) bytes for the bitmask we
-would be accessing invalid memory when working with the bitmask.
+On Wed, 3 Dec 2014 16:02:28 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Change the allocator to allocate sizeof(long) multiples for the bitmask.
+> On Tue, Dec 02, 2014 at 07:39:30PM +0100, Cornelia Huck wrote:
+> > On Tue, 2 Dec 2014 13:44:06 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > balloon device is not part of virtio 1.0 spec.  Still, it's easy enough
+> > > to make it handle endian-ness exactly as other virtio 1.0 devices: what
+> > > we gain from this, is that there's no need to special-case it in virtio
+> > > core.
+> > 
+> > Well, the balloon is weird in a number of ways, including its always
+> > little-endian config space.
+> 
+> Hmm yes, I forgot about that.
+> 
+> > But I'm not quite sure the spec covers this?
+> 
+> The spec does not cover balloon.  It merely includes a reference section
+> about legacy balloon device.  What to do when that device sets VERSION_1
+> is really up to us.
+> 
+> Patchset v8 simply makes balloon tell core it's legacy_only.
+> This is I guess fine as far as it goes.
+> I was still looking for the best way that involves minimal noise
+> in core. This looked like the best way: change 4 lines,
+> and drop all special casing in core, but given the config space
+> endian-ness mess, I'm not sure anymore.
+> I guess we'll just stick to what v8 does for now.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- drivers/gpu/drm/amd/amdkfd/kfd_pasid.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c b/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
-index 2458ab7..71699ad 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
-@@ -32,8 +32,7 @@ int kfd_pasid_init(void)
- {
- 	pasid_limit = max_num_of_processes;
- 
--	pasid_bitmap = kzalloc(DIV_ROUND_UP(pasid_limit, BITS_PER_BYTE),
--				GFP_KERNEL);
-+	pasid_bitmap = kzalloc(BITS_TO_LONGS(pasid_limit), GFP_KERNEL);
- 	if (!pasid_bitmap)
- 		return -ENOMEM;
- 
--- 
-2.1.0
+I don't think the legacy_only approach is so bad, let's keep it for now.
 
