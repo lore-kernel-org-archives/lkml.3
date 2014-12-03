@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaLCLzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:55:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54669 "EHLO mx2.suse.de"
+	id S1753975AbaLCLzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:55:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54705 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaLCL1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:14 -0500
+	id S1752328AbaLCL1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:13 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 017/101] iwlwifi: configure the LTR
-Date: Wed,  3 Dec 2014 12:25:39 +0100
-Message-Id: <9546673d9dc0c6c642d7f4740622d15d7fb980f9.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 047/101] dm btree: fix a recursion depth bug in btree walking code
+Date: Wed,  3 Dec 2014 12:26:09 +0100
+Message-Id: <d0960e2100d219b38ac94bddcca37c04281f31e9.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -23,185 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Joe Thornber <ejt@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9180ac50716a097a407c6d7e7e4589754a922260 upstream.
+commit 9b460d3699324d570a4d4161c3741431887f102f upstream.
 
-The LTR is the handshake between the device and the root
-complex about the latency allowed when the bus exits power
-save. This configuration was missing and this led to high
-latency in the link power up. The end user could experience
-high latency in the network because of this.
+The walk code was using a 'ro_spine' to hold it's locked btree nodes.
+But this data structure is designed for the rolling lock scheme, and
+as such automatically unlocks blocks that are two steps up the call
+chain.  This is not suitable for the simple recursive walk algorithm,
+which retraces its steps.
 
-Cc: <stable@vger.kernel.org> [3.10+]
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+This code is only used by the persistent array code, which in turn is
+only used by dm-cache.  In order to trigger it you need to have a
+mapping tree that is more than 2 levels deep; which equates to 8-16
+million cache blocks.  For instance a 4T ssd with a very small block
+size of 32k only just triggers this bug.
+
+The fix just places the locked blocks on the stack, and stops using
+the ro_spine altogether.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/iwlwifi/iwl-trans.h        |  2 ++
- drivers/net/wireless/iwlwifi/mvm/fw-api-power.h | 35 ++++++++++++++++++++++++-
- drivers/net/wireless/iwlwifi/mvm/fw-api.h       |  1 +
- drivers/net/wireless/iwlwifi/mvm/fw.c           |  9 +++++++
- drivers/net/wireless/iwlwifi/mvm/ops.c          |  1 +
- drivers/net/wireless/iwlwifi/pcie/trans.c       | 16 ++++++-----
- 6 files changed, 56 insertions(+), 8 deletions(-)
+ drivers/md/persistent-data/dm-btree-internal.h |  6 ++++++
+ drivers/md/persistent-data/dm-btree-spine.c    |  2 +-
+ drivers/md/persistent-data/dm-btree.c          | 24 ++++++++++--------------
+ 3 files changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans.h b/drivers/net/wireless/iwlwifi/iwl-trans.h
-index 80b47508647c..c8d1e378f631 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans.h
-@@ -484,6 +484,7 @@ enum iwl_trans_state {
-  *	Set during transport allocation.
-  * @hw_id_str: a string with info about HW ID. Set during transport allocation.
-  * @pm_support: set to true in start_hw if link pm is supported
-+ * @ltr_enabled: set to true if the LTR is enabled
-  * @dev_cmd_pool: pool for Tx cmd allocation - for internal use only.
-  *	The user should use iwl_trans_{alloc,free}_tx_cmd.
-  * @dev_cmd_headroom: room needed for the transport's private use before the
-@@ -508,6 +509,7 @@ struct iwl_trans {
- 	u8 rx_mpdu_cmd, rx_mpdu_cmd_hdr_size;
+diff --git a/drivers/md/persistent-data/dm-btree-internal.h b/drivers/md/persistent-data/dm-btree-internal.h
+index 37d367bb9aa8..bf2b80d5c470 100644
+--- a/drivers/md/persistent-data/dm-btree-internal.h
++++ b/drivers/md/persistent-data/dm-btree-internal.h
+@@ -42,6 +42,12 @@ struct btree_node {
+ } __packed;
  
- 	bool pm_support;
-+	bool ltr_enabled;
  
- 	/* The following fields are internal only */
- 	struct kmem_cache *dev_cmd_pool;
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-index 8e7ab41079ca..4dacb20bf490 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-@@ -66,13 +66,46 @@
- 
- /* Power Management Commands, Responses, Notifications */
- 
-+/**
-+ * enum iwl_ltr_config_flags - masks for LTR config command flags
-+ * @LTR_CFG_FLAG_FEATURE_ENABLE: Feature operational status
-+ * @LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS: allow LTR change on shadow
-+ *	memory access
-+ * @LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH: allow LTR msg send on ANY LTR
-+ *	reg change
-+ * @LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3: allow LTR msg send on transition from
-+ *	D0 to D3
-+ * @LTR_CFG_FLAG_SW_SET_SHORT: fixed static short LTR register
-+ * @LTR_CFG_FLAG_SW_SET_LONG: fixed static short LONG register
-+ * @LTR_CFG_FLAG_DENIE_C10_ON_PD: allow going into C10 on PD
++/*
++ * Locks a block using the btree node validator.
 + */
-+enum iwl_ltr_config_flags {
-+	LTR_CFG_FLAG_FEATURE_ENABLE = BIT(0),
-+	LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS = BIT(1),
-+	LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH = BIT(2),
-+	LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3 = BIT(3),
-+	LTR_CFG_FLAG_SW_SET_SHORT = BIT(4),
-+	LTR_CFG_FLAG_SW_SET_LONG = BIT(5),
-+	LTR_CFG_FLAG_DENIE_C10_ON_PD = BIT(6),
-+};
++int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
++		 struct dm_block **result);
 +
-+/**
-+ * struct iwl_ltr_config_cmd - configures the LTR
-+ * @flags: See %enum iwl_ltr_config_flags
-+ */
-+struct iwl_ltr_config_cmd {
-+	__le32 flags;
-+	__le32 static_long;
-+	__le32 static_short;
-+} __packed;
+ void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
+ 		  struct dm_btree_value_type *vt);
+ 
+diff --git a/drivers/md/persistent-data/dm-btree-spine.c b/drivers/md/persistent-data/dm-btree-spine.c
+index cf9fd676ae44..1b5e13ec7f96 100644
+--- a/drivers/md/persistent-data/dm-btree-spine.c
++++ b/drivers/md/persistent-data/dm-btree-spine.c
+@@ -92,7 +92,7 @@ struct dm_block_validator btree_node_validator = {
+ 
+ /*----------------------------------------------------------------*/
+ 
+-static int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
++int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
+ 		 struct dm_block **result)
+ {
+ 	return dm_tm_read_lock(info->tm, b, &btree_node_validator, result);
+diff --git a/drivers/md/persistent-data/dm-btree.c b/drivers/md/persistent-data/dm-btree.c
+index 468e371ee9b2..9701d29c94e1 100644
+--- a/drivers/md/persistent-data/dm-btree.c
++++ b/drivers/md/persistent-data/dm-btree.c
+@@ -828,22 +828,26 @@ EXPORT_SYMBOL_GPL(dm_btree_find_highest_key);
+  * FIXME: We shouldn't use a recursive algorithm when we have limited stack
+  * space.  Also this only works for single level trees.
+  */
+-static int walk_node(struct ro_spine *s, dm_block_t block,
++static int walk_node(struct dm_btree_info *info, dm_block_t block,
+ 		     int (*fn)(void *context, uint64_t *keys, void *leaf),
+ 		     void *context)
+ {
+ 	int r;
+ 	unsigned i, nr;
++	struct dm_block *node;
+ 	struct btree_node *n;
+ 	uint64_t keys;
+ 
+-	r = ro_step(s, block);
+-	n = ro_node(s);
++	r = bn_read_lock(info, block, &node);
++	if (r)
++		return r;
 +
- /* Radio LP RX Energy Threshold measured in dBm */
- #define POWER_LPRX_RSSI_THRESHOLD	75
- #define POWER_LPRX_RSSI_THRESHOLD_MAX	94
- #define POWER_LPRX_RSSI_THRESHOLD_MIN	30
++	n = dm_block_data(node);
  
- /**
-- * enum iwl_scan_flags - masks for power table command flags
-+ * enum iwl_power_flags - masks for power table command flags
-  * @POWER_FLAGS_POWER_SAVE_ENA_MSK: '1' Allow to save power by turning off
-  *		receiver and transmitter. '0' - does not allow.
-  * @POWER_FLAGS_POWER_MANAGEMENT_ENA_MSK: '0' Driver disables power management,
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw-api.h b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-index 66264cc5a016..cd59ae18ea8f 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-@@ -138,6 +138,7 @@ enum {
- 
- 	/* Power - legacy power table command */
- 	POWER_TABLE_CMD = 0x77,
-+	LTR_CONFIG = 0xee,
- 
- 	/* Thermal Throttling*/
- 	REPLY_THERMAL_MNG_BACKOFF = 0x7e,
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw.c b/drivers/net/wireless/iwlwifi/mvm/fw.c
-index c76299a3a1e0..08f12006ca77 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -424,6 +424,15 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
- 			goto error;
+ 	nr = le32_to_cpu(n->header.nr_entries);
+ 	for (i = 0; i < nr; i++) {
+ 		if (le32_to_cpu(n->header.flags) & INTERNAL_NODE) {
+-			r = walk_node(s, value64(n, i), fn, context);
++			r = walk_node(info, value64(n, i), fn, context);
+ 			if (r)
+ 				goto out;
+ 		} else {
+@@ -855,7 +859,7 @@ static int walk_node(struct ro_spine *s, dm_block_t block,
  	}
  
-+	if (mvm->trans->ltr_enabled) {
-+		struct iwl_ltr_config_cmd cmd = {
-+			.flags = cpu_to_le32(LTR_CFG_FLAG_FEATURE_ENABLE),
-+		};
-+
-+		WARN_ON(iwl_mvm_send_cmd_pdu(mvm, LTR_CONFIG, 0,
-+					     sizeof(cmd), &cmd));
-+	}
-+
- 	IWL_DEBUG_INFO(mvm, "RT uCode started.\n");
- 	return 0;
-  error:
-diff --git a/drivers/net/wireless/iwlwifi/mvm/ops.c b/drivers/net/wireless/iwlwifi/mvm/ops.c
-index 1fd08baa0d32..e3cdc97380d3 100644
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -303,6 +303,7 @@ static const char *iwl_mvm_cmd_strings[REPLY_MAX] = {
- 	CMD(REPLY_BEACON_FILTERING_CMD),
- 	CMD(REPLY_THERMAL_MNG_BACKOFF),
- 	CMD(MAC_PM_POWER_TABLE),
-+	CMD(LTR_CONFIG),
- };
- #undef CMD
- 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index dc875f4befef..67536a26df39 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -121,6 +121,7 @@ static void iwl_pcie_apm_config(struct iwl_trans *trans)
- {
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
- 	u16 lctl;
-+	u16 cap;
- 
- 	/*
- 	 * HW bug W/A for instability in PCIe bus L0S->L1 transition.
-@@ -131,16 +132,17 @@ static void iwl_pcie_apm_config(struct iwl_trans *trans)
- 	 *    power savings, even without L1.
- 	 */
- 	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
--	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
--		/* L1-ASPM enabled; disable(!) L0S */
-+	if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
- 		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
--	} else {
--		/* L1-ASPM disabled; enable(!) L0S */
-+	else
- 		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
--	}
- 	trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-+
-+	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
-+	trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-+	dev_info(trans->dev, "L1 %sabled - LTR %sabled\n",
-+		 (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-+		 trans->ltr_enabled ? "En" : "Dis");
+ out:
+-	ro_pop(s);
++	dm_tm_unlock(info->tm, node);
+ 	return r;
  }
  
- /*
+@@ -863,15 +867,7 @@ int dm_btree_walk(struct dm_btree_info *info, dm_block_t root,
+ 		  int (*fn)(void *context, uint64_t *keys, void *leaf),
+ 		  void *context)
+ {
+-	int r;
+-	struct ro_spine spine;
+-
+ 	BUG_ON(info->levels > 1);
+-
+-	init_ro_spine(&spine, info);
+-	r = walk_node(&spine, root, fn, context);
+-	exit_ro_spine(&spine);
+-
+-	return r;
++	return walk_node(info, root, fn, context);
+ }
+ EXPORT_SYMBOL_GPL(dm_btree_walk);
 -- 
 2.1.3
 
