@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaLCLjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:39:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54697 "EHLO mx2.suse.de"
+	id S1753358AbaLCLjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:39:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54626 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571AbaLCL1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752581AbaLCL1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:40 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joe Schultz <jschultz@xes-inc.com>,
-        Aaron Sierra <asierra@xes-inc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 081/101] vme_tsi148: Fix PCI address mapping assumption
-Date: Wed,  3 Dec 2014 12:26:43 +0100
-Message-Id: <8a8f33b2f640e1e7d0486888293817f56505aa4f.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 085/101] hfsplus: fix remount issue
+Date: Wed,  3 Dec 2014 12:26:47 +0100
+Message-Id: <291e7f11b9028ac9e418e15ebae1d30a94b59382.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -24,65 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Schultz <jschultz@xes-inc.com>
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 226572b110ab6083cb8c1d6afb191166b4178179 upstream.
+commit bd2c00353286d63542a8a0896a8c747f7c880edd upstream.
 
-Previously, tsi148_master_set() assumed the address contained in its
-PCI bus resource represented the actual PCI bus address. This is a fine
-assumption on some platforms. However, on platforms that don't use a
-1:1 (CPU:PCI) mapping this results in the tsi148 driver configuring an
-invalid master window translation.
+Current implementation of HFS+ driver has small issue with remount
+option.  Namely, for example, you are unable to remount from RO mode
+into RW mode by means of command "mount -o remount,rw /dev/loop0
+/mnt/hfsplus".  Trying to execute sequence of commands results in an
+error message:
 
-This patch updates the vme_tsi148 driver to first convert the address
-contained in the PCI bus resource into a PCI bus address before using
-it.
+  mount /dev/loop0 /mnt/hfsplus
+  mount -o remount,ro /dev/loop0 /mnt/hfsplus
+  mount -o remount,rw /dev/loop0 /mnt/hfsplus
 
-[asierra: account for pcibios_resource_to_bus() prototype change]
-Signed-off-by: Joe Schultz <jschultz@xes-inc.com>
-Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  mount: you must specify the filesystem type
 
+  mount -t hfsplus -o remount,rw /dev/loop0 /mnt/hfsplus
+
+  mount: /mnt/hfsplus not mounted or bad option
+
+The reason of such issue is failure of mount syscall:
+
+  mount("/dev/loop0", "/mnt/hfsplus", 0x2282a60, MS_MGC_VAL|MS_REMOUNT, NULL) = -1 EINVAL (Invalid argument)
+
+Namely, hfsplus_parse_options_remount() method receives empty "input"
+argument and return false in such case.  As a result, hfsplus_remount()
+returns -EINVAL error code.
+
+This patch fixes the issue by means of return true for the case of empty
+"input" argument in hfsplus_parse_options_remount() method.
+
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/vme/bridges/vme_tsi148.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/hfsplus/options.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
-index 7db4e6395e23..6783ad0d1875 100644
---- a/drivers/vme/bridges/vme_tsi148.c
-+++ b/drivers/vme/bridges/vme_tsi148.c
-@@ -910,11 +910,15 @@ static int tsi148_master_set(struct vme_master_resource *image, int enabled,
- 	unsigned long long pci_bound, vme_offset, pci_base;
- 	struct vme_bridge *tsi148_bridge;
- 	struct tsi148_driver *bridge;
-+	struct pci_bus_region region;
-+	struct pci_dev *pdev;
+diff --git a/fs/hfsplus/options.c b/fs/hfsplus/options.c
+index 968eab5bc1f5..68537e8b7a09 100644
+--- a/fs/hfsplus/options.c
++++ b/fs/hfsplus/options.c
+@@ -75,7 +75,7 @@ int hfsplus_parse_options_remount(char *input, int *force)
+ 	int token;
  
- 	tsi148_bridge = image->parent;
+ 	if (!input)
+-		return 0;
++		return 1;
  
- 	bridge = tsi148_bridge->driver_priv;
- 
-+	pdev = container_of(tsi148_bridge->parent, struct pci_dev, dev);
-+
- 	/* Verify input data */
- 	if (vme_base & 0xFFFF) {
- 		dev_err(tsi148_bridge->parent, "Invalid VME Window "
-@@ -949,7 +953,9 @@ static int tsi148_master_set(struct vme_master_resource *image, int enabled,
- 		pci_bound = 0;
- 		vme_offset = 0;
- 	} else {
--		pci_base = (unsigned long long)image->bus_resource.start;
-+		pcibios_resource_to_bus(pdev, &region,
-+					&image->bus_resource);
-+		pci_base = region.start;
- 
- 		/*
- 		 * Bound address is a valid address for the window, adjust
+ 	while ((p = strsep(&input, ",")) != NULL) {
+ 		if (!*p)
 -- 
 2.1.3
 
