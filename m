@@ -1,156 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaLCKNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 05:13:38 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54863 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaLCKNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 05:13:33 -0500
-Date: Wed, 3 Dec 2014 11:13:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        linux-api@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        zhangyanfei@cn.fujitsu.com,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH v17 1/7] mm: support madvise(MADV_FREE)
-Message-ID: <20141203101329.GB23236@dhcp22.suse.cz>
-References: <1413799924-17946-1-git-send-email-minchan@kernel.org>
- <1413799924-17946-2-git-send-email-minchan@kernel.org>
- <20141127144725.GB19157@dhcp22.suse.cz>
- <20141130235652.GA10333@bbox>
- <20141202100125.GD27014@dhcp22.suse.cz>
- <20141203000026.GA30217@bbox>
+	id S1751530AbaLCK06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 05:26:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53465 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaLCK04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 05:26:56 -0500
+Date: Wed, 3 Dec 2014 11:26:52 +0100
+From: Joerg Roedel <jroedel@suse.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
+ swiotlb_alloc_coherent
+Message-ID: <20141203102652.GL3156@suse.de>
+References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
+ <1417174149-31210-2-git-send-email-joro@8bytes.org>
+ <20141201202802.GC21626@laptop.dumpdata.com>
+ <20141202144122.GI3156@suse.de>
+ <20141202184615.GA32622@laptop.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141203000026.GA30217@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141202184615.GA32622@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-12-14 09:00:26, Minchan Kim wrote:
-> On Tue, Dec 02, 2014 at 11:01:25AM +0100, Michal Hocko wrote:
-> > On Mon 01-12-14 08:56:52, Minchan Kim wrote:
-> > [...]
-> > > From 2edd6890f92fa4943ce3c452194479458582d88c Mon Sep 17 00:00:00 2001
-> > > From: Minchan Kim <minchan@kernel.org>
-> > > Date: Mon, 1 Dec 2014 08:53:55 +0900
-> > > Subject: [PATCH] madvise.2: Document MADV_FREE
+On Tue, Dec 02, 2014 at 01:46:15PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Tue, Dec 02, 2014 at 03:41:22PM +0100, Joerg Roedel wrote:
+> > On Mon, Dec 01, 2014 at 03:28:03PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Nov 28, 2014 at 12:29:07PM +0100, Joerg Roedel wrote:
+> > > > From: Joerg Roedel <jroedel@suse.de>
+> > > > 
+> > > > Print a warning when all allocation tries have been failed
+> > > > and the function is about to return NULL. This prepares for
+> > > > calling the function with __GFP_NOWARN to suppress
+> > > > allocation failure warnings before all fall-backs have
+> > > > failed.
 > > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  man2/madvise.2 | 13 +++++++++++++
-> > >  1 file changed, 13 insertions(+)
-> > > 
-> > > diff --git a/man2/madvise.2 b/man2/madvise.2
-> > > index 032ead7..33aa936 100644
-> > > --- a/man2/madvise.2
-> > > +++ b/man2/madvise.2
-> > > @@ -265,6 +265,19 @@ file (see
-> > >  .BR MADV_DODUMP " (since Linux 3.4)"
-> > >  Undo the effect of an earlier
-> > >  .BR MADV_DONTDUMP .
-> > > +.TP
-> > > +.BR MADV_FREE " (since Linux 3.19)"
-> > > +Gives the VM system the freedom to free pages, and tells the system that
-> > > +information in the specified page range is no longer important.
-> > > +This is an efficient way of allowing
-> > > +.BR malloc (3)
+> > > This can be quite noisy. Especially the dump-stack.
 > > 
-> > This might be rather misleading. Only some malloc implementations are
-> > using this feature (jemalloc, right?). So either be specific about which
-> > implementation or do not add it at all.
+> > Well, this is as noisy as the dump_stack()s from the page-allocator when
+> > the first allocation try fails. The goal of the first two patches in
 > 
-> Make sense. I don't think it's a good idea to say specific example
-> in man page, which is rather arguable and limit the idea.
-> 
-> > 
-> > > +to free pages anywhere in the address space, while keeping the address space
-> > > +valid. The next time that the page is referenced, the page might be demand
-> > > +zeroed, or might contain the data that was there before the MADV_FREE call.
-> > > +References made to that address space range will not make the VM system page the
-> > > +information back in from backing store until the page is modified again.
-> > 
-> > I am not sure I understand the last sentence. So say I did MADV_FREE and
-> > the reclaim has dropped that page. I know that the file backed mappings
-> > are not supported yet but assume they were for a second... Now, I do
-> > read from that location again what is the result?
-> 
-> Zero page.
+> Right, on the first allocation. Subsequent allocations won't be so noisy
+> in the page-allocator (I think?).
 
-OK, it felt strange at first but now that I am thinking about it some
-more it starts making sense. So the semantic is: Either zero page
-(disconnected from the backing store) or the original content after
-madvise(MADV_FREE). The page gets connected to the backing store after
-it gets modified again. If this is the case then the sentence in the man
-page makes perfect sense.
+>From the code in mm/page_alloc.c (function warn_alloc_failed) it doesn't
+look like a one-time warning. The dmesg I have seen from a failing
+kernel also shows a lot of these messages.
 
-What made me confused was that I expected file backed pages would get a
-fresh page from the origin but this would be awkward I guess. 
+So having the warning at the end of swiotlb_alloc_coherent won't be any
+more noisy than the (removed) warnings from the page allocator.
 
-> > If we consider anon mappings then the backing store is misleading as
-> > well because memory was dropped and so always newly allocated.
-> 
-> When I read the sentence at first, I thought backing store means swap
-> so I don't have any trouble to understand it. But I agree your opinion.
-> Target for man page is not a kernel developer but application developer.
-> 
-> > I would rather drop the whole sentence and rather see an explanation
-> > what is the difference between to MADV_DONT_NEED.
-> > "
-> > Unlike MADV_DONT_NEED the memory is freed lazily e.g. when the VM system
-> > is under memory pressure.
-> > "
-> 
-> It's a good idea but I don't think it's enough. At least we should explan
-> cancel of delay free logic(ie, write). So, How about this?
-> 
-> MADV_FREE " (since Linux 3.19)"
-> 
-> Gives the VM system the freedom to free pages, and tells the system that
-> it's okay to free pages if the VM system has reasons(e.g., memory pressure).
-> So, it looks like delayed MADV_DONTNEED.
-> The next time that the page is referenced, the page might be demand
-> zeroed if the VM system freed the page. Otherwise, it might contain the data
-> that was there before the MADV_FREE call if the VM system didn't free the page.
-> New write in the page after the MADV_FREE call makes the VM system not free
-> the page any more.
 
-Dunno, I guess the original content was slightly better. Or the
-following wording from UNIX man pages is even more descriptive
-(http://www.lehman.cuny.edu/cgi-bin/man-cgi?madvise+3)
-"
-Tell the kernel that contents in the specified address range are no
-longer important and the range will be overwritten. When there is
-demand for memory, the system will free pages associated with the
-specified address range. In this instance, the next time a page in the
-address range is referenced, it will contain all zeroes.  Otherwise,
-it will con- tain the data that was there prior to the MADV_FREE
-call. References made to the address range will not make the system read
-from backing store (swap space) until the page is modified again.
+	Joerg
 
-This value cannot be used on mappings that have underlying file objects.
-"
-
-I would just clarify the last sentence with addition
-(MAP_PRIVATE|MAP_ANONYMOUS mappings in this implementation). The
-difference to MADV_DONTNEED is more complicated now so I wouldn't make
-the text even more confusing.
-
-Anyway the confusion started on my end so feel free to stick with the
-BSD wording (modulo malloc note which is really confusing as the default
-glibc allocator doesn't do that AFAIK).
-
-> It works only with private anonymous pages (see mmap(2)).
-
--- 
-Michal Hocko
-SUSE Labs
