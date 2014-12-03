@@ -1,245 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaLCCE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:04:27 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36844 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaLCCEV (ORCPT
+	id S1751642AbaLCCEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:04:25 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40495 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaLCCEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:04:21 -0500
+	Tue, 2 Dec 2014 21:04:20 -0500
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Michael Ellerman <michaele@au1.ibm.com>,
         Paul Mackerras <paulus@samba.org>
 Cc: dev@codyps.com, peterz@infradead.org, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v5 5/6] powerpc/perf/hv-gpci: add the remaining gpci requests
-Date: Tue,  2 Dec 2014 18:03:54 -0800
-Message-Id: <1417572235-8197-6-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v5 1/6] perf: provide sysfs_show for struct perf_pmu_events_attr
+Date: Tue,  2 Dec 2014 18:03:50 -0800
+Message-Id: <1417572235-8197-2-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417572235-8197-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1417572235-8197-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120302-0033-0000-0000-000002DF3D54
+x-cbid: 14120302-0017-0000-0000-000006C3F5A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Add the remaining gpci requests that contain counters suitable for use
-by perf. Omit those that don't contain any counters (but note their
-ommision).
+(struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
+but the only "show" for it is in x86 and contains x86 specific stuff.
+
+Make a generic one for those of us who are just using the event_str.
 
 CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/hv-gpci-requests.h | 183 +++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
+ include/linux/perf_event.h | 3 +++
+ kernel/events/core.c       | 8 ++++++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/arch/powerpc/perf/hv-gpci-requests.h b/arch/powerpc/perf/hv-gpci-requests.h
-index 0dfc4d9..bf70fdf 100644
---- a/arch/powerpc/perf/hv-gpci-requests.h
-+++ b/arch/powerpc/perf/hv-gpci-requests.h
-@@ -65,6 +65,33 @@ REQUEST(__count(0,	8,	processor_time_in_timebase_cycles)
- )
- #include I(REQUEST_END)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 486e84c..58f59bd 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -897,6 +897,9 @@ struct perf_pmu_events_attr {
+ 	const char *event_str;
+ };
  
-+#define REQUEST_NAME entitled_capped_uncapped_donated_idle_timebase_by_partition
-+#define REQUEST_NUM 0x20
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	entitled_cycles)
-+	__count(0x10,	8,	consumed_capped_cycles)
-+	__count(0x18,	8,	consumed_uncapped_cycles)
-+	__count(0x20,	8,	cycles_donated)
-+	__count(0x28,	8,	purr_idle_cycles)
-+)
-+#include I(REQUEST_END)
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page);
 +
-+/*
-+ * Not available for counter_info_version >= 0x8, use
-+ * run_instruction_cycles_by_partition(0x100) instead.
-+ */
-+#define REQUEST_NAME run_instructions_run_cycles_by_partition
-+#define REQUEST_NUM 0x30
-+#define REQUEST_IDX_KIND sibling_part_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	8,	partition_id)
-+	__count(0x8,	8,	instructions_completed)
-+	__count(0x10,	8,	cycles)
-+)
-+#include I(REQUEST_END)
-+
- #define REQUEST_NAME system_performance_capabilities
- #define REQUEST_NUM 0x40
- #define REQUEST_IDX_KIND M1
-@@ -75,5 +102,161 @@ REQUEST(__field(0,	1,	perf_collect_privileged)
- )
- #include I(REQUEST_END)
+ #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
+ static struct perf_pmu_events_attr _var = {				\
+ 	.attr = __ATTR(_name, 0444, _show, NULL),			\
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 3e19d3e..1e92387 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -8276,6 +8276,14 @@ void __init perf_event_init(void)
+ 		     != 1024);
+ }
  
-+#define REQUEST_NAME processor_bus_utilization_abc_links
-+#define REQUEST_NUM 0x50
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_a_link)
-+	__count(0x20,	8,	idle_cycles_for_b_link)
-+	__count(0x28,	8,	idle_cycles_for_c_link)
-+	__array(0x30,	0x20,	reserved2)
-+)
-+#include I(REQUEST_END)
++ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
++			      char *page)
++{
++	struct perf_pmu_events_attr *pmu_attr =
++		container_of(attr, struct perf_pmu_events_attr, attr);
++	return sprintf(page, "%s\n", pmu_attr->event_str);
++}
 +
-+#define REQUEST_NAME processor_bus_utilization_wxyz_links
-+#define REQUEST_NUM 0x60
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	total_link_cycles)
-+	__count(0x18,	8,	idle_cycles_for_w_link)
-+	__count(0x20,	8,	idle_cycles_for_x_link)
-+	__count(0x28,	8,	idle_cycles_for_y_link)
-+	__count(0x30,	8,	idle_cycles_for_z_link)
-+	__array(0x38,	0x28,	reserved2)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME processor_bus_utilization_gx_links
-+#define REQUEST_NUM 0x70
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	gx0_in_address_cycles)
-+	__count(0x18,	8,	gx0_in_data_cycles)
-+	__count(0x20,	8,	gx0_in_retries)
-+	__count(0x28,	8,	gx0_in_bus_cycles)
-+	__count(0x30,	8,	gx0_in_cycles_total)
-+	__count(0x38,	8,	gx0_out_address_cycles)
-+	__count(0x40,	8,	gx0_out_data_cycles)
-+	__count(0x48,	8,	gx0_out_retries)
-+	__count(0x50,	8,	gx0_out_bus_cycles)
-+	__count(0x58,	8,	gx0_out_cycles_total)
-+	__count(0x60,	8,	gx1_in_address_cycles)
-+	__count(0x68,	8,	gx1_in_data_cycles)
-+	__count(0x70,	8,	gx1_in_retries)
-+	__count(0x78,	8,	gx1_in_bus_cycles)
-+	__count(0x80,	8,	gx1_in_cycles_total)
-+	__count(0x88,	8,	gx1_out_address_cycles)
-+	__count(0x90,	8,	gx1_out_data_cycles)
-+	__count(0x98,	8,	gx1_out_retries)
-+	__count(0xA0,	8,	gx1_out_bus_cycles)
-+	__count(0xA8,	8,	gx1_out_cycles_total)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME processor_bus_utilization_mc_links
-+#define REQUEST_NUM 0x80
-+#define REQUEST_IDX_KIND hw_chip_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	hw_chip_id)
-+	__array(0x4,	0xC,	reserved1)
-+	__count(0x10,	8,	mc0_frames)
-+	__count(0x18,	8,	mc0_reads)
-+	__count(0x20,	8,	mc0_write)
-+	__count(0x28,	8,	mc0_total_cycles)
-+	__count(0x30,	8,	mc1_frames)
-+	__count(0x38,	8,	mc1_reads)
-+	__count(0x40,	8,	mc1_writes)
-+	__count(0x48,	8,	mc1_total_cycles)
-+)
-+#include I(REQUEST_END)
-+
-+/* Processor_config (0x90) skipped, no counters */
-+/* Current_processor_frequency (0x91) skipped, no counters */
-+
-+#define REQUEST_NAME processor_core_utilization
-+#define REQUEST_NUM 0x94
-+#define REQUEST_IDX_KIND phys_processor_idx
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	4,	phys_processor_idx)
-+	__field(0x4,	4,	hw_processor_id)
-+	__count(0x8,	8,	cycles_across_any_thread)
-+	__count(0x10,	8,	timebase_at_collection)
-+	__count(0x18,	8,	purr_cycles)
-+	__count(0x20,	8,	sum_of_cycles_across_all_threads)
-+	__count(0x28,	8,	instructions_completed)
-+)
-+#include I(REQUEST_END)
-+
-+/* Processor_core_power_mode (0x95) skipped, no counters */
-+/* Affinity_domain_information_by_virtual_processor (0xA0) skipped,
-+ *	no counters */
-+/* Affinity_domain_information_by_domain (0xB0) skipped, no counters */
-+/* Affinity_domain_information_by_partition (0xB1) skipped, no counters */
-+/* Physical_memory_info (0xC0) skipped, no counters */
-+/* Processor_bus_topology (0xD0) skipped, no counters */
-+
-+#define REQUEST_NAME partition_hypervisor_queuing_times
-+#define REQUEST_NUM 0xE0
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2, partition_id)
-+	__array(0x2,	6, reserved1)
-+	__count(0x8,	8, time_waiting_for_entitlement)
-+	__count(0x10,	8, times_waited_for_entitlement)
-+	__count(0x18,	8, time_waiting_for_phys_processor)
-+	__count(0x20,	8, times_waited_for_phys_processor)
-+	__count(0x28,	8, dispatches_on_home_core)
-+	__count(0x30,	8, dispatches_on_home_primary_affinity_domain)
-+	__count(0x38,	8, dispatches_on_home_secondary_affinity_domain)
-+	__count(0x40,	8, dispatches_off_home_secondary_affinity_domain)
-+	__count(0x48,	8, dispatches_on_dedicated_processor_donating_cycles)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME system_hypervisor_times
-+#define REQUEST_NUM 0xF0
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	time_spent_to_dispatch_virtual_processors)
-+	__count(0x8,	8,	time_spent_processing_virtual_processor_timers)
-+	__count(0x10,	8,	time_spent_managing_partitions_over_entitlement)
-+	__count(0x18,	8,	time_spent_on_system_management)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME system_tlbie_count_and_time
-+#define REQUEST_NUM 0xF4
-+#define REQUEST_IDX_KIND M1
-+#include I(REQUEST_BEGIN)
-+REQUEST(__count(0,	8,	tlbie_instructions_issued)
-+	/*
-+	 * FIXME: The spec says the offset here is 0x10, which I suspect
-+	 *	  is wrong.
-+	 */
-+	__count(0x8,	8,	time_spent_issuing_tlbies)
-+)
-+#include I(REQUEST_END)
-+
-+#define REQUEST_NAME partition_instruction_count_and_time
-+#define REQUEST_NUM 0x100
-+#define REQUEST_IDX_KIND partition_id
-+#include I(REQUEST_BEGIN)
-+REQUEST(__field(0,	2,	partition_id)
-+	__array(0x2,	0x6,	reserved1)
-+	__count(0x8,	8,	instructions_performed)
-+	__count(0x10,	8,	time_collected)
-+)
-+#include I(REQUEST_END)
-+
-+/* set_mmcrh (0x80001000) skipped, no counters */
-+/* retrieve_hpmcx (0x80002000) skipped, no counters */
-+
- #undef M1
- #include "req-gen/_end.h"
+ static int __init perf_event_sysfs_init(void)
+ {
+ 	struct pmu *pmu;
 -- 
 1.8.3.1
 
