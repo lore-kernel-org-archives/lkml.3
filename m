@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaLCPw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:52:27 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46274 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaLCPw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:52:26 -0500
-Date: Wed, 3 Dec 2014 16:52:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Qiang Huang <h.huangqiang@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, oom: remove gfp helper function
-Message-ID: <20141203155222.GH23236@dhcp22.suse.cz>
-References: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
- <20141127102547.GA18833@dhcp22.suse.cz>
- <20141201233040.GB29642@phnom.home.cmpxchg.org>
+	id S1752076AbaLCPwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:52:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33390 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322AbaLCPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 10:52:50 -0500
+Date: Wed, 3 Dec 2014 15:52:43 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 03/10] mm: Convert p[te|md]_numa users to
+ p[te|md]_protnone_numa
+Message-ID: <20141203155242.GE6043@suse.de>
+References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
+ <1416578268-19597-4-git-send-email-mgorman@suse.de>
+ <1417473762.7182.8.camel@kernel.crashing.org>
+ <87k32ah5q3.fsf@linux.vnet.ibm.com>
+ <1417551115.27448.7.camel@kernel.crashing.org>
+ <87lhmobvuu.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20141201233040.GB29642@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87lhmobvuu.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-12-14 18:30:40, Johannes Weiner wrote:
-> On Thu, Nov 27, 2014 at 11:25:47AM +0100, Michal Hocko wrote:
-> > On Wed 26-11-14 14:17:32, David Rientjes wrote:
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -2706,7 +2706,7 @@ rebalance:
-> > >  	 * running out of options and have to consider going OOM
-> > >  	 */
-> > >  	if (!did_some_progress) {
-> > > -		if (oom_gfp_allowed(gfp_mask)) {
-> > 		/*
-> > 		 * Do not attempt to trigger OOM killer for !__GFP_FS
-> > 		 * allocations because it would be premature to kill
-> > 		 * anything just because the reclaim is stuck on
-> > 		 * dirty/writeback pages.
-> > 		 * __GFP_NORETRY allocations might fail and so the OOM
-> > 		 * would be more harmful than useful.
-> > 		 */
+On Wed, Dec 03, 2014 at 08:53:37PM +0530, Aneesh Kumar K.V wrote:
+> Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 > 
-> I don't think we need to explain the individual flags, but it would
-> indeed be useful to remark here that we shouldn't OOM kill from
-> allocations contexts with (severely) limited reclaim abilities.
+> > On Tue, 2014-12-02 at 12:57 +0530, Aneesh Kumar K.V wrote:
+> >> Now, hash_preload can possibly insert an hpte in hash page table even if
+> >> the access is not allowed by the pte permissions. But i guess even that
+> >> is ok. because we will fault again, end-up calling hash_page_mm where we
+> >> handle that part correctly.
+> >
+> > I think we need a test case...
+> >
+> 
+> I ran the subpageprot test that Paul had written. I modified it to ran
+> with selftest. 
+> 
 
-Is __GFP_NORETRY really related to limited reclaim abilities? I thought
-it was merely a way to tell the allocator to fail rather than spend too
-much time reclaiming. If you are referring to __GFP_FS part then I have
-no objections to be less specific, of course, but __GFP_IO would fall
-into the same category but we are not checking for it. I have no idea
-why we consider the first and not the later one, to be honest...
+It's implied but can I assume it passed? If so, Ben and Paul, can I
+consider the series to be acked by you other than the minor comment
+updates?
+
+Thanks.
 
 -- 
-Michal Hocko
+Mel Gorman
 SUSE Labs
