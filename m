@@ -1,164 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaLCLN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:13:59 -0500
-Received: from mail-bl2on0136.outbound.protection.outlook.com ([65.55.169.136]:30342
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751086AbaLCLN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:13:58 -0500
-From: Zidan Wang <b50113@freescale.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
-        <lars@metafoo.de>, <ckeepax@opensource.wolfsonmicro.com>,
-        <Li.Xiubo@freescale.com>, <patches@opensource.wolfsonmicro.com>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        Zidan Wang <b50113@freescale.com>
-Subject: [alsa-devel][PATCH] ASoC: wm8960: Let wm8960 codec driver manage its own MCLK
-Date: Wed, 3 Dec 2014 19:00:38 +0800
-Message-ID: <1417604438-28362-1-git-send-email-b50113@freescale.com>
+	id S1752153AbaLCLPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:15:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39144 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751937AbaLCLPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:15:07 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 01/11] mfd: syscon: Add atmel-matrix registers definition
+Date: Wed,  3 Dec 2014 12:14:57 +0100
+Message-Id: <1417605297-17310-1-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(95666004)(87936001)(84676001)(19580395003)(19580405001)(44976005)(92726001)(6806004)(87286001)(50466002)(46102003)(48376002)(104166001)(33646002)(86362001)(104016003)(102836001)(92566001)(110136001)(89996001)(93916002)(88136002)(21056001)(4396001)(50226001)(50986999)(2351001)(107046002)(229853001)(77156002)(62966003)(31966008)(36756003)(97736003)(99396003)(120916001)(64706001)(105606002)(20776003)(68736005)(106466001)(47776003)(77096005)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0620;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
-X-Forefront-PRVS: 0414DF926F
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=B50113@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we want to use wm8960 codec, we should enable its MCLK in machine
-driver. It's reasonable for wm8960 codec driver to manage its own MCLK to
-save power.
+AT91 SoCs have a memory range reserved for internal bus configuration.
+Expose those registers so that drivers can make use of the matrix syscon
+declared in at91 DTs.
 
-Enable runtime power management, and auto enable/disable MCLK in pm_runtime
-resume and suspend. When wm8960 codec is being used, it will triger resume()
-to enable MCLK. When codec is not being used, it will triger suspend() to
-disable MCLK and power down PLL.
-
-Signed-off-by: Zidan Wang <b50113@freescale.com>
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/sound/wm8960.h    |  1 +
- sound/soc/codecs/wm8960.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+)
+Changes since v3:
+ - added AT91_MATRIX_USBPUCR_PUON definition
+ - removed useless macros (those directly returning SoC specific register
+   offsets)
 
-diff --git a/include/sound/wm8960.h b/include/sound/wm8960.h
-index e8ce8ee..d7e84ed 100644
---- a/include/sound/wm8960.h
-+++ b/include/sound/wm8960.h
-@@ -16,6 +16,7 @@
- #define WM8960_DRES_MAX  3
- 
- struct wm8960_data {
-+	struct clk *mclk;
- 	bool capless;  /* Headphone outputs configured in capless mode */
- 
- 	bool shared_lrclk;  /* DAC and ADC LRCLKs are wired together */
-diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-index 031a1ae..6a529b1 100644
---- a/sound/soc/codecs/wm8960.c
-+++ b/sound/soc/codecs/wm8960.c
-@@ -15,6 +15,8 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/pm.h>
-+#include <linux/clk.h>
-+#include <linux/pm_runtime.h>
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <sound/core.h>
-@@ -988,6 +990,8 @@ static void wm8960_set_pdata_from_of(struct i2c_client *i2c,
- 
- 	if (of_property_read_bool(np, "wlf,shared-lrclk"))
- 		pdata->shared_lrclk = true;
+ include/linux/mfd/syscon/atmel-matrix.h | 110 ++++++++++++++++++++++++++++++++
+ 1 file changed, 110 insertions(+)
+ create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+
+diff --git a/include/linux/mfd/syscon/atmel-matrix.h b/include/linux/mfd/syscon/atmel-matrix.h
+new file mode 100644
+index 0000000..fc9bdca
+--- /dev/null
++++ b/include/linux/mfd/syscon/atmel-matrix.h
+@@ -0,0 +1,110 @@
++/*
++ *  Copyright (C) 2014 Atmel Corporation.
++ *
++ * Memory Controllers (MATRIX, EBI) - System peripherals registers.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
-+	pdata->mclk = devm_clk_get(&i2c->dev, NULL);
- }
- 
- static int wm8960_i2c_probe(struct i2c_client *i2c,
-@@ -1011,6 +1015,14 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
- 	else if (i2c->dev.of_node)
- 		wm8960_set_pdata_from_of(i2c, &wm8960->pdata);
- 
-+    /* Mark the mclk pointer to NULL if no mclk assigned */
-+	if (IS_ERR(wm8960->pdata.mclk)) {
-+		/* But do not ignore the request for probe defer */
-+		if (PTR_ERR(wm8960->pdata.mclk) == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		wm8960->pdata.mclk = NULL;
-+	}
++#ifndef _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
++#define _LINUX_MFD_SYSCON_ATMEL_MATRIX_H
 +
- 	ret = wm8960_reset(wm8960->regmap);
- 	if (ret != 0) {
- 		dev_err(&i2c->dev, "Failed to issue reset\n");
-@@ -1041,6 +1053,9 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm8960);
- 
-+	pm_runtime_enable(&i2c->dev);
-+	pm_request_idle(&i2c->dev);
++#define AT91SAM9260_MATRIX_MCFG_OFF	0x00
++#define AT91SAM9260_MATRIX_SCFG_OFF	0x40
++#define AT91SAM9260_MATRIX_PRS_OFF	0x80
++#define AT91SAM9260_MATRIX_MRCR_OFF	0x100
++#define AT91SAM9260_MATRIX_EBICSA_OFF	0x11c
 +
- 	ret = snd_soc_register_codec(&i2c->dev,
- 			&soc_codec_dev_wm8960, &wm8960_dai, 1);
- 
-@@ -1053,6 +1068,41 @@ static int wm8960_i2c_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int wm8960_runtime_resume(struct device *dev)
-+{
-+	struct wm8960_priv *wm8960 = dev_get_drvdata(dev);
-+	int ret;
++#define AT91SAM9261_MATRIX_MRCR_OFF	0x0
++#define AT91SAM9261_MATRIX_SCFG_OFF	0x4
++#define AT91SAM9261_MATRIX_TCR_OFF	0x24
++#define AT91SAM9261_MATRIX_EBICSA_OFF	0x30
++#define AT91SAM9261_MATRIX_USBPUCR_OFF	0x34
 +
-+	if (wm8960->pdata.mclk) {
-+		ret = clk_prepare_enable(wm8960->pdata.mclk);
-+		if (ret) {
-+			dev_err(dev, "Failed to enable MCLK: %d\n", ret);
-+			return ret;
-+		}
-+	}
++#define AT91SAM9263_MATRIX_MCFG_OFF	0x00
++#define AT91SAM9263_MATRIX_SCFG_OFF	0x40
++#define AT91SAM9263_MATRIX_PRS_OFF	0x80
++#define AT91SAM9263_MATRIX_MRCR_OFF	0x100
++#define AT91SAM9263_MATRIX_TCR_OFF	0x114
++#define AT91SAM9263_MATRIX_EBI0CSA_OFF	0x120
++#define AT91SAM9263_MATRIX_EBI1CSA_OFF	0x124
 +
-+	return 0;
-+}
++#define AT91SAM9G45_MATRIX_MCFG_OFF	0x00
++#define AT91SAM9G45_MATRIX_SCFG_OFF	0x40
++#define AT91SAM9G45_MATRIX_PRS_OFF	0x80
++#define AT91SAM9G45_MATRIX_MRCR_OFF	0x100
++#define AT91SAM9G45_MATRIX_TCR_OFF	0x110
++#define AT91SAM9G45_MATRIX_DDRMPR_OFF	0x118
++#define AT91SAM9G45_MATRIX_EBICSA_OFF	0x128
 +
-+static int wm8960_runtime_suspend(struct device *dev)
-+{
-+	struct wm8960_priv *wm8960 = dev_get_drvdata(dev);
++#define AT91SAM9N12_MATRIX_MCFG_OFF	0x00
++#define AT91SAM9N12_MATRIX_SCFG_OFF	0x40
++#define AT91SAM9N12_MATRIX_PRS_OFF	0x80
++#define AT91SAM9N12_MATRIX_MRCR_OFF	0x100
++#define AT91SAM9N12_MATRIX_EBICSA_OFF	0x118
 +
-+	/* Power down PLL to save power */
-+	regmap_update_bits(wm8960->regmap, WM8960_POWER2, 0x1, 0);
++#define AT91SAM9X5_MATRIX_MCFG_OFF	0x00
++#define AT91SAM9X5_MATRIX_SCFG_OFF	0x40
++#define AT91SAM9X5_MATRIX_PRS_OFF	0x80
++#define AT91SAM9X5_MATRIX_MRCR_OFF	0x100
++#define AT91SAM9X5_MATRIX_EBICSA_OFF	0x120
 +
-+	if (wm8960->pdata.mclk)
-+		clk_disable_unprepare(wm8960->pdata.mclk);
++#define SAMA5D3_MATRIX_MCFG_OFF		0x00
++#define SAMA5D3_MATRIX_SCFG_OFF		0x40
++#define SAMA5D3_MATRIX_PRS_OFF		0x80
++#define SAMA5D3_MATRIX_MRCR_OFF		0x100
 +
-+	return 0;
-+}
-+#endif
++#define AT91_MATRIX_MCFG(o, x)		((o) + ((x) * 0x4))
++#define AT91_MATRIX_ULBT		(7 << 0)
++#define AT91_MATRIX_ULBT_INFINITE	(0 << 0)
++#define AT91_MATRIX_ULBT_SINGLE		(1 << 0)
++#define AT91_MATRIX_ULBT_FOUR		(2 << 0)
++#define AT91_MATRIX_ULBT_EIGHT		(3 << 0)
++#define AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
 +
-+static const struct dev_pm_ops wm8960_pm = {
-+	SET_RUNTIME_PM_OPS(wm8960_runtime_suspend, wm8960_runtime_resume, NULL)
-+};
++#define AT91_MATRIX_SCFG(o, x)		((o) + ((x) * 0x4))
++#define AT91_MATRIX_SLOT_CYCLE		(0xff <<  0)
++#define AT91_MATRIX_DEFMSTR_TYPE	(3 << 16)
++#define AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
++#define AT91_MATRIX_DEFMSTR_TYPE_LAST	(1 << 16)
++#define AT91_MATRIX_DEFMSTR_TYPE_FIXED	(2 << 16)
++#define AT91_MATRIX_FIXED_DEFMSTR	(7 << 18)
++#define AT91_MATRIX_ARBT		(3 << 24)
++#define AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
++#define AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
 +
- static const struct i2c_device_id wm8960_i2c_id[] = {
- 	{ "wm8960", 0 },
- 	{ }
-@@ -1070,6 +1120,7 @@ static struct i2c_driver wm8960_i2c_driver = {
- 		.name = "wm8960",
- 		.owner = THIS_MODULE,
- 		.of_match_table = wm8960_of_match,
-+		.pm = &wm8960_pm,
- 	},
- 	.probe =    wm8960_i2c_probe,
- 	.remove =   wm8960_i2c_remove,
++#define AT91_MATRIX_ITCM_SIZE		(0xf << 0)
++#define AT91_MATRIX_ITCM_0		(0 << 0)
++#define AT91_MATRIX_ITCM_16		(5 << 0)
++#define AT91_MATRIX_ITCM_32		(6 << 0)
++#define AT91_MATRIX_ITCM_64		(7 << 0)
++#define	AT91_MATRIX_DTCM_SIZE		(0xf << 4)
++#define	AT91_MATRIX_DTCM_0		(0 << 4)
++#define	AT91_MATRIX_DTCM_16		(5 << 4)
++#define AT91_MATRIX_DTCM_32		(6 << 4)
++#define AT91_MATRIX_DTCM_64		(7 << 4)
++
++#define AT91_MATRIX_PRAS(o, x)		((o) + ((x) * 0x8))
++#define AT91_MATRIX_PRBS(o, x)		((o) + ((x) * 0x8) + 0x4)
++#define AT91_MATRIX_MPR_MSK(x)		(3 << ((x) * 0x4))
++
++#define AT91_MATRIX_RCB(x)		BIT(x)
++
++#define AT91_MATRIX_CSA(cs, val)	(val << (cs))
++#define AT91_MATRIX_DBPUC		BIT(8)
++#define AT91_MATRIX_DBPDC		BIT(9)
++#define AT91_MATRIX_VDDIOMSEL		BIT(16)
++#define AT91_MATRIX_VDDIOMSEL_1_8V	(0 << 16)
++#define AT91_MATRIX_VDDIOMSEL_3_3V	(1 << 16)
++#define AT91_MATRIX_EBI_IOSR		BIT(17)
++#define AT91_MATRIX_DDR_IOSR		BIT(18)
++#define AT91_MATRIX_NFD0_SELECT		BIT(24)
++#define AT91_MATRIX_DDR_MP_EN		BIT(25)
++#define AT91_MATRIX_EBI_NUM_CS		8
++
++#define AT91_MATRIX_USBPUCR_PUON	BIT(30)
++
++#endif /* _LINUX_MFD_SYSCON_ATMEL_MATRIX_H */
 -- 
 1.9.1
 
