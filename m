@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaLCCLC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:11:02 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57726 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262AbaLCCKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:10:03 -0500
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>
-Cc: dev@codyps.com, peterz@infradead.org, hbabu@us.ibm.com,
-        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v5 2/4] tools/perf: extend format_alias() to include event parameters
-Date: Tue,  2 Dec 2014 18:09:36 -0800
-Message-Id: <1417572578-9051-3-git-send-email-sukadev@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120302-0029-0000-0000-0000014A37FD
+	id S1751759AbaLCCLa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:11:30 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35219 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaLCCL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 21:11:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417538574.5303.69.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	<1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
+	<CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
+	<1417534380.5303.64.camel@edumazet-glaptop2.roam.corp.google.com>
+	<CAPs88r-jZ5FvCHQjArKXhpX1YRg3O4NdUFtLizraF6nZ9SjFKw@mail.gmail.com>
+	<1417538574.5303.69.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Wed, 3 Dec 2014 13:11:28 +1100
+Message-ID: <CAPs88r_5GYAmWhW9rwj8c6oAjy8RZYih2mBubgvqRXfcgiUzYw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
+On Wed, Dec 3, 2014 at 3:42 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2014-12-03 at 03:23 +1100, Alex Dubov wrote:
+>
+> Tell me how a 128 threads program can use this new mechanism in a
+> scalable way.
+>
+> One signal per thread ?
 
-This causes `perf list pmu` to show parameters for parameterized events
-like:
+What for?
 
-  pmu/event_name,param1=$param1,param2=$param2/ [Kernel PMU event]
+Kernel will deliver the signal only to the thread/threads which has
+the relevant signal unblocked (they are blocked by default).
 
-Example:
+>
+> I guess we'll keep AF_UNIX then, thank you.
 
-  hv_24x7/HPM_TLBIE__PHYS_CORE,starting_index=$core/ [Kernel PMU event]
+Kindly enlighten me, how are you going to use any file descriptor in a
+128 threads program in a scalable way (socket and all)? How this
+approach will be different when using signalfd()?
 
-Changelog[v5]
-	[Jiri Olsa, Peter Zijlstra] Use '$' to prefix parameterized events.
-
-Changelog[v4]
-	[Jiri Olsa] If the parameter for an event in sysfs is 'param=val',
-	have perf-list show the event as 'param=?' rather than 'val=?'.
-
-CC: Haren Myneni <hbabu@us.ibm.com>
-CC: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- tools/perf/util/pmu.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb516dd..f8674c1 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -810,10 +810,35 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 		set_bit(b, bits);
- }
- 
-+static int sub_non_neg(int a, int b)
-+{
-+	if (b > a)
-+		return 0;
-+	return a - b;
-+}
-+
- static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
- 			  struct perf_pmu_alias *alias)
- {
--	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
-+	struct parse_events_term *term;
-+	int used = snprintf(buf, len, "%s/%s", pmu->name, alias->name);
-+
-+	list_for_each_entry(term, &alias->terms, list)
-+		if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR)
-+			used += snprintf(buf + used, sub_non_neg(len, used),
-+					",%s=$%s", term->config,
-+					term->val.str);
-+
-+	if (sub_non_neg(len, used) > 0) {
-+		buf[used] = '/';
-+		used++;
-+	}
-+	if (sub_non_neg(len, used) > 0) {
-+		buf[used] = '\0';
-+		used++;
-+	} else
-+		buf[len - 1] = '\0';
-+
- 	return buf;
- }
- 
--- 
-1.8.3.1
-
+And no, I'm not proposing to take your favorite toys away.
