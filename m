@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaLCTtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:49:22 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:58215 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaLCTtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:49:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-omap@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] hsi / OMAP / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Wed, 03 Dec 2014 20:49:12 +0100
-Message-ID: <2553100.3OLsEPLv6G@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <6319344.XVfdONE5DJ@vostro.rjw.lan>
-References: <6319344.XVfdONE5DJ@vostro.rjw.lan>
+	id S1751806AbaLCTuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:50:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36638 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751186AbaLCTuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 14:50:21 -0500
+Date: Wed, 3 Dec 2014 20:50:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/1] oom: don't assume that a coredumping thread will
+	exit soon
+Message-ID: <20141203195001.GA11558@redhat.com>
+References: <20141127230349.GA25075@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ddGrHQaAuwO6CzjcWS2qDpizgizBLvYhbIOuITQqS9V
- C2yKZCfUfUupW5narSwR5hvUU/i+WXb8+vJJB++SIFWPFXpzyA
- l7n/fc3ILYtIunYMpGDBIGCBrEGC0zc5/qypmSHp2A6hEURXiR
- wFaUyXQ/v9NY0LUmWGppVp0iYjZ6+UQ+ES5UVs4sv+qcr/Gx+4
- SOhkE5Yst2XymBMA7I8Zu6p4fI3ZoNwNTlnuT1eL0wasEza8d7
- atmB3WP17z3AxERfN5qLYS+ojNGkn6k24eqHjXzStg5XJVzdWc
- 3MaomfFDF6VcbqDaJbNGvleUsUc5jWS4aoOX/k3CPuTCoIp3g8
- cZzXIbW2Ju4HjalP7HWM=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127230349.GA25075@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 03:02:24 Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
-> 
-> Do that for the omap_ssi driver.
-> 
+Andrew,
 
-Just for clarification: does that mean that PM, PM_RUNTIME, and PM_SLEEP
-are all synonyms now, or is there still some other combination that
-allows a subset to be set?
+This replaces
 
-Before we do lots of s/CONFIG_PM_SLEEP/CONFIG_PM/ changes in lots of
-other drivers, it would be nice to come up with a new set of macros
-to replace all the SET_RUNTIME_PM_OPS/SIMPLE_DEV_PM_OPS/..._OPS
-with a version that avoided the #ifdefs altogether.
+	oom-dont-assume-that-a-coredumping-thread-will-exit-soon.patch
 
-	Arnd
+in -mm tree.
+
+The patch is basically the same, but as Michal pointed out
+mem_cgroup_out_of_memory() can use the new helper too, it can face
+the same problems.
+
+Also, I tried to update the changelog.
+
+Michal, can you ack this version?
+
+Oleg.
+
