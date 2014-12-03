@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaLCUp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 15:45:59 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:60907 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbaLCUoc (ORCPT
+	id S1752508AbaLCUp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 15:45:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42954 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752172AbaLCUoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 15:44:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141203152147.2ca6c6fd@tlielax.poochiereds.net>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141203121118.21a32fe1@notabene.brown>
-	<20141202202946.1e0f399b@tlielax.poochiereds.net>
-	<20141203155649.GB5013@htj.dyndns.org>
-	<20141203110405.5ecc85df@tlielax.poochiereds.net>
-	<20141203140202.7865bedb@tlielax.poochiereds.net>
-	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
-	<20141203142034.5c14529d@tlielax.poochiereds.net>
-	<CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>
-	<20141203152147.2ca6c6fd@tlielax.poochiereds.net>
-Date: Wed, 3 Dec 2014 15:44:31 -0500
-Message-ID: <CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based nfsd
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v5 09/11] ARM: at91/dt: add matrix node in sama5d3 dtsi
+Date: Wed,  3 Dec 2014 21:44:13 +0100
+Message-Id: <1417639455-17410-10-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 3:21 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
-> On Wed, 3 Dec 2014 14:59:43 -0500
-> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
->
->> On Wed, Dec 3, 2014 at 2:20 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
->> > On Wed, 3 Dec 2014 14:08:01 -0500
->> > Trond Myklebust <trond.myklebust@primarydata.com> wrote:
->> >> Which workqueue are you using? Since the receive code is non-blocking,
->> >> I'd expect you might be able to use rpciod, for the initial socket
->> >> reads, but you wouldn't want to use that for the actual knfsd
->> >> processing.
->> >>
->> >
->> > I'm using the same (nfsd) workqueue for everything. The workqueue
->> > isn't really the bottleneck though, it's the work_struct.
->> >
->> > Basically, the problem is that the work_struct in the svc_xprt was
->> > remaining busy for far too long. So, even though the XPT_BUSY bit had
->> > cleared, the work wouldn't get picked up again until the previous
->> > workqueue job had returned.
->> >
->> > With the change I made today, I just added a new work_struct to
->> > svc_rqst and queue that to the same workqueue to do svc_process as soon
->> > as the receive is done. That means though that each RPC ends up waiting
->> > in the queue twice (once to do the receive and once to process the
->> > RPC), and I think that's probably the reason for the performance delta.
->>
->> Why would the queuing latency still be significant now?
->>
->
-> That, I'm not clear on yet and that may not be why this is slower. But,
-> I was seeing slightly faster performance with reads before I made
-> today's changes. If changing how these jobs get queued doesn't help the
-> performance, then I'll have to look elsewhere...
+Add matrix node in sama5d3 dtsi so that it can be referenced by other
+devices.
 
-Do you have a good method for measuring that latency? If the queuing
-latency turns out to depend on the execution latency for each job,
-then perhaps running the message receives on a separate low latency
-queue could help (hence the suggestion to use rpciod).
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 9f1eed5..d49dab7 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -425,6 +425,11 @@
+ 				clock-names = "ddrck", "mpddr";
+ 			};
+ 
++			matrix: matrix@ffffec00 {
++				compatible = "atmel,sama5d3-matrix", "syscon";
++				reg = <0xffffec00 0x200>;
++			};
++
+ 			dbgu: serial@ffffee00 {
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xffffee00 0x200>;
 -- 
-Trond Myklebust
+1.9.1
 
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
