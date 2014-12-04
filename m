@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaLDIMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:12:32 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:59105 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaLDIMa (ORCPT
+	id S1753052AbaLDIMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:12:48 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42157 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaLDIMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:12:30 -0500
-Message-ID: <54801768.3050404@hitachi.com>
-Date: Thu, 04 Dec 2014 17:12:24 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 4 Dec 2014 03:12:47 -0500
+Message-ID: <5480177F.90309@gmail.com>
+Date: Thu, 04 Dec 2014 16:12:47 +0800
+From: Fred Chou <fred.chou.nd@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alexei Starovoitov <ast@plumgrid.com>
-Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
-References: <20141203031334.174087814@goodmis.org> <20141203032106.156623189@goodmis.org> <547ED753.3060508@hitachi.com> <20141203043423.6c7e4524@gandalf.local.home> <20141203112015.19f6ff6c@gandalf.local.home>
-In-Reply-To: <20141203112015.19f6ff6c@gandalf.local.home>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] staging: rtl8192u: fix sparse warnings
+References: <1417661443-17574-1-git-send-email-fred.chou.nd@gmail.com> <20141204073437.GA4311@sudip-PC>
+In-Reply-To: <20141204073437.GA4311@sudip-PC>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/04 1:20), Steven Rostedt wrote:
-> On Wed, 3 Dec 2014 04:34:23 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
->  
->> OK, I'll hold off on sending this patch then till 3.20.
+
+
+On 4/12/2014 3:34 PM, Sudip Mukherjee wrote:
+> On Thu, Dec 04, 2014 at 10:50:43AM +0800, Fred Chou wrote:
+>> From: Fred Chou <fred.chou.nd@gmail.com>
 >>
+>> Fixed the following warnings in sparse:
+>>
+>> drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
+>>  	symbol 'dump_eprom' was not declared.
+>> 	Should it be static?
+>> drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
+>>  	symbol 'ComputeTxTime' was not declared.
+>> 	Should it be static?
+>> drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
+>> 	symbol 'txqueue2outpipe' was not declared.
+>> 	Should it be static?
+>> drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
+>> 	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
+>> 	Should it be static?
+>>
+>> Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
+>>
+>> ---
+>> change in v3: fixed alignment to match open parenthesis 
+> have u fixed?
+> your v2 was having one problem of alignment, but v3 is again having 3 problems.
+> and your patch doesnot apply to next-20141203
 > 
-> BTW, can we add another option that just shows the echo output. The -d
-> enables -x which floods the screen with lots of useless information and
-> it's hard to see what is going on.
 
-I see, actually -d is not for debugging each test case, but just
-for the ftracetest itself.
-I'll add --verbose to show echos in testcases.
+The alignment issue is fixed when I apply the patch against my local
+kernel source tree. Wondering why there are still alignment problems.
+Let me test with next-20141203 and send v4 again. My apologies...
 
+Fred
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> sudip
+> 
+>>
+>>  drivers/staging/rtl8192u/r8192U_core.c | 12 +++++++-----
+>>  1 file changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+>> index 7640386..2c61801 100644
+>> --- a/drivers/staging/rtl8192u/r8192U_core.c
+>> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+>> @@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
+>>  
+>>  
+>>  /* this is only for debug */
+>> -void dump_eprom(struct net_device *dev)
+>> +static void dump_eprom(struct net_device *dev)
+>>  {
+>>  	int i;
+>>  	for (i = 0; i < 63; i++)
+>> @@ -1486,8 +1486,8 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
+>>  
+>>  u16 N_DBPSOfRate(u16 DataRate);
+>>  
+>> -u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+>> -		  u8 bShortPreamble)
+>> +static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+>> +			  u8 bShortPreamble)
+>>  {
+>>  	u16	FrameTime;
+>>  	u16	N_DBPS;
+>> @@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
+>>  	return N_DBPS;
+>>  }
+>>  
+>> -unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
+>> +static unsigned int txqueue2outpipe(struct r8192_priv *priv,
+>> +				     unsigned int tx_queue)
+>>  {
+>>  	if (tx_queue >= 9) {
+>>  		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
+>> @@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
+>>  
+>>  }
+>>  
+>> -u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
+>> +static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
+>> +					 bool bIsRxAggrSubframe)
+>>  {
+>>  #ifdef USB_RX_AGGREGATION_SUPPORT
+>>  	if (bIsRxAggrSubframe)
+>> -- 
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
