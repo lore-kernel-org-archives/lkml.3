@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaLDVSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:18:24 -0500
-Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:54741 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381AbaLDVSX (ORCPT
+	id S933200AbaLDVTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:19:17 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40794 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932752AbaLDVTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:18:23 -0500
-X-ME-Helo: beldin
-X-ME-Date: Thu, 04 Dec 2014 22:18:21 +0100
-X-ME-IP: 109.214.46.91
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Daniel Mack <daniel@zonque.org>
-Subject: Re: [PATCH] arm: pxa: fix pxa27x device-tree support kconfig
-References: <1417206768-5840-1-git-send-email-robert.jarzmik@free.fr>
-X-URL: http://belgarath.falguerolles.org/
-Date: Thu, 04 Dec 2014 22:18:19 +0100
-In-Reply-To: <1417206768-5840-1-git-send-email-robert.jarzmik@free.fr> (Robert
-	Jarzmik's message of "Fri, 28 Nov 2014 21:32:48 +0100")
-Message-ID: <87a933yuzo.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Thu, 4 Dec 2014 16:19:16 -0500
+Date: Thu, 4 Dec 2014 16:19:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Leonard Crestez <lcrestez@ixiacom.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sorin Dumitru <sdumitru@ixiacom.com>
+Subject: Re: [RFC v2] percpu: Add a separate function to merge free areas
+Message-ID: <20141204211912.GG4080@htj.dyndns.org>
+References: <547E3E57.3040908@ixiacom.com>
+ <20141204175713.GE2995@htj.dyndns.org>
+ <5480BFAA.2020106@ixiacom.com>
+ <alpine.DEB.2.11.1412041426230.14577@gentwo.org>
+ <20141204205202.GP29748@ZenIV.linux.org.uk>
+ <alpine.DEB.2.11.1412041514250.14832@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1412041514250.14832@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Jarzmik <robert.jarzmik@free.fr> writes:
+On Thu, Dec 04, 2014 at 03:15:27PM -0600, Christoph Lameter wrote:
+> On Thu, 4 Dec 2014, Al Viro wrote:
+> 
+> > ... except that somebody has not known that and took refcounts on e.g.
+> > vfsmounts into percpu.  With massive amounts of hilarity once docker folks
+> > started to test the workloads that created/destroyed those in large amounts.
+> 
+> Well, vfsmounts being a performance issue is a bit weird and unexpected.
 
-> Remove the useless CPU_PXA27x non existing kconfig option.
-> The true options is PXA27x, which is already selected.
->
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Docker usage is pretty wide-spread now, making what used to be
+siberia-cold paths hot enough to cause actual scalability issues.
+Besides, we're now using percpu_ref for things like aio and cgroup
+control structures which can be created and destroyed quite
+frequently.  I don't think we can say these are "weird" use cases
+anymore.
 
-Queued to pxa/for-next.
+Thanks.
 
 -- 
-Robert
+tejun
