@@ -1,125 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122AbaLDUOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:14:33 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56460 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933094AbaLDUOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:14:31 -0500
-Date: Thu, 4 Dec 2014 14:14:31 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Mugunthan V N <mugunthanvnm@ti.com>, Nishanth Menon <nm@ti.com>,
-        <bcousson@baylibre.com>, <tony@atomide.com>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
-Message-ID: <20141204201431.GB18419@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com>
- <54463063.80207@ti.com>
- <20141021172223.GA12943@kahuna>
- <20141103162722.GN27425@saruman>
- <545BA9EE.1040905@ti.com>
- <20141204201401.GA18419@saruman>
+	id S1753239AbaLDUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:17:27 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:50159 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaLDURZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:17:25 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cmJC7u66zC7hs+87"
-Content-Disposition: inline
-In-Reply-To: <20141204201401.GA18419@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+Date: Thu, 4 Dec 2014 12:17:24 -0800
+Message-ID: <CA+mtBx_BiJ526jop1tLhx1ji4beRufQRhiN9nfFBWLnr25DMww@mail.gmail.com>
+Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
+From: Tom Herbert <therbert@google.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: Linux Netdev List <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jesse Gross <jesse@nicira.com>,
+        Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cmJC7u66zC7hs+87
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 4, 2014 at 10:39 AM, Joe Stringer <joestringer@nicira.com> wrote:
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an
+> implementation for this driver which checks for IPIP, GRE, UDP tunnels.
+>
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> ---
+> v3: Drop IPIP and GRE (no driver support even though hw supports it).
+>     Check for UDP outer protocol for UDP tunnels.
+> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+>     Add MAX_INNER_LENGTH (as 80).
+> ---
+>  drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> index c3a7f4a..0d6493a 100644
+> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
+>
+>  #endif /* USE_DEFAULT_FDB_DEL_DUMP */
+>  #endif /* HAVE_FDB_OPS */
+> +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +       if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
+> +               unsigned char *ihdr;
+> +
+> +               if (skb->protocol != IPPROTO_UDP ||
+> +                   skb->inner_protocol_type != ENCAP_TYPE_ETHER)
+> +                       return false;
+> +
+> +               if (skb->inner_protocol == htons(ETH_P_TEB))
+> +                       ihdr = skb_inner_mac_header(skb);
+> +               else if (skb->inner_protocol == htons(ETH_P_IP) ||
+> +                        skb->inner_protocol == htons(ETH_P_IPV6))
+> +                       ihdr = skb_inner_network_header(skb);
+> +               else
+> +                       return false;
+> +
 
-On Thu, Dec 04, 2014 at 02:14:01PM -0600, Felipe Balbi wrote:
-> On Thu, Nov 06, 2014 at 10:33:42PM +0530, Mugunthan V N wrote:
-> > Tony
-> >=20
-> > On Monday 03 November 2014 09:57 PM, Felipe Balbi wrote:
-> > > On Tue, Oct 21, 2014 at 12:22:23PM -0500, Nishanth Menon wrote:
-> > >> On 15:37-20141021, Mugunthan V N wrote:
-> > >>> Nishanth
-> > >>>
-> > >>> On Tuesday 21 October 2014 03:30 PM, Mugunthan V N wrote:
-> > >>>> Adding device tree entry for CPSW to make it work in Dual EMAC mod=
-e.
-> > >>>> These patches were tested with DRA7 hwmod patches on top of linux-=
-next.
-> > >>>> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and =
-pushed
-> > >>>> my tree to [2].
-> > >>>>
-> > >>>> Did a boot test with CPSW and ping test with suspend/resume, the b=
-oot logs
-> > >>>> on DRA7xx EVM are posted at [3]
-> > >>>>
-> > >>>> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17=
-/cpu-idle-suspend-dra7-omap5-framework
-> > >>>> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17=
-/dra7-evm-cpsw-v3
-> > >>>> [3] http://pastebin.ubuntu.com/8613072/
-> > >>>>
-> > >>>> Changes from v2:
-> > >>>> * Changed pinctrl comments to hold mode0-name.mode-selected-name
-> > >>>> * Changes slave numbers in the pinctrl comments
-> > >>>> * Added cpsw and cpts clocks
-> > >>>>
-> > >>>
-> > >>> I have not added support for dra72x-evm as it has only slave no 2 p=
-inned
-> > >>> out and having issues with bringing up the interface, need some more
-> > >>> time to submit the patch, in the mean time I have submitted dra7-evm
-> > >>> support only so that people can use dra7-evm on linux-next.
-> > >>
-> > >> Quickly tested as well:
-> > >> http://slexy.org/raw/s2vISJxYrR
-> > >>
-> > >> Please feel free to add:
-> > >> Tested-by: Nishanth Menon <nm@ti.com>
-> > >> Acked-by: Nishanth Menon <nm@ti.com>
-> > >=20
-> > > I've used these patches with X15 (DRA7xx-based yet-to-be-released boa=
-rd)
-> > > with v3.18-rc2.
-> > >=20
-> > > Tested-by: Felipe Balbi <balbi@ti.com>
-> > >=20
-> >=20
-> > Ping on this
->=20
-> another ping on this
+Wow, this is getting complicated! :-( It's not clear that the protocol
+specific checks are needed here since it looks like the header length
+is being passed to the device later on. Also, I think we need
+skb_inner_mac_header(skb) - skb_transport_header(skb) to always work
+to give the length of the encapsulation headers (in case there is no
+real inner mac header, then that offset should be for the network
+header).
 
-oh my bad, it's already queued for v3.19. sorry
+So would a simple check like this work:
 
---=20
-balbi
+if (skb->encapsulation &&
+    (skb_inner_mac_header(skb) - skb_transport_header(skb)) >
+MAX_TUNNEL_HDR_LEN)
+       return false;
 
---cmJC7u66zC7hs+87
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgMCnAAoJEIaOsuA1yqREJSsP/jF1D/KtAq1I9VXtTjrgpdDa
-KGcRF2gZAKFCPVSSKBEXdUtE67nvHy3K9zAq6MZvYCN47F41CxFNhmNybP9HrT8I
-AX2aaVMvSh4HN49ZZSgpG98EVQgnrpy0wb8UCNpwgE7ODPEpVA7oPmiv+lRkpufG
-qSMpHM1rkFfHAYcSt10LTM+0KYGeCxurtU34hXZNrtx4d7x/3TL0SP6P1Z6/HgcE
-JqDgIiRzh8SziRb1rvHO560Vbz5w5x0MmpoF6NjGpDrFS1TSra7wOlqgGWdzk+iL
-TOP267bkC8iIZQRe2cQb88Mgu+wBZVGlqEbs/6OzfLgcug7wQn6K4MKh6qI6v+ks
-7i8c0YfWzrBljGO6NXS3gUJ0SlRDxoQIAknFOkII+clOMLfLUjKJscsZlYGZYRGV
-My+T3Jx4BRrlsknmsen8C7KcBzdlmqKZGVYYH6HR2P6a2x4L9hRVAouxUlSjEtxg
-nLomW6PKE7Q47Vac+gEVBjBAbB9CHax81WH9iwQa49Ty0SKy7i2HbzoXznEEXM+j
-89ICeEYzO4u84leX+ta3hTqHmW8p27MAiiPkeyswj/qHNBdDeKOjoQX0LLR+6R+V
-A+BFqRa0W623p5FBvTDKXGmxYUsXc7Sq5M4VGpw0zkYhYx/vLD8chroEwy5MFxvI
-T+jZ0EbOdfpSRNotYfUK
-=eJmI
------END PGP SIGNATURE-----
-
---cmJC7u66zC7hs+87--
+> +#define MAX_TUNNEL_HDR_LEN     80
+> +               if (ihdr - skb_transport_header(skb) > MAX_TUNNEL_HDR_LEN)
+> +                       return false;
+> +       }
+> +
+> +       return true;
+> +}
+> +
+>  static const struct net_device_ops i40e_netdev_ops = {
+>         .ndo_open               = i40e_open,
+>         .ndo_stop               = i40e_close,
+> @@ -7487,6 +7512,7 @@ static const struct net_device_ops i40e_netdev_ops = {
+>         .ndo_fdb_dump           = i40e_ndo_fdb_dump,
+>  #endif
+>  #endif
+> +       .ndo_gso_check          = i40e_gso_check,
+>  };
+>
+>  /**
+> --
+> 1.7.10.4
+>
