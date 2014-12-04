@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaLDHqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:46:49 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62514 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaLDHqs (ORCPT
+	id S1752812AbaLDHuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:50:32 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:65423 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaLDHub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:46:48 -0500
-Date: Thu, 4 Dec 2014 13:16:41 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
-Message-ID: <20141204074641.GB4311@sudip-PC>
-References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
- <547EF8CC.9030502@ti.com>
- <CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>
- <548007CA.7010900@ti.com>
+	Thu, 4 Dec 2014 02:50:31 -0500
+Message-ID: <54801228.5030405@huawei.com>
+Date: Thu, 4 Dec 2014 15:50:00 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <548007CA.7010900@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Rik van Riel <riel@redhat.com>,
+        <dave@sr71.net>
+CC: the arch/x86 maintainers <x86@kernel.org>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] x86, mm: fix zone ranges print in boot
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 09:05:46AM +0200, Tomi Valkeinen wrote:
-> On 03/12/14 20:29, Prabhakar Lad wrote:
-> > On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> >> On 27/11/14 00:07, Lad, Prabhakar wrote:
-> >>> this patch fixes following build warning:
-> >>> drivers/video/fbdev/vt8623fb.c: In function ‘vt8623_pci_probe’:
-> >>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> >>>   par->state.vgabase = (void __iomem *) vga_res.start;
-> >>>                        ^
-> >>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >>> ---
-> >>>  drivers/video/fbdev/vt8623fb.c | 2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt8623fb.c
-> >>> index 5c7cbc6..ea7f056 100644
-> >>> --- a/drivers/video/fbdev/vt8623fb.c
-> >>> +++ b/drivers/video/fbdev/vt8623fb.c
-> >>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
-> >>>
-> >>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
-> >>>
-> >>> -     par->state.vgabase = (void __iomem *) vga_res.start;
-> >>> +     par->state.vgabase = (void __iomem *) (unsigned long) vga_res.start;
-> >>
-> >> This does look quite ugly... Where does the warning come from in the
-> >> first place. Isn't vga_res.start (resource_size_t) the size of a pointer?
-> >>
-> > Yes looks ugly, I am not sure what you meant from 'where does this warning
-> > come from' its in the commit message.
-> 
-> I meant why is there a warning at all. With a quick glance,
-> vga_res.start is the size of a pointer. So the sizes of the integer and
-> the pointer should be the same. But the warning still says "of different
-> size".
+This is the usual log without restrict memory.
+...
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
+[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
+[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
+...
 
-poking my nose into your discussion.
-I tried to see the warning, and I re-compiled like make W=1 M=drivers/video/fbdev/ (before that make clean M=drivers/video/fbdev was done)
-I can see warning with many other files, but drivers/video/fbdev/vt8623fb.o was quiet and there was no warning.
-I tested with next=20141203.
-did i miss something in checking the warning ?
+This is the log when set "mem=2G" in cmdline.
+...
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
+...
 
-thanks
-sudip
+This patch fix the print, the following log shows right ranges.
+...
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
+...
 
-> 
->  Tomi
-> 
-> 
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ arch/x86/mm/init.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 66dba36..07244aa 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -674,10 +674,10 @@ void __init zone_sizes_init(void)
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+ 
+ #ifdef CONFIG_ZONE_DMA
+-	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
++	max_zone_pfns[ZONE_DMA]		= min(MAX_DMA_PFN, max_low_pfn);
+ #endif
+ #ifdef CONFIG_ZONE_DMA32
+-	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
++	max_zone_pfns[ZONE_DMA32]	= min(MAX_DMA32_PFN, max_low_pfn);
+ #endif
+ 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
+ #ifdef CONFIG_HIGHMEM
+-- 
+2.0.0
 
 
