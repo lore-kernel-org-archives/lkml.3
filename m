@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaLDMpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:45:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614AbaLDMpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:45:06 -0500
-Date: Thu, 4 Dec 2014 13:44:22 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
-        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5 1/4] tools/perf: support parsing parameterized events
-Message-ID: <20141204124422.GA4195@krava.brq.redhat.com>
-References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
+	id S1754106AbaLDMpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:45:49 -0500
+Received: from smtp-out-020.synserver.de ([212.40.185.20]:1066 "EHLO
+	smtp-out-017.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753908AbaLDMpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:45:47 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5949
+Message-ID: <5480577D.4010106@metafoo.de>
+Date: Thu, 04 Dec 2014 13:45:49 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master
+ clock
+References: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 06:09:35PM -0800, Sukadev Bhattiprolu wrote:
-> From: Cody P Schafer <cody@linux.vnet.ibm.com>
-> 
-> Enable event specification like:
-> 
-> 	pmu/event_name,param1=0x1,param2=0x4/
-> 
-> Assuming that
-> 
-> 	/sys/bus/event_source/devices/pmu/events/event_name
-> 
-> Contains something like
-> 
-> 	param2=$foo,bar=1,param1=$baz
+On 12/04/2014 07:52 AM, Mike Looijmans wrote:
+> If the master clock supports programmable rates, program it to generate
+> the desired frequency. Only apply constraints when the clock is fixed.
+> This allows proper clock generation for both 44100 and 48000 Hz based
+> sampling rates if the platform supports it.
+>
+> The clock frequency must be set before enabling it. Enabling the clock
+> was done in "startup", but that occurs before "hw_params" where the rate
+> is known. Move the clock start to the hw_params routine, and keep track
+> of whether the clock has been started, because shutdown may be called
+> without having called hw_params first.
 
-oops.. sorry to be PITA on this one.. I might have missed something
-in the previous discussion but I guess I might have finally some
-opinion on this ;-)
+Usually that shouldn't be a problem. If your clock chip requires it to be 
+disabled in order to be reprogrammed than the CLK_SET_RATE_GATE flag should 
+be set. This will tell the core to disable the clock before changing it.
 
-here's how I think your patchset works:
+[...]
+>   static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
+> @@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
+>   	spdif->dma_data.addr_width = 4;
+>   	spdif->dma_data.maxburst = 1;
+>
+> -	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
+> -	spdif->ratnum.den_step = 1;
+> -	spdif->ratnum.den_min = 1;
+> -	spdif->ratnum.den_max = 64;
+> -
+> -	spdif->rate_constraints.rats = &spdif->ratnum;
+> -	spdif->rate_constraints.nrats = 1;
+> +	/* Determine if the clock rate is fixed. If it cannot change frequency,
+> +	 * it returns an error here. */
+> +	if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
 
-in /sys/bus/event_source/devices/pmu/events/event_name you can actually have:
+I don't think this works. For a fixed clock clk_round_rate() will return the 
+fixed rate rather than an error. I tried the patch and even though I have a 
+fixed clock the constraints are no longer set.
 
-   param2=foo,bar=1,param1=baz
+There is unfortunately no good way to enumerate which frequencies are 
+supported by a clock other than just calling round_rate for all possible rates.
 
-notice no '$', thats what you add later in 'perf list' output, right?
-
-Moreover it actually does not matter whats in value 'param2=HERE',
-because it's not used in the config code at all apart from the
-'perf list' display processing.
-
-So when we discussed the '$' name way, I thought it'd be like:
-
-in /sys/bus/event_source/devices/pmu/events/event_name you have:
-  param2=$foo,bar=1,param1=$baz
-
-and on command line you'd use:
-  pmu/event_name,foo=0x1,bar=0x4/
-
-to assign directly to the $var, which would justify the $var
-syntax I think..
-
-anyway we could assign directly to the param term name as you do,
-but I think we just need to mark the term as parametrized, like:
-
-in /sys/bus/event_source/devices/pmu/events/event_name you have:
-  param2=?,bar=1,param1=?
-
-and on command line you'd use:
-  pmu/event_name,param2=0x1,param1=0x4/
-
-while the config code would check that the param substitution is
-done only for terms with '?' in value, like 'param2=?' and not
-for all PARSE_EVENTS__TERM_TYPE_STR type terms (as of now)
-
-thanks,
-jirka
+I think the best way to implement this for now is to try e.g. 32000 * 128, 
+44100 * 128, 48000 * 128 and then check if clk_round_rate returns the 
+expected rate and if it does set up a rate constraint for that rate.
