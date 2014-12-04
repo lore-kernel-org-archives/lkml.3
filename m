@@ -1,311 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaLDBAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:00:51 -0500
-Received: from regular1.263xmail.com ([211.150.99.131]:43215 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaLDBAs (ORCPT
+	id S1752875AbaLDBBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:01:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58116 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595AbaLDBA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:00:48 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: zyw@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <667c360e9b69e50356b1fefbebfa686a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547FB237.8080502@rock-chips.com>
-Date: Thu, 04 Dec 2014 09:00:39 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Dec 2014 20:00:57 -0500
+Date: Wed, 3 Dec 2014 17:00:56 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Eric Piel <eric.piel@tremplin-utc.net>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] misc / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Message-ID: <20141204010056.GA9680@kroah.com>
+References: <2262178.AG1kTbXfTd@vostro.rjw.lan>
 MIME-Version: 1.0
-To: LiYunzhi <lyz@rock-chips.com>, ulrich.prinz@googlemail.com,
-        dianders <dianders@chromium.org>, heiko <heiko@sntech.de>,
-        huangtao <huangtao@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        linux-usb@vger.kernel.org, kishon@ti.com, linux-kernel@vger.kernel.org,
-        zyw@rock-chips.com
-Subject: Re: [PATCH] phy: add Rockchip RK3288 USB2 PHY driver.
-References: <1417614410-15885-1-git-send-email-lyz@rock-chips.com> <1417614410-15885-2-git-send-email-lyz@rock-chips.com>
-In-Reply-To: <1417614410-15885-2-git-send-email-lyz@rock-chips.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2262178.AG1kTbXfTd@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roy,
-
-     Why you send two patches with different commit message but the same 
-change,
-you should use V2 for a new patch.
-
-On 12/03/2014 09:46 PM, LiYunzhi wrote:
-> From: lyz <lyz@rock-chips.com>
-You don't need the From for the patches from yourself.
->
-> Add a driver for the Rockchip SoC internal USB2.0 PHY.
-> This driver currently support RK3288.
->
-> Signed-off-by: lyz <lyz@rock-chips.com>
-Remember to use you Full name here for From/Signed-off-by
-or all the kind of signature.
+On Thu, Dec 04, 2014 at 01:57:13AM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+> drivers/misc/.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
->   .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  17 ++
-The document should be in a separate patch, so please split this into 
-two patches.
->   drivers/phy/Kconfig                                |   7 +
->   drivers/phy/Makefile                               |   1 +
->   drivers/phy/phy-rockchip-usb.c                     | 179 +++++++++++++++++++++
->   4 files changed, 204 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
->   create mode 100644 drivers/phy/phy-rockchip-usb.c
->
-> diff --git a/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
-> new file mode 100644
-> index 0000000..18ccc2f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
-> @@ -0,0 +1,17 @@
-> +ROCKCHIP USB2 PHY
-> +
-> +Required properties:
-> + - compatible: rockchip,rk3288-usb-phy
-> + - rockchip,grf : phandle to the syscon managing the "general
-> +   register files"
-> + - #phy-cells: must be 1
-> +Refer to phy/phy-bindings.txt for the generic PHY binding
-> +properties
-> +
-> +Example:
-> +
-> +	usbphy: phy {
-> +	#phy-cells = <1>;
-> +	compatible = "rockchip,rk3288-usb-phy";
-> +	rockchip,grf = <&grf>;
-> +	};
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 2a436e6..54ab088 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -218,6 +218,13 @@ config PHY_QCOM_IPQ806X_SATA
->   	depends on OF
->   	select GENERIC_PHY
->   
-> +config PHY_ROCKCHIP_RK3288_USB2
-> +	tristate "Rockchip USB2 RK3288 PHY Driver"
-> +	depends on ARCH_ROCKCHIP && OF
-> +	select GENERIC_PHY
-> +	help
-> +	  Enable this to support the Rockchip USB 2.0 PHY.
-> +
->   config PHY_ST_SPEAR1310_MIPHY
->   	tristate "ST SPEAR1310-MIPHY driver"
->   	select GENERIC_PHY
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index c4590fc..f4f2f79 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -25,6 +25,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
->   phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
->   obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
->   obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
-> +obj-$(CONFIG_PHY_ROCKCHIP_RK3288_USB2) += phy-rockchip-usb.o
-Add this after 'CONFIG_PHY_QCOM_IPQ806X_SATA'.
->   obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
->   obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
->   obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
-> diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
-> new file mode 100644
-> index 0000000..2586b76
-> --- /dev/null
-> +++ b/drivers/phy/phy-rockchip-usb.c
-> @@ -0,0 +1,179 @@
-> +/*
-> + * Rockchip usb PHY driver
-> + *
-> + * Copyright (C) 2014 Roy Li <lyz@rock-chips.com>
-> + * Copyright (C) 2014 ROCKCHIP, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/reset.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/syscon.h>
-> +
-> +#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
-> +
-> +#define SIDDQ_MSK		(1 << (13 + 16))
-> +#define SIDDQ_ON		(1 << 13)
-> +#define SIDDQ_OFF		(0 << 13)
-> +
-> +enum rk3288_phy_id {
-> +	RK3288_OTG,
-> +	RK3288_HOST0,
-> +	RK3288_HOST1,
-> +	RK3288_NUM_PHYS,
-> +};
-> +
-> +struct rockchip_usb_phy {
-> +	struct regmap *reg_base;
-> +	unsigned int reg_offset;
-> +	struct clk *clk;
-> +	struct phy *phy;
-> +};
-> +
-> +static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
-> +					   bool siddq)
-> +{
-> +	return regmap_write(phy->reg_base, phy->reg_offset,
-> +			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
-> +}
-> +
-> +static int rockchip_usb_phy_power_off(struct phy *_phy)
-> +{
-> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-> +	int ret = 0;
-> +
-> +	/* Power down usb phy analog blocks by set siddq 1*/
-> +	ret = rockchip_usb_phy_power(phy, 1);
-Use a MACRO like ON/OFF instead of 1/0?
-and then we don't need the comment anymore.
-> +	if (ret)
-> +		return ret;
-> +
-> +	clk_disable_unprepare(phy->clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int rockchip_usb_phy_power_on(struct phy *_phy)
-> +{
-> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-> +	int ret = 0;
-> +
-> +	ret = clk_prepare_enable(phy->clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Power up usb phy analog blocks by set siddq 0*/
-> +	ret = rockchip_usb_phy_power(phy, 0);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct phy *rockchip_usb_phy_xlate(struct device *dev,
-> +					struct of_phandle_args *args)
-> +{
-> +	struct rockchip_usb_phy *phy_array = dev_get_drvdata(dev);
-> +
-> +	if (WARN_ON(args->args[0] == 0 || args->args[0] >= RK3288_NUM_PHYS))
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	return (phy_array + args->args[0])->phy;
-> +}
-> +
-> +static struct phy_ops ops = {
-> +	.power_on	= rockchip_usb_phy_power_on,
-> +	.power_off	= rockchip_usb_phy_power_off,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static int rockchip_usb_phy_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct rockchip_usb_phy *rk_phy;
-> +	struct rockchip_usb_phy *phy_array;
-> +	struct phy_provider *phy_provider;
-> +	struct regmap *grf;
-> +	char clk_name[16];
-> +	int i;
-> +
-> +	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
-> +	if (IS_ERR(grf)) {
-> +		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
-> +		return PTR_ERR(grf);
-> +	}
-> +
-> +	phy_array = devm_kzalloc(dev, RK3288_NUM_PHYS * sizeof(*rk_phy),
-> +				 GFP_KERNEL);
-> +	if (!phy_array)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < RK3288_NUM_PHYS; i++) {
-> +		rk_phy = &phy_array[i];
-> +
-> +		rk_phy->reg_base = grf;
-> +
-> +		rk_phy->reg_offset = ROCKCHIP_RK3288_UOC(i);
-> +
-> +		snprintf(clk_name, sizeof(clk_name), "usbphy%d", i);
-> +		rk_phy->clk = devm_clk_get(dev, clk_name);
-> +		if (IS_ERR(rk_phy->clk)) {
-> +			dev_warn(dev, "failed to get clock %s\n", clk_name);
-> +			rk_phy->clk = NULL;
-> +		}
-> +
-> +		rk_phy->phy = devm_phy_create(dev, NULL, &ops, NULL);
-> +		if (IS_ERR(rk_phy->phy)) {
-> +			dev_err(dev, "failed to create PHY %d\n", i);
-> +			return PTR_ERR(rk_phy->phy);
-> +		}
-> +		phy_set_drvdata(rk_phy->phy, rk_phy);
-> +	}
-> +
-> +	platform_set_drvdata(pdev, phy_array);
-> +
-> +	phy_provider = devm_of_phy_provider_register(dev,
-> +						     rockchip_usb_phy_xlate);
-> +	return PTR_ERR_OR_ZERO(phy_provider);
-> +}
-> +
-> +static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
-> +	{ .compatible = "rockchip,rk3288-usb-phy" },
-> +	{}
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, rockchip_usb_phy_dt_ids);
-> +
-> +static struct platform_driver rockchip_usb_driver = {
-Maybe use rockchip_usb_phy_driver is better?
-> +	.probe		= rockchip_usb_phy_probe,
-> +	.driver		= {
-> +		.name	= "rockchip-usb-phy",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = rockchip_usb_phy_dt_ids,
-> +	},
-> +};
-> +
-> +module_platform_driver(rockchip_usb_driver);
-> +
-> +MODULE_AUTHOR("Roy Li <lyz@rock-chips.com>");
-> +MODULE_DESCRIPTION("Rockchip USB 2.0 PHY driver");
-> +MODULE_LICENSE("GPL v2");
+> 
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+> 
+> Please let me know if it is OK to take this one into linux-pm.
 
+Please take it through your linux-pm tree:
 
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
