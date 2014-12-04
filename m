@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaLDHXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:23:42 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:57269 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaLDHXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:23:41 -0500
-Date: Thu, 4 Dec 2014 02:23:37 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] optimize ktime_divns for constant divisors
-In-Reply-To: <3913269.qTFsa05Ysv@wuerfel>
-Message-ID: <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr>
-References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <3913269.qTFsa05Ysv@wuerfel>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753087AbaLDHYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:24:37 -0500
+Received: from mga03.intel.com ([134.134.136.65]:9719 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045AbaLDHYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 02:24:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="493402162"
+Date: Thu, 4 Dec 2014 15:24:22 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Andrea Mazzoleni <amadvance@gmail.com>
+Cc: kbuild-all@01.org, NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH md] lib: raid: raid_cauchy_init() can be static
+Message-ID: <20141204072422.GA4898@snb.sh.intel.com>
+References: <201412041540.JqqRoMLc%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201412041540.JqqRoMLc%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Arnd Bergmann wrote:
+lib/raid/module.c:417:12: sparse: symbol 'raid_cauchy_init' was not declared. Should it be static?
+lib/raid/raid.c:156:9: sparse: symbol 'raid_zero_block' was not declared. Should it be static?
 
-> On Wednesday 03 December 2014 14:43:06 Nicolas Pitre wrote:
-> > At least on ARM, do_div() is optimized to turn constant divisors into
-> > an inline multiplication by the reciprocal value at compile time. 
-> > However this optimization is missed entirely whenever ktime_divns() is
-> > used and the slow out-of-line division code is used all the time.
-> > 
-> > Let ktime_divns() use do_div() inline whenever the divisor is constant
-> > and small enough.  This will make things like ktime_to_us() and 
-> > ktime_to_ms() much faster.
-> > 
-> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> 
-> Very cool. I've been thinking about doing something similar for the
-> general case but couldn't get the math to work.
-> 
-> Can you think of an architecture-independent way to ktime_to_sec,
-> ktime_to_ms, and ktime_to_us efficiently based on what you did for
-> the ARM do_div implementation?
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ module.c |    2 +-
+ raid.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Sure.  gcc generates rather shitty code on ARM compared to the output 
-from my do_div() implementation. But here it is:
-
-u64 ktime_to_us(ktime_t kt)
-{
-	u64 ns = ktime_to_ns(kt);
-	u32 x_lo, x_hi, y_lo, y_hi;
-	u64 res, carry;
-
-	x_hi = ns >> 32;
-	x_lo = ns;
-	y_hi = 0x83126e97;
-	y_lo = 0x8d4fdf3b;
-
-	res = (u64)x_lo * y_lo;
-	carry = (u64)(u32)res + y_lo;
-	res = (res >> 32) + (carry >> 32);
-
-	res += (u64)x_lo * y_hi;
-	carry = (u64)(u32)res + (u64)x_hi * y_lo;
-	res = (res >> 32) + (carry >> 32);
-
-	res += (u64)x_hi * y_hi;
-	return res >> 9;
-}
-
-For ktime_to_ms() the constants would be as follows:
-
-	y_hi = 0x8637bd05;
-	y_lo = 0xaf6c69b5;
-	final shift = 19
-
-For ktime_to_sec() that would be:
-
-	y_hi = 0x89705f41;
-	y_lo = 0x36b4a597;
-	final shift = 29
-
-
-Nicolas
+diff --git a/lib/raid/module.c b/lib/raid/module.c
+index 8d45ab4..37962b0 100644
+--- a/lib/raid/module.c
++++ b/lib/raid/module.c
+@@ -414,7 +414,7 @@ int raid_speedtest(int displacement)
+ #ifdef __KERNEL__ /* to build the user mode test */
+ static int speedtest;
+ 
+-int __init raid_cauchy_init(void)
++static int __init raid_cauchy_init(void)
+ {
+ 	int ret;
+ 
+diff --git a/lib/raid/raid.c b/lib/raid/raid.c
+index e1b1660..c662f97 100644
+--- a/lib/raid/raid.c
++++ b/lib/raid/raid.c
+@@ -153,7 +153,7 @@
+ /**
+  * Buffer filled with 0 used in recovering.
+  */
+-uint8_t raid_zero_block[PAGE_SIZE] __aligned(256);
++static uint8_t raid_zero_block[PAGE_SIZE] __aligned(256);
+ 
+ #ifdef RAID_USE_XOR_BLOCKS
+ /*
