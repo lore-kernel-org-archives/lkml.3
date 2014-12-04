@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787AbaLDVJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:09:09 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55656 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736AbaLDVJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:09:06 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+CKWXYe5+/jqVsOSCPmCpz
-Date: Thu, 4 Dec 2014 13:06:44 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/4] ARM: OMAP2+: Make sure pandora_wl1251_init_card()
- applies to SDIO only
-Message-ID: <20141204210644.GJ2817@atomide.com>
-References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
- <1417563767-32181-2-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417563767-32181-2-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754814AbaLDVLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:11:07 -0500
+Received: from mga03.intel.com ([134.134.136.65]:14833 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753165AbaLDVLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 16:11:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,518,1413270000"; 
+   d="scan'208";a="618812076"
+From: Ashutosh Dixit <ashutosh.dixit@intel.com>
+To: Jonathan Corbet <corbet@lwn.net>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Streetman <ddstreet@ieee.org>, Jennings <sjennings@variantweb.net>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        Siva Yerramreddy <yshivakrishna@gmail.com>
+Subject: [PATCH linux-next] Documentation: Build mic/mpssd only for x86_64
+Date: Thu,  4 Dec 2014 13:27:29 -0800
+Message-Id: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Doug Anderson <dianders@chromium.org> [141202 15:45]:
-> In preparation for having init_card() called for all card types (not
-> just SDIO), change pandora_wl1251_init_card() so it checks whether the
-> card type is SDIO.
+mic/mpssd along with MIC drivers are currently only usable on
+x86_64. So build mic/mpssd only for x86_64 to avoid build breaks on
+big-endian systems.
 
-Seems OK to me and should not conflict with linux-omap patches:
+Reported-by: Daniel Borkmann <dborkman@redhat.com>
+Reported-by: Dan Streetman <ddstreet@gmail.com>
+Suggested-by: Peter Foley <pefoley2@pefoley.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+---
+ Documentation/mic/mpssd/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+diff --git a/Documentation/mic/mpssd/Makefile b/Documentation/mic/mpssd/Makefile
+index 0f31568..f47fe6b 100644
+--- a/Documentation/mic/mpssd/Makefile
++++ b/Documentation/mic/mpssd/Makefile
+@@ -1,5 +1,5 @@
+ # List of programs to build
+-hostprogs-y := mpssd
++hostprogs-$(CONFIG_X86_64) := mpssd
+ 
+ mpssd-objs := mpssd.o sysfs.o
+ 
+-- 
+2.0.0.rc3.2.g998f840
 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v5:
-> - Split fixup to pandora_wl1251_init_card() into its own patch.
-> 
-> Changes in v3: None
-> Changes in v2: None
-> 
->  arch/arm/mach-omap2/board-omap3pandora.c | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-> index 7f17087..969e100 100644
-> --- a/arch/arm/mach-omap2/board-omap3pandora.c
-> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
-> @@ -254,12 +254,14 @@ static void pandora_wl1251_init_card(struct mmc_card *card)
->  	 * We have TI wl1251 attached to MMC3. Pass this information to
->  	 * SDIO core because it can't be probed by normal methods.
->  	 */
-> -	card->quirks |= MMC_QUIRK_NONSTD_SDIO;
-> -	card->cccr.wide_bus = 1;
-> -	card->cis.vendor = 0x104c;
-> -	card->cis.device = 0x9066;
-> -	card->cis.blksize = 512;
-> -	card->cis.max_dtr = 20000000;
-> +	if (card->type == MMC_TYPE_SDIO || card->type == MMC_TYPE_SD_COMBO) {
-> +		card->quirks |= MMC_QUIRK_NONSTD_SDIO;
-> +		card->cccr.wide_bus = 1;
-> +		card->cis.vendor = 0x104c;
-> +		card->cis.device = 0x9066;
-> +		card->cis.blksize = 512;
-> +		card->cis.max_dtr = 20000000;
-> +	}
->  }
->  
->  static struct omap2_hsmmc_info omap3pandora_mmc[] = {
-> -- 
-> 2.2.0.rc0.207.ga3a616c
-> 
