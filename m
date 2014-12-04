@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaLDBDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:03:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56413 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaLDBDN (ORCPT
+	id S1751905AbaLDBFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:05:47 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54826 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLDBFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:03:13 -0500
-Date: Thu, 4 Dec 2014 02:02:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-15?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CA+55aFyaRByi2NLb7YZ_jHnHc6VTb-Ht748ZVVfa-XC7sdqL-g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412040120460.16275@nanos>
-References: <20141203184111.GA32005@redhat.com> <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com> <20141203190045.GB32005@redhat.com> <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com> <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
- <20141203200906.GA3118@redhat.com> <CA+55aFxLmBjTOdGu3TFzTJ-ym7TVLDBt79BKqU-vZbX4CvSGog@mail.gmail.com> <alpine.DEB.2.11.1412032141040.16275@nanos> <CA+55aFw8L06BxpsVnbdiNaU2WSFo=tafND25uV_SHUig=CC1AA@mail.gmail.com> <alpine.DEB.2.11.1412032249050.16275@nanos>
- <20141203232115.GA13266@redhat.com> <alpine.DEB.2.11.1412040043170.16275@nanos> <CA+55aFyaRByi2NLb7YZ_jHnHc6VTb-Ht748ZVVfa-XC7sdqL-g@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 3 Dec 2014 20:05:45 -0500
+Message-ID: <547FB368.8020003@codeaurora.org>
+Date: Wed, 03 Dec 2014 17:05:44 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Mike Turquette <mturquette@linaro.org>
+CC: Rajendra Nayak <rnayak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kenneth Westfield <kwestfie@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 6/8] clk: qcom: Add IPQ806X LPASS clock controller
+ (LCC) driver
+References: <1416965735-10583-1-git-send-email-sboyd@codeaurora.org> <1416965735-10583-7-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1416965735-10583-7-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Linus Torvalds wrote:
-> On Wed, Dec 3, 2014 at 3:49 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > Bah. Would have been too simple ....
-> 
-> I do think you tend to trust the hpet too much.
-> 
-> Yes, we've had issues with people doing bad things to the tsc, but on
-> the whole I really would tend to trust the internal CPU counter a
-> _lot_ more than the external hpet.
-> 
-> So I think it's equally (if not more) likely that switching from tsc
-> to hpet causes trouble, because I'd trust the tsc more than the hpet.
+On 11/25/2014 05:35 PM, Stephen Boyd wrote:
+> +
+> +static struct clk_regmap_div mi2s_div_clk = {
+> +	.reg = 0x48,
+> +	.shift = 10,
+> +	.width = 4,
+> +	.clkr = {
+> +		.hw.init = &(struct clk_init_data){
+> +			.name = "mi2s_div_clk",
+> +			.parent_names = lcc_mi2s_parents,
+> +			.num_parents = 1,
+> +			.ops = &clk_regmap_div_ops,
+> +		},
+> +	},
+> +};
 
-Given my experience I trust neither of them too much which makes it
-admittedly weird to assign one as the supervisor of the other.
+Oops this is wrong. Let's fold in this patch.
 
-But yes, on newer machines the TSC tends to be halfways reliable when
-you are not exposed to the never ending supply of BIOS bugs.
+diff --git a/drivers/clk/qcom/lcc-ipq806x.c b/drivers/clk/qcom/lcc-ipq806x.c
+index 80a1ecf2fe69..121ffde25dc3 100644
+--- a/drivers/clk/qcom/lcc-ipq806x.c
++++ b/drivers/clk/qcom/lcc-ipq806x.c
+@@ -188,7 +188,7 @@ static struct clk_branch mi2s_bit_div_clk = {
+ 		.enable_mask = BIT(15),
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "mi2s_bit_div_clk",
+-			.parent_names = lcc_mi2s_parents,
++			.parent_names = (const char *[]){ "mi2s_div_clk" },
+ 			.num_parents = 1,
+ 			.ops = &clk_branch_ops,
+ 			.flags = CLK_SET_RATE_PARENT,
 
-Though, that still does not explain the softlock watchdog issue as
-that is completely independent of HPET.
 
-But in the case that the clocksource switches to HPET it is not
-completely independent because the hrtimer event programming depends
-on it. But that would require the following scenario:
-
- hrtimer_start(timer) /* timer is first to expire timer */
-     clockevents_program_event(timer->expires)
-       delta = expires - ktime_get();
-       evtdev->set_next_event(delta);
-
- So if ktime_get() returns an insane value in the past then delta can
- become large and of course nothing is going to reprogramm the clock
- event device unless there is a timer started which is earlier than
- the one which programmed the large delta.
-
- But ktime_get() cannot return a time which is before the last update
- of the timekeeper. It might return something in the future, but that
- would expire the timer earlier not later.
-
-So there is something else here. If the programmed next event does not
-fire _AND_ there is no earlier timer queued, then nothing which
-depends on queued timers (hrtimer/timerlist) is going to be
-scheduled. In the case of highres timers or nohz enabled not even the
-scheduler tick on that cpu would kick in. We've seen that before and
-it causes interesting failures ...
-
-Now that machine has tsc_deadline_timer. I haven't seen bug reports
-for that one yet, but it might be worthwhile to disable that for a
-test.
-
-But then that does not explain the post 3.16 issue at all.
-
-More questions than answers, sigh.
-
-> DaveJ, do this:
-> 
-> > Could you please run Ingos time-warp test on that machine for a while?
-> 
-> but perhaps also boot with "tsc=reliable", which _should_ get rid of
-> that CLOCK_SOURCE_MUST_VERIFY, and the clocksource watchdog should do
-> nothing.
-> 
-> Thomas? Am I misreading that?
-
-No, that's what it is supposed to do and I actually know that it works.
-
-Now we could also do it the other way round and boot with
-"clocksource=hpet", which should show potential HPET wreckage right
-away when exposed to Ingos time warp test.
-
-Thanks,
-
-	tglx
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
