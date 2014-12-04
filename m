@@ -1,100 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbaLDO6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:58:15 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:10409 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932285AbaLDO6O (ORCPT
+	id S932448AbaLDO7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:59:18 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43812 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932173AbaLDO7P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:58:14 -0500
-Date: Thu, 4 Dec 2014 09:57:29 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <1417705049.21214.3@mail.thefacebook.com>
-In-Reply-To: <CA+55aFz-QhQOQuFPKbxBDAOjJ+fR02m3-unA4iD9kLwhWS38cA@mail.gmail.com>
-References: <20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141203190045.GB32005@redhat.com>
-	<CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
-	<CANcMJZA1NXUMLEveA2k5njFnWc1pCSwSeAOQH7VQCOR-QtiR8g@mail.gmail.com>
-	<alpine.DEB.2.11.1412032137210.16275@nanos>
-	<20141204031553.GA20193@ret.masoncoding.com>
-	<CA+55aFz-QhQOQuFPKbxBDAOjJ+fR02m3-unA4iD9kLwhWS38cA@mail.gmail.com>
-X-Mailer: geary/0.8.2
+	Thu, 4 Dec 2014 09:59:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-04_06:2014-12-04,2014-12-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=42.9673870319736
- compositescore=0.182402046397986 urlsuspect_oldscore=0.182402046397986
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.182402046397986 spamscore=0
- recipient_to_sender_domain_totalscore=29 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412040140
-X-FB-Internal: deliver
+In-Reply-To: <C9DBE2F0-A725-4D05-BEC6-F083F3F83B9F@antoniou-consulting.com>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+ <20141202161227.GH30256@lukather> <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
+ <0EF6A712-5FF1-41BE-B8A9-21ABE7FE37F9@antoniou-consulting.com>
+ <CAAVeFu+kfPi8CUR-YergQv9P1wMBzOik_Q1KBKMTVY1Gg_FBzg@mail.gmail.com> <C9DBE2F0-A725-4D05-BEC6-F083F3F83B9F@antoniou-consulting.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 4 Dec 2014 23:58:54 +0900
+Message-ID: <CAAVeFuKx1uWVh-TQeFKN4uS9TyzQH4BbQ2q1yM4uJsnQdfdzPQ@mail.gmail.com>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Benoit Parrot <bparrot@ti.com>, Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 4, 2014 at 11:47 PM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> Hi Alexandre,
+>
+>> On Dec 4, 2014, at 16:41 , Alexandre Courbot <gnurou@gmail.com> wrote:
+>>
+>> On Thu, Dec 4, 2014 at 11:27 PM, Pantelis Antoniou
+>> <panto@antoniou-consulting.com> wrote:
+>>> Hi Alexandre,
+>>>
+>>> I tried to stay away while things are being fleshed out but…
+>>>
+>>>> On Dec 4, 2014, at 16:15 , Alexandre Courbot <gnurou@gmail.com> wrote:
+>>>>
+>>>> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
+>>>> <maxime.ripard@free-electrons.com> wrote:
+>>>>> On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
+>>>>>> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>>>>>>> On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+>>>>>>> <maxime.ripard@free-electrons.com> wrote:
+>>>>>>
+>>>>>>>> The only thing I'd like to have would be that the request here would
+>>>>>>>> be non-exclusive, so that a later driver would still be allowed later
+>>>>>>>> on to request that GPIO later on and manage it itself (ideally using
+>>>>>>>> the usual gpiod_request function).
+>>>>>>>
+>>>>>>> Actually we have a plan (and I have some code too) to allow multiple
+>>>>>>> consumers per GPIO. Although like Benoit I wonder why you would want
+>>>>>>> to hog a GPIO and then request it properly later. Also, that probably
+>>>>>>> means we should abandon the hog since it actively drives the line and
+>>>>>>> would interfere with the late requested. How to do that correctly is
+>>>>>>> not really clear to me.
+>>>>>>
+>>>>>> I don't get the usecase. A hogged GPIO is per definition hogged.
+>>>>>> This sounds more like "initial settings" or something, which is another
+>>>>>> usecase altogether.
+>>>>>
+>>>>> We do have one board where we have a pin (let's say GPIO14 of the bank
+>>>>> A) that enables a regulator that will provide VCC the bank B.
+>>>>>
+>>>>> Now, both banks are handled by the same driver, but in order to have a
+>>>>> working output on the bank B, we do need to set GPIO14 as soon as
+>>>>> we're probed.
+>>>>>
+>>>>> Just relying on the usual deferred probing introduces a circular
+>>>>> dependency between the gpio-regulator that needs to grab its GPIO from
+>>>>> a driver not there yet, and the gpio driver that needs to enable its
+>>>>> gpio-regulator.
+>>>>
+>>>> I don't get it. According to what you said, the following order should
+>>>> go through IIUC:
+>>>>
+>>>> 1) bank A is probed, gpio 14 is available
+>>>> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
+>>>> 3) bank B is probed, grabs its regulator and turn it on, probes.
+>>>>
+>>>> What am I missing?
+>>>>
+>>>>>
+>>>>> GPIO hogging needs to be the ideal solution for that, since we can
+>>>>> just enforce the GPIO14 value as the driver is probed, which provides
+>>>>> the guarantee that any driver using the bank B will actually drive the
+>>>>> GPIO it might use.
+>>>>
+>>>> At this point I start wondering if such initial setup should not be
+>>>> the job of the bootloader? GPIO hogging ought to be simple and
+>>>> definitive, adding the possibility to have it just as an initial value
+>>>> would considerably complexify it. E.g. when is the gpio chip driver
+>>>> supposed to release the hogged descriptor in such a case?
+>>>>
+>>>
+>>> Do not count on the bootloader setting up anything. The trend is
+>>> for the bootloader to setup the minimal environment to load your kernel
+>>> and jump to it.
+>>>
+>>> http://www.denx.de/wiki/pub/U-Boot/MiniSummitELCE2013/2013-ELCE-U-Boot-Falcon-Boot.pdf
+>>
+>> Just wondering. :)
+>>
+>> But yeah, there are some use-cases (such as this one or
+>> Linux-as-a-bootloader) for which this would not play nicely.
+>>
+>>>
+>>>
+>>>> Note that if the multiple GPIO consumer feature we are planning goes
+>>>> through, you should be able to use both hogging *and* a regulator on
+>>>> the same GPIO and achieve what you want. The expectation of multiple
+>>>> consumers is that the board designers know what they are doing, and
+>>>> this case would certainly fit (chip hogs the line and doesn't touch
+>>>> the value after that, letting the regulator control it without any
+>>>> conflict afterwards), although it would of course be better to solve
+>>>> the issue through regular probing...
+>>>
+>>>
+>>> That’s why I was advocating a simple probing driver for all this.
+>>> Figure out a way for this driver to be probed first would be an easier
+>>> solution that what’s going on here.
+>>
+>> Do you mean, a driver whose sole job is to probe other drivers in the
+>> right order? :/
+>
+> $DEITY no :)
+>
+> I mean instead of having the gpio hog in the gpio adapter driver, have
+> a gpio-hog driver, that’s using an undisclosed method to make sure that
+> it’s the first one to be probed afterwards.
 
+IIUC that would not solve this particular issue - here the GPIO
+controller is both a provider and (indirect) consumer of a GPIO for
+itself. If the hog is in a separate node, if would have to be probed
+from inside the probe() function of the GPIO controller to do the job,
+which would be the same effect as having the hogs directly under the
+controller node, only with more hassle.
 
-On Thu, Dec 4, 2014 at 12:49 AM, Linus Torvalds 
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Dec 3, 2014 at 7:15 PM, Chris Mason <clm@fb.com> wrote:
->> 
->>  One guess is that trinity is generating a huge number of tlb
->>  invalidations over sparse and horrible ranges.  Perhaps the old 
->> code was
->>  falling back to full tlb flushes before Dave Hansen's string of 
->> fixes?
-> 
-> Hmm. I agree that we've had some of the backtraces look like TLB
-> flushing might be involved. Not all, though. And I'm not seeing where
-> a loop over up to 33 pages should matter over doing a full TLB flush.
-> 
-> What *might* matter is if we somehow get that number wrong, and the 
-> loops like
-> 
->                         addr = f->flush_start;
->                         while (addr < f->flush_end) {
->                                 __flush_tlb_single(addr);
->                                 addr += PAGE_SIZE;
->                         }
-> 
-> ends up looping a *lot* due to some bug, and then the IPI itself would
-> take so long that the watchdog could trigger.
-> 
-> But I do not see how that could actually happen. As far as I can tell,
-> either the number of pages is limited to less than 33, or we have that
->  TLB_FLUSH_ALL case.
-> 
-> Do  you see something I don't?
-
-Sadly not.  Looking harder, I'm pretty sure all of the flushes coming 
-through from this path are single page flushes anyway.  So the most 
-likely explanation is that we're waiting on the remote CPU, who is 
-stuck somewhere secret.
-
--chris
-
-
-
+Again, IIUC. >_<
