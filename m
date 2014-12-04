@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676AbaLDQuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:50:04 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:47973 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaLDQuC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:50:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <201412040148.31033@pali>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201411242319.27481@pali> <CAL_JsqJuSa-zHTPynH3vAEOK1D2xYRYtVjZJ5zDR0UHAyGYXuA@mail.gmail.com>
- <201412040148.31033@pali>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 4 Dec 2014 10:49:40 -0600
-Message-ID: <CAL_JsqKYpDD1Rq2n92FcspPWGJeQvtA4eRYPDK=xYPQN0=uQTg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932745AbaLDQu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:50:26 -0500
+Received: from mga03.intel.com ([134.134.136.65]:17037 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932342AbaLDQuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 11:50:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="asc'?scan'208";a="493660692"
+Message-ID: <1417711803.2404.1.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] e1000e / igb / PM: Eliminate CONFIG_PM_RUNTIME
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        Linux NICS <linux.nics@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Thu, 04 Dec 2014 08:50:03 -0800
+In-Reply-To: <2389302.4ImTL0YnUc@vostro.rjw.lan>
+References: <2389302.4ImTL0YnUc@vostro.rjw.lan>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-N5sAahnPKnYjkWl4ycK9"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 6:48 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Thursday 04 December 2014 01:33:08 Rob Herring wrote:
->> On Mon, Nov 24, 2014 at 4:19 PM, Pali Rohár
-> <pali.rohar@gmail.com> wrote:
->> > On Wednesday 18 June 2014 22:46:19 Rob Herring wrote:
->> >> On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár
->> >
->> > <pali.rohar@gmail.com> wrote:
->> >> > On Wednesday 18 June 2014 21:07:35 Rob Herring wrote:
->> >> >> On Wed, Jun 18, 2014 at 11:54 AM, Pali Rohár
->> >> >
->> >> > <pali.rohar@gmail.com> wrote:
->> >> >> > Machine name from board description is some generic
->> >> >> > name on DT kernel. DT provides machine name property
->> >> >> > which is specific for board, so use it instead
->> >> >> > generic one when possible.
->>
->> [...]
->>
->> >> > Basically in DT kernel is missing Hardware, Revision and
->> >> > probably also Serial key. (Now I used only qemu for
->> >> > testing which set serial key to 0). All these
->> >> > informations is used by userspace applications which
->> >> > determinate how to behave.
->> >>
->> >> It is somewhat fragile to expect the name in the DT to
->> >> match the old name from the kernel. As your patch to n900
->> >> dts shows, we'd probably have to update every dts file to
->> >> make them match. While I think we should work to remove
->> >> this string from the kernel, userspace depending on the DT
->> >> model string is a bad idea. For example, if you had some
->> >> platform with multiple OEMs just rebranding the same base
->> >> design, they may all want to put their own model string
->> >> into each product. The true h/w id is the compatible
->> >> string.
->> >>
->> >> Serial number is easy. There is already a standard although
->> >> not widely used property for it with "/serial-number". You
->> >> just need to wire it up to cpuinfo.
->> >
->> > There is no "/serial-number" property in kernel:
->> >
->> > $ ls -l -a /sys/bus/soc/devices/soc0/
->> > drwxr-xr-x    3 0        0                0 Jan  1 00:00 .
->> > drwxr-xr-x   18 0        0                0 Jan  1 00:00 ..
->> > -r--r--r--    1 0        0             4096 Jan  1 00:00
->> > family -r--r--r--    1 0        0             4096 Jan  1
->> > 00:00 machine drwxr-xr-x    2 0        0                0
->> > Jan  1 00:00 power -r--r--r--    1 0        0
->> > 4096 Jan  1 00:00 revision lrwxrwxrwx    1 0        0
->> >          0 Jan  1 00:00 subsystem -> ../../bus/soc
->> > -r--r--r--    1 0        0             4096 Jan  1 00:00
->> > type -rw-r--r--    1 0        0             4096 Jan  1
->> > 00:00 uevent
->>
->> Wrong place. If you put /serial-number in your DT, then it
->> will be in /proc/device-tree/serial-number.
->>
->> If you want to wire that up to /proc/cpuinfo, I would be fine
->> with that.
->>
->> Rob
->
-> I cannot hardcode it into DT, because it is set by bootloader.
-> And bootloader tell it to kernel via ATAGs structure. Bootloader
-> is closed and proprietary and cannot be replaced (there is no
-> documentation for hw init).
 
-Either the bootloader can put the serial number into the DTB instead
-of ATAGs or the kernel decompressor can copy it from ATAGs to DTB like
-is done already for other ATAGs. I presume you cannot update the
-bootloader and will need the latter.
+--=-N5sAahnPKnYjkWl4ycK9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Rob
+On Thu, 2014-12-04 at 02:15 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>=20
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME within #ifdef blocks depending on
+> CONFIG_PM may be dropped now.
+>=20
+> Do that in the e1000e and igb network drivers.
+>=20
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+
+> ---
+>=20
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME
+> if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via
+> the
+> linux-pm tree).
+>=20
+> Please let me know if it is OK to take this one into linux-pm.
+
+Yes, that is fine.
+
+>=20
+> ---
+>  drivers/net/ethernet/intel/e1000e/netdev.c |    2 --
+>  drivers/net/ethernet/intel/igb/igb_main.c  |    6 +-----
+>  2 files changed, 1 insertion(+), 7 deletions(-)
+
+
+
+--=-N5sAahnPKnYjkWl4ycK9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUgJC7AAoJEOVv75VaS+3OhagQAKC2oVQr6pfJKePHVYr1+0VM
+gVtoyKJ7xfG6/r3kWBbYOwqnMIHmwZNYAIsECLiWJVBRTyisCqIe9jI9PFnZV0Hh
+zvVQgtiPkN9IOd1EiF1XzO0JUXLXxZquTxZxLPlzdHQNDxmrJX4HhEIAyT+o5OL2
+qvAguBKU7cS9N7OIGgptOkhj4QPm8b4BaertLgv6tpaYFBqdCfGzO0MEAdJfAPbK
+6NvllmaR0xnufjZhmWSE8k4Ad8cFfkhIaEe+LgjtOcEC1ic962gDMh+LXmOcMy7c
+moKxXCnFXr1z5lQJUwZ9py0aKOtOj/5WalAQM9OfniOkyMLYGt8kuF2m5Wlyun4o
+vni5aTl7JzOQkEC6yN4qFki2jIE6fbCesOcPaBK08J0rjr8XN7WA5WqTNxl8tTFt
++Ldlc0wXAaDXaVuvtSj/oUex/RYdO7aNatvCwPuUH/e/zfAPAHVyBdllq8rdgmH/
+FeTJ4Z4CtyIGQV+M7FVxFcj9nNkJiZDr3b15HTs8WhaYKZtNSVfJxsga7xn0zmc4
+4ncOZgRF+9PeGdMvnzGU0Kgix//j9gxsUXXnTm/qktj0gwaiCH6JCdQlyETlywXj
+hmFlvzF28FEwPlliCfnz+C9Il44HYFfPQAiAwHeK/DECvN/EHILGT0tocM6Y/PkD
+rDoiBOB4uj6i0SLMf7jd
+=sAzl
+-----END PGP SIGNATURE-----
+
+--=-N5sAahnPKnYjkWl4ycK9--
+
