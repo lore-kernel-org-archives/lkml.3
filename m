@@ -1,58 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaLDMkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:40:11 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826AbaLDMkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:40:09 -0500
-Message-ID: <54805626.7030709@nod.at>
-Date: Thu, 04 Dec 2014 13:40:06 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754110AbaLDMkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:40:20 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:24420 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753826AbaLDMkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:40:14 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <gregkh@linuxfoundation.org>, <mark.rutland@arm.com>, <arnd@arndb.de>,
+        <gnomes@lxorguk.ukuu.org.uk>, <broonie@kernel.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <will.deacon@arm.com>, <catalin.marinas@arm.com>, <jslaby@suse.cz>,
+        <jason@lakedaemon.net>, <heiko@sntech.de>, <florian.vaussard@epfl.ch>,
+        <andrew@lunn.ch>, <rrichter@cavium.com>, <hytszk@gmail.com>,
+        <grant.likely@linaro.org>, <orsonzhai@gmail.com>,
+        <geng.ren@spreadtrum.com>, <zhizhou.zhang@spreadtrum.com>,
+        <lanqing.liu@spreadtrum.com>, <zhang.lyra@gmail.com>,
+        <wei.qiao@spreadtrum.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <sprdlinux@freelists.org>,
+        <linux-doc@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-api@vger.kernel.org>, <arm@kernel.org>
+Subject: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+Date: Thu, 4 Dec 2014 19:34:15 +0800
+Message-ID: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <sc9836v4>
+References: <sc9836v4>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/35] UBI: Fix stale pointers in ubi->lookuptbl
-References: <1414586758-9972-1-git-send-email-richard@nod.at> <1414586758-9972-3-git-send-email-richard@nod.at> <54803EBF.9060609@codeaurora.org> <54803FC0.7080305@nod.at> <548055A0.3020703@codeaurora.org>
-In-Reply-To: <548055A0.3020703@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.89]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com sB4BZ9hN009131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.12.2014 um 13:37 schrieb Tanya Brokhman:
-> On 12/4/2014 1:04 PM, Richard Weinberger wrote:
->> Tanya,
->>
->> Am 04.12.2014 um 12:00 schrieb Tanya Brokhman:
->>> Hi Richard
->>>
->>> On 10/29/2014 2:45 PM, Richard Weinberger wrote:
->>>> In some error paths the WL sub-system gives up on a PEB
->>>> and frees it's ubi_wl_entry struct but does not set
->>>> the entry in ubi->lookuptbl to NULL.
->>>> Fastmap can stumble over such a stale pointer as it uses
->>>> ubi->lookuptbl to find all PEBs.
->>>>
->>>> Fix this by setting the pointers to free'd ubi_wl_entry to NULL.
->>>
->>> There are 2 more places:
->>> tree_destroy() and protection_queue_destroy() where ubi_wl_entry is released. Both functions used on power down so all should be good as is, just wanted to make sure you didn't add
->>> ubi->lookuptbl[e2->pnum] = NULL there on purpose.
->>
->> I fear you're looking at the old patch series.
->> Please have a look at:
->> "[PATCH 3/6] UBI: Fix stale pointers in ubi->lookuptbl" sent on 30.11.2014.
->>
->> Thanks,
->> //richard
->>
-> 
-> oh, you're right. Started from the oldest. now I see you released v2. Sorry. So I should be looking at "Fastmap update v2 (pile 1-7)", right?
+Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
 
-Correct. :)
+Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+standards based on ARMv8 multiple core architecture.Now we have only one
+SoC(SC9836) based on this Platform in developing.
 
-Thanks,
-//richard
+This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+of SC9836-UART.
+
+This patchset also has patches which address "sprd" prefix and DT compatible
+strings for nodes which appear un-documented.
+
+This version code was tesed both on Fast Mode and sc9836-fpga board.
+We use the latest boot-wrapper-aarch64 as the bootloader.
+
+Changes from v3:
+* Addressed review comments:
+	- Added the description of clock property for sc9836-uart
+	- Revised the size of GICC to be 8KiB
+	- Added another compatible string for psci-0.1
+	- Removed the clock-frequency property of timer in DT
+	- Removed ARCH_SHARKL64, just left ARCH_SPRD only
+	- sprd_serial.c: Removed .owner of platform_driver.driver
+	- sprd_serial.c: Removed all usages of unlikely
+	- sprd_serial.c: Used the .port member of sprd_port instead of the cast
+	- sprd_serial.c: Used dynamic allocation for major/minor device id
+	- sprd_serial.c: Added a timeout and a cpu_relax for clearing rx/tx fifo
+	- sprd_serial.c: clear CMSPAR in termios->c_cflag
+	- sprd_serial.c: Set the resulting baud back into the termios
+	- sprd_serial.c: Implemented a shared interrupt handler
+
+Changes from v2:
+* Addressed review comments:
+	- Added a specific compitible string 'sc9836-uart' for the serial
+	- Added a full serial driver
+	- Added the property 'clock-frequency' for timer node in dtsi.
+	- Replaceed the old macro prefix 'UART_' with 'SPRD_' in the 
+	  Spreadtrum serial driver code.
+* Revised the name of SoC and board from 'sharkl3' to 'sc9836'
+* Used dual-license for DTS files
+* Added a menuconfig 'ARCH_SPRD' in arch/arm64/Kconfig
+
+Changes from v1:
+* Addressed review comments:
+        - Added "sprd" prefix to vendor-prefixes.txt
+        - Created serial/sprd-serial.txt and remove the properties for serial-sprd
+          from of-serial.txt to it.
+        - Renamed of-serial.txt to 8250.txt according to Arnd's review comments
+        - Splited and revised .dts for Sharkl64 Platform
+        - Changed to PSCI method for cpu power management
+        - Revised Kconfig Makefile to match the alphabetical ordering
+        - Renamed serial-sprd-earlycon.c to serial-sprd.c
+
+Chunyan Zhang (3):
+  Documentation: DT: Renamed of-serial.txt to 8250.txt
+  Documentation: DT: Add bindings for Spreadtrum SoC Platform
+  tty/serial: Add Spreadtrum sc9836-uart driver support
+
+Zhizhou Zhang (2):
+  arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
+  arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and
+    defconfig
+
+ Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+ .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
+ .../devicetree/bindings/serial/sprd-uart.txt       |    9 +
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm64/Kconfig                                 |    6 +
+ arch/arm64/boot/dts/Makefile                       |    1 +
+ arch/arm64/boot/dts/sprd-sc9836-openphone.dts      |   85 +++
+ arch/arm64/boot/dts/sprd-sc9836.dtsi               |  102 +++
+ arch/arm64/boot/dts/sprd-sharkl64.dtsi             |  105 +++
+ arch/arm64/configs/defconfig                       |    1 +
+ drivers/tty/serial/Kconfig                         |   18 +
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/sprd_serial.c                   |  761 ++++++++++++++++++++
+ include/uapi/linux/serial_core.h                   |    3 +
+ 14 files changed, 1104 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
+ create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
+ create mode 100644 arch/arm64/boot/dts/sprd-sc9836-openphone.dts
+ create mode 100644 arch/arm64/boot/dts/sprd-sc9836.dtsi
+ create mode 100644 arch/arm64/boot/dts/sprd-sharkl64.dtsi
+ create mode 100644 drivers/tty/serial/sprd_serial.c
+
+-- 
+1.7.9.5
+
