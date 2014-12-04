@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203AbaLDM2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:28:52 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:47415 "EHLO kirsi1.inet.fi"
+	id S1753943AbaLDMau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:30:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51671 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183AbaLDM2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:28:51 -0500
-Date: Thu, 4 Dec 2014 14:28:13 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user space
-Message-ID: <20141204122813.GA523@node.dhcp.inet.fi>
-References: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
- <20141202113014.GA22683@node.dhcp.inet.fi>
- <35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
+	id S1753420AbaLDMas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:30:48 -0500
+Date: Thu, 4 Dec 2014 13:30:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: eparis@redhat.com, jack@suse.cz, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] fanotify: dont set FAN_ONDIR implicitly on a
+ marks ignored mask
+Message-ID: <20141204123046.GB8569@quack.suse.cz>
+References: <1417668184-14544-1-git-send-email-LinoSanfilippo@gmx.de>
+ <1417668184-14544-3-git-send-email-LinoSanfilippo@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <1417668184-14544-3-git-send-email-LinoSanfilippo@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 02:10:53PM +0800, Wang, Yalin wrote:
-> > -----Original Message-----
-> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> > Sent: Tuesday, December 02, 2014 7:30 PM
-> > To: Wang, Yalin
-> > Cc: 'linux-kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
-> > kernel@lists.infradead.org'
-> > Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user
-> > space
-> > 
-> > On Tue, Dec 02, 2014 at 05:27:36PM +0800, Wang, Yalin wrote:
-> > > This patch add/dec zero_page's _mapcount to make sure the mapcount is
-> > > correct for zero_page, so that when read from /proc/kpagecount,
-> > > zero_page's mapcount is also correct, userspace process like procrank
-> > > can calculate PSS correctly.
-> > 
-> > I don't have specific code path to point to, but I would expect zero page
-> > with non-zero mapcount would cause a problem with rmap.
-> > 
-> > How do you test the change?
-> > 
-> I just test it to see the mapcount from /proc/pid/pagemap  and /proc/kpagecount ,
-> It works well,
-
-I took a closer look and your patch is broken in multiple places:
- - on zap_pte_range() you don't decrement mapcount;
- - you don't update rss counters for mm;
- - copy_one_pte() doesn't increase mapcount;
- - ...
-
-Basically, each and every vm_normal_page() call must be audited. As first
-step. And you totally skip huge zero page.
-
-Proper mapcount handling for zero page would require a lot more work and I
-don't think it worth it. Gain is too small.
-
-NAK.
-
-> The problem is that when I see /proc/pid/smaps ,
-> The Rss / Pss don't calculate zero_page map,
-> Because smaps_pte_entry() --> vm_normal_page( ),
-> Will return NULL for zero_page,
+On Thu 04-12-14 05:43:04, Lino Sanfilippo wrote:
+> Currently FAN_ONDIR is always set on a marks ignored mask when the event mask
+> is extended without FAN_MARK_ONDIR being set. This may result in events for
+> directories being ignored unexpectedly for call sequences like
 > 
-> But when userspace process cat /proc/pid/pagemap  ,
-> It will see zero_page mapped,
-> And will treat as Rss ,  
-> This is weird, should we also omit zero_page in /proc/pid/pagemap ?
-> Or add zero_page as Rss in /proc/pid/smaps ? 
+> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
+> fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE, AT_FDCWD, "dir");
 > 
-> I think we should add zero_page into Rss ,
-> Because it is really mapped into userspace address space.
-> And will let userspace memory analysis more accurate .
+> Also FAN_MARK_ONDIR is only honored when adding events to a marks mask, but
+> not for event removal. Fix both issues.
+  Looks good. Changelog is better but please also expand a bit "Fix both
+issues" to something like:
+Fix both issues by treating FAN_ONDIR as any other event flag and require
+FAN_ONDIR to be set on a mark to send events for directories.
 
-It would be easier for userspace to find out pfn of zero page and take it
-into account.
+Also you can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Note: some architectures have multiple zero page due to coloring.
-
+								Honza
+> 
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> ---
+>  fs/notify/fanotify/fanotify.c      |  2 +-
+>  fs/notify/fanotify/fanotify_user.c | 24 ++++++++++++++++--------
+>  2 files changed, 17 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+> index 30d3add..51ceb81 100644
+> --- a/fs/notify/fanotify/fanotify.c
+> +++ b/fs/notify/fanotify/fanotify.c
+> @@ -140,7 +140,7 @@ static bool fanotify_should_send_event(struct fsnotify_mark *inode_mark,
+>  	}
+>  
+>  	if (S_ISDIR(path->dentry->d_inode->i_mode) &&
+> -	    (marks_ignored_mask & FS_ISDIR))
+> +	    !(marks_mask & FS_ISDIR & ~marks_ignored_mask))
+>  		return false;
+>  
+>  	if (event_mask & marks_mask & ~marks_ignored_mask)
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index ddc33fb..683d140 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -491,10 +491,17 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+>  
+>  	spin_lock(&fsn_mark->lock);
+>  	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+> +		__u32 tmask = fsn_mark->mask & ~mask;
+> +		if (flags & FAN_MARK_ONDIR)
+> +			tmask &= ~FAN_ONDIR;
+> +
+>  		oldmask = fsn_mark->mask;
+> -		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask & ~mask));
+> +		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
+>  	} else {
+>  		__u32 tmask = fsn_mark->ignored_mask & ~mask;
+> +		if (flags & FAN_MARK_ONDIR)
+> +			tmask &= ~FAN_ONDIR;
+> +
+>  		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+>  	}
+>  	*destroy = !(fsn_mark->mask | fsn_mark->ignored_mask);
+> @@ -568,20 +575,21 @@ static __u32 fanotify_mark_add_to_mask(struct fsnotify_mark *fsn_mark,
+>  
+>  	spin_lock(&fsn_mark->lock);
+>  	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+> +		__u32 tmask = fsn_mark->mask | mask;
+> +		if (flags & FAN_MARK_ONDIR)
+> +			tmask |= FAN_ONDIR;
+> +
+>  		oldmask = fsn_mark->mask;
+> -		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask | mask));
+> +		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
+>  	} else {
+>  		__u32 tmask = fsn_mark->ignored_mask | mask;
+> +		if (flags & FAN_MARK_ONDIR)
+> +			tmask |= FAN_ONDIR;
+> +
+>  		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+>  		if (flags & FAN_MARK_IGNORED_SURV_MODIFY)
+>  			fsn_mark->flags |= FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY;
+>  	}
+> -
+> -	if (!(flags & FAN_MARK_ONDIR)) {
+> -		__u32 tmask = fsn_mark->ignored_mask | FAN_ONDIR;
+> -		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+> -	}
+> -
+>  	spin_unlock(&fsn_mark->lock);
+>  
+>  	return mask & ~oldmask;
+> -- 
+> 1.9.1
+> 
 -- 
- Kirill A. Shutemov
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
