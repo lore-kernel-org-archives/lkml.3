@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaLDBx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:53:58 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:38198 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569AbaLDBx4 (ORCPT
+	id S1752569AbaLDB4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:56:35 -0500
+Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:25952
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751911AbaLDB4d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:53:56 -0500
+	Wed, 3 Dec 2014 20:56:33 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "alexander.stein@systec-electronic.com" 
+	<alexander.stein@systec-electronic.com>
+Subject: RE: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+Thread-Topic: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+Thread-Index: AQHQDtn5j6GPqUxwWEaud+fx6yvb95x9n9SAgAELugA=
+Date: Thu, 4 Dec 2014 01:56:28 +0000
+Message-ID: <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
+ <4810522.t9QFQYHtHI@wuerfel>
+In-Reply-To: <4810522.t9QFQYHtHI@wuerfel>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.53]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
+x-forefront-prvs: 041517DFAB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(13464003)(24454002)(189002)(199003)(51704005)(54356999)(76176999)(54206007)(54606007)(110136001)(50986999)(62966003)(74316001)(68736005)(66066001)(20776003)(86362001)(64706001)(33656002)(101416001)(15975445006)(107046002)(31966008)(95666004)(77156002)(105586002)(106356001)(99286002)(106116001)(15202345003)(122556002)(40100003)(76576001)(46102003)(92726001)(92566001)(97736003)(4396001)(21056001)(120916001)(87936001)(19580395003)(19580405001)(2656002)(99396003)(422495003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1417657437.2902.27.camel@perches.com>
-References: <1417655529-8640-1-git-send-email-arun267@gmail.com>
-	<20141204012517.GA31563@kroah.com>
-	<CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
-	<20141204013925.GA32401@kroah.com>
-	<1417657437.2902.27.camel@perches.com>
-Date: Wed, 3 Dec 2014 17:53:56 -0800
-Message-ID: <CAJ8d=bc0ZeZ3gwLQnUfbjBV1+Hb0=pWpbnpGT+M6HaNOPGA57Q@mail.gmail.com>
-Subject: Re: [PATCH] Staging: bcm: Fix lines exceeding 80 character limit in
- CmHost.h This is a patch to CmHost.h that fixes Exceeds 80 Character limits
- warning found by checkpatch.pl Signed-off-by: Arun Ayyer <arun267@gmail.com>
-From: arun vijayshankar <arun267@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Greg and Joe!
+Hi Arnd,
 
-I will work against -next
+Thanks for you advice.
 
-Regards,
-Arun.
+Because this is very emergency for customers and have delayed for monthes, and the
+DRM/KMS will have a little long time to be supported. So I'd like to add this first
+and will add DRM/KMS version later.
 
-On Wed, Dec 3, 2014 at 5:43 PM, Joe Perches <joe@perches.com> wrote:
->
-> On Wed, 2014-12-03 at 17:39 -0800, Greg KH wrote:
-> > On Wed, Dec 03, 2014 at 05:31:59PM -0800, arun vijayshankar wrote:
-> > > Hi Greg,
+Thanks very much,
+
+BRs
+Xiubo
+
+
+> -----Original Message-----
+> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
+> owner@vger.kernel.org] On Behalf Of Arnd Bergmann
+> Sent: Wednesday, December 03, 2014 5:52 PM
+> To: linux-arm-kernel@lists.infradead.org
+> Cc: Xiubo Li-B47053; plagnioj@jcrosoft.com; tomi.valkeinen@ti.com; linux-
+> fbdev@vger.kernel.org; linux-kernel@vger.kernel.org; shawn.guo@linaro.org;
+> alexander.stein@systec-electronic.com
+> Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+> 
+> On Wednesday 03 December 2014 17:15:58 Xiubo Li wrote:
+> > Framebuffer driver for the Freescale SoC Display Controller.
 > >
-> > If you turn off HTML email, your message will not get rejected by the
-> > mailing lists :)
 > >
-> > > I completely agree! I thought of keeping the patch summary as the subject, but
-> > > I wasn't sure and ending up entering nothing. Git then used this by default.
-> >
-> > You forgot a blank line after your first line in the git commit message,
-> > which caused it to get all merged together.
-> >
-> > Try fixing that up and resending please.
->
-> No need.  This directory has been deleted.
->
-> Please work against -next (or Greg's staging tree)
->
->
-
-
-
--- 
-Arun.
+> > Change in V2:
+> > - Use the native-mode timing as default.
+> > - Add to_fsl_private().
+> 
+> <standard reply>
+> 
+> We try to not have any new framebuffer drivers. Please consider making
+> this a DRM/KMS driver instead.
+> 
+> </standard reply>
+> 
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
