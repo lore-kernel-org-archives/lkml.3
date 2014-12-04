@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaLDJBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:01:08 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:44578 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752853AbaLDJBG (ORCPT
+	id S1753474AbaLDJBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:01:38 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45734 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaLDJBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:01:06 -0500
-Message-ID: <548022B3.8050105@arm.com>
-Date: Thu, 04 Dec 2014 09:00:35 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 4 Dec 2014 04:01:36 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH 2/5] ASoC: dwc: Don't allow negative use counts
-References: <547F3C9F.8080102@arm.com> <20141203172526.GC7712@sirena.org.uk>
-In-Reply-To: <20141203172526.GC7712@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141204035758.GA6346@verge.net.au>
+References: <3463511.sXIeyHdjYI@vostro.rjw.lan>
+	<20141204035758.GA6346@verge.net.au>
+Date: Thu, 4 Dec 2014 10:01:34 +0100
+X-Google-Sender-Auth: 2I1clTuslSLlUpt9GtOS40UkPDw
+Message-ID: <CAMuHMdVG2ZR4X4pYSAZYP12x+oMfCEd_7ciuHqBjGQqSumNYzQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: sh / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/14 17:25, Mark Brown wrote:
-> On Wed, Dec 03, 2014 at 04:38:55PM +0000, Andrew Jackson wrote:
-> 
->>  	case SNDRV_PCM_TRIGGER_STOP:
->>  	case SNDRV_PCM_TRIGGER_SUSPEND:
->>  	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
->> -		dev->active--;
->> +		if (dev->active > 0)
->> +			dev->active--;
-> 
-> How is this triggering - this sounds like you're papering over some
-> other bug somewhere?
-> 
+On Thu, Dec 4, 2014 at 4:58 AM, Simon Horman <horms@verge.net.au> wrote:
+> On Thu, Dec 04, 2014 at 02:24:22AM +0100, Rafael J. Wysocki wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+>> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+>> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+>> CONFIG_PM.
+>>
+>> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/sh/pm_runtime.c.
+>>
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> ---
+>>
+>> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+>> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+>> linux-pm tree).
+>>
+>> Please let me know if it is OK to take this one into linux-pm.
+>
+> Hi Rafael,
+>
+> That is fine by me if it is fine by Geert.
+>
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-When I looked at the code paths I couldn't convince myself that STOP wouldn't be called more than once.  Then actuve would be negative and the device might not be restartable.  I didn't have a problem per se, it was just that it seemed to be something of a loophole.
+Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-   Andrew
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
