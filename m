@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaLDM7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:59:39 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:59588 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbaLDM7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:59:38 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Wang Long <long.wanglong@huawei.com>, xuwei5@hisilicon.com,
-        yanhaifeng@gmail.com, zhangfei.gao@linaro.org,
-        haojian.zhuang@linaro.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, jason@lakedaemon.net,
-        jh80.chung@samsung.com, khilman@linaro.org, lee.jones@linaro.org,
-        linux@arm.linux.org.uk, mark.rutland@arm.com,
-        maxime.ripard@free-electrons.com, obh+dt@kernel.org, olof@lixom.net,
-        pawel.moll@arm.com, swarren@nvidia.com,
-        thomas.petazzoni@free-electrons.com, huxinwei@huawei.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        peifeiyue@huawei.com
-Subject: Re: [PATCH 0/7] ARM: hisi: enable HiP01 SoC
-Date: Thu, 04 Dec 2014 13:58:52 +0100
-Message-ID: <3601066.g7Jvjk5UFL@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
-References: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:BDoOrbx/BpI7f1h2ioglMkdEEDbGHbmusAS+Z518uZ5hQRVcSTU
- NzH1/A1tkihgc9Ro23MyzP9QsUA6el9qMtEM6lMxPndmq7zA+VW7VQlFCHr5u8t6mpf7spU
- Y0jB07p7yjUDRa9KfCvnkuORhPsTlHzBkKiGcXvip7SgxRg2sqY2IougmDebBqVoE5QlO4G
- oiqZltcPu5hL8WHu4C47Q==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754031AbaLDNAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:00:47 -0500
+Received: from mga03.intel.com ([134.134.136.65]:38653 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753543AbaLDNAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:00:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="493541705"
+From: Teodora Baluta <teodora.baluta@intel.com>
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Teodora Baluta <teodora.baluta@intel.com>
+Subject: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
+Date: Thu,  4 Dec 2014 15:00:14 +0200
+Message-Id: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 November 2014 02:15:43 Wang Long wrote:
-> This series patch enable Hisilicon HiP01 SoC. The HiP01 SoC series
-> chip is designed for networking product, it integrates a rich peripheral
-> interfaces to support network applications and supports both one 
-> core or dual cores and quad cores. The core is Cortex A9. 
+This patchset adds support for fingerprint sensors through the IIO interface.
+This way userspace applications collect information in a uniform way. All
+processing would be done in the upper layers as suggested in [0].
 
-Sorry for the delay in my reply. The patches look good to me, but I'm
-not sure what you expect to happen to them. You have a number of
-people listed as recipients, but it's not clear if you expect any of
-us to apply them into a git tree.
+In order to test out this proposal, a minimal implementation for UPEK's
+TouchChip Fingerprint Sensor via USB is also available. Although there is an
+existing implementation in userspace for USB fingerprint devices, including this
+particular device, the driver represents a proof of concept of how fingerprint
+sensors could be integrated in the IIO framework regardless of the used bus. For
+lower power requirements, the SPI bus is preferred and a kernel driver
+implementation makes more sense.
 
-Is Xu Wei going to pick these up in a git tree and send a pull request
-to arm@kernel.org?
+A sysfs trigger is enabled and the device starts scanning. As soon as an image
+is available it is written in the character device /dev/iio:deviceX.
 
-	Arnd
+Userspace applications will be able to calculate the expected image size using
+the fingerprint attributes height, width and bit depth. Other attributes
+introduced for the fingerprint channel in IIO represent information that aids in
+the fingerprint image processing. Besides these, the proposed interface offers
+userspace a way to read a feedback after a scan (like the swipe was too slow or
+too fast) through a modified fingerprint_status channel.
+
+[0] http://www.spinics.net/lists/linux-iio/msg11463.html
+
+Teodora Baluta (3):
+  iio: core: add support for fingerprint devices
+  iio: core: change channel's storagebits/realbits to u32
+  iio: fingerprint: add fingerprint sensor via USB
+
+ Documentation/ABI/testing/sysfs-bus-iio |  51 +++
+ drivers/iio/Kconfig                     |   1 +
+ drivers/iio/Makefile                    |   1 +
+ drivers/iio/fingerprint/Kconfig         |  15 +
+ drivers/iio/fingerprint/Makefile        |   5 +
+ drivers/iio/fingerprint/fp_tc.c         | 162 +++++++++
+ drivers/iio/fingerprint/fp_tc.h         |  22 ++
+ drivers/iio/fingerprint/fp_tc_usb.c     | 618 ++++++++++++++++++++++++++++++++
+ drivers/iio/fingerprint/fp_tc_usb.h     | 144 ++++++++
+ drivers/iio/industrialio-core.c         |   9 +
+ include/linux/iio/iio.h                 |  11 +-
+ include/linux/iio/types.h               |  10 +
+ 12 files changed, 1047 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/iio/fingerprint/Kconfig
+ create mode 100644 drivers/iio/fingerprint/Makefile
+ create mode 100644 drivers/iio/fingerprint/fp_tc.c
+ create mode 100644 drivers/iio/fingerprint/fp_tc.h
+ create mode 100644 drivers/iio/fingerprint/fp_tc_usb.c
+ create mode 100644 drivers/iio/fingerprint/fp_tc_usb.h
+
+-- 
+1.9.1
+
