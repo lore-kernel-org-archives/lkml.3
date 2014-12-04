@@ -1,384 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaLDG1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:27:10 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55951 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaLDG1I (ORCPT
+	id S1752980AbaLDGcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:32:45 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:36762 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750858AbaLDGco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:27:08 -0500
-Date: Wed, 3 Dec 2014 22:27:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [RFC PATCH v2] tinification: Introduce CONFIG_SRCU to make SRCU
- optional
-Message-ID: <20141204062704.GH25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1417665832-6933-1-git-send-email-bobby.prani@gmail.com>
+	Thu, 4 Dec 2014 01:32:44 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <catalin.marinas@arm.com>, <will.deacon@arm.com>, <arnd@arndb.de>,
+        <orsonzhai@gmail.com>, <zhang.lyra@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm64/include/asm: Fixed a warning about 'struct pt_regs'
+Date: Thu, 4 Dec 2014 14:29:35 +0800
+Message-ID: <1417674575-10855-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <zcyirq.h>
+References: <zcyirq.h>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417665832-6933-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120406-0025-0000-0000-0000069D3693
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.0.67.89]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com sB46TtaP032938
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 11:03:52PM -0500, Pranith Kumar wrote:
-> (CC list trimmed since this is just for initial feedback)
-> 
-> SRCU is not necessary to be compiled by default in all cases. For tinification
-> efforts not compiling SRCU unless necessary is desirable.
-> 
-> The current patch tries to make compiling SRCU optional by introducing a new
-> Kconfig option CONFIG_SRCU which is selected when any of the components making
-> use of SRCU are selected.
-> 
-> The current tinyconfig on x86 enables SRCU by default since x86 enables
-> PERF_EVENTS which in-turn require SRCU support. If we disable
-> PERF_EVENTS, we can disable compiling SRCU for tiny configs on x86 systems.
-> 
-> I tested this using randconfig and building about 15 kernels. This is definitely
-> not complete and could use more testing. Sticking it in next might help in that
-> regards.
-> 
-> Comments and suggestions are welcome. Please let me know if I should split up
-> this patch.
+If I include asm/irq.h on the top of my code, and set ARCH=arm64,
+I'll get a compile warning, details are below:
+warning: ‘struct pt_regs’
+declared inside parameter list [enabled by default]
 
-For the moment, I applied this to -rcu against v3.18-rc6 to get some 0day
-testing on it.
+This patch is suggested by Arnd, see:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308270.html
 
-There are conflicts against the tip of my tree, but will worry about
-that later.  I don't have a ready answer on whether or not this needs
-to be split up -- in the worst case, we would add the SRCU Kconfig
-parameter, add all the selects, then once they all hit mainline add the
-Makefile change.
+Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+---
+ arch/arm64/include/asm/irq.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-We will need stats on how much memory was saved, and a "size kernel/rcu/srcu.o"
-after a UP/tiny build should do it.  Could you please add this to the
-commit log?
-
-Josh, and additional thoughts?
-
-							Thanx, Paul
-
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> CC: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> CC: Josh Triplett <josh@joshtriplett.org>
-> ---
-> v2:
->  - handle cpufreq, devfreq and notifier
->  - build tested tinyconfig on powerpc
-> 
->  arch/arm/kvm/Kconfig     |  1 +
->  arch/arm64/kvm/Kconfig   |  1 +
->  arch/ia64/kvm/Kconfig    |  1 +
->  arch/mips/kvm/Kconfig    |  1 +
->  arch/powerpc/kvm/Kconfig |  1 +
->  arch/s390/kvm/Kconfig    |  1 +
->  arch/tile/kvm/Kconfig    |  1 +
->  arch/x86/kvm/Kconfig     |  1 +
->  drivers/clk/Kconfig      |  1 +
->  drivers/cpufreq/Kconfig  |  1 +
->  drivers/devfreq/Kconfig  |  1 +
->  drivers/md/Kconfig       |  1 +
->  drivers/net/Kconfig      |  1 +
->  fs/btrfs/Kconfig         |  1 +
->  fs/notify/Kconfig        |  1 +
->  init/Kconfig             | 10 ++++++++++
->  kernel/notifier.c        |  3 +++
->  kernel/rcu/Makefile      |  3 ++-
->  lib/Kconfig.debug        |  1 +
->  mm/Kconfig               |  1 +
->  security/tomoyo/Kconfig  |  1 +
->  21 files changed, 33 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index 466bd29..3afee5f 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -23,6 +23,7 @@ config KVM
->  	select HAVE_KVM_CPU_RELAX_INTERCEPT
->  	select KVM_MMIO
->  	select KVM_ARM_HOST
-> +	select SRCU
->  	depends on ARM_VIRT_EXT && ARM_LPAE
->  	---help---
->  	  Support hosting virtualized guest machines. You will also
-> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
-> index 8ba85e9..b334084 100644
-> --- a/arch/arm64/kvm/Kconfig
-> +++ b/arch/arm64/kvm/Kconfig
-> @@ -26,6 +26,7 @@ config KVM
->  	select KVM_ARM_HOST
->  	select KVM_ARM_VGIC
->  	select KVM_ARM_TIMER
-> +	select SRCU
->  	---help---
->  	  Support hosting virtualized guest machines.
-> 
-> diff --git a/arch/ia64/kvm/Kconfig b/arch/ia64/kvm/Kconfig
-> index 3d50ea9..f7d380b 100644
-> --- a/arch/ia64/kvm/Kconfig
-> +++ b/arch/ia64/kvm/Kconfig
-> @@ -29,6 +29,7 @@ config KVM
->  	select HAVE_KVM_IRQ_ROUTING
->  	select KVM_APIC_ARCHITECTURE
->  	select KVM_MMIO
-> +	select SRCU
->  	---help---
->  	  Support hosting fully virtualized guest machines using hardware
->  	  virtualization extensions.  You will need a fairly recent
-> diff --git a/arch/mips/kvm/Kconfig b/arch/mips/kvm/Kconfig
-> index 30e334e..2ae1282 100644
-> --- a/arch/mips/kvm/Kconfig
-> +++ b/arch/mips/kvm/Kconfig
-> @@ -20,6 +20,7 @@ config KVM
->  	select PREEMPT_NOTIFIERS
->  	select ANON_INODES
->  	select KVM_MMIO
-> +	select SRCU
->  	---help---
->  	  Support for hosting Guest kernels.
->  	  Currently supported on MIPS32 processors.
-> diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
-> index 602eb51..af18e0f 100644
-> --- a/arch/powerpc/kvm/Kconfig
-> +++ b/arch/powerpc/kvm/Kconfig
-> @@ -21,6 +21,7 @@ config KVM
->  	select PREEMPT_NOTIFIERS
->  	select ANON_INODES
->  	select HAVE_KVM_EVENTFD
-> +	select SRCU
-> 
->  config KVM_BOOK3S_HANDLER
->  	bool
-> diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
-> index 646db9c..5fce52c 100644
-> --- a/arch/s390/kvm/Kconfig
-> +++ b/arch/s390/kvm/Kconfig
-> @@ -28,6 +28,7 @@ config KVM
->  	select HAVE_KVM_IRQCHIP
->  	select HAVE_KVM_IRQFD
->  	select HAVE_KVM_IRQ_ROUTING
-> +	select SRCU
->  	---help---
->  	  Support hosting paravirtualized guest machines using the SIE
->  	  virtualization capability on the mainframe. This should work
-> diff --git a/arch/tile/kvm/Kconfig b/arch/tile/kvm/Kconfig
-> index 2298cb1..1e968f7 100644
-> --- a/arch/tile/kvm/Kconfig
-> +++ b/arch/tile/kvm/Kconfig
-> @@ -21,6 +21,7 @@ config KVM
->  	depends on HAVE_KVM && MODULES
->  	select PREEMPT_NOTIFIERS
->  	select ANON_INODES
-> +	select SRCU
->  	---help---
->  	  Support hosting paravirtualized guest machines.
-> 
-> diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-> index f9d16ff..7dc7ba5 100644
-> --- a/arch/x86/kvm/Kconfig
-> +++ b/arch/x86/kvm/Kconfig
-> @@ -40,6 +40,7 @@ config KVM
->  	select HAVE_KVM_MSI
->  	select HAVE_KVM_CPU_RELAX_INTERCEPT
->  	select KVM_VFIO
-> +	select SRCU
->  	---help---
->  	  Support hosting fully virtualized guest machines using hardware
->  	  virtualization extensions.  You will need a fairly recent
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 455fd17..53e64f1 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -13,6 +13,7 @@ config COMMON_CLK
->  	bool
->  	select HAVE_CLK_PREPARE
->  	select CLKDEV_LOOKUP
-> +	select SRCU
->  	---help---
->  	  The common clock framework is a single definition of struct
->  	  clk, useful across many platforms, as well as an
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index 3489f8f..ebaa0cc 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -2,6 +2,7 @@ menu "CPU Frequency scaling"
-> 
->  config CPU_FREQ
->  	bool "CPU Frequency scaling"
-> +	select SRCU
->  	help
->  	  CPU Frequency scaling allows you to change the clock speed of 
->  	  CPUs on the fly. This is a nice method to save power, because 
-> diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-> index faf4e70..3891f67 100644
-> --- a/drivers/devfreq/Kconfig
-> +++ b/drivers/devfreq/Kconfig
-> @@ -1,5 +1,6 @@
->  menuconfig PM_DEVFREQ
->  	bool "Generic Dynamic Voltage and Frequency Scaling (DVFS) support"
-> +	select SRCU
->  	help
->  	  A device may have a list of frequencies and voltages available.
->  	  devfreq, a generic DVFS framework can be registered for a device
-> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-> index 5bdedf6..c355a22 100644
-> --- a/drivers/md/Kconfig
-> +++ b/drivers/md/Kconfig
-> @@ -5,6 +5,7 @@
->  menuconfig MD
->  	bool "Multiple devices driver support (RAID and LVM)"
->  	depends on BLOCK
-> +	select SRCU
->  	help
->  	  Support multiple physical spindles through a single logical device.
->  	  Required for RAID and logical volume management.
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 4706386..221e623 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -176,6 +176,7 @@ config NETCONSOLE_DYNAMIC
-> 
->  config NETPOLL
->  	def_bool NETCONSOLE
-> +	select SRCU
-> 
->  config NET_POLL_CONTROLLER
->  	def_bool NETPOLL
-> diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
-> index a66768e..80e9c18 100644
-> --- a/fs/btrfs/Kconfig
-> +++ b/fs/btrfs/Kconfig
-> @@ -8,6 +8,7 @@ config BTRFS_FS
->  	select LZO_DECOMPRESS
->  	select RAID6_PQ
->  	select XOR_BLOCKS
-> +	select SRCU
-> 
->  	help
->  	  Btrfs is a general purpose copy-on-write filesystem with extents,
-> diff --git a/fs/notify/Kconfig b/fs/notify/Kconfig
-> index 22c629e..2a24249 100644
-> --- a/fs/notify/Kconfig
-> +++ b/fs/notify/Kconfig
-> @@ -1,5 +1,6 @@
->  config FSNOTIFY
->  	def_bool n
-> +	select SRCU
-> 
->  source "fs/notify/dnotify/Kconfig"
->  source "fs/notify/inotify/Kconfig"
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 3ee28ae..80ac0a4 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -501,6 +501,14 @@ config TINY_RCU
-> 
->  endchoice
-> 
-> +config SRCU
-> +	bool "Sleepable form of RCU"
-> +	def_bool n
-> +	help
-> +	  This option selects the sleepable version of RCU. This version
-> +	  permits arbitrary sleeping or blocking within RCU read-side critical
-> +	  sections.
-> +
->  config PREEMPT_RCU
->  	def_bool TREE_PREEMPT_RCU
->  	help
-> @@ -510,6 +518,7 @@ config PREEMPT_RCU
->  config TASKS_RCU
->  	bool "Task_based RCU implementation using voluntary context switch"
->  	default n
-> +	select SRCU
->  	help
->  	  This option enables a task-based RCU implementation that uses
->  	  only voluntary context switch (not preemption!), idle, and
-> @@ -1586,6 +1595,7 @@ config PERF_EVENTS
->  	depends on HAVE_PERF_EVENTS
->  	select ANON_INODES
->  	select IRQ_WORK
-> +	select SRCU
->  	help
->  	  Enable kernel support for various performance events provided
->  	  by software and hardware.
-> diff --git a/kernel/notifier.c b/kernel/notifier.c
-> index 4803da6..f52858a 100644
-> --- a/kernel/notifier.c
-> +++ b/kernel/notifier.c
-> @@ -402,6 +402,7 @@ int raw_notifier_call_chain(struct raw_notifier_head *nh,
->  }
->  EXPORT_SYMBOL_GPL(raw_notifier_call_chain);
-> 
-> +#if CONFIG_SRCU
->  /*
->   *	SRCU notifier chain routines.    Registration and unregistration
->   *	use a mutex, and call_chain is synchronized by SRCU (no locks).
-> @@ -528,6 +529,8 @@ void srcu_init_notifier_head(struct srcu_notifier_head *nh)
->  }
->  EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
-> 
-> +#endif /* CONFIG_SRCU */
-> +
->  static ATOMIC_NOTIFIER_HEAD(die_chain);
-> 
->  int notrace notify_die(enum die_val val, const char *str,
-> diff --git a/kernel/rcu/Makefile b/kernel/rcu/Makefile
-> index 807ccfb..a484080 100644
-> --- a/kernel/rcu/Makefile
-> +++ b/kernel/rcu/Makefile
-> @@ -1,4 +1,5 @@
-> -obj-y += update.o srcu.o
-> +obj-y += update.o
-> +obj-$(CONFIG_SRCU) += srcu.o
->  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
->  obj-$(CONFIG_TREE_RCU) += tree.o
->  obj-$(CONFIG_TREE_PREEMPT_RCU) += tree.o
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 4e35a5d..797511a 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1199,6 +1199,7 @@ config RCU_TORTURE_TEST
->  	tristate "torture tests for RCU"
->  	depends on DEBUG_KERNEL
->  	select TORTURE_TEST
-> +	select SRCU
->  	default n
->  	help
->  	  This option provides a kernel module that runs torture tests
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 1d1ae6b..4395b12 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -325,6 +325,7 @@ config VIRT_TO_BUS
-> 
->  config MMU_NOTIFIER
->  	bool
-> +	select SRCU
-> 
->  config KSM
->  	bool "Enable KSM for page merging"
-> diff --git a/security/tomoyo/Kconfig b/security/tomoyo/Kconfig
-> index 8eb779b9d..604e718 100644
-> --- a/security/tomoyo/Kconfig
-> +++ b/security/tomoyo/Kconfig
-> @@ -5,6 +5,7 @@ config SECURITY_TOMOYO
->  	select SECURITYFS
->  	select SECURITY_PATH
->  	select SECURITY_NETWORK
-> +	select SRCU
->  	default n
->  	help
->  	  This selects TOMOYO Linux, pathname-based access control.
-> -- 
-> 1.9.1
-> 
+diff --git a/arch/arm64/include/asm/irq.h b/arch/arm64/include/asm/irq.h
+index e1f7ecd..acedc7e 100644
+--- a/arch/arm64/include/asm/irq.h
++++ b/arch/arm64/include/asm/irq.h
+@@ -3,6 +3,8 @@
+ 
+ #include <asm-generic/irq.h>
+ 
++struct pt_regs;
++
+ extern void (*handle_arch_irq)(struct pt_regs *);
+ extern void migrate_irqs(void);
+ extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+-- 
+1.7.9.5
 
