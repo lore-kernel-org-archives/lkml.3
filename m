@@ -1,126 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaLDOTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:19:07 -0500
-Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:36704 "EHLO
-	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753908AbaLDOTF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:19:05 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.899
-X-Spam-Languages: en
-Message-ID: <54806D4E.8040504@topic.nl>
-Date: Thu, 4 Dec 2014 15:18:54 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754633AbaLDOT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:19:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37031 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754418AbaLDOT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:19:28 -0500
+Message-ID: <54806D5E.9030501@ti.com>
+Date: Thu, 4 Dec 2014 16:19:10 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master
- clock
-References: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl> <5480577D.4010106@metafoo.de>
-In-Reply-To: <5480577D.4010106@metafoo.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+To: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] video: fbdev-LCDC: Deletion of an unnecessary check
+ before the function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <5470B315.8000507@users.sourceforge.net>
+In-Reply-To: <5470B315.8000507@users.sourceforge.net>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 12/04/2014 01:45 PM, Lars-Peter Clausen wrote:
-> On 12/04/2014 07:52 AM, Mike Looijmans wrote:
->> If the master clock supports programmable rates, program it to generate
->> the desired frequency. Only apply constraints when the clock is fixed.
->> This allows proper clock generation for both 44100 and 48000 Hz based
->> sampling rates if the platform supports it.
->>
->> The clock frequency must be set before enabling it. Enabling the clock
->> was done in "startup", but that occurs before "hw_params" where the rate
->> is known. Move the clock start to the hw_params routine, and keep track
->> of whether the clock has been started, because shutdown may be called
->> without having called hw_params first.
->
-> Usually that shouldn't be a problem. If your clock chip requires it to be
-> disabled in order to be reprogrammed than the CLK_SET_RATE_GATE flag should be
-> set. This will tell the core to disable the clock before changing it.
+--mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-The issue here is not the clock's capabilities, but the order in which things 
-are being done. If the driver just enables the clock without ever having set a 
-rate, the clock will run at whatever happens to be the default. That default 
-may have unpredictable results or even be harmful to the system. So the driver 
-should first set a valid clock rate before enabling the clock. Suggestions on 
-rewording my comments to better reflect that are welcome.
+Hi,
 
->
-> [...]
->>   static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
->> @@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
->>       spdif->dma_data.addr_width = 4;
->>       spdif->dma_data.maxburst = 1;
->>
->> -    spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
->> -    spdif->ratnum.den_step = 1;
->> -    spdif->ratnum.den_min = 1;
->> -    spdif->ratnum.den_max = 64;
->> -
->> -    spdif->rate_constraints.rats = &spdif->ratnum;
->> -    spdif->rate_constraints.nrats = 1;
->> +    /* Determine if the clock rate is fixed. If it cannot change frequency,
->> +     * it returns an error here. */
->> +    if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
->
-> I don't think this works. For a fixed clock clk_round_rate() will return the
-> fixed rate rather than an error. I tried the patch and even though I have a
-> fixed clock the constraints are no longer set.
->
-> There is unfortunately no good way to enumerate which frequencies are
-> supported by a clock other than just calling round_rate for all possible rates.
->
-> I think the best way to implement this for now is to try e.g. 32000 * 128,
-> 44100 * 128, 48000 * 128 and then check if clk_round_rate returns the expected
-> rate and if it does set up a rate constraint for that rate.
+On 22/11/14 18:00, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 22 Nov 2014 16:51:31 +0100
+>=20
+> The vfree() function performs also input parameter validation.
+> Thus the test around the call is not needed.
+>=20
+> This issue was detected by using the Coccinelle software.
+>=20
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/video/fbdev/sh_mobile_lcdcfb.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/sh_mobile_lcdcfb.c b/drivers/video/fbd=
+ev/sh_mobile_lcdcfb.c
+> index 2bcc84a..cfde21d 100644
+> --- a/drivers/video/fbdev/sh_mobile_lcdcfb.c
+> +++ b/drivers/video/fbdev/sh_mobile_lcdcfb.c
+> @@ -2181,8 +2181,7 @@ sh_mobile_lcdc_channel_fb_cleanup(struct sh_mobil=
+e_lcdc_chan *ch)
+>  	if (!info || !info->device)
+>  		return;
+> =20
+> -	if (ch->sglist)
+> -		vfree(ch->sglist);
+> +	vfree(ch->sglist);
+> =20
+>  	fb_dealloc_cmap(&info->cmap);
+>  	framebuffer_release(info);
 
-For what I could see, ALSA never reported or limited the sample rate correctly 
-even before this patch, so maybe the even simpler approach is better: Just 
-remove the constraint. I wonder how you concluded that the constraint didn't 
-get added?
+Thanks, I've applied the fbdev patches. Next time, please use
+git-format-patch and git-send-email to send a proper patch series.
 
-Actually, the SPDIF logic wants a clock that is an "integer multiple of 
-128*samplerate in the range of 1..64". Other than just looping through them 
-all, there's also no way to request the clock framework for such a requirement.
-
-Your suggestion is quite robust though, but the fixed clock may be set to any 
-integer multiple of the desired frequency, so the algorithm would not work if 
-the fixed clock is running at 48000*256 (12.8MHz like in the reference 
-design). So I guess the best I could do here is just check that:
-
-clk_round_rate(spdif->clk_ref, 128 * 44100) != clk_round_rate(spdif->clk_ref, 
-128 * 48000)
-
-Only a configurable clock that is compatible with the patch would do that.
+ Tomi
 
 
 
+--mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Met vriendelijke groet / kind regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Mike Looijmans
-System Expert
+iQIcBAEBAgAGBQJUgG1eAAoJEPo9qoy8lh71ixYP/jguEFFPRW4p6hiaH7YF0e5s
+LZlX0rudf7ViZelSYCPVBI3p+8B+5YtRWqa+bSpYfdg1pSWZACVX8wCZuASKLm0L
+o49jXIx/h71CaMVW0UUdqahfLjRdu36c30cgW99NsBrG1R6ih1VuYtv5egiZPhkY
+agDstCZ+IWdVeUQGDRNDTzP+4cF2rdx4U8tndLmMfsPNqAbug9Btrf6rLRXMpE5h
+J6fTn5oAZosTDpWnmLtI7K0Kin5/PiqnXB4262r8jwz2yfqJVLUE6KUTdNGb9VKf
+f08UqO16CPAoVpl4jzZ3Rm5xORHk8YrFD00MKubGGFo2i2bzYZSUVHaLo2mGrMVX
+8v8u9n2UB46fSwhBPeZik88yUg9kZQq5IbywrUZQv0ss8WyWcQheReQ354+o7L0Z
+SgWklKC80TTtCimbUyhHqHZoxwiTWX7ZliDme6S7WW04lGZIc8aUT60rQxIrBjrc
+UZPIqdz0UbpctzqucZJRE6GEnpR3hb6APNWYAdggXip+xaplU0mh8g4cEYQyHrxa
+c8akOhr7u7OTNQGs4nIfhlf7vr59Rk/QUbXM9EH8HRASeo2hCL8e5ZaLdgkK3NLk
+SAzSkrBbw7bBZCaX9hnTK9EyExjFr1UCTbtnMq4t8nWSfzD83C4R8ZC61/1SNOvP
+st2/YcKuBk5umgFyTw9E
+=IWwX
+-----END PGP SIGNATURE-----
 
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
-Topic zoekt gedreven (embedded) software specialisten!
-http://topic.nl/vacatures/topic-zoekt-software-engineers/
-
+--mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug--
