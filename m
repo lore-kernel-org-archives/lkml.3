@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaLDL0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:26:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50376 "EHLO mx2.suse.de"
+	id S1754024AbaLDL0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:26:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50444 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaLDLYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:24:49 -0500
+	id S1753822AbaLDLYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:24:47 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
@@ -20,9 +20,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/10] mm: numa: Add paranoid check around pte_protnone_numa
-Date: Thu,  4 Dec 2014 11:24:32 +0000
-Message-Id: <1417692273-27170-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/10] mm: numa: Do not trap faults on the huge zero page
+Date: Thu,  4 Dec 2014 11:24:30 +0000
+Message-Id: <1417692273-27170-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1417692273-27170-1-git-send-email-mgorman@suse.de>
 References: <1417692273-27170-1-git-send-email-mgorman@suse.de>
@@ -30,48 +30,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pte_protnone_numa is only safe to use after VMA checks for PROT_NONE are
-complete. Treating a real PROT_NONE PTE as a NUMA hinting fault is going
-to result in strangeness so add a check for it. BUG_ON looks like overkill
-but if this is hit then it's a serious bug that could result in corruption
-so do not even try recovering. It would have been more comprehensive to
-check VMA flags in pte_protnone_numa but it would have made the API ugly
-just for a debugging check.
+Faults on the huge zero page are pointless and there is a BUG_ON
+to catch them during fault time. This patch reintroduces a check
+that avoids marking the zero page PAGE_NONE.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/huge_memory.c | 3 +++
- mm/memory.c      | 3 +++
- 2 files changed, 6 insertions(+)
+ include/linux/huge_mm.h |  3 ++-
+ mm/huge_memory.c        | 13 ++++++++++++-
+ mm/memory.c             |  1 -
+ mm/mprotect.c           | 15 ++++++++++++++-
+ 4 files changed, 28 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 554bbe3..ad9051b 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -31,7 +31,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
+ 			 unsigned long new_addr, unsigned long old_end,
+ 			 pmd_t *old_pmd, pmd_t *new_pmd);
+ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, pgprot_t newprot);
++			unsigned long addr, pgprot_t newprot,
++			int prot_numa);
+ 
+ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_FLAG,
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ad2a3ee..8546654 100644
+index 5618e22..ad2a3ee 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1273,6 +1273,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
+@@ -1502,7 +1502,7 @@ out:
+  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
+  */
+ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, pgprot_t newprot)
++		unsigned long addr, pgprot_t newprot, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+@@ -1510,6 +1510,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
  
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
+ 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pmd_t entry;
 +
- 	ptl = pmd_lock(mm, pmdp);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
++		/*
++		 * Avoid trapping faults against the zero page. The read-only
++		 * data is likely to be read-cached on the local CPU and
++		 * local/remote hits to the zero page are not interesting.
++		 */
++		if (prot_numa && is_huge_zero_pmd(*pmd)) {
++			spin_unlock(ptl);
++			return 0;
++		}
++
+ 		ret = 1;
+ 		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
+ 		entry = pmd_modify(entry, newprot);
 diff --git a/mm/memory.c b/mm/memory.c
-index 2ec07a9..7d97af5 100644
+index 2100e0f..2ec07a9 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -3109,6 +3109,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	bool migrated = false;
- 	int flags = 0;
+@@ -3136,7 +3136,6 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
+ 	}
+-	BUG_ON(is_zero_pfn(page_to_pfn(page)));
  
-+	/* A PROT_NONE fault should not end up here */
-+	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
-+
  	/*
- 	* The "pte" at this point cannot be used safely without
- 	* validation through pte_unmap_same(). It's of NUMA type but
+ 	 * Avoid grouping on DSO/COW pages in specific and RO pages
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index dc65c0f..33dfafb 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -75,6 +75,19 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		oldpte = *pte;
+ 		if (pte_present(oldpte)) {
+ 			pte_t ptent;
++
++			/*
++			 * Avoid trapping faults against the zero or KSM
++			 * pages. See similar comment in change_huge_pmd.
++			 */
++			if (prot_numa) {
++				struct page *page;
++
++				page = vm_normal_page(vma, addr, oldpte);
++				if (!page || PageKsm(page))
++					continue;
++			}
++
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
+ 			ptent = pte_modify(ptent, newprot);
+ 
+@@ -141,7 +154,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else {
+ 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
+-						newprot);
++						newprot, prot_numa);
+ 
+ 				if (nr_ptes) {
+ 					if (nr_ptes == HPAGE_PMD_NR) {
 -- 
 2.1.2
 
