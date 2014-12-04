@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349AbaLDIbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:31:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39722 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaLDIbA (ORCPT
+	id S1752839AbaLDIhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:37:36 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34763 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaLDIhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:31:00 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH 3/4] kvm: cpuid: fix xsave area size of XSAVEC
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <1417681468-7165-3-git-send-email-wanpeng.li@linux.intel.com>
-Date: Thu, 4 Dec 2014 10:30:55 +0200
-Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <1EDEA01D-B396-4F17-947A-22CA4AA4BC61@gmail.com>
-References: <1417681468-7165-1-git-send-email-wanpeng.li@linux.intel.com> <1417681468-7165-3-git-send-email-wanpeng.li@linux.intel.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-X-Mailer: Apple Mail (2.1993)
+	Thu, 4 Dec 2014 03:37:35 -0500
+Date: Thu, 4 Dec 2014 08:37:30 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] MFD / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Message-ID: <20141204083730.GG327@x1>
+References: <2857906.7ft1XTNUKe@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2857906.7ft1XTNUKe@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+On Thu, 04 Dec 2014, Rafael J. Wysocki wrote:
 
-> XSAVEC also use the compacted format for the extended region
-> of the XSAVE area. This patch fix it by caculate the size of 
-> XSAVEC extended region of XSAVE area as compact format.
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+> drivers/mfd/.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
-> arch/x86/kvm/cpuid.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index 70f0fa1..e16a0c7 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -92,7 +92,7 @@ int kvm_update_cpuid(struct kvm_vcpu *vcpu)
-> 	}
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
 > 
-> 	best = kvm_find_cpuid_entry(vcpu, 0xD, 1);
-> -	if (best && (best->eax & F(XSAVES)))
-> +	if (best && (best->eax & (F(XSAVES) || F(XSAVEC))))
-Did you want to use | (bitwise or) instead of II (logical or) ?
+> Please let me know if it is OK to take this one into linux-pm.
 
-> 		best->ebx = xstate_required_size(vcpu->arch.xcr0, true);
-> 
-> 	/*
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It's okay to take the patch.
 
-Nadav
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+> ---
+>  drivers/mfd/ab8500-gpadc.c |    2 +-
+>  drivers/mfd/arizona-core.c |    4 ++--
+>  drivers/mfd/wm8994-core.c  |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> Index: linux-pm/drivers/mfd/ab8500-gpadc.c
+> ===================================================================
+> --- linux-pm.orig/drivers/mfd/ab8500-gpadc.c
+> +++ linux-pm/drivers/mfd/ab8500-gpadc.c
+> @@ -867,7 +867,7 @@ static void ab8500_gpadc_read_calibratio
+>  		gpadc->cal_data[ADC_INPUT_VBAT].offset);
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int ab8500_gpadc_runtime_suspend(struct device *dev)
+>  {
+>  	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
+> Index: linux-pm/drivers/mfd/wm8994-core.c
+> ===================================================================
+> --- linux-pm.orig/drivers/mfd/wm8994-core.c
+> +++ linux-pm/drivers/mfd/wm8994-core.c
+> @@ -116,7 +116,7 @@ static const char *wm8958_main_supplies[
+>  	"SPKVDD2",
+>  };
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int wm8994_suspend(struct device *dev)
+>  {
+>  	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+> Index: linux-pm/drivers/mfd/arizona-core.c
+> ===================================================================
+> --- linux-pm.orig/drivers/mfd/arizona-core.c
+> +++ linux-pm/drivers/mfd/arizona-core.c
+> @@ -330,7 +330,7 @@ err_fll:
+>  		return err;
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int arizona_runtime_resume(struct device *dev)
+>  {
+>  	struct arizona *arizona = dev_get_drvdata(dev);
+> @@ -1024,7 +1024,7 @@ int arizona_dev_init(struct arizona *ari
+>  		goto err_irq;
+>  	}
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  	regulator_disable(arizona->dcvdd);
+>  #endif
+>  
+> 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
