@@ -1,154 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459AbaLDCrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:47:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52371 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaLDCrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:47:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,512,1413270000"; 
-   d="scan'208";a="632397549"
-Message-ID: <547FCAAD.2060406@intel.com>
-Date: Thu, 04 Dec 2014 10:45:01 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752708AbaLDCsX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:48:23 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:57358 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaLDCsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 21:48:22 -0500
+Message-ID: <547FCB73.1010707@linaro.org>
+Date: Wed, 03 Dec 2014 21:48:19 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: xen-devel@lists.xen.org, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-CC: "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>,
-        "Tian, Kevin" <kevin.tian@intel.com>, "Zhu, Libo" <libo.zhu@intel.com>,
-        "Zhou, Chao" <chao.zhou@intel.com>
-Subject: Re: [Intel-gfx] [Announcement] 2014-Q3 release of XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-References: <53D215D3.50608@intel.com>
-In-Reply-To: <53D215D3.50608@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: William Cohen <wcohen@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steve Capper <steve.capper@linaro.org>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com>
+In-Reply-To: <547FB5DD.901@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 12/03/14 20:16, William Cohen wrote:
 
-We're pleased to announce a public release to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.
+[...]
 
-
-The news of this update:
-
-
-	- kernel update from 3.11.6 to 3.14.1
-
-	- We plan to integrate Intel GVT-g as a feature in i915 driver. That effort is still under review, not included in this update yet
-
-	- Next update will be around early Jan, 2015
-
-
-This update consists of:
-
-	- Windows HVM support with driver version 15.33.3910
-
-	- Stability fixes, e.g. stabilize GPU, the GPU hang occurrence rate becomes rare now
-
-	- Hardware Media Acceleration for Decoding/Encoding/Transcoding, VC1, H264 etc. format supporting
-
-	- Display enhancements, e.g. DP type is supported for virtual PORT
-
-	- Display port capability virtualization: with this feature, dom0 manager could freely assign virtual DDI ports to VM, not necessary to check whether the corresponding physical DDI ports are available
-
-
-
-Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
-
-
-	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
-
-
-
-The new source codes are available at the updated github repos:
-
-
-	Linux: https://github.com/01org/XenGT-Preview-kernel.git
-
-	Xen: https://github.com/01org/XenGT-Preview-xen.git
-
-	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
-
-
-More information about Intel GVT-g background, architecture, etc can be found at:
-
-
-	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
-
-	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
-
-	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
-
-
-The previous update can be found here:
-
-
-	http://lists.xen.org/archives/html/xen-devel/2014-07/msg03248.html
-
-
-Appreciate your comments!
-
-
---
-Thanks,
-Jike
-
-On 07/25/2014 04:31 PM, Jike Song wrote:
-> Hi all,
 >
-> We're pleased to announce an update to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.
+> The perf issue seems to be independent and can be reproduced without using any kprobe support.  I need to get a simple reproducer and mention it on the linux-perf-user list.
 >
-> The news of this update:
+> -Will
 >
-> 	- Project code name is "XenGT", now official name is Intel Graphics Virtualization Technology (Intel GVT-g)
-> 	- Currently Intel GVT-g supports Intel Processor Graphics built into 4th generation Intel Core processors - Haswell platform
-> 	- Moving forward, XenGT will change to quarterly release cadence. Next update will be around early October, 2014.
->
-> This update consists of:
->
-> 	- Stability fixes, e.g. stable DP support
-> 	- Display enhancements, e.g. virtual monitor support. Users can define a virtual monitor type with customized EDID for virtual machines, not necessarily the same as physical monitors.
-> 	- Improved support for GPU recovery
-> 	- Experimental Windows HVM support. To download the experimental version, see setup guide for details
-> 	- Experimental Hardware Media Acceleration for decoding.
->
->
-> Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
->
-> 	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
->
->
-> The new source codes are available at the updated github repos:
->
-> 	Linux: https://github.com/01org/XenGT-Preview-kernel.git
-> 	Xen: https://github.com/01org/XenGT-Preview-xen.git
-> 	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
->
->
-> More information about Intel GVT-g background, architecture, etc can be found at:
->
-> 	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
-> 	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
-> 	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
->
-> The previous update can be found here:
->
-> 	http://lists.xen.org/archives/html/xen-devel/2014-02/msg01848.html
->
-> Appreciate your comments!
->
->
->
->
-> --
-> Thanks,
-> Jike
->
+
+
+OK, my confusion came from all the different things perf can use.  I 
+have not yet been able to reproduce the "perf stat" failure, but I do 
+see the failure with Steve's example using tracepoints.  I had thought 
+that was using kprobes, but apparently it just uses tracepoints.  These 
+look like two different failures to me:  One related to tracepoints, and 
+one in the PMU driver.
+
+Since this seems unrelated to kprobes I don't plan on pursuing these 
+particular problems.
+
+-dl
+
