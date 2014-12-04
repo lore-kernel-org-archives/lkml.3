@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402AbaLDNdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:33:17 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:36787 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaLDNdP (ORCPT
+	id S1754216AbaLDNfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:35:38 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:49000 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732AbaLDNfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:33:15 -0500
+	Thu, 4 Dec 2014 08:35:36 -0500
+Message-ID: <54806325.4060306@cogentembedded.com>
+Date: Thu, 04 Dec 2014 16:35:33 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: phy: Restore deferred probing path
+References: <1417694767-18848-1-git-send-email-thierry.reding@gmail.com> <5480522A.5010900@cogentembedded.com> <20141204132200.GC7262@ulmo.nvidia.com>
+In-Reply-To: <20141204132200.GC7262@ulmo.nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Thu, 04 Dec 2014 14:35:25 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        devicetree@vger.kernel.org, Nishanth Menon <nm@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        ijc+devicetree@hellion.org.uk, daniel.lezcano@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>, Sricharan R <r.sricharan@ti.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>, robh+dt@kernel.org,
-        Pawel Moll <Pawel.Moll@arm.com>, kernel@pengutronix.de,
-        u.kleine-koenig@pengutronix.de, olof@lixom.net, galak@codeaurora.org,
-        shawn.guo@linaro.org, LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 03/12] irqchip: gic: define =?UTF-8?Q?register=5Frouta?=
- =?UTF-8?Q?ble=5Fdomain=5Fops=20conditional?=
-In-Reply-To: <547F5EBD.6040705@arm.com>
-References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
- <1417565531-4507-4-git-send-email-stefan@agner.ch>
- <5174649.NxPq80uDz8@wuerfel> <alpine.DEB.2.11.1412031303000.16275@nanos>
- <8eccedc781df2636a132dae449cbe774@agner.ch> <547F5EBD.6040705@arm.com>
-Message-ID: <a62b856866915f6939da79bdbcdabb39@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Dec  4 14:32:37 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5480627512811969022335
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-03 20:04, Marc Zyngier wrote:
-<snip>
->> What do you mean by the shared state in the drawing above? Currently, I
->> check whether a interrupt is already used by the other core by reading
->> the register (do this configuration register reflect the "shared state"
->> in your drawing?).
-> 
-> I think that is basically it. It should only be the register that
-> decides on the actual routing. BTW, how do you arbitrate between
-> concurrent accesses to this register? Or is only the A5 allowed to
-> change it?
- 
-No arbitration so far... The whole Vybrid on M4 stuff is quite a hack
-right now. For instance also the concurrent access to the clock
-registers is not handled. Currently, I start the M4 from a booted A5
-Linux. To avoid half of the clocks get turned of by the M4 clock driver,
-I need to specify clk_ignore_unused. Beside that, peripherals have to be
-enabled/disabled in a non conflicting manor in the device trees...
+On 12/4/2014 4:22 PM, Thierry Reding wrote:
 
-For the interrupt router in MSCM, it would be nice if the access could
-be done an atomic way, which would avoid the use of a lock mechanism.
-But I guess this is not possible, since peripherals only support
-standard ldr/str...?
+>>> From: Thierry Reding <treding@nvidia.com>
 
-There is the SEMA4 module which provides hardware semaphores. I'm aware
-of the hardware spinlock drivers (drivers/hwspinlock/), I started to
-implement such a driver for Vybrid. But so far a grep through the kernel
-does not show one usage of that framework... I guess we could add dt
-support for that, so we can assign the locks to individual drivers.
+>>> Commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error on
+>>> failure") broke platforms that rely on deferred probing to order probing
+>>> of PHY and host controller drivers. The reason is that the commit simply
+>>> propagates errors from __of_usb_find_phy(), which returns -ENODEV if no
+>>> PHY has been registered yet for a given device tree node. The only case
+>>> in which -EPROBE_DEFER would now be returned is if try_module_get() did
+>>> fail, which does not make sense.
 
-I also plan to have a deeper look into remoteproc/rpmsg, not sure if
-locking of shared peripherals is part (or planned to be part) of that
-framework.
+>>> The correct thing to do is to return -EPROBE_DEFER if a PHY hasn't been
+>>> registered yet. The only condition under which it makes sense to return
+>>> -ENODEV is if the device tree node representing the PHY has been
+>>> disabled (via the status property) because in that case the PHY will
+>>> never be registered.
 
-For the clock stuff, the problem is more complex: I guess the would need
-some kind of master/slave definition, where we disallow the change of
-the shared clocks for the slave.
+>>> This patch addresses the problem by making __of_usb_find_phy() return an
+>>> appropriate error code while keeping in line with the above-mentioned
+>>> commit to propagate error codes rather than overwriting them. At the
+>>> same time the check for a valid PHY is decoupled from the check for the
+>>> try_module_get() call and a separate error code is returned if the
+>>> latter fails.
 
-If you are aware of patches/solutions, I'm happy to hear it...
+>>> Signed-off-by: Thierry Reding <treding@nvidia.com>
+>>> ---
+>>>   drivers/usb/phy/phy.c | 14 ++++++++++----
+>>>   1 file changed, 10 insertions(+), 4 deletions(-)
 
---
-Stefan
+>>> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+>>> index b4066a001ba0..2f9735b35338 100644
+>>> --- a/drivers/usb/phy/phy.c
+>>> +++ b/drivers/usb/phy/phy.c
+>> [...]
+>>> @@ -190,10 +193,13 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct device *dev,
+>>>   	spin_lock_irqsave(&phy_lock, flags);
+>>>
+>>>   	phy = __of_usb_find_phy(node);
+>>> -	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+>>> -		if (!IS_ERR(phy))
+>>> -			phy = ERR_PTR(-EPROBE_DEFER);
+>>> +	if (IS_ERR(phy)) {
+>>> +		devres_free(ptr);
+>>> +		goto err1;
+>>> +	}
+>>>
+>>> +	if (!try_module_get(phy->dev->driver->owner)) {
+>>> +		phy = ERR_PTR(-ENODEV);
+>>>   		devres_free(ptr);
+>>>   		goto err1;
+>>>   	}
 
+>>     I think devres_free() should now be called in one place, under the new
+>> 'err2' label.
 
-<snip>
+> That'd make things very confusing, though. devres_free() should only be
+> called on error, whereas both err1 and err0 are shared with the success
+> case as well. If we were to do what you suggest we'd end up with
+> something like this:
+
+[...]
+
+> That's pretty spaghetti-like.
+
+    Oh, sorry, I wasn't looking attentively enough. :-/
+
+> Thierry
+
+WBR, Sergei
 
