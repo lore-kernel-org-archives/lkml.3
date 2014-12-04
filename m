@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576AbaLDNqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:46:33 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:54487 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296AbaLDNqb (ORCPT
+	id S1754317AbaLDNsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:48:33 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:36872 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956AbaLDNsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:46:31 -0500
-Date: Thu, 4 Dec 2014 08:46:27 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] optimize ktime_divns for constant divisors
-In-Reply-To: <2165831.DQoLFmGhIf@wuerfel>
-Message-ID: <alpine.LFD.2.11.1412040837130.470@knanqh.ubzr>
-References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <3913269.qTFsa05Ysv@wuerfel> <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr> <2165831.DQoLFmGhIf@wuerfel>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 4 Dec 2014 08:48:31 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Thu, 04 Dec 2014 14:50:41 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        devicetree@vger.kernel.org, Nishanth Menon <nm@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        ijc+devicetree@hellion.org.uk, daniel.lezcano@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>, robh+dt@kernel.org,
+        Pawel Moll <Pawel.Moll@arm.com>, kernel@pengutronix.de,
+        u.kleine-koenig@pengutronix.de, olof@lixom.net, galak@codeaurora.org,
+        shawn.guo@linaro.org, LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 03/12] irqchip: gic: define =?UTF-8?Q?register=5Frouta?=
+ =?UTF-8?Q?ble=5Fdomain=5Fops=20conditional?=
+In-Reply-To: <548064B9.4080300@arm.com>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
+ <1417565531-4507-4-git-send-email-stefan@agner.ch>
+ <5174649.NxPq80uDz8@wuerfel> <alpine.DEB.2.11.1412031303000.16275@nanos>
+ <8eccedc781df2636a132dae449cbe774@agner.ch> <547F5EBD.6040705@arm.com>
+ <a62b856866915f6939da79bdbcdabb39@agner.ch> <548064B9.4080300@arm.com>
+Message-ID: <4b5c5f64f844ae08e2d2cede9bb4f693@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Dec  4 14:47:53 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5480660912811216152956
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Dec 2014, Arnd Bergmann wrote:
-
-> On Thursday 04 December 2014 02:23:37 Nicolas Pitre wrote:
-> > On Wed, 3 Dec 2014, Arnd Bergmann wrote:
-> > 
-> > > On Wednesday 03 December 2014 14:43:06 Nicolas Pitre wrote:
-> > > > At least on ARM, do_div() is optimized to turn constant divisors into
-> > > > an inline multiplication by the reciprocal value at compile time. 
-> > > > However this optimization is missed entirely whenever ktime_divns() is
-> > > > used and the slow out-of-line division code is used all the time.
-> > > > 
-> > > > Let ktime_divns() use do_div() inline whenever the divisor is constant
-> > > > and small enough.  This will make things like ktime_to_us() and 
-> > > > ktime_to_ms() much faster.
-> > > > 
-> > > > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > > 
-> > > Very cool. I've been thinking about doing something similar for the
-> > > general case but couldn't get the math to work.
-> > > 
-> > > Can you think of an architecture-independent way to ktime_to_sec,
-> > > ktime_to_ms, and ktime_to_us efficiently based on what you did for
-> > > the ARM do_div implementation?
-> > 
-> > Sure.  gcc generates rather shitty code on ARM compared to the output 
-> > from my do_div() implementation. But here it is:
-> > 
-> > u64 ktime_to_us(ktime_t kt)
-> > {
-> >         u64 ns = ktime_to_ns(kt);
-> >         u32 x_lo, x_hi, y_lo, y_hi;
-> >         u64 res, carry;
-> > 
-> >         x_hi = ns >> 32;
-> >         x_lo = ns;
-> >         y_hi = 0x83126e97;
-> >         y_lo = 0x8d4fdf3b;
-> > 
-> >         res = (u64)x_lo * y_lo;
-> >         carry = (u64)(u32)res + y_lo;
-> >         res = (res >> 32) + (carry >> 32);
-> > 
-> >         res += (u64)x_lo * y_hi;
-> >         carry = (u64)(u32)res + (u64)x_hi * y_lo;
-> >         res = (res >> 32) + (carry >> 32);
-> > 
-> >         res += (u64)x_hi * y_hi;
-> >         return res >> 9;
-> > }
+On 2014-12-04 14:42, Marc Zyngier wrote:
+> On 04/12/14 13:35, Stefan Agner wrote:
+>> On 2014-12-03 20:04, Marc Zyngier wrote:
+>> <snip>
+>>>> What do you mean by the shared state in the drawing above? Currently, I
+>>>> check whether a interrupt is already used by the other core by reading
+>>>> the register (do this configuration register reflect the "shared state"
+>>>> in your drawing?).
+>>>
+>>> I think that is basically it. It should only be the register that
+>>> decides on the actual routing. BTW, how do you arbitrate between
+>>> concurrent accesses to this register? Or is only the A5 allowed to
+>>> change it?
+>>
+>> No arbitration so far... The whole Vybrid on M4 stuff is quite a hack
+>> right now. For instance also the concurrent access to the clock
+>> registers is not handled. Currently, I start the M4 from a booted A5
+>> Linux. To avoid half of the clocks get turned of by the M4 clock driver,
+>> I need to specify clk_ignore_unused. Beside that, peripherals have to be
+>> enabled/disabled in a non conflicting manor in the device trees...
+>>
+>> For the interrupt router in MSCM, it would be nice if the access could
+>> be done an atomic way, which would avoid the use of a lock mechanism.
+>> But I guess this is not possible, since peripherals only support
+>> standard ldr/str...?
+>>
+>> There is the SEMA4 module which provides hardware semaphores. I'm aware
+>> of the hardware spinlock drivers (drivers/hwspinlock/), I started to
+>> implement such a driver for Vybrid. But so far a grep through the kernel
+>> does not show one usage of that framework... I guess we could add dt
+>> support for that, so we can assign the locks to individual drivers.
+>>
+>> I also plan to have a deeper look into remoteproc/rpmsg, not sure if
+>> locking of shared peripherals is part (or planned to be part) of that
+>> framework.
+>>
+>> For the clock stuff, the problem is more complex: I guess the would need
+>> some kind of master/slave definition, where we disallow the change of
+>> the shared clocks for the slave.
+>>
+>> If you are aware of patches/solutions, I'm happy to hear it...
 > 
-> Ok, I see, thanks for the example. I also tried this on x86, and it takes
-> about twice as long as do_div on my Opteron, so it wouldn't be as helpful
-> as I hoped.
+> I don't have a real solution for this, but I'd be tempted to generate
+> the M4 DT based on the HW the A5 is not using, and only describe that.
+> 
+> Clearly not ideal, but it gives you the control you need (don't describe
+> the HW you don't want to see touched)...
+> 
 
-Note the above code is for 32-bit architectures that support a 32x32=64 
-bit multiply instruction.  And even then, what kills performances is the 
-inhability to efficiently deal with carry bits from C code.  Hence the 
-far better output from do_div() on ARM.
+Yeah, that avoids the need for any synchronization for those
+peripherals.
 
-If x86-64 has a 64x64=128 bit multiply instruction then the above may 
-greatly be simplified to a single multiply and a shift.  That would 
-possibly outperform do_div().
+However, for some hardware (e.g. clocks and that interrupt controller)
+both sides need access... I guess to do it properly, I need to take care
+of it...
 
-> On a related note, I wonder if we can come up with a more efficient
-> implementation for do_div on ARMv7ve, and I think we should add the
-> Makefile logic to build with -march=armv7ve when we know that we do
-> not need to support processors without idiv.
+--
+Stefan
 
-Multiplications will always be faster than divisions.  However the idiv 
-instruction would come very handy in the slow path when the divisor is 
-not constant.
-
-
-Nicolas
