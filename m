@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaLDIMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:12:13 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:35456 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaLDIML (ORCPT
+	id S1752901AbaLDIMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:12:32 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:59105 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaLDIMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:12:11 -0500
-Date: Thu, 4 Dec 2014 16:11:47 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Thomas Graf <tgraf@suug.ch>, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Where exactly will arch_fast_hash be used
-Message-ID: <20141204081147.GA19030@gondor.apana.org.au>
+	Thu, 4 Dec 2014 03:12:30 -0500
+Message-ID: <54801768.3050404@hitachi.com>
+Date: Thu, 04 Dec 2014 17:12:24 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
+References: <20141203031334.174087814@goodmis.org> <20141203032106.156623189@goodmis.org> <547ED753.3060508@hitachi.com> <20141203043423.6c7e4524@gandalf.local.home> <20141203112015.19f6ff6c@gandalf.local.home>
+In-Reply-To: <20141203112015.19f6ff6c@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi:
+(2014/12/04 1:20), Steven Rostedt wrote:
+> On Wed, 3 Dec 2014 04:34:23 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+>  
+>> OK, I'll hold off on sending this patch then till 3.20.
+>>
+> 
+> BTW, can we add another option that just shows the echo output. The -d
+> enables -x which floods the screen with lots of useless information and
+> it's hard to see what is going on.
 
-While working on rhashtable it came to me that this whole concept
-of arch_fast_hash is flawed.  CRCs are linear functions so it's
-fairly easy for an attacker to identify collisions or at least
-eliminate a large amount of search space (e.g., controlling the
-last bit of the hash result is almost trivial, even when you add
-a random seed).
+I see, actually -d is not for debugging each test case, but just
+for the ftracetest itself.
+I'll add --verbose to show echos in testcases.
 
-So what exactly are we going to use arch_fast_hash for? Presumably
-it's places where security is never goint to be an issue, right?
 
-Even if security wasn't an issue, straight CRC32 has really poor
-lower-order bit distribution, which makes it a terrible choice for
-a hash table that simply uses the lower-order bits.
+Thank you,
 
-Cheers,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
