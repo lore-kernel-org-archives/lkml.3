@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956AbaLDTLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:11:50 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:54777 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716AbaLDTLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:11:49 -0500
-Message-ID: <5480B1F0.9090407@cogentembedded.com>
-Date: Thu, 04 Dec 2014 22:11:44 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933022AbaLDTO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:14:57 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44677 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932637AbaLDTOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 14:14:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
+   d="scan'208";a="648419111"
+Date: Thu, 4 Dec 2014 11:11:14 -0800
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
+        maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
+        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
+        wenkai.du@intel.com, chiau.ee.chew@intel.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V3 2/2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20141204191114.GC1530@pathfinder>
+References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-3-git-send-email-david.e.box@linux.intel.com>
+ <20141203161046.GC28857@lahna.fi.intel.com>
 MIME-Version: 1.0
-To: Joe Stringer <joestringer@nicira.com>, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, jesse@nicira.com, shannon.nelson@intel.com,
-        jesse.brandeburg@intel.com, jeffrey.t.kirsher@intel.com,
-        therbert@google.com, linux.nics@intel.com
-Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
-References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141203161046.GC28857@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Dec 03, 2014 at 06:10:46PM +0200, Mika Westerberg wrote:
+> On Mon, Dec 01, 2014 at 04:09:33PM -0800, David E. Box wrote:
+> > This patch implements an I2C bus sharing mechanism between the host and platform
+> > hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288 PMIC.
+> > 
+> > On these platforms access to the PMIC must be shared with platform hardware. The
+> > hardware unit assumes full control of the I2C bus and the host must request
+> > access through a special semaphore. Hardware control of the bus also makes it
+> > necessary to disable runtime pm to avoid interfering with hardware transactions.
+> > 
+> > Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+> > ---
+> >  drivers/i2c/busses/Kconfig                   |  12 +++
+> >  drivers/i2c/busses/Makefile                  |   1 +
+> >  drivers/i2c/busses/i2c-designware-baytrail.c | 155 +++++++++++++++++++++++++++
+> >  drivers/i2c/busses/i2c-designware-core.h     |   6 ++
+> >  4 files changed, 174 insertions(+)
+> >  create mode 100644 drivers/i2c/busses/i2c-designware-baytrail.c
+> > 
+> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> > index 917c358..d2bfd88 100644
+> > --- a/drivers/i2c/busses/Kconfig
+> > +++ b/drivers/i2c/busses/Kconfig
+> > @@ -464,6 +464,18 @@ config I2C_DESIGNWARE_PCI
+> >  	  This driver can also be built as a module.  If so, the module
+> >  	  will be called i2c-designware-pci.
+> >  
+> > +config I2C_DESIGNWARE_BAYTRAIL
+> > +	bool "Intel Baytrail I2C semaphore support"
+> > +	depends on I2C_DESIGNWARE_PLATFORM=y
+> 
+> Hmm, is there something preventing to compile this as module?
+> 
 
-On 12/04/2014 09:39 PM, Joe Stringer wrote:
+There were load order issues. This driver is really a support module for the
+platform driver. I think Wolfram suggested this earlier but I didn't realize it
+until now. The proper solution is to link it conditionally with
+i2c-designware-platform.
 
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for IPIP, GRE, UDP tunnels.
-
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
-> v3: Drop IPIP and GRE (no driver support even though hw supports it).
->      Check for UDP outer protocol for UDP tunnels.
-> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
->      Add MAX_INNER_LENGTH (as 80).
-> ---
->   drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++++++++++
->   1 file changed, 26 insertions(+)
-
-> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> index c3a7f4a..0d6493a 100644
-> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
->
->   #endif /* USE_DEFAULT_FDB_DEL_DUMP */
->   #endif /* HAVE_FDB_OPS */
-
-    Need empty line here, I think.
-
-> +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
-> +{
-> +	if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
-> +		unsigned char *ihdr;
-> +
-> +		if (skb->protocol != IPPROTO_UDP ||
-> +		    skb->inner_protocol_type != ENCAP_TYPE_ETHER)
-> +			return false;
-> +
-> +		if (skb->inner_protocol == htons(ETH_P_TEB))
-> +			ihdr = skb_inner_mac_header(skb);
-> +		else if (skb->inner_protocol == htons(ETH_P_IP) ||
-> +			 skb->inner_protocol == htons(ETH_P_IPV6))
-> +			ihdr = skb_inner_network_header(skb);
-> +		else
-> +			return false;
-
-    The above is asking to be a *switch* instead, no?
-
-> +
-> +#define MAX_TUNNEL_HDR_LEN	80
-
-    I'd #define this just above the function, if not at the start of the file...
-
-[...]
-
-WBR, Sergei
-
+Dave
