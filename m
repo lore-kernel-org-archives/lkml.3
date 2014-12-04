@@ -1,103 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaLDHF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:05:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42303 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaLDHF4 (ORCPT
+	id S1752000AbaLDHLo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:11:44 -0500
+Received: from smtprelay04.ispgateway.de ([80.67.29.8]:34160 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaLDHLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:05:56 -0500
-Message-ID: <548007CA.7010900@ti.com>
-Date: Thu, 4 Dec 2014 09:05:46 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
-References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com> <547EF8CC.9030502@ti.com> <CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>
-In-Reply-To: <CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="L4Lxibdg4wNuWqHgMSfIIPIH9i8pleOPu"
+	Thu, 4 Dec 2014 02:11:42 -0500
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1417184452-11884-1-git-send-email-peter@piie.net> <1417184452-11884-4-git-send-email-peter@piie.net> <20141203090436.GC52608@vmdeb7>
+Message-ID: <cone.1417677032.220767.18692.1000@mups>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Darren Hart <dvhart@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+        Javi Merino <javi.merino@arm.com>
+Subject: Re: [RESEND PATCH v5 3/5] acerhdf: Use bang-bang thermal governor
+Date: Thu, 04 Dec 2014 08:10:32 +0100
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---L4Lxibdg4wNuWqHgMSfIIPIH9i8pleOPu
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi Darren,
 
-On 03/12/14 20:29, Prabhakar Lad wrote:
-> On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.com>=
- wrote:
->> On 27/11/14 00:07, Lad, Prabhakar wrote:
->>> this patch fixes following build warning:
->>> drivers/video/fbdev/vt8623fb.c: In function =E2=80=98vt8623_pci_probe=
-=E2=80=99:
->>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from =
-integer of different size [-Wint-to-pointer-cast]
->>>   par->state.vgabase =3D (void __iomem *) vga_res.start;
->>>                        ^
->>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>> ---
->>>  drivers/video/fbdev/vt8623fb.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt8=
-623fb.c
->>> index 5c7cbc6..ea7f056 100644
->>> --- a/drivers/video/fbdev/vt8623fb.c
->>> +++ b/drivers/video/fbdev/vt8623fb.c
->>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, =
-const struct pci_device_id *id)
->>>
->>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
->>>
->>> -     par->state.vgabase =3D (void __iomem *) vga_res.start;
->>> +     par->state.vgabase =3D (void __iomem *) (unsigned long) vga_res=
-=2Estart;
->>
->> This does look quite ugly... Where does the warning come from in the
->> first place. Isn't vga_res.start (resource_size_t) the size of a point=
-er?
->>
-> Yes looks ugly, I am not sure what you meant from 'where does this warn=
-ing
-> come from' its in the commit message.
-
-I meant why is there a warning at all. With a quick glance,
-vga_res.start is the size of a pointer. So the sizes of the integer and
-the pointer should be the same. But the warning still says "of different
-size".
-
- Tomi
+thank you very much for your reply.
 
 
+Darren Hart writes:
 
---L4Lxibdg4wNuWqHgMSfIIPIH9i8pleOPu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> On Fri, Nov 28, 2014 at 03:20:50PM +0100, Peter Feuerer wrote:
+>> acerhdf has been doing an on-off fan control using hysteresis by
+>> post-manipulating the outcome of thermal subsystem trip point handling.
+>> This patch enables acerhdf to use the bang-bang governor, which is
+>> intended for on-off controlled fans.
+>> 
+>> Cc: platform-driver-x86@vger.kernel.org
+>> Cc: Darren Hart <dvhart@infradead.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> CC: Zhang Rui <rui.zhang@intel.com>
+>> Cc: Andreas Mohr <andi@lisas.de>
+>> Cc: Javi Merino <javi.merino@arm.com>
+>> Acked-and-tested-by: Borislav Petkov <bp@suse.de>
+>> Signed-off-by: Peter Feuerer <peter@piie.net>
+>> ---
+>>  drivers/platform/x86/Kconfig   |  3 ++-
+>>  drivers/platform/x86/acerhdf.c | 36 +++++++++++++++++++++++++++++++-----
+>>  2 files changed, 33 insertions(+), 6 deletions(-)
+>> 
+>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+>> index a2eabe6..c173266 100644
+>> --- a/drivers/platform/x86/Kconfig
+>> +++ b/drivers/platform/x86/Kconfig
+>> @@ -38,7 +38,8 @@ config ACER_WMI
+>>  
+>>  config ACERHDF
+>>  	tristate "Acer Aspire One temperature and fan driver"
+>> -	depends on THERMAL && ACPI
+>> +	select THERMAL_GOV_BANG_BANG
+> 
+> So we use select sparingly as it does implicit things.
+> 
+> I checked the THERMAL_GOV_BANG_BANG Kconfig entry, and the help says acerhdf
+> already depends on it (which it doesn't appear to). Any particular reason to add
+> select here instead of adding it as a depends.
+> 
+> Why did you drop THERMAL?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I had it like this in my first version of patches:
++ depends on THERMAL && ACPI && THERMAL_GOV_BANG_BANG
 
-iQIcBAEBAgAGBQJUgAfOAAoJEPo9qoy8lh71Gl8P/j4VBc/Eci3PHavYhRxu23bH
-rYBdLJzpbJPSnysJJRGVErwDid5jkgOtUSwKjZlH2jZd29d+zlO0qbWuBpuMwL7x
-11+wpejg4fmuCVbN+YPgBE5oSysIaV0hU4IbWBLSm991RcGAm7bXbs0gr0tGJCNK
-8T1NAYtA6s0I8crlwZw5dSEOhC2E22Yl/ijeEYl2NMknF83OQfu0ajYr4L9dYvPJ
-krgK0o9bGbr5MQJdI9iq6HxPK9Mhauzqp6/fflFnGiJOsq01N++xsqYUUCGk0Utv
-5Y5mcsq4nIs+dv0p+4gv+rILQY7vHghCKtpSZddEsHseNKEO2O5NjGW6wLisQJli
-kUjt/hg9qql7OLq1OHZvEIthe4mngJftULXMqbLad93Tn2ihhMJFP/iYvu7F4u8c
-/3BkNZJshs/s537Gt447epoG5uRWHdPExOb2ye8GBQalP3URR2zv9c+RpzD/qCzS
-O+q97NkOiRVVrkrEewoOiDJ6OvI5/eVPsC87VB55N13gJh+QRctU8oTRslQ9EcBG
-LWd8plGkUUGMRTEbyxzlum+DcCxNCVkDlDEHukMwtoQnwjTwOGaiLxmv/Faf+EvV
-aZei/UsZV85CdtK5FzdLt2HHJsrpA0If3aACvMYDKiH+nK1//UMem3Og7aQTub0L
-PJE7T4qPbjTP0/fbjhRt
-=jdS2
------END PGP SIGNATURE-----
+But after some discussion with lkml community we ended up with the select line and dropped THERMAL dependency, as it is implied by THEMAL_GOV_BANG_BANG.  I'm not so experienced with Kconfig, so I must rely on the statements of the community in this case.
 
---L4Lxibdg4wNuWqHgMSfIIPIH9i8pleOPu--
+
+>> +	depends on ACPI
+>>  	---help---
+>>  	  This is a driver for Acer Aspire One netbooks. It allows to access
+>>  	  the temperature sensor and to control the fan.
+>> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+>> index f30767f..7fe7dbf 100644
+>> --- a/drivers/platform/x86/acerhdf.c
+>> +++ b/drivers/platform/x86/acerhdf.c
+>> @@ -50,7 +50,7 @@
+>>   */
+>>  #undef START_IN_KERNEL_MODE
+>>  
+>> -#define DRV_VER "0.5.30"
+>> +#define DRV_VER "0.7.0"
+>>  
+>>  /*
+>>   * According to the Atom N270 datasheet,
+>> @@ -258,6 +258,14 @@ static const struct bios_settings_t bios_tbl[] = {
+>>  
+>>  static const struct bios_settings_t *bios_cfg __read_mostly;
+>>  
+>> +/*
+>> + * this struct is used to instruct thermal layer to use bang_bang instead of
+>> + * default governor for acerhdf
+> 
+> Please use sentence punctuation, particularly for block comments.
+
+ok.
+
+
+ 
+> /*
+>  * This struct...
+>  * default ... for acerhdf.
+>  */
+> 
+>> + */
+>> +static struct thermal_zone_params acerhdf_zone_params = {
+>> +	.governor_name = "bang_bang",
+>> +};
+>> +
+>>  static int acerhdf_get_temp(int *temp)
+>>  {
+>>  	u8 read_temp;
+>> @@ -439,6 +447,17 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
+>>  	return 0;
+>>  }
+>>  
+>> +static int acerhdf_get_trip_hyst(struct thermal_zone_device *thermal, int trip,
+>> +				 unsigned long *temp)
+>> +{
+>> +	if (trip != 0)
+>> +		return -EINVAL;
+>> +
+>> +	*temp = fanon - fanoff;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>>  static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+>>  				 unsigned long *temp)
+>>  {
+>> @@ -463,6 +482,7 @@ static struct thermal_zone_device_ops acerhdf_dev_ops = {
+>>  	.get_mode = acerhdf_get_mode,
+>>  	.set_mode = acerhdf_set_mode,
+>>  	.get_trip_type = acerhdf_get_trip_type,
+>> +	.get_trip_hyst = acerhdf_get_trip_hyst,
+>>  	.get_trip_temp = acerhdf_get_trip_temp,
+>>  	.get_crit_temp = acerhdf_get_crit_temp,
+>>  };
+>> @@ -515,9 +535,7 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
+>>  	}
+>>  
+>>  	if (state == 0) {
+>> -		/* turn fan off only if below fanoff temperature */
+>> -		if ((cur_state == ACERHDF_FAN_AUTO) &&
+>> -		    (cur_temp < fanoff))
+>> +		if (cur_state == ACERHDF_FAN_AUTO)
+>>  			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
+>>  	} else {
+>>  		if (cur_state == ACERHDF_FAN_OFF)
+>> @@ -696,11 +714,19 @@ static int acerhdf_register_thermal(void)
+>>  		return -EINVAL;
+>>  
+>>  	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
+>> -					      &acerhdf_dev_ops, NULL, 0,
+>> +					      &acerhdf_dev_ops,
+>> +					      &acerhdf_zone_params, 0,
+>>  					      (kernelmode) ? interval*1000 : 0);
+>>  	if (IS_ERR(thz_dev))
+>>  		return -EINVAL;
+>>  
+>> +	if (strcmp(thz_dev->governor->name,
+>> +				acerhdf_zone_params.governor_name)) {
+>> +		pr_err("Didn't get thermal governor %s, perhaps not compiled into thermal subsystem.\n",
+>> +				acerhdf_zone_params.governor_name);
+> 
+> We've ensured it has to be compiled in, so that really can't be it. Right?
+
+Yes, you are right, but if it is no real blocker for you, I'd like to keep this code in as I'm providing the acerhdf.c code in a separate package for debugging / testing too and people could use the code without the Kconfig.
+
+-- 
+kind regards,
+--peter;
