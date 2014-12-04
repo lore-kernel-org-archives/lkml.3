@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaLDSow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:44:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43474 "EHLO mx1.redhat.com"
+	id S1754573AbaLDSo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:44:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaLDSou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:44:50 -0500
-Date: Thu, 4 Dec 2014 20:44:34 +0200
+	id S1751329AbaLDSoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:44:54 -0500
+Date: Thu, 4 Dec 2014 20:44:38 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
         Rusty Russell <rusty@rustcorp.com.au>,
         David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC v2 1/4] virtio: add API to detect legacy devices
-Message-ID: <1417718645-25678-1-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH RFC v2 2/4] virtio_ccw: legacy: don't negotiate rev 1/features
+Message-ID: <1417718645-25678-2-git-send-email-mst@redhat.com>
+References: <1417718645-25678-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1417718645-25678-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-transports need to be able to detect legacy-only
-devices (ATM balloon only) to use legacy path
-to drive them.
+Legacy balloon device doesn't pretend to support revision 1 or 64 bit
+features.
 
-Add a core API to do just that.
-The implementation just blacklists balloon:
-not too pretty, but let's not over-engineer.
+But just in case someone implements a broken one that does, let's not
+even try to drive legacy only devices using revision 1, and let's not
+give them a chance to say they support VIRTIO_F_VERSION_1 by not reading
+high feature bits.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- include/linux/virtio.h  | 2 ++
- drivers/virtio/virtio.c | 6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/s390/kvm/virtio_ccw.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 2bbf626..d666bcb 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -108,6 +108,8 @@ struct virtio_device {
- 	void *priv;
- };
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index 4a3e6e5..c792b5f 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -733,6 +733,9 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
  
-+bool virtio_device_is_legacy_only(struct virtio_device_id id);
-+
- static inline struct virtio_device *dev_to_virtio(struct device *_dev)
- {
- 	return container_of(_dev, struct virtio_device, dev);
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index fa6b75d..6b4c1113 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -267,6 +267,12 @@ static struct bus_type virtio_bus = {
- 	.remove = virtio_dev_remove,
- };
+ 	rc = le32_to_cpu(features->features);
  
-+bool virtio_device_is_legacy_only(struct virtio_device_id id)
-+{
-+	return id.device == VIRTIO_ID_BALLOON;
-+}
-+EXPORT_SYMBOL_GPL(register_virtio_driver);
++	if (vcdev->revision == 0)
++		goto out_free;
 +
- int register_virtio_driver(struct virtio_driver *driver)
- {
- 	/* Catch this early. */
+ 	/* Read second half of the feature bits from the host. */
+ 	features->index = 1;
+ 	ccw->cmd_code = CCW_CMD_READ_FEAT;
+@@ -775,6 +778,9 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
+ 	ccw->cda = (__u32)(unsigned long)features;
+ 	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_FEAT);
+ 
++	if (vcdev->revision == 0)
++		goto out_free;
++
+ 	features->index = 1;
+ 	features->features = cpu_to_le32(vdev->features >> 32);
+ 	/* Write the second half of the feature bits to the host. */
+@@ -1182,9 +1188,13 @@ static int virtio_ccw_online(struct ccw_device *cdev)
+ 	vcdev->vdev.id.vendor = cdev->id.cu_type;
+ 	vcdev->vdev.id.device = cdev->id.cu_model;
+ 
+-	ret = virtio_ccw_set_transport_rev(vcdev);
+-	if (ret)
+-		goto out_free;
++	if (virtio_device_is_legacy_only(vcdev->vdev.id)) {
++		vcdev->revision = 0;
++	} else {
++		ret = virtio_ccw_set_transport_rev(vcdev);
++		if (ret)
++			goto out_free;
++	}
+ 
+ 	ret = register_virtio_device(&vcdev->vdev);
+ 	if (ret) {
 -- 
 MST
 
