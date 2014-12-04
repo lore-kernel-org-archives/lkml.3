@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaLDH7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:59:20 -0500
-Received: from mga03.intel.com ([134.134.136.65]:39822 "EHLO mga03.intel.com"
+	id S1752461AbaLDIKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:10:17 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52760 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaLDH7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:59:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,514,1413270000"; 
-   d="scan'208";a="648084640"
-Message-ID: <5480144F.2040506@linux.intel.com>
-Date: Thu, 04 Dec 2014 09:59:11 +0200
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1751110AbaLDIKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 03:10:15 -0500
+Message-ID: <548016D9.6030006@ti.com>
+Date: Thu, 4 Dec 2014 10:10:01 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "David E. Box" <david.e.box@linux.intel.com>, wsa@the-dreams.de
-CC: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
-        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
-        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
-References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com> <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com> <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
-In-Reply-To: <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "alexander.stein@systec-electronic.com" 
+	<alexander.stein@systec-electronic.com>
+Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com> <4810522.t9QFQYHtHI@wuerfel> <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
+In-Reply-To: <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="8tqXasC1lCUUku3032PcGN7ldMDEfv754"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--8tqXasC1lCUUku3032PcGN7ldMDEfv754
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-On 12/02/2014 02:09 AM, David E. Box wrote:
-> Adds support for acquiring and releasing a hardware bus lock in the i2c
-> designware core transfer function. This is needed for i2c bus controllers
-> that are shared with but not controlled by the kernel.
->
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> ---
->   drivers/i2c/busses/i2c-designware-core.c    | 11 +++++++++++
->   drivers/i2c/busses/i2c-designware-core.h    |  6 ++++++
->   drivers/i2c/busses/i2c-designware-platdrv.c | 18 +++++++++++++-----
->   3 files changed, 30 insertions(+), 5 deletions(-)
->
-...
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index a743115..afdff3b 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -261,10 +261,16 @@ static int dw_i2c_probe(struct platform_device *pdev)
->   		return r;
->   	}
->   
-> -	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> -	pm_runtime_use_autosuspend(&pdev->dev);
-> -	pm_runtime_set_active(&pdev->dev);
-> -	pm_runtime_enable(&pdev->dev);
-> +	i2c_dw_eval_lock_support(dev);
-i2c_dw_eval_lock_support() is added in the next patch.
-> +
-> +	if (dev->pm_runtime_disabled) {
-> +		pm_runtime_forbid(&pdev->dev);
-> +	} else {
-> +		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> +		pm_runtime_use_autosuspend(&pdev->dev);
-> +		pm_runtime_set_active(&pdev->dev);
-> +		pm_runtime_enable(&pdev->dev);
-> +	}
->   
->   	return 0;
->   }
-> @@ -314,7 +320,9 @@ static int dw_i2c_resume(struct device *dev)
->   	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
->   
->   	clk_prepare_enable(i_dev->clk);
-> -	i2c_dw_init(i_dev);
-> +
-> +	if (!i_dev->pm_runtime_disabled)
-> +		i2c_dw_init(i_dev);
->   
-Should there be similar conditional call or locking around i2c_dw_init() 
-and i2c_dw_disable_int() also in dw_i2c_probe()?
+Hi Xiubo,
 
--- 
-Jarkko
+On 04/12/14 03:56, Li.Xiubo@freescale.com wrote:
+> Hi Arnd,
+>=20
+> Thanks for you advice.
+>=20
+> Because this is very emergency for customers and have delayed for month=
+es, and the
+> DRM/KMS will have a little long time to be supported. So I'd like to ad=
+d this first
+> and will add DRM/KMS version later.
+
+I would also suggest to just write a drm driver for this. I don't see
+anything special in this driver that would be better supported via
+fbdev. With drm you'll get a more modern framework, and you will still
+have the same /dev/fbX device to use for legacy userspace software.
+
+What do you mean with "delayed for months"? The first version of this
+series (that I can find) was posted less than two weeks ago.
+
+ Tomi
+
+
+
+--8tqXasC1lCUUku3032PcGN7ldMDEfv754
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgBbZAAoJEPo9qoy8lh71sbkP/iLJXw/btKoio5T4ORqPfN9K
+PigiPBO3GcCRKnSI6rKKtqLypjoepjYEojtmaEqyFSXTsb7OJJIJKhZG2uWCfPfs
+os8rl3eVraSqu8uNX/U75WohEdbnFeCzwwUoNJ6IrArz3XcjAPD88JeOZ2qQg1ss
+Q7LuaWK+J/ZNl6PELVXJpE7jWi9yx/emCHRn7EzxiKGdGRpJ6u1E0jdiIIz73Y68
+b4cOkt4FBMOsJb8Ynznj+UL6000y/4QfBtaocwOhlI60MDMXdTzCDQmVG4rkkauZ
+hpBDROVzgzyA1BQfgXAhlydMW892CsZQMA/3RZfPUL2Y5YQuZDzodmDbHxHRJjj6
+btUp2dThsBdGcfdlFqsfohiYuC8DniKnoRh7DXzokKHznf1Jjzy1bojQLDvUNy6U
+CccZdEcjRphuibFRJjBQFQ2q2g0zpsqfRJjG4rVtTV+rMtxnSJDI5E5A2DxkB07F
+Jl18ybn6YJLQ6L+v7/NIolIcLdcfIS92rq8JCCpw/kqAjoREVi+QihjAk6xCelZR
+EhXeOKsNz4PgBWF/iH5ytMSoJpGdADnYGAnS7C3FNnMubeJm2s7IC5h/NhT1+3Ty
+CiEoxmuhI60GG7tlDbU0LWQmdiJV7uH+xonBsL39Y2w3WfRu4wbcxA9GQiNvRPJq
+7D63nwTdAYNoI3sxs4BH
+=7VB1
+-----END PGP SIGNATURE-----
+
+--8tqXasC1lCUUku3032PcGN7ldMDEfv754--
