@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaLDMqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:46:19 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:48573 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaLDMqS (ORCPT
+	id S1753824AbaLDMv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:51:58 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43602 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199AbaLDMv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:46:18 -0500
+	Thu, 4 Dec 2014 07:51:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E9@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
- <20140924144520.697A8C40738@trevor.secretlab.ca> <35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
- <20141204100453.49DF2C40992@trevor.secretlab.ca> <35FD53F367049845BC99AC72306C23D103E688B313E9@CNBJMBX05.corpusers.net>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 4 Dec 2014 12:45:54 +0000
-X-Google-Sender-Auth: 9XOo8fUHhw1TwKerNC5UPMGTxRs
-Message-ID: <CACxGe6ubYkz+noEsn15JeKFHz1JoL_EEaT5V126SyEqDugrCcw@mail.gmail.com>
-Subject: Re: [RFC] fdt:free the fdt reserved memory
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20141203205237.GE31246@pd.tnic>
+References: <CANVTcTaChssJEU48iS6a1WwFf59Tqz2T9VrnsSM9ZLwnRC+SWw@mail.gmail.com>
+	<20141203205237.GE31246@pd.tnic>
+Date: Thu, 4 Dec 2014 20:51:54 +0800
+Message-ID: <CANVTcTbaGxDPQx503m91KqUY1oGPMTQR3ZCXNrfC5LKs44pBmw@mail.gmail.com>
+Subject: Re: Bug: Fatal errors result in infinite stream of error messages
+From: rui wang <ruiv.wang@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, aris@redhat.com,
+        rui.y.wang@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 10:23 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
->> -----Original Message-----
->> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
->> Sent: Thursday, December 04, 2014 6:05 PM
->> To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
->> 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
->> 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
->> Subject: RE: [RFC] fdt:free the fdt reserved memory
->>
->> On Thu, 4 Dec 2014 14:56:11 +0800
->> , "Wang, Yalin" <Yalin.Wang@sonymobile.com>
->>  wrote:
->> > > -----Original Message-----
->> > > From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant
->> > > Likely
->> > > Sent: Wednesday, September 24, 2014 10:45 PM
->> > > To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
->> > > 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
->> > > 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
->> > > Subject: Re: [RFC] fdt:free the fdt reserved memory
->> > >
->> > > On Thu, 18 Sep 2014 17:25:12 +0800, "Wang, Yalin"
->> > > <Yalin.Wang@sonymobile.com> wrote:
->> > > > This patch make some change to unflatten_dt_node(), make sure the
->> > > > device_node don't reference to fdt raw blob memory, so that we can
->> > > > free the raw blob reserved memory after initcalls.
->> > > >
->> > > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
->> > >
->> > > Do you have any measurements showing a change in available memory
->> > > before and after the patch?
->> > >
->> > Does anyone have a look at this patch?
->> > It can save 12K on my platform,
->> > My dtb is 164K
->>
->> Yes, I've been thinking about this one. Unfortunately there is a conflict
->> with another feature that I'm merging for v3.19. See commit 08d53aa5,
->> "of/fdt: export fdt blob as /sys/firmware/fdt" in linux-next.
->> That commit requires the original blob to be kept around.
->>
->> In order to free the original dtb, the /sys/firmware/fdt feature will need
->> to be changed to let it be configured out. All things considered, that is
->> probably the right thing to do, but doing so increases the memory load for
->> the platforms that want /sys/firmware/fdt. I'd like to see what the impact
->> would be on the code to switch to this method when /sys/firmware/fdt is
->> configured out.
->>
-> Oh, I understand,
-> If enable /sys/firmware/fdt feature patch, doesn't need
-> My patch is fine,
-> So need 2 method to unflatten dtb blob.
+On 12/4/14, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Dec 03, 2014 at 05:11:49PM +0800, rui wang wrote:
+>> The problem is because kdump fails to load a new kernel, and we're
+>> executing past crash_kexec() in panic(). And it calls
+>> bust_spinlocks(0) which calls into the GPU driver trying to unblank
+>> the screen, which eventually calls __schedule() while waiting for a
+>> mutex to be released. But we're still in the machine check context.
+>> The infinite stream of errors is because there's a for(;;) loop in
+>> __mutex_lock_common(), so we enter __schedule() again and again.
+>
+> Hmm, there's a bust_spinlocks(1) call in mce_panic() for which I have no
+> idea what it is for? To stop us from scheduling?
+>
+> If so, why doesn't it stop us...?
+>
+> There's also this:
+>
+> void console_unblank(void)
+> {
+>         struct console *c;
+>
+>         /*
+>          * console_unblank can no longer be called in interrupt context
+> unless
+> ====>    * oops_in_progress is set to 1..
+>          */
+>         if (oops_in_progress) {
+>                 if (down_trylock_console_sem() != 0)
+>                         return;
+>         } else
+>                 console_lock();
+>
 
-I don't want to duplicate the function. It would instead need to be a
-build time configuration to the function that if /sys/firmware/fdt is
-enabled, then copying the property on unflatten is disabled.
+That points to the direction of a potential fix. There are places
+under drivers/gpu/drm/ which should do this kind of check in order to
+make it work in panic. An existing example is here :
 
-g.
+void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
+{
+        struct drm_crtc *crtc;
+
+        /* Locking is currently fubar in the panic handler. */
+        if (oops_in_progress) <======
+                return;
+
+        list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+                WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
+
+        WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
+        WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+}
+
+I'll send a patch later.
+
+Thanks
+Rui
