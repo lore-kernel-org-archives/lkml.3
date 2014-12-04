@@ -1,156 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149AbaLDNWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:22:09 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42292 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaLDNWH (ORCPT
+	id S932158AbaLDN2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:28:06 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:40930 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970AbaLDN1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:22:07 -0500
-Date: Thu, 4 Dec 2014 14:22:02 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: phy: Restore deferred probing path
-Message-ID: <20141204132200.GC7262@ulmo.nvidia.com>
-References: <1417694767-18848-1-git-send-email-thierry.reding@gmail.com>
- <5480522A.5010900@cogentembedded.com>
+	Thu, 4 Dec 2014 08:27:55 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: vladimir_zapolskiy@mentor.com
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <088d1b3a3d8d7cae66ec141fd249fd79>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54806150.6020206@rock-chips.com>
+Date: Thu, 04 Dec 2014 21:27:44 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uh9ZiVrAOUUm9fzH"
-Content-Disposition: inline
-In-Reply-To: <5480522A.5010900@cogentembedded.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
+Subject: Re: [PATCH v17 06/12] dt-bindings: add document for dw_hdmi
+References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>	 <1417687565-13206-1-git-send-email-andy.yan@rock-chips.com> <1417692637.3744.5.camel@pengutronix.de>
+In-Reply-To: <1417692637.3744.5.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Philipp:
+On 2014年12月04日 19:30, Philipp Zabel wrote:
+> Hi Andy,
+>
+> Am Donnerstag, den 04.12.2014, 18:06 +0800 schrieb Andy Yan:
+>> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+>>
+>> ---
+>>
+>> Changes in v17: None
+>> Changes in v16:
+>> - describe ddc-i2c-bus as optional
+>> - add common clocks bindings
+>>
+>> Changes in v15: None
+>> Changes in v14: None
+>> Changes in v13: None
+>> Changes in v12: None
+>> Changes in v11: None
+>> Changes in v10: None
+>> Changes in v9: None
+>> Changes in v8:
+>> - correct some spelling mistake
+>> - modify ddc-i2c-bus and interrupt description
+>>
+>> Changes in v7: None
+>> Changes in v6: None
+>> Changes in v5: None
+>> Changes in v4: None
+>> Changes in v3: None
+>>
+>>   .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 45 ++++++++++++++++++++++
+>>   1 file changed, 45 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+>> new file mode 100644
+>> index 0000000..fb14730
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+>> @@ -0,0 +1,45 @@
+>> +DesignWare HDMI bridge bindings
+>> +
+>> +Required properities:
+>> +- compatible: platform specific such as:
+>> +   * "snps,dw-hdmi-tx"
+>> +   * "fsl,imx6q-hdmi"
+>> +   * "fsl,imx6dl-hdmi"
+>> +   * "rockchip,rk3288-dw-hdmi"
+>> +- reg: Physical base address and length of the controller's registers.
+>> +- interrupts: The HDMI interrupt number
+>> +- clocks, clock-names : must have the phandles to the HDMI iahb and isrf clocks,
+>> +  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
+>> +  the clock-names should be "iahb", "isfr"
+> This is missing the port bindings, I think it should mention the port
+> property here and refer to the soc specific binding document.
+>
+>   - port@...: SoC specific port nodes with endpoint definitions as defined
+>     in Documentation/devicetree/bindings/media/video-interfaces.txt,
+>     please refer to the SoC specific binding document:
+>      * Documentation/devicetree/bindings/drm/imx/hdmi.txt
+>      * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+>
+> This also makes be wonder, shouldn't dw_hdmi-rockchip be under drm/?
+    ok, I will add the port bindings
+    because rockchip drm binds are under video, so I put the 
+dw_hdmi-rockchip
+    under video to keep consistency.
+>
+>> +Optional properties
+>> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
+>> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
+>> +- clkocks, clock-names: phandle to the HDMI cec clock, name should be "cec"
+> s/clkocks/clocks/, and I'd uppercase the HDMI CEC clock for consistency.
+     thanks for point it, I will correct it in next version
+>
+>> +
+>> +Example:
+>> +	hdmi: hdmi@0120000 {
+>> +		compatible = "fsl,imx6q-hdmi";
+> Could you change this example to:
+> 		compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx"
+>
+>> +		reg = <0x00120000 0x9000>;
+>> +		interrupts = <0 115 0x04>;
+>> +		gpr = <&gpr>;
+>> +		clocks = <&clks 123>, <&clks 124>;
+>> +		clock-names = "iahb", "isfr";
+>> +		ddc-i2c-bus = <&i2c2>;
+>> +
+>> +		port@0 {
+>> +			reg = <0>;
+>> +
+>> +			hdmi_mux_0: endpoint {
+>> +				remote-endpoint = <&ipu1_di0_hdmi>;
+>> +			};
+>> +		};
+>> +
+>> +		port@1 {
+>> +			reg = <1>;
+>> +
+>> +			hdmi_mux_1: endpoint {
+>> +				remote-endpoint = <&ipu1_di1_hdmi>;
+>> +			};
+>> +		};
+>> +	};
+>
+>
+>
+>
 
---uh9ZiVrAOUUm9fzH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Dec 04, 2014 at 03:23:06PM +0300, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 12/4/2014 3:06 PM, Thierry Reding wrote:
->=20
-> >From: Thierry Reding <treding@nvidia.com>
->=20
-> >Commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error on
-> >failure") broke platforms that rely on deferred probing to order probing
-> >of PHY and host controller drivers. The reason is that the commit simply
-> >propagates errors from __of_usb_find_phy(), which returns -ENODEV if no
-> >PHY has been registered yet for a given device tree node. The only case
-> >in which -EPROBE_DEFER would now be returned is if try_module_get() did
-> >fail, which does not make sense.
->=20
-> >The correct thing to do is to return -EPROBE_DEFER if a PHY hasn't been
-> >registered yet. The only condition under which it makes sense to return
-> >-ENODEV is if the device tree node representing the PHY has been
-> >disabled (via the status property) because in that case the PHY will
-> >never be registered.
->=20
-> >This patch addresses the problem by making __of_usb_find_phy() return an
-> >appropriate error code while keeping in line with the above-mentioned
-> >commit to propagate error codes rather than overwriting them. At the
-> >same time the check for a valid PHY is decoupled from the check for the
-> >try_module_get() call and a separate error code is returned if the
-> >latter fails.
->=20
-> >Signed-off-by: Thierry Reding <treding@nvidia.com>
-> >---
-> >  drivers/usb/phy/phy.c | 14 ++++++++++----
-> >  1 file changed, 10 insertions(+), 4 deletions(-)
->=20
-> >diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-> >index b4066a001ba0..2f9735b35338 100644
-> >--- a/drivers/usb/phy/phy.c
-> >+++ b/drivers/usb/phy/phy.c
-> [...]
-> >@@ -190,10 +193,13 @@ struct usb_phy *devm_usb_get_phy_by_phandle(struct=
- device *dev,
-> >  	spin_lock_irqsave(&phy_lock, flags);
-> >
-> >  	phy =3D __of_usb_find_phy(node);
-> >-	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
-> >-		if (!IS_ERR(phy))
-> >-			phy =3D ERR_PTR(-EPROBE_DEFER);
-> >+	if (IS_ERR(phy)) {
-> >+		devres_free(ptr);
-> >+		goto err1;
-> >+	}
-> >
-> >+	if (!try_module_get(phy->dev->driver->owner)) {
-> >+		phy =3D ERR_PTR(-ENODEV);
-> >  		devres_free(ptr);
-> >  		goto err1;
-> >  	}
->=20
->    I think devres_free() should now be called in one place, under the new
-> 'err2' label.
-
-That'd make things very confusing, though. devres_free() should only be
-called on error, whereas both err1 and err0 are shared with the success
-case as well. If we were to do what you suggest we'd end up with
-something like this:
-
-		...
-
-		phy =3D __of_usb_find_phy(node);
-		if (IS_ERR(phy))
-			goto err2;
-
-		if (!try_module_get(...)) {
-			phy =3D ERR_PTR(-ENODEV);
-			goto err2;
-		}
-
-		*ptr =3D phy;
-		devres_add(dev, ptr);
-
-		get_device(phy->dev);
-
-		goto err1;
-
-	err2:
-		devres_free(ptr);
-
-	err1:
-		spin_unlock_irqrestore(&phy_lock, flags);
-
-	err0:
-		of_node_put(node);
-
-		return phy;
-	}
-
-That's pretty spaghetti-like.
-
-Thierry
-
---uh9ZiVrAOUUm9fzH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUgF/4AAoJEN0jrNd/PrOhJaAP/i4hhUqO2AaBcdSPU9nsr9Ej
-vYj/H9UWJpp5dcG+wZ6NPjZiLdI8I8pFFHGoSFWuCJwRYlKN97WX5Pq0wbDMgLpY
-c6SSC9WY3Qvqyv+xx/7PBQjyafsjSv80tpwd/o38lh6ByEHXf4laSN5ySAyZf/HL
-3fK9okZQ3Kiwr2dmV0EskB44877Yb5zviN71ULzLe2dj9j+iLXndH6wX/Rdikzxv
-evVnghC6/uMnDCY3lhBHLGWevud5qnSQhWcWCVzYhJux9vu7CMOIyrAR6mkRyirb
-MV5Bhlw3CAes82ezW6LQ+y2lZqJkWizsgsL12BHmdZYq9TCOpr2ieXuNUsJ0LE5C
-ukigDz1YKNWi/0/JwC5944M2BiQdj7UEpRzvnR1V3GshaKCIQP/H1RnIWfSHK0mC
-V7Ccya7RMVvmJUfPNvy6sLz0Myj2uf2NH7EHtbtb/vsoCpmjjRdKXf1IExdW1eeL
-0j687Mb0qgn0x8yM7SXDkmkDvyR4+v+Z0x3end1maBRdLOBIK4GiVxGls+z9wqno
-mjR7Lv8C3CWe3z3COKlZK5AQFVYkL+sQap0oB+16W/cVFDF8fx1YOrzqjiCRo6gl
-MPe8QIoUGkgreV7hJx9CWe5LfxzoyuZ1hoCv/lDQLsipfU1goHvRaNpG+rHKSOdS
-x4PVS2iNJPHYBwpIZkin
-=JANr
------END PGP SIGNATURE-----
-
---uh9ZiVrAOUUm9fzH--
