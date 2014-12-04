@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaLDNPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:15:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51559 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754083AbaLDNPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:15:09 -0500
-Message-ID: <54805E30.4090109@redhat.com>
-Date: Thu, 04 Dec 2014 14:14:24 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754234AbaLDNQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:16:51 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:38685 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaLDNQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:16:49 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Dec 2014 08:16:49 EST
+Date: Thu, 4 Dec 2014 14:10:54 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1107877503.20141204141054@eikelenboom.it>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, bhelgaas@google.com,
+        <linux-pci@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot or bus with 'do_flr' SysFS attribute
+In-Reply-To: <5480528F.8010106@citrix.com>
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com> <5480528F.8010106@citrix.com>
 MIME-Version: 1.0
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        fusco@ntop.org
-Subject: Re: Where exactly will arch_fast_hash be used
-References: <20141204081147.GA19030@gondor.apana.org.au> <1417696468.5386.23.camel@localhost>
-In-Reply-To: <1417696468.5386.23.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 01:34 PM, Hannes Frederic Sowa wrote:
-> On Do, 2014-12-04 at 16:11 +0800, Herbert Xu wrote:
->> While working on rhashtable it came to me that this whole concept
->> of arch_fast_hash is flawed.  CRCs are linear functions so it's
->> fairly easy for an attacker to identify collisions or at least
->> eliminate a large amount of search space (e.g., controlling the
->> last bit of the hash result is almost trivial, even when you add
->> a random seed).
->>
->> So what exactly are we going to use arch_fast_hash for? Presumably
->> it's places where security is never goint to be an issue, right?
 
-The original proposal [1] targeted ovs-only as a closed-door user in
-order to speed up the worst case of calculating a hash over the extracted
-flow key, that is, struct sw_flow_key (which nowadays consumes up to
-7 cachelines on x86_64 ...).
+Thursday, December 4, 2014, 1:24:47 PM, you wrote:
 
-   [1] http://thread.gmane.org/gmane.linux.network/293981/
+> On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
+>> 
+>> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+>>>
+>>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
+>>>>
+>>>> Instead of doing all this complex dance, we depend on the toolstack 
+>>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
+>>>> which 'xl' uses when a device is detached or attached from/to a guest. 
+>>>> It bypasses the need to worry about the PCI lock. 
+>>>
+>>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
+>>> proposed). 
+>>>
+>> 
+>> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
 
->> Even if security wasn't an issue, straight CRC32 has really poor
->> lower-order bit distribution, which makes it a terrible choice for
->> a hash table that simply uses the lower-order bits.
->
-> I wondered the same while trying to use arch_fast_hash in a lot more
-> places (I did a new implementation in assembler I'll send later on, it
-> is mostly optimized to deal with ovs flow keys).
->
-> While the uniformity of crc32 does actually look good and IMHO this even
-> holds for the lower bits of the hash, I totally agree on the linearity
-> matters.
->
-> The easiest way to make arch_fast_hash non-linear would be to build up
-> on the crc32 instruction like e.g. the cityhash function family does and
-> it seems not too hard to do that by combining two crc32c outputs of the
-> original and cyclic shifted input data. I have doubts if this is faster
-> than jhash in the end. There are proposals from Intel to do so, but they
-> are patent encumbered. :/
->
-> For most consumers in the networking stack, security and DoS resistence
-> is an issue. OVS, for which this was designed at first does do rehashing
-> from time to time, but still there is a possible DoS attack vector with
-> this hashing algorithm.
+> It is only needed if the core won't provide one.
+
+> +static int pcistub_try_create_reset_file(struct pci_dev *pci)
+> +{
+> +       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
+> +       struct device *dev = &pci->dev;
+> +       int ret;
+> +
+> +       /* Already have a per-function reset? */
+> +       if (pci_probe_reset_function(pci) == 0)
+> +               return 0;
+> +
+> +       ret = device_create_file(dev, &dev_attr_reset);
+> +       if (ret < 0)
+> +               return ret;
++       dev_data->>created_reset_file = true;
+> +       return 0;
+> +}
+
+Wouldn't the "core-reset-sysfs-file" be still wired to the end up calling 
+"pci.c:__pci_dev_reset" ?
+
+The problem with that function is that from my testing it seems that the 
+first option "pci_dev_specific_reset" always seems to return succes, so all the
+other options are skipped (flr, pm, slot, bus). However the device it self is 
+not properly reset enough (perhaps the pci_dev_specific_reset is good enough for 
+none virtualization purposes and it's probably the least intrusive. For 
+virtualization however it would be nice to be sure it resets properly, or have a 
+way to force a specific reset routine.) 
+
+So it's the ordering and skipping of the other resets that seems to make
+this workaround necessary in the first place.
+
+> David
+
+
+
+
+
