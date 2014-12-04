@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaLDNur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:50:47 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:35824 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaLDNup (ORCPT
+	id S1754446AbaLDNvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:51:23 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:50639 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091AbaLDNvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:50:45 -0500
-From: Anjana Sasindran <anjanasasindran123@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        es.Sorensen@redhat.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org,
-        Anjana Sasindran <anjanasasindran123@gmail.com>
-Subject: [PATCH] staging: rtl8723au: hal: Removed space before semicolon
-Date: Thu,  4 Dec 2014 19:20:30 +0530
-Message-Id: <1417701030-5167-1-git-send-email-anjanasasindran123@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 4 Dec 2014 08:51:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPDyKFogROGA+MtQcGNfa052wPKxcs9cpT43NcpcyeGVFCwPoQ@mail.gmail.com>
+References: <1417614107-5985-1-git-send-email-geert+renesas@glider.be>
+	<1417614107-5985-4-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFogROGA+MtQcGNfa052wPKxcs9cpT43NcpcyeGVFCwPoQ@mail.gmail.com>
+Date: Thu, 4 Dec 2014 14:51:19 +0100
+X-Google-Sender-Auth: pSoESXy9drYAdD13ETE4sYsqwlk
+Message-ID: <CAMuHMdVsuCnqwEoP6k4iM0mnsdTiB=d7y4=EAicB_E_ZSec48Q@mail.gmail.com>
+Subject: Re: [PATCH v6 3/7] ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the checkpatch.pl warning:
+Hi Ulf,
 
-WARNING: spaces prohibited before semicolon
+On Thu, Dec 4, 2014 at 2:41 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
+>> index 168046c355fc8368..6d912ce801aa88bd 100644
+>> --- a/arch/arm/mach-shmobile/pm-rmobile.c
+>> +++ b/arch/arm/mach-shmobile/pm-rmobile.c
+>> @@ -118,6 +118,14 @@ static int rmobile_pd_attach_dev(struct generic_pm_domain *domain,
+>>                 goto fail;
+>>         }
+>>
+>> +       if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
+>
+> This will require a fixup later on, since using genpd will always be
+> done for CONFIG_PM_RUNTIME (or CONFIG_PM actually) ).
 
-Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
----
- drivers/staging/rtl8723au/hal/odm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Indeed. But this is queued up in a branch that doesn't have the PM unification
+yet.
 
-diff --git a/drivers/staging/rtl8723au/hal/odm.c b/drivers/staging/rtl8723au/hal/odm.c
-index cabe33a..216930a 100644
---- a/drivers/staging/rtl8723au/hal/odm.c
-+++ b/drivers/staging/rtl8723au/hal/odm.c
-@@ -983,10 +983,10 @@ void odm_1R_CCA23a(struct dm_odm_t *pDM_Odm)
- void ODM_RF_Saving23a(struct dm_odm_t *pDM_Odm, u8 bForceInNormal)
- {
- 	struct dynamic_pwr_sav *pDM_PSTable = &pDM_Odm->DM_PSTable;
--	u8 Rssi_Up_bound = 30 ;
-+	u8 Rssi_Up_bound = 30;
- 	u8 Rssi_Low_bound = 25;
- 	if (pDM_Odm->PatchID == 40) { /* RT_CID_819x_FUNAI_TV */
--		Rssi_Up_bound = 50 ;
-+		Rssi_Up_bound = 50;
- 		Rssi_Low_bound = 45;
- 	}
- 	if (pDM_PSTable->initialize == 0) {
--- 
-1.9.1
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
