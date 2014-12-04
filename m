@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832AbaLDR1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:27:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaLDR1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:27:05 -0500
-Date: Thu, 4 Dec 2014 19:26:50 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH RFC 3/3] virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
-Message-ID: <1417713984-23771-3-git-send-email-mst@redhat.com>
-References: <1417713984-23771-1-git-send-email-mst@redhat.com>
+	id S932853AbaLDR21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:28:27 -0500
+Received: from mail-bn1bon0066.outbound.protection.outlook.com ([157.56.111.66]:3645
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932219AbaLDR2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:28:25 -0500
+Date: Thu, 4 Dec 2014 09:28:17 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: Re: [PATCH v2 0/7] Pinctrl support for Zynq
+References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
+ <CACRpkdbYPmMksbqciiXv4hHBqx9=b8toA5MgCwGSLteUh+NkZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1417713984-23771-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbYPmMksbqciiXv4hHBqx9=b8toA5MgCwGSLteUh+NkZA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21150.000
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <053edb05cd874daf9232cd5e4930df92@BN1BFFO11FD042.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(54534003)(51704005)(377454003)(24454002)(199003)(377424004)(189002)(120916001)(99396003)(74316001)(83506001)(47776003)(85202003)(92726002)(46102003)(4396001)(92566001)(86362001)(19580405001)(85182001)(21056001)(6806004)(50986999)(53416004)(50466002)(107046002)(77156002)(62966003)(110136001)(104016003)(87936001)(54356999)(23676002)(64706001)(108616004)(33646002)(76176999)(31966008)(19580395003)(106466001)(20776003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB040;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB040;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB040;
+X-Forefront-PRVS: 041517DFAB
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB040;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What does it mean if rev 1 device does not set
-VIRTIO_F_VERSION_1? E.g. is it native endian?
+Hi Linus,
 
-Let's not even try to drive such devices:
-skip attempts to finalize features or set status.
-virtio core will detect this and bail out.
+On Thu, 2014-12-04 at 10:44AM +0100, Linus Walleij wrote:
+> On Fri, Nov 28, 2014 at 2:26 AM, Soren Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
+> 
+> > here is v2 of this series. On the functional side, adding the support
+> > for USB mux groups is probably the biggest change. Most other changes
+> > are mostly cosmetic (typos, function names, documentation, ...).
+> > More detailed changelogs are included with the respective patches.
+> 
+> Unfortunately we are late in the merge cycle.
+> 
+> But I am *very* fond of this series, and I appreciate your patches
+> as *lot* Sören.
+> 
+> So my plan is to merge your v3 patch set after the merge window
+> or whenever you have it ready, with the Zynq driver on top and
+> the dependent AMlogic driver too.
+> 
+> Then we spend the next kernel cycle hashing this out and
+> putting some polished generic code in place so we get some
+> order.
+> 
+> This will likely set the pattern for how we expect ACPI pin controllers
+> to behave too, so it is work of great importance.
+> 
+> I hope I can count on you to hang in there and keep driving
+> those patches!
+> 
+> I'll try to provide a deeper look at the indivudual patches now.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/s390/kvm/virtio_ccw.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+Sounds great! After bringing it so far, I wasn't planning of giving up
+now :)
 
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 088bdf1..0ceeb25 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -65,6 +65,7 @@ struct virtio_ccw_device {
- 	bool is_thinint;
- 	bool going_away;
- 	bool device_lost;
-+	bool features_invalid;
- 	void *airq_info;
- };
- 
-@@ -746,6 +747,12 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- 	if (ret == 0)
- 		rc |= (u64)le32_to_cpu(features->features) << 32;
- 
-+	/* Devices MUST set VIRTIO_F_VERSION_1 */
-+	if (!(rc & BIT_ULL(VIRTIO_F_VERSION_1))) {
-+		vcdev->features_invalid = true;
-+		rc |= BIT_ULL(VIRTIO_F_VERSION_1);
-+	}
-+
- out_free:
- 	kfree(features);
- 	kfree(ccw);
-@@ -758,6 +765,10 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- 	struct virtio_feature_desc *features;
- 	struct ccw1 *ccw;
- 
-+	/* Invalid features? Let's not try to drive this device. */
-+	if (vcdev->features_invalid)
-+		return;
-+
- 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
- 	if (!ccw)
- 		return;
-@@ -869,6 +880,10 @@ static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
- 	struct ccw1 *ccw;
- 	int ret;
- 
-+	/* Invalid features? Let's not try to drive this device. */
-+	if (vcdev->features_invalid)
-+		return;
-+
- 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
- 	if (!ccw)
- 		return;
--- 
-MST
+The approach you chose sounds good to me. I was currently waiting to see
+whether there are a few more change requests coming before sending v3.
+The few comments that came in so far I have already fixed up. Since it's
+not going to make it into this merge window there may be some more time
+now, but in general, I could send v3 any time.
 
+	Sören
