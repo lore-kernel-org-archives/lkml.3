@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaLDB6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:58:33 -0500
-Received: from smtprelay0074.hostedemail.com ([216.40.44.74]:60190 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751302AbaLDB6c (ORCPT
+	id S1752145AbaLDCFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:05:06 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55290 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaLDCFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:58:32 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3352:3622:3867:3871:4250:4321:5007:6261:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13311:13357:13972:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: able70_2d3614fe35757
-X-Filterd-Recvd-Size: 2628
-Message-ID: <1417658309.2902.29.camel@perches.com>
-Subject: Re: [PATCH 1/1] Staging: ft1000: fix some coding style issues
-From: Joe Perches <joe@perches.com>
-To: Kevin Pietsch <kevinpietsch@gmail.com>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 03 Dec 2014 17:58:29 -0800
-In-Reply-To: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
-References: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Dec 2014 21:05:03 -0500
+Date: Thu, 4 Dec 2014 11:04:49 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        trivial@kernel.org, akpm@linux-foundation.org, jic23@kernel.org,
+        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
+        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
+        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v10 2/6] backlight: Add support Skyworks SKY81452
+ backlight driver
+Message-ID: <20141204020449.GA2939@jack-ThinkPad-T520>
+References: <1417590332-4912-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1417590332-4912-3-git-send-email-jack.yoo@skyworksinc.com>
+ <1417600949.12511.7.camel@linux-0dmf.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1417600949.12511.7.camel@linux-0dmf.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 20:49 -0500, Kevin Pietsch wrote:
-> Removed braces from two single line if-else statements
+On Wed, Dec 03, 2014 at 11:02:29AM +0100, Oliver Neukum wrote:
+> On Wed, 2014-12-03 at 16:05 +0900, gyungoh@gmail.com wrote:
+> > +static ssize_t sky81452_bl_store_enable(struct device *dev,
+> > +               struct device_attribute *attr, const char *buf, size_t
+> > count)
+> > +{
+> > +       struct regmap *regmap = bl_get_data(to_backlight_device(dev));
+> > +       unsigned long value;
+> > +       int ret;
+> > +
+> > +       ret = kstrtoul(buf, 16, &value);
+> > +       if (IS_ERR_VALUE(ret))
+> > +               return ret;
+> > +
+> > +       ret = regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN,
+> > +                                       value << CTZ(SKY81452_EN));
+> 
+> No range checking for value?
 
-Another perhaps better option is to use ?: like:
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+Avaiable range is from 0 to SKY81452_EN.
+regmap_update_bits() is masking the value.
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index 0038a3a..8743516 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -172,11 +172,8 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
- 	spin_lock_irqsave(&info->dpram_lock, flags);
- 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
- 	/* check if we want to read upper or lower 32-bit word */
--	if (Index) {
--		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
--	} else {
--		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
--	}
-+	data = ft1000_read_reg(dev, index ? FT1000_REG_MAG_DPDATAL
-+					  : FT1000_REG_MAG_DPDATAH);
- 	spin_unlock_irqrestore(&info->dpram_lock, flags);
- 
- 	return data;
-@@ -204,11 +201,8 @@ static inline void ft1000_write_dpram_mag_16(struct net_device *dev,
- 	/* Provide mutual exclusive access while reading ASIC registers. */
- 	spin_lock_irqsave(&info->dpram_lock, flags);
- 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
--	if (Index) {
--		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAL, value);
--	} else {
--		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAH, value);
--	}
-+	ft1000_write_reg(dev, index ? FT1000_REG_MAG_DPDATAL
-+				    : FT1000_REG_MAG_DPDATAH, value);
- 	spin_unlock_irqrestore(&info->dpram_lock, flags);
- }
- 
-
-
+> 
+> > +       if (IS_ERR_VALUE(ret))
+> > +               return ret;
+> > +
+> > +       return count;
+> > +}
+> 
+> 	Regards
+> 		Oliver
+> 
+> -- 
+> Oliver Neukum <oneukum@suse.de>
+> 
