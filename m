@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207AbaLDW4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:56:46 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:61280 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaLDW4o (ORCPT
+	id S933287AbaLDXAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:00:54 -0500
+Received: from smtprelay0160.hostedemail.com ([216.40.44.160]:55325 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754776AbaLDXAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:56:44 -0500
-Message-ID: <5480E715.3020900@gmail.com>
-Date: Fri, 05 Dec 2014 06:58:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
-        "mattst88@gmail.com" <mattst88@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, minchan@kernel.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, linux-api@vger.kernel.org
-Subject: [PATCH] arch: uapi: asm: mman.h: Let MADV_FREE have same value for
- all architectures
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Dec 2014 18:00:53 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:4321:4605:5007:6119:6261:6690:6742:7903:8603:10004:10400:10848:11026:11658:11914:12043:12296:12517:12519:12555:13069:13161:13229:13311:13357:13972:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: toy38_7364478c500f
+X-Filterd-Recvd-Size: 2881
+Message-ID: <1417734048.2721.22.camel@perches.com>
+Subject: [PATCH] x86: bpf_jit_comp: Reduce is_ereg() code size
+From: Joe Perches <joe@perches.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Dec 2014 15:00:48 -0800
+In-Reply-To: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For uapi, need try to let all macros have same value, and MADV_FREE is
-added into main branch recently, so need redefine MADV_FREE for it.
+Use the (1 << reg) & mask trick to reduce code size.
 
-At present, '8' can be shared with all architectures, so redefine it to
-'8'.
+x86-64 size difference -O2 without profiling for various
+gcc versions:
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+$ size arch/x86/net/bpf_jit_comp.o*
+   text    data     bss     dec     hex filename
+   9266       4       0    9270    2436 arch/x86/net/bpf_jit_comp.o.4.4.new
+  10042       4       0   10046    273e arch/x86/net/bpf_jit_comp.o.4.4.old
+   9109       4       0    9113    2399 arch/x86/net/bpf_jit_comp.o.4.6.new
+   9717       4       0    9721    25f9 arch/x86/net/bpf_jit_comp.o.4.6.old
+   8789       4       0    8793    2259 arch/x86/net/bpf_jit_comp.o.4.7.new
+  10245       4       0   10249    2809 arch/x86/net/bpf_jit_comp.o.4.7.old
+   9671       4       0    9675    25cb arch/x86/net/bpf_jit_comp.o.4.9.new
+  10679       4       0   10683    29bb arch/x86/net/bpf_jit_comp.o.4.9.old
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/alpha/include/uapi/asm/mman.h     | 2 +-
- arch/mips/include/uapi/asm/mman.h      | 2 +-
- arch/parisc/include/uapi/asm/mman.h    | 2 +-
- arch/xtensa/include/uapi/asm/mman.h    | 2 +-
- include/uapi/asm-generic/mman-common.h | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/alpha/include/uapi/asm/mman.h b/arch/alpha/include/uapi/asm/mman.h
-index 836fbd4..0b8a5de 100644
---- a/arch/alpha/include/uapi/asm/mman.h
-+++ b/arch/alpha/include/uapi/asm/mman.h
-@@ -44,9 +44,9 @@
- #define MADV_WILLNEED	3		/* will need these pages */
- #define	MADV_SPACEAVAIL	5		/* ensure resources are available */
- #define MADV_DONTNEED	6		/* don't need these pages */
--#define MADV_FREE	7		/* free pages only if memory pressure */
+compiled, untested by me, but per Alexei Starovoitov this passes
+the test_bpf suite
+
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 3f62734..09e2cea 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -135,11 +135,11 @@ static const int reg2hex[] = {
+  */
+ static inline bool is_ereg(u32 reg)
+ {
+-	if (reg == BPF_REG_5 || reg == AUX_REG ||
+-	    (reg >= BPF_REG_7 && reg <= BPF_REG_9))
+-		return true;
+-	else
+-		return false;
++	return (1 << reg) & (BIT(BPF_REG_5) |
++			     BIT(AUX_REG) |
++			     BIT(BPF_REG_7) |
++			     BIT(BPF_REG_8) |
++			     BIT(BPF_REG_9));
+ }
  
- /* common/generic parameters */
-+#define MADV_FREE	8		/* free pages only if memory pressure */
- #define MADV_REMOVE	9		/* remove these pages & resources */
- #define MADV_DONTFORK	10		/* don't inherit across fork */
- #define MADV_DOFORK	11		/* do inherit across fork */
-diff --git a/arch/mips/include/uapi/asm/mman.h b/arch/mips/include/uapi/asm/mman.h
-index 106e741..d247f54 100644
---- a/arch/mips/include/uapi/asm/mman.h
-+++ b/arch/mips/include/uapi/asm/mman.h
-@@ -67,9 +67,9 @@
- #define MADV_SEQUENTIAL 2		/* expect sequential page references */
- #define MADV_WILLNEED	3		/* will need these pages */
- #define MADV_DONTNEED	4		/* don't need these pages */
--#define MADV_FREE	5		/* free pages only if memory pressure */
- 
- /* common parameters: try to keep these consistent across architectures */
-+#define MADV_FREE	8		/* free pages only if memory pressure */
- #define MADV_REMOVE	9		/* remove these pages & resources */
- #define MADV_DONTFORK	10		/* don't inherit across fork */
- #define MADV_DOFORK	11		/* do inherit across fork */
-diff --git a/arch/parisc/include/uapi/asm/mman.h b/arch/parisc/include/uapi/asm/mman.h
-index 6cb8db7..700d83f 100644
---- a/arch/parisc/include/uapi/asm/mman.h
-+++ b/arch/parisc/include/uapi/asm/mman.h
-@@ -40,9 +40,9 @@
- #define MADV_SPACEAVAIL 5               /* insure that resources are reserved */
- #define MADV_VPS_PURGE  6               /* Purge pages from VM page cache */
- #define MADV_VPS_INHERIT 7              /* Inherit parents page size */
--#define MADV_FREE	8		/* free pages only if memory pressure */
- 
- /* common/generic parameters */
-+#define MADV_FREE	8		/* free pages only if memory pressure */
- #define MADV_REMOVE	9		/* remove these pages & resources */
- #define MADV_DONTFORK	10		/* don't inherit across fork */
- #define MADV_DOFORK	11		/* do inherit across fork */
-diff --git a/arch/xtensa/include/uapi/asm/mman.h b/arch/xtensa/include/uapi/asm/mman.h
-index 1b19f25..77eaca4 100644
---- a/arch/xtensa/include/uapi/asm/mman.h
-+++ b/arch/xtensa/include/uapi/asm/mman.h
-@@ -80,9 +80,9 @@
- #define MADV_SEQUENTIAL	2		/* expect sequential page references */
- #define MADV_WILLNEED	3		/* will need these pages */
- #define MADV_DONTNEED	4		/* don't need these pages */
--#define MADV_FREE	5		/* free pages only if memory pressure */
- 
- /* common parameters: try to keep these consistent across architectures */
-+#define MADV_FREE	8		/* free pages only if memory pressure */
- #define MADV_REMOVE	9		/* remove these pages & resources */
- #define MADV_DONTFORK	10		/* don't inherit across fork */
- #define MADV_DOFORK	11		/* do inherit across fork */
-diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
-index 7a94102..8695959 100644
---- a/include/uapi/asm-generic/mman-common.h
-+++ b/include/uapi/asm-generic/mman-common.h
-@@ -34,9 +34,9 @@
- #define MADV_SEQUENTIAL	2		/* expect sequential page references */
- #define MADV_WILLNEED	3		/* will need these pages */
- #define MADV_DONTNEED	4		/* don't need these pages */
--#define MADV_FREE	5		/* free pages only if memory pressure */
- 
- /* common parameters: try to keep these consistent across architectures */
-+#define MADV_FREE	8		/* free pages only if memory pressure */
- #define MADV_REMOVE	9		/* remove these pages & resources */
- #define MADV_DONTFORK	10		/* don't inherit across fork */
- #define MADV_DOFORK	11		/* do inherit across fork */
--- 
-1.9.3
+ /* add modifiers if 'reg' maps to x64 registers r8..r15 */
+
+
