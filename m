@@ -1,221 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaLDPg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:36:29 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:45346 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276AbaLDPg1 (ORCPT
+	id S1754546AbaLDPhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:37:19 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:42798 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaLDPhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:36:27 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Dec 2014 10:36:26 EST
-Date: Thu, 4 Dec 2014 15:25:12 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
-        josh.triplett@intel.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Will Arthur <will.c.arthur@intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v9 8/8] tpm: TPM 2.0 FIFO Interface
-In-Reply-To: <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1412041459470.5705@localhost.localdomain>
-References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 4 Dec 2014 10:37:17 -0500
+Message-ID: <54807FC3.9050305@gmail.com>
+Date: Thu, 04 Dec 2014 10:37:39 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [RFC PATCH v2] tinification: Introduce CONFIG_SRCU to make SRCU
+ optional
+References: <1417665832-6933-1-git-send-email-bobby.prani@gmail.com> <20141204062704.GH25340@linux.vnet.ibm.com>
+In-Reply-To: <20141204062704.GH25340@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jarkko,
-
-On Thu, 4 Dec 2014, Jarkko Sakkinen wrote:
-> From: Will Arthur <will.c.arthur@intel.com>
+On 12/04/2014 01:27 AM, Paul E. McKenney wrote:
+> For the moment, I applied this to -rcu against v3.18-rc6 to get some 0day
+> testing on it.
 > 
-> Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
-> instead of calling tpm_get_timeouts(), assign duration and timeout
-> values defined in the TPM 2.0 PTP specification.
+> There are conflicts against the tip of my tree, but will worry about
+> that later.  I don't have a ready answer on whether or not this needs
+> to be split up -- in the worst case, we would add the SRCU Kconfig
+> parameter, add all the selects, then once they all hit mainline add the
+> Makefile change.
 > 
-> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> ---
->  drivers/char/tpm/tpm_tis.c | 80 ++++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 67 insertions(+), 13 deletions(-)
+> We will need stats on how much memory was saved, and a "size kernel/rcu/srcu.o"
+> after a UP/tiny build should do it.  Could you please add this to the
+> commit log?
 > 
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index 89e1abb..71cbb2d 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -1,5 +1,6 @@
->  /*
->   * Copyright (C) 2005, 2006 IBM Corporation
-> + * Copyright (C) 2014 Intel Corporation
->   *
->   * Authors:
->   * Leendert van Doorn <leendert@watson.ibm.com>
-> @@ -44,6 +45,10 @@ enum tis_status {
->  	TPM_STS_DATA_EXPECT = 0x08,
->  };
->  
-> +enum tis_status3 {
-> +	TPM_STS3_TPM2_FAM = 0x04,
-> +};
-> +
->  enum tis_int_flags {
->  	TPM_GLOBAL_INT_ENABLE = 0x80000000,
->  	TPM_INTF_BURST_COUNT_STATIC = 0x100,
-> @@ -70,6 +75,7 @@ enum tis_defaults {
->  #define	TPM_INT_STATUS(l)		(0x0010 | ((l) << 12))
->  #define	TPM_INTF_CAPS(l)		(0x0014 | ((l) << 12))
->  #define	TPM_STS(l)			(0x0018 | ((l) << 12))
-> +#define	TPM_STS3(l)			(0x001b | ((l) << 12))
->  #define	TPM_DATA_FIFO(l)		(0x0024 | ((l) << 12))
->  
->  #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
-> @@ -363,6 +369,7 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
->  {
->  	int rc;
->  	u32 ordinal;
-> +	unsigned long dur;
->  
->  	rc = tpm_tis_send_data(chip, buf, len);
->  	if (rc < 0)
-> @@ -374,9 +381,14 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
->  
->  	if (chip->vendor.irq) {
->  		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
-> +
-> +		if (chip->flags & TPM_CHIP_FLAG_TPM2)
-> +			dur = tpm2_calc_ordinal_duration(chip, ordinal);
-> +		else
-> +			dur = tpm_calc_ordinal_duration(chip, ordinal);
-> +
->  		if (wait_for_tpm_stat
-> -		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-> -		     tpm_calc_ordinal_duration(chip, ordinal),
-> +		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID, dur,
->  		     &chip->vendor.read_queue, false) < 0) {
->  			rc = -ETIME;
->  			goto out_err;
-> @@ -588,6 +600,7 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->  	int rc, i, irq_s, irq_e, probe;
->  	struct tpm_chip *chip;
->  	struct priv_data *priv;
-> +	u8 sts3;
->  
->  	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
->  	if (priv == NULL)
-> @@ -604,11 +617,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->  	if (!chip->vendor.iobase)
->  		return -EIO;
->  
-> +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
-> +	if ((sts3 & TPM_STS3_TPM2_FAM) == TPM_STS3_TPM2_FAM)
-> +		chip->flags = TPM_CHIP_FLAG_TPM2;
-> +
->  	/* Default timeouts */
-> -	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> -	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
-> -	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> -	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-> +		chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
-> +		chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
-> +		chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
-> +		chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
-> +		chip->vendor.duration[TPM_SHORT] =
-> +			usecs_to_jiffies(TPM2_DURATION_SHORT);
-> +		chip->vendor.duration[TPM_MEDIUM] =
-> +			usecs_to_jiffies(TPM2_DURATION_MEDIUM);
-> +		chip->vendor.duration[TPM_LONG] =
-> +			usecs_to_jiffies(TPM2_DURATION_LONG);
-> +	} else {
-> +		chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> +		chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
-> +		chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> +		chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-> +	}
->  
->  	if (wait_startup(chip, 0) != 0) {
->  		rc = -ENODEV;
-> @@ -623,8 +653,8 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->  	vendor = ioread32(chip->vendor.iobase + TPM_DID_VID(0));
->  	chip->vendor.manufacturer_id = vendor;
->  
-> -	dev_info(dev,
-> -		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
-> +	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
-> +		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
->  		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
->  
->  	if (!itpm) {
-> @@ -665,6 +695,23 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->  	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
->  		dev_dbg(dev, "\tData Avail Int Support\n");
->  
-> +	/* get the timeouts before testing for irqs */
-> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2) && tpm_get_timeouts(chip)) {
-> +		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-> +		rc = tpm2_do_selftest(chip);
-> +	else
-> +		rc = tpm_do_selftest(chip);
-> +	if (rc) {
-> +		dev_err(dev, "TPM self test failed\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
->  	/* INTERRUPT Setup */
->  	init_waitqueue_head(&chip->vendor.read_queue);
->  	init_waitqueue_head(&chip->vendor.int_queue);
 
-In Peter's for-james branch, commit 0e6cb01, the v1.2 calls to
-tpm_get_timeouts and tpm_do_selftest were moved toward the end of 
-tpm_tis_init.
+So if we do not select CONFIG_SRCU, srcu.o will not be compiled at all. So we should save about
 
+   text	   data	    bss	    dec	    hex	filename
+   2007	      0	      0	   2007	    7d7	kernel/rcu/srcu.o
 
-> @@ -720,7 +767,10 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->  			chip->vendor.probed_irq = 0;
->  
->  			/* Generate Interrupts */
-> -			tpm_gen_interrupt(chip);
-> +			if (chip->flags & TPM_CHIP_FLAG_TPM2)
-> +				tpm2_gen_interrupt(chip);
-> +			else
-> +				tpm_gen_interrupt(chip);
->  
->  			chip->vendor.irq = chip->vendor.probed_irq;
->  
-> @@ -808,14 +858,18 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
->  static int tpm_tis_resume(struct device *dev)
->  {
->  	struct tpm_chip *chip = dev_get_drvdata(dev);
-> -	int ret;
-> +	int ret = 0;
->  
->  	if (chip->vendor.irq)
->  		tpm_tis_reenable_interrupts(chip);
->  
-> -	ret = tpm_pm_resume(dev);
-> -	if (!ret)
-> -		tpm_do_selftest(chip);
-> +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-> +		tpm2_do_selftest(chip);
-> +	else {
-> +		ret = tpm_pm_resume(dev);
-> +		if (!ret)
-> +			tpm_do_selftest(chip);
-> +	}
->  
->  	return ret;
->  }
-> -- 
-> 2.1.0
-> 
+as in size of arch/powerpc/boot/zImage changes from
+
+   text	   data	    bss	    dec	    hex	filename
+ 831552	  64180	  23944	 919676	  e087c	arch/powerpc/boot/zImage : before
+ 829504	  64180	  23952	 917636	  e0084	arch/powerpc/boot/zImage : after
+
+so about ~2000 bytes I guess. 
+
+--
+Pranith
+
