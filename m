@@ -1,166 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaLDWf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:35:29 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:9326 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879AbaLDWf1 (ORCPT
+	id S933146AbaLDWfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:35:54 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50279 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841AbaLDWfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:35:27 -0500
-X-IronPort-AV: E=Sophos;i="5.07,518,1413270000"; 
-   d="scan'208";a="52158773"
-Message-ID: <5480E1AA.4060108@broadcom.com>
-Date: Thu, 4 Dec 2014 14:35:22 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 4 Dec 2014 17:35:52 -0500
+Date: Thu, 4 Dec 2014 22:35:24 +0000
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: m.chehab@samsung.com
+Cc: jarod@wilsonet.com, gregkh@linuxfoundation.org,
+        mahfouz.saif.elyazal@gmail.com, gulsah.1004@gmail.com,
+        tuomas.tynkkynen@iki.fi, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/2] staging: media: lirc: lirc_zilog.c: keep consistency
+ in dev functions
+Message-ID: <20141204223524.GA17650@biggie>
 MIME-Version: 1.0
-To: Belisko Marek <marek.belisko@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Scott Branden <sbranden@broadcom.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
-References: <rjui@broadcom.com>	<1417730171-30455-1-git-send-email-rjui@broadcom.com>	<1417730171-30455-2-git-send-email-rjui@broadcom.com> <CAAfyv37Z=Bs1Ggydg5bX5z=005P+LOXNp0qNMA43a3BsAPSA7w@mail.gmail.com>
-In-Reply-To: <CAAfyv37Z=Bs1Ggydg5bX5z=005P+LOXNp0qNMA43a3BsAPSA7w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The previous patch switched some dev functions to move the string to a second
+line. Doing this for all similar functions because it makes the driver easier
+to read if all similar lines use the same criteria.
 
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+---
+ drivers/staging/media/lirc/lirc_zilog.c | 155 +++++++++++++++++++++-----------
+ 1 file changed, 102 insertions(+), 53 deletions(-)
 
-On 12/4/2014 2:16 PM, Belisko Marek wrote:
-> On Thu, Dec 4, 2014 at 10:56 PM, Ray Jui <rjui@broadcom.com> wrote:
->> Device tree binding documentation for Broadcom Cygnus pinctrl driver
->>
->> Signed-off-by: Ray Jui <rjui@broadcom.com>
->> Reviewed-by: Scott Branden <sbranden@broadcom.com>
->> ---
->>   .../bindings/pinctrl/brcm,cygnus-pinctrl.txt       |   92 ++++++++++++++++++++
->>   1 file changed, 92 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
->>
->> diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
->> new file mode 100644
->> index 0000000..86e4579
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
->> @@ -0,0 +1,92 @@
->> +Broadcom Cygnus Pin Controller
->> +
->> +The Cygnus pin controller supports setting the alternate functions of groups
->> +of pins. Pinmux configuration on individual pins is not supported by the
->> +Cygnus A0 SoC.
->> +
->> +Required properties:
->> +
->> +- compatible:
->> +    Must be "brcm,cygnus-pinctrl"
->> +
->> +- reg:
->> +    Define the base and range of the I/O address space that contain the Cygnus
->> +pin control registers
->> +
->> +- brcm,groups:
->> +    This can be strings of one or more group names. This defines the group(s)
->> +that one wants to configure
->> +
->> +- brcm,function:
->> +    This is the alternate function that one wants to configure to. Valid
->> +alternate functions are "alt1", "alt2", "alt3", "alt4"
->> +
->> +Each child node represents a configuration. Client devices reference the the
->> +child node to enable the mux configuration.
->> +
->> +For example:
->> +
->> +       pinctrl: pinctrl@0x0301d0c8 {
->> +               compatible = "brcm,cygnus-pinctrl";
->> +               reg = <0x0301d0c8 0x2c>;
->> +
->> +               i2s_0: i2s_0 {
->> +                       brcm,groups = "smart_card0", "smart_card0_fcb";
->> +                       brcm,function = "alt2";
->> +               };
->> +
->> +               i2s_1: i2s_1 {
->> +                       brcm,groups = "smart_card1", "smart_card1_fcb";
->> +                       brcm,function = "alt2";
->> +               };
->> +
->> +               spi_0: spi_0 {
->> +                       brcm,groups = "spi0";
->> +                       brcm,function = "alt1";
->> +               };
->> +       }
->> +
->> +       spi0@18028000 {
->> +                       compatible = "arm,pl022", "arm,primecell";
->> +                       reg = <0x18028000 0x1000>;
->> +                       #address-cells = <1>;
->> +                       #size-cells = <0>;
->> +                       interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
->> +                       pinctrl-0 = <&spi_0>;
->> +                       clocks = <&axi81_clk>;
->> +                       clock-names = "apb_pclk";
->> +       };
->> +
->> +Consider the following snapshot of Cygnus pinmux table:
->> +
->> +number    pin            group              alt1             alt2        alt3        alt4
->> +------    ---            ----               ----             ----        ----        ----
->> +42        sc0_clk        smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio24
->> +43        sc0_cmdvcc_l   smart_card0        SMART CARD0      I2S_0       N/A         STRAP
->> +44        sc0_detect     smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio25
->> +45        sc0_fcb        smart_card0_fcb    SMART CARD0_FCB  I2S_0       N/A         chip_gpio26
->> +46        sc0_io         smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio27
->> +47        sc0_rst_l      smart_card0        SMART CARD0      SPDIF       N/A         STRAP
->> +
->> +Note due to limitation of the Cygnus hardware, pinmux configuration can only
->> +be group based. To enable I2S_0 function, one needs the following child node
->> +configuration:
->> +
->> +       i2s_0: i2s_0 {
->> +               brcm,groups = "smart_card0", "smart_card0_fcb";
->> +               brcm,function = "alt2";
->> +       };
->> +
->> +This tells the Cygnus pin controller to configure groups "smart_card0" and
->> +"smart_card0_fcb" to I2S_0. With this configuration, pins 42, 43, 44, 45, 46
->> +become I2C_0, and pin 47 becomes SPDIF
->                    ^^^^ typo - should be I2S_0
-Oh yeah. Will change from I2C_0 to I2S_0. Thanks.
->> +
->> +Consider another example, that one wants to configure the above pins as GPIO:
->> +
->> +       gpio_24_27: gpio_24_27 {
->> +               brcm,groups = "smart_card0", "smart_card0_fcb";
->> +               brcm,function = "alt4";
->> +       };
->> +
->> +With the above configuration, pins 42, 44, 45, 46 become GPIO, and 43 and 47
->> +become reserved for STRAP
->> --
->> 1.7.9.5
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
-> BR,
->
-> marek
->
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index 8814a7e..af46827 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -322,7 +322,8 @@ static int add_to_buf(struct IR *ir)
+ 	struct IR_tx *tx;
+ 
+ 	if (lirc_buffer_full(rbuf)) {
+-		dev_dbg(ir->l.dev, "buffer overflow\n");
++		dev_dbg(ir->l.dev,
++			"buffer overflow\n");
+ 		return -EOVERFLOW;
+ 	}
+ 
+@@ -368,8 +369,9 @@ static int add_to_buf(struct IR *ir)
+ 		 */
+ 		ret = i2c_master_send(rx->c, sendbuf, 1);
+ 		if (ret != 1) {
+-			dev_err(ir->l.dev, "i2c_master_send failed with %d\n",
+-					   ret);
++			dev_err(ir->l.dev,
++				"i2c_master_send failed with %d\n",
++				ret);
+ 			if (failures >= 3) {
+ 				mutex_unlock(&ir->ir_lock);
+ 				dev_err(ir->l.dev,
+@@ -412,8 +414,9 @@ static int add_to_buf(struct IR *ir)
+ 			rx->b[0] = keybuf[3];
+ 			rx->b[1] = keybuf[4];
+ 			rx->b[2] = keybuf[5];
+-			dev_dbg(ir->l.dev, "key (0x%02x/0x%02x)\n",
+-					   rx->b[0], rx->b[1]);
++			dev_dbg(ir->l.dev,
++				"key (0x%02x/0x%02x)\n",
++				rx->b[0], rx->b[1]);
+ 		}
+ 
+ 		/* key pressed ? */
+@@ -464,7 +467,8 @@ static int lirc_thread(void *arg)
+ 	struct IR *ir = arg;
+ 	struct lirc_buffer *rbuf = ir->l.rbuf;
+ 
+-	dev_dbg(ir->l.dev, "poll thread started\n");
++	dev_dbg(ir->l.dev,
++		"poll thread started\n");
+ 
+ 	while (!kthread_should_stop()) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+@@ -492,7 +496,8 @@ static int lirc_thread(void *arg)
+ 			wake_up_interruptible(&rbuf->wait_poll);
+ 	}
+ 
+-	dev_dbg(ir->l.dev, "poll thread ended\n");
++	dev_dbg(ir->l.dev,
++		"poll thread ended\n");
+ 	return 0;
+ }
+ 
+@@ -654,11 +659,14 @@ static int send_data_block(struct IR_tx *tx, unsigned char *data_block)
+ 		buf[0] = (unsigned char)(i + 1);
+ 		for (j = 0; j < tosend; ++j)
+ 			buf[1 + j] = data_block[i + j];
+-		dev_dbg(tx->ir->l.dev, "%*ph", 5, buf);
++		dev_dbg(tx->ir->l.dev,
++			"%*ph",
++			5, buf);
+ 		ret = i2c_master_send(tx->c, buf, tosend + 1);
+ 		if (ret != tosend + 1) {
+-			dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n",
+-					       ret);
++			dev_err(tx->ir->l.dev,
++				"i2c_master_send failed with %d\n",
++				ret);
+ 			return ret < 0 ? ret : -EFAULT;
+ 		}
+ 		i += tosend;
+@@ -682,7 +690,9 @@ static int send_boot_data(struct IR_tx *tx)
+ 	buf[1] = 0x20;
+ 	ret = i2c_master_send(tx->c, buf, 2);
+ 	if (ret != 2) {
+-		dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+@@ -699,19 +709,24 @@ static int send_boot_data(struct IR_tx *tx)
+ 	}
+ 
+ 	if (ret != 1) {
+-		dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+ 	/* Here comes the firmware version... (hopefully) */
+ 	ret = i2c_master_recv(tx->c, buf, 4);
+ 	if (ret != 4) {
+-		dev_err(tx->ir->l.dev, "i2c_master_recv failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_recv failed with %d\n",
++			ret);
+ 		return 0;
+ 	}
+ 	if ((buf[0] != 0x80) && (buf[0] != 0xa0)) {
+-		dev_err(tx->ir->l.dev, "unexpected IR TX init response: %02x\n",
+-				       buf[0]);
++		dev_err(tx->ir->l.dev,
++			"unexpected IR TX init response: %02x\n",
++			buf[0]);
+ 		return 0;
+ 	}
+ 	dev_notice(tx->ir->l.dev,
+@@ -763,12 +778,15 @@ static int fw_load(struct IR_tx *tx)
+ 	/* Request codeset data file */
+ 	ret = request_firmware(&fw_entry, "haup-ir-blaster.bin", tx->ir->l.dev);
+ 	if (ret != 0) {
+-		dev_err(tx->ir->l.dev, "firmware haup-ir-blaster.bin not available (%d)\n",
+-			    ret);
++		dev_err(tx->ir->l.dev,
++			"firmware haup-ir-blaster.bin not available (%d)\n",
++			ret);
+ 		ret = ret < 0 ? ret : -EFAULT;
+ 		goto out;
+ 	}
+-	dev_dbg(tx->ir->l.dev, "firmware of size %zu loaded\n", fw_entry->size);
++	dev_dbg(tx->ir->l.dev,
++		"firmware of size %zu loaded\n",
++		fw_entry->size);
+ 
+ 	/* Parse the file */
+ 	tx_data = vmalloc(sizeof(*tx_data));
+@@ -813,8 +831,9 @@ static int fw_load(struct IR_tx *tx)
+ 			      &tx_data->num_code_sets))
+ 		goto corrupt;
+ 
+-	dev_dbg(tx->ir->l.dev, "%u IR blaster codesets loaded\n",
+-			       tx_data->num_code_sets);
++	dev_dbg(tx->ir->l.dev,
++		"%u IR blaster codesets loaded\n",
++		tx_data->num_code_sets);
+ 
+ 	tx_data->code_sets = vmalloc(
+ 		tx_data->num_code_sets * sizeof(char *));
+@@ -878,7 +897,8 @@ static int fw_load(struct IR_tx *tx)
+ 	goto out;
+ 
+ corrupt:
+-	dev_err(tx->ir->l.dev, "firmware is corrupt\n");
++	dev_err(tx->ir->l.dev,
++		"firmware is corrupt\n");
+ 	fw_unload_locked();
+ 	ret = -EFAULT;
+ 
+@@ -898,9 +918,11 @@ static ssize_t read(struct file *filep, char __user *outbuf, size_t n,
+ 	unsigned int m;
+ 	DECLARE_WAITQUEUE(wait, current);
+ 
+-	dev_dbg(ir->l.dev, "read called\n");
++	dev_dbg(ir->l.dev,
++		"read called\n");
+ 	if (n % rbuf->chunk_size) {
+-		dev_dbg(ir->l.dev, "read result = -EINVAL\n");
++		dev_dbg(ir->l.dev,
++			"read result = -EINVAL\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -944,8 +966,9 @@ static ssize_t read(struct file *filep, char __user *outbuf, size_t n,
+ 			unsigned char buf[MAX_XFER_SIZE];
+ 
+ 			if (rbuf->chunk_size > sizeof(buf)) {
+-				dev_err(ir->l.dev, "chunk_size is too big (%d)!\n",
+-					    rbuf->chunk_size);
++				dev_err(ir->l.dev,
++					"chunk_size is too big (%d)!\n",
++					rbuf->chunk_size);
+ 				ret = -EINVAL;
+ 				break;
+ 			}
+@@ -958,7 +981,8 @@ static ssize_t read(struct file *filep, char __user *outbuf, size_t n,
+ 				retries++;
+ 			}
+ 			if (retries >= 5) {
+-				dev_err(ir->l.dev, "Buffer read failed!\n");
++				dev_err(ir->l.dev,
++					"Buffer read failed!\n");
+ 				ret = -EIO;
+ 			}
+ 		}
+@@ -968,8 +992,9 @@ static ssize_t read(struct file *filep, char __user *outbuf, size_t n,
+ 	put_ir_rx(rx, false);
+ 	set_current_state(TASK_RUNNING);
+ 
+-	dev_dbg(ir->l.dev, "read result = %d (%s)\n",
+-			   ret, ret ? "Error" : "OK");
++	dev_dbg(ir->l.dev,
++		"read result = %d (%s)\n",
++		ret, ret ? "Error" : "OK");
+ 
+ 	return ret ? ret : written;
+ }
+@@ -1002,7 +1027,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	buf[1] = 0x40;
+ 	ret = i2c_master_send(tx->c, buf, 2);
+ 	if (ret != 2) {
+-		dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+@@ -1015,18 +1042,23 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	}
+ 
+ 	if (ret != 1) {
+-		dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+ 	/* Send finished download? */
+ 	ret = i2c_master_recv(tx->c, buf, 1);
+ 	if (ret != 1) {
+-		dev_err(tx->ir->l.dev, "i2c_master_recv failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_recv failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 	if (buf[0] != 0xA0) {
+-		dev_err(tx->ir->l.dev, "unexpected IR TX response #1: %02x\n",
++		dev_err(tx->ir->l.dev,
++			"unexpected IR TX response #1: %02x\n",
+ 			buf[0]);
+ 		return -EFAULT;
+ 	}
+@@ -1036,7 +1068,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	buf[1] = 0x80;
+ 	ret = i2c_master_send(tx->c, buf, 2);
+ 	if (ret != 2) {
+-		dev_err(tx->ir->l.dev, "i2c_master_send failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+@@ -1046,7 +1080,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	 * going to skip this whole mess and say we're done on the HD PVR
+ 	 */
+ 	if (!tx->post_tx_ready_poll) {
+-		dev_dbg(tx->ir->l.dev, "sent code %u, key %u\n", code, key);
++		dev_dbg(tx->ir->l.dev,
++			"sent code %u, key %u\n",
++			code, key);
+ 		return 0;
+ 	}
+ 
+@@ -1076,17 +1112,22 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	/* Seems to be an 'ok' response */
+ 	i = i2c_master_recv(tx->c, buf, 1);
+ 	if (i != 1) {
+-		dev_err(tx->ir->l.dev, "i2c_master_recv failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"i2c_master_recv failed with %d\n",
++			ret);
+ 		return -EFAULT;
+ 	}
+ 	if (buf[0] != 0x80) {
+-		dev_err(tx->ir->l.dev, "unexpected IR TX response #2: %02x\n",
+-				       buf[0]);
++		dev_err(tx->ir->l.dev,
++			"unexpected IR TX response #2: %02x\n",
++			buf[0]);
+ 		return -EFAULT;
+ 	}
+ 
+ 	/* Oh good, it worked */
+-	dev_dbg(tx->ir->l.dev, "sent code %u, key %u\n", code, key);
++	dev_dbg(tx->ir->l.dev,
++		"sent code %u, key %u\n",
++		code, key);
+ 	return 0;
+ }
+ 
+@@ -1211,7 +1252,8 @@ static unsigned int poll(struct file *filep, poll_table *wait)
+ 	struct lirc_buffer *rbuf = ir->l.rbuf;
+ 	unsigned int ret;
+ 
+-	dev_dbg(ir->l.dev, "poll called\n");
++	dev_dbg(ir->l.dev,
++		"poll called\n");
+ 
+ 	rx = get_ir_rx(ir);
+ 	if (rx == NULL) {
+@@ -1219,7 +1261,8 @@ static unsigned int poll(struct file *filep, poll_table *wait)
+ 		 * Revisit this, if our poll function ever reports writeable
+ 		 * status for Tx
+ 		 */
+-		dev_dbg(ir->l.dev, "poll result = POLLERR\n");
++		dev_dbg(ir->l.dev,
++			"poll result = POLLERR\n");
+ 		return POLLERR;
+ 	}
+ 
+@@ -1232,8 +1275,9 @@ static unsigned int poll(struct file *filep, poll_table *wait)
+ 	/* Indicate what ops could happen immediately without blocking */
+ 	ret = lirc_buffer_empty(rbuf) ? 0 : (POLLIN|POLLRDNORM);
+ 
+-	dev_dbg(ir->l.dev, "poll result = %s\n",
+-			   ret ? "POLLIN|POLLRDNORM" : "none");
++	dev_dbg(ir->l.dev,
++		"poll result = %s\n",
++		ret ? "POLLIN|POLLRDNORM" : "none");
+ 	return ret;
+ }
+ 
+@@ -1340,7 +1384,8 @@ static int close(struct inode *node, struct file *filep)
+ 	struct IR *ir = filep->private_data;
+ 
+ 	if (ir == NULL) {
+-		dev_err(ir->l.dev, "close: no private_data attached to the file!\n");
++		dev_err(ir->l.dev,
++			"close: no private_data attached to the file!\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -1452,7 +1497,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	int ret;
+ 	bool tx_probe = false;
+ 
+-	dev_dbg(&client->dev, "%s: %s on i2c-%d (%s), client addr=0x%02x\n",
++	dev_dbg(&client->dev,
++		"%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+ 		__func__, id->name, adap->nr, adap->name, client->addr);
+ 
+ 	/*
+@@ -1611,13 +1657,15 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	ir->l.minor = minor; /* module option: user requested minor number */
+ 	ir->l.minor = lirc_register_driver(&ir->l);
+ 	if (ir->l.minor < 0 || ir->l.minor >= MAX_IRCTL_DEVICES) {
+-		dev_err(tx->ir->l.dev, "%s: \"minor\" must be between 0 and %d (%d)!\n",
+-			    __func__, MAX_IRCTL_DEVICES-1, ir->l.minor);
++		dev_err(tx->ir->l.dev,
++			"%s: \"minor\" must be between 0 and %d (%d)!\n",
++			__func__, MAX_IRCTL_DEVICES-1, ir->l.minor);
+ 		ret = -EBADRQC;
+ 		goto out_put_xx;
+ 	}
+-	dev_info(ir->l.dev, "IR unit on %s (i2c-%d) registered as lirc%d and ready\n",
+-		   adap->name, adap->nr, ir->l.minor);
++	dev_info(ir->l.dev,
++		 "IR unit on %s (i2c-%d) registered as lirc%d and ready\n",
++		 adap->name, adap->nr, ir->l.minor);
+ 
+ out_ok:
+ 	if (rx != NULL)
+@@ -1625,8 +1673,9 @@ out_ok:
+ 	if (tx != NULL)
+ 		put_ir_tx(tx, true);
+ 	put_ir_device(ir, true);
+-	dev_info(ir->l.dev, "probe of IR %s on %s (i2c-%d) done\n",
+-		   tx_probe ? "Tx" : "Rx", adap->name, adap->nr);
++	dev_info(ir->l.dev,
++		 "probe of IR %s on %s (i2c-%d) done\n",
++		 tx_probe ? "Tx" : "Rx", adap->name, adap->nr);
+ 	mutex_unlock(&ir_devices_lock);
+ 	return 0;
+ 
+@@ -1638,9 +1687,9 @@ out_put_xx:
+ out_put_ir:
+ 	put_ir_device(ir, true);
+ out_no_ir:
+-	dev_err(&client->dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+-		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
+-		   ret);
++	dev_err(&client->dev,
++		"%s: probing IR %s on %s (i2c-%d) failed with %d\n",
++		__func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr, ret);
+ 	mutex_unlock(&ir_devices_lock);
+ 	return ret;
+ }
+-- 
+2.1.3
+
