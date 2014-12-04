@@ -1,201 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaLDHTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:19:00 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:36367 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaLDHS7 (ORCPT
+	id S1752654AbaLDHUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:20:24 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59318 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaLDHUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:18:59 -0500
-Date: Thu, 4 Dec 2014 16:18:56 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-sh@vger.kernel.org, tglx@linutronix.de, jason@lakedaemon.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/02] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup
- support
-Message-ID: <20141204071854.GD25806@verge.net.au>
-References: <20141203121753.5936.36253.sendpatchset@w520>
- <20141203121803.5936.35881.sendpatchset@w520>
+	Thu, 4 Dec 2014 02:20:23 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 4 Dec 2014 16:20:53 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: =?utf-8?B?IuuwleyKue2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKUFP?=
+	 =?utf-8?B?VO2MgChzZXVuZ2hvMS5wYXJrQGxnZS5jb20pIg==?= 
+	<seungho1.park@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com
+Subject: Re: [RFC 0/6] zsmalloc support compaction
+Message-ID: <20141204072053.GA11990@bbox>
+References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
+ <548003F1.2080004@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141203121803.5936.35881.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <548003F1.2080004@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Hey Seungho,
 
-I see you have been busy with the marzen board.
+On Thu, Dec 04, 2014 at 03:49:21PM +0900, "박승호/책임연구원/SW Platform(연)AOT팀(seungho1.park@lge.com)" wrote:
+> Hi, Minchan.
+> 
+> I have a question.
+> The problem mentioned can't be resolved with compaction?
+> Is there any reason that zsmalloc pages can't be moved by compaction
+> operation in direct reclaim?
 
-On Wed, Dec 03, 2014 at 09:18:03PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm+renesas@opensource.se>
-> 
-> Add r8a7779 specific support for IRLM bit configuration
-> in the INTC-IRQPIN driver. Without this code we need
-> special workaround code in arch/arm/mach-shmobile.
-> 
-> The IRLM bit for the INTC hardware exists on various
-> older SH-based SoCs and is used to select between two
-> modes for the external interrupt pins IRQ0 to IRQ3:
-> 
-> IRLM = 0: (default from reset on r8a7779)
-> In this mode the pins IRQ0 to IRQ3 are used together
-> to give a value between 0 and 15 to the SoC. External
-> logic is required for masking. This mode is not
-> supported by the INTC-IRQPIN driver.
-> 
-> IRLM = 1: (needs this patch or configuration elsewhere)
-> In this mode IRQ0 to IRQ3 operate as 4 individual
-> external interrupt pins. In this mode the SMSC ethernet
-> chip can be used via IRQ1 on r8a7779 Marzen. This mode
-> is the only supported mode by the INTC-IRQPIN driver.
-> 
-> For this patch to work the r8a7779 DTS needs to pass
-> the ICR0 register as the last register bank.
-> 
-> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> ---
-> 
->  Written against renesas-devel-20141202-v3.18-rc7 which is
->  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
->  
->  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt |    5 +
->  drivers/irqchip/irq-renesas-intc-irqpin.c                                      |   50 ++++++++--
->  2 files changed, 46 insertions(+), 9 deletions(-)
-> 
-> --- 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
-> +++ work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt	2014-12-03 20:25:13.000000000 +0900
-> @@ -9,6 +9,11 @@ Required properties:
->      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
->      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
->      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-> +
-> +- reg: Base address and length of each register bank used by the external
-> +  IRQ pins driven by the interrupt controller hardware module. The base
-> +  addresses, length and number of required register banks varies with soctype.
-> +
->  - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
->    interrupts.txt in this directory
->  
-> --- 0001/drivers/irqchip/irq-renesas-intc-irqpin.c
-> +++ work/drivers/irqchip/irq-renesas-intc-irqpin.c	2014-12-03 20:32:59.000000000 +0900
-> @@ -30,6 +30,7 @@
->  #include <linux/err.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/of_device.h>
->  #include <linux/platform_data/irq-renesas-intc-irqpin.h>
->  #include <linux/pm_runtime.h>
->  
-> @@ -40,7 +41,9 @@
->  #define INTC_IRQPIN_REG_SOURCE 2 /* INTREQnn */
->  #define INTC_IRQPIN_REG_MASK 3 /* INTMSKnn */
->  #define INTC_IRQPIN_REG_CLEAR 4 /* INTMSKCLRnn */
-> -#define INTC_IRQPIN_REG_NR 5
-> +#define INTC_IRQPIN_REG_NR_MANDATORY 5
-> +#define INTC_IRQPIN_REG_IRLM 5 /* ICR0 with IRLM bit (optional) */
-> +#define INTC_IRQPIN_REG_NR 6
->  
->  /* INTC external IRQ PIN hardware register access:
->   *
-> @@ -82,6 +85,10 @@ struct intc_irqpin_priv {
->  	u8 shared_irq_mask;
->  };
->  
-> +struct intc_irqpin_irlm_config {
-> +	unsigned int irlm_bit;
-> +};
-> +
->  static unsigned long intc_irqpin_read32(void __iomem *iomem)
->  {
->  	return ioread32(iomem);
-> @@ -345,10 +352,23 @@ static struct irq_domain_ops intc_irqpin
->  	.xlate  = irq_domain_xlate_twocell,
->  };
->  
-> +static const struct intc_irqpin_irlm_config intc_irqpin_irlm_r8a7779 = {
-> +	.irlm_bit = 23, /* ICR0.IRLM0 */
-> +};
-> +
-> +static const struct of_device_id intc_irqpin_dt_ids[] = {
-> +	{ .compatible = "renesas,intc-irqpin", },
-> +	{ .compatible = "renesas,intc-irqpin-r8a7779",
-> +	  .data = &intc_irqpin_irlm_r8a7779 },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
-> +
->  static int intc_irqpin_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
->  	struct renesas_intc_irqpin_config *pdata = dev->platform_data;
-> +	const struct of_device_id *of_id;
->  	struct intc_irqpin_priv *p;
->  	struct intc_irqpin_iomem *i;
->  	struct resource *io[INTC_IRQPIN_REG_NR];
-> @@ -391,10 +411,11 @@ static int intc_irqpin_probe(struct plat
->  	pm_runtime_enable(dev);
->  	pm_runtime_get_sync(dev);
->  
-> -	/* get hold of manadatory IOMEM */
-> +	/* get hold of register banks */
-> +	memset(io, 0, sizeof(io));
->  	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
->  		io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
-> -		if (!io[k]) {
-> +		if (!io[k] && k < INTC_IRQPIN_REG_NR_MANDATORY) {
->  			dev_err(dev, "not enough IOMEM resources\n");
->  			ret = -EINVAL;
->  			goto err0;
-> @@ -422,6 +443,10 @@ static int intc_irqpin_probe(struct plat
->  	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
->  		i = &p->iomem[k];
->  
-> +		/* handle optional registers */
-> +		if (!io[k])
-> +			continue;
-> +
->  		switch (resource_size(io[k])) {
->  		case 1:
->  			i->width = 8;
-> @@ -448,6 +473,19 @@ static int intc_irqpin_probe(struct plat
->  		}
->  	}
->  
-> +	/* configure "individual IRQ mode" where needed */
-> +	of_id = of_match_device(intc_irqpin_dt_ids, dev);
-> +	if (of_id && of_id->data) {
-> +		const struct intc_irqpin_irlm_config *irlm_config = of_id->data;
-> +
-> +		if (io[INTC_IRQPIN_REG_IRLM])
-> +			intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_IRLM,
-> +						      irlm_config->irlm_bit,
-> +						      1, 1);
-> +		else
-> +			dev_warn(dev, "unable to select IRLM mode\n");
-> +	}
-> +
->  	/* mask all interrupts using priority */
->  	for (k = 0; k < p->number_of_irqs; k++)
->  		intc_irqpin_mask_unmask_prio(p, k, 1);
-> @@ -550,12 +588,6 @@ static int intc_irqpin_remove(struct pla
->  	return 0;
->  }
->  
-> -static const struct of_device_id intc_irqpin_dt_ids[] = {
-> -	{ .compatible = "renesas,intc-irqpin", },
-> -	{},
-> -};
-> -MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
-> -
->  static struct platform_driver intc_irqpin_device_driver = {
->  	.probe		= intc_irqpin_probe,
->  	.remove		= intc_irqpin_remove,
+Currently, zsmalloc doesn't request movable page to page allocator
+since compaction is not aware of zram pages(ie, PageZram(page)).
+IOW, compaction cannot migrate zram pages at the moment.
+As I described, it's final destination we should go but I think
+we need more thinking to generalize such special pages handling
+(ex, balloon, zswap, zram and so on for future) in compaction logic.
 
-I am unclear about the relationship between this last hunk and the rest of
-the patch. It seems to be removing the only compat string that is
-recognised by the driver.
+Now, I want to merge basic primitive functions in zsmalloc to
+support zspage migration, which will be used as basic utility functions
+for supporting compaction-aware zspage migration.
+
+In addition, even we need manual opeartion logic to trigger
+compaction for zsmalloc like /proc/sys/vm/compact_memory.
+
+> 
+> 2014-12-02 오전 11:49에 Minchan Kim 이(가) 쓴 글:
+> >Recently, there was issue about zsmalloc fragmentation and
+> >I got a report from Juno that new fork failed although there
+> >are plenty of free pages in the system.
+> >His investigation revealed zram is one of the culprit to make
+> >heavy fragmentation so there was no more contiguous 16K page
+> >for pgd to fork in the ARM.
+> >
+> >This patchset implement *basic* zsmalloc compaction support
+> >and zram utilizes it so admin can do
+> >	"echo 1 > /sys/block/zram0/compact"
+> >
+> >Actually, ideal is that mm migrate code is aware of zram pages and
+> >migrate them out automatically without admin's manual opeartion
+> >when system is out of contiguous page. Howver, we need more thinking
+> >before adding more hooks to migrate.c. Even though we implement it,
+> >we need manual trigger mode, too so I hope we could enhance
+> >zram migration stuff based on this primitive functions in future.
+> >
+> >I just tested it on only x86 so need more testing on other arches.
+> >Additionally, I should have a number for zsmalloc regression
+> >caused by indirect layering. Unfortunately, I don't have any
+> >ARM test machine on my desk. I will get it soon and test it.
+> >Anyway, before further work, I'd like to hear opinion.
+> >
+> >Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
+> >
+> >Thanks.
+> >
+> >Minchan Kim (6):
+> >   zsmalloc: expand size class to support sizeof(unsigned long)
+> >   zsmalloc: add indrection layer to decouple handle from object
+> >   zsmalloc: implement reverse mapping
+> >   zsmalloc: encode alloced mark in handle object
+> >   zsmalloc: support compaction
+> >   zram: support compaction
+> >
+> >  drivers/block/zram/zram_drv.c |  24 ++
+> >  drivers/block/zram/zram_drv.h |   1 +
+> >  include/linux/zsmalloc.h      |   1 +
+> >  mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
+> >  4 files changed, 552 insertions(+), 70 deletions(-)
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
