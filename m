@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaLDC1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:27:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52828 "EHLO mga11.intel.com"
+	id S1752423AbaLDCd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:33:29 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:39186 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaLDC1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:27:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,512,1413270000"; 
-   d="scan'208";a="642079452"
-Message-ID: <547FC5DE.4010701@intel.com>
-Date: Thu, 04 Dec 2014 10:24:30 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751896AbaLDCd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 21:33:27 -0500
+Message-ID: <547FC7F5.10804@osg.samsung.com>
+Date: Wed, 03 Dec 2014 19:33:25 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: "Tian, Kevin" <kevin.tian@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: [ANNOUNCE][RFC] KVMGT - the implementation of Intel GVT-g(full GPU
- virtualization) for KVM
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Josh Triplett <josh@joshtriplett.org>, Tim Bird <tim.bird@sonymobile.com>
+CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH v6] selftest: size: Add size test for Linux kernel
+References: <547F598D.7030205@sonymobile.com> <20141204003653.GA5004@thin> <547FAFC3.40609@osg.samsung.com>
+In-Reply-To: <547FAFC3.40609@osg.samsung.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 12/03/2014 05:50 PM, Shuah Khan wrote:
+> On 12/03/2014 05:36 PM, Josh Triplett wrote:
+>> On Wed, Dec 03, 2014 at 10:42:21AM -0800, Tim Bird wrote:
+>>> This test shows the amount of memory used by the system.
+>>> Note that this is dependent on the user-space that is loaded
+>>> when this program runs.  Optimally, this program would be
+>>> run as the init program itself.
+>>>
+>>> The program is optimized for size itself, to avoid conflating
+>>> its own execution with that of the system software.
+>>> The code is compiled statically, with no stdlibs. On my x86_64 system,
+>>> this results in a statically linked binary of less than 5K.
+>>>
+>>> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+>>
+>> v6 looks good to me.
+>>
+>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>>
+>> Should this go through the tinification tree or the selftests tree?
+>>
+> 
+> Josh/Tim,
+> 
+> Thanks both. Yes v6 looks good. I will take this through kselftest
+> tree. I will apply this to kselftes fixes.
+> 
 
-  We are pleased to announce the first release of KVMGT project. KVMGT is the implementation of Intel GVT-g technology, a full GPU virtualization solution. Under Intel GVT-g, a virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance of performance, feature, and sharing capability.
+Applied to kselftest fixes branch.
 
-
-  KVMGT is still in the early stage:
-
-   - Basic functions of full GPU virtualization works, guest can see a full-featured vGPU.
-     We ran several 3D workloads such as lightsmark, nexuiz, urbanterror and warsow.
-
-   - Only Linux guest supported so far, and PPGTT must be disabled in guest through a
-     kernel parameter(see README.kvmgt in QEMU).
-
-   - This drop also includes some Xen specific changes, which will be cleaned up later.
-
-   - Our end goal is to upstream both XenGT and KVMGT, which shares ~90% logic for vGPU
-     device model (will be part of i915 driver), with only difference in hypervisor
-     specific services
-
-   - insufficient test coverage, so please bear with stability issues :)
-
-
-
-  There are things need to be improved, esp. the KVM interfacing part:
-
-	1	a domid was added to each KVMGT guest
-
-		An ID is needed for foreground OS switching, e.g.
-
-			# echo <domid>	>	/sys/kernel/vgt/control/foreground_vm
-
-		domid 0 is reserved for host OS.
-
-
-  	2	SRCU workarounds.
-
-		Some KVM functions, such as:
-
-				kvm_io_bus_register_dev
-				install_new_memslots
-
-		must be called *without* &kvm->srcu read-locked. Otherwise it hangs.
-
-		In KVMGT, we need to register an iodev only *after* BAR registers are
-		written by guest. That means, we already have &kvm->srcu hold -
-		trapping/emulating PIO(BAR registers) makes us in such a condition.
-		That will make kvm_io_bus_register_dev hangs.
-
-		Currently we have to disable rcu_assign_pointer() in such functions.
-
-		These were dirty workarounds, your suggestions are high welcome!
+-- Shuah
 
 
-	3	syscalls were called to access "/dev/mem" from kernel
-
-		An in-kernel memslot was added for aperture, but using syscalls like
-		open and mmap to open and access the character device "/dev/mem",
-		for pass-through.
-
-  
-
-
-The source codes(kernel, qemu as well as seabios) are available at github:
-
-	git://github.com/01org/KVMGT-kernel
-	git://github.com/01org/KVMGT-qemu
-	git://github.com/01org/KVMGT-seabios
-
-In the KVMGT-qemu repository, there is a "README.kvmgt" to be referred.
-
-
-
-More information about Intel GVT-g and KVMGT can be found at:
-
-	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
-	http://events.linuxfoundation.org/sites/events/files/slides/KVMGT-a%20Full%20GPU%20Virtualization%20Solution_1.pdf
-
-
-Appreciate your comments, BUG reports, and contributions!
-
-
-
-
---
-Thanks,
-Jike
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Open Source Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
