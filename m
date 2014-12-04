@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaLDKgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:36:03 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:56702 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaLDKgA (ORCPT
+	id S1753704AbaLDKjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:39:25 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:63382 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLDKjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:36:00 -0500
-Message-ID: <5480390E.5050408@atmel.com>
-Date: Thu, 4 Dec 2014 11:35:58 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface)
- driver
-References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 4 Dec 2014 05:39:22 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 1/3] devicetree: of: Add bindings for chosen
+ =?iso-8859-1?Q?node=2C=0D?= stdout-path
+To: frowand.list@gmail.com
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Ian Campbell <ijc@debian.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <547F97C5.7020202@gmail.com>
+References: <1417110967-16284-1-git-send-email-leif.lindholm@linaro.org>
+	<1417110967-16284-2-git-send-email-leif.lindholm@linaro.org>
+	<547E7455.6090009@gmail.com>
+	<CACxGe6vdbURE3=W3Uerwy90piGKhv7-m+-vpUhCiUTKB4AzTsw@mail.gmail.com>
+	<547F6881.20400@gmail.com>
+	<CACxGe6ugLyV50gKCe83wCL0=qy+oHeExf9murW+qFuoVQ_TzsA@mail.gmail.com>
+	<547F97C5.7020202@gmail.com>
+Date: Thu, 04 Dec 2014 10:39:14 +0000
+Message-Id: <20141204103914.B2BACC40992@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 03/12/2014 21:44, Boris Brezillon a écrit :
-> The EBI (External Bus Interface) is used to access external peripherals
-> (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> Each device is assigned a CS line and an address range and can have its
-> own configuration (timings, access mode, bus width, ...).
-> This driver provides a generic DT binding to configure a device according
-> to its requirements.
-> For specific device controllers (like the NAND one) the SMC timings
-> should be configured by the controller driver through the matrix and
-> smc syscon regmaps.
+On Wed, 03 Dec 2014 15:07:49 -0800
+, Frank Rowand <frowand.list@gmail.com>
+ wrote:
+> On 12/3/2014 1:45 PM, Grant Likely wrote:
+> > On Wed, Dec 3, 2014 at 7:46 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+> >> On 12/3/2014 7:12 AM, Grant Likely wrote:
+> >>> On Wed, Dec 3, 2014 at 2:24 AM, Frank Rowand <frowand.list@gmail.com> wrote:
+> >>>> On 11/27/2014 9:56 AM, Leif Lindholm wrote:
+> >>>>> Add a global binding for the chosen node.
+> >>>>> Include a description of the stdout-path, and an explicit statement on
+> >>>>> its extra options in the context of a UART console.
+> >>>>>
+> >>>>> Opening description stolen from www.devicetree.org, and part of the
+> >>>>> remaining text provided by Mark Rutland.
+> >>>>>
+> >>>>> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+> >>>>> ---
+> >>>>>  Documentation/devicetree/bindings/chosen.txt |   42 ++++++++++++++++++++++++++
+> >>>>>  1 file changed, 42 insertions(+)
+> >>>>>  create mode 100644 Documentation/devicetree/bindings/chosen.txt
+> >>>>>
+> >>>>> diff --git a/Documentation/devicetree/bindings/chosen.txt b/Documentation/devicetree/bindings/chosen.txt
+> >>>>> new file mode 100644
+> >>>>> index 0000000..9cd74e9
+> >>>>> --- /dev/null
+> >>>>> +++ b/Documentation/devicetree/bindings/chosen.txt
+> >>>>> @@ -0,0 +1,42 @@
+> >>>>> +The chosen node
+> >>>>> +---------------
+> >>>>> +
+> >>>>> +The chosen node does not represent a real device, but serves as a place
+> >>>>> +for passing data between firmware and the operating system, like boot
+> >>>>> +arguments. Data in the chosen node does not represent the hardware.
+> >>>>> +
+> >>>>> +
+> >>>>> +stdout-path property
+> >>>>
+> >>>> The code in patch 3/3 adds the extra options feature to the properties:
+> >>>>
+> >>>>   stdout-path
+> >>>>   linux,stdout-path
+> >>>>   stdout  [if (IS_ENABLED(CONFIG_PPC) ... ]
+> >>>
+> >>> I don't understand what you mean here. Are you suggesting a change to
+> >>> this patch? Is there something deficient in it?
+> >>
+> >> Assuming that the code change in patch 3 is as desired, then the chosen.txt
+> >> documentation applies to all three properties, not just stdout-path.  So
+> >> yes, a change is suggested for the documentation.
+> > 
+> > how about if this is added:
+> > 
+> > Implementation note: Linux will look for the property "linux,stdout-path" or
+> > on PowerPC "stdout" if "stdout-path" is not found.  However, the
+> > "linux,stdout-path" and "stdout" properties are deprecated. New platforms
+> > should only use the "stdout-path" property.
+> > 
+> > g.
+> > 
 > 
-> The first 4 patches introduce 2 syscon devices needed to configure the
-> EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
-> patches declares the EBI related nodes in sama5d3 dts[i] files.
-> 
-> Changes since v4:
-> - fix inconsistencies in SMC and MATRIX registers definition
-> - add missing compatible strings for at91sam9rl SoC
-> - fix DT bindings documentation
-> - replace "atmel,generic-dev" property by "atmel,specialized-logic"
-> 
-> Changes since v3:
-> - added AT91_MATRIX_USBPUCR_PUON definition
-> - removed useless macros (those directly returning SoC specific register
->   offsets)
-> - use syscon_regmap_lookup_by_phandle instead of of_parse_phandle +
->   syscon_node_to_regmap
-> - drop AT91_EBICSA_REGFIELD and AT91_MULTI_EBICSA_REGFIELD macros
-> 
-> Changes since v2:
-> - minor fixes int DT bindings doc
-> - fix SMC macros
-> - make use of SMC macros defined in include/linux/mfd/syscon/atmel-smc.h
-> 
-> Changes since v1:
-> - almost everything :-)
-> 
-> Boris Brezillon (11):
->   mfd: syscon: Add atmel-matrix registers definition
->   mfd: syscon: Add Atmel Matrix bus DT binding documentation
->   mfd: syscon: Add atmel-smc registers definition
->   mfd: syscon: Add Atmel SMC binding doc
->   memory: add Atmel EBI (External Bus Interface) driver
->   memory: atmel-ebi: add DT bindings documentation
->   ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or
->     sama5d3
->   ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
->   ARM: at91/dt: add matrix node in sama5d3 dtsi
->   ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
->   ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
+> Yep, perfect.
 
-The whole series seems okay.
+Great, thanks. Merged.
 
-If you reorder the content of the patches as noted, you can add my:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Thanks bye.
-
->  .../bindings/memory-controllers/atmel-ebi.txt      | 155 ++++++
->  .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
->  .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
->  arch/arm/boot/dts/sama5d3.dtsi                     |  93 ++++
->  arch/arm/boot/dts/sama5d3xcm.dtsi                  |  33 ++
->  arch/arm/mach-at91/Kconfig                         |   2 +
->  drivers/memory/Kconfig                             |  11 +
->  drivers/memory/Makefile                            |   1 +
->  drivers/memory/atmel-ebi.c                         | 579 +++++++++++++++++++++
->  include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
->  include/linux/mfd/syscon/atmel-smc.h               | 173 ++++++
->  11 files changed, 1207 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
->  create mode 100644 drivers/memory/atmel-ebi.c
->  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
->  create mode 100644 include/linux/mfd/syscon/atmel-smc.h
-> 
-
-
--- 
-Nicolas Ferre
+g.
