@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbaLDUoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:44:30 -0500
-Received: from mout.gmx.net ([212.227.17.22]:51697 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934AbaLDUo2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:44:28 -0500
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: Re: [PATCH v9 4/8] tpm: rename chip->dev to chip->pdev
-Date: Thu, 4 Dec 2014 21:49:41 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-5-git-send-email-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <1417672518-4530-5-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754745AbaLDUoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:44:37 -0500
+Received: from mail-bl2on0057.outbound.protection.outlook.com ([65.55.169.57]:6545
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752979AbaLDUof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:44:35 -0500
+Message-ID: <5480BFAA.2020106@ixiacom.com>
+Date: Thu, 4 Dec 2014 22:10:18 +0200
+From: Leonard Crestez <lcrestez@ixiacom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201412042149.41813.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:v2VB3YBaOgrNAlpeW16RelyvTlPBjsw8BdzZLdXsNcWT/hTt5Bq
- AIFIOcfCgpbkUFhMm5bx3HXbUNJSiFKJtbt0TLu4idO3RsxJICP+u9GSfjmOfM0od7X5OJB
- Tp+ZpjN55TT/6JMFbr+Cstaa8SiBYIJ9fc+1oRRSPUsEK17v7eWQybSfQPiJdtkU1fMlH3P
- USZLnaEwcTXopEb4qIvJA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Sorin Dumitru <sdumitru@ixiacom.com>
+Subject: Re: [RFC v2] percpu: Add a separate function to merge free areas
+References: <547E3E57.3040908@ixiacom.com> <20141204175713.GE2995@htj.dyndns.org>
+In-Reply-To: <20141204175713.GE2995@htj.dyndns.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [205.168.23.154]
+X-ClientProxiedBy: CO1PR06CA036.namprd06.prod.outlook.com (10.242.160.26) To
+ BN3PR0601MB1153.namprd06.prod.outlook.com (25.160.157.18)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0601MB1153;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0601MB1153;
+X-Forefront-PRVS: 041517DFAB
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6049001)(6009001)(377454003)(479174003)(24454002)(189002)(199003)(51704005)(68736005)(65816999)(76176999)(87266999)(54356999)(62966003)(50986999)(110136001)(42186005)(20776003)(47776003)(66066001)(101416001)(33656002)(77096005)(23746002)(36756003)(107046002)(31966008)(106356001)(83506001)(105586002)(77156002)(40100003)(80316001)(46102003)(87976001)(92566001)(97736003)(4396001)(64706001)(50466002)(21056001)(86362001)(122386002)(99396003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0601MB1153;H:[10.205.20.121];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0601MB1153;
+X-OriginatorOrg: ixiacom.com
+X-MS-Exchange-CrossPremises-OriginalClientIPAddress: 205.168.23.154
+X-MS-Exchange-CrossPremises-AuthSource: BN3PR0601MB1153.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-AVStamp-Service: 1.0
+X-MS-Exchange-CrossPremises-SCL: 1
+X-MS-Exchange-CrossPremises-Antispam-ScanContext: DIR:Originating;SFV:NSPM;SKIP:0;
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: BN3PR0601MB1153.namprd06.prod.outlook.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 4. Dezember 2014, 06:55:14 schrieb Jarkko Sakkinen:
-> Rename chip->dev to chip->pdev to make it explicit that this not the
-> character device but actually represents the platform device.
+On 12/04/2014 07:57 PM, Tejun Heo wrote:
+> Hello,
 > 
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> ---
->  drivers/char/tpm/tpm-chip.c         |  4 ++--
->  drivers/char/tpm/tpm-dev.c          | 10 +++++-----
->  drivers/char/tpm/tpm-interface.c    | 29 +++++++++++++++--------------
->  drivers/char/tpm/tpm-sysfs.c        |  6 +++---
->  drivers/char/tpm/tpm.h              |  4 ++--
->  drivers/char/tpm/tpm_atmel.c        | 14 +++++++-------
->  drivers/char/tpm/tpm_i2c_atmel.c    | 16 ++++++++--------
->  drivers/char/tpm/tpm_i2c_infineon.c |  6 +++---
->  drivers/char/tpm/tpm_i2c_nuvoton.c  | 22 +++++++++++-----------
->  drivers/char/tpm/tpm_i2c_stm_st33.c | 14 +++++++-------
->  drivers/char/tpm/tpm_infineon.c     | 22 +++++++++++-----------
->  drivers/char/tpm/tpm_nsc.c          | 20 ++++++++++----------
->  drivers/char/tpm/tpm_ppi.c          |  4 ++--
->  drivers/char/tpm/tpm_tis.c          | 14 +++++++-------
->  14 files changed, 93 insertions(+), 92 deletions(-)
+> On Wed, Dec 03, 2014 at 12:33:59AM +0200, Leonard Crestez wrote:
+>> It seems that free_percpu performance is very bad when working with small 
+>> objects. The easiest way to reproduce this is to allocate and then free a large 
+>> number of percpu int counters in order. Small objects (reference counters and 
+>> pointers) are common users of alloc_percpu and I think this should be fast.
+>> This particular issue can be encountered with very large number of net_device
+>> structs.
 > 
-:(
+> Do you actually experience this with an actual workload?  The thing is
+> allocation has the same quadratic complexity.  If this is actually an
+> issue (which can definitely be the case), I'd much prefer implementing
+> a properly scalable area allocator than mucking with the current
+> implementation.
 
-With CONFIG_OF set I get a compile error.
+Yes, we are actually experiencing issues with this. We create lots of virtual
+net_devices and routes, which means lots of percpu counters/pointers. In particular
+we are getting worse performance than in older kernels because the net_device refcnt
+is now a percpu counter. We could turn that back into a single integer but this
+would negate an upstream optimization.
 
-drivers/char/tpm/tpm_i2c_stm_st33.c: In Funktion »tpm_stm_i2c_of_request_resources«:
-drivers/char/tpm/tpm_i2c_stm_st33.c:649:3: Fehler: Inkompatibler Typ für Argument 1 von »dev_err«
-In file included from include/linux/pci.h:30:0,
-                 from drivers/char/tpm/tpm_i2c_stm_st33.c:32:
-include/linux/device.h:1044:5: Anmerkung: »const struct device *« erwartet, aber Argument hat Typ »struct device«
-drivers/char/tpm/tpm_i2c_stm_st33.c:662:3: Fehler: Inkompatibler Typ für Argument 1 von »dev_err«
-In file included from include/linux/pci.h:30:0,
-                 from drivers/char/tpm/tpm_i2c_stm_st33.c:32:
-include/linux/device.h:1044:5: Anmerkung: »const struct device *« erwartet, aber Argument hat Typ »struct device«
-scripts/Makefile.build:263: recipe for target 'drivers/char/tpm/tpm_i2c_stm_st33.o' failed
-make[3]: *** [drivers/char/tpm/tpm_i2c_stm_st33.o] Error 1
-scripts/Makefile.build:404: recipe for target 'drivers/char/tpm' failed
-make[2]: *** [drivers/char/tpm] Error 2
-scripts/Makefile.build:404: recipe for target 'drivers/char' failed
-make[1]: *** [drivers/char] Error 2
-Makefile:929: recipe for target 'drivers' failed
-make: *** [drivers] Error 2
+We are working on top of linux_3.10. We already pulled some allocation optimizations.
+At least for simple allocation patterns pcpu_alloc does not appear to be unreasonably
+slow.
 
+Having a "properly scalable" percpu allocator would be quite nice indeed.
 
-Sorry,
-Peter
+Regards,
+Leonard
