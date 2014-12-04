@@ -1,153 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400AbaLDXLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 18:11:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42096 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377AbaLDXLF (ORCPT
+	id S933433AbaLDXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:12:16 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:38779 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933260AbaLDXMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 18:11:05 -0500
-Date: Thu, 4 Dec 2014 15:11:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
- only)
-Message-Id: <20141204151102.2d7e11dca39f130c2dff2294@linux-foundation.org>
-In-Reply-To: <CANP1eJGVyBOt1rQ8jA4tMrNGX5X61-UWbVy6kKj_ByeTqAEOBQ@mail.gmail.com>
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141125150101.9596a09e.akpm@linux-foundation.org>
-	<CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
-	<20141202144200.a4ca81a46a43563a8874fd8e@linux-foundation.org>
-	<CANP1eJGVyBOt1rQ8jA4tMrNGX5X61-UWbVy6kKj_ByeTqAEOBQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 18:12:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417734048.2721.22.camel@perches.com>
+References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+	<1417734048.2721.22.camel@perches.com>
+Date: Thu, 4 Dec 2014 15:12:11 -0800
+Message-ID: <CAADnVQKJHXbhJFtibj34ZQ2HLbYUFURt0S3Ho4bX7LFf_GsPQw@mail.gmail.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: Reduce is_ereg() code size
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Joe Perches <joe@perches.com>, Daniel Borkmann <dborkman@redhat.com>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 11:48:28 -0500 Milosz Tanski <milosz@adfin.com> wrote:
+On Thu, Dec 4, 2014 at 3:00 PM, Joe Perches <joe@perches.com> wrote:
+> Use the (1 << reg) & mask trick to reduce code size.
+>
+> x86-64 size difference -O2 without profiling for various
+> gcc versions:
+>
+> $ size arch/x86/net/bpf_jit_comp.o*
+>    text    data     bss     dec     hex filename
+>    9266       4       0    9270    2436 arch/x86/net/bpf_jit_comp.o.4.4.new
+>   10042       4       0   10046    273e arch/x86/net/bpf_jit_comp.o.4.4.old
+>    9109       4       0    9113    2399 arch/x86/net/bpf_jit_comp.o.4.6.new
+>    9717       4       0    9721    25f9 arch/x86/net/bpf_jit_comp.o.4.6.old
+>    8789       4       0    8793    2259 arch/x86/net/bpf_jit_comp.o.4.7.new
+>   10245       4       0   10249    2809 arch/x86/net/bpf_jit_comp.o.4.7.old
+>    9671       4       0    9675    25cb arch/x86/net/bpf_jit_comp.o.4.9.new
+>   10679       4       0   10683    29bb arch/x86/net/bpf_jit_comp.o.4.9.old
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-> On Tue, Dec 2, 2014 at 5:42 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > On Tue, 2 Dec 2014 17:17:42 -0500 Milosz Tanski <milosz@adfin.com> wrote:
-> >
-> > > > There have been several incomplete attempts to implement fincore().  If
-> > > > we were to complete those attempts, preadv2() could be implemented
-> > > > using fincore()+pread().  Plus we get fincore(), which is useful for
-> > > > other (but probably similar) reasons.  Probably fincore()+pwrite() could
-> > > > be used to implement pwritev2(), but I don't know what pwritev2() does
-> > > > yet.
-> > > >
-> > > > Implementing fincore() is more flexible, requires less code and is less
-> > > > likely to have bugs.  So why not go that way?  Yes, it's more CPU
-> > > > intensive, but how much?  Is the difference sufficient to justify the
-> > > > preadv2()/pwritev2() approach?
-> > >
-> > > I would like to see a fincore() functionality (for other reasons) I
-> > > don't think it does the job here. fincore() + preadv() is inherently
-> > > racy as there's no guarantee that the data becomes uncached between
-> > > the two calls.
-> >
-> > There will always be holes.  For example find_get_page() could block on
-> > lock_page() while some other process is doing IO.
-> > page_cache_async_readahead() does lots of memory allocation which can
-> > get blocked for long periods in the page allocator.
-> > page_cache_async_readahead() can block on synchronous metadata reads,
-> > etc.
-> 
-> Andrew I think it would helpful if you did read through the patches.
-> The first 3 are somewhat uninteresting as it's just wiring up the new
-> syscalls and plumbing the flag argument through. The core of the
-> RWF_NONBLOCK is patch 4: https://lkml.org/lkml/2014/11/10/463 and if
-> you strip away the fs specific changes the core of it is very simple.
-> 
-> The core is mostly contained in do_generic_file_read() in filemap.c,
-> and is very short and easy to understand. It boils down to we read as
-> much data as we can given what's in the page cache. There's no
-> fallback to diskio for readpage() in case of missing pages and we bail
-> before any calls to page_cache_async_readahead(). And to the best of
-> my knowledge lock_page() does not lock the page, all it does is call
-> pagecache_get_page() without the FGP_LOCK flag.
-> 
-> I've spent time a decent amount of time looking at this to make sure
-> we cover all our major bases. It's possible I missed something but the
-> biggest offenders should be covered and if I missed something I'd love
-> to cover that as well.
+probably it was worth noting in comment that
+reg is 4-bit value and AUX_REG==12, so it won't overflow.
 
-OK.
+Dave, it's for net-next of course.
 
-> >
-> >
-> > > There's no overlap between prwritev2 and fincore() functionality.
-> >
-> > Do we actually need pwritev2()?  What's the justification for that?
-> 
-> 
-> I'm okay with splitting up the pwritev2 and preadv2 into two
-> independent patchsets to be considered on their own merits.
-
-Well, we can do both together if both are wanted.  The changelogs are
-very skimpy on pwritev2().  A full description and careful
-justification in the [0/n] changelog would be useful - something that
-tells us "what's wrong with O_DSYNC+pwrite".
-
-
-> >
-> >
-> >
-> > Please let's examine the alternative(s) seriously.  It would be mistake
-> > to add preadv2/pwritev2 if fincore+pread would have sufficed.
-> 
-> 
->  What the motivation for my change and also approach is a very common
-> pattern to async buffered disk IO in userspace server applications. It
-> comes down to having one thread to handle the network and a thread
-> pool to perform IO requests. Why a threadpool and not something like a
-> sendfile() for reads? Many non-trivial applications perform additional
-> processing (ssl, checksuming, transformation). Unfortunately this has
-> a inherent increase in average latency due to increased
-> synchronization penalties (enqueue and notify) but primarily due to
-> fast requests (already in cache) behind stuck behind slow request.
-> 
-> Here's the illustration of the common architecture:
-> http://i.imgur.com/f8Pla7j.png. In fact, most apps are even simpler
-> where they replace the request queue, task worker with a single thread
-> doing network IO using epoll or such.
-> 
-> preadv2 with RWF_NONBLOCK is analogous to the kernel recvmsg() with
-> the MSG_NOWAIT flag. It's really frustrating that such capacity
-> doesn't exist today. As with the user space application design we can
-> skip the io threadpool and decrease average request latency in many
-> common workloads (linear reads or zipf data accesses).
-> 
-> preadv2 with RWF_NONBLOCK as implemented does not suffer the same
-> eviction races as fincore + pread because it's not implemented as two
-> syscalls. It also has a much lower surface of possible blocking /
-> locking then fincore + pread because it cannot fallback to reading
-> from disk, it does not trigger read-ahead, and does not wait for page
-> lock.
-
-I can see all that, but it's handwaving.  Yes, preadv2() will perform
-better in some circumstances than fincore+pread.  But how much better? 
-Enough to justify this approach, or not?
-
-Alas, the only way to really settle that is to implement fincore() and
-to subject it to a decent amount of realistic quantitative testing.
-
-Ho hum.
-
-Could you please hunt down some libuv developers, see if we can solicit
-some quality input from them?  As I said, we really don't want to merge
-this then find that people don't use it for some reason, or that it
-needs changes.
+Suggested-by: Alexei Starovoitov <ast@plumgrid.com>
+Tested-by: Alexei Starovoitov <ast@plumgrid.com>
