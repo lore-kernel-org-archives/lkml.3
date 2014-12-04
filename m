@@ -1,330 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaLDKEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:04:45 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:45609 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaLDKEm (ORCPT
+	id S1753889AbaLDKFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:05:06 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:52801 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872AbaLDKFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:04:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <4ca7a29afa3496dc85607ecbb95d2311>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v17 04/12] drm: imx: imx-hdmi: split phy configuration to platform driver
-Date: Thu,  4 Dec 2014 18:04:14 +0800
-Message-Id: <1417687454-13108-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
+	Thu, 4 Dec 2014 05:05:00 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: RE: [RFC] fdt:free the fdt reserved memory
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'robh+dt@kernel.org'" <robh+dt@kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
+        "'pawel.moll@arm.com'" <pawel.moll@arm.com>,
+        "'mark.rutland@arm.com'" <mark.rutland@arm.com>,
+        "'ijc+devicetree@hellion.org.uk'" <ijc+devicetree@hellion.org.uk>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
+	<20140924144520.697A8C40738@trevor.secretlab.ca>
+	<35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
+Date: Thu, 04 Dec 2014 10:04:53 +0000
+Message-Id: <20141204100453.49DF2C40992@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hdmi phy configuration is platform specific, which can be adusted
-according to the board to get the best SI
+On Thu, 4 Dec 2014 14:56:11 +0800
+, "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+ wrote:
+> > -----Original Message-----
+> > From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+> > Sent: Wednesday, September 24, 2014 10:45 PM
+> > To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
+> > 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
+> > 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
+> > Subject: Re: [RFC] fdt:free the fdt reserved memory
+> > 
+> > On Thu, 18 Sep 2014 17:25:12 +0800, "Wang, Yalin"
+> > <Yalin.Wang@sonymobile.com> wrote:
+> > > This patch make some change to unflatten_dt_node(), make sure the
+> > > device_node don't reference to fdt raw blob memory, so that we can
+> > > free the raw blob reserved memory after initcalls.
+> > >
+> > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> > 
+> > Do you have any measurements showing a change in available memory before
+> > and after the patch?
+> > 
+> Does anyone have a look at this patch?
+> It can save 12K on my platform,
+> My dtb is 164K
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+Yes, I've been thinking about this one. Unfortunately there is a
+conflict with another feature that I'm merging for v3.19. See commit
+08d53aa5, "of/fdt: export fdt blob as /sys/firmware/fdt" in linux-next.
+That commit requires the original blob to be kept around.
 
----
+In order to free the original dtb, the /sys/firmware/fdt feature will
+need to be changed to let it be configured out. All things considered,
+that is probably the right thing to do, but doing so increases the
+memory load for the platforms that want /sys/firmware/fdt. I'd like to
+see what the impact would be on the code to switch to this method when
+/sys/firmware/fdt is configured out.
 
-Changes in v17: None
-Changes in v16: None
-Changes in v15: None
-Changes in v14: None
-Changes in v13:
-- split phy configuration from patch#4
+g.
 
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c       | 85 +++++++-----------------------------
- drivers/gpu/drm/imx/imx-hdmi.h       | 29 ++++++++++++
- drivers/gpu/drm/imx/imx-hdmi_pltfm.c | 57 ++++++++++++++++++++++++
- 3 files changed, 101 insertions(+), 70 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index 3ea9726..72358144 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -713,76 +713,14 @@ static void imx_hdmi_phy_sel_interface_control(struct imx_hdmi *hdmi, u8 enable)
- 			 HDMI_PHY_CONF0_SELDIPIF_MASK);
- }
- 
--enum {
--	RES_8,
--	RES_10,
--	RES_12,
--	RES_MAX,
--};
--
--struct mpll_config {
--	unsigned long mpixelclock;
--	struct {
--		u16 cpce;
--		u16 gmp;
--	} res[RES_MAX];
--};
--
--static const struct mpll_config mpll_config[] = {
--	{
--		45250000, {
--			{ 0x01e0, 0x0000 },
--			{ 0x21e1, 0x0000 },
--			{ 0x41e2, 0x0000 }
--		},
--	}, {
--		92500000, {
--			{ 0x0140, 0x0005 },
--			{ 0x2141, 0x0005 },
--			{ 0x4142, 0x0005 },
--		},
--	}, {
--		148500000, {
--			{ 0x00a0, 0x000a },
--			{ 0x20a1, 0x000a },
--			{ 0x40a2, 0x000a },
--		},
--	}, {
--		~0UL, {
--			{ 0x00a0, 0x000a },
--			{ 0x2001, 0x000f },
--			{ 0x4002, 0x000f },
--		},
--	}
--};
--
--struct curr_ctrl {
--	unsigned long mpixelclock;
--	u16 curr[RES_MAX];
--};
--
--static const struct curr_ctrl curr_ctrl[] = {
--	/*	pixelclk     bpp8    bpp10   bpp12 */
--	{
--		 54000000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		 58400000, { 0x091c, 0x06dc, 0x06dc },
--	}, {
--		 72000000, { 0x06dc, 0x06dc, 0x091c },
--	}, {
--		 74250000, { 0x06dc, 0x0b5c, 0x091c },
--	}, {
--		118800000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		216000000, { 0x06dc, 0x0b5c, 0x091c },
--	}
--};
--
- static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 			      unsigned char res, int cscon)
- {
- 	unsigned res_idx, i;
- 	u8 val, msec;
-+	const struct mpll_config *mpll_config = hdmi->plat_data->mpll_cfg;
-+	const struct curr_ctrl   *curr_ctrl = hdmi->plat_data->cur_ctr;
-+	const struct sym_term *sym_term =  hdmi->plat_data->sym_term;
- 
- 	if (prep)
- 		return -EINVAL;
-@@ -828,7 +766,7 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_test_clear(hdmi, 0);
- 
- 	/* PLL/MPLL Cfg - always match on final entry */
--	for (i = 0; i < ARRAY_SIZE(mpll_config) - 1; i++)
-+	for (i = 0; mpll_config[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    mpll_config[i].mpixelclock)
- 			break;
-@@ -836,12 +774,12 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].cpce, 0x06);
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].gmp, 0x15);
- 
--	for (i = 0; i < ARRAY_SIZE(curr_ctrl); i++)
-+	for (i = 0; curr_ctrl[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    curr_ctrl[i].mpixelclock)
- 			break;
- 
--	if (i >= ARRAY_SIZE(curr_ctrl)) {
-+	if (curr_ctrl[i].mpixelclock == (~0UL)) {
- 		dev_err(hdmi->dev, "Pixel clock %d - unsupported by HDMI\n",
- 			hdmi->hdmi_data.video_mode.mpixelclock);
- 		return -EINVAL;
-@@ -852,10 +790,17 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 
- 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
- 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
-+
-+	for (i = 0; sym_term[i].mpixelclock != (~0UL); i++)
-+		if (hdmi->hdmi_data.video_mode.mpixelclock <=
-+		    sym_term[i].mpixelclock)
-+			break;
-+
- 	/* RESISTANCE TERM 133Ohm Cfg */
--	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].term, 0x19);  /* TXTERM */
- 	/* PREEMP Cgf 0.00 */
--	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].sym_ctr, 0x09);  /* CKSYMTXCTRL */
-+
- 	/* TX/CK LVL 10 */
- 	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
- 	/* REMOVE CLK TERM */
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.h b/drivers/gpu/drm/imx/imx-hdmi.h
-index 86c6c5b..db407f0 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.h
-+++ b/drivers/gpu/drm/imx/imx-hdmi.h
-@@ -1037,6 +1037,35 @@ enum imx_hdmi_devtype {
- 
- struct imx_hdmi_plat_data {
- 	enum imx_hdmi_devtype dev_type;
-+	const struct mpll_config *mpll_cfg;
-+	const struct curr_ctrl *cur_ctr;
-+	const struct sym_term *sym_term;
-+};
-+
-+enum {
-+	RES_8,
-+	RES_10,
-+	RES_12,
-+	RES_MAX,
-+};
-+
-+struct mpll_config {
-+	unsigned long mpixelclock;
-+	struct {
-+		u16 cpce;
-+		u16 gmp;
-+	} res[RES_MAX];
-+};
-+
-+struct curr_ctrl {
-+	unsigned long mpixelclock;
-+	u16 curr[RES_MAX];
-+};
-+
-+struct sym_term {
-+	unsigned long mpixelclock;
-+	u16 sym_ctr;    /*clock symbol and transmitter control*/
-+	u16 term;       /*transmission termination value*/
- };
- 
- int imx_hdmi_bind(struct device *dev, struct device *master,
-diff --git a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-index adea848..e1d5ee2 100644
---- a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-@@ -28,6 +28,57 @@ struct imx_hdmi_priv {
- 	struct regmap *regmap;
- };
- 
-+static const struct mpll_config imx_mpll_cfg[] = {
-+	{
-+		45250000, {
-+			{ 0x01e0, 0x0000 },
-+			{ 0x21e1, 0x0000 },
-+			{ 0x41e2, 0x0000 }
-+		},
-+	}, {
-+		92500000, {
-+			{ 0x0140, 0x0005 },
-+			{ 0x2141, 0x0005 },
-+			{ 0x4142, 0x0005 },
-+	},
-+	}, {
-+		148500000, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x20a1, 0x000a },
-+			{ 0x40a2, 0x000a },
-+		},
-+	}, {
-+		~0UL, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x2001, 0x000f },
-+			{ 0x4002, 0x000f },
-+		},
-+	}
-+};
-+
-+static const struct curr_ctrl imx_cur_ctr[] = {
-+	/*      pixelclk     bpp8    bpp10   bpp12 */
-+	{
-+		54000000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		58400000, { 0x091c, 0x06dc, 0x06dc },
-+	}, {
-+		72000000, { 0x06dc, 0x06dc, 0x091c },
-+	}, {
-+		74250000, { 0x06dc, 0x0b5c, 0x091c },
-+	}, {
-+		118800000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		216000000, { 0x06dc, 0x0b5c, 0x091c },
-+	}
-+};
-+
-+static const struct sym_term imx_sym_term[] = {
-+	/*pixelclk   symbol   term*/
-+	{ 148500000, 0x800d, 0x0005 },
-+	{ ~0UL,      0x0000, 0x0000 }
-+};
-+
- static int imx_hdmi_parse_dt(struct imx_hdmi_priv *hdmi)
- {
- 	struct device_node *np = hdmi->dev->of_node;
-@@ -88,10 +139,16 @@ static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
- };
- 
- static struct imx_hdmi_plat_data imx6q_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6Q_HDMI,
- };
- 
- static struct imx_hdmi_plat_data imx6dl_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6DL_HDMI,
- };
- 
--- 
-1.9.1
-
+> 
+> Thanks
+> 
+> > 
+> > > ---
+> > >  drivers/of/fdt.c       | 27 +++++++++++++++++++++++----
+> > >  include/linux/of_fdt.h |  2 ++
+> > >  2 files changed, 25 insertions(+), 4 deletions(-)
+> > >
+> > > diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c index
+> > > 79cb831..e891ef6 100644
+> > > --- a/drivers/of/fdt.c
+> > > +++ b/drivers/of/fdt.c
+> > > @@ -240,6 +240,7 @@ static void * unflatten_dt_node(void *blob,
+> > >  	     (offset = fdt_next_property_offset(blob, offset))) {
+> > >  		const char *pname;
+> > >  		u32 sz;
+> > > +		int name_len;
+> > >
+> > >  		if (!(p = fdt_getprop_by_offset(blob, offset, &pname, &sz))) {
+> > >  			offset = -FDT_ERR_INTERNAL;
+> > > @@ -250,10 +251,12 @@ static void * unflatten_dt_node(void *blob,
+> > >  			pr_info("Can't find property name in list !\n");
+> > >  			break;
+> > >  		}
+> > > +		name_len = strlen(pname);
+> > >  		if (strcmp(pname, "name") == 0)
+> > >  			has_name = 1;
+> > > -		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
+> > > -					__alignof__(struct property));
+> > > +		pp = unflatten_dt_alloc(&mem,
+> > > +				ALIGN(sizeof(struct property) + name_len + 1, 4)
+> > > +				+ sz, __alignof__(struct property));
+> > >  		if (allnextpp) {
+> > >  			/* We accept flattened tree phandles either in
+> > >  			 * ePAPR-style "phandle" properties, or the @@ -270,9
+> > +273,11 @@
+> > > static void * unflatten_dt_node(void *blob,
+> > >  			 * stuff */
+> > >  			if (strcmp(pname, "ibm,phandle") == 0)
+> > >  				np->phandle = be32_to_cpup(p);
+> > > -			pp->name = (char *)pname;
+> > > +			pp->name = (char *)memcpy(pp + 1, pname, name_len + 1);
+> > >  			pp->length = sz;
+> > > -			pp->value = (__be32 *)p;
+> > > +			pp->value = (__be32 *)memcpy((void *)pp +
+> > > +					ALIGN(sizeof(struct property) +
+> > > +						name_len + 1, 4), p, sz);
+> > >  			*prev_pp = pp;
+> > >  			prev_pp = &pp->next;
+> > >  		}
+> > > @@ -564,6 +569,20 @@ void __init early_init_fdt_scan_reserved_mem(void)
+> > >  	fdt_init_reserved_mem();
+> > >  }
+> > >
+> > > +void __init free_early_init_fdt_scan_reserved_mem(void)
+> > > +{
+> > > +	unsigned long start, end, size;
+> > > +	if (!initial_boot_params)
+> > > +		return;
+> > > +
+> > > +	size = fdt_totalsize(initial_boot_params);
+> > > +	memblock_free(__pa(initial_boot_params), size);
+> > > +	start = round_down((unsigned long)initial_boot_params, PAGE_SIZE);
+> > > +	end = round_up((unsigned long)initial_boot_params + size, PAGE_SIZE);
+> > > +	free_reserved_area((void *)start, (void *)end, 0, "fdt");
+> > > +	initial_boot_params = 0;
+> > > +}
+> > > +
+> > >  /**
+> > >   * of_scan_flat_dt - scan flattened tree blob and call callback on each.
+> > >   * @it: callback function
+> > > diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h index
+> > > 0ff360d..21d51ce 100644
+> > > --- a/include/linux/of_fdt.h
+> > > +++ b/include/linux/of_fdt.h
+> > > @@ -62,6 +62,7 @@ extern int early_init_dt_scan_chosen(unsigned long
+> > > node, const char *uname,  extern int early_init_dt_scan_memory(unsigned
+> > long node, const char *uname,
+> > >  				     int depth, void *data);
+> > >  extern void early_init_fdt_scan_reserved_mem(void);
+> > > +extern void free_early_init_fdt_scan_reserved_mem(void);
+> > >  extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+> > > extern int early_init_dt_reserve_memory_arch(phys_addr_t base,
+> > phys_addr_t size,
+> > >  					     bool no_map);
+> > > @@ -89,6 +90,7 @@ extern u64 fdt_translate_address(const void *blob,
+> > > int node_offset);  extern void of_fdt_limit_memory(int limit);  #else
+> > > /* CONFIG_OF_FLATTREE */  static inline void
+> > > early_init_fdt_scan_reserved_mem(void) {}
+> > > +static inline void free_early_init_fdt_scan_reserved_mem(void) {}
+> > >  static inline const char *of_flat_dt_get_machine_name(void) { return
+> > > NULL; }  static inline void unflatten_device_tree(void) {}  static
+> > > inline void unflatten_and_copy_device_tree(void) {}
+> > > --
+> > > 2.1.0
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe
+> > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
