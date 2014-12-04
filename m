@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394AbaLDPNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:13:32 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:33263 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbaLDPNb convert rfc822-to-8bit (ORCPT
+	id S932421AbaLDPO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:14:29 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:41729 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaLDPO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:13:31 -0500
+	Thu, 4 Dec 2014 10:14:28 -0500
+Date: Thu, 4 Dec 2014 10:14:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH wq/for-3.19] workqueue: cosmetic update in rescuer_thread()
+Message-ID: <20141204151413.GF15219@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <12630889.EI0exeDoNc@wuerfel>
-References: <1417703910-2474-1-git-send-email-prabhakar.csengg@gmail.com> <12630889.EI0exeDoNc@wuerfel>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 4 Dec 2014 15:13:00 +0000
-Message-ID: <CA+V-a8vH9McTLVSWhQZun04AP7SZ7wGHeobBK1hA+EKn5fYgKw@mail.gmail.com>
-Subject: Re: [PATCH] misc: suppress build warning
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 2:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 04 December 2014 14:38:30 Lad, Prabhakar wrote:
->> this patch fixes following build warning:
->>
->> drivers/misc/ioc4.c: In function ‘ioc4_probe’:
->> drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->>   period = (end - start) /
->>                 ^
->> drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
->>   uint64_t start, end, period;
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->
-> Please explain why the compiler thinks there is a bug, why you
-> are sure that there isn't, and why you picked '0' as the
-> initialization value.
->
-Its a false positive, to suppress the warning '0' was picked.
+rescuer_thread() caches &rescuer->scheduled in a local variable
+scheduled for convenience.  There's one WARN_ON_ONCE() which was using
+&rescuer->scheduled directly.  Replace it with the local variable.
 
-Thanks,
---Prabhakar Lad
+This patch causes no functional difference.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applying to wq/for-3.19.
+
+Thanks.
+
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2246,7 +2246,7 @@ repeat:
+ 		 * Slurp in all works issued via this workqueue and
+ 		 * process'em.
+ 		 */
+-		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
++		WARN_ON_ONCE(!list_empty(scheduled));
+ 		list_for_each_entry_safe(work, n, &pool->worklist, entry)
+ 			if (get_work_pwq(work) == pwq)
+ 				move_linked_works(work, scheduled, &n);
