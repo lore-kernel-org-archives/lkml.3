@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501AbaLDNoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:44:10 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:27588 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193AbaLDNoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:44:08 -0500
-X-IronPort-AV: E=Sophos;i="5.07,515,1413244800"; 
-   d="scan'208";a="200070709"
-Message-ID: <54806526.7040906@citrix.com>
-Date: Thu, 4 Dec 2014 13:44:06 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1754533AbaLDNoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:44:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754231AbaLDNoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:44:16 -0500
+Date: Thu, 4 Dec 2014 11:43:52 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org
+Subject: Re: [patch -rt 2/2] KVM: lapic: mark LAPIC timer handler as irqsafe
+Message-ID: <20141204134352.GA28510@amt.cnet>
+References: <20141125172108.992070524@redhat.com>
+ <20141125172329.580701786@redhat.com>
+ <5474BE7C.5040909@redhat.com>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
-        <stefano.stabellini@eu.citrix.com>
-CC: <linux-kernel@vger.kernel.org>, <jun.nakajima@intel.com>,
-        <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH v4 0/2] xen/pci: Use APIC for MSIs when APIC
- virtualization is supported
-References: <1417551553-22234-1-git-send-email-boris.ostrovsky@oracle.com> <54803DF7.1030903@citrix.com>
-In-Reply-To: <54803DF7.1030903@citrix.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5474BE7C.5040909@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/14 10:56, David Vrabel wrote:
-> On 02/12/14 20:19, Boris Ostrovsky wrote:
->> Changes in v4:
->> * Added comment describing what we check for in pci_xen_init()
+On Tue, Nov 25, 2014 at 06:38:04PM +0100, Paolo Bonzini wrote:
 > 
-> I applied v3 ages ago to the devel/for-linus-3.19 branch and I'm not
-> going to mess about replacing it for a comment change.
+> 
+> On 25/11/2014 18:21, Marcelo Tosatti wrote:
+> > +
+> > +	if (r == HRTIMER_RESTART) {
+> > +		do {
+> > +			ret = hrtimer_start_expires(data, HRTIMER_MODE_ABS);
+> > +			if (ret == -ETIME)
+> > +				hrtimer_add_expires_ns(&ktimer->timer,
+> > +							ktimer->period);
+> 
+> Is it possible to just compute the time where the next interrupt
+> happens?  
 
-I had to mess with it anyway to fix a build problem.  I've applied this
-version.
+Yes but there is no guarantee hrtimer_start_expires will not fail.
 
-Thanks.
+> I suspect the printk and WARN_ON below can be easily triggered
+> by a guest.
 
-David
+I'll remove those, thanks.
+
+
