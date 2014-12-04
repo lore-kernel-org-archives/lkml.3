@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaLDNl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:41:28 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:43737 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaLDNl0 (ORCPT
+	id S1754353AbaLDNm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:42:29 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44722 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294AbaLDNm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:41:26 -0500
+	Thu, 4 Dec 2014 08:42:27 -0500
+Message-ID: <548064B9.4080300@arm.com>
+Date: Thu, 04 Dec 2014 13:42:17 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1417614107-5985-4-git-send-email-geert+renesas@glider.be>
-References: <1417614107-5985-1-git-send-email-geert+renesas@glider.be>
-	<1417614107-5985-4-git-send-email-geert+renesas@glider.be>
-Date: Thu, 4 Dec 2014 14:41:25 +0100
-Message-ID: <CAPDyKFogROGA+MtQcGNfa052wPKxcs9cpT43NcpcyeGVFCwPoQ@mail.gmail.com>
-Subject: Re: [PATCH v6 3/7] ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Stefan Agner <stefan@agner.ch>
+CC: Thomas Gleixner <tglx@linutronix.de>, Mark Rutland <Mark.Rutland@arm.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Nishanth Menon <nm@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 03/12] irqchip: gic: define register_routable_domain_ops
+ conditional
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch> <1417565531-4507-4-git-send-email-stefan@agner.ch> <5174649.NxPq80uDz8@wuerfel> <alpine.DEB.2.11.1412031303000.16275@nanos> <8eccedc781df2636a132dae449cbe774@agner.ch> <547F5EBD.6040705@arm.com> <a62b856866915f6939da79bdbcdabb39@agner.ch>
+In-Reply-To: <a62b856866915f6939da79bdbcdabb39@agner.ch>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 December 2014 at 14:41, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> If CONFIG_PM_RUNTIME is not set, the clocks must be enabled before the
-> devices can be used.
->
-> Currently these clocks are enabled by the !CONFIG_PM_RUNTIME version of
-> pm_clk_notify, activated by the hack in drivers/sh/pm_runtime.c, but
-> this will go away soon (at least for DT).
->
-> On detach, disabling the clocks is already handled by pm_clk_destroy().
-> On system suspend/resume, disabling/enabling clocks is already handled
-> from the genpd->dev_ops.{start,stop}() callbacks.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
-> v6:
->   - No changes,
-> v5:
->   - No changes,
-> v4:
->   - New.
-> ---
->  arch/arm/mach-shmobile/pm-rmobile.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
->
-> diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
-> index 168046c355fc8368..6d912ce801aa88bd 100644
-> --- a/arch/arm/mach-shmobile/pm-rmobile.c
-> +++ b/arch/arm/mach-shmobile/pm-rmobile.c
-> @@ -118,6 +118,14 @@ static int rmobile_pd_attach_dev(struct generic_pm_domain *domain,
->                 goto fail;
->         }
->
-> +       if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
+On 04/12/14 13:35, Stefan Agner wrote:
+> On 2014-12-03 20:04, Marc Zyngier wrote:
+> <snip>
+>>> What do you mean by the shared state in the drawing above? Currently, I
+>>> check whether a interrupt is already used by the other core by reading
+>>> the register (do this configuration register reflect the "shared state"
+>>> in your drawing?).
+>>
+>> I think that is basically it. It should only be the register that
+>> decides on the actual routing. BTW, how do you arbitrate between
+>> concurrent accesses to this register? Or is only the A5 allowed to
+>> change it?
+>  
+> No arbitration so far... The whole Vybrid on M4 stuff is quite a hack
+> right now. For instance also the concurrent access to the clock
+> registers is not handled. Currently, I start the M4 from a booted A5
+> Linux. To avoid half of the clocks get turned of by the M4 clock driver,
+> I need to specify clk_ignore_unused. Beside that, peripherals have to be
+> enabled/disabled in a non conflicting manor in the device trees...
+> 
+> For the interrupt router in MSCM, it would be nice if the access could
+> be done an atomic way, which would avoid the use of a lock mechanism.
+> But I guess this is not possible, since peripherals only support
+> standard ldr/str...?
+> 
+> There is the SEMA4 module which provides hardware semaphores. I'm aware
+> of the hardware spinlock drivers (drivers/hwspinlock/), I started to
+> implement such a driver for Vybrid. But so far a grep through the kernel
+> does not show one usage of that framework... I guess we could add dt
+> support for that, so we can assign the locks to individual drivers.
+> 
+> I also plan to have a deeper look into remoteproc/rpmsg, not sure if
+> locking of shared peripherals is part (or planned to be part) of that
+> framework.
+> 
+> For the clock stuff, the problem is more complex: I guess the would need
+> some kind of master/slave definition, where we disallow the change of
+> the shared clocks for the slave.
+> 
+> If you are aware of patches/solutions, I'm happy to hear it...
 
-This will require a fixup later on, since using genpd will always be
-done for CONFIG_PM_RUNTIME (or CONFIG_PM actually) ).
+I don't have a real solution for this, but I'd be tempted to generate
+the M4 DT based on the HW the A5 is not using, and only describe that.
 
-I guess you knew that already, but then you can't keep my response as
-a reminder. :-)
+Clearly not ideal, but it gives you the control you need (don't describe
+the HW you don't want to see touched)...
 
-Kind regards
-Uffe
-
-> +               error = pm_clk_resume(dev);
-> +               if (error) {
-> +                       dev_err(dev, "pm_clk_resume failed %d\n", error);
-> +                       goto fail;
-> +               }
-> +       }
-> +
->         return 0;
->
->  fail:
-> --
-> 1.9.1
->
+	M.
+-- 
+Jazz is not dead. It just smells funny...
