@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748AbaLDQmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:42:18 -0500
-Received: from sauhun.de ([89.238.76.85]:33600 "EHLO pokefinder.org"
+	id S932730AbaLDQmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:42:17 -0500
+Received: from sauhun.de ([89.238.76.85]:33597 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590AbaLDQmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932512AbaLDQmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Dec 2014 11:42:15 -0500
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linuxppc-dev@ozlabs.org
 Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Wolfram Sang <wsa@the-dreams.de>
-Subject: [RFC 2/2] sound: ppc: keywest: drop using attach adapter
-Date: Thu,  4 Dec 2014 17:41:53 +0100
-Message-Id: <1417711313-7257-3-git-send-email-wsa@the-dreams.de>
+Subject: [RFC 1/2] macintosh: therm_windtunnel: drop using attach adapter
+Date: Thu,  4 Dec 2014 17:41:52 +0100
+Message-Id: <1417711313-7257-2-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417711313-7257-1-git-send-email-wsa@the-dreams.de>
 References: <1417711313-7257-1-git-send-email-wsa@the-dreams.de>
@@ -26,64 +26,52 @@ finally get rid of the legacy interface from the i2c core.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- sound/ppc/keywest.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ drivers/macintosh/therm_windtunnel.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-diff --git a/sound/ppc/keywest.c b/sound/ppc/keywest.c
-index 0d1c27e911b8..a957f32368fa 100644
---- a/sound/ppc/keywest.c
-+++ b/sound/ppc/keywest.c
-@@ -52,7 +52,7 @@ static int keywest_attach_adapter(struct i2c_adapter *adapter)
- 		return -EINVAL;
- 
- 	if (strncmp(adapter->name, "mac-io", 6))
--		return 0; /* ignored */
-+		return -EINVAL; /* ignored */
- 
- 	memset(&info, 0, sizeof(struct i2c_board_info));
- 	strlcpy(info.type, "keywest", I2C_NAME_SIZE);
-@@ -100,7 +100,6 @@ static struct i2c_driver keywest_driver = {
+diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+index 3b4a157714b1..9de83cdd0bca 100644
+--- a/drivers/macintosh/therm_windtunnel.c
++++ b/drivers/macintosh/therm_windtunnel.c
+@@ -431,7 +431,6 @@ static struct i2c_driver g4fan_driver = {
  	.driver = {
- 		.name = "PMac Keywest Audio",
+ 		.name	= "therm_windtunnel",
  	},
--	.attach_adapter = keywest_attach_adapter,
- 	.probe = keywest_probe,
- 	.remove = keywest_remove,
- 	.id_table = keywest_i2c_id,
-@@ -132,16 +131,32 @@ int snd_pmac_tumbler_post_init(void)
- /* exported */
- int snd_pmac_keywest_init(struct pmac_keywest *i2c)
+-	.attach_adapter = do_attach,
+ 	.probe		= do_probe,
+ 	.remove		= do_remove,
+ 	.id_table	= therm_windtunnel_id,
+@@ -444,7 +443,29 @@ static struct i2c_driver g4fan_driver = {
+ 
+ static int therm_of_probe(struct platform_device *dev)
  {
--	int err;
+-	return i2c_add_driver( &g4fan_driver );
 +	struct i2c_adapter *adap;
-+	int err, i = 0;
- 
- 	if (keywest_ctx)
- 		return -EBUSY;
- 
++	int ret, i = 0;
++
 +	adap = i2c_get_adapter(0);
 +	if (!adap)
 +		return -EPROBE_DEFER;
 +
- 	keywest_ctx = i2c;
- 
- 	if ((err = i2c_add_driver(&keywest_driver))) {
- 		snd_printk(KERN_ERR "cannot register keywest i2c driver\n");
++	ret = i2c_add_driver(&g4fan_driver);
++	if (ret) {
 +		i2c_put_adapter(adap);
- 		return err;
- 	}
++		return ret;
++	}
 +
 +	/* We assume Macs have consecutive I2C bus numbers starting at 0 */
 +	while (adap) {
-+		err = keywest_attach_adapter(adap);
-+		if (!err)
++		do_attach(adap);
++		if (x.running)
 +			break;
 +		i2c_put_adapter(adap);
 +		adap = i2c_get_adapter(++i);
 +	}
 +
- 	return 0;
++	return 0;
  }
+ 
+ static int
 -- 
 2.1.3
 
