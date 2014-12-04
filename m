@@ -1,58 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaLDOZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:25:38 -0500
-Received: from h1.radempa.de ([176.9.142.194]:54554 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932271AbaLDOZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:25:37 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Richard Weinberger <richard@nod.at>
-cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] iio: dht11: Logging updates
-In-reply-to: <547F80E0.3020001@nod.at>
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <1417563176-31972-4-git-send-email-richard@nod.at> <E1Xw9W8-0001Db-9a@stardust.g4.wien.funkfeuer.at> <547F0BE5.2050808@nod.at> <E1XwAQO-0001HP-9x@stardust.g4.wien.funkfeuer.at> <547F80E0.3020001@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Wed, 03 Dec 2014 22:30:08 +0100."
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4160.1417703106.1@stardust.g4.wien.funkfeuer.at>
-Date: Thu, 04 Dec 2014 15:25:06 +0100
-Message-Id: <E1XwXL8-000158-49@stardust.g4.wien.funkfeuer.at>
+	id S932347AbaLDO1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:27:10 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:57221 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932172AbaLDO1I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:27:08 -0500
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
+Date: Thu, 4 Dec 2014 16:27:00 +0200
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Benoit Parrot <bparrot@ti.com>, Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0EF6A712-5FF1-41BE-B8A9-21ABE7FE37F9@antoniou-consulting.com>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com> <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com> <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com> <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com> <20141202161227.GH30256@lukather> <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger writes:
-> Am 03.12.2014 um 14:56 schrieb Harald Geyer:
-> > Richard Weinberger writes:
-> >> Am 03.12.2014 um 13:58 schrieb Harald Geyer:
-> >> Currently we get log messages of style:
-> >> "iio iio:deviceX: foo bar"
-> >> and:
-> >> "dht11 <name in DT>: foo bar"
-> >>
-> >> I really favorite "dht11 <name in DT".
-> >> In my device tree every senor has a sane name and log messages look like:
-> >> "dht11 toiletten sensor: invalid checksum"
-> > 
-> > I think I ACKed the one with "iio iio:deviceX: foo bar"? 
+Hi Alexandre,
+
+I tried to stay away while things are being fleshed out but…
+
+> On Dec 4, 2014, at 16:15 , Alexandre Courbot <gnurou@gmail.com> wrote:
 > 
-> No, my patch turns all logs to "dht11 <name in DT>: foo bar".
+> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+>> On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
+>>> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>>>> On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+>>>> <maxime.ripard@free-electrons.com> wrote:
+>>> 
+>>>>> The only thing I'd like to have would be that the request here would
+>>>>> be non-exclusive, so that a later driver would still be allowed later
+>>>>> on to request that GPIO later on and manage it itself (ideally using
+>>>>> the usual gpiod_request function).
+>>>> 
+>>>> Actually we have a plan (and I have some code too) to allow multiple
+>>>> consumers per GPIO. Although like Benoit I wonder why you would want
+>>>> to hog a GPIO and then request it properly later. Also, that probably
+>>>> means we should abandon the hog since it actively drives the line and
+>>>> would interfere with the late requested. How to do that correctly is
+>>>> not really clear to me.
+>>> 
+>>> I don't get the usecase. A hogged GPIO is per definition hogged.
+>>> This sounds more like "initial settings" or something, which is another
+>>> usecase altogether.
+>> 
+>> We do have one board where we have a pin (let's say GPIO14 of the bank
+>> A) that enables a regulator that will provide VCC the bank B.
+>> 
+>> Now, both banks are handled by the same driver, but in order to have a
+>> working output on the bank B, we do need to set GPIO14 as soon as
+>> we're probed.
+>> 
+>> Just relying on the usual deferred probing introduces a circular
+>> dependency between the gpio-regulator that needs to grab its GPIO from
+>> a driver not there yet, and the gpio driver that needs to enable its
+>> gpio-regulator.
+> 
+> I don't get it. According to what you said, the following order should
+> go through IIUC:
+> 
+> 1) bank A is probed, gpio 14 is available
+> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
+> 3) bank B is probed, grabs its regulator and turn it on, probes.
+> 
+> What am I missing?
+> 
+>> 
+>> GPIO hogging needs to be the ideal solution for that, since we can
+>> just enforce the GPIO14 value as the driver is probed, which provides
+>> the guarantee that any driver using the bank B will actually drive the
+>> GPIO it might use.
+> 
+> At this point I start wondering if such initial setup should not be
+> the job of the bootloader? GPIO hogging ought to be simple and
+> definitive, adding the possibility to have it just as an initial value
+> would considerably complexify it. E.g. when is the gpio chip driver
+> supposed to release the hogged descriptor in such a case?
+> 
 
-Maybe I was unclear. AFAICS there is one case where we actually have
-"iio iio:deviceX: foo bar" now and I said:
+Do not count on the bootloader setting up anything. The trend is
+for the bootloader to setup the minimal environment to load your kernel
+and jump to it.
 
-> @@ -193,7 +197,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
->               free_irq(dht11->irq, iio_dev);
->
->               if (ret == 0 && dht11->num_edges < DHT11_EDGES_PER_READ - 1) {
-> -                     dev_err(&iio_dev->dev,
-> +                     dev_err(dht11->dev,
+http://www.denx.de/wiki/pub/U-Boot/MiniSummitELCE2013/2013-ELCE-U-Boot-Falcon-Boot.pdf
 
-Ack.
 
-Hope that clarifies,
-Harald
+> Note that if the multiple GPIO consumer feature we are planning goes
+> through, you should be able to use both hogging *and* a regulator on
+> the same GPIO and achieve what you want. The expectation of multiple
+> consumers is that the board designers know what they are doing, and
+> this case would certainly fit (chip hogs the line and doesn't touch
+> the value after that, letting the regulator control it without any
+> conflict afterwards), although it would of course be better to solve
+> the issue through regular probing...
+
+
+That’s why I was advocating a simple probing driver for all this.
+Figure out a way for this driver to be probed first would be an easier
+solution that what’s going on here.
+
+Regards
+
+— Pantelis
+
+
