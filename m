@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaLDJ6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:58:40 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58055 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLDJ56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:57:58 -0500
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH 1/2] hwmon: tmp401: add support for TI TMP435
-Date: Thu,  4 Dec 2014 10:57:27 +0100
-Message-Id: <1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com>
-References: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com>
+	id S1753548AbaLDKAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:00:00 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42058 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211AbaLDJ76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 04:59:58 -0500
+Message-ID: <5480308F.6070607@ti.com>
+Date: Thu, 4 Dec 2014 11:59:43 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "alexander.stein@systec-electronic.com" 
+	<alexander.stein@systec-electronic.com>
+Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com> <4810522.t9QFQYHtHI@wuerfel> <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com> <548016D9.6030006@ti.com> <BY2PR0301MB0613ABEA1410C04CF07C1C7C9B780@BY2PR0301MB0613.namprd03.prod.outlook.com> <548024C7.3060004@ti.com> <BY2PR0301MB061372E00518F169BCF2FFFA9B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
+In-Reply-To: <BY2PR0301MB061372E00518F169BCF2FFFA9B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="v3vJbD6ricPu0Nex7CWVcae8Bu9VAiSAG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick Titiano <ptitiano@baylibre.com>
+--v3vJbD6ricPu0Nex7CWVcae8Bu9VAiSAG
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Patrick Titiano <ptitiano@baylibre.com>
-Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
----
- drivers/hwmon/tmp401.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+On 04/12/14 11:54, Li.Xiubo@freescale.com wrote:
+> Hi Tomi,
+>=20
+> Thanks for your information very much.
+>=20
+>>> Sorry for confusing, it was delayed for other reasons internal.
+>>>
+>>> I am not familiar about the DRM, and I'd like to know if the DRM driv=
+er will
+>> be
+>>> support, should I also develop the libdrm too ? Or just coding in ker=
+nel
+>> level ?
+>>
+>> For simple drm drivers (this looks like it would be a simple one), I
+>> don't think there's any need for libdrm support. The generic DRM
+>> interfaces should be enough, so just kernel level coding needed.
+>>
+>=20
+> That's to say, if I am using the X11 server without any code in usrspac=
+e,
+> If the DRM driver will support /dev/fbX, it could work correctly ?
 
-diff --git a/drivers/hwmon/tmp401.c b/drivers/hwmon/tmp401.c
-index 7fa6e7d..5a72d7f 100644
---- a/drivers/hwmon/tmp401.c
-+++ b/drivers/hwmon/tmp401.c
-@@ -8,6 +8,9 @@
-  * Cleanup and support for TMP431 and TMP432 by Guenter Roeck
-  * Copyright (c) 2013 Guenter Roeck <linux@roeck-us.net>
-  *
-+ * Support for TMP435 by Patrick Titiano
-+ * Copyright (c) 2014 Patrick Titiano <ptitiano@baylibre.com>
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -46,7 +49,7 @@
- /* Addresses to scan */
- static const unsigned short normal_i2c[] = { 0x4c, 0x4d, 0x4e, I2C_CLIENT_END };
- 
--enum chips { tmp401, tmp411, tmp431, tmp432 };
-+enum chips { tmp401, tmp411, tmp431, tmp432, tmp435 };
- 
- /*
-  * The TMP401 registers, note some registers have different addresses for
-@@ -136,6 +139,7 @@ static const u8 TMP432_STATUS_REG[] = {
- #define TMP411C_DEVICE_ID			0x10
- #define TMP431_DEVICE_ID			0x31
- #define TMP432_DEVICE_ID			0x32
-+#define TMP435_DEVICE_ID			0x35
- 
- /*
-  * Driver data (common to all clients)
-@@ -146,6 +150,7 @@ static const struct i2c_device_id tmp401_id[] = {
- 	{ "tmp411", tmp411 },
- 	{ "tmp431", tmp431 },
- 	{ "tmp432", tmp432 },
-+	{ "tmp435", tmp435 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, tmp401_id);
-@@ -684,6 +689,11 @@ static int tmp401_detect(struct i2c_client *client,
- 			return -ENODEV;
- 		kind = tmp432;
- 		break;
-+	case TMP435_DEVICE_ID:
-+		if (client->addr != 0x4c)
-+			return -ENODEV;
-+		kind = tmp435;
-+		break;
- 	default:
- 		return -ENODEV;
- 	}
-@@ -705,7 +715,9 @@ static int tmp401_detect(struct i2c_client *client,
- static int tmp401_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
--	const char *names[] = { "TMP401", "TMP411", "TMP431", "TMP432" };
-+	static const char *names[] = {
-+		"TMP401", "TMP411", "TMP431", "TMP432", "TMP435"
-+	};
- 	struct device *dev = &client->dev;
- 	struct device *hwmon_dev;
- 	struct tmp401_data *data;
--- 
-2.1.3
+Yes. DRM offers helper code to add /dev/fbX with not too many lines. You
+can look at the docs and drm_fb_helper.c.
 
+And X11 should work fine on top of that, using the X11 fbdev support.
+
+ Tomi
+
+
+
+--v3vJbD6ricPu0Nex7CWVcae8Bu9VAiSAG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgDCPAAoJEPo9qoy8lh71C6oP/2j/ewerlhm3Ed0f92cLNHSV
+PQOZtAwAkFeCi7nbqEmKQfLTSilK89lxcEcDVH6YSUPp5Mstaaya+meNlJwUazVg
+tglLuqamgIwRSSBd8nqlPn4uOr5yfrHFvtawYgy+yPoUaOGZpoviAn75dENOTXor
+5ouQ4bUiPz6SlbRPnWWWzkgvZZaZ/S1w1KCEh1XPr+7f5z9fBWTTGhtERaHps3rd
+iw/gnnBteavHz7h1RZnV7CKELWa5fePMTz6jhTgsiQtDwnEmTHAGHWgOFxpJOisv
+6qtxf5hCc0cu8SGndvRDuSwcp17F70Wc/1fBhwLIH2/6hviIZa5bPtkmt7fK8cUe
+n59FrxeiNvxXQ4ERKPUOPp9fNL5fZuFHgivh0XFFf7WOX1MGC/phFZ1C4g3e1JgG
+KxROKMVPiZouYQO/T6cvmK57RZX3+l51EklS5sm7ZuniLTH7fgX8kblTYyAZziVW
+z+sV9WVPKZwmoVasnC0T6HzBejvsCw3AvtIqBwp7gKXsKmkFRkjuclYDQVjMjsBD
+f01YytLU4Awv2fIKVrkiYyvlueAJU9JVzY+5X7uasQDjngdf4/3a1nOU18dpEIKf
+Oc/QNVzyBBrpYS8Tp1rXpniuwbzACb2dqd0LEvd4eSDTF37LvphGRMmGByiTPX+L
+sZFNd9mlk6zcoGMFUkhT
+=nziE
+-----END PGP SIGNATURE-----
+
+--v3vJbD6ricPu0Nex7CWVcae8Bu9VAiSAG--
