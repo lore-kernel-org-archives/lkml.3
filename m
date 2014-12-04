@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaLDANO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:13:14 -0500
-Received: from ozlabs.org ([103.22.144.67]:34377 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaLDANM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:13:12 -0500
-Message-ID: <1417651990.9123.2.camel@concordia>
-Subject: Re: [RESEND PATCH] ima: Fix build failure on powerpc when
- TCG_IBMVTPM dependencies are not met
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, serge@hallyn.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, Lo Hon Ching <lo1@us.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, George Wilson <gcwilson@us.ibm.com>
-Date: Thu, 04 Dec 2014 11:13:10 +1100
-In-Reply-To: <1417618130.10667.102.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1417586690-11521-1-git-send-email-mpe@ellerman.id.au>
-	 <1417618130.10667.102.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752764AbaLDANz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:13:55 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:63421 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaLDANy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:13:54 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        xiakaixu <xiakaixu@huawei.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jacob Shin <jacob.w.shin@gmail.com>
+Subject: [GIT PULL][RESEND] hw_breakpoints: Support AMD range breakpoints
+Date: Thu,  4 Dec 2014 01:13:41 +0100
+Message-Id: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 09:48 -0500, Mimi Zohar wrote:
-> On Wed, 2014-12-03 at 17:04 +1100, Michael Ellerman wrote: 
-> > On powerpc we can end up with IMA=y and PPC_PSERIES=n which leads to:
-> > 
-> >   warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES)
-> >   tpm_ibmvtpm.c:(.text+0x14f3e8): undefined reference to `.plpar_hcall_norets'
-> > 
-> > I'm not sure why IMA needs to select those user-visible symbols, but if
-> > it must then the simplest fix is to just express the proper dependencies
-> > on the select.
-> 
-> On systems without a TPM, IMA goes into a "by-pass" mode, which stores
-> the measurements without extending the TPM PCR.  On Power, there isn't a
-> HW TPM, but on Power running PowerVM there is a virtual TPM(vTPM).  On
-> Power running PowerKVM there isn't support for vTPM, yet.  The Kconfig
-> needs to differentiate between the two.
+Ingo,
 
-No it doesn't. We don't build different configs for guests on PowerVM vs
-PowerKVM. The code needs to handle detecting the presence or absence of the
-vTPM at runtime.
+Please pull the perf/core-v3 branch that can be found at:
 
-But none of that relates to this build fix AFAICS.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	perf/core-v3
 
-cheers
+HEAD: 36748b9518a2437beffe861b47dff6d12b736b3f
+
+It has been acked by Jiri and Oleg.
+---
+Summary:
+
+* Extend breakpoint tools and core to support address range through perf
+  event with initial backend support for AMD extended breakpoints.
+  Syntax is:
+
+        perf record -e mem:addr/len:type
+
+  For example set write breakpoint from 0x1000 to 0x1200 (0x1000 + 512)
+
+        perf record -e mem:0x1000/512:w
+
+* Clean up a bit breakpoint code validation
+---
 
 
+Thanks,
+	Frederic
+---
+
+Jacob Shin (4):
+      perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+      perf tools: allow user to specify hardware breakpoint bp_len
+      perf tools: add hardware breakpoint bp_len test cases
+      perf/x86: Remove get_hbp_len and replace with bp_len
+
+
+ arch/x86/include/asm/cpufeature.h        |  2 ++
+ arch/x86/include/asm/debugreg.h          |  5 +++
+ arch/x86/include/asm/hw_breakpoint.h     |  1 +
+ arch/x86/include/uapi/asm/msr-index.h    |  4 +++
+ arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
+ arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++---------------
+ tools/perf/Documentation/perf-record.txt |  7 ++--
+ tools/perf/tests/parse-events.c          | 58 ++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c           | 21 ++++++------
+ tools/perf/util/parse-events.h           |  2 +-
+ tools/perf/util/parse-events.l           |  1 +
+ tools/perf/util/parse-events.y           | 26 ++++++++++++--
+ 12 files changed, 148 insertions(+), 43 deletions(-)
