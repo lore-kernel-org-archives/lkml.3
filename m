@@ -1,219 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaLDPjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:39:18 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:21091 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397AbaLDPjQ (ORCPT
+	id S1754671AbaLDPjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:39:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51974 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137AbaLDPjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:39:16 -0500
-From: Sifan Naeem <sifan.naeem@imgtec.com>
-To: <james.hogan@imgtec.com>, <mchehab@osg.samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <james.hartley@imgtec.com>, <ezequiel.garcia@imgtec.com>,
-        Sifan Naeem <sifan.naeem@imgtec.com>
-Subject: [PATCH 5/5] rc: img-ir: add philips rc6 decoder module
-Date: Thu, 4 Dec 2014 15:38:42 +0000
-Message-ID: <1417707523-7730-6-git-send-email-sifan.naeem@imgtec.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
-References: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
+	Thu, 4 Dec 2014 10:39:39 -0500
+Date: Thu, 4 Dec 2014 15:39:38 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Where exactly will arch_fast_hash be used
+Message-ID: <20141204153938.GC32140@casper.infradead.org>
+References: <20141204081147.GA19030@gondor.apana.org.au>
+ <20141204152637.GA32140@casper.infradead.org>
+ <20141204152929.GA22075@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.167.63]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204152929.GA22075@gondor.apana.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add img-ir module for decoding Philips rc6 protocol.
+On 12/04/14 at 11:29pm, Herbert Xu wrote:
+> On Thu, Dec 04, 2014 at 03:26:37PM +0000, Thomas Graf wrote:
+> >
+> > As Daniel pointed out, this work originated for the OVS edge use
+> > case where security is of less concern and the rehashing is
+> > sufficient. Identifying collisions is less of interest as the user
+> > space fall back provides a greater surface for an attack.
+> 
+> Well in that case the current setup I think is very misleading.
+> It's inviting unsuspecting kernel developers to use it as a hash
+> function for general hash tables, which AFAICS is something that
+> it fails at miserably.
 
-Signed-off-by: Sifan Naeem <sifan.naeem@imgtec.com>
----
- drivers/media/rc/img-ir/Kconfig      |    8 +++
- drivers/media/rc/img-ir/Makefile     |    1 +
- drivers/media/rc/img-ir/img-ir-hw.c  |    3 +
- drivers/media/rc/img-ir/img-ir-hw.h  |    1 +
- drivers/media/rc/img-ir/img-ir-rc6.c |  117 ++++++++++++++++++++++++++++++++++
- 5 files changed, 130 insertions(+)
- create mode 100644 drivers/media/rc/img-ir/img-ir-rc6.c
+Well, it's called fast hash and not secure hash ;-) but a clear hint
+definitely wouldn't hurt.
 
-diff --git a/drivers/media/rc/img-ir/Kconfig b/drivers/media/rc/img-ir/Kconfig
-index b5b114f..4d3fca9 100644
---- a/drivers/media/rc/img-ir/Kconfig
-+++ b/drivers/media/rc/img-ir/Kconfig
-@@ -66,3 +66,11 @@ config IR_IMG_RC5
- 	help
- 	   Say Y here to enable support for the RC5 protocol in the ImgTec
- 	   infrared decoder block.
-+
-+config IR_IMG_RC6
-+	bool "Phillips RC6 protocol support"
-+	depends on IR_IMG_HW
-+	help
-+	   Say Y here to enable support for the RC6 protocol in the ImgTec
-+	   infrared decoder block.
-+	   Note: This version only supports mode 0.
-diff --git a/drivers/media/rc/img-ir/Makefile b/drivers/media/rc/img-ir/Makefile
-index 898b1b8..8e6d458 100644
---- a/drivers/media/rc/img-ir/Makefile
-+++ b/drivers/media/rc/img-ir/Makefile
-@@ -7,6 +7,7 @@ img-ir-$(CONFIG_IR_IMG_SONY)	+= img-ir-sony.o
- img-ir-$(CONFIG_IR_IMG_SHARP)	+= img-ir-sharp.o
- img-ir-$(CONFIG_IR_IMG_SANYO)	+= img-ir-sanyo.o
- img-ir-$(CONFIG_IR_IMG_RC5)	+= img-ir-rc5.o
-+img-ir-$(CONFIG_IR_IMG_RC6)	+= img-ir-rc6.o
- img-ir-objs			:= $(img-ir-y)
- 
- obj-$(CONFIG_IR_IMG)		+= img-ir.o
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.c b/drivers/media/rc/img-ir/img-ir-hw.c
-index 322cdf8..3b70dc2 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.c
-+++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -45,6 +45,9 @@ static struct img_ir_decoder *img_ir_decoders[] = {
- #ifdef CONFIG_IR_IMG_RC5
- 	&img_ir_rc5,
- #endif
-+#ifdef CONFIG_IR_IMG_RC6
-+	&img_ir_rc6,
-+#endif
- 	NULL
- };
- 
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.h b/drivers/media/rc/img-ir/img-ir-hw.h
-index f124ec5..c7b6e1a 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.h
-+++ b/drivers/media/rc/img-ir/img-ir-hw.h
-@@ -188,6 +188,7 @@ extern struct img_ir_decoder img_ir_sony;
- extern struct img_ir_decoder img_ir_sharp;
- extern struct img_ir_decoder img_ir_sanyo;
- extern struct img_ir_decoder img_ir_rc5;
-+extern struct img_ir_decoder img_ir_rc6;
- 
- /**
-  * struct img_ir_reg_timings - Reg values for decoder timings at clock rate.
-diff --git a/drivers/media/rc/img-ir/img-ir-rc6.c b/drivers/media/rc/img-ir/img-ir-rc6.c
-new file mode 100644
-index 0000000..bcd0822
---- /dev/null
-+++ b/drivers/media/rc/img-ir/img-ir-rc6.c
-@@ -0,0 +1,117 @@
-+/*
-+ * ImgTec IR Decoder setup for Phillips RC-6 protocol.
-+ *
-+ * Copyright 2012-2014 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include "img-ir-hw.h"
-+
-+/* Convert RC6 data to a scancode */
-+static int img_ir_rc6_scancode(int len, u64 raw, u64 enabled_protocols,
-+				struct img_ir_scancode_req *request)
-+{
-+	unsigned int addr, cmd, mode, trl1, trl2;
-+
-+	/*
-+	 * Due to a side effect of the decoder handling the double length
-+	 * Trailer bit, the header information is a bit scrambled, and the
-+	 * raw data is shifted incorrectly.
-+	 * This workaround effectively recovers the header bits.
-+	 *
-+	 * The Header field should look like this:
-+	 *
-+	 * StartBit ModeBit2 ModeBit1 ModeBit0 TrailerBit
-+	 *
-+	 * But what we get is:
-+	 *
-+	 * ModeBit2 ModeBit1 ModeBit0 TrailerBit1 TrailerBit2
-+	 *
-+	 * The start bit is not important to recover the scancode.
-+	 */
-+
-+	raw	>>= 27;
-+
-+	trl1	= (raw >>  17)	& 0x01;
-+	trl2	= (raw >>  16)	& 0x01;
-+
-+	mode	= (raw >>  18)	& 0x07;
-+	addr	= (raw >>   8)	& 0xff;
-+	cmd	=  raw		& 0xff;
-+
-+	/*
-+	 * Due to the above explained irregularity the trailer bits cannot
-+	 * have the same value.
-+	 */
-+	if (trl1 == trl2)
-+		return -EINVAL;
-+
-+	/* Only mode 0 supported for now */
-+	if (mode)
-+		return -EINVAL;
-+
-+	request->protocol = RC_TYPE_RC6_0;
-+	request->scancode = addr << 8 | cmd;
-+	request->toggle	  = trl2;
-+	return IMG_IR_SCANCODE;
-+}
-+
-+/* Convert RC6 scancode to RC6 data filter */
-+static int img_ir_rc6_filter(const struct rc_scancode_filter *in,
-+				 struct img_ir_filter *out, u64 protocols)
-+{
-+	/* Not supported by the hw. */
-+	return -EINVAL;
-+}
-+
-+/*
-+ * RC-6 decoder
-+ * see http://www.sbprojects.com/knowledge/ir/rc6.php
-+ */
-+struct img_ir_decoder img_ir_rc6 = {
-+	.type		= RC_BIT_RC6_0,
-+	.control	= {
-+		.bitorien	= 1,
-+		.code_type	= IMG_IR_CODETYPE_BIPHASE,
-+		.decoden	= 1,
-+		.decodinpol	= 1,
-+	},
-+	/* main timings */
-+	.tolerance	= 20,
-+	/*
-+	 * Due to a quirk in the img-ir decoder, default header values do
-+	 * not work, the values described below were extracted from
-+	 * successful RTL test cases.
-+	 */
-+	.timings	= {
-+		/* leader symbol */
-+		.ldr = {
-+			.pulse	= { 650 },
-+			.space	= { 660 },
-+		},
-+		/* 0 symbol */
-+		.s00 = {
-+			.pulse	= { 370 },
-+			.space	= { 370 },
-+		},
-+		/* 01 symbol */
-+		.s01 = {
-+			.pulse	= { 370 },
-+			.space	= { 370 },
-+		},
-+		/* free time */
-+		.ft  = {
-+			.minlen = 21,
-+			.maxlen = 21,
-+			.ft_min = 2666,	/* 2.666 ms */
-+		},
-+	},
-+
-+	/* scancode logic */
-+	.scancode	= img_ir_rc6_scancode,
-+	.filter		= img_ir_rc6_filter,
-+};
--- 
-1.7.9.5
-
+I wasn't aware of the distribution weakness of the lower bits. Do
+you have a reference to more information?
