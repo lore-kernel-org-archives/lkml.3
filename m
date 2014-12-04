@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaLDM2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:28:16 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:53543 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaLDM2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:28:08 -0500
-Message-ID: <54805305.9070105@linaro.org>
-Date: Thu, 04 Dec 2014 13:26:45 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932203AbaLDM2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:28:52 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:47415 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932183AbaLDM2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:28:51 -0500
+Date: Thu, 4 Dec 2014 14:28:13 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user space
+Message-ID: <20141204122813.GA523@node.dhcp.inet.fi>
+References: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
+ <20141202113014.GA22683@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: eric.auger@st.com, Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        kvm-devel <kvm@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Alexander Graf <agraf@suse.de>, "gleb@kernel.org" <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
-References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org> <CAFEAcA9YmAVYAOFbmV53Y3zBdcmK9MGSVR4gaLCjKxbyrZ6Xaw@mail.gmail.com> <547DFCD6.3000406@linaro.org> <CAFEAcA_pSiMXX52xUhNBCwiNdZomspFhr_Y+9+F2yb7P_D26bg@mail.gmail.com> <54804D27.1020901@linaro.org> <CAFEAcA_moz=PBJX23Ghj53oYTObNN-Hh8DGZ1Oa=mMKWgM7Emw@mail.gmail.com>
-In-Reply-To: <CAFEAcA_moz=PBJX23Ghj53oYTObNN-Hh8DGZ1Oa=mMKWgM7Emw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 01:07 PM, Peter Maydell wrote:
-> On 4 December 2014 at 12:01, Eric Auger <eric.auger@linaro.org> wrote:
->> Here is the sequence:
->> 1) The VGIC early initialization is initiated in a machine init done
->> notifier. This notifier is registered in kvm_arm_gic_realize
->> (http://lists.gnu.org/archive/html/qemu-devel/2014-12/msg00220.html). It
->> executes after vcpu instantiations + dist/cpu interface base address
->> setting + nb irq setting.
->> 2) the VFIO signaling and irqfd setup is done in a reset notifier
->> http://lists.gnu.org/archive/html/qemu-devel/2014-11/msg04365.html
+On Thu, Dec 04, 2014 at 02:10:53PM +0800, Wang, Yalin wrote:
+> > -----Original Message-----
+> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> > Sent: Tuesday, December 02, 2014 7:30 PM
+> > To: Wang, Yalin
+> > Cc: 'linux-kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
+> > kernel@lists.infradead.org'
+> > Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user
+> > space
+> > 
+> > On Tue, Dec 02, 2014 at 05:27:36PM +0800, Wang, Yalin wrote:
+> > > This patch add/dec zero_page's _mapcount to make sure the mapcount is
+> > > correct for zero_page, so that when read from /proc/kpagecount,
+> > > zero_page's mapcount is also correct, userspace process like procrank
+> > > can calculate PSS correctly.
+> > 
+> > I don't have specific code path to point to, but I would expect zero page
+> > with non-zero mapcount would cause a problem with rmap.
+> > 
+> > How do you test the change?
+> > 
+> I just test it to see the mapcount from /proc/pid/pagemap  and /proc/kpagecount ,
+> It works well,
+
+I took a closer look and your patch is broken in multiple places:
+ - on zap_pte_range() you don't decrement mapcount;
+ - you don't update rss counters for mm;
+ - copy_one_pte() doesn't increase mapcount;
+ - ...
+
+Basically, each and every vm_normal_page() call must be audited. As first
+step. And you totally skip huge zero page.
+
+Proper mapcount handling for zero page would require a lot more work and I
+don't think it worth it. Gain is too small.
+
+NAK.
+
+> The problem is that when I see /proc/pid/smaps ,
+> The Rss / Pss don't calculate zero_page map,
+> Because smaps_pte_entry() --> vm_normal_page( ),
+> Will return NULL for zero_page,
 > 
-> OK. And on x86 VFIO how does this work? Obviously x86's GIC just
-> initializes as soon as it's created, but do we do the irqfd setup
-> in a reset notifier there too?
-
-This is what I understand from PCI intx init sequence: the vfio
-signaling and irqfd setup happens in the vfio_initfn function instead.
-first vfio signaling with user-side eventfd handlers is setup
-(vfio_enable_intx). if KVM is enabled, vfio_enable_intx then tears the
-user-side handlers down and replace them by irqfd kernel-side handlers
-(IRQFD setup). the virtual IRQ to be injected to the guest is set to
-vdev->intx.route.irq. This obviously requires this routing to be set
-before the QEMU PCI VFIO device instantiation.
-
-On ARM case, VFIO device are bound to be dynamically instantiated from
-command line using dynamic sysbus device instantiation. Binding of IRQ
-is done by a platform bus machine init done notifier. Only at that stage
-we know the gsi. hence doing the irqfd init in a reset notifier.
-
-Eric
-
-
+> But when userspace process cat /proc/pid/pagemap  ,
+> It will see zero_page mapped,
+> And will treat as Rss ,  
+> This is weird, should we also omit zero_page in /proc/pid/pagemap ?
+> Or add zero_page as Rss in /proc/pid/smaps ? 
 > 
-> thanks
-> -- PMM
-> 
+> I think we should add zero_page into Rss ,
+> Because it is really mapped into userspace address space.
+> And will let userspace memory analysis more accurate .
 
+It would be easier for userspace to find out pfn of zero page and take it
+into account.
+
+Note: some architectures have multiple zero page due to coloring.
+
+-- 
+ Kirill A. Shutemov
