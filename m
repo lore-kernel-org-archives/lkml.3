@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaLDH4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:56:37 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:49647 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaLDH4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:56:35 -0500
-Date: Thu, 4 Dec 2014 08:56:28 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-Message-ID: <20141204075627.GE6390@secunet.com>
-References: <547F2462.6040405@smart-weblications.de>
+	id S1753132AbaLDH4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:56:42 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48297 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853AbaLDH4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 02:56:38 -0500
+Message-ID: <548013B0.4080108@ti.com>
+Date: Thu, 4 Dec 2014 09:56:32 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <547F2462.6040405@smart-weblications.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.182.7.102]
-X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
+References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com> <547EF8CC.9030502@ti.com> <CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com> <548007CA.7010900@ti.com> <20141204074641.GB4311@sudip-PC>
+In-Reply-To: <20141204074641.GB4311@sudip-PC>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="8iEkgqnVptv4nKeTns12iLPI1OlDNhx32"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 03:55:30PM +0100, Smart Weblications GmbH - Florian Wiessner wrote:
-> Hi list,
-> 
-> 
-> 
-> [16623.095403] BUG: unable to handle kernel paging request at 00000000010600d0
-> [16623.095445] IP: [<ffffffff81547767>] xfrm_selector_match+0x25/0x2f6
-> [16623.095480] PGD aeaea067 PUD 85d95067 PMD 0
-> [16623.095513] Oops: 0000 [#1] SMP
-> [16623.095543] Modules linked in: netconsole xt_nat xt_multiport veth ip_vs_rr
-> nfsd lockd nfs_acl auth_rpcgss sunrpc oid_registry iptable_mangle xt_mark
-> nf_conntrack_netlink nfnetlink ipt_MASQUERADE iptable_nat nf_nat_ipv4
-> nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_tcpudp iptable_filter ip_tables
-> cpufreq_ondemand cpufreq_powersave cpufreq_conservative cpufreq_userspace
-> ocfs2_stack_o2cb ocfs2_dlm bridge stp llc bonding fuse nf_conntrack_ftp 8021q
-> openvswitch gre vxlan xt_conntrack x_tables ocfs2_dlmfs dlm sctp ocfs2
-> ocfs2_nodemanager ocfs2_stackglue configfs rbd kvm_intel kvm coretemp ip_vs_ftp
-> ip_vs nf_nat nf_conntrack ctr twofish_generic twofish_x86_64 twofish_common
-> camellia_generic serpent_generic blowfish_generic blowfish_common cast5_generic
-> cast_common xcbc sha512_generic crypto_null af_key xfrm_algo psmouse serio_raw
-> i2c_i801 lpc_ich mfd_core evdev btrfs lzo_decompress lzo_compress
-> [16623.096062] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.33 #1
-> [16623.096091] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 1.1a
-> 09/28/2011
-> [16623.096137] task: ffffffff81804450 ti: ffffffff817f4000 task.ti: ffffffff817f4000
-> [16623.096182] RIP: 0010:[<ffffffff81547767>]  [<ffffffff81547767>]
-> xfrm_selector_match+0x25/0x2f6
-> [16623.096233] RSP: 0018:ffff88083fc03900  EFLAGS: 00010246
-> [16623.096261] RAX: 0000000000000001 RBX: ffff88083fc03a20 RCX: ffff880787fb1200
-> [16623.096292] RDX: 0000000000000002 RSI: ffff88083fc03a20 RDI: 00000000010600a6
-> [16623.096323] RBP: 00000000010600a6 R08: 0000000000000000 R09: ffff88083fc039a0
-> [16623.096353] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88083fc03a20
-> [16623.096383] R13: 0000000000000001 R14: ffffffff818a9700 R15: ffffffffa01c73e0
-> [16623.096414] FS:  0000000000000000(0000) GS:ffff88083fc00000(0000)
-> knlGS:0000000000000000
-> [16623.096469] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [16623.096498] CR2: 00000000010600d0 CR3: 0000000085f0b000 CR4: 00000000000407f0
-> [16623.096528] Stack:
-> [16623.096550]  0000000000000000 0000000001060002 ffff880787fb1200 ffff88083fc03a20
-> [16623.096602]  0000000000000001 ffffffff81547a7c 0000000000000000 ffff8800baad5480
-> [16623.096655]  ffffffff81804450 ffffffff818a9700 000000003c9041bc ffffffff81547ef7
-> [16623.096721] Call Trace:
-> [16623.096744]  <IRQ>
-> [16623.096749]  [<ffffffff81547a7c>] ? xfrm_sk_policy_lookup+0x44/0x9b
-> [16623.096802]  [<ffffffff81547ef7>] ? xfrm_lookup+0x91/0x446
-> [16623.096832]  [<ffffffff81541316>] ? ip_route_me_harder+0x150/0x1b0
-> [16623.096865]  [<ffffffffa01b6457>] ? ip_vs_route_me_harder+0x86/0x91 [ip_vs]
-> [16623.096899]  [<ffffffffa01b797a>] ? ip_vs_out+0x2d3/0x5bc [ip_vs]
-> [16623.096930]  [<ffffffff81501420>] ? ip_rcv_finish+0x2b8/0x2b8
+--8iEkgqnVptv4nKeTns12iLPI1OlDNhx32
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-I really wonder why the xfrm_sk_policy_lookup codepath is taken here.
-It looks like this is the processing of an inbound ipv4 packet that
-is going to be rerouted to the output path by ipvs, so this packet
-should not have socket context at all.
+On 04/12/14 09:46, Sudip Mukherjee wrote:
+> On Thu, Dec 04, 2014 at 09:05:46AM +0200, Tomi Valkeinen wrote:
+>> On 03/12/14 20:29, Prabhakar Lad wrote:
+>>> On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.co=
+m> wrote:
+>>>> On 27/11/14 00:07, Lad, Prabhakar wrote:
+>>>>> this patch fixes following build warning:
+>>>>> drivers/video/fbdev/vt8623fb.c: In function =E2=80=98vt8623_pci_pro=
+be=E2=80=99:
+>>>>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer fro=
+m integer of different size [-Wint-to-pointer-cast]
+>>>>>   par->state.vgabase =3D (void __iomem *) vga_res.start;
+>>>>>                        ^
+>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>> ---
+>>>>>  drivers/video/fbdev/vt8623fb.c | 2 +-
+>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/v=
+t8623fb.c
+>>>>> index 5c7cbc6..ea7f056 100644
+>>>>> --- a/drivers/video/fbdev/vt8623fb.c
+>>>>> +++ b/drivers/video/fbdev/vt8623fb.c
+>>>>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev=
+, const struct pci_device_id *id)
+>>>>>
+>>>>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
+>>>>>
+>>>>> -     par->state.vgabase =3D (void __iomem *) vga_res.start;
+>>>>> +     par->state.vgabase =3D (void __iomem *) (unsigned long) vga_r=
+es.start;
+>>>>
+>>>> This does look quite ugly... Where does the warning come from in the=
 
-xfrm_sk_policy_lookup is called just if the packet has socket context
-and the socket has an IPsec output policy configured. Do you use IPsec
-socket policies?
+>>>> first place. Isn't vga_res.start (resource_size_t) the size of a poi=
+nter?
+>>>>
+>>> Yes looks ugly, I am not sure what you meant from 'where does this wa=
+rning
+>>> come from' its in the commit message.
+>>
+>> I meant why is there a warning at all. With a quick glance,
+>> vga_res.start is the size of a pointer. So the sizes of the integer an=
+d
+>> the pointer should be the same. But the warning still says "of differe=
+nt
+>> size".
+>=20
+> poking my nose into your discussion.
+> I tried to see the warning, and I re-compiled like make W=3D1 M=3Ddrive=
+rs/video/fbdev/ (before that make clean M=3Ddrivers/video/fbdev was done)=
 
-> 
-> This happens again and again with 3.12.33
-> 
-> 
-> see also: http://www.spinics.net/lists/netdev/msg306283.html
-> 
-> is this already fixed somehow?
-> 
+> I can see warning with many other files, but drivers/video/fbdev/vt8623=
+fb.o was quiet and there was no warning.
+> I tested with next=3D20141203.
+> did i miss something in checking the warning ?
 
-You mentioned in the tread above that it does not happen with
-3.17.4, so it should be fixed somehow. But I have no idea how
-it was fixed.
+I don't see the warning either when compiling for arm or x86_64. On what
+architecture do you see the warning?
+
+ Tomi
+
+
+
+--8iEkgqnVptv4nKeTns12iLPI1OlDNhx32
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgBOwAAoJEPo9qoy8lh71viwP/2E6cesNrRrALzE3315MYc+m
+bHh6h6RnRTw4jqvD76QeeNNRV+J+fPE+7v8J/dtUTzv+943dxvJX4yBKWL7v9OFr
+qI1xi0VkgEO8eAhsaR7gCLw+T3+znHA79vn2ex1hyYJijG5l+YWGRkukadoHu6xF
+qyGNrRxip8e/xCSzcLeccrGj81AE3Y9uqz/YKLnwpieZWMFmoB1cWCMjBwKk+/Ym
+oPNHhyJnjRkCmJRvZp0wzXy6PsDt/wFf9Wja9EEs1HiDE7atHUtGtx2XF9mZ3299
++HF+OKXI/rIIq9a+TLYfXZlUmi6gQXJsXjQlw2gAGah840+UtSur6OnYWoRcGxra
+mfjLOAK8kWE5B+CedUrJ8EQVxpEYm0IM5IKsoGnZoM5ByzhHGIuue16PPVozDHIn
+7TRUL4A24VGq3yp+LQCrfAPC5PYMkb7VfQcEombDRxGl5x/HBEmcTJTjsV6hLiGn
+FoMSDGsB3EvAa8yTDF7qv5DwlMQGbYkqzpKRTb1ZCW0o2J0PktZvLpDWZy6YPkZz
+thksamxXRfmH+rudnjNQ4Zo1WbRWIm5qkA7uTINVyzaW3VRIWiTuiPreU46DNUUW
+IeYWjUqFF/sbCivd2WZc++xCY0+koG3/Y21MvoKCUv0icmdR8AHDgEOW0uXTC6Yc
+245nuKYpF0MHz6JbwWyq
+=DTY6
+-----END PGP SIGNATURE-----
+
+--8iEkgqnVptv4nKeTns12iLPI1OlDNhx32--
