@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaLDBct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:32:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391AbaLDBcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:32:47 -0500
-Date: Wed, 3 Dec 2014 20:32:00 -0500
-From: Dave Jones <davej@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141204013200.GB17727@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	John Stultz <john.stultz@linaro.org>
-References: <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
- <20141203200906.GA3118@redhat.com>
- <CA+55aFxLmBjTOdGu3TFzTJ-ym7TVLDBt79BKqU-vZbX4CvSGog@mail.gmail.com>
- <alpine.DEB.2.11.1412032141040.16275@nanos>
- <CA+55aFw8L06BxpsVnbdiNaU2WSFo=tafND25uV_SHUig=CC1AA@mail.gmail.com>
- <alpine.DEB.2.11.1412032249050.16275@nanos>
- <20141203232115.GA13266@redhat.com>
- <alpine.DEB.2.11.1412040043170.16275@nanos>
- <20141204002044.GA15239@redhat.com>
- <alpine.DEB.2.11.1412040156070.16275@nanos>
+	id S1752152AbaLDBj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:39:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58372 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaLDBj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 20:39:26 -0500
+Date: Wed, 3 Dec 2014 17:39:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: arun vijayshankar <arun267@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] Staging: bcm: Fix lines exceeding 80 character limit in
+ CmHost.h This is a patch to CmHost.h that fixes Exceeds 80 Character limits
+ warning found by checkpatch.pl Signed-off-by: Arun Ayyer <arun267@gmail.com>
+Message-ID: <20141204013925.GA32401@kroah.com>
+References: <1417655529-8640-1-git-send-email-arun267@gmail.com>
+ <20141204012517.GA31563@kroah.com>
+ <CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412040156070.16275@nanos>
+In-Reply-To: <CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 01:59:01AM +0100, Thomas Gleixner wrote:
+On Wed, Dec 03, 2014 at 05:31:59PM -0800, arun vijayshankar wrote:
+> Hi Greg,
 
- > > Also, should I run it in isolation, with nothing else going on,
- > > or under load where I see problems ?
- > 
- > isolated is usually the best thing as it has the highest density of
- > reads.
+If you turn off HTML email, your message will not get rejected by the
+mailing lists :)
 
-Ok, it's been running for just over an hour with no 'fails' yet.
-How long should I leave it ?
+> I completely agree! I thought of keeping the patch summary as the subject, but
+> I wasn't sure and ending up entering nothing. Git then used this by default.
 
-	Dave
+You forgot a blank line after your first line in the git commit message,
+which caused it to get all merged together.
 
+Try fixing that up and resending please.
 
+thanks,
 
-
+greg k-h
