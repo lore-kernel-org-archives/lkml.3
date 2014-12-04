@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790AbaLDHVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:21:04 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59808 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220AbaLDHVC (ORCPT
+	id S1752837AbaLDHV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:21:59 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:59884 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaLDHV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:21:02 -0500
-X-Original-SENDERIP: 10.177.220.140
-X-Original-MAILFROM: seungho1.park@lge.com
-Message-ID: <54800B73.8090503@lge.com>
-Date: Thu, 04 Dec 2014 16:21:23 +0900
-From: =?UTF-8?B?IuuwleyKue2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKQ==?=
-	 =?UTF-8?B?QU9U7YyAKHNldW5naG8xLnBhcmtAbGdlLmNvbSki?= 
-	<seungho1.park@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 4 Dec 2014 02:21:58 -0500
+Date: Thu, 4 Dec 2014 16:21:55 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        jason@lakedaemon.net
+Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM
+ workaround
+Message-ID: <20141204072153.GE25806@verge.net.au>
+References: <20141203121753.5936.36253.sendpatchset@w520>
+ <20141203121813.5936.17433.sendpatchset@w520>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com
-Subject: Re: [RFC 0/6] zsmalloc support compaction
-References: <1417488587-28609-1-git-send-email-minchan@kernel.org> <548003F1.2080004@lge.com>
-In-Reply-To: <548003F1.2080004@lge.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141203121813.5936.17433.sendpatchset@w520>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Minchan.
+Hi Magnus,
 
-Sorry, I got it. You made zsmalloc pages movable.
-forget it.
+On Wed, Dec 03, 2014 at 09:18:13PM +0900, Magnus Damm wrote:
+> From: Magnus Damm <damm+renesas@opensource.se>
+> 
+> Adjust the r8a7779 SoC DTS and the Marzen Reference
+> C board code to use DTS only for INTC-IRQPIN IRLM setup.
+> 
+> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+> ---
+> 
+>  Written on top of renesas-devel-20141202-v3.18-rc7 and
+>  [PATCH] ARM: shmobile: r8a7779 CCF DTS update
+> 
+>  Has a runtime dependency on:
+>  [PATCH 01/02] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
+> 
+>  arch/arm/boot/dts/r8a7779.dtsi                  |    5 +++--
+>  arch/arm/mach-shmobile/board-marzen-reference.c |    7 -------
+>  2 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
+> +++ work/arch/arm/boot/dts/r8a7779.dtsi	2014-12-03 20:27:49.000000000 +0900
+> @@ -139,7 +139,7 @@
+>  		interrupt-controller;
+>  	};
+>  
+> -	irqpin0: irqpin@fe780010 {
+> +	irqpin0: irqpin@fe780000 {
+>  		compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
+>  		#interrupt-cells = <2>;
+>  		status = "disabled";
+> @@ -148,7 +148,8 @@
+>  			<0xfe780010 4>,
+>  			<0xfe780024 4>,
+>  			<0xfe780044 4>,
+> -			<0xfe780064 4>;
+> +			<0xfe780064 4>,
+> +			<0xfe780000 4>;
 
-Seungho.
+Is there any order implied by the above list?
+Naïvely I would expect it to be sorted numerically.
 
-2014-12-04 오후 3:49에 "박승호/책임연구원/SW Platform(연)AOT팀 
-(seungho1.park@lge.com)" 이(가) 쓴 글:
-> Hi, Minchan.
->
-> I have a question.
-> The problem mentioned can't be resolved with compaction?
-> Is there any reason that zsmalloc pages can't be moved by compaction
-> operation in direct reclaim?
->
-> 2014-12-02 오전 11:49에 Minchan Kim 이(가) 쓴 글:
->> Recently, there was issue about zsmalloc fragmentation and
->> I got a report from Juno that new fork failed although there
->> are plenty of free pages in the system.
->> His investigation revealed zram is one of the culprit to make
->> heavy fragmentation so there was no more contiguous 16K page
->> for pgd to fork in the ARM.
->>
->> This patchset implement *basic* zsmalloc compaction support
->> and zram utilizes it so admin can do
->>     "echo 1 > /sys/block/zram0/compact"
->>
->> Actually, ideal is that mm migrate code is aware of zram pages and
->> migrate them out automatically without admin's manual opeartion
->> when system is out of contiguous page. Howver, we need more thinking
->> before adding more hooks to migrate.c. Even though we implement it,
->> we need manual trigger mode, too so I hope we could enhance
->> zram migration stuff based on this primitive functions in future.
->>
->> I just tested it on only x86 so need more testing on other arches.
->> Additionally, I should have a number for zsmalloc regression
->> caused by indirect layering. Unfortunately, I don't have any
->> ARM test machine on my desk. I will get it soon and test it.
->> Anyway, before further work, I'd like to hear opinion.
->>
->> Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
->>
->> Thanks.
->>
->> Minchan Kim (6):
->>    zsmalloc: expand size class to support sizeof(unsigned long)
->>    zsmalloc: add indrection layer to decouple handle from object
->>    zsmalloc: implement reverse mapping
->>    zsmalloc: encode alloced mark in handle object
->>    zsmalloc: support compaction
->>    zram: support compaction
->>
->>   drivers/block/zram/zram_drv.c |  24 ++
->>   drivers/block/zram/zram_drv.h |   1 +
->>   include/linux/zsmalloc.h      |   1 +
->>   mm/zsmalloc.c                 | 596 
->> +++++++++++++++++++++++++++++++++++++-----
->>   4 files changed, 552 insertions(+), 70 deletions(-)
->>
->
-
+>  		interrupts = <0 27 IRQ_TYPE_LEVEL_HIGH
+>  			      0 28 IRQ_TYPE_LEVEL_HIGH
+>  			      0 29 IRQ_TYPE_LEVEL_HIGH
+> --- 0001/arch/arm/mach-shmobile/board-marzen-reference.c
+> +++ work/arch/arm/mach-shmobile/board-marzen-reference.c	2014-12-03 20:28:37.000000000 +0900
+> @@ -32,12 +32,6 @@ static void __init marzen_init_timer(voi
+>  	clocksource_of_init();
+>  }
+>  
+> -static void __init marzen_init(void)
+> -{
+> -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> -	r8a7779_init_irq_extpin_dt(1); /* IRQ1 as individual interrupt */
+> -}
+> -
+>  static const char *marzen_boards_compat_dt[] __initdata = {
+>  	"renesas,marzen",
+>  	"renesas,marzen-reference",
+> @@ -50,7 +44,6 @@ DT_MACHINE_START(MARZEN, "marzen")
+>  	.init_early	= shmobile_init_delay,
+>  	.init_time	= marzen_init_timer,
+>  	.init_irq	= r8a7779_init_irq_dt,
+> -	.init_machine	= marzen_init,
+>  	.init_late	= shmobile_init_late,
+>  	.dt_compat	= marzen_boards_compat_dt,
+>  MACHINE_END
+> 
