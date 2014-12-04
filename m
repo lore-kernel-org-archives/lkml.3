@@ -1,81 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaLDJYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:24:37 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:52722 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLDJYe convert rfc822-to-8bit (ORCPT
+	id S1753463AbaLDJY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:24:58 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51395 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLDJYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:24:34 -0500
+	Thu, 4 Dec 2014 04:24:54 -0500
+Message-ID: <5480285F.1070501@de.ibm.com>
+Date: Thu, 04 Dec 2014 10:24:47 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
-References: <20141203121753.5936.36253.sendpatchset@w520>
-	<20141203121813.5936.17433.sendpatchset@w520>
-	<20141204072153.GE25806@verge.net.au>
-	<CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
-	<CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
-Date: Thu, 4 Dec 2014 18:24:32 +0900
-Message-ID: <CANqRtoQM8jrggMT7QFTQ1_1fKJgankkrUnF-wO8mJx3NqjxMTQ@mail.gmail.com>
-Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM workaround
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
+References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com> <1417645821-54731-2-git-send-email-borntraeger@de.ibm.com> <20141204000749.GX25340@linux.vnet.ibm.com>
+In-Reply-To: <20141204000749.GX25340@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120409-0013-0000-0000-000002173EBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Thu, Dec 4, 2014 at 6:19 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Magnus,
->
-> On Thu, Dec 4, 2014 at 8:33 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>>> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
->>>> +++ work/arch/arm/boot/dts/r8a7779.dtsi       2014-12-03 20:27:49.000000000 +0900
->>>> @@ -139,7 +139,7 @@
->>>>               interrupt-controller;
->>>>       };
->>>>
->>>> -     irqpin0: irqpin@fe780010 {
->>>> +     irqpin0: irqpin@fe780000 {
->>>>               compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
->>>>               #interrupt-cells = <2>;
->>>>               status = "disabled";
->>>> @@ -148,7 +148,8 @@
->>>>                       <0xfe780010 4>,
->>>>                       <0xfe780024 4>,
->>>>                       <0xfe780044 4>,
->>>> -                     <0xfe780064 4>;
->>>> +                     <0xfe780064 4>,
->>>> +                     <0xfe780000 4>;
->>>
->>> Is there any order implied by the above list?
->>> Naïvely I would expect it to be sorted numerically.
+Am 04.12.2014 um 01:07 schrieb Paul E. McKenney:
+> On Wed, Dec 03, 2014 at 11:30:13PM +0100, Christian Borntraeger wrote:
+>> ACCESS_ONCE does not work reliably on non-scalar types. For
+>> example gcc 4.6 and 4.7 might remove the volatile tag for such
+>> accesses during the SRA (scalar replacement of aggregates) step
+>> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 >>
->> Yes, the driver assumes the register banks to be passed in a certain
->> order. In the case of r8a7779 we add one more register bank at the end
->> for IRLM setup. Register detail (base address, access size, order and
->> bitfield width) varies with SoC version. So the IRLM register will be
->> at different addresses depending on SoC, but the driver wants it at
->> the end of the list.
->
-> As these are all individual registers, and there are that many, I think
-> it's worth adding a reg-names property to identify the registers.
-> Of course the driver still has to support the old anonymous order
-> for backwards compatibility.
+>> Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
+>> scalar types as suggested by Linus Torvalds. Accesses larger than
+>> the machines word size cannot be guaranteed to be atomic. These
+>> macros will use memcpy and emit a build warning.
+>>
+>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> 
+> With or without some nits below addressed:
+> 
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+>> ---
+>>  include/linux/compiler.h | 64 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 64 insertions(+)
+>>
+>> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+>> index d5ad7b1..947710e 100644
+>> --- a/include/linux/compiler.h
+>> +++ b/include/linux/compiler.h
+>> @@ -186,6 +186,70 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>>  # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+>>  #endif
+>>
+>> +#include <linux/types.h>
+>> +
+>> +void data_access_exceeds_word_size(void)
+>> +__compiletime_warning("data access exceeds word size and won't be atomic");
+>> +
+>> +static __always_inline void __read_once_size(volatile void *p, void *res, int size)
+>> +{
+>> +	switch (size) {
+>> +	case 1: *(u8 *)res = *(volatile u8 *)p; break;
+>> +	case 2: *(u16 *)res = *(volatile u16 *)p; break;
+>> +	case 4: *(u32 *)res = *(volatile u32 *)p; break;
+>> +#ifdef CONFIG_64BIT
+>> +	case 8: *(u64 *)res = *(volatile u64 *)p; break;
+>> +#endif
+> 
+> You could get rid of the #ifdef above by doing "case sizeof(long)"
+> and switching the casts from u64 to unsigned long.
 
-If we should rework things, then I propose going the other way around.
-=) Basically only passing a single base address with a certain SoC
-specific compat string, and based on that letting the driver
-internally figure out which register is at what offset and the access
-size and bitfield size. Either way we have a limited number of SoCs
-and they are all old.
+Wouldnt that cause a compile warning because we have two case statements
+with the same size?
 
-Cheers,
+> 
+>> +	default:
+>> +		barrier();
+>> +		__builtin_memcpy((void *)res, (const void *)p, size);
+>> +		data_access_exceeds_word_size();
+>> +		barrier();
+>> +	}
+>> +}
+>> +
+>> +static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
+>> +{
+>> +	switch (size) {
+>> +	case 1: *(volatile u8 *)p = *(u8 *)res; break;
+>> +	case 2: *(volatile u16 *)p = *(u16 *)res; break;
+>> +	case 4: *(volatile u32 *)p = *(u32 *)res; break;
+>> +#ifdef CONFIG_64BIT
+>> +	case 8: *(volatile u64 *)p = *(u64 *)res; break;
+>> +#endif
+> 
+> Ditto.
+> 
+>> +	default:
+>> +		barrier();
+>> +		__builtin_memcpy((void *)p, (const void *)res, size);
+>> +		data_access_exceeds_word_size();
+>> +		barrier();
+>> +	}
+>> +}
+>> +
+>> +/*
+>> + * Prevent the compiler from merging or refetching reads or writes. The compiler
+>> + * is also forbidden from reordering successive instances of READ_ONCE,
+>> + * ASSIGN_ONCE and ACCESS_ONCE (see below), but only when the compiler is aware
+>> + * of some particular ordering.  One way to make the compiler aware of ordering
+>> + * is to put the two invocations of READ_ONCE, ASSIGN_ONCE or ACCESS_ONCE() in
+>> + * different C statements.
+>> + *
+>> + * In contrast to ACCESS_ONCE these two macros will also work on aggregate data
+>> + * types like structs or unions. If the size of the accessed data type exceeds
+>> + * the word size of the machine (e.g. 32bit or 64bit), the access might happen
+>> + * in multiple chunks, though.
+> 
+> This last sentence might be more clear if it was something like the
+> following:
+> 
+> 	If the size of the accessed data type exceeeds the word size of
+> 	the machine (e.g., 32 bits or 64 bits), ACCESS_ONCE() might
+> 	carry out the access in multiple chunks, but READ_ONCE() and
+> 	ASSIGN_ONCE() will give a link-time error.
 
-/ magnus
+The code in v4 now combines Linus (memcpy) and your (error) suggestion. We do a memcpy and a compile time _warning_
+
+So I will do 
+
+ * In contrast to ACCESS_ONCE these two macros will also work on aggregate
+ * data types like structs or unions. If the size of the accessed data
+ * type exceeds the word size of the machine (e.g., 32 bits or 64 bits)
+ * READ_ONCE() and ASSIGN_ONCE()  will fall back to memcpy and print a
+ * compile-time warning.
+
+
+
+> 
+>> + *
+>> + * These macros do absolutely -nothing- to prevent the CPU from reordering,
+>> + * merging, or refetching absolutely anything at any time.  Their main intended
+>> + * use is to mediate communication between process-level code and irq/NMI
+>> + * handlers, all running on the same CPU.
+> 
+> This last sentence is now obsolete.  How about something like this?
+> 
+> 	Their two major use cases are: (1) Mediating communication
+> 	between process-level code and irq/NMI handlers, all running
+> 	on the same CPU, and (2) Ensuring that the compiler does not
+> 	fold, spindle, or otherwise mutilate accesses that either do
+> 	not require ordering or that interact with an explicit memory
+> 	barrier or atomic instruction that provides the required ordering.
+
+sounds good. Will change.
+
+Thanks
+
+> 
+>> + */
+>> +
+>> +#define READ_ONCE(p) \
+>> +      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
+>> +
+>> +#define ASSIGN_ONCE(val, p) \
+>> +      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
+>> +
+>>  #endif /* __KERNEL__ */
+>>
+>>  #endif /* __ASSEMBLY__ */
+>> -- 
+>> 1.9.3
+>>
+
