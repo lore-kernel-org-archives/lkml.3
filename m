@@ -1,202 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaLDWbe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:31:34 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50674 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754705AbaLDWac (ORCPT
+	id S1754896AbaLDWfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:35:05 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:40275 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989AbaLDWfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:30:32 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Josh Wu <josh.wu@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 1/4] mtd: nand: atmel: Rework driver to separate nfc and nand nodes
-Date: Thu,  4 Dec 2014 23:30:11 +0100
-Message-Id: <1417732214-3292-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 4 Dec 2014 17:35:02 -0500
+Date: Thu, 4 Dec 2014 22:34:34 +0000
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: m.chehab@samsung.com
+Cc: jarod@wilsonet.com, gregkh@linuxfoundation.org,
+        mahfouz.saif.elyazal@gmail.com, gulsah.1004@gmail.com,
+        tuomas.tynkkynen@iki.fi, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/2] staging: media: lirc: lirc_zilog.c: fix quoted
+ strings split across lines
+Message-ID: <20141204223434.GA17555@biggie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mtd: nand: atmel: Update DT documentation after splitting NFC and NAND
+checkpatch makes an exception to the 80-column rule for quotes strings, and
+Documentation/CodingStyle recommends not splitting quotes strings across lines
+because it breaks the ability to grep for the string. Fixing these.
 
-The NAND and NFC (NAND Flash Controller) were linked together with a
-parent <-> child relationship.
+WARNING: quoted string split across lines
 
-This model has several drawbacks:
-- it does not allow for multiple NAND chip handling while the controller
-  support multi-chip (even though the driver is not ready yet)
-- it mixes NAND partitions and NFC nodes at the same level (which is a bit
-  disturbing)
-- the introduction of the EBI bus implies defining NAND chips under the
-  EBI node, and the ranges available under the EBI node should be
-  restricted to EBI address space, while the NFC references several
-  registers outside of these EBI ranges.
-
-Move the NFC node outside of the NAND node, to get a more future-proof
-DT representation.
-
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
 ---
- drivers/mtd/nand/atmel_nand.c | 76 ++++++++++++++++++++++++++++++++++---------
- 1 file changed, 61 insertions(+), 15 deletions(-)
+ drivers/staging/media/lirc/lirc_zilog.c | 61 ++++++++++++++++++---------------
+ 1 file changed, 34 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 19d1e9d..0239fe6 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -123,6 +123,7 @@ struct atmel_nand_host {
- 	struct dma_chan		*dma_chan;
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index dca806a..8814a7e 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -372,14 +372,14 @@ static int add_to_buf(struct IR *ir)
+ 					   ret);
+ 			if (failures >= 3) {
+ 				mutex_unlock(&ir->ir_lock);
+-				dev_err(ir->l.dev, "unable to read from the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(ir->l.dev,
++					"unable to read from the IR chip after 3 resets, giving up\n");
+ 				break;
+ 			}
  
- 	struct atmel_nfc	*nfc;
-+	bool			wait_for_nfc;
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
+-				    "trying reset\n");
++			dev_err(ir->l.dev,
++				"polling the IR receiver chip failed, trying reset\n");
  
- 	bool			has_pmecc;
- 	u8			pmecc_corr_cap;
-@@ -1423,6 +1424,12 @@ static void atmel_nand_hwctl(struct mtd_info *mtd, int mode)
- 		ecc_writel(host->ecc, CR, ATMEL_ECC_RST);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			if (kthread_should_stop()) {
+@@ -405,8 +405,9 @@ static int add_to_buf(struct IR *ir)
+ 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
+ 		mutex_unlock(&ir->ir_lock);
+ 		if (ret != sizeof(keybuf)) {
+-			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
+-				    "keeping last read buffer\n", ret);
++			dev_err(ir->l.dev,
++				"i2c_master_recv failed with %d -- keeping last read buffer\n",
++				ret);
+ 		} else {
+ 			rx->b[0] = keybuf[3];
+ 			rx->b[1] = keybuf[4];
+@@ -713,8 +714,9 @@ static int send_boot_data(struct IR_tx *tx)
+ 				       buf[0]);
+ 		return 0;
+ 	}
+-	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
+-		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
++	dev_notice(tx->ir->l.dev,
++		   "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
++		   buf[1], buf[2], buf[3]);
+ 
+ 	return 0;
  }
+@@ -794,9 +796,9 @@ static int fw_load(struct IR_tx *tx)
+ 	if (!read_uint8(&data, tx_data->endp, &version))
+ 		goto corrupt;
+ 	if (version != 1) {
+-		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
+-			    "1) -- please upgrade to a newer driver",
+-			    version);
++		dev_err(tx->ir->l.dev,
++			"unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
++			version);
+ 		fw_unload_locked();
+ 		ret = -EFAULT;
+ 		goto out;
+@@ -983,8 +985,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	ret = get_key_data(data_block, code, key);
  
-+static const struct of_device_id atmel_nand_nfc_match[] = {
-+	{ .compatible = "atmel,sama5d3-nfc" },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, atmel_nand_nfc_match);
-+
- static int atmel_of_init_port(struct atmel_nand_host *host,
- 			      struct device_node *np)
- {
-@@ -1431,6 +1438,7 @@ static int atmel_of_init_port(struct atmel_nand_host *host,
- 	int ecc_mode;
- 	struct atmel_nand_data *board = &host->board;
- 	enum of_gpio_flags flags = 0;
-+	struct device_node *child;
+ 	if (ret == -EPROTO) {
+-		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
+-			    "lircd.conf entries\n", code, key);
++		dev_err(tx->ir->l.dev,
++			"failed to get data for code %u, key %u -- check lircd.conf entries\n",
++			code, key);
+ 		return ret;
+ 	} else if (ret != 0)
+ 		return ret;
+@@ -1059,12 +1062,14 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 		ret = i2c_master_send(tx->c, buf, 1);
+ 		if (ret == 1)
+ 			break;
+-		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
+-			"failed with %d (try %d)\n", ret, i+1);
++		dev_dbg(tx->ir->l.dev,
++			"NAK expected: i2c_master_send failed with %d (try %d)\n",
++			ret, i+1);
+ 	}
+ 	if (ret != 1) {
+-		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
+-			    "failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"IR TX chip never got ready: last i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
  
- 	if (of_property_read_u32(np, "atmel,nand-addr-offset", &val) == 0) {
- 		if (val >= 32) {
-@@ -1467,8 +1475,30 @@ static int atmel_of_init_port(struct atmel_nand_host *host,
+@@ -1167,12 +1172,12 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
+ 		 */
+ 		if (ret != 0) {
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
+-				    "failed, trying reset\n");
++			dev_err(tx->ir->l.dev,
++				"sending to the IR transmitter chip failed, trying reset\n");
  
- 	host->has_pmecc = of_property_read_bool(np, "atmel,has-pmecc");
+ 			if (failures >= 3) {
+-				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(tx->ir->l.dev,
++					"unable to send to the IR chip after 3 resets, giving up\n");
+ 				mutex_unlock(&ir->ir_lock);
+ 				mutex_unlock(&tx->client_lock);
+ 				put_ir_tx(tx, false);
+@@ -1542,8 +1547,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
  
--	/* load the nfc driver if there is */
--	of_platform_populate(np, NULL, NULL, host->dev);
-+	/*
-+	 * Backward compatibility with DTs defining the NFC node as their
-+	 * child.
-+	 * The new model reference the NFC so that we can define several
-+	 * chip controlled by the same controller.
-+	 */
-+	for_each_available_child_of_node(np, child) {
-+		/*
-+		 * If we find an NFC node under the NAND node, then populate
-+		 * the device so that it can be probed, and wait for it.
-+		 */
-+		if (of_match_node(atmel_nand_nfc_match, child)) {
-+			of_platform_populate(np, NULL, NULL, host->dev);
-+			host->wait_for_nfc = true;
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * If there's an atmel,nfc property we should access the NAND
-+	 * through the NFC.
-+	 */
-+	if (of_property_read_bool(np, "atmel,nfc"))
-+		host->wait_for_nfc = true;
- 
- 	if (!(board->ecc_mode == NAND_ECC_HW) || !host->has_pmecc)
- 		return 0;	/* Not using PMECC */
-@@ -2032,10 +2062,6 @@ static int atmel_nand_probe(struct platform_device *pdev)
- 	if (!host)
- 		return -ENOMEM;
- 
--	res = platform_driver_register(&atmel_nand_nfc_driver);
--	if (res)
--		dev_err(&pdev->dev, "atmel_nand: can't register NFC driver\n");
--
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	host->io_base = devm_ioremap_resource(&pdev->dev, mem);
- 	if (IS_ERR(host->io_base)) {
-@@ -2089,6 +2115,13 @@ static int atmel_nand_probe(struct platform_device *pdev)
- 			goto err_nand_ioremap;
+ 		/* Proceed only if the Rx client is also ready or not needed */
+ 		if (rx == NULL && !tx_only) {
+-			dev_info(tx->ir->l.dev, "probe of IR Tx on %s (i2c-%d) done. Waiting"
+-				   " on IR Rx.\n", adap->name, adap->nr);
++			dev_info(tx->ir->l.dev,
++				 "probe of IR Tx on %s (i2c-%d) done. Waiting on IR Rx.\n",
++				 adap->name, adap->nr);
+ 			goto out_ok;
  		}
  	} else {
-+		/*
-+		 * If the NFC is not initialized (or not probed) and the device
-+		 * is asking to be accessed through the NFC then defer the
-+		 * probe.
-+		 */
-+		if (host->wait_for_nfc)
-+			return -EPROBE_DEFER;
- 		res = atmel_nand_set_enable_ready_pins(mtd);
- 		if (res)
- 			goto err_nand_ioremap;
-@@ -2230,8 +2263,6 @@ static int atmel_nand_remove(struct platform_device *pdev)
- 	if (host->dma_chan)
- 		dma_release_channel(host->dma_chan);
+@@ -1581,8 +1587,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 				       "zilog-rx-i2c-%d", adap->nr);
+ 		if (IS_ERR(rx->task)) {
+ 			ret = PTR_ERR(rx->task);
+-			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
+-				    "\n", __func__);
++			dev_err(tx->ir->l.dev,
++				"%s: could not start IR Rx polling thread\n",
++				__func__);
+ 			/* Failed kthread, so put back the ir ref */
+ 			put_ir_device(ir, true);
+ 			/* Failure exit, so put back rx ref from i2c_client */
+@@ -1594,8 +1601,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
  
--	platform_driver_unregister(&atmel_nand_nfc_driver);
--
- 	return 0;
- }
- 
-@@ -2303,12 +2334,6 @@ static int atmel_nand_nfc_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static const struct of_device_id atmel_nand_nfc_match[] = {
--	{ .compatible = "atmel,sama5d3-nfc" },
--	{ /* sentinel */ }
--};
--MODULE_DEVICE_TABLE(of, atmel_nand_nfc_match);
--
- static struct platform_driver atmel_nand_nfc_driver = {
- 	.driver = {
- 		.name = "atmel_nand_nfc",
-@@ -2329,7 +2354,28 @@ static struct platform_driver atmel_nand_driver = {
- 	},
- };
- 
--module_platform_driver(atmel_nand_driver);
-+static int __init atmel_nand_init(void)
-+{
-+	int ret;
-+
-+	ret = platform_driver_register(&atmel_nand_nfc_driver);
-+	if (ret)
-+		return ret;
-+
-+	ret = platform_driver_register(&atmel_nand_driver);
-+	if (ret)
-+		platform_driver_unregister(&atmel_nand_nfc_driver);
-+
-+	return ret;
-+}
-+module_init(atmel_nand_init);
-+
-+static void __exit atmel_nand_exit(void)
-+{
-+	platform_driver_unregister(&atmel_nand_driver);
-+	platform_driver_unregister(&atmel_nand_nfc_driver);
-+}
-+module_exit(atmel_nand_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Rick Bronson");
+ 		/* Proceed only if the Tx client is also ready */
+ 		if (tx == NULL) {
+-			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
+-				   " on IR Tx.\n", adap->name, adap->nr);
++			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
++				   adap->name, adap->nr);
+ 			goto out_ok;
+ 		}
+ 	}
 -- 
-1.9.1
+2.1.3
 
