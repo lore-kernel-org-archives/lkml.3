@@ -1,186 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaLDBAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:00:39 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55193 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751429AbaLDBAh (ORCPT
+	id S1752847AbaLDBAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:00:51 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:43215 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaLDBAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:00:37 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: linux-scsi@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Vinayak Holikatti <vinholikatti@gmail.com>
-Subject: [PATCH] SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Thu, 04 Dec 2014 02:22:01 +0100
-Message-ID: <3237237.IIIiULdqDt@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Wed, 3 Dec 2014 20:00:48 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: zyw@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <667c360e9b69e50356b1fefbebfa686a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547FB237.8080502@rock-chips.com>
+Date: Thu, 04 Dec 2014 09:00:39 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: LiYunzhi <lyz@rock-chips.com>, ulrich.prinz@googlemail.com,
+        dianders <dianders@chromium.org>, heiko <heiko@sntech.de>,
+        huangtao <huangtao@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        linux-usb@vger.kernel.org, kishon@ti.com, linux-kernel@vger.kernel.org,
+        zyw@rock-chips.com
+Subject: Re: [PATCH] phy: add Rockchip RK3288 USB2 PHY driver.
+References: <1417614410-15885-1-git-send-email-lyz@rock-chips.com> <1417614410-15885-2-git-send-email-lyz@rock-chips.com>
+In-Reply-To: <1417614410-15885-2-git-send-email-lyz@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Roy,
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+     Why you send two patches with different commit message but the same 
+change,
+you should use V2 for a new patch.
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-drivers/scsi/ and in include/scsi/scsi_device.h.
+On 12/03/2014 09:46 PM, LiYunzhi wrote:
+> From: lyz <lyz@rock-chips.com>
+You don't need the From for the patches from yourself.
+>
+> Add a driver for the Rockchip SoC internal USB2.0 PHY.
+> This driver currently support RK3288.
+>
+> Signed-off-by: lyz <lyz@rock-chips.com>
+Remember to use you Full name here for From/Signed-off-by
+or all the kind of signature.
+> ---
+>   .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  17 ++
+The document should be in a separate patch, so please split this into 
+two patches.
+>   drivers/phy/Kconfig                                |   7 +
+>   drivers/phy/Makefile                               |   1 +
+>   drivers/phy/phy-rockchip-usb.c                     | 179 +++++++++++++++++++++
+>   4 files changed, 204 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+>   create mode 100644 drivers/phy/phy-rockchip-usb.c
+>
+> diff --git a/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+> new file mode 100644
+> index 0000000..18ccc2f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+> @@ -0,0 +1,17 @@
+> +ROCKCHIP USB2 PHY
+> +
+> +Required properties:
+> + - compatible: rockchip,rk3288-usb-phy
+> + - rockchip,grf : phandle to the syscon managing the "general
+> +   register files"
+> + - #phy-cells: must be 1
+> +Refer to phy/phy-bindings.txt for the generic PHY binding
+> +properties
+> +
+> +Example:
+> +
+> +	usbphy: phy {
+> +	#phy-cells = <1>;
+> +	compatible = "rockchip,rk3288-usb-phy";
+> +	rockchip,grf = <&grf>;
+> +	};
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 2a436e6..54ab088 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -218,6 +218,13 @@ config PHY_QCOM_IPQ806X_SATA
+>   	depends on OF
+>   	select GENERIC_PHY
+>   
+> +config PHY_ROCKCHIP_RK3288_USB2
+> +	tristate "Rockchip USB2 RK3288 PHY Driver"
+> +	depends on ARCH_ROCKCHIP && OF
+> +	select GENERIC_PHY
+> +	help
+> +	  Enable this to support the Rockchip USB 2.0 PHY.
+> +
+>   config PHY_ST_SPEAR1310_MIPHY
+>   	tristate "ST SPEAR1310-MIPHY driver"
+>   	select GENERIC_PHY
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index c4590fc..f4f2f79 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -25,6 +25,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>   phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
+>   obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+>   obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
+> +obj-$(CONFIG_PHY_ROCKCHIP_RK3288_USB2) += phy-rockchip-usb.o
+Add this after 'CONFIG_PHY_QCOM_IPQ806X_SATA'.
+>   obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+>   obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
+>   obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
+> diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
+> new file mode 100644
+> index 0000000..2586b76
+> --- /dev/null
+> +++ b/drivers/phy/phy-rockchip-usb.c
+> @@ -0,0 +1,179 @@
+> +/*
+> + * Rockchip usb PHY driver
+> + *
+> + * Copyright (C) 2014 Roy Li <lyz@rock-chips.com>
+> + * Copyright (C) 2014 ROCKCHIP, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/reset.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/syscon.h>
+> +
+> +#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
+> +
+> +#define SIDDQ_MSK		(1 << (13 + 16))
+> +#define SIDDQ_ON		(1 << 13)
+> +#define SIDDQ_OFF		(0 << 13)
+> +
+> +enum rk3288_phy_id {
+> +	RK3288_OTG,
+> +	RK3288_HOST0,
+> +	RK3288_HOST1,
+> +	RK3288_NUM_PHYS,
+> +};
+> +
+> +struct rockchip_usb_phy {
+> +	struct regmap *reg_base;
+> +	unsigned int reg_offset;
+> +	struct clk *clk;
+> +	struct phy *phy;
+> +};
+> +
+> +static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
+> +					   bool siddq)
+> +{
+> +	return regmap_write(phy->reg_base, phy->reg_offset,
+> +			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
+> +}
+> +
+> +static int rockchip_usb_phy_power_off(struct phy *_phy)
+> +{
+> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
+> +	int ret = 0;
+> +
+> +	/* Power down usb phy analog blocks by set siddq 1*/
+> +	ret = rockchip_usb_phy_power(phy, 1);
+Use a MACRO like ON/OFF instead of 1/0?
+and then we don't need the comment anymore.
+> +	if (ret)
+> +		return ret;
+> +
+> +	clk_disable_unprepare(phy->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static int rockchip_usb_phy_power_on(struct phy *_phy)
+> +{
+> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
+> +	int ret = 0;
+> +
+> +	ret = clk_prepare_enable(phy->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Power up usb phy analog blocks by set siddq 0*/
+> +	ret = rockchip_usb_phy_power(phy, 0);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy *rockchip_usb_phy_xlate(struct device *dev,
+> +					struct of_phandle_args *args)
+> +{
+> +	struct rockchip_usb_phy *phy_array = dev_get_drvdata(dev);
+> +
+> +	if (WARN_ON(args->args[0] == 0 || args->args[0] >= RK3288_NUM_PHYS))
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	return (phy_array + args->args[0])->phy;
+> +}
+> +
+> +static struct phy_ops ops = {
+> +	.power_on	= rockchip_usb_phy_power_on,
+> +	.power_off	= rockchip_usb_phy_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static int rockchip_usb_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct rockchip_usb_phy *rk_phy;
+> +	struct rockchip_usb_phy *phy_array;
+> +	struct phy_provider *phy_provider;
+> +	struct regmap *grf;
+> +	char clk_name[16];
+> +	int i;
+> +
+> +	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
+> +	if (IS_ERR(grf)) {
+> +		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
+> +		return PTR_ERR(grf);
+> +	}
+> +
+> +	phy_array = devm_kzalloc(dev, RK3288_NUM_PHYS * sizeof(*rk_phy),
+> +				 GFP_KERNEL);
+> +	if (!phy_array)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < RK3288_NUM_PHYS; i++) {
+> +		rk_phy = &phy_array[i];
+> +
+> +		rk_phy->reg_base = grf;
+> +
+> +		rk_phy->reg_offset = ROCKCHIP_RK3288_UOC(i);
+> +
+> +		snprintf(clk_name, sizeof(clk_name), "usbphy%d", i);
+> +		rk_phy->clk = devm_clk_get(dev, clk_name);
+> +		if (IS_ERR(rk_phy->clk)) {
+> +			dev_warn(dev, "failed to get clock %s\n", clk_name);
+> +			rk_phy->clk = NULL;
+> +		}
+> +
+> +		rk_phy->phy = devm_phy_create(dev, NULL, &ops, NULL);
+> +		if (IS_ERR(rk_phy->phy)) {
+> +			dev_err(dev, "failed to create PHY %d\n", i);
+> +			return PTR_ERR(rk_phy->phy);
+> +		}
+> +		phy_set_drvdata(rk_phy->phy, rk_phy);
+> +	}
+> +
+> +	platform_set_drvdata(pdev, phy_array);
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev,
+> +						     rockchip_usb_phy_xlate);
+> +	return PTR_ERR_OR_ZERO(phy_provider);
+> +}
+> +
+> +static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
+> +	{ .compatible = "rockchip,rk3288-usb-phy" },
+> +	{}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, rockchip_usb_phy_dt_ids);
+> +
+> +static struct platform_driver rockchip_usb_driver = {
+Maybe use rockchip_usb_phy_driver is better?
+> +	.probe		= rockchip_usb_phy_probe,
+> +	.driver		= {
+> +		.name	= "rockchip-usb-phy",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = rockchip_usb_phy_dt_ids,
+> +	},
+> +};
+> +
+> +module_platform_driver(rockchip_usb_driver);
+> +
+> +MODULE_AUTHOR("Roy Li <lyz@rock-chips.com>");
+> +MODULE_DESCRIPTION("Rockchip USB 2.0 PHY driver");
+> +MODULE_LICENSE("GPL v2");
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
-
-Please let me know if it is OK to take this one into linux-pm.
-
----
- drivers/scsi/scsi_pm.c           |    4 ++--
- drivers/scsi/scsi_priv.h         |    5 ++---
- drivers/scsi/ufs/ufshcd-pci.c    |   11 ++++-------
- drivers/scsi/ufs/ufshcd-pltfrm.c |   11 ++++-------
- include/scsi/scsi_device.h       |    4 ++--
- 5 files changed, 14 insertions(+), 21 deletions(-)
-
-Index: linux-pm/include/scsi/scsi_device.h
-===================================================================
---- linux-pm.orig/include/scsi/scsi_device.h
-+++ linux-pm/include/scsi/scsi_device.h
-@@ -440,13 +440,13 @@ static inline int scsi_execute_req(struc
- extern void sdev_disable_disk_events(struct scsi_device *sdev);
- extern void sdev_enable_disk_events(struct scsi_device *sdev);
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- extern int scsi_autopm_get_device(struct scsi_device *);
- extern void scsi_autopm_put_device(struct scsi_device *);
- #else
- static inline int scsi_autopm_get_device(struct scsi_device *d) { return 0; }
- static inline void scsi_autopm_put_device(struct scsi_device *d) {}
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- static inline int __must_check scsi_device_reprobe(struct scsi_device *sdev)
- {
-Index: linux-pm/drivers/scsi/scsi_priv.h
-===================================================================
---- linux-pm.orig/drivers/scsi/scsi_priv.h
-+++ linux-pm/drivers/scsi/scsi_priv.h
-@@ -157,8 +157,7 @@ static inline void scsi_netlink_exit(voi
- /* scsi_pm.c */
- #ifdef CONFIG_PM
- extern const struct dev_pm_ops scsi_bus_pm_ops;
--#endif
--#ifdef CONFIG_PM_RUNTIME
-+
- extern void scsi_autopm_get_target(struct scsi_target *);
- extern void scsi_autopm_put_target(struct scsi_target *);
- extern int scsi_autopm_get_host(struct Scsi_Host *);
-@@ -168,7 +167,7 @@ static inline void scsi_autopm_get_targe
- static inline void scsi_autopm_put_target(struct scsi_target *t) {}
- static inline int scsi_autopm_get_host(struct Scsi_Host *h) { return 0; }
- static inline void scsi_autopm_put_host(struct Scsi_Host *h) {}
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- extern struct async_domain scsi_sd_pm_domain;
- extern struct async_domain scsi_sd_probe_domain;
-Index: linux-pm/drivers/scsi/scsi_pm.c
-===================================================================
---- linux-pm.orig/drivers/scsi/scsi_pm.c
-+++ linux-pm/drivers/scsi/scsi_pm.c
-@@ -213,7 +213,7 @@ static int scsi_bus_restore(struct devic
- 
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 
- static int sdev_runtime_suspend(struct device *dev)
- {
-@@ -338,7 +338,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
- #define scsi_runtime_resume	NULL
- #define scsi_runtime_idle	NULL
- 
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- const struct dev_pm_ops scsi_bus_pm_ops = {
- 	.prepare =		scsi_bus_prepare,
-Index: linux-pm/drivers/scsi/ufs/ufshcd-pci.c
-===================================================================
---- linux-pm.orig/drivers/scsi/ufs/ufshcd-pci.c
-+++ linux-pm/drivers/scsi/ufs/ufshcd-pci.c
-@@ -62,12 +62,7 @@ static int ufshcd_pci_resume(struct devi
- {
- 	return ufshcd_system_resume(dev_get_drvdata(dev));
- }
--#else
--#define ufshcd_pci_suspend	NULL
--#define ufshcd_pci_resume	NULL
--#endif /* CONFIG_PM */
- 
--#ifdef CONFIG_PM_RUNTIME
- static int ufshcd_pci_runtime_suspend(struct device *dev)
- {
- 	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
-@@ -80,11 +75,13 @@ static int ufshcd_pci_runtime_idle(struc
- {
- 	return ufshcd_runtime_idle(dev_get_drvdata(dev));
- }
--#else /* !CONFIG_PM_RUNTIME */
-+#else /* !CONFIG_PM */
-+#define ufshcd_pci_suspend	NULL
-+#define ufshcd_pci_resume	NULL
- #define ufshcd_pci_runtime_suspend	NULL
- #define ufshcd_pci_runtime_resume	NULL
- #define ufshcd_pci_runtime_idle	NULL
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- /**
-  * ufshcd_pci_shutdown - main function to put the controller in reset state
-Index: linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
-===================================================================
---- linux-pm.orig/drivers/scsi/ufs/ufshcd-pltfrm.c
-+++ linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
-@@ -266,12 +266,7 @@ static int ufshcd_pltfrm_resume(struct d
- {
- 	return ufshcd_system_resume(dev_get_drvdata(dev));
- }
--#else
--#define ufshcd_pltfrm_suspend	NULL
--#define ufshcd_pltfrm_resume	NULL
--#endif
- 
--#ifdef CONFIG_PM_RUNTIME
- static int ufshcd_pltfrm_runtime_suspend(struct device *dev)
- {
- 	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
-@@ -284,11 +279,13 @@ static int ufshcd_pltfrm_runtime_idle(st
- {
- 	return ufshcd_runtime_idle(dev_get_drvdata(dev));
- }
--#else /* !CONFIG_PM_RUNTIME */
-+#else /* !CONFIG_PM */
-+#define ufshcd_pltfrm_suspend	NULL
-+#define ufshcd_pltfrm_resume	NULL
- #define ufshcd_pltfrm_runtime_suspend	NULL
- #define ufshcd_pltfrm_runtime_resume	NULL
- #define ufshcd_pltfrm_runtime_idle	NULL
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- static void ufshcd_pltfrm_shutdown(struct platform_device *pdev)
- {
 
