@@ -1,140 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908AbaLDDqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 22:46:36 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:49774 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLDDqc (ORCPT
+	id S1752634AbaLDD6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 22:58:08 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:41865 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaLDD6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 22:46:32 -0500
+	Wed, 3 Dec 2014 22:58:07 -0500
+Date: Thu, 4 Dec 2014 12:58:00 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: sh / PM: Replace CONFIG_PM_RUNTIME with
+ CONFIG_PM
+Message-ID: <20141204035758.GA6346@verge.net.au>
+References: <3463511.sXIeyHdjYI@vostro.rjw.lan>
 MIME-Version: 1.0
-Date: Thu, 4 Dec 2014 11:46:31 +0800
-Message-ID: <CAA+hA=Tz4ExrbiMrL-6+GBQvPph=70h4OgNjaDNADurTQhE-UQ@mail.gmail.com>
-Subject: WARNING: at fs/fs-writeback.c when plug out SD card after system suspend/resume
-From: Dong Aisheng <dongas86@gmail.com>
-To: tj@kernel.org, jack@suse.cz, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Cc: Dong Aisheng-B29396 <b29396@freescale.com>, r64343@freescale.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3463511.sXIeyHdjYI@vostro.rjw.lan>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ALL,
+On Thu, Dec 04, 2014 at 02:24:22AM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/sh/pm_runtime.c.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+> 
+> Please let me know if it is OK to take this one into linux-pm.
 
-We met an filesystem issue when do stable kernel upgrade from 3.10.31 to
-3.10.53. And we found it's caused by the following commit bf0972039 which
-introduced in 3.10.53.
-After applying this patch, after system suspend/resume, plug out a SD card
-will cause the following WARNING if SD card has a filesystem mounted.
-If revert it, no such WARNING shows.
+Hi Rafael,
 
-I also tried the latest linux-next tree, it also has such issue.
+That is fine by me if it is fine by Geert.
 
-Looks the patch is used to fixing a potential system crashing.
-We're not sure whether this WARNING is as expected and reasonable
-or a BUG because there's no such WARNING before this patch.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-Can someone explain about it?
-
-Reproduce step is as follows:
-root@imx6qdlsolo:~# mmc2: mmc_rescan_try_freq: trying to init card at 400000 Hz
-mmc2: Problem setting current limit!
-mmc2: new ultra high speed DDR50 SDHC card at address aaaa
-mmcblk2: mmc2:aaaa SL32G 29.7 GiB
- mmcblk2: p1 p2
-wm8962 3-001a: Failed to get supply 'DCVDD': -517
-wm8962 3-001a: Failed to request supplies: -517
-i2c 3-001a: Driver wm8962 requests probe deferral
-kjournald starting.  Commit interval 5 seconds
-EXT3-fs (mmcblk2p2): using internal journal
-EXT3-fs (mmcblk2p2): recovery complete
-EXT3-fs (mmcblk2p2): mounted filesystem with ordered data mode
-FAT-fs (mmcblk2p1): Volume was not properly unmounted. Some data may
-be corrupt. Please run fsck.
-
-root@imx6qdlsolo:~#
-root@imx6qdlsolo:~# echo mem > /sys/power/state
-PM: Syncing filesystems ... done.
-Freezing user space processes ... (elapsed 0.01 seconds) done.
-Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-Suspending console(s) (use no_console_suspend to debug)
-PM: suspend of devices complete after 45.436 msecs
-PM: suspend devices took 0.050 seconds
-PM: late suspend of devices complete after 0.599 msecs
-PM: noirq suspend of devices complete after 0.704 msecs
-Disabling non-boot CPUs ...
-Turn off M/F mix!
-PM: noirq resume of devices complete after 0.380 msecs
-PM: early resume of devices complete after 0.498 msecs
-imx-sdma 20ec000.sdma: loaded firmware 1.1
-mmc2: Problem setting current limit!
-PM: resume of devices complete after 409.704 msecs
-PM: resume devices took 0.410 seconds
-Restarting tasks ... done.
-root@imx6qdlsolo:~#
-root@imx6qdlsolo:~# libphy: 2188000.ethernet:01 - Link is Up - 100/Full
-mmc2: card aaaa removed
-------------[ cut here ]------------
-WARNING: at fs/fs-writeback.c:1196 __mark_inode_dirty+0x1d0/0x1d4()
-bdi-block not registered
-Modules linked in:
-CPU: 0 PID: 927 Comm: umount Not tainted 3.10.53-02602-g89aa41e #751
-[<80013b00>] (unwind_backtrace+0x0/0xf4) from [<80011524>]
-(show_stack+0x10/0x14)
-[<80011524>] (show_stack+0x10/0x14) from [<8002c290>]
-(warn_slowpath_common+0x54/0x6c)
-[<8002c290>] (warn_slowpath_common+0x54/0x6c) from [<8002c2d8>]
-(warn_slowpath_fmt+0x30/0x40)
-[<8002c2d8>] (warn_slowpath_fmt+0x30/0x40) from [<800e8bbc>]
-(__mark_inode_dirty+0x1d0/0x1d4)
-[<800e8bbc>] (__mark_inode_dirty+0x1d0/0x1d4) from [<80131ba8>]
-(ext3_put_super+0x20c/0x23c)
-[<80131ba8>] (ext3_put_super+0x20c/0x23c) from [<800c88e0>]
-(generic_shutdown_super+0x58/0xc4)
-[<800c88e0>] (generic_shutdown_super+0x58/0xc4) from [<800c8b14>]
-(kill_block_super+0x18/0x68)
-[<800c8b14>] (kill_block_super+0x18/0x68) from [<800c8e60>]
-(deactivate_locked_super+0x48/0x64)
-[<800c8e60>] (deactivate_locked_super+0x48/0x64) from [<800e271c>]
-(SyS_umount+0x94/0x38c)
-[<800e271c>] (SyS_umount+0x94/0x38c) from [<8000e080>]
-(ret_fast_syscall+0x0/0x30)
----[ end trace a52c980ef229d9da ]---
-EXT3-fs (mmcblk2p2): I/O error while writing superblock
-
-Caused by following commit:
-commit bf0972039ddc483a9cb79edae73076c635876568
-Author: Jan Kara <jack@suse.cz>
-Date:   Thu Apr 3 14:46:23 2014 -0700
-
-    bdi: avoid oops on device removal
-
-    commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
-
-    After commit 839a8e8660b6 ("writeback: replace custom worker pool
-    implementation with unbound workqueue") when device is removed while we
-    are writing to it we crash in bdi_writeback_workfn() ->
-    set_worker_desc() because bdi->dev is NULL.
-
-    This can happen because even though bdi_unregister() cancels all pending
-    flushing work, nothing really prevents new ones from being queued from
-    balance_dirty_pages() or other places.
-
-    Fix the problem by clearing BDI_registered bit in bdi_unregister() and
-    checking it before scheduling of any flushing work.
-
-    Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-
-    Reviewed-by: Tejun Heo <tj@kernel.org>
-    Signed-off-by: Jan Kara <jack@suse.cz>
-    Cc: Derek Basehore <dbasehore@chromium.org>
-    Cc: Jens Axboe <axboe@kernel.dk>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Regards
-Dong Aisheng
+> 
+> ---
+>  drivers/sh/pm_runtime.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: linux-pm/drivers/sh/pm_runtime.c
+> ===================================================================
+> --- linux-pm.orig/drivers/sh/pm_runtime.c
+> +++ linux-pm/drivers/sh/pm_runtime.c
+> @@ -20,7 +20,7 @@
+>  #include <linux/bitmap.h>
+>  #include <linux/slab.h>
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int sh_pm_runtime_suspend(struct device *dev)
+>  {
+>  	int ret;
+> @@ -68,7 +68,7 @@ static struct dev_pm_domain default_pm_d
+>  
+>  #define DEFAULT_PM_DOMAIN_PTR	NULL
+>  
+> -#endif /* CONFIG_PM_RUNTIME */
+> +#endif /* CONFIG_PM */
+>  
+>  static struct pm_clk_notifier_block platform_bus_notifier = {
+>  	.pm_domain = DEFAULT_PM_DOMAIN_PTR,
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
