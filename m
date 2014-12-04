@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaLDKzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:55:15 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:44829 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390AbaLDKzN (ORCPT
+	id S1753733AbaLDK4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:56:04 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:62935 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaLDK4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:55:13 -0500
+	Thu, 4 Dec 2014 05:56:02 -0500
 MIME-Version: 1.0
 Reply-To: rogelio.serrano@gmail.com
-In-Reply-To: <CAB_-8bKBC9T-35U3=g5gL7qcg6DrfhPuk2154-yLkuwko7HZFw@mail.gmail.com>
-References: <CANszf4jKHq-WY=+W=D3mFEnhL9=aZJ+-Mx7yp9kw=hYTi+gGFA@mail.gmail.com>
-	<CA+rthh8q1+hh7wvZg8hXB4j-WyQm-ainU0X2Cb_mnGwLM9DW_Q@mail.gmail.com>
-	<CAB_-8bLXD65f=eX-kudZC8LHBUk50qCK=w_B1wbXe=A4egU1RQ@mail.gmail.com>
-	<CA+rthh_xhUytmh26pBUh7q9uocDv4VdbtXvz-tMJSJSeVT3FNw@mail.gmail.com>
-	<CAB_-8bKBC9T-35U3=g5gL7qcg6DrfhPuk2154-yLkuwko7HZFw@mail.gmail.com>
-Date: Thu, 4 Dec 2014 10:55:11 +0000
-Message-ID: <CAB_-8bL-UmFBoEsk27bEqifyOnhg-xO9PkamfDibttbTCxXUWA@mail.gmail.com>
-Subject: Fwd: mysterious udev segfault
+In-Reply-To: <CAB_-8bJhZjZp+1KDYOSaFQa3fcDt+hhHywDP4CUWZEr4_PQKUQ@mail.gmail.com>
+References: <CAB_-8bJhZjZp+1KDYOSaFQa3fcDt+hhHywDP4CUWZEr4_PQKUQ@mail.gmail.com>
+Date: Thu, 4 Dec 2014 10:56:00 +0000
+Message-ID: <CAB_-8bL+QoXz2OuZgb7iyxYFwoWiTrZdexESfsf4AJYoObbcaA@mail.gmail.com>
+Subject: Fwd: direct firmware load failure with loadable kernel modules and
+ userspace firmware loader user helper fallback turned off
 From: "Rogelio M. Serrano Jr." <rogelios664@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
@@ -27,26 +24,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---------- Forwarded message ----------
 From: Rogelio M. Serrano Jr. <rogelios664@gmail.com>
-Date: Thu, Dec 4, 2014 at 10:53 AM
-Subject: Re: mysterious udev segfault
-To: Mathias Krause <minipli@googlemail.com>
+Date: Thu, Dec 4, 2014 at 10:48 AM
+Subject: direct firmware load failure with loadable kernel modules and
+userspace firmware loader user helper fallback turned off
+To: linux-kernel@vger.kernel.org
 
 
-On Thu, Dec 4, 2014 at 8:13 AM, Mathias Krause <minipli@googlemail.com> wrote:
->
-<snipped...>
->
-> Probably not. But I don't think the grsec patch changes anything
-> related to firmware loading.
-> Upstream added an option to disable firmware loading via udev
-> (CONFIG_FW_LOADER_USER_HELPER_FALLBACK). Maybe that's related.
-> Again, logs may help here.
->
->
-> Regards,
-> Mathias
 
-both loadable kernel modules and loader user helper fallback are off
+
 
 Dec  3 10:18:02 (none) klogd: [    1.789031] iwl4965: Intel(R)
 Wireless WiFi 4965 driver for Linux, in-tree:
@@ -69,4 +54,5 @@ request for firmware file 'iwlwifi-4965-2.ucode' failed.
 Dec  3 10:18:02 (none) klogd: [    1.847392] iwl4965 0000:03:00.0: no
 suitable firmware found!
 
-turning loadable kernel modules back on works
+
+turning loadable modules back on works.
