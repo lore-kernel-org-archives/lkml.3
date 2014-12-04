@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaLDBwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:52:37 -0500
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:48865 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaLDBwf (ORCPT
+	id S1752682AbaLDBxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:53:46 -0500
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:42135 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaLDBxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:52:35 -0500
+	Wed, 3 Dec 2014 20:53:45 -0500
 From: Pranith Kumar <bobby.prani@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.com>
+        Josh Triplett <josh@joshtriplett.org>
 Subject: [RFC PATCH] tinification: Introduce CONFIG_SRCU to make  SRCU optional
-Date: Wed,  3 Dec 2014 20:52:56 -0500
-Message-Id: <1417657976-3611-1-git-send-email-bobby.prani@gmail.com>
+Date: Wed,  3 Dec 2014 20:54:06 -0500
+Message-Id: <1417658046-4538-1-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,7 +41,7 @@ up this patch.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 CC: Paul McKenney <paulmck@linux.vnet.ibm.com>
-CC: Josh Triplett <josh@joshtriplett.com>
+CC: Josh Triplett <josh@joshtriplett.org>
 ---
  arch/arm/kvm/Kconfig     |  1 +
  arch/arm64/kvm/Kconfig   |  1 +
