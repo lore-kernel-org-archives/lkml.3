@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaLDPy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:54:56 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:38065 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579AbaLDPyx (ORCPT
+	id S1754748AbaLDPzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:55:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:54179 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754133AbaLDPzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:54:53 -0500
-Date: Thu, 4 Dec 2014 07:54:51 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Yaniv Gardi <ygardi@codeaurora.org>
-Cc: James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
-        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
-        noag@codeaurora.org, draviv@codeaurora.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Vinayak Holikatti <vinholikatti@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Grant Likely <grant.likely@linaro.org>, Christoph Hellwig <hch@lst.de>,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        Raviv Shvili <rshvili@codeaurora.org>,
-        Sahitya Tummala <stummala@codeaurora.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] scsi: ufs: add support of generic PHY and ICE in
- Qualcomm chips
-Message-ID: <20141204155451.GA29255@infradead.org>
-References: <1417104021-2997-1-git-send-email-ygardi@codeaurora.org>
+	Thu, 4 Dec 2014 10:55:45 -0500
+Message-Id: <20141204155544.206813142@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 04 Dec 2014 10:55:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 1/2] ftracetest: Fix to show descriptions on dash
+References: <20141204155517.575600663@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417104021-2997-1-git-send-email-ygardi@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-ftracetest-Fix-to-show-descriptions-on-dash.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 05:59:58PM +0200, Yaniv Gardi wrote:
-> In this change we add support to the generic PHY framework.
-> Two UFS phys are implemented:
-> qmp-20nm and qmp-28nm.
-> 
-> Also, the files in this change implement the UFS HW (controller & PHY)
-> specific behavior in Qualcomm chips.
-> Relocation of a few header files is needed in order to expose routines
-> and data structures between PHY driver and UFS driver.
-> 
-> Also, this change include the implementation of Inline Crypto Engine (ICE)
-> in Qualcomm chips.
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-This whole patch is a mess.  It does way to many things in one patch,
-and it doesn't explain enough of it.
+The ftracetest doesn't show testcase's descriptions when
+it is executed on dash. This fixes that to show the
+descriptions on dash correctly by passing it via a variable
+instead of directly passing the grep command output.
 
-Please explain why you need it.  Especially as the PHY API is a generic
-phy abstraction, so having to share defintions between the provider and
-consumer seems wrong.  Even if you need some shared bits keep them to an
-absolute minium insted of moving so much out of the driver directory.
-Also if at all possible keep the shared data in a single header under
-include/linux instead of having lots of global headers in a deep
-directory structure.
+Link: http://lkml.kernel.org/r/20141204194116.7376.78940.stgit@localhost.localdomain
 
-Second split this into patches that do a single things, and explain why
-you're doing each:
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/selftests/ftrace/ftracetest | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- 1) header move if/as needed
- 2) add 20nm phy driver
- 3) add 28nm phy driver
- 4) add ufs-qcom driver
- 5) add ufs-qcom-ice support
+diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
+index 535b98b79c29..e8b402193a82 100755
+--- a/tools/testing/selftests/ftrace/ftracetest
++++ b/tools/testing/selftests/ftrace/ftracetest
+@@ -135,7 +135,8 @@ TOTAL_RESULT=0
+ CASENO=0
+ testcase() { # testfile
+   CASENO=$((CASENO+1))
+-  prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
++  desc=`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
++  prlog -n "[$CASENO]$desc"
+ }
+ 
+ eval_result() { # retval sigval
+-- 
+2.1.3
 
-and so on.
+
