@@ -1,30 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312AbaLDWkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:40:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48528 "EHLO
+	id S933330AbaLDWmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:42:05 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48539 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933139AbaLDWku (ORCPT
+	with ESMTP id S933102AbaLDWmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:40:50 -0500
-Date: Thu, 4 Dec 2014 22:40:33 +0000
+	Thu, 4 Dec 2014 17:42:02 -0500
+Date: Thu, 4 Dec 2014 22:41:41 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Peter Rosin <peda@lysator.liu.se>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, Peter Rosin <peda@axentia.se>
-Message-ID: <20141204224033.GA11764@sirena.org.uk>
-References: <1417122162-8122-1-git-send-email-peda@lysator.liu.se>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Patrice Chotard <patrice.chotard@st.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@stlinux.com,
+        linux-spi@vger.kernel.org
+Message-ID: <20141204224140.GB11764@sirena.org.uk>
+References: <1417534844-25080-1-git-send-email-lee.jones@linaro.org>
+ <1417534844-25080-2-git-send-email-lee.jones@linaro.org>
+ <547DE5FA.5000409@st.com>
+ <20141203091707.GH22522@x1>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
+	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
 Content-Disposition: inline
-In-Reply-To: <1417122162-8122-1-git-send-email-peda@lysator.liu.se>
+In-Reply-To: <20141203091707.GH22522@x1>
 X-Cookie: I don't get no respect.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: Augment existing card DAPM routes in
- snd_soc_of_parse_audio_routing
+Subject: Re: [STLinux Kernel] [PATCH v2 1/4] spi: Add new driver for
+ STMicroelectronics' SPI Controller
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,33 +37,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mYCpIKhGyMATD0i+
+--7ZAtKRhVyVSsbBD2
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 27, 2014 at 10:02:42PM +0100, Peter Rosin wrote:
-> From: Peter Rosin <peda@axentia.se>
->=20
-> If a snd_soc_card has any DAPM routes when it calls
-> snd_soc_of_parse_audio_routing, those are clobbered without this change.
+On Wed, Dec 03, 2014 at 09:17:07AM +0000, Lee Jones wrote:
 
-Applied, thanks.
+>   Would you mind casting your eye over this submission prior to
+> the v3 please?
 
---mYCpIKhGyMATD0i+
+This all seems fine (which also means that the DT updates are good to
+go).
+
+--7ZAtKRhVyVSsbBD2
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUgOLgAAoJECTWi3JdVIfQadgH/Ai1BfqxhLKxGP30YZKWYsyf
-K2bhZgCRxkeqiT0wJ4YGbS2jICu5We5Yfqym/sUQfpUoeUsUv/IYIiQ5ysnJD1uY
-JuojkpbanP08vpuQnWRbtF+Rfy8OZZTeMVLHEFTGQoKg3f69kDI2zJPgJFfJj8YT
-6S4rZMHxV086XytpLsOj6ARFSH8q+B+IDuzVhQmpc6qX/LF+vkR0t2Mc+h7Xgx2M
-voRmApbUPddYawLa9c3ykXAGgAzyPLg7LVOmVtcW+Hl4Iz9cxNkh3L11B0UJ+tEL
-w2NyGcSJ9X/zvZoRlR+Dist5++uqvCQRgj+9w2TDczNTdN/zKfJoapwokNElDDk=
-=9w5l
+iQEcBAEBAgAGBQJUgOMkAAoJECTWi3JdVIfQoPsH/3idF/c+bYZmPNTn1dciMUO9
+kNekhodEpU3vtdeaytOkw+EgiJA1/sxmd83m/6RVh8+xExgL9JPNRtayiHn5UIDn
+gomVtR7NM3sKJfuOiE9aXSSSJ3VL6R3ceqh/ySb703IHPV5IZwr/o8IWYFtFMDR/
+JlpnRtzEE8trPviMYI2LCF/ENwQd2IxshK8jdMUU3s/DlS1LqMfR+j7ri2FRpgVj
+EFoZgn/REWVb2w7pqtjPzyAZoaxxL3K7Wj+jx3taycNLkiFwoX+lUawZDLQHU47r
+0SRTw0ADbSd22o0D86QPVt3rreLJrc6ijmdd4BFi+auXTEfmkHlAKmRuk0zlis0=
+=vyX6
 -----END PGP SIGNATURE-----
 
---mYCpIKhGyMATD0i+--
+--7ZAtKRhVyVSsbBD2--
