@@ -1,86 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaLDGtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:49:03 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52108 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaLDGtB (ORCPT
+	id S1752914AbaLDGw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:52:29 -0500
+Received: from atl4mhob18.myregisteredsite.com ([209.17.115.111]:34469 "EHLO
+	atl4mhob18.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751878AbaLDGw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:49:01 -0500
-X-Original-SENDERIP: 10.177.220.140
-X-Original-MAILFROM: seungho1.park@lge.com
-Message-ID: <548003F1.2080004@lge.com>
-Date: Thu, 04 Dec 2014 15:49:21 +0900
-From: =?UTF-8?B?IuuwleyKue2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKQ==?=
-	 =?UTF-8?B?QU9U7YyAKHNldW5naG8xLnBhcmtAbGdlLmNvbSki?= 
-	<seungho1.park@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com
-Subject: Re: [RFC 0/6] zsmalloc support compaction
-References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1417488587-28609-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 4 Dec 2014 01:52:28 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: lars@metafoo.de
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master clock
+Date: Thu,  4 Dec 2014 07:52:19 +0100
+Message-Id: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Minchan.
+If the master clock supports programmable rates, program it to generate
+the desired frequency. Only apply constraints when the clock is fixed.
+This allows proper clock generation for both 44100 and 48000 Hz based
+sampling rates if the platform supports it.
 
-I have a question.
-The problem mentioned can't be resolved with compaction?
-Is there any reason that zsmalloc pages can't be moved by compaction
-operation in direct reclaim?
+The clock frequency must be set before enabling it. Enabling the clock
+was done in "startup", but that occurs before "hw_params" where the rate
+is known. Move the clock start to the hw_params routine, and keep track
+of whether the clock has been started, because shutdown may be called
+without having called hw_params first.
 
-2014-12-02 오전 11:49에 Minchan Kim 이(가) 쓴 글:
-> Recently, there was issue about zsmalloc fragmentation and
-> I got a report from Juno that new fork failed although there
-> are plenty of free pages in the system.
-> His investigation revealed zram is one of the culprit to make
-> heavy fragmentation so there was no more contiguous 16K page
-> for pgd to fork in the ARM.
->
-> This patchset implement *basic* zsmalloc compaction support
-> and zram utilizes it so admin can do
-> 	"echo 1 > /sys/block/zram0/compact"
->
-> Actually, ideal is that mm migrate code is aware of zram pages and
-> migrate them out automatically without admin's manual opeartion
-> when system is out of contiguous page. Howver, we need more thinking
-> before adding more hooks to migrate.c. Even though we implement it,
-> we need manual trigger mode, too so I hope we could enhance
-> zram migration stuff based on this primitive functions in future.
->
-> I just tested it on only x86 so need more testing on other arches.
-> Additionally, I should have a number for zsmalloc regression
-> caused by indirect layering. Unfortunately, I don't have any
-> ARM test machine on my desk. I will get it soon and test it.
-> Anyway, before further work, I'd like to hear opinion.
->
-> Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
->
-> Thanks.
->
-> Minchan Kim (6):
->    zsmalloc: expand size class to support sizeof(unsigned long)
->    zsmalloc: add indrection layer to decouple handle from object
->    zsmalloc: implement reverse mapping
->    zsmalloc: encode alloced mark in handle object
->    zsmalloc: support compaction
->    zram: support compaction
->
->   drivers/block/zram/zram_drv.c |  24 ++
->   drivers/block/zram/zram_drv.h |   1 +
->   include/linux/zsmalloc.h      |   1 +
->   mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
->   4 files changed, 552 insertions(+), 70 deletions(-)
->
+Starting the clock and enabling the SPDIF output AFTER programming the
+dividers is a more logical order anyway.
+
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+ sound/soc/adi/axi-spdif.c |   56 ++++++++++++++++++++++++++++-----------------
+ 1 file changed, 35 insertions(+), 21 deletions(-)
+
+diff --git a/sound/soc/adi/axi-spdif.c b/sound/soc/adi/axi-spdif.c
+index 198e3a4..d67e010 100644
+--- a/sound/soc/adi/axi-spdif.c
++++ b/sound/soc/adi/axi-spdif.c
+@@ -4,7 +4,6 @@
+  *
+  * Licensed under the GPL-2.
+  */
+-
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -44,6 +43,8 @@ struct axi_spdif {
+ 
+ 	struct snd_ratnum ratnum;
+ 	struct snd_pcm_hw_constraint_ratnums rate_constraints;
++
++	bool clk_ref_running;
+ };
+ 
+ static int axi_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
+@@ -79,6 +80,7 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
+ 	unsigned int rate = params_rate(params);
+ 	unsigned int clkdiv, stat;
++	int ret;
+ 
+ 	switch (params_rate(params)) {
+ 	case 32000:
+@@ -95,6 +97,9 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 		break;
+ 	}
+ 
++	/* Try to set the master clock */
++	clk_set_rate(spdif->clk_ref, rate * 128);
++
+ 	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
+ 			rate * 64 * 2) - 1;
+ 	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
+@@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+ 		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
+ 
++	ret = clk_prepare_enable(spdif->clk_ref);
++	if (ret)
++		return ret;
++	spdif->clk_ref_running = true;
++
++	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
++		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
++
+ 	return 0;
+ }
+ 
+@@ -121,18 +134,13 @@ static int axi_spdif_startup(struct snd_pcm_substream *substream,
+ 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
+ 	int ret;
+ 
+-	ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
+-			   SNDRV_PCM_HW_PARAM_RATE,
+-			   &spdif->rate_constraints);
+-	if (ret)
+-		return ret;
+-
+-	ret = clk_prepare_enable(spdif->clk_ref);
+-	if (ret)
+-		return ret;
+-
+-	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+-		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
++	if (spdif->rate_constraints.nrats) {
++		ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
++				SNDRV_PCM_HW_PARAM_RATE,
++				&spdif->rate_constraints);
++		if (ret)
++			return ret;
++	}
+ 
+ 	return 0;
+ }
+@@ -145,7 +153,10 @@ static void axi_spdif_shutdown(struct snd_pcm_substream *substream,
+ 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+ 		AXI_SPDIF_CTRL_TXEN, 0);
+ 
+-	clk_disable_unprepare(spdif->clk_ref);
++	if (spdif->clk_ref_running) {
++		clk_disable_unprepare(spdif->clk_ref);
++		spdif->clk_ref_running = false;
++	}
+ }
+ 
+ static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
+@@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
+ 	spdif->dma_data.addr_width = 4;
+ 	spdif->dma_data.maxburst = 1;
+ 
+-	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
+-	spdif->ratnum.den_step = 1;
+-	spdif->ratnum.den_min = 1;
+-	spdif->ratnum.den_max = 64;
+-
+-	spdif->rate_constraints.rats = &spdif->ratnum;
+-	spdif->rate_constraints.nrats = 1;
++	/* Determine if the clock rate is fixed. If it cannot change frequency,
++	 * it returns an error here. */
++	if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
++		spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
++		spdif->ratnum.den_step = 1;
++		spdif->ratnum.den_min = 1;
++		spdif->ratnum.den_max = 64;
+ 
++		spdif->rate_constraints.rats = &spdif->ratnum;
++		spdif->rate_constraints.nrats = 1;
++	}
+ 	ret = devm_snd_soc_register_component(&pdev->dev, &axi_spdif_component,
+ 					 &axi_spdif_dai, 1);
+ 	if (ret)
+-- 
+1.7.9.5
 
