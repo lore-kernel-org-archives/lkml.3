@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaLDJnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:43:04 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:22328 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLDJm7 (ORCPT
+	id S1753449AbaLDJod (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:44:33 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:40724 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751785AbaLDJob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:42:59 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-36-54802ca05e46
-Message-id: <54802C9F.8030101@samsung.com>
-Date: Thu, 04 Dec 2014 10:42:55 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Subject: Re: [PATCH/RFC v9 02/19] Documentation: leds: Add description of LED
- Flash class extension
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-3-git-send-email-j.anaszewski@samsung.com>
- <20141203170818.GN14746@valkosipuli.retiisi.org.uk>
-In-reply-to: <20141203170818.GN14746@valkosipuli.retiisi.org.uk>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Fd0FOg0hBhe/a1tsnLGe1eLozolM
-	Fv1vFrJanHu1ktHibNMbdovLu+awWWx9s47RomfDVlaLpdcvMlncPXWUzWLC9LUsFq17j7Bb
-	7N71lNXi8Jt2Vosz+1eyOfB7rJm3htHjcl8vk8fOWXfZPVYu/8LmcfjrQhaPTas62Tz2zP/B
-	6tG3ZRWjx4rV39k9Pm+SC+CK4rJJSc3JLEst0rdL4Mr43DmNveChZMXmAw9ZGxgfiHQxcnJI
-	CJhIrFvZwAZhi0lcuLceyObiEBJYyihxfdZ7FgjnI6PE0fPnWUGqeAW0JD4e/8IEYrMIqErM
-	+/aRHcRmEzCU+PniNVhcVCBC4s/pfVD1ghI/Jt9jAbFFBNQknm56CDaUWeAak8SG9SfBGoQF
-	UiWObr7HDGILCexllFi6UgvE5hRwkLj76jxYM7OAtcTKSdsYIWx5ic1r3jJPYBSYhWTHLCRl
-	s5CULWBkXsUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREmtfdzAuPWZ1iFGAg1GJh3fC9foQ
-	IdbEsuLK3EOMEhzMSiK8jH+BQrwpiZVVqUX58UWlOanFhxiZODilGhhDTPemayc+f3D7ZAL/
-	irkxl68rhZdXHbF008hkW7139/8W3d7p/LGfpl0Sv5q8dq6X5fSYZTMehF3ieRV9YOH1Z+Fa
-	etFv01ZLiN2a6ZhXVHn46UOdZ4ZXU9wj1bK6DCe3T2HWPrLPOo/PT+jY1DnfDu8TsWjt2qv0
-	w94rp2hzkqKaZMPn/2pKLMUZiYZazEXFiQCvddsrkwIAAA==
+	Thu, 4 Dec 2014 04:44:31 -0500
+Message-ID: <54802CDD.6080000@arm.com>
+Date: Thu, 04 Dec 2014 09:43:57 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>
+Subject: Re: [PATCH 4/5] ASoC: dwc: Add devicetree support for Designware
+ I2S
+References: <547F3CAC.9050105@arm.com> <2041200.ZjakFFAZAU@wuerfel>
+In-Reply-To: <2041200.ZjakFFAZAU@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sakari,
-
-Thanks for the review.
-
-On 12/03/2014 06:08 PM, Sakari Ailus wrote:
-> Hi Jacek,
->
-> On Wed, Dec 03, 2014 at 05:06:37PM +0100, Jacek Anaszewski wrote:
->> The documentation being added contains overall description of the
->> LED Flash Class and the related sysfs attributes.
+On 12/03/14 20:13, Arnd Bergmann wrote:
+> On Wednesday 03 December 2014 16:39:08 Andrew Jackson wrote:
+>> Convert to driver to use either platform_data or device-tree for configuration
+>> of the device.  When using device-tree, the I2S block's configuration is read
+>> from the relevant registers: this reduces the amount of information required in
+>> the device tree.
 >>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Bryan Wu <cooloney@gmail.com>
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->> ---
->>   Documentation/leds/leds-class-flash.txt |   50 +++++++++++++++++++++++++++++++
->>   1 file changed, 50 insertions(+)
->>   create mode 100644 Documentation/leds/leds-class-flash.txt
->>
->> diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
->> new file mode 100644
->> index 0000000..82e58b1
->> --- /dev/null
->> +++ b/Documentation/leds/leds-class-flash.txt
->> @@ -0,0 +1,50 @@
->> +
->> +Flash LED handling under Linux
->> +==============================
->> +
->> +Some LED devices support two modes - torch and flash. The modes are
->> +supported by the LED class (see Documentation/leds/leds-class.txt)
->> +and LED Flash class respectively.
->> +
->> +In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
->> +must be defined in the kernel config. A flash LED driver must register
->> +in the LED subsystem with led_classdev_flash_register to gain flash
->> +capabilities.
->> +
->> +Following sysfs attributes are exposed for controlling flash led devices:
->> +
->> +	- flash_brightness - flash LED brightness in microamperes (RW)
->> +	- max_flash_brightness - maximum available flash LED brightness (RO)
->> +	- flash_timeout - flash strobe duration in microseconds (RW)
->> +	- max_flash_timeout - maximum available flash strobe duration (RO)
->> +	- flash_strobe - flash strobe state (RW)
->> +	- flash_sync_strobe - one flash device can control more than one
->> +			      sub-led; when this atrribute is set to 1
->
-> s/atrribute/attribute/
->
->> +			      the flash led will be strobed synchronously
->> +			      with the other one controlled by the same
->> +			      device; flash timeout setting is inherited
->> +			      from the led being strobed explicitly and
->> +			      flash brightness setting of a sub-led's
->> +			      being synchronized is used (RW)
->
-> The flash brightness shouldn't be determined by the strobed LED. If this is
-> a property of the hardware, then be it, but in general no, it it shouldn't
-> be an interface requirement. I think this should just say that the strobe is
-> synchronised.
+>> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+> 
+> I don't think we even have to worry about the platform_data case here:
+> the only platform using this hardware in Linux is arm/mach-spear, and
+> it defines a device node with a binding that is similar to the one you
+> document here but that is not implemented in the driver.
+> 
+> So, I think for all practical purposes we can assume that nobody cares
+> if you make incompatible changes as long as you don't introduce build
+> regression.
+> 
+> Also, please adapt the 	arch/arm/boot/dts/spear13*.dts{,i} files
+> as good as you can. They are broken in other ways too that you don't
+> have to fix, just make them conform to the binding you add.
+> 
 
-I intended this to sound exactly as you laid it out above, but maybe it
-is obscure English. "and flash brightness setting of a sub-led >>>being
-synchronized<<< is used" - from my point of view the led being
-synchronized is the one that isn't strobed explicitly. But I'm ok with
-confining ourselves only to saying that strobe is synchronized.
+Will do.  Although I had noticed those DT entries, I couldn't find anything in support of them.  I wasn't sure whether someone else was waiting in the wings (so as to speak) with a DT enabled Designware I2S driver. 
 
-> How does the user btw. figure out which flash LEDs may be strobed
-> synchronously using the LED flash interface?
+> 	Arnd
+> 
+> 
 
-The flash_sync_strobe argument is absent if synchronized strobe
-is not available for a LED. The driver defines this by setting
-newly added LED_DEV_CAP_COMPOUND flag.
-
-Best Regards,
-Jacek Anaszewski
