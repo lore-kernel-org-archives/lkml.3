@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019AbaLDSlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:41:07 -0500
-Received: from sauhun.de ([89.238.76.85]:34442 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215AbaLDSlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:41:04 -0500
-Date: Thu, 4 Dec 2014 19:40:46 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
-        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?utf-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Subject: Re: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns
- doesn't meet I2C spec
-Message-ID: <20141204184046.GL7944@katana>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
- <1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
- <20141203111518.GB1039@katana>
- <CAD=FV=X5inPWZakhgDX0dX=1CWXygEi3_AH9FVFWXYT3LZA5bg@mail.gmail.com>
+	id S933047AbaLDSl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:41:57 -0500
+Received: from na6sys009bog021.obsmtp.com ([74.125.150.82]:32815 "HELO
+	na6sys009bog021.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932215AbaLDSlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:41:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xjamM5M9kpPM/bcu"
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=X5inPWZakhgDX0dX=1CWXygEi3_AH9FVFWXYT3LZA5bg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+ <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
+ <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
+ <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
+ <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com>
+ <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com>
+ <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com> <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
+From: Joe Stringer <joestringer@nicira.com>
+Date: Thu, 4 Dec 2014 10:41:34 -0800
+Message-ID: <CANr6G5zVA=hZLuo5Z2MaXy9A7zzt1-3RQCAS6aZY2iFudOGfYQ@mail.gmail.com>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+To: Jesse Gross <jesse@nicira.com>
+Cc: Tom Herbert <therbert@google.com>, netdev <netdev@vger.kernel.org>,
+        Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2 December 2014 at 10:26, Jesse Gross <jesse@nicira.com> wrote:
+> On Mon, Dec 1, 2014 at 4:09 PM, Tom Herbert <therbert@google.com> wrote:
+>> On Mon, Dec 1, 2014 at 3:53 PM, Jesse Gross <jesse@nicira.com> wrote:
+>>> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
+>>>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
+>>>>>>> I don't know if we need to have the check at all for IPIP though -
+>>>>>>> after all the driver doesn't expose support for it all (actually it
+>>>>>>> doesn't expose GRE either). This raises kind of an interesting
+>>>>>>> question about the checks though - it's pretty easy to add support to
+>>>>>>> the driver for a new GSO type (and I imagine that people will be
+>>>>>>> adding GRE soon) and forget to update the check.
+>>>>>>
+>>>>>> If the check is more conservative, then testing would show that it's
+>>>>>> not working and lead people to figure out why (and update the check).
+>>>>>
+>>>>> More concretely, one suggestion would be something like following at
+>>>>> the start of each gso_check():
+>>>>>
+>>>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
+>>>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
+>>>>> +
+>>>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
+>>>>> +               return false;
+>>>>
+>>>> This should already be handled by net_gso_ok.
+>>>
+>>> My original point wasn't so much that this isn't handled at the moment
+>>> but that it's easy to add a supported GSO type but then forget to
+>>> update this check - i.e. if a driver already supports UDP_TUNNEL and
+>>> adds support for GRE with the same constraints. It seems not entirely
+>>> ideal that this function is acting as a blacklist rather than a
+>>> whitelist.
+>>
+>> Agreed, it would be nice to have all the checking logic in one place.
+>> If all the drivers end up implementing ndo_gso_check then we could
+>> potentially get rid of the GSO types as features. This probably
+>> wouldn't be a bad thing since we already know that the features
+>> mechanism doesn't scale (for instance there's no way to indicate that
+>> certain combinations of GSO types are supported by a device).
+>
+> This crossed my mind and I agree that it's pretty clear that the
+> features mechanism isn't scaling very well. Presumably, the logical
+> extension of this is that each driver would have a function that looks
+> at a packet and returns a set of offload operations that it can
+> support rather than exposing a set of protocols. However, it seems
+> like it would probably result in a bunch of duplicate code in each
+> driver.
 
---xjamM5M9kpPM/bcu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-
-> If you don't read all the below, my belief is that we should simply
-> rename the strings in Addy's patch.  We should change "rise-ns" to
-> "i2c-scl-rising-time" and "fall-ns" to "i2c-scl-falling-time".
-> Wolfram: can you confirm this is OK?  I'm voting to leave the "-ns"
-> off the end of both to avoid asymmetry.
-
-New binding should have the "-ns" suffix, right? So, I'd vote to add the
-suffix to the new bindings and deprecate the ones used in the designware
-driver: "i2c-scl-rising-time-ns" and "i2c-scl-falling-time-ns"
-
-It might be a little more work now, but it will help us in the future,
-because it is the correct way to do it.
-
---xjamM5M9kpPM/bcu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgKquAAoJEBQN5MwUoCm2/BgP/3HQXR2iRvK+F1+ZQS/jilk3
-L/1gRWOud2ixUpGzPLCWeEEPO+MFO2Pbci4cE2ULPp6e2ta7eVRpOIOColSCYDMO
-iamBdCYJ1af2s6Z7oPrMGihp9b9BurvJw1PmIqnXHmOUuUqjKkikFueCY5wMuHuS
-LsFx71BFYKrVhAiuy5I3TkcUeZwc+GNrbZCoTLnWuD+I/tM6TtGeUlWn/1WSJbmU
-Ht0iR8cpMSu/yGpNKKToXGT0iTsBkSbCoGaK5nej9jz/s55OvoCiq8pnw29d7qdq
-VTlMLkrXxbYQJJ6JhM6TlT17Lakj/8PXxZMI0p+mXIWiXJYSpopd57vjg1GYD8OF
-nZEYm40ppufY+gofuJvB2/RiCHf7N9eCiiqvcwMPjrMI5t3CqNtm3djI9oL4Hut4
-psUy5rMO1ddRce911/o0teWdpfrerw7jmfD0zm4K3cB6Fgf4tvU8BdVXb+UhiR2I
-R2yVOVEMgXsjeYRKJdFC5ALcwG3CXAcPyiqq89aSX3rfh52G6hTyXNlPN2ys5VUA
-zkclj4i7EUz64JO1XTiRCXRW0JZ1QcKw4QqqkHATC+tHBBubV/Sp6XlbtkF4wDE+
-40L8FhOC1D0ID/txWKJE5Mewbs9A7jT1pdy/0oQgZv5efLfaWJH7SQKRHV52ui9E
-oLhql1hQxpvrS5IUQSrC
-=Hh5C
------END PGP SIGNATURE-----
-
---xjamM5M9kpPM/bcu--
+Given the discussion is still pretty open-ended, I've made the basic
+feedback changes for v3 and haven't tried to address the concern about
+forgetting to update this check when a driver adds support.
