@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaLDN3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:29:46 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63159 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952AbaLDN3o convert rfc822-to-8bit (ORCPT
+	id S1753402AbaLDNdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:33:17 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:36787 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaLDNdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:29:44 -0500
+	Thu, 4 Dec 2014 08:33:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <548013B0.4080108@ti.com>
-References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
-	<547EF8CC.9030502@ti.com>
-	<CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>
-	<548007CA.7010900@ti.com>
-	<20141204074641.GB4311@sudip-PC>
-	<548013B0.4080108@ti.com>
-Date: Thu, 4 Dec 2014 14:29:42 +0100
-X-Google-Sender-Auth: w23sdLn3ReTxZrzGyM6zteQIkOk
-Message-ID: <CAMuHMdX6rbaPYFpSR7nGf6Di0G=cGL9yFZLLpjUDi7TLyu1wmw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Thu, 04 Dec 2014 14:35:25 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        devicetree@vger.kernel.org, Nishanth Menon <nm@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        ijc+devicetree@hellion.org.uk, daniel.lezcano@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>, robh+dt@kernel.org,
+        Pawel Moll <Pawel.Moll@arm.com>, kernel@pengutronix.de,
+        u.kleine-koenig@pengutronix.de, olof@lixom.net, galak@codeaurora.org,
+        shawn.guo@linaro.org, LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 03/12] irqchip: gic: define =?UTF-8?Q?register=5Frouta?=
+ =?UTF-8?Q?ble=5Fdomain=5Fops=20conditional?=
+In-Reply-To: <547F5EBD.6040705@arm.com>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
+ <1417565531-4507-4-git-send-email-stefan@agner.ch>
+ <5174649.NxPq80uDz8@wuerfel> <alpine.DEB.2.11.1412031303000.16275@nanos>
+ <8eccedc781df2636a132dae449cbe774@agner.ch> <547F5EBD.6040705@arm.com>
+Message-ID: <a62b856866915f6939da79bdbcdabb39@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Dec  4 14:32:37 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5480627512811969022335
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 8:56 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 04/12/14 09:46, Sudip Mukherjee wrote:
->> On Thu, Dec 04, 2014 at 09:05:46AM +0200, Tomi Valkeinen wrote:
->>> On 03/12/14 20:29, Prabhakar Lad wrote:
->>>> On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
->>>>> On 27/11/14 00:07, Lad, Prabhakar wrote:
->>>>>> this patch fixes following build warning:
->>>>>> drivers/video/fbdev/vt8623fb.c: In function ‘vt8623_pci_probe’:
->>>>>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
->>>>>>   par->state.vgabase = (void __iomem *) vga_res.start;
->>>>>>                        ^
->>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>>>> ---
->>>>>>  drivers/video/fbdev/vt8623fb.c | 2 +-
->>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt8623fb.c
->>>>>> index 5c7cbc6..ea7f056 100644
->>>>>> --- a/drivers/video/fbdev/vt8623fb.c
->>>>>> +++ b/drivers/video/fbdev/vt8623fb.c
->>>>>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->>>>>>
->>>>>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
->>>>>>
->>>>>> -     par->state.vgabase = (void __iomem *) vga_res.start;
->>>>>> +     par->state.vgabase = (void __iomem *) (unsigned long) vga_res.start;
->>>>>
->>>>> This does look quite ugly... Where does the warning come from in the
->>>>> first place. Isn't vga_res.start (resource_size_t) the size of a pointer?
->>>>>
->>>> Yes looks ugly, I am not sure what you meant from 'where does this warning
->>>> come from' its in the commit message.
->>>
->>> I meant why is there a warning at all. With a quick glance,
->>> vga_res.start is the size of a pointer. So the sizes of the integer and
->>> the pointer should be the same. But the warning still says "of different
->>> size".
->>
->> poking my nose into your discussion.
->> I tried to see the warning, and I re-compiled like make W=1 M=drivers/video/fbdev/ (before that make clean M=drivers/video/fbdev was done)
->> I can see warning with many other files, but drivers/video/fbdev/vt8623fb.o was quiet and there was no warning.
->> I tested with next=20141203.
->> did i miss something in checking the warning ?
->
-> I don't see the warning either when compiling for arm or x86_64. On what
-> architecture do you see the warning?
+On 2014-12-03 20:04, Marc Zyngier wrote:
+<snip>
+>> What do you mean by the shared state in the drawing above? Currently, I
+>> check whether a interrupt is already used by the other core by reading
+>> the register (do this configuration register reflect the "shared state"
+>> in your drawing?).
+> 
+> I think that is basically it. It should only be the register that
+> decides on the actual routing. BTW, how do you arbitrate between
+> concurrent accesses to this register? Or is only the A5 allowed to
+> change it?
+ 
+No arbitration so far... The whole Vybrid on M4 stuff is quite a hack
+right now. For instance also the concurrent access to the clock
+registers is not handled. Currently, I start the M4 from a booted A5
+Linux. To avoid half of the clocks get turned of by the M4 clock driver,
+I need to specify clk_ignore_unused. Beside that, peripherals have to be
+enabled/disabled in a non conflicting manor in the device trees...
 
-On 32-bit systems with PHYS_ADDR_T_64BIT=y, resource_size_t is u64,
-while pointers are still 32-bit.
+For the interrupt router in MSCM, it would be nice if the access could
+be done an atomic way, which would avoid the use of a lock mechanism.
+But I guess this is not possible, since peripherals only support
+standard ldr/str...?
 
-Gr{oetje,eeting}s,
+There is the SEMA4 module which provides hardware semaphores. I'm aware
+of the hardware spinlock drivers (drivers/hwspinlock/), I started to
+implement such a driver for Vybrid. But so far a grep through the kernel
+does not show one usage of that framework... I guess we could add dt
+support for that, so we can assign the locks to individual drivers.
 
-                        Geert
+I also plan to have a deeper look into remoteproc/rpmsg, not sure if
+locking of shared peripherals is part (or planned to be part) of that
+framework.
+
+For the clock stuff, the problem is more complex: I guess the would need
+some kind of master/slave definition, where we disallow the change of
+the shared clocks for the slave.
+
+If you are aware of patches/solutions, I'm happy to hear it...
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Stefan
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
+<snip>
+
