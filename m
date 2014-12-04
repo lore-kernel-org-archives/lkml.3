@@ -1,97 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005AbaLDRwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:52:04 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:27960 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655AbaLDRwB (ORCPT
+	id S933031AbaLDRwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:52:13 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:47231 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544AbaLDRwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:52:01 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: cleanup for 3.19 #5
-Date: Thu, 4 Dec 2014 18:52:00 +0100
-Message-ID: <1417715520-30412-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-Organization: atmel
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 4 Dec 2014 12:52:08 -0500
+From: Pieter Smith <pieter@boesman.nl>
+To: linux-kernel@vger.kernel.org
+Cc: Josh Triplett <josh@joshtriplett.org>, Pieter Smith <pieter@boesman.nl>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        fuse-devel@lists.sourceforge.net (open list:FUSE: FILESYSTEM...),
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hugh Dickins <hughd@google.com>, Iulia Manda <iulia.manda21@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org (open list:KERNEL NFSD, SUNR...),
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
+        Tom Herbert <therbert@google.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
+Subject: [PATCH v6 3/7] fs/splice: support compiling out splice-family syscalls
+Date: Thu,  4 Dec 2014 18:50:51 +0100
+Message-Id: <1417715473-24110-4-git-send-email-pieter@boesman.nl>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1417715473-24110-1-git-send-email-pieter@boesman.nl>
+References: <1417715473-24110-1-git-send-email-pieter@boesman.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+Many embedded systems will not need the splice-family syscalls (splice,
+vmsplice, tee and sendfile). Omitting them saves space.  This adds a new EXPERT
+config option CONFIG_SYSCALL_SPLICE (default y) to support compiling them out.
 
-This is the last "cleanup" pull-request for 3.19 on my side. Most of the work
-was done by Arnd actually ;-)
-This simplifies even more the mach-at91 directory and remove a bunch of dead
-code. Arnd also wrote some more cleanup patches that I will keep for 3.20 as
-they modify files in a larger extent.
+The goal is to completely compile out fs/splice along with the syscalls. To
+achieve this, the remaining patch-set will deal with fs/splice exports. As far
+as possible, the impact on other device drivers will be minimized so as to
+reduce the overal maintenance burden of CONFIG_SYSCALL_SPLICE.
 
-Thanks, best regards,
+The use of exported functions will be solved by transparently mocking them out
+with static inlines. Uses of the exported pipe_buf_operations struct however
+require direct modification in fs/fuse and net/core. The next two patches will
+deal with this.
 
-The following changes since commit 4a109c50d1958a2783df01980b55508fe47bb79c:
+The last change required before fs/splice can be comipled out is making fs/nfsd
+aware of the lacking splice support in file-systems when CONFIG_SYSCALL_SPLICE
+is undefined.
 
-  ARM: at91: remove unused IRQ function declarations (2014-11-27 16:33:06 +0100)
+The bloat benefit of this patch given a tinyconfig is:
 
-are available in the git repository at:
+add/remove: 0/16 grow/shrink: 2/5 up/down: 114/-3693 (-3579)
+function                                     old     new   delta
+splice_direct_to_actor                       348     416     +68
+splice_to_pipe                               371     417     +46
+splice_from_pipe_next                        107     106      -1
+fdput                                         11       -     -11
+signal_pending                                39      26     -13
+fdget                                         56      42     -14
+user_page_pipe_buf_ops                        20       -     -20
+user_page_pipe_buf_steal                      25       -     -25
+file_end_write                                58      29     -29
+file_start_write                              68      34     -34
+pipe_to_user                                  43       -     -43
+wakeup_pipe_readers                           54       -     -54
+do_splice_to                                  87       -     -87
+ipipe_prep.part                               92       -     -92
+opipe_prep.part                              119       -    -119
+sys_sendfile                                 122       -    -122
+sys_sendfile64                               126       -    -126
+sys_vmsplice                                 137       -    -137
+vmsplice_to_user                             205       -    -205
+sys_tee                                      491       -    -491
+do_sendfile                                  492       -    -492
+vmsplice_to_pipe                             558       -    -558
+sys_splice                                  1020       -   -1020
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup5
+Signed-off-by: Pieter Smith <pieter@boesman.nl>
+---
+ fs/splice.c     |  2 ++
+ init/Kconfig    | 10 ++++++++++
+ kernel/sys_ni.c |  8 ++++++++
+ 3 files changed, 20 insertions(+)
 
-for you to fetch changes up to ba62a8593d15f3f353acdc8ab32c18dd40a275bb:
-
-  ARM: at91: remove unused board.h file (2014-12-03 14:16:07 +0100)
-
-----------------------------------------------------------------
-Fifth batch of cleanup/SoC for 3.19:
-- removal of now dead code and AT91-specific driver
-- removal of !DT initialization in some core AT91 drivers
-- simplification of Kconfig DT board file selection: now automatic
-
-----------------------------------------------------------------
-Arnd Bergmann (6):
-      ARM: at91/Kconfig: select board files automatically
-      ARM: at91: cleanup initilisation code by removing dead code
-      ARM: at91: remove old AT91-specific drivers
-      ARM: at91: at91rm9200 ST initialization is now DT only
-      ARM: at91/clocksource: remove !DT PIT initializations
-      ARM: at91: remove unused board.h file
-
-Nicolas Ferre (1):
-      ARM: at91: remove unneeded header files
-
- arch/arm/mach-at91/Kconfig                 |  14 +-
- arch/arm/mach-at91/Makefile                |   5 +-
- arch/arm/mach-at91/at91_tc.h               | 146 -----
- arch/arm/mach-at91/at91rm9200_time.c       |  23 -
- arch/arm/mach-at91/board-dt-rm9200.c       |   2 -
- arch/arm/mach-at91/board-dt-sam9.c         |   1 -
- arch/arm/mach-at91/board.h                 | 123 ----
- arch/arm/mach-at91/generic.h               |  33 -
- arch/arm/mach-at91/gpio.c                  | 982 -----------------------------
- arch/arm/mach-at91/gpio.h                  | 214 -------
- arch/arm/mach-at91/gsia18s.h               |  33 -
- arch/arm/mach-at91/include/mach/hardware.h |   5 -
- arch/arm/mach-at91/leds.c                  |  56 --
- arch/arm/mach-at91/pm.c                    |  11 +-
- arch/arm/mach-at91/setup.c                 |  54 --
- arch/arm/mach-at91/soc.h                   |   6 -
- drivers/clocksource/timer-atmel-pit.c      |  32 -
- 17 files changed, 5 insertions(+), 1735 deletions(-)
- delete mode 100644 arch/arm/mach-at91/at91_tc.h
- delete mode 100644 arch/arm/mach-at91/board.h
- delete mode 100644 arch/arm/mach-at91/gpio.c
- delete mode 100644 arch/arm/mach-at91/gpio.h
- delete mode 100644 arch/arm/mach-at91/gsia18s.h
- delete mode 100644 arch/arm/mach-at91/leds.c
-
+diff --git a/fs/splice.c b/fs/splice.c
+index 44b201b..7c4c695 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1316,6 +1316,7 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_SYSCALL_SPLICE
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
+ 			       size_t len, unsigned int flags);
+@@ -2200,4 +2201,5 @@ COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
+ 	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+ }
+ #endif
++#endif
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index d811d5f..dec9819 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1571,6 +1571,16 @@ config NTP
+ 	  system clock to an NTP server, you can disable this option to save
+ 	  space.
+ 
++config SYSCALL_SPLICE
++	bool "Enable splice/vmsplice/tee/sendfile syscalls" if EXPERT
++	default y
++	help
++	  This option enables the splice, vmsplice, tee and sendfile syscalls. These
++	  are used by applications to: move data between buffers and arbitrary file
++	  descriptors; "copy" data between buffers; or copy data from userspace into
++	  buffers. If building an embedded system where no applications use these
++	  syscalls, you can disable this option to save space.
++
+ config PCI_QUIRKS
+ 	default y
+ 	bool "Enable PCI quirk workarounds" if EXPERT
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index d2f5b00..25d5551 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -170,6 +170,14 @@ cond_syscall(sys_fstat);
+ cond_syscall(sys_stat);
+ cond_syscall(sys_uname);
+ cond_syscall(sys_olduname);
++cond_syscall(sys_vmsplice);
++cond_syscall(sys_splice);
++cond_syscall(sys_tee);
++cond_syscall(sys_sendfile);
++cond_syscall(sys_sendfile64);
++cond_syscall(compat_sys_vmsplice);
++cond_syscall(compat_sys_sendfile);
++cond_syscall(compat_sys_sendfile64);
+ 
+ /* arch-specific weak syscall entries */
+ cond_syscall(sys_pciconfig_read);
 -- 
-Nicolas Ferre
+2.1.0
+
