@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152AbaLDBj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:39:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58372 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaLDBj0 (ORCPT
+	id S1752394AbaLDBmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:42:53 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:45310 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaLDBmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:39:26 -0500
-Date: Wed, 3 Dec 2014 17:39:25 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: arun vijayshankar <arun267@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] Staging: bcm: Fix lines exceeding 80 character limit in
- CmHost.h This is a patch to CmHost.h that fixes Exceeds 80 Character limits
- warning found by checkpatch.pl Signed-off-by: Arun Ayyer <arun267@gmail.com>
-Message-ID: <20141204013925.GA32401@kroah.com>
-References: <1417655529-8640-1-git-send-email-arun267@gmail.com>
- <20141204012517.GA31563@kroah.com>
- <CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
+	Wed, 3 Dec 2014 20:42:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <cover.1415403984.git.luto@amacapital.net>
+References: <cover.1415403984.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 3 Dec 2014 17:42:28 -0800
+Message-ID: <CALCETrVLFtg=VqYTaBenD+U9uQJENTZx7Nd30LVsQg7HQ_ydrQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] x86_64,entry: Rearrange the syscall exit optimizations
+To: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
+Cc: =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 05:31:59PM -0800, arun vijayshankar wrote:
-> Hi Greg,
+[adding potentially interested people]
 
-If you turn off HTML email, your message will not get rejected by the
-mailing lists :)
+On Fri, Nov 7, 2014 at 3:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> The syscall exit asm is a big mess.  There's a really fast path, some
+> kind of fast path code (with a hard-coded optimization for audit), and
+> the really slow path.  The result is that it's very hard to work with
+> this code.  There are some asm paths that are much slower than they
+> should be (context tracking is a major offender), but no one really
+> wants to add even more asm to speed them up.
+>
+> This series takes a different, unorthodox approach.  Rather than trying
+> to avoid entering the very slow iret path, it adds a way back out of the
+> iret path.  The result is a dramatic speedup for context tracking, user
+> return notification, and similar code, as the cost of a few lines of
+> tricky asm.  Nonetheless, it's barely a net addition of asm code,
+> because we get to remove the fast path optimizations for audit and
+> rescheduling.
+>
+> Thoughts?  If this works, it opens the door for a lot of further
+> consolidation of the exit code.
+>
+> Note: patch 1 in this series has been floating around on the list
+> for quite a while.  It's mandatory for this series to work, because
+> the buglet that it fixes almost completely defeats the optimization
+> that I'm introducing.
 
-> I completely agree! I thought of keeping the patch summary as the subject, but
-> I wasn't sure and ending up entering nothing. Git then used this by default.
+It turns out that sysret_audit may be rather buggy.  I think it leaves
+edx and edi in a confused state, and it interacts badly with
+SCHEDULE_USER if context tracking is on.  My preferred long-term
+solution is to delete sysret_audit entirely, which this patch set
+does.  Can you (x86 people and people who, for reasons that escape me,
+enjoy reviewing this stuff) take a look?
 
-You forgot a blank line after your first line in the git commit message,
-which caused it to get all merged together.
+This clearly isn't 3.18 material, and it may want to soak in -next
+(can -tip do that?  I can do it myself, I suppose), but it might also
+be a good idea to try to do this for 3.19 to get rid of sysret_audit.
 
-Try fixing that up and resending please.
+For those who haven't followed all the recent threads: the asm that's
+deleted in patch 3 currently has a nasty RCU + context tracking +
+audit bug that has become much easier to trigger as a result of the
+seccomp changes in 3.18.  This isn't directly a bug in the seccomp
+changes -- it's just that the seccomp changes make it much easier to
+cause the offending ask to be executed.
 
-thanks,
+--Andy
 
-greg k-h
+>
+> Andy Lutomirski (3):
+>   x86_64,entry: Fix RCX for traced syscalls
+>   x86_64,entry: Use sysret to return to userspace when possible
+>   x86_64,entry: Remove the syscall exit audit and schedule optimizations
+>
+>  arch/x86/kernel/entry_64.S | 103 ++++++++++++++++++++++++---------------------
+>  1 file changed, 55 insertions(+), 48 deletions(-)
+>
+> --
+> 1.9.3
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
