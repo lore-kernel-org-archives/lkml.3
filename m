@@ -1,119 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbaLDUOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:14:03 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54488 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507AbaLDUOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:14:01 -0500
-Date: Thu, 4 Dec 2014 14:14:01 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Mugunthan V N <mugunthanvnm@ti.com>
-CC: <balbi@ti.com>, Nishanth Menon <nm@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
-Message-ID: <20141204201401.GA18419@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com>
- <54463063.80207@ti.com>
- <20141021172223.GA12943@kahuna>
- <20141103162722.GN27425@saruman>
- <545BA9EE.1040905@ti.com>
+	id S933091AbaLDUOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:14:19 -0500
+Received: from mout.gmx.net ([212.227.15.19]:63011 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507AbaLDUOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:14:15 -0500
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: Re: [PATCH v9 7/8] tpm: TPM 2.0 CRB Interface
+Date: Thu, 4 Dec 2014 21:19:21 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1417672518-4530-8-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <545BA9EE.1040905@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412042119.21493.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:MvoAmaSm7pfJ2PaIjlxwrNWYNUbjsqEhzZkc2gPzE6VBeBtEfRG
+ q6teUWaQVEpTUJ5m4SwDpaYJV/uiiPBeW0kDGVCczvOOHIuqa+TBve5vRBU7VzXFh7D0NcP
+ ptXcozPjfcQFJB/zvQ/hNVOA/bddVKyoBYMAS8bfOuDi00mgcbTtMzv9+fssmbw1hEYdecv
+ 68gD7Mx2IC+HtvFA1aPvA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am Donnerstag, 4. Dezember 2014, 06:55:17 schrieb Jarkko Sakkinen:
+> tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
+> as defined in PC Client Platform TPM Profile (PTP) Specification.
+> 
+> Only polling and single locality is supported as these are the limitations
+> of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
+> CPUs.
+> 
+> The driver always applies CRB with ACPI start because PTT reports using
+> only ACPI start as start method but as a result of my testing it requires
+> also CRB start.
+> 
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-On Thu, Nov 06, 2014 at 10:33:42PM +0530, Mugunthan V N wrote:
-> Tony
->=20
-> On Monday 03 November 2014 09:57 PM, Felipe Balbi wrote:
-> > On Tue, Oct 21, 2014 at 12:22:23PM -0500, Nishanth Menon wrote:
-> >> On 15:37-20141021, Mugunthan V N wrote:
-> >>> Nishanth
-> >>>
-> >>> On Tuesday 21 October 2014 03:30 PM, Mugunthan V N wrote:
-> >>>> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
-> >>>> These patches were tested with DRA7 hwmod patches on top of linux-ne=
-xt.
-> >>>> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pu=
-shed
-> >>>> my tree to [2].
-> >>>>
-> >>>> Did a boot test with CPSW and ping test with suspend/resume, the boo=
-t logs
-> >>>> on DRA7xx EVM are posted at [3]
-> >>>>
-> >>>> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/c=
-pu-idle-suspend-dra7-omap5-framework
-> >>>> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17/d=
-ra7-evm-cpsw-v3
-> >>>> [3] http://pastebin.ubuntu.com/8613072/
-> >>>>
-> >>>> Changes from v2:
-> >>>> * Changed pinctrl comments to hold mode0-name.mode-selected-name
-> >>>> * Changes slave numbers in the pinctrl comments
-> >>>> * Added cpsw and cpts clocks
-> >>>>
-> >>>
-> >>> I have not added support for dra72x-evm as it has only slave no 2 pin=
-ned
-> >>> out and having issues with bringing up the interface, need some more
-> >>> time to submit the patch, in the mean time I have submitted dra7-evm
-> >>> support only so that people can use dra7-evm on linux-next.
-> >>
-> >> Quickly tested as well:
-> >> http://slexy.org/raw/s2vISJxYrR
-> >>
-> >> Please feel free to add:
-> >> Tested-by: Nishanth Menon <nm@ti.com>
-> >> Acked-by: Nishanth Menon <nm@ti.com>
-> >=20
-> > I've used these patches with X15 (DRA7xx-based yet-to-be-released board)
-> > with v3.18-rc2.
-> >=20
-> > Tested-by: Felipe Balbi <balbi@ti.com>
-> >=20
->=20
-> Ping on this
+:(
 
-another ping on this
+ make -C /data/data-old/linux-2.6/ M=$(pwd) modules C=1 CHECK=sparse
+make: Entering directory '/data/data-old/linux-2.6'
+  CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:99:5: warning: symbol 'crb_suspend' was not declared. Should it be static?
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63: warning: incorrect type in argument 2 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56: warning: incorrect type in argument 2 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27: warning: incorrect type in argument 2 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:277:22: warning: cast removes address space of expression
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33: warning: incorrect type in argument 2 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33:    expected void const volatile [noderef] <asn:2>*src
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33:    got unsigned long long *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19: warning: incorrect type in assignment (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19:    expected unsigned char [usertype] *cmd
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19:    got void [noderef] <asn:2>*
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33: warning: incorrect type in argument 2 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33:    expected void const volatile [noderef] <asn:2>*src
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33:    got unsigned long long *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56: warning: incorrect type in argument 1 (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56:    expected void [noderef] <asn:2>*<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56:    got unsigned int *<noident>
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19: warning: incorrect type in assignment (different address spaces)
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19:    expected unsigned char [usertype] *rsp
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19:    got void [noderef] <asn:2>*
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:325:5: warning: symbol 'crb_acpi_remove' was not declared. Should it be static?
+  CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.o
 
---=20
-balbi
-
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgMCJAAoJEIaOsuA1yqREkLwP/RUy9lfGwH5FY6CoathimTd2
-b1zNIVdQhc5jxTycJfCpfeOuQzfoTBwkZxbITq5/Al/BBPVGYaNESlXoHdUAgKHY
-ro0VBdbQBNgkBAky4oCRa6f92yg0FSJ9R37ax0PXKHtRhsJS1Rvc8VsmayqG8eDD
-8XvhtCqitlpdatem7RdzaNPj6j9rRUzQ0CRH17m9FoNtMGMCC1uqDeNauiLtd2V/
-ouFxYjvpWPE0vbGiNCBc2/kQuHjso5SAoF4ncKYF3g7fCi3jCyOpqpQM6PLJVKpn
-djIhsYsBRgoFy7pQu0Cp6Rp87CjjbIIPHYSvTaZOdwpAhnMNFPHJ3KJifjV6j/lM
-LxvRxcBKoDmCgAV+E0w8pN/Yk9dqvXiXvWgjGFiqmZFO/+4Y7JgU9ttnQLXQY6+6
-SI+b5GiRxa9lK0YkpZIcxYm6W1XWM6Sa9CchCnqgNZiWfED9OJomRDiwjvVaq2NK
-xNDctcl8vZcna1s/EOzYT8QJCQTYoP4mzoPpXDAKnDo/bYZ51swXdW+RqGUCwsHd
-jWV6ZyvI8zd/SsCOg/ZLjWfVgWVGOLxl58PHU+G3S7kDjqRSr4kqeE2jZOXg9afI
-4ds8LkGeaF9yDUqmyA7dblEjS7II/tZXv0DG+ewwmN9j3hhMZGyRJdcJRMQq5DII
-7In0Pi9acNA9OFV0naIn
-=jCEj
------END PGP SIGNATURE-----
-
---HlL+5n6rz5pIUxbD--
+:(
+Peter
