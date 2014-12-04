@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaLDAWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:22:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106AbaLDAW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:22:29 -0500
-Date: Wed, 3 Dec 2014 19:20:44 -0500
-From: Dave Jones <davej@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141204002044.GA15239@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	John Stultz <john.stultz@linaro.org>
-References: <20141203190045.GB32005@redhat.com>
- <CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
- <CA+55aFxa90b31Fvy6RkvMneY3+GTR=Nko2Sgj2mk7SSHZC7b6g@mail.gmail.com>
- <20141203200906.GA3118@redhat.com>
- <CA+55aFxLmBjTOdGu3TFzTJ-ym7TVLDBt79BKqU-vZbX4CvSGog@mail.gmail.com>
- <alpine.DEB.2.11.1412032141040.16275@nanos>
- <CA+55aFw8L06BxpsVnbdiNaU2WSFo=tafND25uV_SHUig=CC1AA@mail.gmail.com>
- <alpine.DEB.2.11.1412032249050.16275@nanos>
- <20141203232115.GA13266@redhat.com>
- <alpine.DEB.2.11.1412040043170.16275@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412040043170.16275@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752608AbaLDAXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:23:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44529 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaLDAXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:23:13 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v2] time: settimeofday: validate the values of tv from user
+Date: Wed,  3 Dec 2014 19:22:48 -0500
+Message-Id: <1417652569-1649-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:49:29AM +0100, Thomas Gleixner wrote:
+An unvalidated user input is multiplied by a constant, which can result in
+an undefined behaviour for large values. While this is validated later,
+we should avoid triggering undefined behaviour.
 
- > > I just got 
- > > 
- > > [ 1472.614433] Clocksource tsc unstable (delta = -26373048906 ns)
- > > 
- > > without any sign of the pr_err above.
- > 
- > Bah. Would have been too simple ....
- > 
- > Could you please run Ingos time-warp test on that machine for a while?
- > 
- >    http://people.redhat.com/mingo/time-warp-test/time-warp-test.c
- > 
- > Please change:
- > 
- > - #define TEST_CLOCK 0
- > + #define TEST_CLOCK 1
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ include/linux/time.h |   13 +++++++++++++
+ kernel/time/time.c   |    4 ++++
+ 2 files changed, 17 insertions(+)
 
-Seems to be 32-bit only, so I built it with -m32. I assume that's ok?
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 203c2ad..851d822 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -110,6 +110,19 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
+ 	return true;
+ }
+ 
++static inline bool timeval_valid(const struct timeval *tv)
++{
++	/* Dates before 1970 are bogus */
++	if (tv->tv_sec < 0)
++		return false;
++
++	/* Can't have more miliseconds then a second */
++	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
++		return false;
++
++	return true;
++}
++
+ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+ 
+ #define CURRENT_TIME		(current_kernel_time())
+diff --git a/kernel/time/time.c b/kernel/time/time.c
+index 58c4c7c..d54ca39 100644
+--- a/kernel/time/time.c
++++ b/kernel/time/time.c
+@@ -200,6 +200,10 @@ SYSCALL_DEFINE2(settimeofday, struct timeval __user *, tv,
+ 	if (tv) {
+ 		if (copy_from_user(&user_tv, tv, sizeof(*tv)))
+ 			return -EFAULT;
++
++		if (!timeval_valid(&user_tv))
++			return -EINVAL;
++
+ 		new_ts.tv_sec = user_tv.tv_sec;
+ 		new_ts.tv_nsec = user_tv.tv_usec * NSEC_PER_USEC;
+ 	}
+-- 
+1.7.10.4
 
-Also, should I run it in isolation, with nothing else going on,
-or under load where I see problems ?
-
-	Dave
