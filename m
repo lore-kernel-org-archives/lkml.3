@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026AbaLDTSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:18:20 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:56567 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932315AbaLDTSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:18:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141204183628.GT25340@linux.vnet.ibm.com>
-References: <20141204062005.GA2553@linux.vnet.ibm.com>
-	<CA+55aFzn-6asfWHB8SAvz4GJWz7uEriujgVLfaqoo_VPtNBLuA@mail.gmail.com>
-	<CA+55aFxGCxQNE4HzRP_Uk2FmFDn_+Hfm6GBz75S+5+SDeODVJQ@mail.gmail.com>
-	<20141204070248.GJ25340@linux.vnet.ibm.com>
-	<CA+55aFxDmaA2D37Zz1Zc7y6iD6gVs=wskP5wgJb37R98aN-qmg@mail.gmail.com>
-	<20141204183628.GT25340@linux.vnet.ibm.com>
-Date: Thu, 4 Dec 2014 11:18:17 -0800
-X-Google-Sender-Auth: QqOZJnUiggkEgw8p7beU9lU3eHg
-Message-ID: <CA+55aFzPZdk5F2q7HjTnjFq673xpZGWUtkMZFx24q8RWQE0-dg@mail.gmail.com>
-Subject: Re: [PATCH RFC] locking: Add volatile to arch_spinlock_t structures
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S933193AbaLDTUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:20:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45460 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933114AbaLDTUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 14:20:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
+   d="asc'?scan'208";a="648423710"
+Message-ID: <1417720816.2404.11.camel@jtkirshe-mobl>
+Subject: Re: [linux-nics] [PATCHv3 net] i40e: Implement ndo_gso_check()
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Joe Stringer <joestringer@nicira.com>, netdev@vger.kernel.org,
+        linux.nics@intel.com, jesse@nicira.com, linux-kernel@vger.kernel.org,
+        therbert@google.com
+Date: Thu, 04 Dec 2014 11:20:16 -0800
+In-Reply-To: <5480B1F0.9090407@cogentembedded.com>
+References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+	 <5480B1F0.9090407@cogentembedded.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-u8MS4s+HN1vJycpTz1dK"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 10:36 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> I have to ask...  Does this mean we can remove the current
-> restrictions against 8-bit and 16-bit access from smp_load_acquire()
-> and smp_store_release()?
 
-I'd certainly be ok with it. Alpha doesn't have acquire/release
-semantics anyway (really, it's the worst memory ordering model
-*ever*), so those will end up being just plain (access-once) loads and
-stores, followed/preceded by a memory barrier anyway. So it arguably
-is no worse than the existing situation with ACCESS_ONCE() on alpha.
+--=-u8MS4s+HN1vJycpTz1dK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-And quite frankly, I simply don't think that an old broken alpha
-architecture should be something we worry about. Remember: the byte
-and word ops were introduced in 21164, and released in 1996, so it's
-not even like "alpha has broken behavior". It's literally just "the
-very earliest alphas were broken", and I suspect most of those
-machines (at least running Linux) weren't even SMP (ie somebody may
-still have a Multia around for sentimental reasons, but SMP? No).
+On Thu, 2014-12-04 at 22:11 +0300, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 12/04/2014 09:39 PM, Joe Stringer wrote:
+>=20
+> > ndo_gso_check() was recently introduced to allow NICs to report the
+> > offloading support that they have on a per-skb basis. Add an
+> > implementation for this driver which checks for IPIP, GRE, UDP tunnels.
+>=20
+> > Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> > ---
+> > v3: Drop IPIP and GRE (no driver support even though hw supports it).
+> >      Check for UDP outer protocol for UDP tunnels.
+> > v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+> >      Add MAX_INNER_LENGTH (as 80).
+> > ---
+> >   drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++=
+++++++++
+> >   1 file changed, 26 insertions(+)
+>=20
+> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/=
+ethernet/intel/i40e/i40e_main.c
+> > index c3a7f4a..0d6493a 100644
+> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> > @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb=
+,
+> >
+> >   #endif /* USE_DEFAULT_FDB_DEL_DUMP */
+> >   #endif /* HAVE_FDB_OPS */
+>=20
+>     Need empty line here, I think.
 
-Of course, I'd like there to be a real reason to do so, not just "who
-cares about really old alphas, nyaah, nyaah, nyaah"? But if there is a
-clear case where a byte load-acquire and store-release would improve
-on something important, then yes, I think we should do it.
+Nope, look above the #endif's, that is the blank line that you are
+wanting if the above #ifdefs are defined and if not, the blank line is
+before the #ifdef's.  So if you were to add a blank line as you
+requested, there is a possibility of 2 blank lines in a row.  So it is
+not needed.
 
-We dropped support for the original i386, we can drop support for old
-broken alphas. People running them for sentimental reasons might as
-well be sentimental about software too, and run old kernels ;)
+>=20
+> > +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev=
+)
+> > +{
+> > +	if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
+> > +		unsigned char *ihdr;
+> > +
+> > +		if (skb->protocol !=3D IPPROTO_UDP ||
+> > +		    skb->inner_protocol_type !=3D ENCAP_TYPE_ETHER)
+> > +			return false;
+> > +
+> > +		if (skb->inner_protocol =3D=3D htons(ETH_P_TEB))
+> > +			ihdr =3D skb_inner_mac_header(skb);
+> > +		else if (skb->inner_protocol =3D=3D htons(ETH_P_IP) ||
+> > +			 skb->inner_protocol =3D=3D htons(ETH_P_IPV6))
+> > +			ihdr =3D skb_inner_network_header(skb);
+> > +		else
+> > +			return false;
+>=20
+>     The above is asking to be a *switch* instead, no?
+>=20
+> > +
+> > +#define MAX_TUNNEL_HDR_LEN	80
+>=20
+>     I'd #define this just above the function, if not at the start of the =
+file...
+>=20
+> [...]
+>=20
+> WBR, Sergei
+>=20
+> _______________________________________________
+> Linux-nics mailing list
+> Linux-nics@intel.com
 
-                    Linus
+
+
+--=-u8MS4s+HN1vJycpTz1dK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUgLPwAAoJEOVv75VaS+3OQAYP/RNGuutfuKML0bL5+EhzOzNF
+qk2EIQM/MXWSq2eVRzLADuML5FryDtkgmWsdyu1tmgvrnR4bZoGEjMLao9pLEFmA
+/YePjh0SOLj22qmaiE9nM7yty9EYV4ftJWDDQ5a+ssHC40cuKX515/lEDpoSu5o5
+roqOm1OOLPFdDyaKxzou++efief7XUB+6lvdtLByY7MeSbBhfdfFARr0ZcmYleMP
+yA/tm/lL0fQYOICEwZ4NbZh6oV1tJO+H8EyfiR/3JdaMqNCYqlLbwZX5ht1oeXZU
+B5gZMqRSFUIWCgV5h/xiL/PJTtFVhTBVlGZIUFDAa4WYFjfuJMvSnCmLvitSb9O0
+mH4f6UY3o9UTv5HbYFtfS0Vn8kthZUxajlDv+DDW5FhH0UnpQW9E4U4rLFhKGqp4
+HdXmiAqzYtkT8PQ0rooHbqRxBG/lB26Wq7PspELtFz1s5atO60x5lsjuYe2EIRbO
+ozgWghZB8pcAYutcQDOrfVblD2xCYPfBrxJbCoL20XvZp16WkEf3aYgUJgC3uzz7
+wvvZTX+k062H+I8S3uOmsNYJKSn8CgLTHLijzYgDQT1r5jmZPYAJE/S6zznaDu/U
+DgLZTOpivcWesbFfi/zv6MGJqtpH4VBAN7BAKNm615c+Lyopsv3kXbpSCTqAR81O
+Zkk2FMuqv0Of8jS4WG7S
+=KxC/
+-----END PGP SIGNATURE-----
+
+--=-u8MS4s+HN1vJycpTz1dK--
+
