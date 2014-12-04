@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaLDAOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:14:39 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:53358 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131AbaLDAOA (ORCPT
+	id S1752443AbaLDAQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:16:29 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:37181 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaLDAQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:14:00 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 4/4] perf/x86: Remove get_hbp_len and replace with bp_len
-Date: Thu,  4 Dec 2014 01:13:45 +0100
-Message-Id: <1417652025-2305-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
-References: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
+	Wed, 3 Dec 2014 19:16:27 -0500
+Date: Wed, 3 Dec 2014 16:16:21 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 9/9] kernel: tighten rules for ACCESS ONCE
+Message-ID: <20141204001621.GF25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
+ <1417645821-54731-10-git-send-email-borntraeger@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417645821-54731-10-git-send-email-borntraeger@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120400-8236-0000-0000-00000772138F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.w.shin@gmail.com>
+On Wed, Dec 03, 2014 at 11:30:21PM +0100, Christian Borntraeger wrote:
+> Now that all non-scalar users of ACCESS_ONCE have been converted
+> to READ_ONCE or ASSIGN once, lets tighten ACCESS_ONCE to only
+> work on scalar types.
+> This variant was proposed by Alexei Starovoitov.
+> 
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Clean up the logic for determining the breakpoint length
+With or without the updated comment:
 
-Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: xiakaixu <xiakaixu@huawei.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/hw_breakpoint.c | 25 +------------------------
- 1 file changed, 1 insertion(+), 24 deletions(-)
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index b5cb0c5..7114ba2 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -167,29 +167,6 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
- 		set_dr_addr_mask(0, i);
- }
- 
--static int get_hbp_len(u8 hbp_len)
--{
--	unsigned int len_in_bytes = 0;
--
--	switch (hbp_len) {
--	case X86_BREAKPOINT_LEN_1:
--		len_in_bytes = 1;
--		break;
--	case X86_BREAKPOINT_LEN_2:
--		len_in_bytes = 2;
--		break;
--	case X86_BREAKPOINT_LEN_4:
--		len_in_bytes = 4;
--		break;
--#ifdef CONFIG_X86_64
--	case X86_BREAKPOINT_LEN_8:
--		len_in_bytes = 8;
--		break;
--#endif
--	}
--	return len_in_bytes;
--}
--
- /*
-  * Check for virtual address in kernel space.
-  */
-@@ -200,7 +177,7 @@ int arch_check_bp_in_kernelspace(struct perf_event *bp)
- 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
- 
- 	va = info->address;
--	len = get_hbp_len(info->len);
-+	len = bp->attr.bp_len;
- 
- 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
- }
--- 
-2.1.3
+> ---
+>  include/linux/compiler.h | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index 947710e..5ba91de 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -441,8 +441,16 @@ static __always_inline void __assign_once_size(volatile void *p, void *res, int
+>   * merging, or refetching absolutely anything at any time.  Its main intended
+>   * use is to mediate communication between process-level code and irq/NMI
+>   * handlers, all running on the same CPU.
+
+This comment is obsolete in the same way as that of READ_ONCE() and
+ASSIGN_ONCE(), but probably more to the point to just get rid of
+ACCESS_ONCE().  ;-)
+
+> + *
+> + * ACCESS_ONCE will only work on scalar types. For union types, ACCESS_ONCE
+> + * on a union member will work as long as the size of the member matches the
+> + * size of the union and the size is smaller than word size.
+> + * If possible READ_ONCE/ASSIGN_ONCE should be used instead.
+>   */
+> -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> +#define __ACCESS_ONCE(x) ({ \
+> +	 __maybe_unused typeof(x) __var = 0; \
+> +	(volatile typeof(x) *)&(x); })
+> +#define ACCESS_ONCE(x) (*__ACCESS_ONCE(x))
+> 
+>  /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
+>  #ifdef CONFIG_KPROBES
+> -- 
+> 1.9.3
+> 
 
