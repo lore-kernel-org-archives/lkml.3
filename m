@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843AbaLDRAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:00:11 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45590 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313AbaLDRAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:00:07 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
-CC: <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
-        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] hwmon: (gpio-fan) Add a shutdown handler to poweroff the fans
-Date: Thu, 4 Dec 2014 10:58:56 -0600
-Message-ID: <1417712336-31070-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932736AbaLDRNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:13:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58015 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932474AbaLDRNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:13:17 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>
+Subject: [RFC PATCH 1/3] mm: when stealing freepages, also take pages created by splitting buddy page
+Date: Thu,  4 Dec 2014 18:12:56 +0100
+Message-Id: <1417713178-10256-2-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Poweroff the fans when shutting down the system. Else,
-echo '1' > /sys/class/hwmon/hwmon0/fan1_target; poweroff leaves the
-fan running if the System power off does not drive the gpio expander
-which might control the fan power supply.
+When __rmqueue_fallback() is called to allocate a page of order X, it will
+find a page of order Y >= X of a fallback migratetype, which is different from
+the desired migratetype. With the help of try_to_steal_freepages(), it may
+change the migratetype (to the desired one) also of:
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
+1) all currently free pages in the pageblock containing the fallback page
+2) the fallback pageblock itself
+3) buddy pages created by splitting the fallback page (when Y > X)
+
+These decisions take the order Y into account, as well as the desired
+migratetype, with the goal of preventing multiple fallback allocations that
+could e.g. distribute UNMOVABLE allocations among multiple pageblocks.
+
+Originally, decision for 1) has implied the decision for 3). Commit
+47118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added") changed that
+(probably unintentionally) so that the buddy pages in case 3) are always
+changed to the desired migratetype, except for CMA pageblocks.
+
+Commit fef903efcf0c ("mm/page_allo.c: restructure free-page stealing code and
+fix a bug") did some refactoring and added a comment that the case of 3) is
+intended. Commit 0cbef29a7821 ("mm: __rmqueue_fallback() should respect
+pageblock type") removed the comment and tried to restore the original behavior
+where 1) implies 3), but due to the previous refactoring, the result is instead
+that only 2) implies 3) - and the conditions for 2) are less frequently met
+than conditions for 1). This may increase fragmentation in situations where the
+code decides to steal all free pages from the pageblock (case 1)), but then
+gives back the buddy pages produced by splitting.
+
+This patch restores the original intended logic where 1) implies 3). During
+testing with stress-highalloc from mmtests, this has shown to decrease the
+number of events where UNMOVABLE and RECLAIMABLE allocations steal from MOVABLE
+pageblocks, which can lead to permanent fragmentation. It has increased the
+number of events when MOVABLE allocations steal from UNMOVABLE or RECLAIMABLE
+pageblocks, but these are fixable by sync compaction and thus less harmful.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
-based on next-20141204 , but can rebase to required branch as needed.
+ mm/page_alloc.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
- drivers/hwmon/gpio-fan.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-index 7802eb2..36abf81 100644
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -550,6 +550,14 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 	return 0;
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 616a2c9..548b072 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1105,12 +1105,10 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
  
-+static void gpio_fan_shutdown(struct platform_device *pdev)
-+{
-+	struct gpio_fan_data *fan_data = dev_get_drvdata(&pdev->dev);
-+
-+	if (fan_data->ctrl)
-+		set_fan_speed(fan_data, 0);
-+}
-+
- #ifdef CONFIG_PM_SLEEP
- static int gpio_fan_suspend(struct device *dev)
- {
-@@ -581,6 +589,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
+ 		/* Claim the whole block if over half of it is free */
+ 		if (pages >= (1 << (pageblock_order-1)) ||
+-				page_group_by_mobility_disabled) {
+-
++				page_group_by_mobility_disabled)
+ 			set_pageblock_migratetype(page, start_type);
+-			return start_type;
+-		}
  
- static struct platform_driver gpio_fan_driver = {
- 	.probe		= gpio_fan_probe,
-+	.shutdown	= gpio_fan_shutdown,
- 	.driver	= {
- 		.name	= "gpio-fan",
- 		.pm	= GPIO_FAN_PM,
++		return start_type;
+ 	}
+ 
+ 	return fallback_type;
 -- 
-1.7.9.5
+2.1.2
 
