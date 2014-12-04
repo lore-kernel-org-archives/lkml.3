@@ -1,86 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863AbaLDKEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:04:24 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:51165 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaLDKEV (ORCPT
+	id S1753871AbaLDKEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:04:45 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:45609 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992AbaLDKEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:04:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <2647870.gu06V1GGvo@vostro.rjw.lan>
-References: <37310416.jZXoh5nfSC@vostro.rjw.lan>
-	<3484329.phAPviVnbd@vostro.rjw.lan>
-	<CAPDyKFoZmCYYNAGfNzwwEj=jk9wrfCKoxqQ4p=KStADSK1suCg@mail.gmail.com>
-	<2647870.gu06V1GGvo@vostro.rjw.lan>
-Date: Thu, 4 Dec 2014 11:04:20 +0100
-Message-ID: <CAPDyKFr_WEbeHLY9Q03PxpMnOwVAaj1PN28pvU6d-WoO+ocAgA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] PM: Drop the SET_PM_RUNTIME_PM_OPS() macro
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Dec 2014 05:04:42 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <4ca7a29afa3496dc85607ecbb95d2311>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
+        Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v17 04/12] drm: imx: imx-hdmi: split phy configuration to platform driver
+Date: Thu,  4 Dec 2014 18:04:14 +0800
+Message-Id: <1417687454-13108-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 December 2014 at 23:51, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, December 03, 2014 03:15:49 PM Ulf Hansson wrote:
->> On 27 November 2014 at 01:38, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > The SET_PM_RUNTIME_PM_OPS() and SET_RUNTIME_PM_OPS() macros are
->> > identical except that one of them is not empty for CONFIG_PM set,
->> > while the other one is not empty for CONFIG_PM_RUNTIME set,
->> > respectively.
->> >
->> > However, after commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
->> > PM_SLEEP is selected) PM_RUNTIME is always set if PM is set, so one
->> > of these macros is now redundant.
->> >
->> > For this reason, drop SET_PM_RUNTIME_PM_OPS() and replace it with
->> > SET_RUNTIME_PM_OPS() everywhere.
->>
->> Hi Rafael,
->>
->> Apparently, I have queued an mmc patch in my mmc tree, which means one
->> mmc driver starts using the SET_PM_RUNTIME_PM_OPS macro. It should
->> cause a build error in linux-next with @subject patch.
->>
->> I have shared that patch through an immutable branch, I have also
->> checked potential conflicts and it shouldn't be any problems to pull
->> that in to your tree. Then you can fix $subject patch by also
->> converting the mmc driver to use SET_RUNTIME_PM_OPS macro.
->>
->> The branch is available at:
->> git://git.linaro.org/people/ulf.hansson/mmc.git mmc_for_linux_pm
->
-> Thanks for letting me know!
->
-> What about adding the following line to the $subject patch instead:
->
-> #define SET_PM_RUNTIME_PM_OPS   SET_RUNTIME_PM_OPS
->
-> and fixing things up when all has been merged?
+hdmi phy configuration is platform specific, which can be adusted
+according to the board to get the best SI
 
-That's an option.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-On the other hand we will have a window of new users of
-SET_PM_RUNTIME_PM_OPS, during the next release cycle. Or are you
-saying that we should send fixes for the rc which takes care of the
-removal of it?
+---
 
-Kind regards
-Uffe
+Changes in v17: None
+Changes in v16: None
+Changes in v15: None
+Changes in v14: None
+Changes in v13:
+- split phy configuration from patch#4
 
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+
+ drivers/gpu/drm/imx/imx-hdmi.c       | 85 +++++++-----------------------------
+ drivers/gpu/drm/imx/imx-hdmi.h       | 29 ++++++++++++
+ drivers/gpu/drm/imx/imx-hdmi_pltfm.c | 57 ++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+), 70 deletions(-)
+
+diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
+index 3ea9726..72358144 100644
+--- a/drivers/gpu/drm/imx/imx-hdmi.c
++++ b/drivers/gpu/drm/imx/imx-hdmi.c
+@@ -713,76 +713,14 @@ static void imx_hdmi_phy_sel_interface_control(struct imx_hdmi *hdmi, u8 enable)
+ 			 HDMI_PHY_CONF0_SELDIPIF_MASK);
+ }
+ 
+-enum {
+-	RES_8,
+-	RES_10,
+-	RES_12,
+-	RES_MAX,
+-};
+-
+-struct mpll_config {
+-	unsigned long mpixelclock;
+-	struct {
+-		u16 cpce;
+-		u16 gmp;
+-	} res[RES_MAX];
+-};
+-
+-static const struct mpll_config mpll_config[] = {
+-	{
+-		45250000, {
+-			{ 0x01e0, 0x0000 },
+-			{ 0x21e1, 0x0000 },
+-			{ 0x41e2, 0x0000 }
+-		},
+-	}, {
+-		92500000, {
+-			{ 0x0140, 0x0005 },
+-			{ 0x2141, 0x0005 },
+-			{ 0x4142, 0x0005 },
+-		},
+-	}, {
+-		148500000, {
+-			{ 0x00a0, 0x000a },
+-			{ 0x20a1, 0x000a },
+-			{ 0x40a2, 0x000a },
+-		},
+-	}, {
+-		~0UL, {
+-			{ 0x00a0, 0x000a },
+-			{ 0x2001, 0x000f },
+-			{ 0x4002, 0x000f },
+-		},
+-	}
+-};
+-
+-struct curr_ctrl {
+-	unsigned long mpixelclock;
+-	u16 curr[RES_MAX];
+-};
+-
+-static const struct curr_ctrl curr_ctrl[] = {
+-	/*	pixelclk     bpp8    bpp10   bpp12 */
+-	{
+-		 54000000, { 0x091c, 0x091c, 0x06dc },
+-	}, {
+-		 58400000, { 0x091c, 0x06dc, 0x06dc },
+-	}, {
+-		 72000000, { 0x06dc, 0x06dc, 0x091c },
+-	}, {
+-		 74250000, { 0x06dc, 0x0b5c, 0x091c },
+-	}, {
+-		118800000, { 0x091c, 0x091c, 0x06dc },
+-	}, {
+-		216000000, { 0x06dc, 0x0b5c, 0x091c },
+-	}
+-};
+-
+ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
+ 			      unsigned char res, int cscon)
+ {
+ 	unsigned res_idx, i;
+ 	u8 val, msec;
++	const struct mpll_config *mpll_config = hdmi->plat_data->mpll_cfg;
++	const struct curr_ctrl   *curr_ctrl = hdmi->plat_data->cur_ctr;
++	const struct sym_term *sym_term =  hdmi->plat_data->sym_term;
+ 
+ 	if (prep)
+ 		return -EINVAL;
+@@ -828,7 +766,7 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
+ 	hdmi_phy_test_clear(hdmi, 0);
+ 
+ 	/* PLL/MPLL Cfg - always match on final entry */
+-	for (i = 0; i < ARRAY_SIZE(mpll_config) - 1; i++)
++	for (i = 0; mpll_config[i].mpixelclock != (~0UL); i++)
+ 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
+ 		    mpll_config[i].mpixelclock)
+ 			break;
+@@ -836,12 +774,12 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
+ 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].cpce, 0x06);
+ 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].gmp, 0x15);
+ 
+-	for (i = 0; i < ARRAY_SIZE(curr_ctrl); i++)
++	for (i = 0; curr_ctrl[i].mpixelclock != (~0UL); i++)
+ 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
+ 		    curr_ctrl[i].mpixelclock)
+ 			break;
+ 
+-	if (i >= ARRAY_SIZE(curr_ctrl)) {
++	if (curr_ctrl[i].mpixelclock == (~0UL)) {
+ 		dev_err(hdmi->dev, "Pixel clock %d - unsupported by HDMI\n",
+ 			hdmi->hdmi_data.video_mode.mpixelclock);
+ 		return -EINVAL;
+@@ -852,10 +790,17 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
+ 
+ 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
+ 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
++
++	for (i = 0; sym_term[i].mpixelclock != (~0UL); i++)
++		if (hdmi->hdmi_data.video_mode.mpixelclock <=
++		    sym_term[i].mpixelclock)
++			break;
++
+ 	/* RESISTANCE TERM 133Ohm Cfg */
+-	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
++	hdmi_phy_i2c_write(hdmi, sym_term[i].term, 0x19);  /* TXTERM */
+ 	/* PREEMP Cgf 0.00 */
+-	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
++	hdmi_phy_i2c_write(hdmi, sym_term[i].sym_ctr, 0x09);  /* CKSYMTXCTRL */
++
+ 	/* TX/CK LVL 10 */
+ 	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
+ 	/* REMOVE CLK TERM */
+diff --git a/drivers/gpu/drm/imx/imx-hdmi.h b/drivers/gpu/drm/imx/imx-hdmi.h
+index 86c6c5b..db407f0 100644
+--- a/drivers/gpu/drm/imx/imx-hdmi.h
++++ b/drivers/gpu/drm/imx/imx-hdmi.h
+@@ -1037,6 +1037,35 @@ enum imx_hdmi_devtype {
+ 
+ struct imx_hdmi_plat_data {
+ 	enum imx_hdmi_devtype dev_type;
++	const struct mpll_config *mpll_cfg;
++	const struct curr_ctrl *cur_ctr;
++	const struct sym_term *sym_term;
++};
++
++enum {
++	RES_8,
++	RES_10,
++	RES_12,
++	RES_MAX,
++};
++
++struct mpll_config {
++	unsigned long mpixelclock;
++	struct {
++		u16 cpce;
++		u16 gmp;
++	} res[RES_MAX];
++};
++
++struct curr_ctrl {
++	unsigned long mpixelclock;
++	u16 curr[RES_MAX];
++};
++
++struct sym_term {
++	unsigned long mpixelclock;
++	u16 sym_ctr;    /*clock symbol and transmitter control*/
++	u16 term;       /*transmission termination value*/
+ };
+ 
+ int imx_hdmi_bind(struct device *dev, struct device *master,
+diff --git a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
+index adea848..e1d5ee2 100644
+--- a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
++++ b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
+@@ -28,6 +28,57 @@ struct imx_hdmi_priv {
+ 	struct regmap *regmap;
+ };
+ 
++static const struct mpll_config imx_mpll_cfg[] = {
++	{
++		45250000, {
++			{ 0x01e0, 0x0000 },
++			{ 0x21e1, 0x0000 },
++			{ 0x41e2, 0x0000 }
++		},
++	}, {
++		92500000, {
++			{ 0x0140, 0x0005 },
++			{ 0x2141, 0x0005 },
++			{ 0x4142, 0x0005 },
++	},
++	}, {
++		148500000, {
++			{ 0x00a0, 0x000a },
++			{ 0x20a1, 0x000a },
++			{ 0x40a2, 0x000a },
++		},
++	}, {
++		~0UL, {
++			{ 0x00a0, 0x000a },
++			{ 0x2001, 0x000f },
++			{ 0x4002, 0x000f },
++		},
++	}
++};
++
++static const struct curr_ctrl imx_cur_ctr[] = {
++	/*      pixelclk     bpp8    bpp10   bpp12 */
++	{
++		54000000, { 0x091c, 0x091c, 0x06dc },
++	}, {
++		58400000, { 0x091c, 0x06dc, 0x06dc },
++	}, {
++		72000000, { 0x06dc, 0x06dc, 0x091c },
++	}, {
++		74250000, { 0x06dc, 0x0b5c, 0x091c },
++	}, {
++		118800000, { 0x091c, 0x091c, 0x06dc },
++	}, {
++		216000000, { 0x06dc, 0x0b5c, 0x091c },
++	}
++};
++
++static const struct sym_term imx_sym_term[] = {
++	/*pixelclk   symbol   term*/
++	{ 148500000, 0x800d, 0x0005 },
++	{ ~0UL,      0x0000, 0x0000 }
++};
++
+ static int imx_hdmi_parse_dt(struct imx_hdmi_priv *hdmi)
+ {
+ 	struct device_node *np = hdmi->dev->of_node;
+@@ -88,10 +139,16 @@ static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
+ };
+ 
+ static struct imx_hdmi_plat_data imx6q_hdmi_drv_data = {
++	.mpll_cfg = imx_mpll_cfg,
++	.cur_ctr  = imx_cur_ctr,
++	.sym_term = imx_sym_term,
+ 	.dev_type = IMX6Q_HDMI,
+ };
+ 
+ static struct imx_hdmi_plat_data imx6dl_hdmi_drv_data = {
++	.mpll_cfg = imx_mpll_cfg,
++	.cur_ctr  = imx_cur_ctr,
++	.sym_term = imx_sym_term,
+ 	.dev_type = IMX6DL_HDMI,
+ };
+ 
+-- 
+1.9.1
+
+
