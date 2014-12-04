@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaLDAaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:30:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaLDAai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:30:38 -0500
-Date: Wed, 3 Dec 2014 19:30:24 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] context_tracking: Restore previous state in schedule_user
-Message-ID: <20141204003024.GA17665@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>
-References: <20141203220836.GC31369@lerouge>
- <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
- <20141203235835.GE31369@lerouge>
- <CALCETrXbEheevmNKsuEd0NEpCrDz06W5z_OphMOUHqT7qNUTyA@mail.gmail.com>
+	id S1752133AbaLDAdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:33:22 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52287 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751106AbaLDAdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:33:20 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] MFD / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Thu, 04 Dec 2014 01:54:41 +0100
+Message-ID: <2857906.7ft1XTNUKe@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrXbEheevmNKsuEd0NEpCrDz06W5z_OphMOUHqT7qNUTyA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 04:04:31PM -0800, Andy Lutomirski wrote:
- > On Wed, Dec 3, 2014 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
- > > On Wed, Dec 03, 2014 at 03:18:41PM -0800, Andy Lutomirski wrote:
- > >> It appears that some SCHEDULE_USER (asm for schedule_user) callers
- > >> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
- > >> and schedule_user will return in RCU user context.  This causes RCU
- > >> warnings and possible failures.
- > >>
- > >> This is intended to be a minimal fix suitable for 3.18.
- > >>
- > >> Reported-by: Dave Jones <davej@redhat.com>
- > >> Cc: Oleg Nesterov <oleg@redhat.com>
- > >> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
- > >> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
- > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
- > >
- > > Ah, we sent it about at the same time :-)
- > >
- > > Might be too late for 3.18 though because it's not a regression.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Wait, so how come that trace didn't start showing up until recently ?
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-	Dave
+Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+drivers/mfd/.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
+
+Please let me know if it is OK to take this one into linux-pm.
+
+---
+ drivers/mfd/ab8500-gpadc.c |    2 +-
+ drivers/mfd/arizona-core.c |    4 ++--
+ drivers/mfd/wm8994-core.c  |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+Index: linux-pm/drivers/mfd/ab8500-gpadc.c
+===================================================================
+--- linux-pm.orig/drivers/mfd/ab8500-gpadc.c
++++ linux-pm/drivers/mfd/ab8500-gpadc.c
+@@ -867,7 +867,7 @@ static void ab8500_gpadc_read_calibratio
+ 		gpadc->cal_data[ADC_INPUT_VBAT].offset);
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int ab8500_gpadc_runtime_suspend(struct device *dev)
+ {
+ 	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
+Index: linux-pm/drivers/mfd/wm8994-core.c
+===================================================================
+--- linux-pm.orig/drivers/mfd/wm8994-core.c
++++ linux-pm/drivers/mfd/wm8994-core.c
+@@ -116,7 +116,7 @@ static const char *wm8958_main_supplies[
+ 	"SPKVDD2",
+ };
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int wm8994_suspend(struct device *dev)
+ {
+ 	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+Index: linux-pm/drivers/mfd/arizona-core.c
+===================================================================
+--- linux-pm.orig/drivers/mfd/arizona-core.c
++++ linux-pm/drivers/mfd/arizona-core.c
+@@ -330,7 +330,7 @@ err_fll:
+ 		return err;
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int arizona_runtime_resume(struct device *dev)
+ {
+ 	struct arizona *arizona = dev_get_drvdata(dev);
+@@ -1024,7 +1024,7 @@ int arizona_dev_init(struct arizona *ari
+ 		goto err_irq;
+ 	}
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 	regulator_disable(arizona->dcvdd);
+ #endif
+ 
 
