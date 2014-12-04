@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaLDAN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:13:58 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47639 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759AbaLDANz (ORCPT
+	id S1752856AbaLDAOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:14:05 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47037 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaLDAN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:13:55 -0500
+	Wed, 3 Dec 2014 19:13:58 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
@@ -16,9 +16,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 1/4] perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
-Date: Thu,  4 Dec 2014 01:13:42 +0100
-Message-Id: <1417652025-2305-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/4] perf tools: allow user to specify hardware breakpoint bp_len
+Date: Thu,  4 Dec 2014 01:13:43 +0100
+Message-Id: <1417652025-2305-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
 References: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
@@ -28,12 +28,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jacob Shin <jacob.w.shin@gmail.com>
 
-Implement hardware breakpoint address mask for AMD Family 16h and
-above processors. CPUID feature bit indicates hardware support for
-DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
-breakpoint addresses to allow matching of larger addresses ranges.
+Currently bp_len is given a default value of 4. Allow user to override it:
 
-Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
+  $ perf stat -e mem:0x1000/8
+                            ^
+                            bp_len
+
+If no value is given, it will default to 4 as it did before.
 
 Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
 Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
@@ -46,176 +47,157 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: xiakaixu <xiakaixu@huawei.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/include/asm/cpufeature.h     |  2 ++
- arch/x86/include/asm/debugreg.h       |  5 +++++
- arch/x86/include/asm/hw_breakpoint.h  |  1 +
- arch/x86/include/uapi/asm/msr-index.h |  4 ++++
- arch/x86/kernel/cpu/amd.c             | 19 +++++++++++++++++++
- arch/x86/kernel/hw_breakpoint.c       | 20 ++++++++++++++++----
- 6 files changed, 47 insertions(+), 4 deletions(-)
+ tools/perf/Documentation/perf-record.txt |  7 +++++--
+ tools/perf/util/parse-events.c           | 21 +++++++++++----------
+ tools/perf/util/parse-events.h           |  2 +-
+ tools/perf/util/parse-events.l           |  1 +
+ tools/perf/util/parse-events.y           | 26 ++++++++++++++++++++++++--
+ 5 files changed, 42 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 0bb1335..53966d6 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -174,6 +174,7 @@
- #define X86_FEATURE_TOPOEXT	( 6*32+22) /* topology extensions CPUID leafs */
- #define X86_FEATURE_PERFCTR_CORE ( 6*32+23) /* core performance counter extensions */
- #define X86_FEATURE_PERFCTR_NB  ( 6*32+24) /* NB performance counter extensions */
-+#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
- #define X86_FEATURE_PERFCTR_L2	( 6*32+28) /* L2 performance counter extensions */
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index af9a54e..81a20f2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -33,12 +33,15 @@ OPTIONS
+         - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+ 	  hexadecimal event descriptor.
  
- /*
-@@ -383,6 +384,7 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
- #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
-+#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
+-        - a hardware breakpoint event in the form of '\mem:addr[:access]'
++        - a hardware breakpoint event in the form of '\mem:addr[/len][:access]'
+           where addr is the address in memory you want to break in.
+           Access is the memory access type (read, write, execute) it can
+-          be passed as follows: '\mem:addr[:[r][w][x]]'.
++          be passed as follows: '\mem:addr[:[r][w][x]]'. len is the range,
++          number of bytes from specified addr, which the breakpoint will cover.
+           If you want to profile read-write accesses in 0x1000, just set
+           'mem:0x1000:rw'.
++          If you want to profile write accesses in [0x1000~1008), just set
++          'mem:0x1000/8:w'.
  
- #if __GNUC__ >= 4
- extern void warn_pre_alternatives(void);
-diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
-index 61fd18b..12cb66f 100644
---- a/arch/x86/include/asm/debugreg.h
-+++ b/arch/x86/include/asm/debugreg.h
-@@ -114,5 +114,10 @@ static inline void debug_stack_usage_inc(void) { }
- static inline void debug_stack_usage_dec(void) { }
- #endif /* X86_64 */
- 
-+#ifdef CONFIG_CPU_SUP_AMD
-+extern void set_dr_addr_mask(unsigned long mask, int dr);
-+#else
-+static inline void set_dr_addr_mask(unsigned long mask, int dr) { }
-+#endif
- 
- #endif /* _ASM_X86_DEBUGREG_H */
-diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-index ef1c4d2..6c98be8 100644
---- a/arch/x86/include/asm/hw_breakpoint.h
-+++ b/arch/x86/include/asm/hw_breakpoint.h
-@@ -12,6 +12,7 @@
-  */
- struct arch_hw_breakpoint {
- 	unsigned long	address;
-+	unsigned long	mask;
- 	u8		len;
- 	u8		type;
- };
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 8f02f69..b1fb4fa 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -212,6 +212,10 @@
- /* Fam 16h MSRs */
- #define MSR_F16H_L2I_PERF_CTL		0xc0010230
- #define MSR_F16H_L2I_PERF_CTR		0xc0010231
-+#define MSR_F16H_DR1_ADDR_MASK		0xc0011019
-+#define MSR_F16H_DR2_ADDR_MASK		0xc001101a
-+#define MSR_F16H_DR3_ADDR_MASK		0xc001101b
-+#define MSR_F16H_DR0_ADDR_MASK		0xc0011027
- 
- /* Fam 15h MSRs */
- #define MSR_F15H_PERF_CTL		0xc0010200
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 813d29d..abe4ec7 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -870,3 +870,22 @@ static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
- 
- 	return false;
+ --filter=<filter>::
+         Event filter.
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index c659a3c..efa1ff4 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -526,7 +526,7 @@ do {					\
  }
-+
-+void set_dr_addr_mask(unsigned long mask, int dr)
-+{
-+	if (!cpu_has_bpext)
-+		return;
-+
-+	switch (dr) {
-+	case 0:
-+		wrmsr(MSR_F16H_DR0_ADDR_MASK, mask, 0);
-+		break;
-+	case 1:
-+	case 2:
-+	case 3:
-+		wrmsr(MSR_F16H_DR1_ADDR_MASK - 1 + dr, mask, 0);
-+		break;
-+	default:
-+		break;
+ 
+ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+-				void *ptr, char *type)
++				void *ptr, char *type, u64 len)
+ {
+ 	struct perf_event_attr attr;
+ 
+@@ -536,14 +536,15 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ 	if (parse_breakpoint_type(type, &attr))
+ 		return -EINVAL;
+ 
+-	/*
+-	 * We should find a nice way to override the access length
+-	 * Provide some defaults for now
+-	 */
+-	if (attr.bp_type == HW_BREAKPOINT_X)
+-		attr.bp_len = sizeof(long);
+-	else
+-		attr.bp_len = HW_BREAKPOINT_LEN_4;
++	/* Provide some defaults if len is not specified */
++	if (!len) {
++		if (attr.bp_type == HW_BREAKPOINT_X)
++			len = sizeof(long);
++		else
++			len = HW_BREAKPOINT_LEN_4;
 +	}
-+}
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index 3d5fb50..b5cb0c5 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -126,6 +126,8 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
- 	*dr7 |= encode_dr7(i, info->len, info->type);
- 
- 	set_debugreg(*dr7, 7);
-+	if (info->mask)
-+		set_dr_addr_mask(info->mask, i);
- 
- 	return 0;
- }
-@@ -161,6 +163,8 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
- 	*dr7 &= ~__encode_dr7(i, info->len, info->type);
- 
- 	set_debugreg(*dr7, 7);
-+	if (info->mask)
-+		set_dr_addr_mask(0, i);
- }
- 
- static int get_hbp_len(u8 hbp_len)
-@@ -277,6 +281,8 @@ static int arch_build_bp_info(struct perf_event *bp)
- 	}
- 
- 	/* Len */
-+	info->mask = 0;
 +
- 	switch (bp->attr.bp_len) {
- 	case HW_BREAKPOINT_LEN_1:
- 		info->len = X86_BREAKPOINT_LEN_1;
-@@ -293,11 +299,17 @@ static int arch_build_bp_info(struct perf_event *bp)
- 		break;
- #endif
- 	default:
--		return -EINVAL;
-+		if (!is_power_of_2(bp->attr.bp_len))
-+			return -EINVAL;
-+		if (!cpu_has_bpext)
-+			return -EOPNOTSUPP;
-+		info->mask = bp->attr.bp_len - 1;
-+		info->len = X86_BREAKPOINT_LEN_1;
++	attr.bp_len = len;
+ 
+ 	attr.type = PERF_TYPE_BREAKPOINT;
+ 	attr.sample_period = 1;
+@@ -1364,7 +1365,7 @@ void print_events(const char *event_glob, bool name_only)
+ 		printf("\n");
+ 
+ 		printf("  %-50s [%s]\n",
+-		       "mem:<addr>[:access]",
++		       "mem:<addr>[/len][:access]",
+ 			event_type_descriptors[PERF_TYPE_BREAKPOINT]);
+ 		printf("\n");
  	}
- 
- 	return 0;
- }
-+
- /*
-  * Validate the arch-specific HW Breakpoint register settings
-  */
-@@ -312,11 +324,11 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 	if (ret)
- 		return ret;
- 
--	ret = -EINVAL;
--
- 	switch (info->len) {
- 	case X86_BREAKPOINT_LEN_1:
- 		align = 0;
-+		if (info->mask)
-+			align = info->mask;
- 		break;
- 	case X86_BREAKPOINT_LEN_2:
- 		align = 1;
-@@ -330,7 +342,7 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 		break;
- #endif
- 	default:
--		return ret;
-+		WARN_ON_ONCE(1);
- 	}
- 
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index db2cf78..a19fbeb 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -104,7 +104,7 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
+ int parse_events_add_cache(struct list_head *list, int *idx,
+ 			   char *type, char *op_result1, char *op_result2);
+ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+-				void *ptr, char *type);
++				void *ptr, char *type, u64 len);
+ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
+ enum perf_pmu_event_symbol_type
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 906630b..94eacb6 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -159,6 +159,7 @@ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE
+ <mem>{
+ {modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
+ :			{ return ':'; }
++"/"			{ return '/'; }
+ {num_dec}		{ return value(yyscanner, 10); }
+ {num_hex}		{ return value(yyscanner, 16); }
  	/*
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 93c4c9f..72def07 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -326,6 +326,28 @@ PE_NAME_CACHE_TYPE
+ }
+ 
+ event_legacy_mem:
++PE_PREFIX_MEM PE_VALUE '/' PE_VALUE ':' PE_MODIFIER_BP sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *list;
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
++					     (void *) $2, $6, $4));
++	$$ = list;
++}
++|
++PE_PREFIX_MEM PE_VALUE '/' PE_VALUE sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *list;
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
++					     (void *) $2, NULL, $4));
++	$$ = list;
++}
++|
+ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ {
+ 	struct parse_events_evlist *data = _data;
+@@ -333,7 +355,7 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ 
+ 	ALLOC_LIST(list);
+ 	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+-					     (void *) $2, $4));
++					     (void *) $2, $4, 0));
+ 	$$ = list;
+ }
+ |
+@@ -344,7 +366,7 @@ PE_PREFIX_MEM PE_VALUE sep_dc
+ 
+ 	ALLOC_LIST(list);
+ 	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+-					     (void *) $2, NULL));
++					     (void *) $2, NULL, 0));
+ 	$$ = list;
+ }
+ 
 -- 
 2.1.3
 
