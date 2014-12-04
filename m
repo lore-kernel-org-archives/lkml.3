@@ -1,252 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869AbaLDSpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:45:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40216 "EHLO mx1.redhat.com"
+	id S932983AbaLDSpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:45:54 -0500
+Received: from mga03.intel.com ([134.134.136.65]:44787 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932637AbaLDSpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:45:22 -0500
-Date: Thu, 4 Dec 2014 20:44:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: [PATCH RFC v2 3/4] virtio: allow finalize_features to fail
-Message-ID: <1417718645-25678-3-git-send-email-mst@redhat.com>
-References: <1417718645-25678-1-git-send-email-mst@redhat.com>
+	id S932138AbaLDSpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:45:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="493729213"
+Date: Thu, 4 Dec 2014 10:42:10 -0800
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
+        maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
+        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        chiau.ee.chew@intel.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
+Message-ID: <20141204184210.GA1530@pathfinder>
+References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
+ <5480144F.2040506@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417718645-25678-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <5480144F.2040506@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will make it easy for transports to validate features and return
-failure.
+On Thu, Dec 04, 2014 at 09:59:11AM +0200, Jarkko Nikula wrote:
+> Hi
+> 
+> On 12/02/2014 02:09 AM, David E. Box wrote:
+> >Adds support for acquiring and releasing a hardware bus lock in the i2c
+> >designware core transfer function. This is needed for i2c bus controllers
+> >that are shared with but not controlled by the kernel.
+> >
+> >Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+> >---
+> >  drivers/i2c/busses/i2c-designware-core.c    | 11 +++++++++++
+> >  drivers/i2c/busses/i2c-designware-core.h    |  6 ++++++
+> >  drivers/i2c/busses/i2c-designware-platdrv.c | 18 +++++++++++++-----
+> >  3 files changed, 30 insertions(+), 5 deletions(-)
+> >
+> ...
+> >diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> >index a743115..afdff3b 100644
+> >--- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> >+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> >@@ -261,10 +261,16 @@ static int dw_i2c_probe(struct platform_device *pdev)
+> >  		return r;
+> >  	}
+> >-	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
+> >-	pm_runtime_use_autosuspend(&pdev->dev);
+> >-	pm_runtime_set_active(&pdev->dev);
+> >-	pm_runtime_enable(&pdev->dev);
+> >+	i2c_dw_eval_lock_support(dev);
+> i2c_dw_eval_lock_support() is added in the next patch.
+> >+
+> >+	if (dev->pm_runtime_disabled) {
+> >+		pm_runtime_forbid(&pdev->dev);
+> >+	} else {
+> >+		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
+> >+		pm_runtime_use_autosuspend(&pdev);
+> >+		pm_runtime_set_active(&pdev->dev);
+> >+		pm_runtime_enable(&pdev->dev);
+> >+	}
+> >  	return 0;
+> >  }
+> >@@ -314,7 +320,9 @@ static int dw_i2c_resume(struct device *dev)
+> >  	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
+> >  	clk_prepare_enable(i_dev->clk);
+> >-	i2c_dw_init(i_dev);
+> >+
+> >+	if (!i_dev->pm_runtime_disabled)
+> >+		i2c_dw_init(i_dev);
+> Should there be similar conditional call or locking around
+> i2c_dw_init() and i2c_dw_disable_int() also in dw_i2c_probe()?
+> 
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/virtio_config.h          | 3 ++-
- drivers/lguest/lguest_device.c         | 4 +++-
- drivers/misc/mic/card/mic_virtio.c     | 4 +++-
- drivers/remoteproc/remoteproc_virtio.c | 4 +++-
- drivers/s390/kvm/kvm_virtio.c          | 4 +++-
- drivers/s390/kvm/virtio_ccw.c          | 6 ++++--
- drivers/virtio/virtio.c                | 4 +++-
- drivers/virtio/virtio_mmio.c           | 4 +++-
- drivers/virtio/virtio_pci.c            | 4 +++-
- 9 files changed, 27 insertions(+), 10 deletions(-)
+Timely reply. Around i2c_dw_init(), yes. I just discovered this as the source
+of a recent hang that's occuring in the loop in __i2c_dw_enable().
+The hange occurs very infrequently and only, so far, when not built in. A
+block around i2c_dw_disable_int() would make sense as well as a precaution.
 
-diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index 1fa5faa..7979f85 100644
---- a/include/linux/virtio_config.h
-+++ b/include/linux/virtio_config.h
-@@ -47,6 +47,7 @@
-  *	vdev: the virtio_device
-  *	This gives the final feature bits for the device: it can change
-  *	the dev->feature bits if it wants.
-+ *	Returns 0 on success or error status
-  * @bus_name: return the bus name associated with the device
-  *	vdev: the virtio_device
-  *      This returns a pointer to the bus name a la pci_name from which
-@@ -68,7 +69,7 @@ struct virtio_config_ops {
- 			const char *names[]);
- 	void (*del_vqs)(struct virtio_device *);
- 	u64 (*get_features)(struct virtio_device *vdev);
--	void (*finalize_features)(struct virtio_device *vdev);
-+	int (*finalize_features)(struct virtio_device *vdev);
- 	const char *(*bus_name)(struct virtio_device *vdev);
- 	int (*set_vq_affinity)(struct virtqueue *vq, int cpu);
- };
-diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
-index 9b77b66..89088d6 100644
---- a/drivers/lguest/lguest_device.c
-+++ b/drivers/lguest/lguest_device.c
-@@ -126,7 +126,7 @@ static void status_notify(struct virtio_device *vdev)
-  * sorted out, this routine is called so we can tell the Host which features we
-  * understand and accept.
-  */
--static void lg_finalize_features(struct virtio_device *vdev)
-+static int lg_finalize_features(struct virtio_device *vdev)
- {
- 	unsigned int i, bits;
- 	struct lguest_device_desc *desc = to_lgdev(vdev)->desc;
-@@ -153,6 +153,8 @@ static void lg_finalize_features(struct virtio_device *vdev)
- 
- 	/* Tell Host we've finished with this device's feature negotiation */
- 	status_notify(vdev);
-+
-+	return 0;
- }
- 
- /* Once they've found a field, getting a copy of it is easy. */
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index d027d29..e486a0c 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -84,7 +84,7 @@ static u64 mic_get_features(struct virtio_device *vdev)
- 	return features;
- }
- 
--static void mic_finalize_features(struct virtio_device *vdev)
-+static int mic_finalize_features(struct virtio_device *vdev)
- {
- 	unsigned int i, bits;
- 	struct mic_device_desc __iomem *desc = to_micvdev(vdev)->desc;
-@@ -107,6 +107,8 @@ static void mic_finalize_features(struct virtio_device *vdev)
- 			iowrite8(ioread8(&out_features[i / 8]) | (1 << (i % 8)),
- 				 &out_features[i / 8]);
- 	}
-+
-+	return 0;
- }
- 
- /*
-diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index 627737e..e1a1023 100644
---- a/drivers/remoteproc/remoteproc_virtio.c
-+++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -217,7 +217,7 @@ static u64 rproc_virtio_get_features(struct virtio_device *vdev)
- 	return rsc->dfeatures;
- }
- 
--static void rproc_virtio_finalize_features(struct virtio_device *vdev)
-+static int rproc_virtio_finalize_features(struct virtio_device *vdev)
- {
- 	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
- 	struct fw_rsc_vdev *rsc;
-@@ -235,6 +235,8 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
- 	 * to the remote processor once it is powered on.
- 	 */
- 	rsc->gfeatures = vdev->features;
-+
-+	return 0;
- }
- 
- static void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
-diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index f5575cc..dd65c8b 100644
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -93,7 +93,7 @@ static u64 kvm_get_features(struct virtio_device *vdev)
- 	return features;
- }
- 
--static void kvm_finalize_features(struct virtio_device *vdev)
-+static int kvm_finalize_features(struct virtio_device *vdev)
- {
- 	unsigned int i, bits;
- 	struct kvm_device_desc *desc = to_kvmdev(vdev)->desc;
-@@ -112,6 +112,8 @@ static void kvm_finalize_features(struct virtio_device *vdev)
- 		if (__virtio_test_bit(vdev, i))
- 			out_features[i / 8] |= (1 << (i % 8));
- 	}
-+
-+	return 0;
- }
- 
- /*
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index c792b5f..789275f 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -752,7 +752,7 @@ out_free:
- 	return rc;
- }
- 
--static void virtio_ccw_finalize_features(struct virtio_device *vdev)
-+static int virtio_ccw_finalize_features(struct virtio_device *vdev)
- {
- 	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
- 	struct virtio_feature_desc *features;
-@@ -760,7 +760,7 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- 
- 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
- 	if (!ccw)
--		return;
-+		return 0;
- 
- 	features = kzalloc(sizeof(*features), GFP_DMA | GFP_KERNEL);
- 	if (!features)
-@@ -793,6 +793,8 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- out_free:
- 	kfree(features);
- 	kfree(ccw);
-+
-+	return 0;
- }
- 
- static void virtio_ccw_get_config(struct virtio_device *vdev,
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index 6b4c1113..7ddebbc 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -211,7 +211,9 @@ static int virtio_dev_probe(struct device *_d)
- 		if (device_features & (1ULL << i))
- 			__virtio_set_bit(dev, i);
- 
--	dev->config->finalize_features(dev);
-+	err = dev->config->finalize_features(dev);
-+	if (err)
-+		goto err;
- 
- 	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
- 		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index aec1dae..5219210 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -152,7 +152,7 @@ static u64 vm_get_features(struct virtio_device *vdev)
- 	return readl(vm_dev->base + VIRTIO_MMIO_HOST_FEATURES);
- }
- 
--static void vm_finalize_features(struct virtio_device *vdev)
-+static int vm_finalize_features(struct virtio_device *vdev)
- {
- 	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
- 
-@@ -164,6 +164,8 @@ static void vm_finalize_features(struct virtio_device *vdev)
- 
- 	writel(0, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SEL);
- 	writel(vdev->features, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
-+
-+	return 0;
- }
- 
- static void vm_get(struct virtio_device *vdev, unsigned offset,
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 98f9c6e..c7649f3 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -111,7 +111,7 @@ static u64 vp_get_features(struct virtio_device *vdev)
- }
- 
- /* virtio config->finalize_features() implementation */
--static void vp_finalize_features(struct virtio_device *vdev)
-+static int vp_finalize_features(struct virtio_device *vdev)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
- 
-@@ -124,6 +124,8 @@ static void vp_finalize_features(struct virtio_device *vdev)
- 	/* We only support 32 feature bits. */
- 	iowrite32(vdev->features, vp_dev->ioaddr +
- 		  VIRTIO_PCI_LEGACY_GUEST_FEATURES);
-+
-+	return 0;
- }
- 
- /* virtio config->get() implementation */
--- 
-MST
-
+Dave
