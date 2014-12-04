@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960AbaLDTCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:02:43 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35806 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaLDTCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:02:42 -0500
-Date: Thu, 4 Dec 2014 11:02:38 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v3 0/3] hwmon: tmp401: support for TMP435 and fix for a
- probe issue
-Message-ID: <20141204190238.GA16710@roeck-us.net>
-References: <1417711553-21311-1-git-send-email-bgolaszewski@baylibre.com>
+	id S1754502AbaLDTEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:04:04 -0500
+Received: from sauhun.de ([89.238.76.85]:34600 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaLDTEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 14:04:01 -0500
+Date: Thu, 4 Dec 2014 20:03:43 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
+        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        =?utf-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Subject: Re: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns
+ doesn't meet I2C spec
+Message-ID: <20141204190342.GM7944@katana>
+References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+ <1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
+ <20141203111518.GB1039@katana>
+ <CAD=FV=X5inPWZakhgDX0dX=1CWXygEi3_AH9FVFWXYT3LZA5bg@mail.gmail.com>
+ <20141204184046.GL7944@katana>
+ <CAD=FV=Vp3hwxbDzb+FUhNXy8qW8fTCkgd67jRDV3foT0o9HQuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AQYPrgrEUc/1pSX1"
 Content-Disposition: inline
-In-Reply-To: <1417711553-21311-1-git-send-email-bgolaszewski@baylibre.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5480AFD1.037C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CAD=FV=Vp3hwxbDzb+FUhNXy8qW8fTCkgd67jRDV3foT0o9HQuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 05:45:50PM +0100, Bartosz Golaszewski wrote:
-> This series adds support for the TI TMP435 chip and fixes an issue similar
-> to the one we observed for ina2xx - ignoring the write errors when probing the
-> device.
-> 
-Series applied, with the tmp435 related patches merged into one.
 
-Thanks,
-Guenter
+--AQYPrgrEUc/1pSX1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> v3:
-> - remove the copyright notice from tmp401.c
-> - preinitialize status and skip an 'if'
-> 
-> v2:
-> - changed 'static const char *names' to 'static const char * const names'
->   as checkpatch.pl still complained about this one,
-> - updated Documentation and Kconfig on TMP435,
-> - added missing error check in tmp401_init_client(),
-> - removed the redundant "Initialization failed" string since we'll get
->   'tmp401: probe of X-00XX failed with error -121' anyway in dmesg,
-> 
-> v1:
-> https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg781930.html
-> 
-> Bartosz Golaszewski (2):
->   hwmon: tmp401: add TMP435 to the list of supported chips in docs and Kconfig
->   hwmon: tmp401: bail-out from tmp401_probe() in case of write errors
-> 
-> Patrick Titiano (1):
->   hwmon: tmp401: add support for TI TMP435
-> 
->  Documentation/hwmon/tmp401 |  7 +++++--
->  drivers/hwmon/Kconfig      |  2 +-
->  drivers/hwmon/tmp401.c     | 45 ++++++++++++++++++++++++++++++++-------------
->  3 files changed, 38 insertions(+), 16 deletions(-)
-> 
-> -- 
-> 2.1.3
-> 
+
+> > New binding should have the "-ns" suffix, right? So, I'd vote to add the
+> > suffix to the new bindings and deprecate the ones used in the designware
+> > driver: "i2c-scl-rising-time-ns" and "i2c-scl-falling-time-ns"
+> >
+> > It might be a little more work now, but it will help us in the future,
+> > because it is the correct way to do it.
+>=20
+> OK, that sounds fair.  You're OK with my proposal otherwise?
+
+Yes.
+
+> Are you looking for Addy or me to submit a patch supporting the "-ns"
+> suffix on the Designware i2c driver, or should we just use the "-ns"
+> suffix in the Rockchip driver and assume someone will later add
+> support for the new binding in the Designware i2c driver?
+
+I'd be really happy if you can do it. I'd love to have consistency right
+away.
+
+
+--AQYPrgrEUc/1pSX1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgLAOAAoJEBQN5MwUoCm2MZoP/2+ZtwoRTOxH7xJMmnmngJTI
+y4CXTCTr8ES9GRvGizq0oeMS6/B0JCVKHgwAuD99WXXFM9oRuVwP1XpiuJ2D9AZv
+6h0kA4My4RqS0G+HDWvvVTsgNIisBg0X3yY20Me3iE4dG1DRTKPSf4L8UDRaBIkG
+86xF1lmJqDHCrdGEoGeL0GPkdQwx5JZuryUf1xJdG6A64lYWljf6jCPbT7Z5JzoL
+6kBTSCDmS2hnrEs+iCXjelzsv/DRZNZaQnCxUbhS+nPMkJJ+zU6tm98OQsTaURB2
+vg4NVXpiOlSp9bEeTYe5HlYZQzHucdMlsv/s09BBdh8nrVnrcUQx4oC526+8165Z
+P4dNfiAbZjR+bVcouSOMcqkh6QJFqtaBdN1v//7rI83iQiNw3onpxFDsLhZsjESA
+h4YRBLcyXHv6qQJos+BMgE7FvTkCuV2C34bEnzVHnVvanquNvCx4cPe1oAKwJpKG
+OLvMQH6wdpp9wXNXiVMvWLoQBgLbkFgw1McVg+KV01ah1E6Er3YxFL0u/blJYJyC
+/6urwqUrA1VJCf9XyvPWlKpJjSv8EpWK4VyY9fbHUt88hkLEWQQPem7Yv0QNhZ41
+bVYbliN5VcopeBucrNhsPlEjxOO68EeWA1JqhyLmyAdbI6eqysA+6ml807QOEe2G
+joRwygOCCnlnq3Fw9j5h
+=nKGV
+-----END PGP SIGNATURE-----
+
+--AQYPrgrEUc/1pSX1--
