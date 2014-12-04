@@ -1,98 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633AbaLDOT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:19:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37031 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418AbaLDOT2 (ORCPT
+	id S932183AbaLDOUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:20:49 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58085 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253AbaLDOUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:19:28 -0500
-Message-ID: <54806D5E.9030501@ti.com>
-Date: Thu, 4 Dec 2014 16:19:10 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 4 Dec 2014 09:20:48 -0500
+Message-ID: <54806D6C.7060009@roeck-us.net>
+Date: Thu, 04 Dec 2014 06:19:24 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] video: fbdev-LCDC: Deletion of an unnecessary check
- before the function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <5470B315.8000507@users.sourceforge.net>
-In-Reply-To: <5470B315.8000507@users.sourceforge.net>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug"
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 1/2] hwmon: tmp401: add support for TI TMP435
+References: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com> <1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
+In-Reply-To: <1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54806DB5.00BC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On 22/11/14 18:00, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sat, 22 Nov 2014 16:51:31 +0100
->=20
-> The vfree() function performs also input parameter validation.
-> Thus the test around the call is not needed.
->=20
-> This issue was detected by using the Coccinelle software.
->=20
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+On 12/04/2014 01:57 AM, Bartosz Golaszewski wrote:
+> From: Patrick Titiano <ptitiano@baylibre.com>
+>
+> Signed-off-by: Patrick Titiano <ptitiano@baylibre.com>
+> Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 > ---
->  drivers/video/fbdev/sh_mobile_lcdcfb.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->=20
-> diff --git a/drivers/video/fbdev/sh_mobile_lcdcfb.c b/drivers/video/fbd=
-ev/sh_mobile_lcdcfb.c
-> index 2bcc84a..cfde21d 100644
-> --- a/drivers/video/fbdev/sh_mobile_lcdcfb.c
-> +++ b/drivers/video/fbdev/sh_mobile_lcdcfb.c
-> @@ -2181,8 +2181,7 @@ sh_mobile_lcdc_channel_fb_cleanup(struct sh_mobil=
-e_lcdc_chan *ch)
->  	if (!info || !info->device)
->  		return;
-> =20
-> -	if (ch->sglist)
-> -		vfree(ch->sglist);
-> +	vfree(ch->sglist);
-> =20
->  	fb_dealloc_cmap(&info->cmap);
->  	framebuffer_release(info);
+>   drivers/hwmon/tmp401.c | 16 ++++++++++++++--
 
-Thanks, I've applied the fbdev patches. Next time, please use
-git-format-patch and git-send-email to send a proper patch series.
+Please also update Kconfig and Documentation/hwmon/tmp401.
 
- Tomi
+>   1 file changed, 14 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/hwmon/tmp401.c b/drivers/hwmon/tmp401.c
+> index 7fa6e7d..5a72d7f 100644
+> --- a/drivers/hwmon/tmp401.c
+> +++ b/drivers/hwmon/tmp401.c
+> @@ -8,6 +8,9 @@
+>    * Cleanup and support for TMP431 and TMP432 by Guenter Roeck
+>    * Copyright (c) 2013 Guenter Roeck <linux@roeck-us.net>
+>    *
+> + * Support for TMP435 by Patrick Titiano
+> + * Copyright (c) 2014 Patrick Titiano <ptitiano@baylibre.com>
+> + *
+>    * This program is free software; you can redistribute it and/or modify
+>    * it under the terms of the GNU General Public License as published by
+>    * the Free Software Foundation; either version 2 of the License, or
+> @@ -46,7 +49,7 @@
+>   /* Addresses to scan */
+>   static const unsigned short normal_i2c[] = { 0x4c, 0x4d, 0x4e, I2C_CLIENT_END };
+>
+> -enum chips { tmp401, tmp411, tmp431, tmp432 };
+> +enum chips { tmp401, tmp411, tmp431, tmp432, tmp435 };
+>
+>   /*
+>    * The TMP401 registers, note some registers have different addresses for
+> @@ -136,6 +139,7 @@ static const u8 TMP432_STATUS_REG[] = {
+>   #define TMP411C_DEVICE_ID			0x10
+>   #define TMP431_DEVICE_ID			0x31
+>   #define TMP432_DEVICE_ID			0x32
+> +#define TMP435_DEVICE_ID			0x35
 
+The datasheet claims otherwise (0x31, specifically).
+Is this based on real chip information ?
+Can you send me the output from i2cdump for the chip ?
 
+Thanks,
+Guenter
 
---mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>
+>   /*
+>    * Driver data (common to all clients)
+> @@ -146,6 +150,7 @@ static const struct i2c_device_id tmp401_id[] = {
+>   	{ "tmp411", tmp411 },
+>   	{ "tmp431", tmp431 },
+>   	{ "tmp432", tmp432 },
+> +	{ "tmp435", tmp435 },
+>   	{ }
+>   };
+>   MODULE_DEVICE_TABLE(i2c, tmp401_id);
+> @@ -684,6 +689,11 @@ static int tmp401_detect(struct i2c_client *client,
+>   			return -ENODEV;
+>   		kind = tmp432;
+>   		break;
+> +	case TMP435_DEVICE_ID:
+> +		if (client->addr != 0x4c)
+> +			return -ENODEV;
+> +		kind = tmp435;
+> +		break;
+>   	default:
+>   		return -ENODEV;
+>   	}
+> @@ -705,7 +715,9 @@ static int tmp401_detect(struct i2c_client *client,
+>   static int tmp401_probe(struct i2c_client *client,
+>   			const struct i2c_device_id *id)
+>   {
+> -	const char *names[] = { "TMP401", "TMP411", "TMP431", "TMP432" };
+> +	static const char *names[] = {
+> +		"TMP401", "TMP411", "TMP431", "TMP432", "TMP435"
+> +	};
+>   	struct device *dev = &client->dev;
+>   	struct device *hwmon_dev;
+>   	struct tmp401_data *data;
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgG1eAAoJEPo9qoy8lh71ixYP/jguEFFPRW4p6hiaH7YF0e5s
-LZlX0rudf7ViZelSYCPVBI3p+8B+5YtRWqa+bSpYfdg1pSWZACVX8wCZuASKLm0L
-o49jXIx/h71CaMVW0UUdqahfLjRdu36c30cgW99NsBrG1R6ih1VuYtv5egiZPhkY
-agDstCZ+IWdVeUQGDRNDTzP+4cF2rdx4U8tndLmMfsPNqAbug9Btrf6rLRXMpE5h
-J6fTn5oAZosTDpWnmLtI7K0Kin5/PiqnXB4262r8jwz2yfqJVLUE6KUTdNGb9VKf
-f08UqO16CPAoVpl4jzZ3Rm5xORHk8YrFD00MKubGGFo2i2bzYZSUVHaLo2mGrMVX
-8v8u9n2UB46fSwhBPeZik88yUg9kZQq5IbywrUZQv0ss8WyWcQheReQ354+o7L0Z
-SgWklKC80TTtCimbUyhHqHZoxwiTWX7ZliDme6S7WW04lGZIc8aUT60rQxIrBjrc
-UZPIqdz0UbpctzqucZJRE6GEnpR3hb6APNWYAdggXip+xaplU0mh8g4cEYQyHrxa
-c8akOhr7u7OTNQGs4nIfhlf7vr59Rk/QUbXM9EH8HRASeo2hCL8e5ZaLdgkK3NLk
-SAzSkrBbw7bBZCaX9hnTK9EyExjFr1UCTbtnMq4t8nWSfzD83C4R8ZC61/1SNOvP
-st2/YcKuBk5umgFyTw9E
-=IWwX
------END PGP SIGNATURE-----
-
---mJBrljmQeWEn4CTEHjwHlnDqCcuh8Icug--
