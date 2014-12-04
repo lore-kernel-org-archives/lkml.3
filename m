@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344AbaLDX3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 18:29:12 -0500
-Received: from ozlabs.org ([103.22.144.67]:58146 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069AbaLDX3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 18:29:11 -0500
-Date: Fri, 5 Dec 2014 10:29:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-next@vger.kernel.org, <linux-kernel@vger.kernel.org>
-Subject: Re: Please add
- git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git
- linux-next
-Message-ID: <20141205102903.156731eb@canb.auug.org.au>
-In-Reply-To: <54802B9F.1090303@de.ibm.com>
-References: <54802B9F.1090303@de.ibm.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S933385AbaLDX3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:29:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42204 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933350AbaLDX3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 18:29:52 -0500
+Date: Thu, 4 Dec 2014 15:29:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Misc: pass miscdevice through file's private_data
+Message-ID: <20141204232951.GA13690@kroah.com>
+References: <20141204211342.GA22293@kroah.com>
+ <1417734063-28489-1-git-send-email-tomvanbraeckel@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5GKvpvfkflk8siGS6BiyZpQ"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417734063-28489-1-git-send-email-tomvanbraeckel@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5GKvpvfkflk8siGS6BiyZpQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 05, 2014 at 12:01:03AM +0100, Tom Van Braeckel wrote:
+> > >  
+> > > +	/*
+> > > +	 * Place the miscdevice in the file's
+> > > +	 * private_data so it can be used by the
+> > > +	 * file operations, including f_op->open below
+> > > +	 */
+> > > +	file->private_data = c;
+> > > +
+> > >  	err = 0;
+> > >  	replace_fops(file, new_fops);
+> > >  	if (file->f_op->open) {
+> > > -		file->private_data = c;
+> > >  		err = file->f_op->open(inode,file);
+> > >  	}
+> >
+> > These braces aren't needed anymore, right?
+> >
+> > Also, what is this now going to break?  :)
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Thanks for the fast feedback!
+> 
+> Good point, so I made a list of all drivers that use private_data (find drivers/ -iname "*.c" -exec grep -l private_data {} \;  | sort -u) and manually verified that all of them either register an open() operation, do not use the misc subsystem, or matched because of vm_private_data.
+> 
+> >From this investigation, I conclude that it does not break anything.
+> 
+> I also removed the unnecessary curly braces. Please find the new patch below.
+> 
+> 
+> misc: pass miscdevice through file's private_data
+> 
+> Place the miscdevice in the file's private_data to be used by the file operations.
+> 
+> Previously, this was done only when an open() operation had been registered.
+> But it is also useful in the other file operations, so we pass it on unconditionally.
+> 
+> All drivers that use private_data and misc_register() were checked to ensure they register an open() operation,
+> in order to verify that this improvement does not break any existing driver that uses the misc subsystem.
+> 
+> Signed-off-by: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+> ---
+>  drivers/char/misc.c | 11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
 
-Hi Christian,
+Please resend this in a format I can apply it in (standalone, lines
+properly wrapped, etc.)
 
-On Thu, 04 Dec 2014 10:38:39 +0100 Christian Borntraeger <borntraeger@de.ib=
-m.com> wrote:
->
-> can you add=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git linux=
--next
-> to linux-next?
-> It contains changes to ACCESS_ONCE and it would be good to have this cros=
-s tested on several platforms.
-> Thanks
+thanks,
 
-Added from today.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
---Sig_/5GKvpvfkflk8siGS6BiyZpQ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUgO5EAAoJEMDTa8Ir7ZwVrrAP/0hizD8x9mVN2X65/efKmat8
-rvlSH4OwC+lEZWXqwiALHMQTYAktweCoU1UxZSC8Mj4+0unkJXH5WybOKHTvoQiZ
-vwhJ8VO1CAPHVopG7eqC4aL8blhYCCDxvtbBuNjdh8nsxIgcti5T1PQA2OwIBg+B
-lSZhNGFWqpdY5cJyxB4LiRzaM2g3q80oMZaBUjy9SwaaxvaINh4eQS0tdnrQZ4on
-iu4Qj5tfaK+hBXgC9luNN9iNpcU4zEhabc5EobHHz5zMIH1Qo32WZKifQAFQwTbl
-fkiEXw0HvprnlI39iCkNG/CzXEBzaaPhpmBeJF10spRcwRKyIQR4MHafl/ylj8PH
-7ksDl92N/E/Hxy4W9zJ1UpOUSarDCN0xu/tIPedAP9Tuc/31Unv8MgLV2wFFf4z2
-Bir+wkNdYacKgxm6EWEya4NPXeOoV7yNc7hXgukh9fUFtJxKZJl/N9LmVNnx5oUP
-drtw4HSeLGkjVlrz9+kAJRf8UQLw/hXSbabRxZTPvvZRI49xzt5NPJM0fV4ML8Pp
-JwOEeBxrZv33gSYRBzhulWfjixuY/dsrah3+MbVhDQCKOtXc5EAfqPqzK8Glroml
-fcbM+AuUdRV1zCeN8tDxtlg1HIbtHcApUlrEzvq7KG2gUcjEqedVrtHd46v6WRS8
-TMil9x2MN1EX79/PVpby
-=lKaW
------END PGP SIGNATURE-----
-
---Sig_/5GKvpvfkflk8siGS6BiyZpQ--
+greg k-h
