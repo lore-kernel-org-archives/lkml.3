@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778AbaLDLMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:12:16 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54084 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaLDLMN (ORCPT
+	id S1753831AbaLDLMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:12:44 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:43516 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727AbaLDLMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:12:13 -0500
-From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-Date: Thu, 4 Dec 2014 14:11:40 +0300
-To: Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b43-dev <b43-dev@lists.infradead.org>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
-Message-ID: <20141204111140.GF4979@localhost.localdomain>
-Mail-Followup-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
-	Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	b43-dev <b43-dev@lists.infradead.org>,
-	=?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-References: <20141201111125.GA11974@localhost.localdomain>
- <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
- <20141201221023.79ffb40d@wiggum>
- <20141202200129.GA4580@crion89>
- <20141202211211.7e08b935@wiggum>
- <547E3BF5.5060201@lwfinger.net>
- <20141203161855.50951aa8@wiggum>
- <20141203161452.GD2896@tuxdriver.com>
- <20141203172315.120040c2@wiggum>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="e5bfZ/T2xnjpUIbw"
-Content-Disposition: inline
-In-Reply-To: <20141203172315.120040c2@wiggum>
-X-PGP-Key: fp="21AF 2E6F 04EC 7E11 21C6  E399 2236 2F26 57A3 AEAD";
- id="0x57A3AEAD";
- get=<hkp://pgp.mit.edu/pks/lookup?search=0x22362F2657A3AEAD&op=get>;
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Dec 2014 06:12:42 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Mark Brown <broonie@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1820241.GUleD5gbzs@vostro.rjw.lan>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+	<2127240.rWRTDu6LHQ@vostro.rjw.lan> <20141129115209.GD7712@sirena.org.uk>
+	<1820241.GUleD5gbzs@vostro.rjw.lan>
+Date: Thu, 04 Dec 2014 11:12:34 +0000
+Message-Id: <20141204111234.44C0FC40874@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 29 Nov 2014 23:27:52 +0100
+, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+ wrote:
+> On Saturday, November 29, 2014 11:52:09 AM Mark Brown wrote:
+> > 
+> > --9GYGtdBumnmR69ER
+> > Content-Type: text/plain; charset=us-ascii
+> > Content-Disposition: inline
+> > Content-Transfer-Encoding: quoted-printable
+> > 
+> > On Sat, Nov 29, 2014 at 12:51:59AM +0100, Rafael J. Wysocki wrote:
+> > > On Friday, November 28, 2014 04:00:36 PM Mark Brown wrote:
+> > 
+> > > > OK, we probably should have one to aid discoverability since as far as I
+> > > > can tell what's happening is that people (hi Intel!) are allocating
+> > > > their own identifiers for devices produced by other vendors that turn up
+> > > > on their boards.  If people can find the set of IDs in use there's more
+> > > > chance they'll use the same ones as other people.
+> > 
+> > > There's the PRP0001 ID that can be use to in combination with the
+> > > "compatible" property which then works the same way as for DT.
+> > 
+> > > That should be sufficient if the properties are going to be the
+> > > same for ACPI (_DSD) and DT.
+> > 
+> > We've got people making BIOSs right now for systems you can actually buy=20
+> > that are intended to run Windows which we need to support; right now the
+> > pressing problem I'm seeing is that we've got BIOS vendors not using
+> > properties at all and we're going to be ending up with configuration
+> > coming from big DMI tables instead which is miserable, Windows is
+> > perfectly happy to have custom drivers installed per machine.  Do we
+> > know if Windows supports PRP0001 as it currently stands?
+> 
+> No, it doesn't.
+> 
+> Separate device IDs are necessary for Windows compatibility AFAICS.
+> 
+> But that also means any device ID registered by us won't be suitable in that
+> case, because Windows won't use it.
+> 
+> There are two different problems here, though.  The first one is a way to
+> provide the existing Linux drivers with the information expected by them via
+> ACPI and that's what _DSD (plus PRP0001 optionally) is.  The second one is
+> to be able to handle systems with ACPI tables from a random vendor who only
+> cares about Windows and that's more difficult to address, because our
+> ecosystem is different from theirs.
 
---e5bfZ/T2xnjpUIbw
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is a problem if the expected binding method is different between
+Linux and Windows. This is a problem we've hit before where the platform
+/may/ try to get both right, but in reality only one works, or even
+implemented.
 
-On Wed, Dec 03, 2014 at 05:23:15PM +0100, Michael B=C3=BCsch wrote:
+I predict that PRP0001 is only going to be practical when the hardware
+is only ever going to be driven by Linux or other PRP0001 aware OS. ie.
+A Minnowboard Max with a custom expansion board attached. When the
+hardware is supported under both Windows and Linux then it will probably
+be best for Linux to attempt to bind using the device id before
+attempting to use PRP0001.
 
-> > > > > That sounds good, indeed.
-> > > > > I'd still prefer, if someone with b43 (wireless) would test it, t=
-oo.
-> > > >=20
-> > > > I did a partial test with my PowerBook G4. With the patch installed=
-, it would=20
-> > > > both suspend and hibernate, but WOL would be impossible. This compu=
-ter uses a=20
-> > > > PCMCIA version of the BCM4318, and power is turned off to the PCMCI=
-A card when=20
-> > > > suspended or hibernating.
-> > >=20
-> > > Thanks for testing.
-> > >=20
-> > > John, can you take this one? Or do we need to split the b44 part out?
-> > > I added my Signed-off.
-> >=20
-> > Um, sure...3.19 is OK I presume?
->=20
-> I think we could even wait for 3.20.
->
+> There basically are two ways around that.  The first one is to have all
+> knowledge related to device IDs in drivers (which effectively is what
+> Windows does and which implies "board files" of sorts) and the second one is
+> to make it possible to use overlays on top of the existing ACPI tables that
+> will allow people to provide the properties expected by a more generic driver
+> (this way, if the vendor didn't care to provide _DSD, for example, in the
+> original ACPI tables, the system integrator would be able to use an overlay
+> in an initramfs or boot partition to amend them).
 
-Thanks, guys.
+Either approach amounts to pretty much the same thing. The
+kernel/distribution needs to carry around device specific driver data
+which is exactly how we've supported x86 hardware. Whether the data is
+in-kernel or in-userspace is kind of an implementation detail. :-)
 
 
---=20
-Best regards,
-Andrey Skvortsov
+_DSD support is a different situation though. Even if Windows doesn't
+care to directly support _DSD, drivers are free to use _DSD properties.
+This is the scenario where the shared binding repository will be
+important.
 
-PGP Key ID: 0x57A3AEAD
-
---e5bfZ/T2xnjpUIbw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJUgEFsAAoJEAF8y6L1SLCtyiEP/RWUaBtrdbbiof7rdVOnjpIY
-LOZdLyc10hoZfxzcISn/1IOAuqHAW4DnU14VJClxOiu+gGTB/kcm4IcSj9SgV+Kg
-FtVrKeayIZvGq1c9GvtwUuYGkrkQheOBO3Utzbb/JWzJiOUA/RP90vLZr5T1ruTR
-df0ceqlCaUTDSd/gCmynQRpnf3160QAD0VVD0UILvUp+H9pRVEu91QfFNGvBOXpk
-ntUKDrlfatcN4D7GjYA6HaFu8FCef8J7nm7U39FXzuAcNRWUh6dmKJgi1OyBT9du
-J6C3V8rlygi/UZBF3qsMMOxCIpKMm27rwi/Eq3YTfwbsDVt1XgdnZbY6yUjj7+ob
-HyrOlBF9UicOFn5gGuRe1uaG04iG/53ecPIsw3IRTrrjZGTL81+uolz8OuH/y2vv
-aXfmJBQdhIdtIuR72I2O0Ohf5Y4DHXxyVIfIK3wDi0HwgEzct7Z3qeBTRXYRAsiz
-g7AWTOuu7nJoOJ+l/IeJj5Yn2JjCEKG+MBCQ0q/N7TGXTNj7KFeYl65cFm8hufVT
-QlSaoK8gHydyMDHPk1EFoxLtQHACIWtx5c6hjexUWW8DczJa3yvrKKJpsIrh5u1H
-sDnEkQuMfb55+tLG3Azk1q4kA2HupiJME3A3lUVxuiJVjfVamnt1YrYxCwQxylsP
-DuVu1UVhqoDBpP6DVHEx
-=rWrL
------END PGP SIGNATURE-----
-
---e5bfZ/T2xnjpUIbw--
+g.
