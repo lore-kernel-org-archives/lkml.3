@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998AbaLDSa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:30:26 -0500
-Received: from sauhun.de ([89.238.76.85]:34350 "EHLO pokefinder.org"
+	id S932936AbaLDSct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:32:49 -0500
+Received: from sauhun.de ([89.238.76.85]:34372 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841AbaLDSaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:30:21 -0500
-Date: Thu, 4 Dec 2014 19:30:15 +0100
+	id S932455AbaLDScr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:32:47 -0500
+Date: Thu, 4 Dec 2014 19:32:43 +0100
 From: Wolfram Sang <wsa@the-dreams.de>
 To: Harini Katakam <harinik@xilinx.com>
 Cc: mark.rutland@arm.com, michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
         linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, vishnum@xilinx.com,
         harinikatakamlinux@gmail.com
-Subject: Re: [PATCH v2 2/3] i2c: cadence: Set the hardware time-out register
- to maximum value
-Message-ID: <20141204183015.GI7944@katana>
+Subject: Re: [PATCH v2 1/3] i2c: cadence: Handle > 252 byte transfers
+Message-ID: <20141204183242.GJ7944@katana>
 References: <1417610126-7957-1-git-send-email-harinik@xilinx.com>
- <1417610126-7957-3-git-send-email-harinik@xilinx.com>
+ <1417610126-7957-2-git-send-email-harinik@xilinx.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="byLs0wutDcxFdwtm"
+	protocol="application/pgp-signature"; boundary="1ou9v+QBCNysIXaH"
 Content-Disposition: inline
-In-Reply-To: <1417610126-7957-3-git-send-email-harinik@xilinx.com>
+In-Reply-To: <1417610126-7957-2-git-send-email-harinik@xilinx.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---byLs0wutDcxFdwtm
+--1ou9v+QBCNysIXaH
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Dec 03, 2014 at 06:05:25PM +0530, Harini Katakam wrote:
-> From: Vishnu Motghare <vishnum@xilinx.com>
->=20
-> Cadence I2C controller has bug wherein it generates invalid read transact=
-ions
-> after timeout in master receiver mode. This driver does not use the HW
-> timeout and this interrupt is disabled but the feature itself cannot be
-> disabled. Hence, this patch writes the maximum value (0xFF) to this regis=
-ter.
-> This is one of the workarounds to this bug and it will not avoid the issue
-> completely but reduces the chances of error.
->=20
-> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
-> Signed-off-by: Harini Katakam <harinik@xilinx.com>
-
-Applied to for-current, thanks!
 
 
---byLs0wutDcxFdwtm
+> +		/*
+> +		 * If the device is sending data If there is further
+> +		 * data to be sent. Calculate the available space
+> +		 * in FIFO and fill the FIFO with that many bytes.
+> +		 */
+
+This comment looks broken. In general, I think there should be more
+comments explaining why things have to be done this way.
+
+
+--1ou9v+QBCNysIXaH
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUgKg2AAoJEBQN5MwUoCm23pwP/itLlYloGG6UhJiqE67jIxq1
-Zzh/9XnWunZN62cDASUh663SfCTqQy6VzbFMbxlwZszDEcYpMEnApFy/QQarszBS
-1tSgJaET7FK5nadhWrz3uqUTAqv5Qlcs54GhMoD8LNfJfT4OQKzk6luaOu+eUNXv
-Re/rpRJmhLHPmpMhExvNA5fKKGcj5UOMTuulENhW+sBpuM16NkUuPY8S4bsh3Y0E
-Hoho/A9KSlHdlVf/GMnZgv2qA2ke1vc52GfN+8E3KKntQaFdWL2TXwDNx6orUrGc
-CUE9wyoYcIVEHs/f69J5ryAzbs/I2TkMJKcNyoPJ/ZKwtGEHPPClayLFKTJtmi5H
-sDrKI/j1CDlQsWRWD3w60tNugBtcT+pNflfAAYcXa0IE59M/U/Ch+kyG/tdzHKdz
-Cy53l2L8/U9CImBTExOKgQmSoeKJUeF//lhDkWdNr5JQ423VlnbRfZvRvIeNWsNC
-AuTHkXbcqA8I6EQnN6cscjNK7hHM4hx5Z08NCqpvFh2veUilwL7ARCwevbseBvHg
-Aqtmo4Eim2QhJkJCXvEHFaZH6meBcdQdD0nNQNLDX2Feb0+ixRaB3TzBmMjajaRm
-dJowy/BKcOY9mWzGlzIsX3BJAzl6lQ1+P2AQ6/jQTxY6LRXLt6KAANY0WLfkNPhP
-TYBPRjLehDUi/qz1GGGS
-=BDJf
+iQIcBAEBAgAGBQJUgKjKAAoJEBQN5MwUoCm2QNYQALFSMcFaSdbuQdzFfDGCUSNQ
+QCBKi1yuVOAArsXzWiPqedR62xNJ2r4AfUhNxAQF+wu6ZZtztOTT1XMFtkNvuGhM
+1VYOqRuq84LjduhW19OFCdO0Vli2Zgr9qLKNMLoJxnLviwHx2HPsYyOjG6mM6IdZ
+hCLGe1y/he6IhImAyTheqF4VMawyQQ8mzWGGIvuyp/ry5amnUMHVYfWk0FSAm+iV
++fTxLC/9AHmUIUPPu1b5NPHfkaY3R/blgZVkWxSe+sK62+TV+gNJhOh1260NQkq/
+9qfQdVm8kYSxfCv0BRWmS2tOCtO/A42zFnkdNbN74OzEZPsxWWMeWb7sb5bMdr3P
+i3da2tyQaurODcY6rZah0lfpl7bct3mUhZjWrLyL/yTbe59Kmo9pEFwC4l21uKFo
+szK5Rn9vf2MRWJfEQ6C3eOs+LRxJ4wgdDAR4pEJuqO/7aKQoaRF0jchxGNWJhu0G
+BJjtY+GLb/OrE9Qu1U6kFrvSCoYX1jHit3d2l1rZNQHLTLnLQFKD0gq2mAvD5AQ3
+0SNfFV2HifTy+2jvAfTbQpCxIDp83c+7aT+nasFTPJWj2P50qzMs6+kARX/ujRIR
+aBxOgQhBQvgwzyMAI7IQhJhdMRJiFX+POF3hE6qyLK22juapEvdB5x796PhdyGFr
+7OwvbsXXapolMMpTh8UX
+=4GSX
 -----END PGP SIGNATURE-----
 
---byLs0wutDcxFdwtm--
+--1ou9v+QBCNysIXaH--
