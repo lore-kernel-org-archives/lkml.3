@@ -1,303 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaLDLty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:49:54 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:30194 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542AbaLDLtw (ORCPT
+	id S1753879AbaLDLwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:52:11 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48085 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420AbaLDLwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:49:52 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-65-54804a5e1d11
-Message-id: <54804A50.60509@samsung.com>
-Date: Thu, 04 Dec 2014 12:49:36 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v3 1/3] clk: samsung: Fix clock disable failure because
- domain being gated
-References: <1417690075-13483-1-git-send-email-k.kozlowski@samsung.com>
- <1417690075-13483-2-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1417690075-13483-2-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xa7pxXg0hBq+OiVlsnLGe1aLtykF2
-	i6O/CyxevzC06H/8mtni6ebHTBZnm96wW2x6fI3V4vKuOWwWM87vY7JYe+Quu8XTCRfZLFbt
-	+sPowOvx9/l1Fo+ds+6ye2xa1cnmcefaHjaPzUvqPfq2rGL0+LxJLoA9issmJTUnsyy1SN8u
-	gStjQ98CloIN5hV9DSvZGhjPaHcxcnJICJhI/OjYwQphi0lcuLeerYuRi0NIYCmjxJUT91gh
-	nE+MEifOrwOr4hXQkHh+oYUJxGYRUJU4dHApWJxNwFCi92gfI4gtKhAhcfLuHnaIekGJH5Pv
-	sYDYIkA1B3dvB+tlFvjNLDH1R1wXIweHsECCxNqrKhC7WhklHjxvB6vnFPCQaNiwnB2khllA
-	T+L+RS2IVnmJzWveMk9gFJiFZMMshKpZSKoWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/d
-	xAiJlq87GJceszrEKMDBqMTDO+F6fYgQa2JZcWXuIUYJDmYlEd5T1g0hQrwpiZVVqUX58UWl
-	OanFhxiZODilGhizLtXHuAux9h3uyVHL+LHGeMWUfIV0pQud8Zs8l5z3rzDafCNqz6yLz/3N
-	ylNFBDtebnSZelHJ0WtjAv8Uwblmnr3sccvUThyMXmR0t/O7TJqT9pZoiz8u/xh7pVv/z548
-	95Z43tPemxHcf32MlyVYzuT5KSVwjGfCvQ//dz1tnug488WJ4molluKMREMt5qLiRADq8OxD
-	dAIAAA==
+	Thu, 4 Dec 2014 06:52:09 -0500
+Date: Thu, 4 Dec 2014 11:51:38 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Darren Hart <dvhart@linux.intel.com>, Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20141204115138.GU7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+ <2127240.rWRTDu6LHQ@vostro.rjw.lan>
+ <20141129115209.GD7712@sirena.org.uk>
+ <1820241.GUleD5gbzs@vostro.rjw.lan>
+ <20141204111234.44C0FC40874@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q1e9gQ/ARJj/k4o3"
+Content-Disposition: inline
+In-Reply-To: <20141204111234.44C0FC40874@trevor.secretlab.ca>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/14 11:47, Krzysztof Kozlowski wrote:
-> Audio subsystem clocks are located in separate block. If clock for this
-> block (from main clock domain) 'mau_epll' is gated then any read or
-> write to audss registers will block.
-> 
-> This was observed on Exynos 5420 platforms (Arndale Octa and Peach
-> Pi/Pit) after introducing runtime PM to pl330 DMA driver. After that
-> commit the 'mau_epll' was gated, because the "amba" clock was disabled
-> and there were no more users of mau_epll. The system hang on disabling
-> unused clocks from audss block.
-> 
-> Unfortunately the 'mau_epll' clock is not parent of some of audss clocks.
-> 
-> Whenever system wants to operate on audss clocks it has to enable epll
-> clock. The solution reuses common clk-gate/divider/mux code and duplicates
-> clk_register_*() functions.
-> 
-> Additionally this patch fixes memory leak of clock gate/divider/mux
-> structures. The leak exists in generic clk_register_*() functions. Patch
-> replaces them with custom code with managed allocation.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Reported-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> ---
->  drivers/clk/samsung/clk-exynos-audss.c | 357 +++++++++++++++++++++++++++++----
->  1 file changed, 321 insertions(+), 36 deletions(-)
 
-In general I'm not happy with this as we are more than doubling LOC in this
-driver.  I don't have a better idea though ATM on how to address the issue for
-v3.19.  I suspect we will need a regmap based clocks for some Exynos clocks
-controllers in near future and then we could refactor this driver by using
-the common code.
+--q1e9gQ/ARJj/k4o3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A few style comments below...
+On Thu, Dec 04, 2014 at 11:12:34AM +0000, Grant Likely wrote:
+> On Sat, 29 Nov 2014 23:27:52 +0100
 
-> +/*
-> + * A simplified copy of clk-gate.c:clk_register_gate() to mimic
-> + * clk-gate behavior while using customized ops.
-> + */
-> +static struct clk *audss_clk_register_gate(struct device *dev, const char *name,
-> +		const char *parent_name, unsigned long flags,
-> +		void __iomem *reg, u8 bit_idx)
-> +{
-> +	struct clk_gate *gate;
-> +	struct clk *clk;
-> +	struct clk_init_data init;
-> +
-> +	/* allocate the gate */
-> +	gate = devm_kzalloc(dev, sizeof(struct clk_gate), GFP_KERNEL);
-> +	if (!gate)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &audss_clk_gate_ops;
-> +	init.flags = flags | CLK_IS_BASIC;
-> +	init.parent_names = (parent_name ? &parent_name : NULL);
-> +	init.num_parents = (parent_name ? 1 : 0);
-> +
-> +	/* struct clk_gate assignments */
-> +	gate->reg = reg;
-> +	gate->bit_idx = bit_idx;
-> +	gate->flags = 0;
+> > There basically are two ways around that.  The first one is to have all
+> > knowledge related to device IDs in drivers (which effectively is what
+> > Windows does and which implies "board files" of sorts) and the second one is
+> > to make it possible to use overlays on top of the existing ACPI tables that
+> > will allow people to provide the properties expected by a more generic driver
+> > (this way, if the vendor didn't care to provide _DSD, for example, in the
+> > original ACPI tables, the system integrator would be able to use an overlay
+> > in an initramfs or boot partition to amend them).
 
-The assignment here redundant, since the data structure has been allocated
-with kzalloc().
+> Either approach amounts to pretty much the same thing. The
+> kernel/distribution needs to carry around device specific driver data
+> which is exactly how we've supported x86 hardware. Whether the data is
+> in-kernel or in-userspace is kind of an implementation detail. :-)
 
-> +	gate->lock = &lock;
-> +	gate->hw.init = &init;
-> +
-> +	clk = clk_register(dev, &gate->hw);
-> +
-> +	return clk;
+This isn't entirely what we've doing for x86 up until now - there's always
+been an expectation that the firmware will be setting things up to work
+by default (or so we can read the setup back from the hardwaer when we
+take over) and we're mostly just carrying quirk data when that doesn't
+pan out.
 
-Just do
-	return clk_register(dev, &gate->hw);
+> _DSD support is a different situation though. Even if Windows doesn't
+> care to directly support _DSD, drivers are free to use _DSD properties.
+> This is the scenario where the shared binding repository will be
+> important.
 
-> +}
-> +
-> +static unsigned long audss_clk_divider_recalc_rate(struct clk_hw *hw,
-> +		unsigned long parent_rate)
-> +{
-> +	unsigned long ret;
-> +
-> +	ret = pll_clk_enable();
-> +	if (ret) {
-> +		WARN(ret, "Could not enable epll clock\n");
-> +		return parent_rate;
-> +	}
+Right, this would be ideal for the devices we're looking at.
 
-How about moving the error log to pll_clk_enable() and making this
+--q1e9gQ/ARJj/k4o3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	ret = pll_clk_enable();
-	if (ret < 0)
-		return parent_rate;
-?
-> +
-> +	ret = clk_divider_ops.recalc_rate(hw, parent_rate);
-> +
-> +	pll_clk_disable();
-> +
-> +	return ret;
-> +}
-> +
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> +/*
-> + * A simplified copy of clk-divider.c:clk_register_divider() to mimic
-> + * clk-divider behavior while using customized ops.
-> + */
-> +static struct clk *audss_clk_register_divider(struct device *dev,
-> +		const char *name, const char *parent_name, unsigned long flags,
-> +		void __iomem *reg, u8 shift, u8 width)
-> +{
-> +	struct clk_divider *div;
-> +	struct clk *clk;
-> +	struct clk_init_data init;
-> +
-> +	/* allocate the divider */
+iQEcBAEBAgAGBQJUgErKAAoJECTWi3JdVIfQqzoH/3kp45j+8QfDzEGHBssTIH7f
+80j5xhSIYlEv/fJ7koaVYuP8uhTIsm6EkxT3G9TPqaYwujTFIfSJYKD/JAw4aLXb
+sWoCbmGIcaoNithOzUlkmMGXX1zDfFM/lAtC7IDbbLV6hlU1lNMIBrvSiQwREdrS
+PFLYtzfpHONsnXBQoVObQyzjhiubk7VT8HNp2v/M/cB+T1QCpnW8ZB8ttcc6ujpd
+vBzCwr2wOs/a5fMNBpvRp2ptGAYnYJ4P1z9z+gBcg2vFIOEHEff76BeKDHiCMXBn
+QuSKqgos3n5VFcIQwpI/kRN1YDUsUpHqM9NePcFLJUEfvbY3xgCNAsQI00aYsDY=
+=Mx5W
+-----END PGP SIGNATURE-----
 
-Not sure if this comment helps in anything.
-
-> +	div = devm_kzalloc(dev, sizeof(struct clk_divider), GFP_KERNEL);
-> +	if (!div)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &audss_clk_divider_ops;
-> +	init.flags = flags | CLK_IS_BASIC;
-> +	init.parent_names = (parent_name ? &parent_name : NULL);
-> +	init.num_parents = (parent_name ? 1 : 0);
-> +
-> +	/* struct clk_divider assignments */
-> +	div->reg = reg;
-> +	div->shift = shift;
-> +	div->width = width;
-> +	div->flags = 0;
-
-Redundant assignment.
-
-> +	div->lock = &lock;
-> +	div->hw.init = &init;
-> +	div->table = NULL;
-
-This could be safely removed as well, but up to you.
-
-> +	/* register the clock */
-
-That comment has really no value, I'd remove it.
-
-> +	clk = clk_register(dev, &div->hw);
-> +
-> +	return clk;
-
-Please change it to:
-
-	return clk_register(dev, &div->hw);
-> +}
-> +
-> +static u8 audss_clk_mux_get_parent(struct clk_hw *hw)
-> +{
-> +	u8 parent;
-> +	int ret;
-> +
-> +	ret = pll_clk_enable();
-> +	if (ret) {
-> +		WARN(ret, "Could not enable epll clock\n");
-> +		return -EINVAL; /* Just like clk_mux_get_parent() */
-
-Do we need to overwrite the error code ? The error log could be moved
-inside pll_clk_enable() and it all would become:
-
-	ret = pll_clk_enable();
-	if (ret < 0)
-		return ret;
-
-> +	}
-> +
-> +	parent = clk_mux_ops.get_parent(hw);
-> +
-> +	pll_clk_disable();
-> +
-> +	return parent;
-> +}
-
-> +/*
-> + * A simplified copy of clk-mux.c:clk_register_mux_table() to mimic
-> + * clk-mux behavior while using customized ops.
-> + */
-> +static struct clk *audss_clk_register_mux(struct device *dev, const char *name,
-> +		const char **parent_names, u8 num_parents, unsigned long flags,
-> +		void __iomem *reg, u8 shift, u8 width)
-> +{
-> +	struct clk_mux *mux;
-> +	struct clk *clk;
-> +	struct clk_init_data init;
-> +	u32 mask = BIT(width) - 1;
-> +
-> +	/* allocate the mux */
-
-I'd remove this comment.
-
-> +	mux = devm_kzalloc(dev, sizeof(struct clk_mux), GFP_KERNEL);
-> +	if (!mux)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &audss_clk_mux_ops;
-> +	init.flags = flags | CLK_IS_BASIC;
-> +	init.parent_names = parent_names;
-> +	init.num_parents = num_parents;
-> +
-> +	/* struct clk_mux assignments */
-> +	mux->reg = reg;
-> +	mux->shift = shift;
-> +	mux->mask = mask;
-> +	mux->flags = 0;
-
-Redundant assignment.
-
-> +	mux->lock = &lock;
-> +	mux->table = NULL;
-
-Ditto.
-
-> +	mux->hw.init = &init;
-> +
-> +	clk = clk_register(dev, &mux->hw);
-> +
-> +	return clk;
-
-	return clk_register(dev, &mux->hw);
-> +}
-> +
->  /* register exynos_audss clocks */
->  static int exynos_audss_clk_probe(struct platform_device *pdev)
->  {
-> @@ -98,6 +364,8 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev, "failed to map audss registers\n");
->  		return PTR_ERR(reg_base);
->  	}
-> +	/* epll don't have to be enabled for boards != Exynos5420 */
-
-s/!=/other than/ ?
-s/epll/EPLL ?
-
-> +	epll = ERR_PTR(-ENODEV);
->  
->  	clk_table = devm_kzalloc(&pdev->dev,
->  				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
-
--- 
-Thanks,
-Sylwester
+--q1e9gQ/ARJj/k4o3--
