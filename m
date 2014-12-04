@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaLDSpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:45:54 -0500
-Received: from mga03.intel.com ([134.134.136.65]:44787 "EHLO mga03.intel.com"
+	id S933053AbaLDSqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:46:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8540 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138AbaLDSpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:45:51 -0500
+	id S932138AbaLDSqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:46:47 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="493729213"
-Date: Thu, 4 Dec 2014 10:42:10 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
-        maxime.ripard@free-electrons.com, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
-        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
-Message-ID: <20141204184210.GA1530@pathfinder>
-References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
- <5480144F.2040506@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5480144F.2040506@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
+   d="asc'?scan'208";a="648400657"
+Message-ID: <1417718785.2404.5.camel@jtkirshe-mobl>
+Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jesse@nicira.com,
+        shannon.nelson@intel.com, jesse.brandeburg@intel.com,
+        therbert@google.com, linux.nics@intel.com
+Date: Thu, 04 Dec 2014 10:46:25 -0800
+In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-jC5Fd97JZ91L62YSU9P6"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 09:59:11AM +0200, Jarkko Nikula wrote:
-> Hi
-> 
-> On 12/02/2014 02:09 AM, David E. Box wrote:
-> >Adds support for acquiring and releasing a hardware bus lock in the i2c
-> >designware core transfer function. This is needed for i2c bus controllers
-> >that are shared with but not controlled by the kernel.
-> >
-> >Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> >---
-> >  drivers/i2c/busses/i2c-designware-core.c    | 11 +++++++++++
-> >  drivers/i2c/busses/i2c-designware-core.h    |  6 ++++++
-> >  drivers/i2c/busses/i2c-designware-platdrv.c | 18 +++++++++++++-----
-> >  3 files changed, 30 insertions(+), 5 deletions(-)
-> >
-> ...
-> >diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> >index a743115..afdff3b 100644
-> >--- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> >+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> >@@ -261,10 +261,16 @@ static int dw_i2c_probe(struct platform_device *pdev)
-> >  		return r;
-> >  	}
-> >-	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> >-	pm_runtime_use_autosuspend(&pdev->dev);
-> >-	pm_runtime_set_active(&pdev->dev);
-> >-	pm_runtime_enable(&pdev->dev);
-> >+	i2c_dw_eval_lock_support(dev);
-> i2c_dw_eval_lock_support() is added in the next patch.
-> >+
-> >+	if (dev->pm_runtime_disabled) {
-> >+		pm_runtime_forbid(&pdev->dev);
-> >+	} else {
-> >+		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> >+		pm_runtime_use_autosuspend(&pdev);
-> >+		pm_runtime_set_active(&pdev->dev);
-> >+		pm_runtime_enable(&pdev->dev);
-> >+	}
-> >  	return 0;
-> >  }
-> >@@ -314,7 +320,9 @@ static int dw_i2c_resume(struct device *dev)
-> >  	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
-> >  	clk_prepare_enable(i_dev->clk);
-> >-	i2c_dw_init(i_dev);
-> >+
-> >+	if (!i_dev->pm_runtime_disabled)
-> >+		i2c_dw_init(i_dev);
-> Should there be similar conditional call or locking around
-> i2c_dw_init() and i2c_dw_disable_int() also in dw_i2c_probe()?
-> 
 
-Timely reply. Around i2c_dw_init(), yes. I just discovered this as the source
-of a recent hang that's occuring in the loop in __i2c_dw_enable().
-The hange occurs very infrequently and only, so far, when not built in. A
-block around i2c_dw_disable_int() would make sense as well as a precaution.
+--=-jC5Fd97JZ91L62YSU9P6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Dave
+On Thu, 2014-12-04 at 10:39 -0800, Joe Stringer wrote:
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an
+> implementation for this driver which checks for IPIP, GRE, UDP
+> tunnels.
+>=20
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> ---
+> v3: Drop IPIP and GRE (no driver support even though hw supports it).
+>     Check for UDP outer protocol for UDP tunnels.
+> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+>     Add MAX_INNER_LENGTH (as 80).
+> ---
+>  drivers/net/ethernet/intel/i40e/i40e_main.c |   26
+> ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+
+Thanks Joe, I will add your patch to my queue.
+
+Jesse Gross/Tom- If you guys are OK with the latest patch, I will move
+forward with adding this patch to my queue.
+
+--=-jC5Fd97JZ91L62YSU9P6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUgKwBAAoJEOVv75VaS+3OGSoP/3IiURx6dK43zFEZlCbTo1mz
+beoWD2k0SQylvCwxnbbDp9dmjsg3zKwiIaQhBFPfhrHMKETw4+EFPLcpYF45ugvF
+2v3sODD/UdtttJZ3Hi5F22fElQRmT5ZQHX0X+JkDMSwsOsHVG6CruGv2SpvD4kyE
+HSVJNAcokTzHqGVfSSaILM1KchafwzeWneSQfLhoIS1/c5sQsxo2o7By8C3KnT5v
+RDu+zYHIrdVarGoyx+Jz5OBn/WOv8x1ypyOmaVCu45VGrP21G4gfldw2bqSAJsBv
+9qhO2Z+T2RswRqOUI9wNyzmdM/oFT1w6LIS6QuADqubwRxkd7MUSZXw1650Iue7k
+yrCTuS4mXr3TWcq18AyWIinlopUmIzwEhnVm68fLUnPQhr55UmHZlb3xfaY28UJQ
+oMBvknLBGSfrrmmnhDLjeM9h7NmeI2XQPDar4sj9HElOKP7ri3796UbQP/TU4Xjx
+zDEmKlyttV7nwchyLziBtm9+SXNPUF4h5ltkQbcoV51O/oZYJvy4PfgtsO7F16T0
+ZY6LLqR9RxXsJDULpzFywm4R8WeiHBmjMG4HCYR1IsLmdLmEtxd22rm3tXXjlb+k
+X4ukVsO/AwJ0Qp3HeV66tACFDuCcRN95a6MZsmstJZOK2Kl4q56veRs3Sd4UOw+P
+3ANgpYr/6OPQPhvgA58x
+=OGxd
+-----END PGP SIGNATURE-----
+
+--=-jC5Fd97JZ91L62YSU9P6--
+
