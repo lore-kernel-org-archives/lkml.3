@@ -1,77 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaLDUUR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:20:17 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50267 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbaLDUUO (ORCPT
+	id S1754549AbaLDUWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:22:38 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:30366 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934AbaLDUWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:20:14 -0500
-Date: Thu, 4 Dec 2014 20:20:11 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141204202011.GO29748@ZenIV.linux.org.uk>
+	Thu, 4 Dec 2014 15:22:37 -0500
+X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
+   d="scan'208";a="52147742"
+Message-ID: <5480C286.6000405@broadcom.com>
+Date: Thu, 4 Dec 2014 12:22:30 -0800
+From: Jonathan Richardson <jonathar@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Scott Branden <sbranden@broadcom.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        Arun Ramamurthy <arunrama@broadcom.com>,
+        <bcm-kernel-feedback-list@broadcom.com>, <linux-pwm@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] pwm: kona: Remove setting default smooth type
+ and polarity for all channels
+References: <sbranden@broadcom.com> <1416944441-12066-1-git-send-email-sbranden@broadcom.com> <1416944441-12066-2-git-send-email-sbranden@broadcom.com> <CAD7vxxJFD8Xgsd1Jrf=vA5-duqG21UWXMr4oRM6MEmMxQ9V49A@mail.gmail.com> <5479097B.6020108@broadcom.com> <CAD7vxxJr48p_1=obXkX5kvk96B18A8=F98ikqnzTKsz6nYZJbQ@mail.gmail.com> <54791F30.3050306@broadcom.com> <CAD7vxxJFuA8V0TiPLQo1LOnRQPbM-QOYDTLkg7Ty0N=Nr7frGQ@mail.gmail.com>
+In-Reply-To: <CAD7vxxJFuA8V0TiPLQo1LOnRQPbM-QOYDTLkg7Ty0N=Nr7frGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	First of all, I want to apologize for the nastiness of preprocessor
-use in this series.  Seeing that the whole "macros that look like new kinds
-of C statements" thing (including list_for_each_...(), etc) is very much not
-to my liking, I really don't trust my taste on finer details and I'd very
-much like some feedback.
+Hi Tim,
 
-	The reason for doing that kind of tricks is that iov_iter.c keeps
-growing more and more boilerplate code.  For iov_iter-net series we need
-	* csum_and_copy_from_iter()
-	* csum_and_copy_to_iter()
-	* copy_from_iter_nocache()
-That's 3 new primitives, each in 2 variants (iovec and bvec).
-	* ITER_KVEC handled without going through uaccess.h stuff (and
-independent of set_fs() state).
-And *that* means 3 variants intstead of 2 for most of the existing primitives.
-That's far too much, and the amount of copies of the same logics would pretty
-much guarantee that it will be a breeding ground for hard-to-kill bugs.
+I'm going to take over this submission because I made the changes to the
+driver. Arun was filling in for me while I was on leave. Now I'm back
+and I think I can help clarify why these changes were made. A summary
+for all the changes should help.
 
-	The following series (also in vfs.git#iov_iter) actually manages to
-do all of the above *and* shrink the damn thing quite a bit.  The generated
-code appears to be no worse than before.  The price is a couple of iterator
-macros - iterate_all_kinds() and iterate_and_advance().  They are given an
-iov_iter, size (i.e. the amount of data in iov_iter beginning we want to go
-through), name of the loop variable and 3 variants of loop body - for iovec,
-bvec and kvec resp.  Loop variable is declared *inside* the expansion of those
-suckers according to the kind of iov_iter - it's struct iovec, struct bio_vec
-or struct kvec, covering the current range to deal with.
-	The difference between those two is that iterate_and_advance() will
-advance the iov_iter by the amount it has handled and iterate_all_kinds()
-will leave iov_iter unchanged.
+There were two problems. First was a problem caused by setting the
+polarity in probe. It caused the speaker to click when the polarity was
+set so we took that out as it didn't seem to serve any useful purpose
+that I could see. The polarity changes should be made in the polarity
+callback.
 
-	Unless I hear anybody yelling, it goes into vfs.git#for-next today,
-so if you have objections, suggestions, etc., give those *now*.
+The second and bigger problem was the smooth type sequence. If it isn't
+done according to the spec then one in ten or twenty times you won't
+even get a signal when it's enabled. Following the correct sequence with
+the 400 ns delays solves this problem.
 
-Al Viro (13):
-      iov_iter.c: macros for iterating over iov_iter
-      iov_iter.c: iterate_and_advance
-      iov_iter.c: convert iov_iter_npages() to iterate_all_kinds
-      iov_iter.c: convert iov_iter_get_pages() to iterate_all_kinds
-      iov_iter.c: convert iov_iter_get_pages_alloc() to iterate_all_kinds
-      iov_iter.c: convert iov_iter_zero() to iterate_and_advance
-      iov_iter.c: get rid of bvec_copy_page_{to,from}_iter()
-      iov_iter.c: convert copy_from_iter() to iterate_and_advance
-      iov_iter.c: convert copy_to_iter() to iterate_and_advance
-      iov_iter.c: handle ITER_KVEC directly
-      csum_and_copy_..._iter()
-      new helper: iov_iter_kvec()
-      copy_from_iter_nocache()
+Additionally, by not following the sequence you won't get a smooth
+transition. You'll get a change in the settings (duty cycle, period) but
+may get a non smooth transition. So it's important to follow the spec
+here. We don't want non-smooth transitions.
 
-Diffstat:
- include/linux/uio.h |    6 +
- mm/iov_iter.c       | 1077 +++++++++++++++++++++------------------------------
- 2 files changed, 445 insertions(+), 638 deletions(-)
+More comments below.
+
+On 14-11-28 07:19 PM, Tim Kryger wrote:
+> On Fri, Nov 28, 2014 at 5:19 PM, Arun Ramamurthy
+> <arun.ramamurthy@broadcom.com> wrote:
+>>
+>>
+>> On 14-11-28 05:08 PM, Tim Kryger wrote:
+>>>
+>>> On Fri, Nov 28, 2014 at 3:47 PM, Arun Ramamurthy
+>>> <arun.ramamurthy@broadcom.com> wrote:
+>>>>
+>>>>
+>>>>
+>>>> On 14-11-25 09:51 PM, Tim Kryger wrote:
+>>>>>
+>>>>>
+>>>>> On Tue, Nov 25, 2014 at 11:40 AM, Scott Branden <sbranden@broadcom.com>
+>>>>> wrote:
+>>>>>>
+>>>>>>
+>>>>>> From: Arun Ramamurthy <arunrama@broadcom.com>
+>>>>>>
+>>>>>> The probe routine unnecessarily sets the smooth type and polarity for
+>>>>>> all channels. This causes the channel for the speaker to click at the
+>>>>>> same
+>>>>>> time the backlight turns on. The smooth type and polarity should be set
+>>>>>> individually
+>>>>>> for each channel as required and no defaults need to be set.
+>>>>>
+>>>>>
+>>>>>
+>>>>> I am guessing you are talking about a PWM controlled beeper/buzzer.
+>>>>>
+>>>> This change is more so to remove setting smooth type and polarity for all
+>>>> channels during probe and to leave them as their default values. Infact,
+>>>> setting the PWM_CONTROL_TYPE_SHIT is also redundant cause the default
+>>>> value
+>>>> is already 1 for all channels. We can remove that loop entirely and this
+>>>> will be done in the next patch set. The smooth type and polarity are only
+>>>> changed when the particular pwm channel is enabled or polarity is
+>>>> changed.
+>>>>
+>>>>> Can you mention what board you are observing this issue on?
+>>>>>
+>>>>> Also please explain why setting these bits result in an audible click.
+>>>>>
+>>>> We observe this on the bcm958300K board where one of the
+>>>> PWM channels is connected to the buzzer and changing the
+>>>> smooth type and polarity from its default values causes a click
+>>>>
+>>>
+>>> Which of these two bits is causing the click?
+>>>
+>>> I've already said that I'm open to removing the smooth bit here if that
+>>> helps.
+>>>
+>> Thank you for your quick reply Tim. It is setting the polarity bit that
+>> causes the click. I am planning on removing this entire loop in the next
+>> patch set, are you okay with that?
+> 
+> Does it cause a click at this moment or at a later point in time?
+> 
+> Is the click your sole motivation for this series?  If so, can you
+> propose a more targeted fix?
+> 
+> I would be amenable to deferring polarity changes until subsequent
+> enable operations:
+> 
+> - kona_pwmc_probe doesn't do any hardware writes
+> - kona_pwmc_set_polarity only updates a polarity variable
+> - kona_pwmc_enable sets hardware polarity according to the variable
+> 
+> Would this be sufficient to satisfy your needs?
+> 
+> I am still worried that deferring polarity changes may negatively
+> impact some PWM users who set polarity but don't immediately enable
+> the PWM.
+> 
+>>>>>>
+>>>>>> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
+>>>>>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>>>>>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>>>>>> ---
+>>>>>>    drivers/pwm/pwm-bcm-kona.c | 7 ++-----
+>>>>>>    1 file changed, 2 insertions(+), 5 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
+>>>>>> index 02bc048..29eef9e 100644
+>>>>>> --- a/drivers/pwm/pwm-bcm-kona.c
+>>>>>> +++ b/drivers/pwm/pwm-bcm-kona.c
+>>>>>> @@ -266,12 +266,9 @@ static int kona_pwmc_probe(struct platform_device
+>>>>>> *pdev)
+>>>>>>                   return ret;
+>>>>>>           }
+>>>>>>
+>>>>>> -       /* Set smooth mode, push/pull, and normal polarity for all
+>>>>>> channels */
+>>>>>> -       for (chan = 0; chan < kp->chip.npwm; chan++) {
+>>>>>> -               value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>>>>>> +       /* Set push/pull for all channels */
+>>>>>> +       for (chan = 0; chan < kp->chip.npwm; chan++)
+>>>>>>                   value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
+>>>>>> -               value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
+>>>>>> -       }
+>>>>>>
+>>>>>>           writel(value, kp->base + PWM_CONTROL_OFFSET);
+>>>>>
+>>>>>
+>>>>>
+>>>>> While the smooth bit need not be set here, it is important that the
+>>>>> polarity bit be set.
+>>>>>
+>>>> The default value for polarity is 0 which is normal polarity, so setting
+>>>> it
+>>>> to 1 here in the probe function without a sysfs call is
+>>>> when the software will report the polarity as normal when it is actually
+>>>> inversed.
+>>>
+>>>
+>>> Please double check the meaning of the polarity bits for the revision
+>>> of PWM IP in your chip.  I suspect you are mistaken here.
+>>>
+>>> This driver is for PWM blocks compatible those found in bcm28145,
+>>> bcm28155, bcm21664, and other mobile chips of that generation.
+>>>
+>>> Apparently in contrast to the chip you are using, a set polarity bit
+>>> in the control register means normal polarity for the chips I
+>>> mentioned.
+>>>
+>>> A default of zero for these bits means they must be set to meet the
+>>> PWM framework's expectation that channels begin with normal polarity.
+>>>
+>> Tim, this is from the RDB of our new chip which is supposed to have the same
+>> IP as the mobile chip sets you mentioned:
+>>
+>> When set to 1 the output polarity for the PWM Output signal will be active
+>> hight; When set to 0, the output polarity for the PWM Output signal will be
+>> active low. Default State is 0.
+>>
+>> My understanding is that the frameworks normal polarity means active low, am
+>> I mistaken in that?
+> 
+> That is not how I would interpret things.
+> 
+> Perhaps this paragraph from Documentation/pwm.txt will help you:
+> 
+> When implementing polarity support in a PWM driver, make sure to respect the
+> signal conventions in the PWM framework. By definition, normal polarity
+> characterizes a signal starts high for the duration of the duty cycle and
+> goes low for the remainder of the period. Conversely, a signal with inversed
+> polarity starts low for the duration of the duty cycle and goes high for the
+> remainder of the period.
+> 
+
+Agreed. When using DT, the polarity will be set properly. When using
+sysfs there is a discrepancy and this needs to be addressed. Because the
+hw default is active low, the polarity will be inversed when the sysfs
+says polarity is "normal". I'll have to account for this in the driver.
+
+>>
+>>>>>
+>>>>> Otherwise software will report the polarity as normal when it it is
+>>>>> actually inversed.
+>>>>>
+>>>>> Consider the case where a userspace process is controlling the PWM via
+>>>>> sysfs.
+>>>>>
+>>>> I agree with you about the sysfs case Tim, but since this is the probe
+>>>> function and not a sysfs callback, should we not leave it as the default
+>>>> value?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
