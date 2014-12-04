@@ -1,119 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaLDORO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:17:14 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46206 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaLDORM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:17:12 -0500
-Message-ID: <54806CDF.50609@redhat.com>
-Date: Thu, 04 Dec 2014 15:17:03 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754505AbaLDOTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:19:07 -0500
+Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:36704 "EHLO
+	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753908AbaLDOTF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:19:05 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <54806D4E.8040504@topic.nl>
+Date: Thu, 4 Dec 2014 15:18:54 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Nadav Amit <nadav.amit@gmail.com>, rkrcmar@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] kvm: vmx: add nested virtualization support for
- xsaves
-References: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master
+ clock
+References: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl> <5480577D.4010106@metafoo.de>
+In-Reply-To: <5480577D.4010106@metafoo.de>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+﻿On 12/04/2014 01:45 PM, Lars-Peter Clausen wrote:
+> On 12/04/2014 07:52 AM, Mike Looijmans wrote:
+>> If the master clock supports programmable rates, program it to generate
+>> the desired frequency. Only apply constraints when the clock is fixed.
+>> This allows proper clock generation for both 44100 and 48000 Hz based
+>> sampling rates if the platform supports it.
+>>
+>> The clock frequency must be set before enabling it. Enabling the clock
+>> was done in "startup", but that occurs before "hw_params" where the rate
+>> is known. Move the clock start to the hw_params routine, and keep track
+>> of whether the clock has been started, because shutdown may be called
+>> without having called hw_params first.
+>
+> Usually that shouldn't be a problem. If your clock chip requires it to be
+> disabled in order to be reprogrammed than the CLK_SET_RATE_GATE flag should be
+> set. This will tell the core to disable the clock before changing it.
+
+The issue here is not the clock's capabilities, but the order in which things 
+are being done. If the driver just enables the clock without ever having set a 
+rate, the clock will run at whatever happens to be the default. That default 
+may have unpredictable results or even be harmful to the system. So the driver 
+should first set a valid clock rate before enabling the clock. Suggestions on 
+rewording my comments to better reflect that are welcome.
+
+>
+> [...]
+>>   static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
+>> @@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
+>>       spdif->dma_data.addr_width = 4;
+>>       spdif->dma_data.maxburst = 1;
+>>
+>> -    spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
+>> -    spdif->ratnum.den_step = 1;
+>> -    spdif->ratnum.den_min = 1;
+>> -    spdif->ratnum.den_max = 64;
+>> -
+>> -    spdif->rate_constraints.rats = &spdif->ratnum;
+>> -    spdif->rate_constraints.nrats = 1;
+>> +    /* Determine if the clock rate is fixed. If it cannot change frequency,
+>> +     * it returns an error here. */
+>> +    if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
+>
+> I don't think this works. For a fixed clock clk_round_rate() will return the
+> fixed rate rather than an error. I tried the patch and even though I have a
+> fixed clock the constraints are no longer set.
+>
+> There is unfortunately no good way to enumerate which frequencies are
+> supported by a clock other than just calling round_rate for all possible rates.
+>
+> I think the best way to implement this for now is to try e.g. 32000 * 128,
+> 44100 * 128, 48000 * 128 and then check if clk_round_rate returns the expected
+> rate and if it does set up a rate constraint for that rate.
+
+For what I could see, ALSA never reported or limited the sample rate correctly 
+even before this patch, so maybe the even simpler approach is better: Just 
+remove the constraint. I wonder how you concluded that the constraint didn't 
+get added?
+
+Actually, the SPDIF logic wants a clock that is an "integer multiple of 
+128*samplerate in the range of 1..64". Other than just looping through them 
+all, there's also no way to request the clock framework for such a requirement.
+
+Your suggestion is quite robust though, but the fixed clock may be set to any 
+integer multiple of the desired frequency, so the algorithm would not work if 
+the fixed clock is running at 48000*256 (12.8MHz like in the reference 
+design). So I guess the best I could do here is just check that:
+
+clk_round_rate(spdif->clk_ref, 128 * 44100) != clk_round_rate(spdif->clk_ref, 
+128 * 48000)
+
+Only a configurable clock that is compatible with the patch would do that.
 
 
-On 04/12/2014 12:11, Wanpeng Li wrote:
-> Add nested virtualization support for xsaves.
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  arch/x86/kvm/vmx.c | 17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 6e3a448..e5bc349 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -216,6 +216,7 @@ struct __packed vmcs12 {
->  	u64 virtual_apic_page_addr;
->  	u64 apic_access_addr;
->  	u64 ept_pointer;
-> +	u64 xss_exit_bitmap;
->  	u64 guest_physical_address;
->  	u64 vmcs_link_pointer;
->  	u64 guest_ia32_debugctl;
-> @@ -618,6 +619,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
->  	FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
->  	FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
->  	FIELD64(EPT_POINTER, ept_pointer),
-> +	FIELD64(XSS_EXIT_BITMAP, xss_exit_bitmap),
->  	FIELD64(GUEST_PHYSICAL_ADDRESS, guest_physical_address),
->  	FIELD64(VMCS_LINK_POINTER, vmcs_link_pointer),
->  	FIELD64(GUEST_IA32_DEBUGCTL, guest_ia32_debugctl),
-> @@ -1104,6 +1106,12 @@ static inline int nested_cpu_has_ept(struct vmcs12 *vmcs12)
->  	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_ENABLE_EPT);
->  }
->  
-> +static inline bool nested_cpu_has_xsaves(struct vmcs12 *vmcs12)
-> +{
-> +	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES) &&
-> +		vmx_xsaves_supported();
-> +}
-> +
->  static inline bool is_exception(u32 intr_info)
->  {
->  	return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
-> @@ -2392,7 +2400,8 @@ static __init void nested_vmx_setup_ctls_msrs(void)
->  	nested_vmx_secondary_ctls_high &=
->  		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
->  		SECONDARY_EXEC_UNRESTRICTED_GUEST |
-> -		SECONDARY_EXEC_WBINVD_EXITING;
-> +		SECONDARY_EXEC_WBINVD_EXITING |
-> +		SECONDARY_EXEC_XSAVES;
->  
->  	if (enable_ept) {
->  		/* nested EPT: emulate EPT also to L1 */
-> @@ -7285,6 +7294,8 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
->  		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_WBINVD_EXITING);
->  	case EXIT_REASON_XSETBV:
->  		return 1;
-> +	case EXIT_REASON_XSAVES: case EXIT_REASON_XRSTORS:
-> +		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES);
 
-This assumes that we do not set any bit in the XSS exit bitmap in the
-host, and/or that we do not allow setting any bit in the XSS msr itself.
- Otherwise we'd have to check the XSS MSR of the L2 guest against the
-exit bitmap of the guest.
 
-I'll add a FIXME here.
+Met vriendelijke groet / kind regards,
 
-Paolo
+Mike Looijmans
+System Expert
 
->  	default:
->  		return 1;
->  	}
-> @@ -8341,6 +8352,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  	vmcs_writel(GUEST_SYSENTER_ESP, vmcs12->guest_sysenter_esp);
->  	vmcs_writel(GUEST_SYSENTER_EIP, vmcs12->guest_sysenter_eip);
->  
-> +	if (nested_cpu_has_xsaves(vmcs12))
-> +		vmcs_write64(XSS_EXIT_BITMAP, vmcs12->xss_exit_bitmap);
->  	vmcs_write64(VMCS_LINK_POINTER, -1ull);
->  
->  	exec_control = vmcs12->pin_based_vm_exec_control;
-> @@ -8981,6 +8994,8 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12,
->  	vmcs12->guest_sysenter_eip = vmcs_readl(GUEST_SYSENTER_EIP);
->  	if (vmx_mpx_supported())
->  		vmcs12->guest_bndcfgs = vmcs_read64(GUEST_BNDCFGS);
-> +	if (nested_cpu_has_xsaves(vmcs12))
-> +		vmcs12->xss_exit_bitmap = vmcs_read64(XSS_EXIT_BITMAP);
->  
->  	/* update exit information fields: */
->  
-> 
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Topic zoekt gedreven (embedded) software specialisten!
+http://topic.nl/vacatures/topic-zoekt-software-engineers/
+
