@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879AbaLDLwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:52:11 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48085 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbaLDLwJ (ORCPT
+	id S932093AbaLDLxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:53:12 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37098 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500AbaLDLxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:52:09 -0500
-Date: Thu, 4 Dec 2014 11:51:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Darren Hart <dvhart@linux.intel.com>, Ben Zhang <benzh@chromium.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20141204115138.GU7712@sirena.org.uk>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
- <2127240.rWRTDu6LHQ@vostro.rjw.lan>
- <20141129115209.GD7712@sirena.org.uk>
- <1820241.GUleD5gbzs@vostro.rjw.lan>
- <20141204111234.44C0FC40874@trevor.secretlab.ca>
+	Thu, 4 Dec 2014 06:53:10 -0500
+Message-ID: <54804B1F.3020703@hitachi.com>
+Date: Thu, 04 Dec 2014 20:53:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="q1e9gQ/ARJj/k4o3"
-Content-Disposition: inline
-In-Reply-To: <20141204111234.44C0FC40874@trevor.secretlab.ca>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Steve Capper <steve.capper@linaro.org>
+Cc: David Long <dave.long@linaro.org>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com> <547FCB73.1010707@linaro.org> <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com> <54803ADD.2090201@hitachi.com> <CAPvkgC26-CprjLVH55=7z73JtxTumFFZ4W7itevXxMwReVqQ1g@mail.gmail.com>
+In-Reply-To: <CAPvkgC26-CprjLVH55=7z73JtxTumFFZ4W7itevXxMwReVqQ1g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/12/04 20:29), Steve Capper wrote:
 
---q1e9gQ/ARJj/k4o3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> I'd like to ask you to try my fix on your machine, with my reproducing
+>> methods. (do not use sytemtap nor perf, those can have other issues)
+>>
+> 
+> Thank you Masami,
+> 
+> I tried the following commands:
+> 
+> echo "p:trace_event_buffer_lock_reserve
+> trace_event_buffer_lock_reserve" >
+> /sys/kernel/debug/tracing/kprobe_events
+> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+> echo 1 > /sys/kernel/debug/tracing/events/sched/sched_process_exec/enable
+> 
+> The system appeared okay, I then cat'ed out:
+> # cat /sys/kernel/debug/tracing/kprobe_profile
+>    trace_event_buffer_lock_reserve                           25              25
+> 
+> I got similar output (i.e. no crashes) both with and without the
+> interrupt fix you recommended.
+> 
+> I'm not sure how to interpret this, please let me know if you would
+> like me to run any other tests?
+> 
+> (I did also try your proposed fix with perf + memcpy and that crashed
+> in a similar way as before).
 
-On Thu, Dec 04, 2014 at 11:12:34AM +0000, Grant Likely wrote:
-> On Sat, 29 Nov 2014 23:27:52 +0100
+Hmm, then the bug is still there, and the bug may not be in the recursive
+call path... We need to find another suspicious code in the patch.
 
-> > There basically are two ways around that.  The first one is to have all
-> > knowledge related to device IDs in drivers (which effectively is what
-> > Windows does and which implies "board files" of sorts) and the second one is
-> > to make it possible to use overlays on top of the existing ACPI tables that
-> > will allow people to provide the properties expected by a more generic driver
-> > (this way, if the vendor didn't care to provide _DSD, for example, in the
-> > original ACPI tables, the system integrator would be able to use an overlay
-> > in an initramfs or boot partition to amend them).
 
-> Either approach amounts to pretty much the same thing. The
-> kernel/distribution needs to carry around device specific driver data
-> which is exactly how we've supported x86 hardware. Whether the data is
-> in-kernel or in-userspace is kind of an implementation detail. :-)
+Thank you,
 
-This isn't entirely what we've doing for x86 up until now - there's always
-been an expectation that the firmware will be setting things up to work
-by default (or so we can read the setup back from the hardwaer when we
-take over) and we're mostly just carrying quirk data when that doesn't
-pan out.
 
-> _DSD support is a different situation though. Even if Windows doesn't
-> care to directly support _DSD, drivers are free to use _DSD properties.
-> This is the scenario where the shared binding repository will be
-> important.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Right, this would be ideal for the devices we're looking at.
 
---q1e9gQ/ARJj/k4o3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUgErKAAoJECTWi3JdVIfQqzoH/3kp45j+8QfDzEGHBssTIH7f
-80j5xhSIYlEv/fJ7koaVYuP8uhTIsm6EkxT3G9TPqaYwujTFIfSJYKD/JAw4aLXb
-sWoCbmGIcaoNithOzUlkmMGXX1zDfFM/lAtC7IDbbLV6hlU1lNMIBrvSiQwREdrS
-PFLYtzfpHONsnXBQoVObQyzjhiubk7VT8HNp2v/M/cB+T1QCpnW8ZB8ttcc6ujpd
-vBzCwr2wOs/a5fMNBpvRp2ptGAYnYJ4P1z9z+gBcg2vFIOEHEff76BeKDHiCMXBn
-QuSKqgos3n5VFcIQwpI/kRN1YDUsUpHqM9NePcFLJUEfvbY3xgCNAsQI00aYsDY=
-=Mx5W
------END PGP SIGNATURE-----
-
---q1e9gQ/ARJj/k4o3--
