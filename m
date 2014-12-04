@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaLDJNI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:13:08 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:54207 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123AbaLDJNF (ORCPT
+	id S1753431AbaLDJNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:13:36 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:46775 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752922AbaLDJNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:13:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, heiko@sntech.de,
-        Linus Walleij <linus.walleij@linaro.org>, tomasz.figa@gmail.com,
-        Rob Herring <robh+dt@kernel.org>, thomas.ab@samsung.com,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/2] soc: samsung: add exynos chipid driver support
-Date: Thu, 04 Dec 2014 10:12:24 +0100
-Message-ID: <4074205.TGQpWxTihh@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <547FEA74.1010900@samsung.com>
-References: <1417594658-2931-1-git-send-email-pankaj.dubey@samsung.com> <19026872.NZqUJn3Abb@wuerfel> <547FEA74.1010900@samsung.com>
+	Thu, 4 Dec 2014 04:13:34 -0500
+Message-ID: <5480259D.6040106@arm.com>
+Date: Thu, 04 Dec 2014 09:13:01 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:rr5gBLzwwV3yGBqF5OoyNuALWUFmWobuEqe/23Au+ly
- +NOIJw30bQsh3GVqvBWeBRJ0uhWPUcJAqr7/BRBGag46ffsynX
- MIyf89RBukN7E2X6dK3mDBeFXe/OeImkZy+ANhWVfgacORpdHM
- pbVNb5X7wkibAGcOtg79gjtpJs2E2m8SPzFqb9t5gIpM8tsn7+
- vehy4B0XJU2a8iXXUaoc0O1t8gu2364Y2Ox+FTg+wawW1/6jEj
- iCmIK+qN9VXKf2rUuyQHY/aS/3saxoOffLTMMiPM/DDjP4BV6I
- IY+d/F2J2De9qEbj4k2klu/9aUSKCyBCQwuD6knW9m3vnQVnN6
- AB0eA/L6DHnV3/5Yh6zk=
-X-UI-Out-Filterresults: notjunk:1;
+To: rajeev kumar <rajeevkumar.linux@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH 3/5] ASoC: dwc: Iterate over all channels
+References: <547F3CA5.2010500@arm.com>	<20141203172928.GD7712@sirena.org.uk> <CAA7nrthuG_4837JArAmmEkcBqfqRRUM5rzyZ1UcH3TqhfF79bg@mail.gmail.com>
+In-Reply-To: <CAA7nrthuG_4837JArAmmEkcBqfqRRUM5rzyZ1UcH3TqhfF79bg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 December 2014 10:30:36 Pankaj Dubey wrote:
-> >
-> > On Wednesday 03 December 2014 13:47:37 Pankaj Dubey wrote:
-> >
-> >> +       soc_dev_attr->soc_id = exynos_product_id_to_name(soc_product_id);
-> >> +
-> >> +       soc_dev = soc_device_register(soc_dev_attr);
-> >> +       if (IS_ERR(soc_dev))
-> >> +               goto free_rev;
-> >> +
-> >> +       device_create_file(soc_device_to_device(soc_dev), &exynos_product_attr);
-> >> +       device_create_file(soc_device_to_device(soc_dev),
-> >> +                               &exynos_main_rev_attr);
-> >> +       device_create_file(soc_device_to_device(soc_dev), &exynos_sub_rev_attr);
-> >> +
-> >
-> > I don't like the idea of having three extra nonstandard properties here,
-> > especially when you are not using the machine field for anything useful.
-> >
+On 12/04/14 06:55, rajeev kumar wrote:
+> On Wed, Dec 3, 2014 at 10:59 PM, Mark Brown <broonie@kernel.org> wrote:
+>> On Wed, Dec 03, 2014 at 04:39:01PM +0000, Andrew Jackson wrote:
+>>
+>>> +     /* Iterate over set of channels - independently controlled.
+>>> +      */
+>>> +     do {
+>>> +             if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+>>> +                     i2s_write_reg(dev->i2s_base, TCR(ch_reg),
+>>> +                                   xfer_resolution);
+>>> +                     i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
+>>> +                     irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+>>> +                     i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
+>>> +                     i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
+>>> +             } else {
+>>> +                     i2s_write_reg(dev->i2s_base, RCR(ch_reg),
+>>> +                                   xfer_resolution);
+>>> +                     i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
+>>> +                     irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+>>> +                     i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
+>>> +                     i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
+>>> +             }
+>>> +     } while (ch_reg-- > 0);
+>>
+>> The normal way to write an iteration would be with a for loop - why are
+>> we not doing that?
+>>
+>> Also I see that you've not sent these as a single thread - please use
+>> --thread.
 > 
-> I did not get you here. Any suggestions how we can use 'machine' field 
-> more useful way.
-
-For instance you could pass the exynos_product_id_to_name() result to
-the machine field instead of the soc_id field, and use the soc_id
-for a more fine-grained distinction.
-
-> > Also, all three of these just come from the same register, why expose
-> > them all as the machine and revision standard properties.
-> >
+> designware i2s has individual register for channel support. It is like
+> TCR(0), TCR(1) and so on.. So a macro is defined to capture these
+> please check below #define
 > 
-> Agreed. These properties are basically giving same information but with 
-> small modification.
-> As you said these are getting exposed via standard properties as well, 
-> so I have no issue to drop them. Just waiting for more review from 
-> Samsung folks, will take care of this in next version.
+> #define TCR(x)      (0x40 * x + 0x034)
+> 
+> and the same is true for capture also. So there is no need for
+> iteration. Only writing to the particular register will do the work.
 
-Ok.
+However params_channels returns the number of channels that the device needs to configure.  So, for example, when there are four channels two sets of channel registers need to be programmed.
 
-	Arnd
+
+	Andrew
+> 
+> ~Rajeev
+> 
+
