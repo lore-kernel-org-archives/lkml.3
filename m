@@ -1,67 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221AbaLDWKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:10:50 -0500
-Received: from mout.web.de ([212.227.15.4]:52364 "EHLO mout.web.de"
+	id S933249AbaLDWNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:13:23 -0500
+Received: from mout.gmx.net ([212.227.17.20]:63630 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752997AbaLDWKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:10:47 -0500
-Message-ID: <5480DBDE.7040604@users.sourceforge.net>
-Date: Thu, 04 Dec 2014 23:10:38 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752997AbaLDWNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 17:13:20 -0500
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: Re: [PATCH v9 8/8] tpm: TPM 2.0 FIFO Interface
+Date: Thu, 4 Dec 2014 23:18:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Will Arthur <will.c.arthur@intel.com>
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by pr_warn()
- in mppe_rekey()
-References: <5307CAA2.8060406@users.sourceforge.net> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net> <547CA157.1080401@cogentembedded.com> <5480DA32.8000201@users.sourceforge.net>
-In-Reply-To: <5480DA32.8000201@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:TUgskJCvWyZ7a5TpYLyTyAZPvUPx9xV7ZBHwJ1PUGzPBjIt3B5I
- mfRhfHrbJryT4qD8pSMShXIRq5vIf6JYRm+6t1EA8HIYIfX+uwpGkapTEVQr0IfDDF0KhcB
- PN+mi3lGIO519P+MWLi5BsS7PKoxAoyv6xkMgrWL+6LnLozNIxNSO1O0g2+n+UDi5mUB1eW
- 0lyPsMCPJAMWMhwXnLwdw==
+Message-Id: <201412042318.33889.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:5L0qpLXpyjvR78sjPZBvJAaNQw32p+mvDZfCV/2HoM6VfIXYjcw
+ g1r1/YqwIJQlXF5F91eae6c8rxJIxfkyPpbVLUTLM+9yV7FY4xekCd9idBqXCREKcIdGlpR
+ 61wCp0pYvUyal7l4HqEtNqUMpB4hC7/NtmkfqyaZLF5yQtmbec5wCK4bJlmNd/n3+W6TLUm
+ 3Fy3bw3ytNFpPv8ugmNSg==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 4 Dec 2014 18:28:52 +0100
+Hi Jarkko,
 
-The mppe_rekey() function contained a few update candidates.
-* Curly brackets were still used around a single function call "printk".
-* Unwanted space characters
+Am Donnerstag, 4. Dezember 2014, 06:55:18 schrieb Jarkko Sakkinen:
+> From: Will Arthur <will.c.arthur@intel.com>
+> 
+> Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
+> instead of calling tpm_get_timeouts(), assign duration and timeout
+> values defined in the TPM 2.0 PTP specification.
+> 
+> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
+>  drivers/char/tpm/tpm_tis.c | 80
+> ++++++++++++++++++++++++++++++++++++++-------- 1 file changed, 67
+> insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 89e1abb..71cbb2d 100644
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright (C) 2005, 2006 IBM Corporation
+> + * Copyright (C) 2014 Intel Corporation
+>   *
+>   * Authors:
+>   * Leendert van Doorn <leendert@watson.ibm.com>
+> @@ -44,6 +45,10 @@ enum tis_status {
+>  	TPM_STS_DATA_EXPECT = 0x08,
+>  };
+> 
+> +enum tis_status3 {
+> +	TPM_STS3_TPM2_FAM = 0x04,
+> +};
+> +
+>  enum tis_int_flags {
+>  	TPM_GLOBAL_INT_ENABLE = 0x80000000,
+>  	TPM_INTF_BURST_COUNT_STATIC = 0x100,
+> @@ -70,6 +75,7 @@ enum tis_defaults {
+>  #define	TPM_INT_STATUS(l)		(0x0010 | ((l) << 12))
+>  #define	TPM_INTF_CAPS(l)		(0x0014 | ((l) << 12))
+>  #define	TPM_STS(l)			(0x0018 | ((l) << 12))
+> +#define	TPM_STS3(l)			(0x001b | ((l) << 12))
+>  #define	TPM_DATA_FIFO(l)		(0x0024 | ((l) << 12))
+> 
+>  #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
+> @@ -363,6 +369,7 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8
+> *buf, size_t len) {
+>  	int rc;
+>  	u32 ordinal;
+> +	unsigned long dur;
+> 
+>  	rc = tpm_tis_send_data(chip, buf, len);
+>  	if (rc < 0)
+> @@ -374,9 +381,14 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8
+> *buf, size_t len)
+> 
+>  	if (chip->vendor.irq) {
+>  		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+> +
+> +		if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +			dur = tpm2_calc_ordinal_duration(chip, ordinal);
+> +		else
+> +			dur = tpm_calc_ordinal_duration(chip, ordinal);
+> +
+>  		if (wait_for_tpm_stat
+> -		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
+> -		     tpm_calc_ordinal_duration(chip, ordinal),
+> +		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID, dur,
+>  		     &chip->vendor.read_queue, false) < 0) {
+>  			rc = -ETIME;
+>  			goto out_err;
+> @@ -588,6 +600,7 @@ static int tpm_tis_init(struct device *dev, acpi_handle
+> acpi_dev_handle, int rc, i, irq_s, irq_e, probe;
+>  	struct tpm_chip *chip;
+>  	struct priv_data *priv;
+> +	u8 sts3;
+> 
+>  	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
+>  	if (priv == NULL)
+> @@ -604,11 +617,28 @@ static int tpm_tis_init(struct device *dev,
+> acpi_handle acpi_dev_handle, if (!chip->vendor.iobase)
+>  		return -EIO;
+> 
+> +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
+> +	if ((sts3 & TPM_STS3_TPM2_FAM) == TPM_STS3_TPM2_FAM)
+> +		chip->flags = TPM_CHIP_FLAG_TPM2;
+> +
+>  	/* Default timeouts */
+> -	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> -	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> -	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> -	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+> +		chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
+> +		chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
+> +		chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
+> +		chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
+> +		chip->vendor.duration[TPM_SHORT] =
+> +			usecs_to_jiffies(TPM2_DURATION_SHORT);
+> +		chip->vendor.duration[TPM_MEDIUM] =
+> +			usecs_to_jiffies(TPM2_DURATION_MEDIUM);
+> +		chip->vendor.duration[TPM_LONG] =
+> +			usecs_to_jiffies(TPM2_DURATION_LONG);
+> +	} else {
+> +		chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +		chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> +		chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +		chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> +	}
+> 
+>  	if (wait_startup(chip, 0) != 0) {
+>  		rc = -ENODEV;
+> @@ -623,8 +653,8 @@ static int tpm_tis_init(struct device *dev, acpi_handle
+> acpi_dev_handle, vendor = ioread32(chip->vendor.iobase + TPM_DID_VID(0));
+>  	chip->vendor.manufacturer_id = vendor;
+> 
+> -	dev_info(dev,
+> -		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
+> +	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
+> +		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
+>  		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
+> 
 
-Let us improve these implementation details according to the current Linux
-coding style convention.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ppp/ppp_mppe.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+When loading tpm_tis force=1 with my tpm1.2 chip on a machine without bios 
+integration, it fets detected as a TPM2.0 chip :/
 
-diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-index 911b216..84b7bce 100644
---- a/drivers/net/ppp/ppp_mppe.c
-+++ b/drivers/net/ppp/ppp_mppe.c
-@@ -172,9 +172,8 @@ static void mppe_rekey(struct ppp_mppe_state * state, int initial_key)
- 		setup_sg(sg_in, state->sha1_digest, state->keylen);
- 		setup_sg(sg_out, state->session_key, state->keylen);
- 		if (crypto_blkcipher_encrypt(&desc, sg_out, sg_in,
--					     state->keylen) != 0) {
--    		    printk(KERN_WARNING "mppe_rekey: cipher_encrypt failed\n");
--		}
-+					     state->keylen) != 0)
-+			pr_warn("mppe_rekey: cipher_encrypt failed\n");
- 	} else {
- 		memcpy(state->session_key, state->sha1_digest, state->keylen);
- 	}
--- 
-2.1.3
+sudo rmmod tpm_tis
+# modprobe tpm_tis force=1
+modprobe: ERROR: could not insert 'tpm_tis': No such device
+# dmesg 
+[  263.903828] tpm_tis tpm_tis: 2.0 TPM (device-id 0xB, rev-id 16)
+[  263.948049] tpm_tis tpm_tis: A TPM error (10) occurred continue selftest
+[  263.948120] tpm_tis tpm_tis: TPM self test failed
+
+
+sts3 is reported as 0xff from my TPM1.2
+
+Thanks,
+Peter
+
 
