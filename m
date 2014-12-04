@@ -1,90 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaLDFyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 00:54:49 -0500
-Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:7129
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750724AbaLDFys convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 00:54:48 -0500
-From: Dudley Du <dudl@cypress.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-Subject: RE: [PATCH v12 01/19] input: cyapa: modify code to following kernel
- code style
-Thread-Topic: [PATCH v12 01/19] input: cyapa: modify code to following kernel
- code style
-Thread-Index: AQLSNRra1jZVB9nM0+wOVR3Z+Zb0TgHHg1DRAmgH20uaWSRXAA==
-Date: Thu, 4 Dec 2014 05:54:43 +0000
-Message-ID: <CO1PR06MB078B7C0303567890795B94BD1780@CO1PR06MB078.namprd06.prod.outlook.com>
-References: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
- <1417599025-21681-2-git-send-email-dudley.dulixin@gmail.com>
- <20141204045735.GA5362@newt.localdomain>
-In-Reply-To: <20141204045735.GA5362@newt.localdomain>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.95.211.187]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR06MB079;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR06MB079;
-x-forefront-prvs: 041517DFAB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(164054003)(51164003)(24454002)(13464003)(51704005)(199003)(189002)(106116001)(120916001)(99396003)(106356001)(76576001)(50986999)(31966008)(74316001)(76176999)(54356999)(99286002)(107046002)(95666004)(19580395003)(20776003)(54206007)(68736005)(122556002)(64706001)(54606007)(19580405001)(40100003)(66066001)(62966003)(110136001)(1411001)(77156002)(2656002)(15975445006)(92726001)(105586002)(21056001)(4396001)(87936001)(86362001)(33656002)(92566001)(101416001)(46102003)(97736003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR06MB079;H:CO1PR06MB078.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
+	id S1752907AbaLDFz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 00:55:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60749 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052AbaLDFz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 00:55:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,513,1413270000"; 
+   d="scan'208";a="618372197"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v9 0/8] TPM 2.0 support
+Date: Thu,  4 Dec 2014 07:55:10 +0200
+Message-Id: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremiah,
+This patch set enables TPM2 protocol and provides drivers for FIFO and
+CRB interfaces. This patch set does not export any sysfs attributes for
+TPM 2.0 because existing sysfs attributes have three non-trivial issues:
 
-I didn't submitted this fix patch, but Dmitry has been helping apply the fix patch quickly, maybe todoay or tommorrow.
+- They are associated with the platform device instead of character
+  device.
+- They are are not trivial key-value pairs but contain text that is
+  not easily parsed by a computer.
+- Raciness as described in
+  http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
 
-For the pathces that I made were worked based off of kernel mainline.
+This is too big effort to be included into this patch set and requires
+more discussion.
 
-Thanks,
-Dudley
+v2:
+- Improved struct tpm_chip life-cycle by taking advantage of devres
+  API.
+- Refined sysfs attributes as simple key-values thereby not repeating
+  mistakes in TPM1 sysfs attributes.
+- Documented functions in tpm-chip.c and tpm2-cmd.c.
+- Documented sysfs attributes.
 
-> -----Original Message-----
-> From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
-> Sent: 2014?12?4? 12:58
-> To: Dudley Du
-> Cc: linux-kernel@vger.kernel.org; dmitry.torokhov@gmail.com
-> Subject: Re: [PATCH v12 01/19] input: cyapa: modify code to following kernel code
-> style
->
-> Dudley,
->
-> On Wed, Dec 03, 2014 at 05:30:07PM +0800, Dudley Du wrote:
-> > This patch modified the code to fix the patch check warning issue with latest
-> > checkpatch.sh tool, and also changed the return variable name from "ret" to
-> > "error" when there is only one error path to follow code style.
-> > TEST=test on Chromebooks.
-> >
-> > Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
-> > ---
-> >  drivers/input/mouse/cyapa.c | 162 ++++++++++++++++++++++----------------------
-> >  1 file changed, 80 insertions(+), 82 deletions(-)
-> >
-> > diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-> > index b409c3d..c9fdf6d 100644
-> > --- a/drivers/input/mouse/cyapa.c
-> > +++ b/drivers/input/mouse/cyapa.c
-> [...]
->
-> I was hoping to test out your patchset since the patch for the touchpad
-> problem [1] still has not appeared in linux-next as of 20141203.
-> Unfortunately your patchset does not apply so I can't test it.  Which
-> kernel is your work based off of?
->
->   [1]: https://lkml.org/lkml/2014/11/27/684
->
-> --
-> - Jeremiah Mahler
+v3:
+- Lots of fixes in calling order in device drivers (thanks to Jason
+  Gunthorpe for pointing these out!).
+- Attach sysfs attributes to the misc device because it represents
+  TPM device to the user space.
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+v4:
+- Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
+  best approach for them.
+- Fixed all the style issues found with checkpatch.pl.
+
+v5:
+- missing EXPORT_SYMBOL_GPL()
+- own class for TPM devices used for TPM 2.0 devices and onwards.
+
+v6:
+- Non-racy initialization for sysfs attributes using struct device's
+  groups field.
+- The class 'tpm' is used now for all TPM devices. For the first device
+  node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
+  backwards compatability.
+
+v7:
+- Release device number and free struct tpm_chip memory inside
+  tpm_dev_release callback.
+- Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
+
+v8:
+- Cleaned up unneeded cast from tpm_transmit_cmd().
+- Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
+- Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
+- tpm_crb: in crb_recv, check that count can hold the TPM header at
+  minimum.
+- tpm_crb: add enumerations for bit flags in start and cancel fields
+  of the control area.
+- tpm_crb: use ioremap() for command and response buffer because
+  they might be anywhere.
+- tpm_crb: use IO access functions for reading ioremapped buffers
+  because using direct pointers is not portable.
+- tpm_crb: only apply ACPI start if start method reported by the
+  TPM2 ACPI table allows it.
+- In tpm2_pcr_read() just calculate index and bit and get rid of
+  hacky loop.
+- Do not add sysfs attributes for TPM 2.0 devices.
+
+v9:
+- Fixed compilation issues in v8 (sorry for not using the correct
+  tree).
+- Just do "return tpm_chip_register();" instead of copying return
+  value to a variable.
+- Removed unused tpm2_startup().
+- In the CRB driver ACPI TPM2 table could contain platform specific
+  and therefore inequality test does not work. Fixed in this patch
+  set.
+
+Jarkko Sakkinen (7):
+  tpm: merge duplicate transmit_cmd() functions
+  tpm: two-phase chip management functions
+  tpm: fix raciness of PPI interface lookup
+  tpm: rename chip->dev to chip->pdev
+  tpm: device class for tpm
+  tpm: TPM 2.0 baseline support
+  tpm: TPM 2.0 CRB Interface
+
+Will Arthur (1):
+  tpm: TPM 2.0 FIFO Interface
+
+ drivers/char/tpm/Kconfig            |   9 +
+ drivers/char/tpm/Makefile           |   3 +-
+ drivers/char/tpm/tpm-chip.c         | 251 +++++++++++++++++
+ drivers/char/tpm/tpm-dev.c          |  42 +--
+ drivers/char/tpm/tpm-interface.c    | 261 ++++++-----------
+ drivers/char/tpm/tpm-sysfs.c        |  29 +-
+ drivers/char/tpm/tpm.h              | 107 +++++--
+ drivers/char/tpm/tpm2-cmd.c         | 542 ++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_atmel.c        |  25 +-
+ drivers/char/tpm/tpm_crb.c          | 356 +++++++++++++++++++++++
+ drivers/char/tpm/tpm_i2c_atmel.c    |  55 ++--
+ drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
+ drivers/char/tpm/tpm_i2c_nuvoton.c  |  71 ++---
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  28 +-
+ drivers/char/tpm/tpm_ibmvtpm.c      |  17 +-
+ drivers/char/tpm/tpm_infineon.c     |  51 ++--
+ drivers/char/tpm/tpm_nsc.c          |  34 ++-
+ drivers/char/tpm/tpm_ppi.c          | 137 +++++----
+ drivers/char/tpm/tpm_tis.c          | 192 ++++++++-----
+ drivers/char/tpm/xen-tpmfront.c     |  14 +-
+ 20 files changed, 1689 insertions(+), 578 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm-chip.c
+ create mode 100644 drivers/char/tpm/tpm2-cmd.c
+ create mode 100644 drivers/char/tpm/tpm_crb.c
+
+-- 
+2.1.0
+
