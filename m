@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371AbaLDXQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 18:16:09 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:41628 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933153AbaLDXQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 18:16:07 -0500
-Date: Fri, 5 Dec 2014 01:15:51 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-cc: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-In-Reply-To: <20141204075627.GE6390@secunet.com>
-Message-ID: <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg>
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S933344AbaLDX3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:29:12 -0500
+Received: from ozlabs.org ([103.22.144.67]:58146 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069AbaLDX3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 18:29:11 -0500
+Date: Fri, 5 Dec 2014 10:29:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-next@vger.kernel.org, <linux-kernel@vger.kernel.org>
+Subject: Re: Please add
+ git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git
+ linux-next
+Message-ID: <20141205102903.156731eb@canb.auug.org.au>
+In-Reply-To: <54802B9F.1090303@de.ibm.com>
+References: <54802B9F.1090303@de.ibm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5GKvpvfkflk8siGS6BiyZpQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/5GKvpvfkflk8siGS6BiyZpQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-	Hello,
+Hi Christian,
 
-On Thu, 4 Dec 2014, Steffen Klassert wrote:
+On Thu, 04 Dec 2014 10:38:39 +0100 Christian Borntraeger <borntraeger@de.ib=
+m.com> wrote:
+>
+> can you add=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git linux=
+-next
+> to linux-next?
+> It contains changes to ACCESS_ONCE and it would be good to have this cros=
+s tested on several platforms.
+> Thanks
 
-> > [16623.096721] Call Trace:
-> > [16623.096744]  <IRQ>
-> > [16623.096749]  [<ffffffff81547a7c>] ? xfrm_sk_policy_lookup+0x44/0x9b
-> > [16623.096802]  [<ffffffff81547ef7>] ? xfrm_lookup+0x91/0x446
-> > [16623.096832]  [<ffffffff81541316>] ? ip_route_me_harder+0x150/0x1b0
-> > [16623.096865]  [<ffffffffa01b6457>] ? ip_vs_route_me_harder+0x86/0x91 [ip_vs]
-> > [16623.096899]  [<ffffffffa01b797a>] ? ip_vs_out+0x2d3/0x5bc [ip_vs]
-> > [16623.096930]  [<ffffffff81501420>] ? ip_rcv_finish+0x2b8/0x2b8
-> 
-> I really wonder why the xfrm_sk_policy_lookup codepath is taken here.
-> It looks like this is the processing of an inbound ipv4 packet that
-> is going to be rerouted to the output path by ipvs, so this packet
-> should not have socket context at all.
+Added from today.
 
-	In above trace looks like IPVS-NAT is used between
-local client and some real server. IPVS handles this skb
-at LOCAL_IN and calls ip_vs_route_me_harder(). If we have
-skb->sk at LOCAL_IN, my first thought is about early demux.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-	If I remember correctly, looking at commit f5a41847acc535e2
-("ipvs: move ip_route_me_harder for ICMP") that introduced
-this rerouting (2.6.37), it was needed because at that time TCP
-used rt_src from received skb to select daddr in ip_send_reply().
-As packets to server are DNAT-ed and packets to client are
-SNAT-ed we used rerouting to fill rt_src with correct IP
-after SNAT.
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-	Now when routing cache is removed in 3.6 and
-tcp_v4_send_reset() is changed to provide ip_hdr(skb)->saddr
-instead of rt_src it should be safe to remove this rerouting,
-it is enough that ip_hdr(skb)->saddr was updated on IPVS-SNAT at
-LOCAL_IN. In fact, rt_src was removed early in 3.0 with
-commit 0a5ebb8000c5362 ("ipv4: Pass explicit daddr arg to 
-ip_send_reply().").
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-	This is only to explain above stack. Not sure
-if problem is related somehow to early demux but such
-commits look interesting:
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-- commit 6b8dbcf2c44fd7a ("bridge: netfilter: orphan skb before invoking 
-ip netfilter hooks")
+--Sig_/5GKvpvfkflk8siGS6BiyZpQ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-	Also, it would be good to know which 3.x kernel between
-3.13 and 3.17 fixes the problem, it will narrow the search.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Regards
+iQIcBAEBCAAGBQJUgO5EAAoJEMDTa8Ir7ZwVrrAP/0hizD8x9mVN2X65/efKmat8
+rvlSH4OwC+lEZWXqwiALHMQTYAktweCoU1UxZSC8Mj4+0unkJXH5WybOKHTvoQiZ
+vwhJ8VO1CAPHVopG7eqC4aL8blhYCCDxvtbBuNjdh8nsxIgcti5T1PQA2OwIBg+B
+lSZhNGFWqpdY5cJyxB4LiRzaM2g3q80oMZaBUjy9SwaaxvaINh4eQS0tdnrQZ4on
+iu4Qj5tfaK+hBXgC9luNN9iNpcU4zEhabc5EobHHz5zMIH1Qo32WZKifQAFQwTbl
+fkiEXw0HvprnlI39iCkNG/CzXEBzaaPhpmBeJF10spRcwRKyIQR4MHafl/ylj8PH
+7ksDl92N/E/Hxy4W9zJ1UpOUSarDCN0xu/tIPedAP9Tuc/31Unv8MgLV2wFFf4z2
+Bir+wkNdYacKgxm6EWEya4NPXeOoV7yNc7hXgukh9fUFtJxKZJl/N9LmVNnx5oUP
+drtw4HSeLGkjVlrz9+kAJRf8UQLw/hXSbabRxZTPvvZRI49xzt5NPJM0fV4ML8Pp
+JwOEeBxrZv33gSYRBzhulWfjixuY/dsrah3+MbVhDQCKOtXc5EAfqPqzK8Glroml
+fcbM+AuUdRV1zCeN8tDxtlg1HIbtHcApUlrEzvq7KG2gUcjEqedVrtHd46v6WRS8
+TMil9x2MN1EX79/PVpby
+=lKaW
+-----END PGP SIGNATURE-----
 
---
-Julian Anastasov <ja@ssi.bg>
+--Sig_/5GKvpvfkflk8siGS6BiyZpQ--
