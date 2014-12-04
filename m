@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaLDGnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:43:49 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:63575 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178AbaLDGnr (ORCPT
+	id S1752582AbaLDGtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:49:03 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52108 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaLDGtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:43:47 -0500
+	Thu, 4 Dec 2014 01:49:01 -0500
+X-Original-SENDERIP: 10.177.220.140
+X-Original-MAILFROM: seungho1.park@lge.com
+Message-ID: <548003F1.2080004@lge.com>
+Date: Thu, 04 Dec 2014 15:49:21 +0900
+From: =?UTF-8?B?IuuwleyKue2YuC/ssYXsnoTsl7Dqtazsm5AvU1cgUGxhdGZvcm0o7JewKQ==?=
+	 =?UTF-8?B?QU9U7YyAKHNldW5naG8xLnBhcmtAbGdlLmNvbSki?= 
+	<seungho1.park@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAA7nrtjrQ5SpDrZRPb58zqmZrWahY3XOMWnmdH70WLr3q46_bA@mail.gmail.com>
-References: <547F3C9F.8080102@arm.com>
-	<20141203172526.GC7712@sirena.org.uk>
-	<CAA7nrtjrQ5SpDrZRPb58zqmZrWahY3XOMWnmdH70WLr3q46_bA@mail.gmail.com>
-Date: Thu, 4 Dec 2014 12:13:46 +0530
-Message-ID: <CAA7nrth+h32Un2C4z106wL181eru7hwFDxMdS00X55h5Zw=-Vg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] ASoC: dwc: Don't allow negative use counts
-From: rajeev kumar <rajeevkumar.linux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Jackson <Andrew.Jackson@arm.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com
+Subject: Re: [RFC 0/6] zsmalloc support compaction
+References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1417488587-28609-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 12:10 PM, rajeev kumar
-<rajeevkumar.linux@gmail.com> wrote:
-> On Wed, Dec 3, 2014 at 10:55 PM, Mark Brown <broonie@kernel.org> wrote:
->> On Wed, Dec 03, 2014 at 04:38:55PM +0000, Andrew Jackson wrote:
->>
->>>       case SNDRV_PCM_TRIGGER_STOP:
->>>       case SNDRV_PCM_TRIGGER_SUSPEND:
->>>       case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
->>> -             dev->active--;
->>> +             if (dev->active > 0)
->>> +                     dev->active--;
->>
->> How is this triggering - this sounds like you're papering over some
->> other bug somewhere?
+Hi, Minchan.
 
-This check can be removed as it is not going to triggered.
+I have a question.
+The problem mentioned can't be resolved with compaction?
+Is there any reason that zsmalloc pages can't be moved by compaction
+operation in direct reclaim?
 
-B'rgds
-~Rajeev
+2014-12-02 오전 11:49에 Minchan Kim 이(가) 쓴 글:
+> Recently, there was issue about zsmalloc fragmentation and
+> I got a report from Juno that new fork failed although there
+> are plenty of free pages in the system.
+> His investigation revealed zram is one of the culprit to make
+> heavy fragmentation so there was no more contiguous 16K page
+> for pgd to fork in the ARM.
+>
+> This patchset implement *basic* zsmalloc compaction support
+> and zram utilizes it so admin can do
+> 	"echo 1 > /sys/block/zram0/compact"
+>
+> Actually, ideal is that mm migrate code is aware of zram pages and
+> migrate them out automatically without admin's manual opeartion
+> when system is out of contiguous page. Howver, we need more thinking
+> before adding more hooks to migrate.c. Even though we implement it,
+> we need manual trigger mode, too so I hope we could enhance
+> zram migration stuff based on this primitive functions in future.
+>
+> I just tested it on only x86 so need more testing on other arches.
+> Additionally, I should have a number for zsmalloc regression
+> caused by indirect layering. Unfortunately, I don't have any
+> ARM test machine on my desk. I will get it soon and test it.
+> Anyway, before further work, I'd like to hear opinion.
+>
+> Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
+>
+> Thanks.
+>
+> Minchan Kim (6):
+>    zsmalloc: expand size class to support sizeof(unsigned long)
+>    zsmalloc: add indrection layer to decouple handle from object
+>    zsmalloc: implement reverse mapping
+>    zsmalloc: encode alloced mark in handle object
+>    zsmalloc: support compaction
+>    zram: support compaction
+>
+>   drivers/block/zram/zram_drv.c |  24 ++
+>   drivers/block/zram/zram_drv.h |   1 +
+>   include/linux/zsmalloc.h      |   1 +
+>   mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
+>   4 files changed, 552 insertions(+), 70 deletions(-)
+>
+
