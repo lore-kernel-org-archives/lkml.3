@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaLDNPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:15:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46369 "EHLO mx1.redhat.com"
+	id S1754205AbaLDNPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:15:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754083AbaLDNPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:15:01 -0500
-Date: Thu, 4 Dec 2014 14:14:55 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <nadav.amit@gmail.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] kvm: cpuid: fix the size of xsaves area
-Message-ID: <20141204131454.GA17050@potion.brq.redhat.com>
-References: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
- <1417691470-5221-2-git-send-email-wanpeng.li@linux.intel.com>
+	id S1754083AbaLDNPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:15:09 -0500
+Message-ID: <54805E30.4090109@redhat.com>
+Date: Thu, 04 Dec 2014 14:14:24 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417691470-5221-2-git-send-email-wanpeng.li@linux.intel.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Herbert Xu <herbert@gondor.apana.org.au>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        fusco@ntop.org
+Subject: Re: Where exactly will arch_fast_hash be used
+References: <20141204081147.GA19030@gondor.apana.org.au> <1417696468.5386.23.camel@localhost>
+In-Reply-To: <1417696468.5386.23.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-04 19:11+0800, Wanpeng Li:
-> The section of CPUID(EAX=0xd, ECX=1) in the spec which commit
-> f5c2290cd01e (KVM: cpuid: mask more bits in leaf 0xd and subleaves)
-> mentioned is older than SDM.
-> 
-> EBX: Bits 31-00: The size in bytes of the XSAVE area containing all
-> states enabled by XCR0|IA32_XSS.
+On 12/04/2014 01:34 PM, Hannes Frederic Sowa wrote:
+> On Do, 2014-12-04 at 16:11 +0800, Herbert Xu wrote:
+>> While working on rhashtable it came to me that this whole concept
+>> of arch_fast_hash is flawed.  CRCs are linear functions so it's
+>> fairly easy for an attacker to identify collisions or at least
+>> eliminate a large amount of search space (e.g., controlling the
+>> last bit of the hash result is almost trivial, even when you add
+>> a random seed).
+>>
+>> So what exactly are we going to use arch_fast_hash for? Presumably
+>> it's places where security is never goint to be an issue, right?
 
-Well, CPUs without XSAVES return 0 there, so we would emulate them
-incorrectly ... (I don't mind much, it is reserved.)
+The original proposal [1] targeted ovs-only as a closed-door user in
+order to speed up the worst case of calculating a hash over the extracted
+flow key, that is, struct sw_flow_key (which nowadays consumes up to
+7 cachelines on x86_64 ...).
 
-> The the value of EBX should represent the size of XCR0 related XSAVE
-> area since IA32_XSS is not used currently.
+   [1] http://thread.gmane.org/gmane.linux.network/293981/
 
-True, but 'supported' is not the state of XCR0, just its supremum.
-EBX should be set in kvm_update_cpuid(), like [3/4] does.
-(We can safely drop [2/4].)
-
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v1 -> v2:
->  * add F(XSAVEC) check
-> 
->  arch/x86/kvm/cpuid.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index 646e6e8..5b78e9b 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -477,7 +477,10 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->  			do_cpuid_1_ent(&entry[i], function, idx);
->  			if (idx == 1) {
->  				entry[i].eax &= kvm_supported_word10_x86_features;
-> -				entry[i].ebx = 0;
-> +				if (entry[i].eax & (F(XSAVES) | F(XSAVEC)))
-> +					entry[i].ebx = xstate_required_size(supported, true);
-> +				else
-> +					entry[i].ebx = xstate_required_size(supported, false);
->  			} else {
->  				if (entry[i].eax == 0 || !(supported & mask))
->  					continue;
-> -- 
-> 1.9.1
-> 
+>> Even if security wasn't an issue, straight CRC32 has really poor
+>> lower-order bit distribution, which makes it a terrible choice for
+>> a hash table that simply uses the lower-order bits.
+>
+> I wondered the same while trying to use arch_fast_hash in a lot more
+> places (I did a new implementation in assembler I'll send later on, it
+> is mostly optimized to deal with ovs flow keys).
+>
+> While the uniformity of crc32 does actually look good and IMHO this even
+> holds for the lower bits of the hash, I totally agree on the linearity
+> matters.
+>
+> The easiest way to make arch_fast_hash non-linear would be to build up
+> on the crc32 instruction like e.g. the cityhash function family does and
+> it seems not too hard to do that by combining two crc32c outputs of the
+> original and cyclic shifted input data. I have doubts if this is faster
+> than jhash in the end. There are proposals from Intel to do so, but they
+> are patent encumbered. :/
+>
+> For most consumers in the networking stack, security and DoS resistence
+> is an issue. OVS, for which this was designed at first does do rehashing
+> from time to time, but still there is a possible DoS attack vector with
+> this hashing algorithm.
