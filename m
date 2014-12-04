@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081AbaLDSAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:00:35 -0500
-Received: from v032797.home.net.pl ([89.161.177.31]:50555 "HELO
-	v032797.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932455AbaLDSAc (ORCPT
+	id S932893AbaLDSCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:02:17 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:41346 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382AbaLDSCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:00:32 -0500
-Message-ID: <5480A132.2010103@elproma.com.pl>
-Date: Thu, 04 Dec 2014 19:00:18 +0100
-From: =?ISO-8859-2?Q?Janusz_U=BFycki?= <j.uzycki@elproma.com.pl>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 4 Dec 2014 13:02:15 -0500
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Subject: Re: [PATCH v2] clk: Add PWM clock driver
-References: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-Content-Type: text/plain; charset=iso-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141204070248.GJ25340@linux.vnet.ibm.com>
+References: <20141204062005.GA2553@linux.vnet.ibm.com>
+	<CA+55aFzn-6asfWHB8SAvz4GJWz7uEriujgVLfaqoo_VPtNBLuA@mail.gmail.com>
+	<CA+55aFxGCxQNE4HzRP_Uk2FmFDn_+Hfm6GBz75S+5+SDeODVJQ@mail.gmail.com>
+	<20141204070248.GJ25340@linux.vnet.ibm.com>
+Date: Thu, 4 Dec 2014 10:02:14 -0800
+X-Google-Sender-Auth: t9ztH_lSFbE4o6kFOnQMqSmZBMs
+Message-ID: <CA+55aFxDmaA2D37Zz1Zc7y6iD6gVs=wskP5wgJb37R98aN-qmg@mail.gmail.com>
+Subject: Re: [PATCH RFC] locking: Add volatile to arch_spinlock_t structures
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-W dniu 2014-11-03 o 10:31, Philipp Zabel pisze:
-> Some board designers, when running out of clock output pads, decide to
-> (mis)use PWM output pads to provide a clock to external components.
-> This driver supports this practice by providing an adapter between the
-> PWM and clock bindings in the device tree. As the PWM bindings specify
-> the period in the device tree, this is a fixed clock.
+On Wed, Dec 3, 2014 at 11:02 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Dec 03, 2014 at 10:40:45PM -0800, Linus Torvalds wrote:
+>> On Dec 3, 2014 10:31 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
+>> wrote:
+>> >
+>> > So no, no, no. C got this wrong. Volatile data structures are a
+>> fundamental mistake and a bug.
+>>
+>> BTW, I'm not at all interested in language lawyering and people who say
+>> "but but we can do x". A compiler that modifies adjacent fields because the
+>> standard leaves is open is a crap compiler, and we won't use it, or disable
+>> the broken optimization. It is wrong from a concurrency standpoint anyway,
+>> and adding broken volatiles is just making things worse.
 >
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
-> I'm resending this because last time the linux-pwm list was not in Cc:
-> So far I have not received any comments on the patch itself. I have used
-> it on a BoundaryDevices Nitrogen6X board to produce a master clock for
-> the OV5640 MIPI CSI-2 camera module.
->
-> Changes since v1:
->   - none (rebased onto v3.18-rc3)
-> ---
->   .../devicetree/bindings/clock/pwm-clock.txt        |  23 +++++
->   drivers/clk/Kconfig                                |   7 ++
->   drivers/clk/Makefile                               |   1 +
->   drivers/clk/clk-pwm.c                              | 110 +++++++++++++++++++++
->   4 files changed, 141 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
->   create mode 100644 drivers/clk/clk-pwm.c
->
-> diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-> new file mode 100644
-> index 0000000..d127d17
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-> @@ -0,0 +1,23 @@
-> +Binding for an external clock signal driven by a PWM pin.
-> +
-> +This binding uses the common clock binding[1] and the common PWM binding[2].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +[2] Documentation/devicetree/bindings/pwm/pwm.txt
-> +
-> +Required properties:
-> +- compatible : shall be "pwm-clock".
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- pwms : from common PWM binding; this determines the clock frequency
-> +  via the PWM period given in the pwm-specifier.
-> +
-> +Optional properties:
-> +- clock-output-names : From common clock binding.
-> +
-> +Example:
-> +	clock {
-> +		compatible = "pwm-clock";
-> +		#clock-cells = <0>;
-> +		clock-output-names = "mipi_mclk";
-> +		pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
+> Understood, for example, adjacent fields protected by different locks
+> as one example, where adjacent-field overwriting completely breaks even
+> very conservatively designed code.
 
-Before I asked about [MHz/kHz] <-> [ns] conversion problem but I didn't 
-noticed
-you've just used [ns] in dt. As Thierry wrote:
-"Also the PWM chips will most likely use the concept of period and 
-duty-cycle
-internally anyway, so it will convert back from Hz/percentage to nanoseconds
-and fall victim to similar rounding effects."
+Exactly. Compilers that "optimize" things to touch fields that aren't
+touched by the source code are simply inherently buggy shit. I'm not
+at all interested in catering to their insanity.
 
-Unfortunately I discovered that many pwm drivers are buggy around upper 
-freqs limit.
-The example is pwm-mxs.c. PWM has 24MHz clock. There is no problem to set
-registers directly for 12MHz 50% output (period_cycles=2-1=1, 
-inactive_c=1, active_c=0).
+It doesn't matter one whit if they can point to the legacy C "virtual
+machine" definition and say that those accesses are invisible in the
+virtual machine. They are not invisible in real life, and it is
+entirely possible that two adjacent variables or fields are protected
+by different locks - even in non-kernel code. Claiming that they need
+to be marked volatile is a symptom of a diseased compiler writer.
 
-When I set pwm-mxs period to 83ns / duty to 42ns the output is low because
-it sets inactive_c=0!
-For 125ns/63ns I got about 6MHz instead of 8MHz, and +width=42ns.
-When I set 42ns/42ns I got 12MHz 50%.
-It means new patches for pwms...
+Now, the one exception to this is generally bitfields, because there
+the programmer knowingly and intentionally puts the fields together in
+the same storage unit. I also think that volatile bitfields are an
+insane concept, even if I think that the standard allows them. So I am
+not saying that compilers should try to magically make bitfield
+members not access the members around them.
 
-I will test the patch backported to 3.14 using the mxs platform.
-However as I wrote I  need to patch pwm-mxs first.
+I also accept that some architectures are broken. Old
+non-byte/word-access alpha being the really canonical example. It's
+not the compilers fault if the architecture is broken, and the
+compiler cannot magically fix it.
 
-> [...]
->
-> +static struct platform_driver clk_pwm_driver = {
-> +	.probe = clk_pwm_probe,
-> +	.driver = {
-> +		.name = "pwm-clock",
-> +		.owner = THIS_MODULE,
+But compilers that think that "hey, vectorization is cool, and I can
+do load-stores and mask things dynamically" are misguided crap. It may
+be fancy, it may be really cool compiler technology, but it's
+fundamentally wrong unless the programmer told it was safe some way
+(be it with a "pragma" or "restrict" or a compile-time switch or
+whatever).
 
-AFAIR new drivers don't need to set .owner.
-
-thanks
-Janusz
-
-> +		.of_match_table = of_match_ptr(clk_pwm_dt_ids),
-> +	},
-> +};
-> +
-> +module_platform_driver(clk_pwm_driver);
-
+                            Linus
