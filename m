@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941AbaLDS21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:28:27 -0500
-Received: from sauhun.de ([89.238.76.85]:34318 "EHLO pokefinder.org"
+	id S932971AbaLDS2e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:28:34 -0500
+Received: from sauhun.de ([89.238.76.85]:34322 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932464AbaLDS20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:28:26 -0500
-Date: Thu, 4 Dec 2014 19:28:18 +0100
+	id S932464AbaLDS2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:28:31 -0500
+Date: Thu, 4 Dec 2014 19:28:28 +0100
 From: Wolfram Sang <wsa@the-dreams.de>
 To: Grygorii Strashko <grygorii.strashko@ti.com>
 Cc: Sekhar Nori <nsekhar@ti.com>,
@@ -17,63 +17,70 @@ Cc: Sekhar Nori <nsekhar@ti.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Santosh Shilimkar <ssantosh@kernel.org>,
         Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [PATCH v3 1/5] i2c: i2c-davinci: switch to use platform_get_irq
-Message-ID: <20141204182818.GF7944@katana>
+Subject: Re: [PATCH v3 2/5] i2c: davinci: generate STP always when NACK is
+ received
+Message-ID: <20141204182828.GG7944@katana>
 References: <1417448047-15236-1-git-send-email-grygorii.strashko@ti.com>
- <1417448047-15236-2-git-send-email-grygorii.strashko@ti.com>
+ <1417448047-15236-3-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uTRFFR9qmiCqR05s"
+	protocol="application/pgp-signature"; boundary="uc35eWnScqDcQrv5"
 Content-Disposition: inline
-In-Reply-To: <1417448047-15236-2-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1417448047-15236-3-git-send-email-grygorii.strashko@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---uTRFFR9qmiCqR05s
-Content-Type: text/plain; charset=utf-8
+--uc35eWnScqDcQrv5
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Dec 01, 2014 at 05:34:03PM +0200, Grygorii Strashko wrote:
-> Switch Davinci I2C driver to use platform_get_irq(), because
-> it is not recommened to use platform_get_resource(pdev, IORESOURCE_IRQ, .=
-=2E)
-> for requesting IRQ resources any more, as they can be not ready yet
-> in case of DT-boot.
+On Mon, Dec 01, 2014 at 05:34:04PM +0200, Grygorii Strashko wrote:
+> According to I2C specification the NACK should be handled as follows:
+> "When SDA remains HIGH during this ninth clock pulse, this is defined as =
+the Not
+> Acknowledge signal. The master can then generate either a STOP condition =
+to
+> abort the transfer, or a repeated START condition to start a new transfer=
+=2E"
+> [I2C spec Rev. 6, 3.1.6: http://www.nxp.com/documents/user_manual/UM10204=
+=2Epdf]
 >=20
-> CC: Sekhar Nori <nsekhar@ti.com>
-> CC: Kevin Hilman <khilman@deeprootsystems.com>
-> CC: Santosh Shilimkar <ssantosh@kernel.org>
-> CC: Murali Karicheri <m-karicheri2@ti.com>
-> Acked-by: Uwe Kleine-K=C3=B6nig <u.kleine-koenig@pengutronix.de>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Currently the Davinci i2c driver interrupts the transfer on receipt of a
+> NACK but fails to send a STOP in some situations and so makes the bus
+> stuck until next I2C IP reset (idle/enable).
+>=20
+> For example, the issue will happen during SMBus read transfer which
+> consists from two i2c messages write command/address and read data:
+>=20
+> S Slave Address Wr A Command Code A Sr Slave Address Rd A D1..Dn A P
 
-Applied to for-next, thanks!
+Applied to for-current, thanks!
 
 
---uTRFFR9qmiCqR05s
+--uc35eWnScqDcQrv5
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUgKfCAAoJEBQN5MwUoCm2vN4P/25C5VmYsVkyFkSbuNq1PsRU
-dbD80jYu/s/kzQ3e2tLBIpwEPvjxrqFUZ/EDth9SK5h8K2LOkPAwf3fkeKdePOxP
-VgeG6iynQLsT1RpKmbRABSOMYAQLscYR21/z1u8m9xRHYGmiMCO2B4TkP4aOCq9A
-pGkBeuFRWm5wuXvO39/Lc0heWwWk3DluoUAx/NdkyawxtikqkAwZmgjaMhjFGK8o
-pJB2hiy9IpptfGzN1Rt/Ffxliw+DQktnWw1TdZaO0N2RZ2852j1Q0yAp9gBsAf1N
-drZj8ZwMnCWHtVrfs/NKrgx1Bds/w7LJfrQ2jIT2QQoVTuHc0n8stV/tufcPzqQw
-lhGSU5YPo0rTk3Xcv8jiyIo1oDn45rITzx80ChNZ/iplulZoWR015KbrsQWCBM7s
-4ri2m33Gzq8HGJQ4nZq8EykBC+K7kI+jey9AbIeiiwgARxw3CQmAzdzn+CSHHvgs
-V52grVQawAjEbuXhds/5sslrCwLborBbaWbZ30aV36HSyH8sipShMzsnpYR2xJmM
-4Hwxfr7W5cU8IcMpDPr/yYzSjksChXXrxUnLLsUVYcHb5fL2blbtcipqHUAY2Q18
-601YadQ8UXAsKba6U2b1Q3W87OZCvLWkUlKanMaLaHtmXxfmFzsvBNTOY0+PHrJy
-nxL7dtE5fKQrHLfJpq1R
-=vkj6
+iQIcBAEBAgAGBQJUgKfMAAoJEBQN5MwUoCm2omIP/RIXUavcJBCbHB/Zpt20ZgdZ
+P7VBMFPtlwNcbWkjFA8GeuSBv0KSJHgr5F83NlhKvJauEp9bdOUKo8YIi15Y8dcf
+wN8FCE2pmYl9dbtUD9uT4bdtfjfXCVqlvwAoGe0StVz40JivYtZcb6LdVszn/Lhg
+S/K/wpdRtevMewuh20FdEL+uDfwZtOin04BfDHoyP9rR7Z/IvlchD6KYzO0wegvo
+IfX91JnMzWOIveODRh8kY4CMNr2D31YlDARjEYDRP2vMKtt2Nss7MvOkezz+MO5g
+hDur1BRiAcr0pI+FGQ2M433wvnB3ymgi+2xwLvhI6JqBNQvMdQlslMDo+0k6NNWi
+R6kbtTndrKqKInOdcS06gW+DOzL2EL13Jtz1w4ruTd3ZIOaExjplcKqKxMvZPI4j
+yAhZwPsGW+t9eaHGNeu3b4hX1ZMSkmyE5Yz+gpF6wX14/pTmAqaebvEziP5sqpjO
+z+KHvLUucZHfQY05DPoS8e2ii8cFchOk4LlU2e5U/7eTGs25j8QJMflJeSeZeX1X
+K71EoUVhq6DBC6yyWU9vGq1fd2Ss9li/ojRjHfhNt0G/vk22l6qtgHCJtjLleoUS
+JZG51bayn9V4X10ruzj/rvcbVi4mjWc2tKthWfHJ72gJDX9rFjYoGOYRx02I3noV
+zjiq0FFl0GypwLmM+fCf
+=fFfo
 -----END PGP SIGNATURE-----
 
---uTRFFR9qmiCqR05s--
+--uc35eWnScqDcQrv5--
