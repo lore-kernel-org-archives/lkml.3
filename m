@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaLDEwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 23:52:25 -0500
-Received: from mga03.intel.com ([134.134.136.65]:56109 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911AbaLDEwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 23:52:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,512,1413270000"; 
-   d="scan'208";a="648011840"
-From: jun.zhang@intel.com
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, zhang jun <jun.zhang@intel.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Changcheng Liu <changcheng.liu@intel.com>
-Subject: [PATCH] sched/fair: fix select_task_rq_fair return -1
-Date: Thu,  4 Dec 2014 12:27:54 +0800
-Message-Id: <1417667274-20942-1-git-send-email-jun.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752896AbaLDE5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 23:57:41 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:51861 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbaLDE5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 23:57:40 -0500
+Date: Wed, 3 Dec 2014 20:57:35 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com
+Subject: Re: [PATCH v12 01/19] input: cyapa: modify code to following kernel
+ code style
+Message-ID: <20141204045735.GA5362@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, linux-kernel@vger.kernel.org,
+	dmitry.torokhov@gmail.com
+References: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
+ <1417599025-21681-2-git-send-email-dudley.dulixin@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417599025-21681-2-git-send-email-dudley.dulixin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: zhang jun <jun.zhang@intel.com>
+Dudley,
 
-when cpu == -1 and sd->child == NULL, select_task_rq_fair return -1, system panic.
+On Wed, Dec 03, 2014 at 05:30:07PM +0800, Dudley Du wrote:
+> This patch modified the code to fix the patch check warning issue with latest
+> checkpatch.sh tool, and also changed the return variable name from "ret" to
+> "error" when there is only one error path to follow code style.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> ---
+>  drivers/input/mouse/cyapa.c | 162 ++++++++++++++++++++++----------------------
+>  1 file changed, 80 insertions(+), 82 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+> index b409c3d..c9fdf6d 100644
+> --- a/drivers/input/mouse/cyapa.c
+> +++ b/drivers/input/mouse/cyapa.c
+[...]
 
-[ 0.738326] BUG: unable to handle kernel paging request at ffff8800997ea928
-[ 0.746138] IP: [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
-[ 0.752886] PGD 25df067 PUD 0
-[ 0.756321] Oops: 0000 1 PREEMPT SMP
-[ 0.760743] Modules linked in:
-[ 0.764179] CPU: 0 PID: 6 Comm: kworker/u8:0 Not tainted 3.14.19-quilt-b27ac761 #2
-[ 0.772651] Hardware name: Intel Corporation CHERRYVIEW B1 PLATFORM/Cherry Trail CR, BIOS CHTTRVP1.X64.0003.R08.1411110453 11/11/2014
-[ 0.786084] Workqueue: khelper __call_usermodehelper
-[ 0.791649] task: ffff88007955a150 ti: ffff88007955c000 task.ti: ffff88007955c000
-[ 0.800021] RIP: 0010:[<ffffffff810b15d3>] [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
-[ 0.809478] RSP: 0000:ffff88007955dd58 EFLAGS: 00010092
-[ 0.815422] RAX: 00000000ffffffff RBX: 0000000000000001 RCX: 0000000000000020
-[ 0.823404] RDX: 00000000ffffffff RSI: 0000000000000020 RDI: 0000000000000020
-[ 0.831386] RBP: ffff88007955dd80 R08: ffff880079604b58 R09: 00000000ffffffff
-[ 0.839368] R10: 0000000000000004 R11: eae0000000000000 R12: ffff8800797ea650
-[ 0.847350] R13: 0000000000004000 R14: ffff8800797ead52 R15: 0000000000000206
-[ 0.855335] FS: 0000000000000000(0000) GS:ffff88007aa00000(0000) knlGS:0000000000000000
-[ 0.864387] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 0.870817] CR2: ffff8800997ea928 CR3: 000000000220b000 CR4: 00000000001007f0
-[ 0.878796] Stack:
-[ 0.881046] 0000000000000001 ffff8800797ea650 0000000000004000 0000000000000000
-[ 0.889363] 000000000000003c ffff88007955ddf0 ffffffff8107ddfd ffffffff810b6a95
-[ 0.897680] 0000000000000000 ffff8800796beb00 ffff880000000000 ffffffff81000000
-[ 0.905998] Call Trace:
-[ 0.908752] [<ffffffff8107ddfd>] do_fork+0x12d/0x3b0
-[ 0.914416] [<ffffffff810b6a95>] ? set_next_entity+0x95/0xb0
-[ 0.920856] [<ffffffff8107e0a6>] kernel_thread+0x26/0x30
-[ 0.926903] [<ffffffff8109703e>] __call_usermodehelper+0x2e/0x90
-[ 0.933730] [<ffffffff8109ad31>] process_one_work+0x171/0x490
-[ 0.940264] [<ffffffff8109ba4b>] worker_thread+0x11b/0x3a0
-[ 0.946508] [<ffffffff8109b930>] ? manage_workers.isra.27+0x2b0/0x2b0
-[ 0.953821] [<ffffffff810a1802>] kthread+0xd2/0xf0
-[ 0.959289] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
-[ 0.966602] [<ffffffff81af81ac>] ret_from_fork+0x7c/0xb0
-[ 0.972652] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
-[ 0.979956] Code: 49 89 fc 4c 89 f7 53 e8 bc 5c a4 00 49 8b 54 24 08 31 c9 49 89 c7 49 8b 44 24 60 4c 89 e7 8b 72 18 ba 08 00 00 00 ff 50 40 89 c2 <49> 0f a3 94 24 e0 02 00 00 19 c9 85 c9 0f 84 34 01 00 00 48 8b
-[ 1.001809] RIP [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
-[ 1.008641] RSP <ffff88007955dd58>
-[ 1.012544] CR2: ffff8800997ea928
-[ 1.016279] --[ end trace 9737aaa337a5ca10 ]--
+I was hoping to test out your patchset since the patch for the touchpad
+problem [1] still has not appeared in linux-next as of 20141203.
+Unfortunately your patchset does not apply so I can't test it.  Which
+kernel is your work based off of?
 
-Signed-off-by: zhang jun <jun.zhang@intel.com>
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: Changcheng Liu <changcheng.liu@intel.com>
----
- kernel/sched/fair.c |    2 ++
- 1 file changed, 2 insertions(+)
+  [1]: https://lkml.org/lkml/2014/11/27/684
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 34baa60..123153f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4587,6 +4587,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 		if (new_cpu == -1 || new_cpu == cpu) {
- 			/* Now try balancing at a lower domain level of cpu */
- 			sd = sd->child;
-+			if ((!sd) && (new_cpu == -1))
-+				new_cpu = smp_processor_id();
- 			continue;
- 		}
- 
 -- 
-1.7.9.5
-
+- Jeremiah Mahler
