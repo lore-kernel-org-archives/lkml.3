@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaLDLZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:25:48 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:11080 "EHLO
-	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753500AbaLDLZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:25:46 -0500
-From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-To: <zhang.lyra@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm64/include/asm: Fixed a warning about 'struct pt_regs'
-Date: Thu, 4 Dec 2014 19:24:24 +0800
-Message-ID: <1417692264-18553-1-git-send-email-chunyan.zhang@spreadtrum.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.0.67.89]
-X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
- SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com sB4BOTGv094919
+	id S1754008AbaLDL0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:26:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50376 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866AbaLDLYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:24:49 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 09/10] mm: numa: Add paranoid check around pte_protnone_numa
+Date: Thu,  4 Dec 2014 11:24:32 +0000
+Message-Id: <1417692273-27170-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1417692273-27170-1-git-send-email-mgorman@suse.de>
+References: <1417692273-27170-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I include asm/irq.h on the top of my code, and set ARCH=arm64,
-I'll get a compile warning, details are below:
-warning: ‘struct pt_regs’
-declared inside parameter list [enabled by default]
+pte_protnone_numa is only safe to use after VMA checks for PROT_NONE are
+complete. Treating a real PROT_NONE PTE as a NUMA hinting fault is going
+to result in strangeness so add a check for it. BUG_ON looks like overkill
+but if this is hit then it's a serious bug that could result in corruption
+so do not even try recovering. It would have been more comprehensive to
+check VMA flags in pte_protnone_numa but it would have made the API ugly
+just for a debugging check.
 
-This patch is suggested by Arnd, see:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308270.html
-
-Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/arm64/include/asm/irq.h |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/huge_memory.c | 3 +++
+ mm/memory.c      | 3 +++
+ 2 files changed, 6 insertions(+)
 
-diff --git a/arch/arm64/include/asm/irq.h b/arch/arm64/include/asm/irq.h
-index e1f7ecd..acedc7e 100644
---- a/arch/arm64/include/asm/irq.h
-+++ b/arch/arm64/include/asm/irq.h
-@@ -3,6 +3,8 @@
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index ad2a3ee..8546654 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1273,6 +1273,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	bool migrated = false;
+ 	int flags = 0;
  
- #include <asm-generic/irq.h>
- 
-+struct pt_regs;
++	/* A PROT_NONE fault should not end up here */
++	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
 +
- extern void (*handle_arch_irq)(struct pt_regs *);
- extern void migrate_irqs(void);
- extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+ 	ptl = pmd_lock(mm, pmdp);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+ 		goto out_unlock;
+diff --git a/mm/memory.c b/mm/memory.c
+index 2ec07a9..7d97af5 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3109,6 +3109,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	bool migrated = false;
+ 	int flags = 0;
+ 
++	/* A PROT_NONE fault should not end up here */
++	BUG_ON(!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)));
++
+ 	/*
+ 	* The "pte" at this point cannot be used safely without
+ 	* validation through pte_unmap_same(). It's of NUMA type but
 -- 
-1.7.9.5
+2.1.2
 
