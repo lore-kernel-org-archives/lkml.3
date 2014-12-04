@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400AbaLDO21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:28:27 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:34041 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155AbaLDO20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:28:26 -0500
-Message-ID: <54806F82.5090806@redhat.com>
-Date: Thu, 04 Dec 2014 15:28:18 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932420AbaLDO2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:28:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932155AbaLDO2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:28:51 -0500
+Date: Thu, 4 Dec 2014 15:23:30 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        ak@linux.intel.com, namhyung@kernel.org
+Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Message-ID: <20141204142330.GB10406@krava.brq.redhat.com>
+References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Nadav Amit <nadav.amit@gmail.com>, rkrcmar@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] kvm: vmx: fix VMfailValid when write vmcs02/vmcs01
-References: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com> <1417691470-5221-4-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1417691470-5221-4-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/12/2014 12:11, Wanpeng Li wrote:
-> SDM 30.3 VMWRITE
+On Tue, Dec 02, 2014 at 10:06:51AM -0500, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
 > 
-> ELSIF secondary source operand does not correspond to any VMCS field
->    THEN VMfailValid(VMREAD/VMWRITE from/to unsupported VMCS component);
+> This is the user space patch for Haswell LBR call stack support.
+> For many profiling tasks we need the callgraph. For example we often
+> need to see the caller of a lock or the caller of a memcpy or other
+> library function to actually tune the program. Frame pointer unwinding
+> is efficient and works well. But frame pointers are off by default on
+> 64bit code (and on modern 32bit gccs), so there are many binaries around
+> that do not use frame pointers. Profiling unchanged production code is
+> very useful in practice. On some CPUs frame pointer also has a high
+> cost. Dwarf2 unwinding also does not always work and is extremely slow
+> (upto 20% overhead).
 > 
-> We can't suppose L1 VMM expose MPX to L2 just if L0 support MPX. There
-> will be VMfailValid if L0 doesn't support MPX and L1 expose MPX to L2
-> when L0 writes vmcs02/vmcs01, in addition, there is no need to read
-> GUEST_BNDCFGS if L1 VMM doesn't expose it to L2. This patch fix it by
-> both check L0 support xsaves and L1 expose MPX to L2.
+> Haswell has a new feature that utilizes the existing Last Branch Record
+> facility to record call chains. When the feature is enabled, function
+> call will be collected as normal, but as return instructions are
+> executed the last captured branch record is popped from the on-chip LBR
+> registers. The LBR call stack facility provides an alternative to get
+> callgraph. It has some limitations too, but should work in most cases
+> and is significantly faster than dwarf. Frame pointer unwinding is still
+> the best default, but LBR call stack is a good alternative when nothing
+> else works.
+> 
+> Please find the kernel part patch at https://lkml.org/lkml/2014/11/6/432
+> 
+> Changes since v1
+>  - Update help document
+>  - Force exclude_user to 0 with warning in LBR call stack
+>  - Dump both lbr and fp info when report -D
+>  - Reconstruct thread__resolve_callchain_sample and split it into two patches
+>  - Use has_branch_callstack function to check LBR call stack available
+> 
+> Changes since v2
+>  - Rebase to 025ce5d33373
+> 
+> Changes since v3
+>  - Rebase to cc502c23aadf
+>  - Separated function for lbr call stack sample resolve and print
+>  - Some minor changes according to comments
+> 
+> Changes since V4
+>  - Rebase to 09a6a1b
+>  - Falling back to framepointers if LBR not available, and warning user
 
-Did you have a reproducer for this?  It should not be needed, because
-the bndcfgs entry/exit controls are hidden from
-nested_vmx_exit_ctls_high and nested_vmx_entry_ctls_high if
-!vmx_mpx_supported().
+looks ok to me..
 
-This hunk is also not correct:
+I'll test it once I get hands on Haswel server again, I guess we
+wait for the kernel change to go in first anyway, right?
 
-> -	if (vmx_mpx_supported())
-> +	if (vmx_mpx_supported() &&
-> +		(vmcs12->vm_entry_controls & VM_ENTRY_LOAD_BNDCFGS))
->  		vmcs12->guest_bndcfgs = vmcs_read64(GUEST_BNDCFGS);
->  	if (nested_cpu_has_xsaves(vmcs12))
->  		vmcs12->xss_exit_bitmap = vmcs_read64(XSS_EXIT_BITMAP);
-
-because there is no "save BNDCFGS" exit control; the guest BNDCFGS is
-saved unconditionally into the vmcs.
-
-Paolo
+thanks,
+jirka
