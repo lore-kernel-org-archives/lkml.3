@@ -1,122 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaLDBNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:13:22 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:43769 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLDBNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:13:21 -0500
-Date: Thu, 4 Dec 2014 02:13:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] context_tracking: Restore previous state in schedule_user
-Message-ID: <20141204011316.GH31369@lerouge>
-References: <20141203220836.GC31369@lerouge>
- <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
- <20141203235835.GE31369@lerouge>
- <CALCETrXbEheevmNKsuEd0NEpCrDz06W5z_OphMOUHqT7qNUTyA@mail.gmail.com>
- <20141204003024.GA17665@redhat.com>
- <CALCETrXSsTa76QGg+MHDAkrr9gJPSqm2zKrcTbU5SV31mWDVuQ@mail.gmail.com>
+	id S1752274AbaLDBRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:17:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833AbaLDBRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 20:17:02 -0500
+Message-ID: <547FB5DD.901@redhat.com>
+Date: Wed, 03 Dec 2014 20:16:13 -0500
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrXSsTa76QGg+MHDAkrr9gJPSqm2zKrcTbU5SV31mWDVuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Long <dave.long@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steve Capper <steve.capper@linaro.org>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org>
+In-Reply-To: <547F94B0.1000902@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 04:38:46PM -0800, Andy Lutomirski wrote:
-> On Wed, Dec 3, 2014 at 4:30 PM, Dave Jones <davej@redhat.com> wrote:
-> > On Wed, Dec 03, 2014 at 04:04:31PM -0800, Andy Lutomirski wrote:
-> >  > On Wed, Dec 3, 2014 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >  > > On Wed, Dec 03, 2014 at 03:18:41PM -0800, Andy Lutomirski wrote:
-> >  > >> It appears that some SCHEDULE_USER (asm for schedule_user) callers
-> >  > >> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
-> >  > >> and schedule_user will return in RCU user context.  This causes RCU
-> >  > >> warnings and possible failures.
-> >  > >>
-> >  > >> This is intended to be a minimal fix suitable for 3.18.
-> >  > >>
-> >  > >> Reported-by: Dave Jones <davej@redhat.com>
-> >  > >> Cc: Oleg Nesterov <oleg@redhat.com>
-> >  > >> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-> >  > >> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> >  > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >  > >
-> >  > > Ah, we sent it about at the same time :-)
-> >  > >
-> >  > > Might be too late for 3.18 though because it's not a regression.
-> >
-> > Wait, so how come that trace didn't start showing up until recently ?
+On 12/03/2014 05:54 PM, David Long wrote:
+> On 12/03/14 09:54, William Cohen wrote:
+>> On 12/01/2014 04:37 AM, Masami Hiramatsu wrote:
+>>> (2014/11/29 1:01), Steve Capper wrote:
+>>>> On 27 November 2014 at 06:07, Masami Hiramatsu
+>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>> (2014/11/27 3:59), Steve Capper wrote:
+>>>>>> The crash is extremely easy to reproduce.
+>>>>>>
+>>>>>> I've not observed any missed events on a kprobe on an arm64 system
+>>>>>> that's still alive.
+>>>>>> My (limited!) understanding is that this suggests there could be a
+>>>>>> problem with how missed events from a recursive call to memcpy are
+>>>>>> being handled.
+>>>>>
+>>>>> I think so too. BTW, could you bisect that? :)
+>>>>>
+>>>>
+>>>> I can't bisect, but the following functions look suspicious to me
+>>>> (again I'm new to kprobes...):
+>>>> kprobes_save_local_irqflag
+>>>> kprobes_restore_local_irqflag
+>>>>
+>>>> I think these are breaking somehow when nested (i.e. from a recursive probe).
+>>>
+>>> Agreed. On x86, prev_kprobe has old_flags and saved_flags, this
+>>> at least must have saved_irqflag and save/restore it in
+>>> save/restore_previous_kprobe().
+>>>
+>>> What about adding this?
+>>>
+>>>   struct prev_kprobe {
+>>>       struct kprobe *kp;
+>>>       unsigned int status;
+>>> +    unsigned long saved_irqflag;
+>>>   };
+>>>
+>>> and
+>>>
+>>>   static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
+>>>   {
+>>>       kcb->prev_kprobe.kp = kprobe_running();
+>>>       kcb->prev_kprobe.status = kcb->kprobe_status;
+>>> +    kcb->prev_kprobe.saved_irqflag = kcb->saved_irqflag;
+>>>   }
+>>>
+>>>   static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+>>>   {
+>>>       __this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+>>>       kcb->kprobe_status = kcb->prev_kprobe.status;
+>>> +    kcb->saved_irqflag = kcb->prev_kprobe.saved_irqflag;
+>>>   }
+>>>
+>>>
+>>
+>> I have noticed with the aarch64 kprobe patches and recent kernel I can get the machine to end up getting stuck and printing out endless strings of
+>>
+>> [187694.855843] Unexpected kernel single-step exception at EL1
+>> [187694.861385] Unexpected kernel single-step exception at EL1
+>> [187694.866926] Unexpected kernel single-step exception at EL1
+>> [187694.872467] Unexpected kernel single-step exception at EL1
+>> [187694.878009] Unexpected kernel single-step exception at EL1
+>> [187694.883550] Unexpected kernel single-step exception at EL1
+>>
+>> I can reproduce this pretty easily on my machine with functioncallcount.stp from https://sourceware.org/systemtap/examples/profiling/functioncallcount.stp and the following steps:
+>>
+>> # stap -p4 -k -m mm_probes -w functioncallcount.stp "*@mm/*.c" -c "sleep 1"
+>> # staprun mm_probes.ko -c "sleep 1"
+>>
+>> -Will
 > 
-> Looking at the code, it's because int_careful has the same bug, but
-> syscall_trace_leave does:
+> I did a fresh checkout and build of systemtap and tried the above.  I'm not yet seeing this problem.  It does remind me of the problem we saw before debug exception handling in entry.S was patched in v3.18-rc1, but you say you are using recent kernel sources.
 > 
->     /*
->      * We may come here right after calling schedule_user()
->      * or do_notify_resume(), in which case we can be in RCU
->      * user mode.
->      */
->     user_exit();
-> 
-> which means that this issue was anticipated when that comment was written.
 
-Indeed, in fact it was expected to work as long as the code that follows the
-syscall is limited to schedule_user(), syscall_trace_leave() and do_notify_resume().
-But if anything else is called and uses RCU, this doesn't work anymore.
+Hi Dave,
 
-So user_enter() and user_exit() have been designed to be re-entrant on purpose.
+I saw this problem with a 3.18.0-rc5 based kernel.  Today I built a kernel based on  3.18.0-0.rc6.git0.1.x1 with the patches and I didn't see the problem with the unexpected kernel single-step exception.  I am not sure if maybe there was some problem function being probed in the 3.18.0-rc5 kernel but not with the 3.18.0-rc6 kernel or maybe some difference in the config between the kernels. It seemed wiser to mention it.
 
+>>>
+>>>
+>>>> That would explain why the state of play of the interrupts is in an
+>>>> unexpected state in the crash I reported:
+>>>> "The point of failure in the panic was:
+>>>> fs/buffer.c:1257
+>>>>
+>>>> static inline void check_irqs_on(void)
+>>>> {
+>>>> #ifdef irqs_disabled
+>>>>          BUG_ON(irqs_disabled());
+>>>> #endif
+>>>> }
+>>>> "
+>>>>
+>>>> This is all new to me so I'm still at the head-scratching stage.
+>>>
+>>> Ah, I see.
+>>>
+>>> Thank you,
+>>>
+>>>>
+>>>> David,
+>>>> Does the above make sense to you? Have you managed to reproduce the crash I get?
+>>>>
+>>>> Cheers,
+>>>> -- 
+>>>> Steve
 > 
-> Prior to the 3.18 seccomp changes and the _TIF_WORK typo fix, it would
-> have been difficult to hit sysret_audit when context tracking was on
-> (you could do it once on the way out from a syscall that enabled
-> context tracking).  So this is 3.18 regression.
+> I have easily produced a crash although it doesn't look to me like the same one.  I'm getting a NULL pointer dereference.  The PMU stuff (used by perf record|stat -e) should be quite independent of kprobes though.
+> 
+> -dl
 
-I see now.
+The perf issue seems to be independent and can be reproduced without using any kprobe support.  I need to get a simple reproducer and mention it on the linux-perf-user list.
 
-So the real problem is not on schedule_user(). It's rather that __audit_syscall_exit()
-should we wrapped inside user_exit()/user_enter() or exception_foo(). The latter
-is safer in a sensitive patch. That would be the real and simple regression fix.
-Tweaking schedule_user() is more risky.
-
-Then, if you like, we can rethink the whole later, define syscall_trace_leave()
-as the only place that calls user_enter() and all the other syscall exit functions
-(schedule_user(), do_notify_resume(), __audit_syscall_exit()) can just call
-exception_enter() - exception_exit() if they can be called after syscall_trace_leave().
-Then finally we can make user_enter and user_exit non-reentrant after careful audit
-of how other archs use it (sounds scary though).
-
-Or better yet: if you rework the syscall exit slow path, lets call user_enter() at the
-very end of the syscall.
-
-> 
-> The sysret_audit code is still totally screwed up AFAICT.  At the very
-> least, the whole mess rather strongly suggests that, if both context
-> tracking and audit are on, then __audit_syscall_exit is called *twice*
-> on each syscall.  __audit_syscall_exit seems to be idempotent, so
-> maybe no one has noticed that little glitch.
-> 
-> I'll ask the x86 people to include my sysret_audit removal for 3.19,
-> since I think that this schedule_user change is a better last-minute
-> fix than removing a whole chunk of asm.
-> 
-> --Andy
-> 
-> >
-> >         Dave
-> >
-> 
-> 
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
+-Will
