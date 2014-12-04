@@ -1,140 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaLDDnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 22:43:19 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:59164 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038AbaLDDnS (ORCPT
+	id S1752793AbaLDDpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 22:45:25 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:52131 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaLDDpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 22:43:18 -0500
+	Wed, 3 Dec 2014 22:45:23 -0500
 MIME-Version: 1.0
-Date: Thu, 4 Dec 2014 11:43:17 +0800
-Message-ID: <CAA+hA=R2x5dUkZAh9=nHLsmaqA5YiAjEya-vQnjLx6i7fruV1w@mail.gmail.com>
-Subject: WARNING: at fs/fs-writeback.c when plug out SD card after system suspend/resume
-From: Dong Aisheng <dongas86@gmail.com>
-To: tj@kernel.org, jack@suse.cz, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.or>,
-        Dong Aisheng-B29396 <b29396@freescale.com>, r64343@freescale.com
+In-Reply-To: <1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
+References: <1416814256-24288-3-git-send-email-a.hajda@samsung.com>
+	<1417610024-29748-1-git-send-email-m.szyprowski@samsung.com>
+Date: Thu, 4 Dec 2014 09:15:21 +0530
+X-Google-Sender-Auth: 0HLgjeDigVSMreAmO_ulU-ty-U4
+Message-ID: <CADGdYn5N-hw7P0+0Z4hZk33NeV30UR+h8joHfC1qSo_mRfzofg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/7] ARM: Exynos: add support for sub-power domains
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene@kernel.org>, Inki Dae <inki.dae@samsung.com>,
+        Tobias Jakobi <Liquid.Acid@gmx.net>, Daniel Drake <drake@endlessm.com>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ALL,
+On Wed, Dec 3, 2014 at 6:03 PM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> This patch adds support for making one power domain a sub-domain of
+> other domain. This is useful for modeling power dependences for devices
+> like TV Mixer or Camera ISP, which needs to have more than one power
+> domain enabled to be operational.
+>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/arm/exynos/power_domain.txt |  2 ++
+>  arch/arm/mach-exynos/pm_domains.c                             | 11 ++++++++++-
+>  2 files changed, 12 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> index abde1ea8a119..b884358ebb1a 100644
+> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> @@ -22,6 +22,8 @@ Optional Properties:
+>         - pclkN, clkN: Pairs of parent of input clock and input clock to the
+>                 devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
+>                 are supported currently.
+> +- samsung,power-domain: phandle to a master power domain that the given domain
+> +                      is a part of
+>
+>  Node of a device using power domains must have a samsung,power-domain property
+>  defined with a phandle to respective power domain.
+> diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+> index 20f267121b3e..fa9a47ddad81 100644
+> --- a/arch/arm/mach-exynos/pm_domains.c
+> +++ b/arch/arm/mach-exynos/pm_domains.c
+> @@ -108,7 +108,7 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+>  static __init int exynos4_pm_init_power_domain(void)
+>  {
+>         struct platform_device *pdev;
+> -       struct device_node *np;
+> +       struct device_node *np, *master_np;
+>
+>         for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+>                 struct exynos_pm_domain *pd;
+> @@ -159,6 +159,15 @@ no_clk:
+>
+>                 pm_genpd_init(&pd->pd, NULL, !on);
+>                 of_genpd_add_provider_simple(np, &pd->pd);
+> +
+> +               /* make master and slave hierarchy */
+> +               master_np = of_parse_phandle(np, "samsung,power-domain", 0);
+> +               if (!master_np)
+> +                       master_np = of_parse_phandle(np, "power-domains", 0);
+> +               if (master_np) {
+> +                       pm_genpd_add_subdomain_names(master_np->name, np->name);
+> +                       of_node_put(master_np);
+> +               }
+>         }
+Hi Marek,
 
-We met an filesystem issue when do stable kernel upgrade from 3.10.31 to
-3.10.53. And we found it's caused by the following commit bf0972039 which
-introduced in 3.10.53.
-After applying this patch, after system suspend/resume, plug out a SD card
-will cause the following WARNING if SD card has a filesystem mounted.
-If revert it, no such WARNING shows.
+In the my patch series posted earlier i added this feature in a
+slightly different way. (https://lkml.org/lkml/2014/11/24/320)
+Parent PD's are not added in the same loop but in the second loop.
+This will make sure that the parents PD are registered before the
+child PD's and we can get away from the assumption of child/parent
+PD's position in the Device Tree. This is a still a work in progress.
+Also posted a patch earlier regarding this,
+http://www.spinics.net/lists/linux-samsung-soc/msg39836.html.
 
-I also tried the latest linux-next tree, it also has such issue.
+Regards,
+Amit
 
-Looks the patch is used to fixing a potential system crashing.
-We're not sure whether this WARNING is as expected and reasonable
-or a BUG because there's no such WARNING before this patch.
 
-Can someone explain about it?
 
-Reproduce step is as follows:
-root@imx6qdlsolo:~# mmc2: mmc_rescan_try_freq: trying to init card at 400000 Hz
-mmc2: Problem setting current limit!
-mmc2: new ultra high speed DDR50 SDHC card at address aaaa
-mmcblk2: mmc2:aaaa SL32G 29.7 GiB
- mmcblk2: p1 p2
-wm8962 3-001a: Failed to get supply 'DCVDD': -517
-wm8962 3-001a: Failed to request supplies: -517
-i2c 3-001a: Driver wm8962 requests probe deferral
-kjournald starting.  Commit interval 5 seconds
-EXT3-fs (mmcblk2p2): using internal journal
-EXT3-fs (mmcblk2p2): recovery complete
-EXT3-fs (mmcblk2p2): mounted filesystem with ordered data mode
-FAT-fs (mmcblk2p1): Volume was not properly unmounted. Some data may
-be corrupt. Please run fsck.
-
-root@imx6qdlsolo:~#
-root@imx6qdlsolo:~# echo mem > /sys/power/state
-PM: Syncing filesystems ... done.
-Freezing user space processes ... (elapsed 0.01 seconds) done.
-Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-Suspending console(s) (use no_console_suspend to debug)
-PM: suspend of devices complete after 45.436 msecs
-PM: suspend devices took 0.050 seconds
-PM: late suspend of devices complete after 0.599 msecs
-PM: noirq suspend of devices complete after 0.704 msecs
-Disabling non-boot CPUs ...
-Turn off M/F mix!
-PM: noirq resume of devices complete after 0.380 msecs
-PM: early resume of devices complete after 0.498 msecs
-imx-sdma 20ec000.sdma: loaded firmware 1.1
-mmc2: Problem setting current limit!
-PM: resume of devices complete after 409.704 msecs
-PM: resume devices took 0.410 seconds
-Restarting tasks ... done.
-root@imx6qdlsolo:~#
-root@imx6qdlsolo:~# libphy: 2188000.ethernet:01 - Link is Up - 100/Full
-mmc2: card aaaa removed
-------------[ cut here ]------------
-WARNING: at fs/fs-writeback.c:1196 __mark_inode_dirty+0x1d0/0x1d4()
-bdi-block not registered
-Modules linked in:
-CPU: 0 PID: 927 Comm: umount Not tainted 3.10.53-02602-g89aa41e #751
-[<80013b00>] (unwind_backtrace+0x0/0xf4) from [<80011524>]
-(show_stack+0x10/0x14)
-[<80011524>] (show_stack+0x10/0x14) from [<8002c290>]
-(warn_slowpath_common+0x54/0x6c)
-[<8002c290>] (warn_slowpath_common+0x54/0x6c) from [<8002c2d8>]
-(warn_slowpath_fmt+0x30/0x40)
-[<8002c2d8>] (warn_slowpath_fmt+0x30/0x40) from [<800e8bbc>]
-(__mark_inode_dirty+0x1d0/0x1d4)
-[<800e8bbc>] (__mark_inode_dirty+0x1d0/0x1d4) from [<80131ba8>]
-(ext3_put_super+0x20c/0x23c)
-[<80131ba8>] (ext3_put_super+0x20c/0x23c) from [<800c88e0>]
-(generic_shutdown_super+0x58/0xc4)
-[<800c88e0>] (generic_shutdown_super+0x58/0xc4) from [<800c8b14>]
-(kill_block_super+0x18/0x68)
-[<800c8b14>] (kill_block_super+0x18/0x68) from [<800c8e60>]
-(deactivate_locked_super+0x48/0x64)
-[<800c8e60>] (deactivate_locked_super+0x48/0x64) from [<800e271c>]
-(SyS_umount+0x94/0x38c)
-[<800e271c>] (SyS_umount+0x94/0x38c) from [<8000e080>]
-(ret_fast_syscall+0x0/0x30)
----[ end trace a52c980ef229d9da ]---
-EXT3-fs (mmcblk2p2): I/O error while writing superblock
-
-Caused by following commit:
-commit bf0972039ddc483a9cb79edae73076c635876568
-Author: Jan Kara <jack@suse.cz>
-Date:   Thu Apr 3 14:46:23 2014 -0700
-
-    bdi: avoid oops on device removal
-
-    commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
-
-    After commit 839a8e8660b6 ("writeback: replace custom worker pool
-    implementation with unbound workqueue") when device is removed while we
-    are writing to it we crash in bdi_writeback_workfn() ->
-    set_worker_desc() because bdi->dev is NULL.
-
-    This can happen because even though bdi_unregister() cancels all pending
-    flushing work, nothing really prevents new ones from being queued from
-    balance_dirty_pages() or other places.
-
-    Fix the problem by clearing BDI_registered bit in bdi_unregister() and
-    checking it before scheduling of any flushing work.
-
-    Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-
-    Reviewed-by: Tejun Heo <tj@kernel.org>
-    Signed-off-by: Jan Kara <jack@suse.cz>
-    Cc: Derek Basehore <dbasehore@chromium.org>
-    Cc: Jens Axboe <axboe@kernel.dk>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Regards
-Dong Aisheng
+>
+>         return 0;
+> --
+> 1.9.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
