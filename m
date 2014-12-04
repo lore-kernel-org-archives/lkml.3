@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810AbaLDWDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:03:45 -0500
-Received: from mout.web.de ([212.227.17.12]:52813 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaLDWDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:03:43 -0500
-Message-ID: <5480DA32.8000201@users.sourceforge.net>
-Date: Thu, 04 Dec 2014 23:03:30 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S933132AbaLDWIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:08:09 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:48520 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705AbaLDWIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 17:08:07 -0500
+Date: Thu, 4 Dec 2014 14:06:57 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH RFC] locking: Add volatile to arch_spinlock_t structures
+Message-ID: <20141204220657.GB25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141204062005.GA2553@linux.vnet.ibm.com>
+ <CA+55aFzn-6asfWHB8SAvz4GJWz7uEriujgVLfaqoo_VPtNBLuA@mail.gmail.com>
+ <CA+55aFxGCxQNE4HzRP_Uk2FmFDn_+Hfm6GBz75S+5+SDeODVJQ@mail.gmail.com>
+ <20141204070248.GJ25340@linux.vnet.ibm.com>
+ <CA+55aFxDmaA2D37Zz1Zc7y6iD6gVs=wskP5wgJb37R98aN-qmg@mail.gmail.com>
+ <20141204183628.GT25340@linux.vnet.ibm.com>
+ <20141204214546.76b7b7cd@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
-References: <5307CAA2.8060406@users.sourceforge.net> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net> <547CA157.1080401@cogentembedded.com>
-In-Reply-To: <547CA157.1080401@cogentembedded.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:dVCLjn5r1xx4L8nOdpihTmXIz4FZ5A6uSqWex9oYdc7xQRepMjb
- wle8SBbO606ffURV7IW5KFPwAifI0W6E/0VAtlcOogVWDJCxun72f74O+JbRAdP26iePwGZ
- CIQoHsPgV71MTFmmMPkYzN2xxBdZgxPbHT/kGVS9DzXzx398toq+090FJpLMCPyDzgCEKxZ
- MSunNWOKpEI5alYaY2MuQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204214546.76b7b7cd@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120422-0017-0000-0000-000006D3B356
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 4 Dec 2014 22:50:28 +0100
+On Thu, Dec 04, 2014 at 09:45:46PM +0000, One Thousand Gnomes wrote:
+> > anywhere in that translation unit.  After all, any non-static function
+> > in that translation unit might be called from some other translation
+> > unit that -did- use locking or whatever.
+> > 
+> > I will let you know how it goes.  ;-)
+> 
+> It breaks DEC10 ;-)
 
-Further update suggestions were taken into account before and after a patch
-was applied from static source code analysis.
+To say nothing of CDC 6600 systems lacking the compare-move unit.  ;-)
 
-Markus Elfring (6):
-  Replacement of a printk() call by pr_warn() in mppe_rekey()
-  Fix indentation
-  Deletion of unnecessary checks before the function call "kfree"
-  Less function calls in mppe_alloc() after error detection
-  Delete an unnecessary assignment in mppe_alloc()
-  Delete another unnecessary assignment in mppe_alloc()
+> If there is kickback over things like optimisation perhaps the gcc
+> maintainers could at least consider something like
+> 
+> 	int __attribute((threadsafe)) fred;
+> 
+> ??
 
- drivers/net/ppp/ppp_mppe.c | 49 +++++++++++++++++++---------------------------
- 1 file changed, 20 insertions(+), 29 deletions(-)
+Not needed for recent gcc versions -- both the C11 and C++11 standards
+require that different threads be permitted to independently access
+different variables, where "different" means "no bits of the two variables
+residing in the same byte".  From what I can see, this would mean that
+a conforming pre-EV56 Alpha C11 compiler would need to use LDL_L and
+STL_C to carry out 8-bit and 16-bit stores.  ;-)
 
--- 
-2.1.3
+							Thanx, Paul
 
