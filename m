@@ -1,276 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaLDUTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:19:18 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:60025 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877AbaLDUTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:19:17 -0500
-Date: Thu, 4 Dec 2014 15:19:05 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Qiang Huang <h.huangqiang@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, oom: remove gfp helper function
-Message-ID: <20141204201905.GA17790@phnom.home.cmpxchg.org>
-References: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
- <20141127102547.GA18833@dhcp22.suse.cz>
- <20141201233040.GB29642@phnom.home.cmpxchg.org>
- <20141203155222.GH23236@dhcp22.suse.cz>
- <20141203181509.GA24567@phnom.home.cmpxchg.org>
- <20141204151758.GC25001@dhcp22.suse.cz>
+	id S1754728AbaLDUUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:20:17 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50267 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaLDUUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:20:14 -0500
+Date: Thu, 4 Dec 2014 20:20:11 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [RFC][PATCHES] iov_iter.c rewrite
+Message-ID: <20141204202011.GO29748@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141204151758.GC25001@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 04:17:58PM +0100, Michal Hocko wrote:
-> On Wed 03-12-14 13:15:09, Johannes Weiner wrote:
-> > On Wed, Dec 03, 2014 at 04:52:22PM +0100, Michal Hocko wrote:
-> > > On Mon 01-12-14 18:30:40, Johannes Weiner wrote:
-> > > > On Thu, Nov 27, 2014 at 11:25:47AM +0100, Michal Hocko wrote:
-> > > > > On Wed 26-11-14 14:17:32, David Rientjes wrote:
-> > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > > > > --- a/mm/page_alloc.c
-> > > > > > +++ b/mm/page_alloc.c
-> > > > > > @@ -2706,7 +2706,7 @@ rebalance:
-> > > > > >  	 * running out of options and have to consider going OOM
-> > > > > >  	 */
-> > > > > >  	if (!did_some_progress) {
-> > > > > > -		if (oom_gfp_allowed(gfp_mask)) {
-> > > > > 		/*
-> > > > > 		 * Do not attempt to trigger OOM killer for !__GFP_FS
-> > > > > 		 * allocations because it would be premature to kill
-> > > > > 		 * anything just because the reclaim is stuck on
-> > > > > 		 * dirty/writeback pages.
-> > > > > 		 * __GFP_NORETRY allocations might fail and so the OOM
-> > > > > 		 * would be more harmful than useful.
-> > > > > 		 */
-> > > > 
-> > > > I don't think we need to explain the individual flags, but it would
-> > > > indeed be useful to remark here that we shouldn't OOM kill from
-> > > > allocations contexts with (severely) limited reclaim abilities.
-> > > 
-> > > Is __GFP_NORETRY really related to limited reclaim abilities? I thought
-> > > it was merely a way to tell the allocator to fail rather than spend too
-> > > much time reclaiming.
-> > 
-> > And you wouldn't call that "limited reclaim ability"?
-> 
-> I really do not want to go into language lawyering here. But to me the
-> reclaim ability is what the reclaim is capable to do with the given gfp.
+	First of all, I want to apologize for the nastiness of preprocessor
+use in this series.  Seeing that the whole "macros that look like new kinds
+of C statements" thing (including list_for_each_...(), etc) is very much not
+to my liking, I really don't trust my taste on finer details and I'd very
+much like some feedback.
 
-I was explicitely talking about the reclaim abilities of the
-allocation context, in the context of the allocator.  Surely that
-includes how often the task can call try_to_free_pages()?
+	The reason for doing that kind of tricks is that iov_iter.c keeps
+growing more and more boilerplate code.  For iov_iter-net series we need
+	* csum_and_copy_from_iter()
+	* csum_and_copy_to_iter()
+	* copy_from_iter_nocache()
+That's 3 new primitives, each in 2 variants (iovec and bvec).
+	* ITER_KVEC handled without going through uaccess.h stuff (and
+independent of set_fs() state).
+And *that* means 3 variants intstead of 2 for most of the existing primitives.
+That's far too much, and the amount of copies of the same logics would pretty
+much guarantee that it will be a breeding ground for hard-to-kill bugs.
 
-> And __GFP_NORETRY is completely irrelevant for the reclaim. It tells the
-> allocator how hard it should try (similar like __GFP_REPEAT or
-> __GFP_NOFAIL) unlike __GFP_FS which restricts the reclaim in its
-> operation.
+	The following series (also in vfs.git#iov_iter) actually manages to
+do all of the above *and* shrink the damn thing quite a bit.  The generated
+code appears to be no worse than before.  The price is a couple of iterator
+macros - iterate_all_kinds() and iterate_and_advance().  They are given an
+iov_iter, size (i.e. the amount of data in iov_iter beginning we want to go
+through), name of the loop variable and 3 variants of loop body - for iovec,
+bvec and kvec resp.  Loop variable is declared *inside* the expansion of those
+suckers according to the kind of iov_iter - it's struct iovec, struct bio_vec
+or struct kvec, covering the current range to deal with.
+	The difference between those two is that iterate_and_advance() will
+advance the iov_iter by the amount it has handled and iterate_all_kinds()
+will leave iov_iter unchanged.
 
-Tells the allocator how hard to try *what*?  It's not just looking at
-the freelists in a tight loop.  It's reclaiming memory.
+	Unless I hear anybody yelling, it goes into vfs.git#for-next today,
+so if you have objections, suggestions, etc., give those *now*.
 
-You're still thinking about the implementation and get distracted by
-the detail that the allocator's reclaim logic is living in a separate
-code file.  Look at the architecture.  The GFP flags apply to the
-freelist manager and the reclaim code as one big allocator machine
-that goes off to get pages, from wherever.  And anything that is
-taking pages that are not already on the freelist must be reclaiming
-them from somewhere else, by definition.  Thus, the allocation
-context's reclaim ability includes whether it can free or migrate used
-pages on its own (__GFP_WAIT), whether it can scan and migrate pages
-indefinitely or not (__GFP_NOFAIL and __GFP_NORETRY), and whether it
-can write and wait for the pages it looks at (__GFP_FS and __GFP_IO).
+Al Viro (13):
+      iov_iter.c: macros for iterating over iov_iter
+      iov_iter.c: iterate_and_advance
+      iov_iter.c: convert iov_iter_npages() to iterate_all_kinds
+      iov_iter.c: convert iov_iter_get_pages() to iterate_all_kinds
+      iov_iter.c: convert iov_iter_get_pages_alloc() to iterate_all_kinds
+      iov_iter.c: convert iov_iter_zero() to iterate_and_advance
+      iov_iter.c: get rid of bvec_copy_page_{to,from}_iter()
+      iov_iter.c: convert copy_from_iter() to iterate_and_advance
+      iov_iter.c: convert copy_to_iter() to iterate_and_advance
+      iov_iter.c: handle ITER_KVEC directly
+      csum_and_copy_..._iter()
+      new helper: iov_iter_kvec()
+      copy_from_iter_nocache()
 
-OOM killing is just another way to reclaim, but the point here is that
-it's so disruptive that we want to avoid it unless all other means to
-reclaim memory are exhausted.  And yes, continuing to scan pages *is*
-a means for the allocator to reclaim memory, and we don't OOM kill
-when that is still making progress!
-
-That being said, you ARE right that __GFP_FS and __GFP_NORETRY apply
-to different components of the allocator.  While they should have the
-same effect on OOM-killing, the fact that they are checked together in
-the same branch is a strong signal of how weird this code actually is.
-
-How about the following?  It changes the code flow to clarify what's
-actually going on there and gets rid of oom_gfp_allowed() altogether,
-instead of awkwardly trying to explain something that has no meaning.
-
-Btw, it looks like there is a bug with oom_killer_disabled, because it
-will return NULL for __GFP_NOFAIL.
-
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: page_alloc: embed OOM killing naturally into allocation
- slowpath
-
-The OOM killing invocation does a lot of duplicative checks against
-the task's allocation context.  Rework it to take advantage of the
-existing checks in the allocator slowpath.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/oom.h |  5 ----
- mm/page_alloc.c     | 80 +++++++++++++++++++++++------------------------------
- 2 files changed, 35 insertions(+), 50 deletions(-)
-
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index e8d6e1058723..4971874f54db 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -85,11 +85,6 @@ static inline void oom_killer_enable(void)
- 	oom_killer_disabled = false;
- }
- 
--static inline bool oom_gfp_allowed(gfp_t gfp_mask)
--{
--	return (gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY);
--}
--
- extern struct task_struct *find_lock_task_mm(struct task_struct *p);
- 
- /* sysctls */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 616a2c956b4b..2df99ca56e28 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2232,12 +2232,21 @@ static inline struct page *
- __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int classzone_idx, int migratetype)
-+	int classzone_idx, int migratetype, unsigned long *did_some_progress)
- {
- 	struct page *page;
- 
--	/* Acquire the per-zone oom lock for each zone */
-+	*did_some_progress = 0;
-+
-+	if (oom_killer_disabled)
-+		return NULL;
-+
-+	/*
-+	 * Acquire the per-zone oom lock for each zone.  If that
-+	 * fails, somebody else is making progress for us.
-+	 */
- 	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
-+		*did_some_progress = 1;
- 		schedule_timeout_uninterruptible(1);
- 		return NULL;
- 	}
-@@ -2263,12 +2272,18 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 		goto out;
- 
- 	if (!(gfp_mask & __GFP_NOFAIL)) {
-+		/* Coredumps can quickly deplete all memory reserves */
-+		if (current->flags & PF_DUMPCORE)
-+			goto out;
- 		/* The OOM killer will not help higher order allocs */
- 		if (order > PAGE_ALLOC_COSTLY_ORDER)
- 			goto out;
- 		/* The OOM killer does not needlessly kill tasks for lowmem */
- 		if (high_zoneidx < ZONE_NORMAL)
- 			goto out;
-+		/* The OOM killer does not compensate for light reclaim */
-+		if (!(gfp_mask & __GFP_FS))
-+			goto out;
- 		/*
- 		 * GFP_THISNODE contains __GFP_NORETRY and we never hit this.
- 		 * Sanity check for bare calls of __GFP_THISNODE, not real OOM.
-@@ -2281,7 +2296,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	}
- 	/* Exhausted what can be done so it's blamo time */
- 	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
--
-+	*did_some_progress = 1;
- out:
- 	oom_zonelist_unlock(zonelist, gfp_mask);
- 	return page;
-@@ -2571,7 +2586,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
- 		goto nopage;
- 
--restart:
- 	if (!(gfp_mask & __GFP_NO_KSWAPD))
- 		wake_all_kswapds(order, zonelist, high_zoneidx,
- 				preferred_zone, nodemask);
-@@ -2701,51 +2715,27 @@ rebalance:
- 	if (page)
- 		goto got_pg;
- 
--	/*
--	 * If we failed to make any progress reclaiming, then we are
--	 * running out of options and have to consider going OOM
--	 */
--	if (!did_some_progress) {
--		if (oom_gfp_allowed(gfp_mask)) {
--			if (oom_killer_disabled)
--				goto nopage;
--			/* Coredumps can quickly deplete all memory reserves */
--			if ((current->flags & PF_DUMPCORE) &&
--			    !(gfp_mask & __GFP_NOFAIL))
--				goto nopage;
--			page = __alloc_pages_may_oom(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask, preferred_zone,
--					classzone_idx, migratetype);
--			if (page)
--				goto got_pg;
--
--			if (!(gfp_mask & __GFP_NOFAIL)) {
--				/*
--				 * The oom killer is not called for high-order
--				 * allocations that may fail, so if no progress
--				 * is being made, there are no other options and
--				 * retrying is unlikely to help.
--				 */
--				if (order > PAGE_ALLOC_COSTLY_ORDER)
--					goto nopage;
--				/*
--				 * The oom killer is not called for lowmem
--				 * allocations to prevent needlessly killing
--				 * innocent tasks.
--				 */
--				if (high_zoneidx < ZONE_NORMAL)
--					goto nopage;
--			}
--
--			goto restart;
--		}
--	}
--
- 	/* Check if we should retry the allocation */
- 	pages_reclaimed += did_some_progress;
- 	if (should_alloc_retry(gfp_mask, order, did_some_progress,
- 						pages_reclaimed)) {
-+		/*
-+		 * If we fail to make progress by freeing individual
-+		 * pages, but the allocation wants us to keep going,
-+		 * start OOM killing tasks.
-+		 */
-+		if (!did_some_progress) {
-+			page = __alloc_pages_may_oom(gfp_mask, order, zonelist,
-+						high_zoneidx, nodemask,
-+						preferred_zone, classzone_idx,
-+						migratetype,&did_some_progress);
-+			if (page)
-+				goto got_pg;
-+			if (!did_some_progress) {
-+				BUG_ON(gfp_mask & __GFP_NOFAIL);
-+				goto nopage;
-+			}
-+		}
- 		/* Wait for some write requests to complete then retry */
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
--- 
-2.1.3
-
+Diffstat:
+ include/linux/uio.h |    6 +
+ mm/iov_iter.c       | 1077 +++++++++++++++++++++------------------------------
+ 2 files changed, 445 insertions(+), 638 deletions(-)
