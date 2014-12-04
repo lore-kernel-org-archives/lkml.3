@@ -1,39 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaLDPwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:52:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753737AbaLDPwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:52:09 -0500
-Message-ID: <5480830A.8090803@redhat.com>
-Date: Thu, 04 Dec 2014 16:51:38 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754614AbaLDPx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:53:26 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:34176 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335AbaLDPxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:53:25 -0500
+From: j.glisse@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] scripts/package: binrpm-pkg do not build source tar file v4
+Date: Thu,  4 Dec 2014 10:53:13 -0500
+Message-Id: <1417708393-14318-1-git-send-email-j.glisse@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Where exactly will arch_fast_hash be used
-References: <20141204081147.GA19030@gondor.apana.org.au> <20141204152637.GA32140@casper.infradead.org> <20141204152929.GA22075@gondor.apana.org.au> <20141204153938.GC32140@casper.infradead.org> <54808123.8000704@redhat.com> <20141204154708.GA22185@gondor.apana.org.au>
-In-Reply-To: <20141204154708.GA22185@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 04:47 PM, Herbert Xu wrote:
-> On Thu, Dec 04, 2014 at 04:43:31PM +0100, Daniel Borkmann wrote:
->>
->> Hm, I thought the kernel doc on arch_fast_hash() in include/linux/hash.h
->> would give enough of a hint ...
->
-> I think something more explicit like "do not use this in a hash
-> table unless you know what you're doing" might be needed.
+From: Jérôme Glisse <jglisse@redhat.com>
 
-Ok, I'm fine with that, do you want to submit a patch on top of, or
-after Hannes' improvements [1] got in? Thanks a lot, Herbert.
+When doing make binrpm-pkg we only want to build the binary and header
+package as the documentation of binrpm-pkg target claims. Hence this
+patch avoid building the source and devel package. This makes binrpm-pkg
+target lot faster and way more usefull.
 
-   [1] http://patchwork.ozlabs.org/patch/417761/
+Changed since v3 :
+  - Avoid creating /usr/src/kernels directory.
+  - Avoid useless pre clean step of source and devel package.
+
+Changed since v2 :
+  - Avoid symlinks in /usr/src/kernel.
+  - Update subject line and changelog.
+
+Changed since v1 :
+  - Avoid building the devel package too.
+
+Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>
+---
+ scripts/package/mkspec | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/scripts/package/mkspec b/scripts/package/mkspec
+index 1395760..d9ab94b 100755
+--- a/scripts/package/mkspec
++++ b/scripts/package/mkspec
+@@ -117,6 +117,7 @@ echo 'mv vmlinux.bz2 $RPM_BUILD_ROOT'"/boot/vmlinux-$KERNELRELEASE.bz2"
+ echo 'mv vmlinux.orig vmlinux'
+ echo "%endif"
+ 
++if ! $PREBUILT; then
+ echo 'rm -f $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE/{build,source}"
+ echo "mkdir -p "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNELRELEASE"
+ echo "EXCLUDES=\"$RCS_TAR_IGNORE --exclude .tmp_versions --exclude=*vmlinux* --exclude=*.o --exclude=*.ko --exclude=*.cmd --exclude=Documentation --exclude=firmware --exclude .config.old --exclude .missing-syscalls.d\""
+@@ -124,6 +125,7 @@ echo "tar "'$EXCLUDES'" -cf- . | (cd "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNEL
+ echo 'cd $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE"
+ echo "ln -sf /usr/src/kernels/$KERNELRELEASE build"
+ echo "ln -sf /usr/src/kernels/$KERNELRELEASE source"
++fi
+ 
+ echo ""
+ echo "%clean"
+@@ -151,9 +153,11 @@ echo "%files headers"
+ echo '%defattr (-, root, root)'
+ echo "/usr/include"
+ echo ""
++if ! $PREBUILT; then
+ echo "%files devel"
+ echo '%defattr (-, root, root)'
+ echo "/usr/src/kernels/$KERNELRELEASE"
+ echo "/lib/modules/$KERNELRELEASE/build"
+ echo "/lib/modules/$KERNELRELEASE/source"
+ echo ""
++fi
+-- 
+1.8.3.1
+
