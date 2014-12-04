@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaLDCke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:40:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46643 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaLDCkc (ORCPT
+	id S1752690AbaLDCnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:43:23 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:57162 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbaLDCnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:40:32 -0500
-Message-ID: <547FC990.5010100@oracle.com>
-Date: Wed, 03 Dec 2014 21:40:16 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 3 Dec 2014 21:43:21 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB42hH38016741, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: redefine REALTEK_USB_DEVICE
+Date: Thu, 4 Dec 2014 10:43:11 +0800
+Message-ID: <1394712342-15778-106-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] time: adjtimex: validate the ADJ_FREQUENCY case
-References: <1417652705-1959-1-git-send-email-sasha.levin@oracle.com> <CALAqxLUhheX1=jPmhTvnQyOH3X=+4Tgx5-kwQwQHj1c2YK+Neg@mail.gmail.com>
-In-Reply-To: <CALAqxLUhheX1=jPmhTvnQyOH3X=+4Tgx5-kwQwQHj1c2YK+Neg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 08:09 PM, John Stultz wrote:
-> On Wed, Dec 3, 2014 at 4:25 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> Verify that the frequency value from userspace is valid and makes sense.
->>
->> Unverified values can cause overflows later on.
->>
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> ---
->>  kernel/time/ntp.c |    9 +++++++++
->>  1 file changed, 9 insertions(+)
->>
->> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
->> index 87a346f..54828cf 100644
->> --- a/kernel/time/ntp.c
->> +++ b/kernel/time/ntp.c
->> @@ -633,6 +633,15 @@ int ntp_validate_timex(struct timex *txc)
->>         if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
->>                 return -EPERM;
->>
->> +       if (txc->modes & ADJ_FREQUENCY) {
->> +               if (!capable(CAP_SYS_TIME))
->> +                       return -EPERM;
-> 
-> So does this actually change behavior? We check CAP_SYS_TIME if modes
-> is set to anything a few lines above (with the exception of
-> ADJ_ADJTIME which only allows for ADJ_OFFSET_SINGLESHOT or
-> ADJ_OFFSET_READONLY).
-> 
-> Granted, that logic isn't intuitive to read (and probably needs a
-> cleanup) but seems ok.
+Redefine REALTEK_USB_DEVICE for the desired USB interface for probe().
+There are three USB interfaces for the device. USB_CLASS_COMM and
+USB_CLASS_CDC_DATA are for ECM mode (config #2). USB_CLASS_VENDOR_SPEC
+is for the vendor mode (config #1). However, we are not interesting
+in USB_CLASS_CDC_DATA for probe(), so redefine REALTEK_USB_DEVICE
+to ignore the USB interface class of USB_CLASS_CDC_DATA.
 
-No, it doesn't change behaviour. The logic, as you said, is a mess - so
-I tried to keep this change (I actually have a few more which look very
-similar) as readable and safe as possible
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 26 ++++++++++++++++++++------
+ 1 file changed, 20 insertions(+), 6 deletions(-)
 
->> +               if (txc->freq < 0)
->> +                       return -EINVAL;
-> 
-> ?  Freq adjustments can be negative....  Am I just missing something here?
-
-No, My bad, this should actually be:
-
-	if (LONG_MIN / PPM_SCALE > txc->freq)
-		return -EINVAL;
-
->> +               if (LONG_MAX / PPM_SCALE < txc->freq)
->> +                       return -EINVAL;
->> +       }
-> 
-> This part seems reasonable though. We bound the output, but overflows
-> could result in negative result when it was specified positive.
-
-The overflows could actually result in being anything, as this is considered
-undefined behaviour.
-
-> I'm curious: I know many of your patches come from trinity issues, but
-> this one isn't super clear in the commit message how it was found. Did
-> an actually issue crop up here, or was this just something you came up
-> with while looking at the 3.18rc hang problem?
-
-This is just me playing with the undefined behaviour/gcc5 patch and trinity,
-it doesn't have anything to do with the hang problem.
-
-
-Thanks,
-Sasha
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 4a9ece0..2d1c77e 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -24,6 +24,7 @@
+ #include <net/ip6_checksum.h>
+ #include <uapi/linux/mdio.h>
+ #include <linux/mdio.h>
++#include <linux/usb/cdc.h>
+ 
+ /* Version Information */
+ #define DRIVER_VERSION "v1.07.0 (2014/10/09)"
+@@ -466,9 +467,6 @@ enum rtl8152_flags {
+ #define MCU_TYPE_PLA			0x0100
+ #define MCU_TYPE_USB			0x0000
+ 
+-#define REALTEK_USB_DEVICE(vend, prod)	\
+-	USB_DEVICE_INTERFACE_CLASS(vend, prod, USB_CLASS_VENDOR_SPEC)
+-
+ struct tally_counter {
+ 	__le64	tx_packets;
+ 	__le64	rx_packets;
+@@ -3915,11 +3913,27 @@ static void rtl8152_disconnect(struct usb_interface *intf)
+ 	}
+ }
+ 
++#define REALTEK_USB_DEVICE(vend, prod)	\
++	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | \
++		       USB_DEVICE_ID_MATCH_INT_CLASS, \
++	.idVendor = (vend), \
++	.idProduct = (prod), \
++	.bInterfaceClass = USB_CLASS_VENDOR_SPEC \
++}, \
++{ \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO | \
++		       USB_DEVICE_ID_MATCH_DEVICE, \
++	.idVendor = (vend), \
++	.idProduct = (prod), \
++	.bInterfaceClass = USB_CLASS_COMM, \
++	.bInterfaceSubClass = USB_CDC_SUBCLASS_ETHERNET, \
++	.bInterfaceProtocol = USB_CDC_PROTO_NONE
++
+ /* table of devices that work with this driver */
+ static struct usb_device_id rtl8152_table[] = {
+-	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
+-	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
+-	{USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
++	{REALTEK_USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
+ 	{}
+ };
+ 
+-- 
+1.9.3
 
