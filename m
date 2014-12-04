@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaLDIhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:37:36 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34763 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaLDIhf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:37:35 -0500
-Date: Thu, 4 Dec 2014 08:37:30 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] MFD / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Message-ID: <20141204083730.GG327@x1>
-References: <2857906.7ft1XTNUKe@vostro.rjw.lan>
+	id S1753131AbaLDIip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:38:45 -0500
+Received: from ozlabs.org ([103.22.144.67]:59059 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883AbaLDIio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 03:38:44 -0500
+Date: Thu, 4 Dec 2014 19:38:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Bryan Wu <cooloney@gmail.com>, jg1.han@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: remove my name from Backlight subsystem
+Message-ID: <20141204193837.75da4d30@canb.auug.org.au>
+In-Reply-To: <20141204082328.GD327@x1>
+References: <1417634040-11791-1-git-send-email-cooloney@gmail.com>
+	<20141204082328.GD327@x1>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2857906.7ft1XTNUKe@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/w6YvQg3Mc=Ol9Go0x_7s0_E"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Dec 2014, Rafael J. Wysocki wrote:
+--Sig_/w6YvQg3Mc=Ol9Go0x_7s0_E
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
-> 
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-> drivers/mfd/.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
-> 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
-> 
-> Please let me know if it is OK to take this one into linux-pm.
+Hi Lee,
 
-It's okay to take the patch.
+On Thu, 4 Dec 2014 08:23:28 +0000 Lee Jones <lee.jones@linaro.org> wrote:
+>
+> > Signed-off-by: Bryan Wu <cooloney@gmail.com>
+> > ---
+> >  MAINTAINERS | 1 -
+> >  1 file changed, 1 deletion(-)
+>=20
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+>=20
+> If this doesn't get swallowed up by Stephen in the next couple of
+> days, I'll take it in via the Backlight tree.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+I don't take patches directly (except for temporary fixes) ...
 
-> ---
->  drivers/mfd/ab8500-gpadc.c |    2 +-
->  drivers/mfd/arizona-core.c |    4 ++--
->  drivers/mfd/wm8994-core.c  |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> Index: linux-pm/drivers/mfd/ab8500-gpadc.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mfd/ab8500-gpadc.c
-> +++ linux-pm/drivers/mfd/ab8500-gpadc.c
-> @@ -867,7 +867,7 @@ static void ab8500_gpadc_read_calibratio
->  		gpadc->cal_data[ADC_INPUT_VBAT].offset);
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static int ab8500_gpadc_runtime_suspend(struct device *dev)
->  {
->  	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
-> Index: linux-pm/drivers/mfd/wm8994-core.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mfd/wm8994-core.c
-> +++ linux-pm/drivers/mfd/wm8994-core.c
-> @@ -116,7 +116,7 @@ static const char *wm8958_main_supplies[
->  	"SPKVDD2",
->  };
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static int wm8994_suspend(struct device *dev)
->  {
->  	struct wm8994 *wm8994 = dev_get_drvdata(dev);
-> Index: linux-pm/drivers/mfd/arizona-core.c
-> ===================================================================
-> --- linux-pm.orig/drivers/mfd/arizona-core.c
-> +++ linux-pm/drivers/mfd/arizona-core.c
-> @@ -330,7 +330,7 @@ err_fll:
->  		return err;
->  }
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  static int arizona_runtime_resume(struct device *dev)
->  {
->  	struct arizona *arizona = dev_get_drvdata(dev);
-> @@ -1024,7 +1024,7 @@ int arizona_dev_init(struct arizona *ari
->  		goto err_irq;
->  	}
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  	regulator_disable(arizona->dcvdd);
->  #endif
->  
-> 
+Also, I didn't have Bryan listed as a contact for the backlight tree in
+linux-next, just you.  I do, however, have Bryan listed as the contact
+for the leds tree (if that is relevant).
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/w6YvQg3Mc=Ol9Go0x_7s0_E
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUgB2RAAoJEMDTa8Ir7ZwV5MAP/1OuCBpfM1Z1bzGOEq1qPVfQ
+9gCscdb3MFcIYTUbSpIyQXw61uzS1Ej3PZ1iFe8KxeIjT/WGo2WqNdUN0+GjJK8Q
+Ct7pwq3XtGpM60o/qGtRd0wiH3skRc7+lFmfUFVBDUURqBuBFmz3Jsgef9TOv3we
+OGs1J9PfyfYZpcO30dDFEcyfjT5eIfh7sTJdybO1PCwPB4sqR8qbRknzXcfBg/Cq
+EGm2gCHLlgANY7cWAbtxJMUy73A0LTRszDDLGNxat65SHFQUKmRCE0cRlmrM+QlR
+SiBkkY/4wS/bAWWQ0rvFNL7crt38hMv3TjKRlM6JRmTtp3aLR3tuY8SBs8OV6qn7
+0EpQxPI5QHomnLfjLtcO7QjW7Zqdks4ViXv4dkD6WXPN/cJJOHm0s7yyL/Bj5mPC
+wx7SSJPxAx9QU3flVQVsXYbGQQAvaN4sNRbGmtCJn5SEHoEnq6u3UcB5iZQpapEt
+gOwHXx4aXzzxFXV344tyiGKtELSKhq/ZbC6WwwG9+6aUiu/odJE7SYQXpsXKviHs
+HvgasIqOzRWrA/VEPcy1NOQkdbiXYoe5MKHvUL44ERBQhLgupXQ/WcQ6R4qWtWSL
+ZaIkc2cgHdRBRXirszba0dmUKSFYbYL89SZ6MGCyc5ZcDE8WV9HZCGuvraIjCHhU
+28iDDu07tLZ0MzQJGEY6
+=dgMG
+-----END PGP SIGNATURE-----
+
+--Sig_/w6YvQg3Mc=Ol9Go0x_7s0_E--
