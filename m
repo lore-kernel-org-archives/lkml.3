@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaLDMlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:41:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51984 "EHLO mx2.suse.de"
+	id S1753958AbaLDMpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:45:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700AbaLDMlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:41:42 -0500
-Date: Thu, 4 Dec 2014 13:41:39 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dong Aisheng <dongas86@gmail.com>
-Cc: tj@kernel.org, jack@suse.cz, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.or>,
-        Dong Aisheng-B29396 <b29396@freescale.com>, r64343@freescale.com
-Subject: Re: WARNING: at fs/fs-writeback.c when plug out SD card after system
- suspend/resume
-Message-ID: <20141204124139.GC8569@quack.suse.cz>
-References: <CAA+hA=R2x5dUkZAh9=nHLsmaqA5YiAjEya-vQnjLx6i7fruV1w@mail.gmail.com>
+	id S1753614AbaLDMpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:45:06 -0500
+Date: Thu, 4 Dec 2014 13:44:22 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 1/4] tools/perf: support parsing parameterized events
+Message-ID: <20141204124422.GA4195@krava.brq.redhat.com>
+References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA+hA=R2x5dUkZAh9=nHLsmaqA5YiAjEya-vQnjLx6i7fruV1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-12-14 11:43:17, Dong Aisheng wrote:
-> Hi ALL,
+On Tue, Dec 02, 2014 at 06:09:35PM -0800, Sukadev Bhattiprolu wrote:
+> From: Cody P Schafer <cody@linux.vnet.ibm.com>
 > 
-> We met an filesystem issue when do stable kernel upgrade from 3.10.31 to
-> 3.10.53. And we found it's caused by the following commit bf0972039 which
-> introduced in 3.10.53.
-> After applying this patch, after system suspend/resume, plug out a SD card
-> will cause the following WARNING if SD card has a filesystem mounted.
-> If revert it, no such WARNING shows.
+> Enable event specification like:
 > 
-> I also tried the latest linux-next tree, it also has such issue.
+> 	pmu/event_name,param1=0x1,param2=0x4/
 > 
-> Looks the patch is used to fixing a potential system crashing.
-> We're not sure whether this WARNING is as expected and reasonable
-> or a BUG because there's no such WARNING before this patch.
+> Assuming that
 > 
-> Can someone explain about it?
-  The warning happens because bdi disappeared from under filesystem (likely
-it was even freed) but filesystem still has references to it. Previously,
-we were just silenly using freed memory, now we warn about it because we
-now clear the BDI_registered bit before freeing the bdi.
+> 	/sys/bus/event_source/devices/pmu/events/event_name
+> 
+> Contains something like
+> 
+> 	param2=$foo,bar=1,param1=$baz
 
-So for now the best advice I can give you is: Don't remove device from
-under mounted filesystem (even when the system is suspended). I may easily
-crash your machine.
+oops.. sorry to be PITA on this one.. I might have missed something
+in the previous discussion but I guess I might have finally some
+opinion on this ;-)
 
-We should fix bdi lifetime issues by making bdi live as long as the
-filesystem on top of it but someone has to find time to do that...
+here's how I think your patchset works:
 
-								Honza
+in /sys/bus/event_source/devices/pmu/events/event_name you can actually have:
 
-> Reproduce step is as follows:
-> root@imx6qdlsolo:~# mmc2: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> mmc2: Problem setting current limit!
-> mmc2: new ultra high speed DDR50 SDHC card at address aaaa
-> mmcblk2: mmc2:aaaa SL32G 29.7 GiB
->  mmcblk2: p1 p2
-> wm8962 3-001a: Failed to get supply 'DCVDD': -517
-> wm8962 3-001a: Failed to request supplies: -517
-> i2c 3-001a: Driver wm8962 requests probe deferral
-> kjournald starting.  Commit interval 5 seconds
-> EXT3-fs (mmcblk2p2): using internal journal
-> EXT3-fs (mmcblk2p2): recovery complete
-> EXT3-fs (mmcblk2p2): mounted filesystem with ordered data mode
-> FAT-fs (mmcblk2p1): Volume was not properly unmounted. Some data may
-> be corrupt. Please run fsck.
-> 
-> root@imx6qdlsolo:~#
-> root@imx6qdlsolo:~# echo mem > /sys/power/state
-> PM: Syncing filesystems ... done.
-> Freezing user space processes ... (elapsed 0.01 seconds) done.
-> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> Suspending console(s) (use no_console_suspend to debug)
-> PM: suspend of devices complete after 45.436 msecs
-> PM: suspend devices took 0.050 seconds
-> PM: late suspend of devices complete after 0.599 msecs
-> PM: noirq suspend of devices complete after 0.704 msecs
-> Disabling non-boot CPUs ...
-> Turn off M/F mix!
-> PM: noirq resume of devices complete after 0.380 msecs
-> PM: early resume of devices complete after 0.498 msecs
-> imx-sdma 20ec000.sdma: loaded firmware 1.1
-> mmc2: Problem setting current limit!
-> PM: resume of devices complete after 409.704 msecs
-> PM: resume devices took 0.410 seconds
-> Restarting tasks ... done.
-> root@imx6qdlsolo:~#
-> root@imx6qdlsolo:~# libphy: 2188000.ethernet:01 - Link is Up - 100/Full
-> mmc2: card aaaa removed
-> ------------[ cut here ]------------
-> WARNING: at fs/fs-writeback.c:1196 __mark_inode_dirty+0x1d0/0x1d4()
-> bdi-block not registered
-> Modules linked in:
-> CPU: 0 PID: 927 Comm: umount Not tainted 3.10.53-02602-g89aa41e #751
-> [<80013b00>] (unwind_backtrace+0x0/0xf4) from [<80011524>]
-> (show_stack+0x10/0x14)
-> [<80011524>] (show_stack+0x10/0x14) from [<8002c290>]
-> (warn_slowpath_common+0x54/0x6c)
-> [<8002c290>] (warn_slowpath_common+0x54/0x6c) from [<8002c2d8>]
-> (warn_slowpath_fmt+0x30/0x40)
-> [<8002c2d8>] (warn_slowpath_fmt+0x30/0x40) from [<800e8bbc>]
-> (__mark_inode_dirty+0x1d0/0x1d4)
-> [<800e8bbc>] (__mark_inode_dirty+0x1d0/0x1d4) from [<80131ba8>]
-> (ext3_put_super+0x20c/0x23c)
-> [<80131ba8>] (ext3_put_super+0x20c/0x23c) from [<800c88e0>]
-> (generic_shutdown_super+0x58/0xc4)
-> [<800c88e0>] (generic_shutdown_super+0x58/0xc4) from [<800c8b14>]
-> (kill_block_super+0x18/0x68)
-> [<800c8b14>] (kill_block_super+0x18/0x68) from [<800c8e60>]
-> (deactivate_locked_super+0x48/0x64)
-> [<800c8e60>] (deactivate_locked_super+0x48/0x64) from [<800e271c>]
-> (SyS_umount+0x94/0x38c)
-> [<800e271c>] (SyS_umount+0x94/0x38c) from [<8000e080>]
-> (ret_fast_syscall+0x0/0x30)
-> ---[ end trace a52c980ef229d9da ]---
-> EXT3-fs (mmcblk2p2): I/O error while writing superblock
-> 
-> Caused by following commit:
-> commit bf0972039ddc483a9cb79edae73076c635876568
-> Author: Jan Kara <jack@suse.cz>
-> Date:   Thu Apr 3 14:46:23 2014 -0700
-> 
->     bdi: avoid oops on device removal
-> 
->     commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
-> 
->     After commit 839a8e8660b6 ("writeback: replace custom worker pool
->     implementation with unbound workqueue") when device is removed while we
->     are writing to it we crash in bdi_writeback_workfn() ->
->     set_worker_desc() because bdi->dev is NULL.
-> 
->     This can happen because even though bdi_unregister() cancels all pending
->     flushing work, nothing really prevents new ones from being queued from
->     balance_dirty_pages() or other places.
-> 
->     Fix the problem by clearing BDI_registered bit in bdi_unregister() and
->     checking it before scheduling of any flushing work.
-> 
->     Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-> 
->     Reviewed-by: Tejun Heo <tj@kernel.org>
->     Signed-off-by: Jan Kara <jack@suse.cz>
->     Cc: Derek Basehore <dbasehore@chromium.org>
->     Cc: Jens Axboe <axboe@kernel.dk>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Regards
-> Dong Aisheng
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+   param2=foo,bar=1,param1=baz
+
+notice no '$', thats what you add later in 'perf list' output, right?
+
+Moreover it actually does not matter whats in value 'param2=HERE',
+because it's not used in the config code at all apart from the
+'perf list' display processing.
+
+So when we discussed the '$' name way, I thought it'd be like:
+
+in /sys/bus/event_source/devices/pmu/events/event_name you have:
+  param2=$foo,bar=1,param1=$baz
+
+and on command line you'd use:
+  pmu/event_name,foo=0x1,bar=0x4/
+
+to assign directly to the $var, which would justify the $var
+syntax I think..
+
+anyway we could assign directly to the param term name as you do,
+but I think we just need to mark the term as parametrized, like:
+
+in /sys/bus/event_source/devices/pmu/events/event_name you have:
+  param2=?,bar=1,param1=?
+
+and on command line you'd use:
+  pmu/event_name,param2=0x1,param1=0x4/
+
+while the config code would check that the param substitution is
+done only for terms with '?' in value, like 'param2=?' and not
+for all PARSE_EVENTS__TERM_TYPE_STR type terms (as of now)
+
+thanks,
+jirka
