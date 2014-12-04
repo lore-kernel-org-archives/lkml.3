@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaLDFwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 00:52:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:26957 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858AbaLDFwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 00:52:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,513,1413270000"; 
-   d="scan'208";a="618371324"
-Date: Thu, 4 Dec 2014 07:52:35 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [PATCH v8 0/8] TPM 2.0 support
-Message-ID: <20141204055235.GA4194@intel.com>
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <201412030016.20268.PeterHuewe@gmx.de>
+	id S1752009AbaLDFyt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 00:54:49 -0500
+Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:7129
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750724AbaLDFys convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 00:54:48 -0500
+From: Dudley Du <dudl@cypress.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH v12 01/19] input: cyapa: modify code to following kernel
+ code style
+Thread-Topic: [PATCH v12 01/19] input: cyapa: modify code to following kernel
+ code style
+Thread-Index: AQLSNRra1jZVB9nM0+wOVR3Z+Zb0TgHHg1DRAmgH20uaWSRXAA==
+Date: Thu, 4 Dec 2014 05:54:43 +0000
+Message-ID: <CO1PR06MB078B7C0303567890795B94BD1780@CO1PR06MB078.namprd06.prod.outlook.com>
+References: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
+ <1417599025-21681-2-git-send-email-dudley.dulixin@gmail.com>
+ <20141204045735.GA5362@newt.localdomain>
+In-Reply-To: <20141204045735.GA5362@newt.localdomain>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.95.211.187]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR06MB079;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR06MB079;
+x-forefront-prvs: 041517DFAB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(164054003)(51164003)(24454002)(13464003)(51704005)(199003)(189002)(106116001)(120916001)(99396003)(106356001)(76576001)(50986999)(31966008)(74316001)(76176999)(54356999)(99286002)(107046002)(95666004)(19580395003)(20776003)(54206007)(68736005)(122556002)(64706001)(54606007)(19580405001)(40100003)(66066001)(62966003)(110136001)(1411001)(77156002)(2656002)(15975445006)(92726001)(105586002)(21056001)(4396001)(87936001)(86362001)(33656002)(92566001)(101416001)(46102003)(97736003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR06MB079;H:CO1PR06MB078.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412030016.20268.PeterHuewe@gmx.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 12:16:19AM +0100, Peter Hüwe wrote:
-> [SNIP]
-> 
-> When applying to linux-v3.18-rc6 I get this new coccinelle warning:
-> drivers/char/tpm/tpm_i2c_nuvoton.c:607:1-3: WARNING: end returns can be 
-> simpified
-> 
-> 
-> make -C ../../../linux/ M=$(pwd) coccicheck
+Jeremiah,
 
-Not a huge problem but I've been only been able to run coccicheck
-globally to the whole kernel tree. If I try what you put, it will
-just print the usage information of spatch couple of times...
+I didn't submitted this fix patch, but Dmitry has been helping apply the fix patch quickly, maybe todoay or tommorrow.
 
-> Peter
+For the pathces that I made were worked based off of kernel mainline.
 
-/Jarkko
+Thanks,
+Dudley
+
+> -----Original Message-----
+> From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
+> Sent: 2014?12?4? 12:58
+> To: Dudley Du
+> Cc: linux-kernel@vger.kernel.org; dmitry.torokhov@gmail.com
+> Subject: Re: [PATCH v12 01/19] input: cyapa: modify code to following kernel code
+> style
+>
+> Dudley,
+>
+> On Wed, Dec 03, 2014 at 05:30:07PM +0800, Dudley Du wrote:
+> > This patch modified the code to fix the patch check warning issue with latest
+> > checkpatch.sh tool, and also changed the return variable name from "ret" to
+> > "error" when there is only one error path to follow code style.
+> > TEST=test on Chromebooks.
+> >
+> > Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> > ---
+> >  drivers/input/mouse/cyapa.c | 162 ++++++++++++++++++++++----------------------
+> >  1 file changed, 80 insertions(+), 82 deletions(-)
+> >
+> > diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+> > index b409c3d..c9fdf6d 100644
+> > --- a/drivers/input/mouse/cyapa.c
+> > +++ b/drivers/input/mouse/cyapa.c
+> [...]
+>
+> I was hoping to test out your patchset since the patch for the touchpad
+> problem [1] still has not appeared in linux-next as of 20141203.
+> Unfortunately your patchset does not apply so I can't test it.  Which
+> kernel is your work based off of?
+>
+>   [1]: https://lkml.org/lkml/2014/11/27/684
+>
+> --
+> - Jeremiah Mahler
+
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
