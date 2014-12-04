@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaLDWnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:43:51 -0500
-Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:54438 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753262AbaLDWnt (ORCPT
+	id S933278AbaLDWoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:44:06 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:54877 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932709AbaLDWoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:43:49 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3868:3870:3872:3874:4321:4605:5007:6119:6120:6261:7901:7903:8603:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12555:12740:13019:13069:13146:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wing68_421e7b50273b
-X-Filterd-Recvd-Size: 2471
-Message-ID: <1417733027.2721.19.camel@perches.com>
-Subject: Re: tinyconfig x86-32 vmlinux sizes by gcc compiler version
-From: Joe Perches <joe@perches.com>
-To: josh@joshtriplett.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 04 Dec 2014 14:43:47 -0800
-In-Reply-To: <20141204222521.GA20091@cloud>
-References: <1417728779.2721.15.camel@perches.com>
-	 <20141204222521.GA20091@cloud>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 17:44:03 -0500
+MIME-Version: 1.0
+Date: Thu, 4 Dec 2014 14:44:01 -0800
+Message-ID: <CAADnVQJ8CinXDXDGsPjd++Ru+sun81eygGnW58NKAuR2xh6KEA@mail.gmail.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Laight <David.Laight@aculab.com>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-04 at 14:25 -0800, josh@joshtriplett.org wrote:
-> On Thu, Dec 04, 2014 at 01:32:59PM -0800, Joe Perches wrote:
-> > Just fyi.
-> > 
-> > At least for x86-32, it seems later versions of gcc
-> > are producing smaller images.
-> > 
-> > $ size vmlinux.*
-> >    text	   data	    bss	    dec	    hex	filename
-> >  657725	 118496	1189040	1965261	 1dfccd	vmlinux.4.4
-> >  633563	 118528	1189448	1941539	 1da023	vmlinux.4.6
-> >  633277	 118496	1189592	1941365	 1d9f75	vmlinux.4.7
-> >  632299	 121120	1192784	1946203	 1db25b	vmlinux.4.9
-> 
-> I would certainly hope that GCC's -Os gets better over time.  However, I
-> find the increase in data/bss and thus overall size in 4.9 concerning.
-> Any idea what that comes from?
+On Thu, Dec 4, 2014 at 10:05 AM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2014-12-04 at 07:56 -0800, Alexei Starovoitov wrote:
+>> On Thu, Dec 4, 2014 at 1:26 AM, Joe Perches <joe@perches.com> wrote:
+>> > On Thu, 2014-11-27 at 10:49 -0800, Joe Perches wrote:
+>> >> On Thu, 2014-11-27 at 12:25 +0000, David Laight wrote:
+>> >> > Why the change in data?
+>> >>
+>> >> btw: without gcov and using -O2
+>> >>
+>> >> $ size arch/x86/net/bpf_jit_comp.o*
+>> >>    text          data     bss     dec     hex filename
+>> >>    9671             4       0    9675    25cb arch/x86/net/bpf_jit_comp.o.new
+>> >>   10679             4       0   10683    29bb arch/x86/net/bpf_jit_comp.o.old
+>> >
+>> > Alexei?
+>> >
+>> > Is this 10% reduction in size a good reason to change the code?
+>>
+>> yes.
+>> I believe you're seeing it with gcc 4.9. I wanted to double
+>> check what 4.6 and 4.7 are doing. If they're not suddenly
+>> increase code size then resubmit it for inclusion please.
+>
+> I get these sizes for these compilers
+> (x86-64, -O2, without profiling)
+>
+> $ size arch/x86/net/bpf_jit_comp.o*
+>    text    data     bss     dec     hex filename
+>    9266       4       0    9270    2436 arch/x86/net/bpf_jit_comp.o.4.4.new
+>   10042       4       0   10046    273e arch/x86/net/bpf_jit_comp.o.4.4.old
+>    9109       4       0    9113    2399 arch/x86/net/bpf_jit_comp.o.4.6.new
+>    9717       4       0    9721    25f9 arch/x86/net/bpf_jit_comp.o.4.6.old
+>    8789       4       0    8793    2259 arch/x86/net/bpf_jit_comp.o.4.7.new
+>   10245       4       0   10249    2809 arch/x86/net/bpf_jit_comp.o.4.7.old
+>    9671       4       0    9675    25cb arch/x86/net/bpf_jit_comp.o.4.9.new
+>   10679       4       0   10683    29bb arch/x86/net/bpf_jit_comp.o.4.9.old
+>
+> I am a bit surprised by the size variations
 
-No.
-
-It's all over the place.
-
-For instance:
-
-$ objdump -t vmlinux.4.7 | awk '{if (NF>=2) {print $(NF) "\t" $(NF-1)}}' | sort > 4.7
-$ objdump -t vmlinux.4.9 | awk '{if (NF>=2) {print $(NF) "\t" $(NF-1)}}' | sort > 4.9
-
-$ diff -u0 -rN 4.7 4.9 | wc -l
-6944
-
-$ diff -u0 -rN 4.7 4.9 | head -20
---- 4.7 2014-12-04 14:34:41.455533301 -0800
-+++ 4.9 2014-12-04 14:34:16.703531656 -0800
-@@ -5 +5 @@
--access_process_vm      00000040
-+access_process_vm      0000003e
-@@ -9,3 +9,2 @@
--account_event_cpu.isra.57      0000001f
--account_event.part.60  00000065
--account_group_user_time        0000001f
-+account_event_cpu.isra.56      0000001f
-+account_event.part.61  00000069
-@@ -14,2 +13 @@
--account_kernel_stack   00000029
--account_page_dirtied   00000052
-+account_page_dirtied   0000005f
-@@ -20,2 +18,2 @@
--account_system_time    000000e3
--account_user_time      00000047
-+account_system_time    0000010d
-+account_user_time      0000005d
-
-
-
+yeah. the difference is surprising.
+Just tried with 4.7 and my regular config and I see the same difference.
+Looks like gcc wasn't able to fold conditions into cmov
+and used a bunch of cmp/jmp
+Since is_ereg() was inlined ~70 times on its own and as
+part of other functions, the difference of 3-4 instructions
+may a large difference in total size.
+test_bpf also passes, so please resubmit properly.
