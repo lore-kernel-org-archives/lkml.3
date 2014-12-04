@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaLDVwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:52:11 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65337 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaLDVwJ (ORCPT
+	id S933218AbaLDVyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:54:11 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:8294 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932717AbaLDVyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:52:09 -0500
+	Thu, 4 Dec 2014 16:54:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,518,1413270000"; 
+   d="scan'208";a="52155317"
+From: Ray Jui <rjui@broadcom.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
+Subject: [PATCH 0/4] Add pinctrl support to Broadcom Cygnus SoC
+Date: Thu, 4 Dec 2014 13:56:07 -0800
+Message-ID: <1417730171-30455-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <1416839720-18400-10-git-send-email-marc.zyngier@arm.com>
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
-	<1416839720-18400-10-git-send-email-marc.zyngier@arm.com>
-Date: Thu, 4 Dec 2014 15:52:08 -0600
-Message-ID: <CALRxmdAULDXqx5oNUGQx9y2oUegULKO7=gWQWMRkFOzFo9XS8A@mail.gmail.com>
-Subject: Re: [PATCH v3 09/13] irqchip: GICv3: ITS: MSI support
-From: Stuart Yoder <b08248@gmail.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 8:35 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+This patchset contains the initial pinctrl support for the Broadcom Cygnus SoC.
+The Cygnus pinctrl controller supports group based alternate function configuration
 
-> +/*
-> + * We need a value to serve as a irq-type for LPIs. Choose one that will
-> + * hopefully pique the interest of the reviewer.
-> + */
-> +#define GIC_IRQ_TYPE_LPI               0xa110c8ed
+Ray Jui (4):
+  pinctrl: Broadcom Cygnus pinctrl device tree binding
+  pinctrl: cygnus: add initial pinctrl support
+  ARM: mach-bcm: enable pinctrl support for Cygnus
+  ARM: dts: enable pinctrl for Broadcom Cygnus
 
-Ok, my interest is piqued.  Why this value?
+ .../bindings/pinctrl/brcm,cygnus-pinctrl.txt       |   92 +++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |    5 +
+ arch/arm/mach-bcm/Kconfig                          |    1 +
+ drivers/pinctrl/Kconfig                            |    7 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-bcm-cygnus.c               |  753 ++++++++++++++++++++
+ 6 files changed, 859 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+ create mode 100644 drivers/pinctrl/pinctrl-bcm-cygnus.c
 
-Stuart
+-- 
+1.7.9.5
+
