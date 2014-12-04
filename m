@@ -1,309 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaLDCVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:21:43 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:58439 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLDCVm (ORCPT
+	id S1752595AbaLDCWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:22:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41521 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaLDCW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:21:42 -0500
+	Wed, 3 Dec 2014 21:22:29 -0500
+Message-ID: <547FC556.8010301@oracle.com>
+Date: Thu, 04 Dec 2014 10:22:14 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1417658046-4538-1-git-send-email-bobby.prani@gmail.com>
-References: <1417658046-4538-1-git-send-email-bobby.prani@gmail.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 3 Dec 2014 21:21:10 -0500
-Message-ID: <CAJhHMCBC6q1p-D=pqZ65dsZHgyDR1rGtp7Mp9s1rTfeU+VreAQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] tinification: Introduce CONFIG_SRCU to make SRCU optional
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ethan Zhao <ethan.zhao@oracle.com>
+CC: dirk.j.brandewie@intel.com, linda.knippers@hp.com, viresh.kumar@linaro.org,
+        rjw@rjwysocki.net, corbet@lwn.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ethan.kernel@gmail.com, Alexey Kodanev <alexey.kodanev@oracle.com>
+Subject: Re: [PATCH 2/2 V7] intel_pstate: add kernel parameter to force loading
+ on Sun X86 servers.
+References: <1417658851-8729-1-git-send-email-ethan.zhao@oracle.com>
+In-Reply-To: <1417658851-8729-1-git-send-email-ethan.zhao@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 8:54 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> (CC list restricted since this is just for initial feedback)
->
-> SRCU is not necessary to be compiled by default in all cases. For tinification
-> efforts not compiling SRCU unless necessary is desirable.
->
-> The current patch tries to make compiling SRCU optional by introducing a new
-> Kconfig option CONFIG_SRCU which is selected when any of the components making
-> use of SRCU are selected.
->
-> The current tinyconfig on x86 enables SRCU by default since x86 enables
-> PERF_EVENTS which in-turn require SRCU support. If we disable PERF_EVENTS, we
-> can disable compiling SRCU for tiny configs on x86 systems.
->
-> I tested this using randconfig and building about 15 kernels. This is definitely
-> not complete and could use more testing. Sticking it in next might help in that
-> regards.
->
-> Comments and suggestions are welcome. Please let me know if I should split
-> up this patch.
->
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Alexey has tested this patch on Lenovo machines. so
 
-So it looks like I missed a few places where this needs to be
-set(cpufreq, devfreq, notifier etc.,)
+Tested-by: Alexey Kodanev <alexey.kodanev@oracle.com>
 
-I will update the patch and send it in.
-
-Thanks!
-
-> CC: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> CC: Josh Triplett <josh@joshtriplett.org>
+On 2014/12/4 10:07, Ethan Zhao wrote:
+> To force loading on Oracle Sun X86 servers, provide one kernel command line
+> parameter
+>
+>    intel_pstate = ora_force
+>
+> For those who be aware of the risk of no power capping capabily working and
+> try to get better performance with this driver.
+>
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 > ---
->  arch/arm/kvm/Kconfig     |  1 +
->  arch/arm64/kvm/Kconfig   |  1 +
->  arch/ia64/kvm/Kconfig    |  1 +
->  arch/mips/kvm/Kconfig    |  1 +
->  arch/powerpc/kvm/Kconfig |  1 +
->  arch/s390/kvm/Kconfig    |  1 +
->  arch/tile/kvm/Kconfig    |  1 +
->  arch/x86/kvm/Kconfig     |  1 +
->  drivers/md/Kconfig       |  1 +
->  drivers/net/Kconfig      |  1 +
->  fs/btrfs/Kconfig         |  1 +
->  fs/notify/Kconfig        |  1 +
->  init/Kconfig             | 10 ++++++++++
->  kernel/rcu/Makefile      |  3 ++-
->  lib/Kconfig.debug        |  1 +
->  mm/Kconfig               |  1 +
->  security/tomoyo/Kconfig  |  1 +
->  17 files changed, 27 insertions(+), 1 deletion(-)
+>   v2: change to hardware vendor specific naming parameter.
+>   v4: refine code and doc.
+>   v5&v6: fix a typo in doc.
+>   v7: change enum PCC to PPC.
 >
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index 466bd29..3afee5f 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -23,6 +23,7 @@ config KVM
->         select HAVE_KVM_CPU_RELAX_INTERCEPT
->         select KVM_MMIO
->         select KVM_ARM_HOST
-> +       select SRCU
->         depends on ARM_VIRT_EXT && ARM_LPAE
->         ---help---
->           Support hosting virtualized guest machines. You will also
-> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
-> index 8ba85e9..b334084 100644
-> --- a/arch/arm64/kvm/Kconfig
-> +++ b/arch/arm64/kvm/Kconfig
-> @@ -26,6 +26,7 @@ config KVM
->         select KVM_ARM_HOST
->         select KVM_ARM_VGIC
->         select KVM_ARM_TIMER
-> +       select SRCU
->         ---help---
->           Support hosting virtualized guest machines.
+>   Documentation/kernel-parameters.txt | 5 +++++
+>   drivers/cpufreq/intel_pstate.c      | 6 +++++-
+>   2 files changed, 10 insertions(+), 1 deletion(-)
 >
-> diff --git a/arch/ia64/kvm/Kconfig b/arch/ia64/kvm/Kconfig
-> index 3d50ea9..f7d380b 100644
-> --- a/arch/ia64/kvm/Kconfig
-> +++ b/arch/ia64/kvm/Kconfig
-> @@ -29,6 +29,7 @@ config KVM
->         select HAVE_KVM_IRQ_ROUTING
->         select KVM_APIC_ARCHITECTURE
->         select KVM_MMIO
-> +       select SRCU
->         ---help---
->           Support hosting fully virtualized guest machines using hardware
->           virtualization extensions.  You will need a fairly recent
-> diff --git a/arch/mips/kvm/Kconfig b/arch/mips/kvm/Kconfig
-> index 30e334e..2ae1282 100644
-> --- a/arch/mips/kvm/Kconfig
-> +++ b/arch/mips/kvm/Kconfig
-> @@ -20,6 +20,7 @@ config KVM
->         select PREEMPT_NOTIFIERS
->         select ANON_INODES
->         select KVM_MMIO
-> +       select SRCU
->         ---help---
->           Support for hosting Guest kernels.
->           Currently supported on MIPS32 processors.
-> diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
-> index 602eb51..af18e0f 100644
-> --- a/arch/powerpc/kvm/Kconfig
-> +++ b/arch/powerpc/kvm/Kconfig
-> @@ -21,6 +21,7 @@ config KVM
->         select PREEMPT_NOTIFIERS
->         select ANON_INODES
->         select HAVE_KVM_EVENTFD
-> +       select SRCU
->
->  config KVM_BOOK3S_HANDLER
->         bool
-> diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
-> index 646db9c..5fce52c 100644
-> --- a/arch/s390/kvm/Kconfig
-> +++ b/arch/s390/kvm/Kconfig
-> @@ -28,6 +28,7 @@ config KVM
->         select HAVE_KVM_IRQCHIP
->         select HAVE_KVM_IRQFD
->         select HAVE_KVM_IRQ_ROUTING
-> +       select SRCU
->         ---help---
->           Support hosting paravirtualized guest machines using the SIE
->           virtualization capability on the mainframe. This should work
-> diff --git a/arch/tile/kvm/Kconfig b/arch/tile/kvm/Kconfig
-> index 2298cb1..1e968f7 100644
-> --- a/arch/tile/kvm/Kconfig
-> +++ b/arch/tile/kvm/Kconfig
-> @@ -21,6 +21,7 @@ config KVM
->         depends on HAVE_KVM && MODULES
->         select PREEMPT_NOTIFIERS
->         select ANON_INODES
-> +       select SRCU
->         ---help---
->           Support hosting paravirtualized guest machines.
->
-> diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-> index f9d16ff..7dc7ba5 100644
-> --- a/arch/x86/kvm/Kconfig
-> +++ b/arch/x86/kvm/Kconfig
-> @@ -40,6 +40,7 @@ config KVM
->         select HAVE_KVM_MSI
->         select HAVE_KVM_CPU_RELAX_INTERCEPT
->         select KVM_VFIO
-> +       select SRCU
->         ---help---
->           Support hosting fully virtualized guest machines using hardware
->           virtualization extensions.  You will need a fairly recent
-> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-> index 5bdedf6..c355a22 100644
-> --- a/drivers/md/Kconfig
-> +++ b/drivers/md/Kconfig
-> @@ -5,6 +5,7 @@
->  menuconfig MD
->         bool "Multiple devices driver support (RAID and LVM)"
->         depends on BLOCK
-> +       select SRCU
->         help
->           Support multiple physical spindles through a single logical device.
->           Required for RAID and logical volume management.
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 4706386..221e623 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -176,6 +176,7 @@ config NETCONSOLE_DYNAMIC
->
->  config NETPOLL
->         def_bool NETCONSOLE
-> +       select SRCU
->
->  config NET_POLL_CONTROLLER
->         def_bool NETPOLL
-> diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
-> index a66768e..80e9c18 100644
-> --- a/fs/btrfs/Kconfig
-> +++ b/fs/btrfs/Kconfig
-> @@ -8,6 +8,7 @@ config BTRFS_FS
->         select LZO_DECOMPRESS
->         select RAID6_PQ
->         select XOR_BLOCKS
-> +       select SRCU
->
->         help
->           Btrfs is a general purpose copy-on-write filesystem with extents,
-> diff --git a/fs/notify/Kconfig b/fs/notify/Kconfig
-> index 22c629e..2a24249 100644
-> --- a/fs/notify/Kconfig
-> +++ b/fs/notify/Kconfig
-> @@ -1,5 +1,6 @@
->  config FSNOTIFY
->         def_bool n
-> +       select SRCU
->
->  source "fs/notify/dnotify/Kconfig"
->  source "fs/notify/inotify/Kconfig"
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 3ee28ae..80ac0a4 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -501,6 +501,14 @@ config TINY_RCU
->
->  endchoice
->
-> +config SRCU
-> +       bool "Sleepable form of RCU"
-> +       def_bool n
-> +       help
-> +         This option selects the sleepable version of RCU. This version
-> +         permits arbitrary sleeping or blocking within RCU read-side critical
-> +         sections.
-> +
->  config PREEMPT_RCU
->         def_bool TREE_PREEMPT_RCU
->         help
-> @@ -510,6 +518,7 @@ config PREEMPT_RCU
->  config TASKS_RCU
->         bool "Task_based RCU implementation using voluntary context switch"
->         default n
-> +       select SRCU
->         help
->           This option enables a task-based RCU implementation that uses
->           only voluntary context switch (not preemption!), idle, and
-> @@ -1586,6 +1595,7 @@ config PERF_EVENTS
->         depends on HAVE_PERF_EVENTS
->         select ANON_INODES
->         select IRQ_WORK
-> +       select SRCU
->         help
->           Enable kernel support for various performance events provided
->           by software and hardware.
-> diff --git a/kernel/rcu/Makefile b/kernel/rcu/Makefile
-> index 807ccfb..a484080 100644
-> --- a/kernel/rcu/Makefile
-> +++ b/kernel/rcu/Makefile
-> @@ -1,4 +1,5 @@
-> -obj-y += update.o srcu.o
-> +obj-y += update.o
-> +obj-$(CONFIG_SRCU) += srcu.o
->  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
->  obj-$(CONFIG_TREE_RCU) += tree.o
->  obj-$(CONFIG_TREE_PREEMPT_RCU) += tree.o
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 4e35a5d..797511a 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1199,6 +1199,7 @@ config RCU_TORTURE_TEST
->         tristate "torture tests for RCU"
->         depends on DEBUG_KERNEL
->         select TORTURE_TEST
-> +       select SRCU
->         default n
->         help
->           This option provides a kernel module that runs torture tests
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 1d1ae6b..4395b12 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -325,6 +325,7 @@ config VIRT_TO_BUS
->
->  config MMU_NOTIFIER
->         bool
-> +       select SRCU
->
->  config KSM
->         bool "Enable KSM for page merging"
-> diff --git a/security/tomoyo/Kconfig b/security/tomoyo/Kconfig
-> index 8eb779b9d..604e718 100644
-> --- a/security/tomoyo/Kconfig
-> +++ b/security/tomoyo/Kconfig
-> @@ -5,6 +5,7 @@ config SECURITY_TOMOYO
->         select SECURITYFS
->         select SECURITY_PATH
->         select SECURITY_NETWORK
-> +       select SRCU
->         default n
->         help
->           This selects TOMOYO Linux, pathname-based access control.
-> --
-> 1.9.1
->
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 479f332..7d0983e 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>   		       disable
+>   		         Do not enable intel_pstate as the default
+>   		         scaling driver for the supported processors
+> +		       ora_force
+> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
+> +			 only for those who be aware of the risk of no power capping
+> +			 capability working and try to get better performance with this
+> +			 driver.
+>   
+>   	intremap=	[X86-64, Intel-IOMMU]
+>   			on	enable Interrupt Remapping (default)
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 1bb62ca..2654e13 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>   };
+>   
+>   static int __initdata no_load;
+> +static unsigned int  ora_force;
+>   
+>   static int intel_pstate_msrs_not_valid(void)
+>   {
+> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>   			case PSS:
+>   				return intel_pstate_no_acpi_pss();
+>   			case PPC:
+> -				return intel_pstate_has_acpi_ppc();
+> +				return intel_pstate_has_acpi_ppc() &&
+> +					(!ora_force);
+>   			}
+>   	}
+>   
+> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+>   
+>   	if (!strcmp(str, "disable"))
+>   		no_load = 1;
+> +	if (!strcmp(str, "ora_force"))
+> +		ora_force = 1;
+>   	return 0;
+>   }
+>   early_param("intel_pstate", intel_pstate_setup);
 
-
-
--- 
-Pranith
