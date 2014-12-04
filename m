@@ -1,175 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaLDKGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:06:17 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40397 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaLDKGM (ORCPT
+	id S1753983AbaLDKGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:06:38 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:44946 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaLDKGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:06:12 -0500
-Message-ID: <548031C1.9020701@linaro.org>
-Date: Thu, 04 Dec 2014 11:04:49 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
-        gleb@kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
-        patches@linaro.org, a.motakis@virtualopensystems.com
-Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
-References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org> <20141203104510.GE17502@cbox>
-In-Reply-To: <20141203104510.GE17502@cbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 05:06:35 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <3a603484b07d1817d4ec0d470c8ff1b3>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
+        Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v17 06/12] dt-bindings: add document for dw_hdmi
+Date: Thu,  4 Dec 2014 18:06:05 +0800
+Message-Id: <1417687565-13206-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoffer
-On 12/03/2014 11:45 AM, Christoffer Dall wrote:
-> On Tue, Dec 02, 2014 at 06:27:31PM +0100, Eric Auger wrote:
->> Since the advent of dynamic initialization of VGIC, this latter is
->> initialized very late, on the first vcpu run. This initialization
->> could be initiated much earlier by the user, as soon as it has
->> provided the requested dimensioning parameters:
->> - number of IRQs and number of vCPUs,
->> - DIST and CPU interface base address.
->>
->> One motivation behind being able to initialize the VGIC sooner is
->> related to the setup of IRQ injection in VFIO use case. The VFIO
->> signaling, especially when used along with irqfd must be set *after*
->> vgic initialization to prevent any virtual IRQ injection before
->> VGIC initialization. If virtual IRQ injection occurs before the VGIC
->> init, the IRQ cannot be injected and subsequent injection is blocked
->> due to VFIO completion mechanism (unmask/mask or forward/unforward).
->>
->> This patch adds a new entry to the VGIC KVM device that allows
->> the user to manually request the VGIC init:
->> - a new KVM_DEV_ARM_VGIC_GRP_CTRL group is introduced.
->> - Its first attribute is KVM_DEV_ARM_VGIC_CTRL_INIT
->>
->> The rationale behind introducing a group is to be able to add other
->> controls later on, if needed.
->>
->> Obviously, as soon as the init is done, the dimensioning parameters
->> cannot be changed.
-> 
-> you would need to add a check in the vcpu_create path,
-check added in v2
- which I don't
-> believe we currently have.  That may conflict with Andre's series so we
-> need to coordinate.
-> 
-> We're also seeing this potentially being useful for migration, so my
-> feeling is that the GICv3 patches should be rebased on this patch and
-> this patch should include a check in the vcpu create path.
-> 
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->> ---
->>  Documentation/virtual/kvm/devices/arm-vgic.txt | 11 +++++++++++
->>  arch/arm/include/uapi/asm/kvm.h                |  2 ++
->>  arch/arm64/include/uapi/asm/kvm.h              |  2 ++
->>  virt/kvm/arm/vgic.c                            | 14 +++++++++++++-
->>  4 files changed, 28 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/virtual/kvm/devices/arm-vgic.txt b/Documentation/virtual/kvm/devices/arm-vgic.txt
->> index df8b0c7..80db43f 100644
->> --- a/Documentation/virtual/kvm/devices/arm-vgic.txt
->> +++ b/Documentation/virtual/kvm/devices/arm-vgic.txt
->> @@ -81,3 +81,14 @@ Groups:
->>      -EINVAL: Value set is out of the expected range
->>      -EBUSY: Value has already be set, or GIC has already been initialized
->>              with default values.
->> +
->> +  KVM_DEV_ARM_VGIC_GRP_CTRL
->> +  Attributes:
->> +    KVM_DEV_ARM_VGIC_CTRL_INIT
->> +      request the initialization of the VGIC, no additional parameter in
->> +      kvm_device_attr.addr.
->> +  Errors:
->> +    -ENXIO: distributor or CPU interface base address were not set prior
->> +            to that call
-> 
-> this should be more generic to also apply to GICv3, I would suggest:
-> 
-> "VGIC not properly configured as required prior to calling this
-> attribute."
-corrected
-> 
-> alternatively, the attribute should be KVM_DEV_ARM_VGIC_V2_CTRL_INIT.
-> 
->> +    -EINVAL: number of vcpus is not known
-> 
-> can we have a different error code for this case?  ENODEV for example?
-corrected
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-Thanks
-Eric
-> 
->> +    -ENOMEM: memory shortage when allocating vgic internal data
-> 
->> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
->> index 77547bb..2499867 100644
->> --- a/arch/arm/include/uapi/asm/kvm.h
->> +++ b/arch/arm/include/uapi/asm/kvm.h
->> @@ -175,6 +175,8 @@ struct kvm_arch_memory_slot {
->>  #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
->>  #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
->>  #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
->> +#define KVM_DEV_ARM_VGIC_GRP_CTRL       4
->> +#define   KVM_DEV_ARM_VGIC_CTRL_INIT    0
->>  
->>  /* KVM_IRQ_LINE irq field index values */
->>  #define KVM_ARM_IRQ_TYPE_SHIFT		24
->> diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
->> index 1ed4417..b35c95a 100644
->> --- a/arch/arm64/include/uapi/asm/kvm.h
->> +++ b/arch/arm64/include/uapi/asm/kvm.h
->> @@ -161,6 +161,8 @@ struct kvm_arch_memory_slot {
->>  #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
->>  #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
->>  #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
->> +#define KVM_DEV_ARM_VGIC_GRP_CTRL	4
->> +#define   KVM_DEV_ARM_VGIC_CTRL_INIT	0
->>  
->>  /* KVM_IRQ_LINE irq field index values */
->>  #define KVM_ARM_IRQ_TYPE_SHIFT		24
->> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
->> index b76c38c..2fe5bdb 100644
->> --- a/virt/kvm/arm/vgic.c
->> +++ b/virt/kvm/arm/vgic.c
->> @@ -2474,7 +2474,14 @@ static int vgic_set_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
->>  
->>  		return ret;
->>  	}
->> -
->> +	case KVM_DEV_ARM_VGIC_GRP_CTRL: {
->> +		switch (attr->attr) {
->> +		case KVM_DEV_ARM_VGIC_CTRL_INIT:
->> +			r = kvm_vgic_init(dev->kvm);
->> +			return r;
->> +		}
->> +		break;
->> +	}
->>  	}
->>  
->>  	return -ENXIO;
->> @@ -2553,6 +2560,11 @@ static int vgic_has_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
->>  		return vgic_has_attr_regs(vgic_cpu_ranges, offset);
->>  	case KVM_DEV_ARM_VGIC_GRP_NR_IRQS:
->>  		return 0;
->> +	case KVM_DEV_ARM_VGIC_GRP_CTRL:
->> +		switch (attr->attr) {
->> +		case KVM_DEV_ARM_VGIC_CTRL_INIT:
->> +			return 0;
->> +		}
->>  	}
->>  	return -ENXIO;
->>  }
->> -- 
->> 1.9.1
->>
+---
+
+Changes in v17: None
+Changes in v16:
+- describe ddc-i2c-bus as optional
+- add common clocks bindings
+
+Changes in v15: None
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
+
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 45 ++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+new file mode 100644
+index 0000000..fb14730
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+@@ -0,0 +1,45 @@
++DesignWare HDMI bridge bindings
++
++Required properities:
++- compatible: platform specific such as:
++   * "snps,dw-hdmi-tx"
++   * "fsl,imx6q-hdmi"
++   * "fsl,imx6dl-hdmi"
++   * "rockchip,rk3288-dw-hdmi"
++- reg: Physical base address and length of the controller's registers.
++- interrupts: The HDMI interrupt number
++- clocks, clock-names : must have the phandles to the HDMI iahb and isrf clocks,
++  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
++  the clock-names should be "iahb", "isfr"
++
++Optional properties
++- reg-io-width: the width of the reg:1,4, default set to 1 if not present
++- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
++- clkocks, clock-names: phandle to the HDMI cec clock, name should be "cec"
++
++Example:
++	hdmi: hdmi@0120000 {
++		compatible = "fsl,imx6q-hdmi";
++		reg = <0x00120000 0x9000>;
++		interrupts = <0 115 0x04>;
++		gpr = <&gpr>;
++		clocks = <&clks 123>, <&clks 124>;
++		clock-names = "iahb", "isfr";
++		ddc-i2c-bus = <&i2c2>;
++
++		port@0 {
++			reg = <0>;
++
++			hdmi_mux_0: endpoint {
++				remote-endpoint = <&ipu1_di0_hdmi>;
++			};
++		};
++
++		port@1 {
++			reg = <1>;
++
++			hdmi_mux_1: endpoint {
++				remote-endpoint = <&ipu1_di1_hdmi>;
++			};
++		};
++	};
+-- 
+1.9.1
+
 
