@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795AbaLDRcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:32:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58484 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932182AbaLDRcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:32:32 -0500
-Date: Thu, 4 Dec 2014 18:32:28 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 1/2] hwmon: tmp401: add support for TI
- TMP435
-Message-ID: <20141204183228.0b8cbbe3@endymion.delvare>
-In-Reply-To: <CAMpxmJUVQyU_NC=7wByinboM-n9kvQoDALZ3-ZiDmRatKQp8Rg@mail.gmail.com>
-References: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com>
-	<1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
-	<54806D6C.7060009@roeck-us.net>
-	<CAMpxmJUVQyU_NC=7wByinboM-n9kvQoDALZ3-ZiDmRatKQp8Rg@mail.gmail.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S932583AbaLDRm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:42:59 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:62678 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937AbaLDRm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:42:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141204104228.GJ32117@phenom.ffwll.local>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+	<20141202163506.GG18921@nuc-i3427.alporthouse.com>
+	<CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+	<20141203143029.GF32117@phenom.ffwll.local>
+	<CALAqxLUYL91khoW=oLAp_FtPBrDnSazfYqVpkXYTBJsTjDsv+g@mail.gmail.com>
+	<20141204104228.GJ32117@phenom.ffwll.local>
+Date: Thu, 4 Dec 2014 09:42:57 -0800
+Message-ID: <CALAqxLX0hvv5DeLRji7g+jVX+F2ipU_f04YtehjFnSV4i==q4w@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout correctly
+From: John Stultz <john.stultz@linaro.org>
+To: John Stultz <john.stultz@linaro.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Dec 2014 15:33:47 +0100, Bartosz Golaszewski wrote:
-> 2014-12-04 15:19 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> > The datasheet claims otherwise (0x31, specifically).
-> > Is this based on real chip information ?
-> > Can you send me the output from i2cdump for the chip ?
-> >
-> 
-> This is what I'm reading:
-> 
-> # i2cdump -y 1 0x4c
-> No size specified (using byte-data access)
->      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
-> 00: 1a 1b 00 00 05 55 00 55 00 00 05 55 00 55 00 0d    ??..?U.U..?U.U.?
-> 10: 70 00 00 00 00 90 00 00 00 55 1c XX XX XX XX 00    p....?...U?XXXX.
-> 20: 55 0a 70 XX XX 0f XX XX XX XX XX XX XX XX XX XX    U?pXX?XXXXXXXXXX
-> 30: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 40: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 50: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 60: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 70: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 80: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> 90: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> a0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> b0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> c0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> d0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> e0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
-> f0: XX XX XX XX XX XX XX XX XX XX XX XX 00 35 55 35    XXXXXXXXXXXX.5U5
-> 
-> # i2cget -y 1 0x4c 0xff b
-> 0x35
+On Thu, Dec 4, 2014 at 2:42 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Wed, Dec 03, 2014 at 11:07:08AM -0800, John Stultz wrote:
+>> On Wed, Dec 3, 2014 at 6:30 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> > On Tue, Dec 02, 2014 at 08:54:13AM -0800, John Stultz wrote:
+>> >> On Tue, Dec 2, 2014 at 8:35 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> >> > On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
+>> >> >> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
+>> >> >> +{
+>> >> >> +     u64 usecs = div_u64(m + 999, 1000);
+>> >> >> +     unsigned long j = usecs_to_jiffies(usecs);
+>> >> >> +
+>> >> >> +     return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+>> >> >
+>> >> > Or more concisely and review friendly:
+>> >> >
+>> >> > static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
+>> >> > {
+>> >> >         return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
+>> >> > }
+>> >>
+>> >> Yea. This looks much nicer. Seems generic enough it might be better
+>> >> added next to nsec_to_jiffies64() in kernel/time/time.c or jiffies.h
+>> >> rather then in a driver header.
+>> >
+>> > Ok, that needs an EXPORT_SYMBOL for nsecs_to_jiffies64. Can I count your
+>> > "Yea" above as an ack for adding that and pulling it in through
+>> > drm-intel.git?
+>>
+>> Do you need an EXPORT_SYMBOL if you add the _timeout version next to
+>> nsecs_to_jiffies64 in time.c?
+>
+> I wouldn't but the patch from Imre to add all the _timeout was killed with
+> a few bikesheds so really not volunteering. And just moving this single
+> one doesn't make a lot of sense imo. Also the next patch I'll do is just
+> add the +1 that we lost to the code and call it a day, really ;-)
+>
 
-That makes sense for a chip named TMP435. Looks like TI forgot to
-update the value when copying the datasheet from TMP431 to TMP435.
+Sigh. So you're going to make me write a separate patch that moves it over?
 
-Thanks for the dump, by the way :)
+I know you'll probably say this is bikeshedding, but the reason why
+avoiding the EXPORT_SYMBOL on nsec_to_jiffies would be good is because
+nsec_to_jiffies explicitly states in the comments that its not for any
+use but the scheduler.
 
--- 
-Jean Delvare
-SUSE L3 Support
+But still, I do see our change broke you here, so I'm not going to object.
+
+thanks
+-john
