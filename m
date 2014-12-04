@@ -1,170 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628AbaLDJyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:54:31 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:58805 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaLDJy0 (ORCPT
+	id S1753658AbaLDJzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:55:20 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49586 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLDJzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:54:26 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <03f258273cb7d0f95cc89a105697ad63>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v17 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-Date: Thu,  4 Dec 2014 17:53:46 +0800
-Message-Id: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 4 Dec 2014 04:55:17 -0500
+Date: Thu, 4 Dec 2014 15:25:06 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Fred Chou <fred.chou.nd@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] staging: rtl8192u: fix sparse warnings
+Message-ID: <20141204095506.GA16745@sudip-PC>
+References: <1417661443-17574-1-git-send-email-fred.chou.nd@gmail.com>
+ <20141204073437.GA4311@sudip-PC>
+ <5480177F.90309@gmail.com>
+ <20141204083042.GA15299@sudip-PC>
+ <54802A93.3000103@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54802A93.3000103@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 04, 2014 at 05:34:11PM +0800, Fred Chou wrote:
+> 
+> 
+> On 4/12/2014 4:30 PM, Sudip Mukherjee wrote:
+> > On Thu, Dec 04, 2014 at 04:12:47PM +0800, Fred Chou wrote:
+> >>
+> >>
+> >> On 4/12/2014 3:34 PM, Sudip Mukherjee wrote:
+> >>> On Thu, Dec 04, 2014 at 10:50:43AM +0800, Fred Chou wrote:
+> >>>> From: Fred Chou <fred.chou.nd@gmail.com>
+> >>>>
+> >>>> Fixed the following warnings in sparse:
+> >>>>
+> >>>> drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
+> >>>>  	symbol 'dump_eprom' was not declared.
+> >>>> 	Should it be static?
+> >>>> drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
+> >>>>  	symbol 'ComputeTxTime' was not declared.
+> >>>> 	Should it be static?
+> >>>> drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
+> >>>> 	symbol 'txqueue2outpipe' was not declared.
+> >>>> 	Should it be static?
+> >>>> drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
+> >>>> 	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
+> >>>> 	Should it be static?
+> >>>>
+> >>>> Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
+> >>>>
+> >>>> ---
+> >>>> change in v3: fixed alignment to match open parenthesis 
+> >>> have u fixed?
+> >>> your v2 was having one problem of alignment, but v3 is again having 3 problems.
+> >>> and your patch doesnot apply to next-20141203
+> >>>
+> >>
+> >> The alignment issue is fixed when I apply the patch against my local
+> >> kernel source tree. Wondering why there are still alignment problems.
+> >> Let me test with next-20141203 and send v4 again. My apologies...
+> > 
+> > i think you have created your v3 on top of your v2.
+> > reset the source before doing this one. and check the patch with checkpatch before sending.
+> > 
+> > thanks
+> > sudip
+> 
+> v3 is created from scratch. I removed the v2 patch when formatting the
+> patch. checkpatch.pl does not report any zeros or warnings for both v2
+> and v3, and the alignment looks all right to me. That makes me very
+> confused.
+check your patch with checkpatch --strict , checkpatch will report if alignment is right or wrong.
+this time reset your source to next-20141204 , then create your patch from scratch.
 
-We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-use the interface compatible Designware HDMI IP, but they also have some
-lightly differences, such as phy pll configuration, register width(imx hdmi
-register is one byte, but rk3288 is 4 bytes width and can only be accessed
-by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
-support.
-
-To reuse the imx-hdmi driver, we make this patch set:
-(1): fix some CodingStyle warning to make checkpatch happy
-(2): convert imx-hdmi to drm_bridge
-(3): split platform specific code
-(4): move imx-hdmi to bridge/dw_hdmi
-(5): extend dw_hdmi.c to support rk3288 hdmi
-(6): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
-
-Changes in v17:
-- remove platform device stuff from dw_hdmi core, adviced by Russell King
-- remove prompt message of dw_hdmi kconfig, adviced by Russel King
-- parse resource and irq in platform driver
-
-Changes in v16:
-- use the common binding for the clocks
-- describe ddc-i2c-bus as optional
-- add common clocks bindings
-- modify clocks bindings
-
-Changes in v15:
-- add prefix dw_hdmi/DW_HDMI for public used dw_hdmi structs
-  adviced by Philipp Zabel
-- remove THIS_MODULE in platform driver
-- remove unio of the multi-byte register access, adviced by Philipp Zabel
-- remove THIS_MODULE in platform driver
-
-Changes in v14:
-- add defer probing, adviced by Philipp Zabel
-- remove drm_connector_register, because imx-drm core has registered
-connector
-
-Changes in v13:
-- patch against drm-next
-- split platform specific phy configuration
-- split phy configuration from patch#4
-
-Changes in v12:
-- refactor of_node_put(ddc_node)
-- squash patch <convert dw_hdmi to drm_bridge>
-- add comment for the depend on patch
-
-Changes in v11:
-- squash patch  <split some phy configuration to platform driver>
-
-Changes in v10:
-- split generic dw_hdmi.c improvements from patch#11 (add rk3288 support)
-- add more display mode support mpll configuration for rk3288
-
-Changes in v9:
-- move some phy configuration to platform driver
-
-Changes in v8:
-- correct some spelling mistake
-- modify ddc-i2c-bus and interrupt description
-- Add documentation for rockchip dw hdmi
-
-Changes in v7:
-- remove unused variables from structure dw_hdmi
-- remove a wrong modification
-- add copyrights for dw_hdmi-imx.c
-
-Changes in v6:
-- rearrange the patch order
-- refactor register access without reg_shift
-
-Changes in v5:
-- refactor reg-io-width
-
-Changes in v4:
-- fix checkpatch CHECK
-- defer probe ddc i2c adapter
-
-Changes in v3:
-- split multi-register access to one indepent patch
-
-Andy Yan (12):
-  drm: imx: imx-hdmi: make checkpatch happy
-  drm: imx: imx-hdmi: return defer if can't get ddc i2c adapter
-  drm: imx: imx-hdmi: convert imx-hdmi to drm_bridge mode
-  drm: imx: imx-hdmi: split phy configuration to platform driver
-  drm: imx: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
-  dt-bindings: add document for dw_hdmi
-  drm: bridge/dw_hdmi: add support for multi-byte register width access
-  drm: bridge/dw_hdmi: add mode_valid support
-  drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
-  drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
-  dt-bindings: Add documentation for rockchip dw hdmi
-  drm: bridge/dw_hdmi: add rockchip rk3288 support
-
- .../devicetree/bindings/drm/bridge/dw_hdmi.txt     |  45 ++
- .../devicetree/bindings/video/dw_hdmi-rockchip.txt |  46 ++
- drivers/gpu/drm/bridge/Kconfig                     |   5 +
- drivers/gpu/drm/bridge/Makefile                    |   1 +
- .../gpu/drm/{imx/imx-hdmi.c => bridge/dw_hdmi.c}   | 716 ++++++++++-----------
- .../gpu/drm/{imx/imx-hdmi.h => bridge/dw_hdmi.h}   |   4 +-
- drivers/gpu/drm/imx/Kconfig                        |   1 +
- drivers/gpu/drm/imx/Makefile                       |   2 +-
- drivers/gpu/drm/imx/dw_hdmi-imx.c                  | 258 ++++++++
- drivers/gpu/drm/rockchip/Kconfig                   |  10 +
- drivers/gpu/drm/rockchip/Makefile                  |   2 +
- drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c        | 340 ++++++++++
- include/drm/bridge/dw_hdmi.h                       |  61 ++
- 13 files changed, 1105 insertions(+), 386 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
- create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
- rename drivers/gpu/drm/{imx/imx-hdmi.c => bridge/dw_hdmi.c} (72%)
- rename drivers/gpu/drm/{imx/imx-hdmi.h => bridge/dw_hdmi.h} (99%)
- create mode 100644 drivers/gpu/drm/imx/dw_hdmi-imx.c
- create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
- create mode 100644 include/drm/bridge/dw_hdmi.h
-
--- 
-1.9.1
-
-
+thanks
+sudip
+> 
+> 
+> >>
+> >> Fred
+> >>
+> >>> sudip
+> >>>
+> >>>>
+> >>>>  drivers/staging/rtl8192u/r8192U_core.c | 12 +++++++-----
+> >>>>  1 file changed, 7 insertions(+), 5 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+> >>>> index 7640386..2c61801 100644
+> >>>> --- a/drivers/staging/rtl8192u/r8192U_core.c
+> >>>> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+> >>>> @@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
+> >>>>  
+> >>>>  
+> >>>>  /* this is only for debug */
+> >>>> -void dump_eprom(struct net_device *dev)
+> >>>> +static void dump_eprom(struct net_device *dev)
+> >>>>  {
+> >>>>  	int i;
+> >>>>  	for (i = 0; i < 63; i++)
+> >>>> @@ -1486,8 +1486,8 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
+> >>>>  
+> >>>>  u16 N_DBPSOfRate(u16 DataRate);
+> >>>>  
+> >>>> -u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+> >>>> -		  u8 bShortPreamble)
+> >>>> +static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+> >>>> +			  u8 bShortPreamble)
+> >>>>  {
+> >>>>  	u16	FrameTime;
+> >>>>  	u16	N_DBPS;
+> >>>> @@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
+> >>>>  	return N_DBPS;
+> >>>>  }
+> >>>>  
+> >>>> -unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
+> >>>> +static unsigned int txqueue2outpipe(struct r8192_priv *priv,
+> >>>> +				     unsigned int tx_queue)
+> >>>>  {
+> >>>>  	if (tx_queue >= 9) {
+> >>>>  		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
+> >>>> @@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
+> >>>>  
+> >>>>  }
+> >>>>  
+> >>>> -u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
+> >>>> +static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
+> >>>> +					 bool bIsRxAggrSubframe)
+> >>>>  {
+> >>>>  #ifdef USB_RX_AGGREGATION_SUPPORT
+> >>>>  	if (bIsRxAggrSubframe)
+> >>>> -- 
+> >>>> 1.9.1
+> >>>>
+> >>>> --
+> >>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>>> the body of a message to majordomo@vger.kernel.org
+> >>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>> Please read the FAQ at  http://www.tux.org/lkml/
