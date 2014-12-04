@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933330AbaLDWmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:42:05 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48539 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933102AbaLDWmC (ORCPT
+	id S1754931AbaLDWnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:43:51 -0500
+Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:54438 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753262AbaLDWnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:42:02 -0500
-Date: Thu, 4 Dec 2014 22:41:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Patrice Chotard <patrice.chotard@st.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@stlinux.com,
-        linux-spi@vger.kernel.org
-Message-ID: <20141204224140.GB11764@sirena.org.uk>
-References: <1417534844-25080-1-git-send-email-lee.jones@linaro.org>
- <1417534844-25080-2-git-send-email-lee.jones@linaro.org>
- <547DE5FA.5000409@st.com>
- <20141203091707.GH22522@x1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
-Content-Disposition: inline
-In-Reply-To: <20141203091707.GH22522@x1>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [STLinux Kernel] [PATCH v2 1/4] spi: Add new driver for
- STMicroelectronics' SPI Controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 4 Dec 2014 17:43:49 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3868:3870:3872:3874:4321:4605:5007:6119:6120:6261:7901:7903:8603:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12555:12740:13019:13069:13146:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wing68_421e7b50273b
+X-Filterd-Recvd-Size: 2471
+Message-ID: <1417733027.2721.19.camel@perches.com>
+Subject: Re: tinyconfig x86-32 vmlinux sizes by gcc compiler version
+From: Joe Perches <joe@perches.com>
+To: josh@joshtriplett.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Dec 2014 14:43:47 -0800
+In-Reply-To: <20141204222521.GA20091@cloud>
+References: <1417728779.2721.15.camel@perches.com>
+	 <20141204222521.GA20091@cloud>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-12-04 at 14:25 -0800, josh@joshtriplett.org wrote:
+> On Thu, Dec 04, 2014 at 01:32:59PM -0800, Joe Perches wrote:
+> > Just fyi.
+> > 
+> > At least for x86-32, it seems later versions of gcc
+> > are producing smaller images.
+> > 
+> > $ size vmlinux.*
+> >    text	   data	    bss	    dec	    hex	filename
+> >  657725	 118496	1189040	1965261	 1dfccd	vmlinux.4.4
+> >  633563	 118528	1189448	1941539	 1da023	vmlinux.4.6
+> >  633277	 118496	1189592	1941365	 1d9f75	vmlinux.4.7
+> >  632299	 121120	1192784	1946203	 1db25b	vmlinux.4.9
+> 
+> I would certainly hope that GCC's -Os gets better over time.  However, I
+> find the increase in data/bss and thus overall size in 4.9 concerning.
+> Any idea what that comes from?
 
---7ZAtKRhVyVSsbBD2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No.
 
-On Wed, Dec 03, 2014 at 09:17:07AM +0000, Lee Jones wrote:
+It's all over the place.
 
->   Would you mind casting your eye over this submission prior to
-> the v3 please?
+For instance:
 
-This all seems fine (which also means that the DT updates are good to
-go).
+$ objdump -t vmlinux.4.7 | awk '{if (NF>=2) {print $(NF) "\t" $(NF-1)}}' | sort > 4.7
+$ objdump -t vmlinux.4.9 | awk '{if (NF>=2) {print $(NF) "\t" $(NF-1)}}' | sort > 4.9
 
---7ZAtKRhVyVSsbBD2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+$ diff -u0 -rN 4.7 4.9 | wc -l
+6944
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+$ diff -u0 -rN 4.7 4.9 | head -20
+--- 4.7 2014-12-04 14:34:41.455533301 -0800
++++ 4.9 2014-12-04 14:34:16.703531656 -0800
+@@ -5 +5 @@
+-access_process_vm      00000040
++access_process_vm      0000003e
+@@ -9,3 +9,2 @@
+-account_event_cpu.isra.57      0000001f
+-account_event.part.60  00000065
+-account_group_user_time        0000001f
++account_event_cpu.isra.56      0000001f
++account_event.part.61  00000069
+@@ -14,2 +13 @@
+-account_kernel_stack   00000029
+-account_page_dirtied   00000052
++account_page_dirtied   0000005f
+@@ -20,2 +18,2 @@
+-account_system_time    000000e3
+-account_user_time      00000047
++account_system_time    0000010d
++account_user_time      0000005d
 
-iQEcBAEBAgAGBQJUgOMkAAoJECTWi3JdVIfQoPsH/3idF/c+bYZmPNTn1dciMUO9
-kNekhodEpU3vtdeaytOkw+EgiJA1/sxmd83m/6RVh8+xExgL9JPNRtayiHn5UIDn
-gomVtR7NM3sKJfuOiE9aXSSSJ3VL6R3ceqh/ySb703IHPV5IZwr/o8IWYFtFMDR/
-JlpnRtzEE8trPviMYI2LCF/ENwQd2IxshK8jdMUU3s/DlS1LqMfR+j7ri2FRpgVj
-EFoZgn/REWVb2w7pqtjPzyAZoaxxL3K7Wj+jx3taycNLkiFwoX+lUawZDLQHU47r
-0SRTw0ADbSd22o0D86QPVt3rreLJrc6ijmdd4BFi+auXTEfmkHlAKmRuk0zlis0=
-=vyX6
------END PGP SIGNATURE-----
 
---7ZAtKRhVyVSsbBD2--
+
