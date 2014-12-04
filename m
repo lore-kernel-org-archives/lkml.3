@@ -1,127 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaLDLp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:45:58 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45885 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaLDLp4 (ORCPT
+	id S1753979AbaLDLrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:47:17 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:49682 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614AbaLDLrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:45:56 -0500
-Subject: [PATCH 2/2] ftracetest: Add --verbose option for showing echo output
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Thu, 04 Dec 2014 14:41:23 -0500
-Message-ID: <20141204194123.7376.22964.stgit@localhost.localdomain>
-In-Reply-To: <20141204194109.7376.84279.stgit@localhost.localdomain>
-References: <20141204194109.7376.84279.stgit@localhost.localdomain>
-User-Agent: StGit/0.17-dirty
+	Thu, 4 Dec 2014 06:47:15 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Thu, 4 Dec 2014 06:47:11 -0500
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Jeff Layton <jeff.layton@primarydata.com>, Tejun Heo <tj@kernel.org>,
+        NeilBrown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
+ workqueue-based nfsd
+Message-ID: <20141204064711.72d48317@tlielax.poochiereds.net>
+In-Reply-To: <CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141203121118.21a32fe1@notabene.brown>
+	<20141202202946.1e0f399b@tlielax.poochiereds.net>
+	<20141203155649.GB5013@htj.dyndns.org>
+	<20141203110405.5ecc85df@tlielax.poochiereds.net>
+	<20141203140202.7865bedb@tlielax.poochiereds.net>
+	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
+	<20141203142034.5c14529d@tlielax.poochiereds.net>
+	<CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>
+	<20141203152147.2ca6c6fd@tlielax.poochiereds.net>
+	<CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add --verbose/-v option for showing echo output in testcases.
-This is good for checking the progress of testcases which
-take a longer time to run.
+On Wed, 3 Dec 2014 15:44:31 -0500
+Trond Myklebust <trond.myklebust@primarydata.com> wrote:
 
-To implement this feature, all the testcase failures are
-captured in ftracetest and send signal to set SIG_RESULT=FAIL.
+> On Wed, Dec 3, 2014 at 3:21 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> > On Wed, 3 Dec 2014 14:59:43 -0500
+> > Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+> >
+> >> On Wed, Dec 3, 2014 at 2:20 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> >> > On Wed, 3 Dec 2014 14:08:01 -0500
+> >> > Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+> >> >> Which workqueue are you using? Since the receive code is non-blocking,
+> >> >> I'd expect you might be able to use rpciod, for the initial socket
+> >> >> reads, but you wouldn't want to use that for the actual knfsd
+> >> >> processing.
+> >> >>
+> >> >
+> >> > I'm using the same (nfsd) workqueue for everything. The workqueue
+> >> > isn't really the bottleneck though, it's the work_struct.
+> >> >
+> >> > Basically, the problem is that the work_struct in the svc_xprt was
+> >> > remaining busy for far too long. So, even though the XPT_BUSY bit had
+> >> > cleared, the work wouldn't get picked up again until the previous
+> >> > workqueue job had returned.
+> >> >
+> >> > With the change I made today, I just added a new work_struct to
+> >> > svc_rqst and queue that to the same workqueue to do svc_process as soon
+> >> > as the receive is done. That means though that each RPC ends up waiting
+> >> > in the queue twice (once to do the receive and once to process the
+> >> > RPC), and I think that's probably the reason for the performance delta.
+> >>
+> >> Why would the queuing latency still be significant now?
+> >>
+> >
+> > That, I'm not clear on yet and that may not be why this is slower. But,
+> > I was seeing slightly faster performance with reads before I made
+> > today's changes. If changing how these jobs get queued doesn't help the
+> > performance, then I'll have to look elsewhere...
+> 
+> Do you have a good method for measuring that latency? If the queuing
+> latency turns out to depend on the execution latency for each job,
+> then perhaps running the message receives on a separate low latency
+> queue could help (hence the suggestion to use rpciod).
+> 
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- tools/testing/selftests/ftrace/ftracetest |   33 ++++++++++++++++++++---------
- 1 file changed, 23 insertions(+), 10 deletions(-)
+I was using ftrace with the sunrpc:* and workqueue:* tracepoints, and
+had a simple perl script to postprocess the trace info to figure out
+average/min/max latency.
 
-diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
-index e8b4021..da48812 100755
---- a/tools/testing/selftests/ftrace/ftracetest
-+++ b/tools/testing/selftests/ftrace/ftracetest
-@@ -13,6 +13,7 @@ echo "Usage: ftracetest [options] [testcase(s)] [testcase-directory(s)]"
- echo " Options:"
- echo "		-h|--help  Show help message"
- echo "		-k|--keep  Keep passed test logs"
-+echo "		-v|--verbose Show all stdout messages in testcases"
- echo "		-d|--debug Debug mode (trace all shell commands)"
- exit $1
- }
-@@ -53,6 +54,10 @@ parse_opts() { # opts
-       KEEP_LOG=1
-       shift 1
-     ;;
-+    --verbose|-v)
-+      VERBOSE=1
-+      shift 1
-+    ;;
-     --debug|-d)
-       DEBUG=1
-       shift 1
-@@ -90,6 +95,7 @@ TEST_CASES=`find_testcases $TEST_DIR`
- LOG_DIR=$TOP_DIR/logs/`date +%Y%m%d-%H%M%S`/
- KEEP_LOG=0
- DEBUG=0
-+VERBOSE=0
- # Parse command-line options
- parse_opts $*
- 
-@@ -139,12 +145,8 @@ testcase() { # testfile
-   prlog -n "[$CASENO]$desc"
- }
- 
--eval_result() { # retval sigval
--  local retval=$2
--  if [ $2 -eq 0 ]; then
--    test $1 -ne 0 && retval=$FAIL
--  fi
--  case $retval in
-+eval_result() { # sigval
-+  case $1 in
-     $PASS)
-       prlog "	[PASS]"
-       PASSED_CASES="$PASSED_CASES $CASENO"
-@@ -188,6 +190,9 @@ SIG_RESULT=
- SIG_BASE=36	# Use realtime signals
- SIG_PID=$$
- 
-+SIG_FAIL=$((SIG_BASE + FAIL))
-+trap 'SIG_RESULT=$FAIL' $SIG_FAIL
-+
- SIG_UNRESOLVED=$((SIG_BASE + UNRESOLVED))
- exit_unresolved () {
-   kill -s $SIG_UNRESOLVED $SIG_PID
-@@ -216,6 +221,12 @@ exit_xfail () {
- }
- trap 'SIG_RESULT=$XFAIL' $SIG_XFAIL
- 
-+__run_test() { # testfile
-+  # setup PID and PPID, $$ is not updated.
-+  (cd $TRACING_DIR; read PID _ < /proc/self/stat ; set -e; set -x; . $1)
-+  [ $? -ne 0 ] && kill -s $SIG_FAIL $SIG_PID
-+}
-+
- # Run one test case
- run_test() { # testfile
-   local testname=`basename $1`
-@@ -223,10 +234,12 @@ run_test() { # testfile
-   testcase $1
-   echo "execute: "$1 > $testlog
-   SIG_RESULT=0
--  # setup PID and PPID, $$ is not updated.
--  (cd $TRACING_DIR; read PID _ < /proc/self/stat ;
--   set -e; set -x; . $1) >> $testlog 2>&1
--  eval_result $? $SIG_RESULT
-+  if [ $VERBOSE -ne 0 ]; then
-+    __run_test $1 2>> $testlog | tee -a $testlog
-+  else
-+    __run_test $1 >> $testlog 2>&1
-+  fi
-+  eval_result $SIG_RESULT
-   if [ $? -eq 0 ]; then
-     # Remove test log if the test was done as it was expected.
-     [ $KEEP_LOG -eq 0 ] && rm $testlog
+I don't think the queueing latency is that significant per-se, but I
+think the best thing is to avoid making multiple trips through the
+workqueue per RPC if we can help it. I tested and pushed a newer
+patchset to my repo last night that does that (at least if there's
+already a svc_rqst available when the xprt needs servicing). It seems
+to be pretty close speed-wise to the thread-based code.
 
+The next step is to test this out on something larger-scale. I'm hoping
+to get access to just such a test rig soon. Once we have some results
+from that, I think I'll have a much better idea of how viable this
+approach is and where other potential bottlenecks might be.
 
+Thanks!
+-- 
+Jeff Layton <jlayton@primarydata.com>
