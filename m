@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaLDPvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:51:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48098 "EHLO mail.kernel.org"
+	id S1754642AbaLDPwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:52:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43339 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750AbaLDPvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:51:49 -0500
-Date: Thu, 4 Dec 2014 12:51:42 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20141204155142.GD18689@kernel.org>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
- <20141204142330.GB10406@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+	id S1753737AbaLDPwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:52:09 -0500
+Message-ID: <5480830A.8090803@redhat.com>
+Date: Thu, 04 Dec 2014 16:51:38 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Where exactly will arch_fast_hash be used
+References: <20141204081147.GA19030@gondor.apana.org.au> <20141204152637.GA32140@casper.infradead.org> <20141204152929.GA22075@gondor.apana.org.au> <20141204153938.GC32140@casper.infradead.org> <54808123.8000704@redhat.com> <20141204154708.GA22185@gondor.apana.org.au>
+In-Reply-To: <20141204154708.GA22185@gondor.apana.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
-> Jiri Wrote:
-> > looks ok to me..
- 
-> Thanks for the review.
- 
-> > I'll test it once I get hands on Haswel server again, I guess we wait for the
-> > kernel change to go in first anyway, right?
- 
-> I'm not sure, let's ask Peter.
- 
-> Peter?
+On 12/04/2014 04:47 PM, Herbert Xu wrote:
+> On Thu, Dec 04, 2014 at 04:43:31PM +0100, Daniel Borkmann wrote:
+>>
+>> Hm, I thought the kernel doc on arch_fast_hash() in include/linux/hash.h
+>> would give enough of a hint ...
+>
+> I think something more explicit like "do not use this in a hash
+> table unless you know what you're doing" might be needed.
 
-Would be good to go in one pull request, so that whoever pulls it has
-the chance to test the kernel feature with the accompanying tooling bits.
+Ok, I'm fine with that, do you want to submit a patch on top of, or
+after Hannes' improvements [1] got in? Thanks a lot, Herbert.
 
-- Arnaldo
+   [1] http://patchwork.ozlabs.org/patch/417761/
