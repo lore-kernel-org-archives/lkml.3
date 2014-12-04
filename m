@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaLDKVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:21:03 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:65299 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872AbaLDKVA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:21:00 -0500
+	id S1754210AbaLDKVH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:21:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752992AbaLDKVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 05:21:04 -0500
+Date: Thu, 4 Dec 2014 12:20:13 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org, jiri@resnulli.us,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
+ tun.
+Message-ID: <20141204102013.GC17122@redhat.com>
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
+ <1417591177-7985-3-git-send-email-pagupta@redhat.com>
+ <20141203095210.GC9487@redhat.com>
+ <1417661734.16500.0@smtp.corp.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVtHN6amVXP_uqEfrOyQG9S4fjeJPAe6Kvr94u_Sb6fPQ@mail.gmail.com>
-References: <20141203121753.5936.36253.sendpatchset@w520>
-	<20141203121813.5936.17433.sendpatchset@w520>
-	<20141204072153.GE25806@verge.net.au>
-	<CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
-	<CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
-	<CANqRtoQM8jrggMT7QFTQ1_1fKJgankkrUnF-wO8mJx3NqjxMTQ@mail.gmail.com>
-	<CAMuHMdVtHN6amVXP_uqEfrOyQG9S4fjeJPAe6Kvr94u_Sb6fPQ@mail.gmail.com>
-Date: Thu, 4 Dec 2014 19:20:58 +0900
-Message-ID: <CANqRtoRan=sNiN5Eo-CZhnTSFHBte8SyanGXnYsTC68K2_z=EQ@mail.gmail.com>
-Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM workaround
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417661734.16500.0@smtp.corp.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
+> 
+> 
+> On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
+> >> Networking under kvm works best if we allocate a per-vCPU RX and TX
+> >> queue in a virtual NIC. This requires a per-vCPU queue on the host
+> >>side.
+> >> It is now safe to increase the maximum number of queues.
+> >> Preceding patche: 'net: allow large number of rx queues'
+> >
+> >s/patche/patch/
+> >
+> >> made sure this won't cause failures due to high order memory
+> >> allocations. Increase it to 256: this is the max number of vCPUs
+> >> KVM supports.
+> >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> >> Reviewed-by: David Gibson <dgibson@redhat.com>
+> >
+> >Hmm it's kind of nasty that each tun device is now using x16 memory.
+> >Maybe we should look at using a flex array instead, and removing the
+> >limitation altogether (e.g. make it INT_MAX)?
+> 
+> But this only happens when IFF_MULTIQUEUE were used.
 
-On Thu, Dec 4, 2014 at 6:31 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Magnus,
->
-> On Thu, Dec 4, 2014 at 10:24 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> On Thu, Dec 4, 2014 at 6:19 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Thu, Dec 4, 2014 at 8:33 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>>>>> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
->>>>>> +++ work/arch/arm/boot/dts/r8a7779.dtsi       2014-12-03 20:27:49.000000000 +0900
->>>>>> @@ -139,7 +139,7 @@
->>>>>>               interrupt-controller;
->>>>>>       };
->>>>>>
->>>>>> -     irqpin0: irqpin@fe780010 {
->>>>>> +     irqpin0: irqpin@fe780000 {
->>>>>>               compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
->>>>>>               #interrupt-cells = <2>;
->>>>>>               status = "disabled";
->>>>>> @@ -148,7 +148,8 @@
->>>>>>                       <0xfe780010 4>,
->>>>>>                       <0xfe780024 4>,
->>>>>>                       <0xfe780044 4>,
->>>>>> -                     <0xfe780064 4>;
->>>>>> +                     <0xfe780064 4>,
->>>>>> +                     <0xfe780000 4>;
->>>>>
->>>>> Is there any order implied by the above list?
->>>>> Naïvely I would expect it to be sorted numerically.
->>>>
->>>> Yes, the driver assumes the register banks to be passed in a certain
->>>> order. In the case of r8a7779 we add one more register bank at the end
->>>> for IRLM setup. Register detail (base address, access size, order and
->>>> bitfield width) varies with SoC version. So the IRLM register will be
->>>> at different addresses depending on SoC, but the driver wants it at
->>>> the end of the list.
->>>
->>> As these are all individual registers, and there are that many, I think
->>> it's worth adding a reg-names property to identify the registers.
->>> Of course the driver still has to support the old anonymous order
->>> for backwards compatibility.
->>
->> If we should rework things, then I propose going the other way around.
->> =) Basically only passing a single base address with a certain SoC
->> specific compat string, and based on that letting the driver
->> internally figure out which register is at what offset and the access
->> size and bitfield size.
->
-> That's gonna mean a complete new compatible value.
-> Seems like we shouldn't have added "renesas,intc-irqpin-r8a7779",
-> as the SoC-type was encoded in the reg properties...
+I refer to this field:
+        struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
+if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
+apparently unconditionally.
 
-Yeah, having that SoC specific compat string in the DTS does not
-exactly help us that this point. We could however use a slightly
-different SoC compat string or something else that is unused if we
-wanted to change things around.
 
->> Either way we have a limited number of SoCs and they are all old.
->
-> So your current patch looks like the best option for now
-> (can you promise future R-Car SoCs won't have an intc-irqpin hardware
->  block ;-)?
-
-Hehe, almost. =)
-
-I think I can promise that R-Car hardware won't use that hardware -
-the IRQC hardware block replaced INTC-IRQPIN in R-Car Gen2 and it will
-most likely not make a comeback. However, other SoC product lines may
-show up with old interrupt controllers. But if so we can rework things
-at that point and make use of a fresh compatible string for a clean
-start.
-
-Cheers,
-
-/ magnus
+> And core has vmalloc() fallback.
+> So probably not a big issue?
+> >
+> >
+> >
+> >> ---
+> >>  drivers/net/tun.c | 9 +++++----
+> >>  1 file changed, 5 insertions(+), 4 deletions(-)
+> >> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> >> index e3fa65a..a19dc5f8 100644
+> >> --- a/drivers/net/tun.c
+> >> +++ b/drivers/net/tun.c
+> >> @@ -113,10 +113,11 @@ struct tap_filter {
+> >>  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
+> >>  };
+> >>    -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues
+> >>allocated for
+> >> - * the netdevice to be fit in one page. So we can make sure the
+> >>success of
+> >> - * memory allocation. TODO: increase the limit. */
+> >> -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
+> >> +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
+> >> + * to max number of vCPUS in guest. Also, we are making sure here
+> >> + * queue memory allocation do not fail.
+> >
+> >It's not queue memory allocation anymore, is it?
+> >I would say "
+> >This also helps the tfiles field fit in 4K, so the whole tun
+> >device only needs an order-1 allocation.
+> >"
+> >
+> >> + */
+> >> +#define MAX_TAP_QUEUES 256
+> >>  #define MAX_TAP_FLOWS  4096
+> >>  #define TUN_FLOW_EXPIRE (3 * HZ)
+> >> --  1.8.3.1
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
