@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549AbaLDPXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:23:46 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:50025 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932484AbaLDPXH (ORCPT
+	id S932567AbaLDPYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:24:11 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:36505 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932398AbaLDPYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:23:07 -0500
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH v2 2/3] hwmon: tmp401: add TMP435 to the list of supported chips in docs and Kconfig
-Date: Thu,  4 Dec 2014 16:22:53 +0100
-Message-Id: <1417706574-1023-3-git-send-email-bgolaszewski@baylibre.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417706574-1023-1-git-send-email-bgolaszewski@baylibre.com>
-References: <1417706574-1023-1-git-send-email-bgolaszewski@baylibre.com>
+	Thu, 4 Dec 2014 10:24:07 -0500
+Message-ID: <54807C92.1010405@de.ibm.com>
+Date: Thu, 04 Dec 2014 16:24:02 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: linux-arch@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCHv4 0/9] ACCESS_ONCE and non-scalar accesses
+References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
+In-Reply-To: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120415-0029-0000-0000-000002062041
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
----
- Documentation/hwmon/tmp401 | 8 ++++++--
- drivers/hwmon/Kconfig      | 2 +-
- 2 files changed, 7 insertions(+), 3 deletions(-)
+Am 03.12.2014 um 23:30 schrieb Christian Borntraeger:
+> As discussed on LKML http://marc.info/?i=54611D86.4040306%40de.ibm.com
+> ACCESS_ONCE might fail with specific compiler for non-scalar accesses.
+> 
+> Here is a set of patches to tackle that problem.
+> 
+> The first patch introduce READ_ONCE and ASSIGN_ONCE. If the data structure
+> is larger than the machine word size memcpy is used and a warning is emitted.
+> The next patches fix up all in-tree users of ACCESS_ONCE on non-scalar types.
+> The last patch forces ACCESS_ONCE to work only on scalar types. 
+> 
+> I have cross-compiled the resulting kernel with defconfig and gcc 4.9 for
+> microblaze, m68k, alpha, s390,x86_64, i686, sparc, sparc64, mips,
+> ia64, arm and arm64.
+> 
+> Runtime tested on s390x and x86_64. I have also verified that ASSIGN_ONCE works
+> as expected with some test changes as there are no user in this patch series.
+> 
+> Linus, ok for the next merge window?
+> 
+> Christian Borntraeger (9):
+>   kernel: Provide READ_ONCE and ASSIGN_ONCE
+>   mm: replace ACCESS_ONCE with READ_ONCE or barriers
+>   x86/spinlock: Replace ACCESS_ONCE with READ_ONCE
+>   x86/gup: Replace ACCESS_ONCE with READ_ONCE
+>   mips/gup: Replace ACCESS_ONCE with READ_ONCE
+>   arm64/spinlock: Replace ACCESS_ONCE READ_ONCE
+>   arm/spinlock: Replace ACCESS_ONCE with READ_ONCE
+>   s390/kvm: REPLACE ACCESS_ONCE with READ_ONCE
+>   kernel: tighten rules for ACCESS ONCE
+> 
+>  arch/arm/include/asm/spinlock.h   |  4 +--
+>  arch/arm64/include/asm/spinlock.h |  4 +--
+>  arch/mips/mm/gup.c                |  2 +-
+>  arch/s390/kvm/gaccess.c           | 14 ++++----
+>  arch/x86/include/asm/spinlock.h   |  8 ++---
+>  arch/x86/mm/gup.c                 |  2 +-
+>  include/linux/compiler.h          | 74 ++++++++++++++++++++++++++++++++++++++-
+>  mm/gup.c                          |  2 +-
+>  mm/memory.c                       |  2 +-
+>  mm/rmap.c                         |  3 +-
+>  10 files changed, 95 insertions(+), 20 deletions(-)
+> 
 
-diff --git a/Documentation/hwmon/tmp401 b/Documentation/hwmon/tmp401
-index f91e3fa..445ff7b 100644
---- a/Documentation/hwmon/tmp401
-+++ b/Documentation/hwmon/tmp401
-@@ -18,6 +18,10 @@ Supported chips:
-     Prefix: 'tmp432'
-     Addresses scanned: I2C 0x4c, 0x4d
-     Datasheet: http://focus.ti.com/docs/prod/folders/print/tmp432.html
-+  * Texas Instruments TMP435
-+    Prefix: 'tmp435'
-+    Addresses scanned: I2C 0x4c
-+    Datasheet: http://focus.ti.com/docs/prod/folders/print/tmp435.html
- 
- Authors:
-          Hans de Goede <hdegoede@redhat.com>
-@@ -27,8 +31,8 @@ Description
- -----------
- 
- This driver implements support for Texas Instruments TMP401, TMP411,
--TMP431, and TMP432 chips. These chips implement one or two remote and
--one local temperature sensors. Temperature is measured in degrees
-+TMP431, TMP432 and TMP435 chips. These chips implement one or two remote
-+and one local temperature sensors. Temperature is measured in degrees
- Celsius. Resolution of the remote sensor is 0.0625 degree. Local
- sensor resolution can be set to 0.5, 0.25, 0.125 or 0.0625 degree (not
- supported by the driver so far, so using the default resolution of 0.5
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index b1ce6a0..6529c09 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1466,7 +1466,7 @@ config SENSORS_TMP401
- 	depends on I2C
- 	help
- 	  If you say yes here you get support for Texas Instruments TMP401,
--	  TMP411, TMP431, and TMP432 temperature sensor chips.
-+	  TMP411, TMP431, TMP432 and TMP435 temperature sensor chips.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called tmp401.
--- 
-2.1.3
+FWIW, the code is on
+
+git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git linux-next
+and
+git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git ACCESS_ONCE
+
+I rebased the queue against rc3 + the initial patch that triggered the  whole discussion.
+
+Christian
 
