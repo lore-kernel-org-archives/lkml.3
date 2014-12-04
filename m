@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851AbaLDRny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:43:54 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34071 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932751AbaLDRnx (ORCPT
+	id S932874AbaLDRos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:44:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28905 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932632AbaLDRoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:43:53 -0500
-Message-ID: <54809D57.9060804@gmail.com>
-Date: Thu, 04 Dec 2014 09:43:51 -0800
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 4 Dec 2014 12:44:46 -0500
+Message-ID: <54809D7F.4020901@oracle.com>
+Date: Thu, 04 Dec 2014 09:44:31 -0800
+From: Shirley Ma <shirley.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to enable
- MC promiscuous mode
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05DBFDAD@BPXM14GP.gisp.nec.co.jp>
-In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05DBFDAD@BPXM14GP.gisp.nec.co.jp>
-Content-Type: text/plain; charset=windows-1252
+To: Jeff Layton <jeff.layton@primarydata.com>
+CC: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
+ nfsd
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>	<20141203121118.21a32fe1@notabene.brown>	<20141202202946.1e0f399b@tlielax.poochiereds.net>	<20141203155649.GB5013@htj.dyndns.org>	<20141203110405.5ecc85df@tlielax.poochiereds.net>	<20141203140202.7865bedb@tlielax.poochiereds.net>	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>	<20141203142034.5c14529d@tlielax.poochiereds.net>	<CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>	<20141203152147.2ca6c6fd@tlielax.poochiereds.net>	<CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>	<20141204064711.72d48317@tlielax.poochiereds.net>	<5480971D.9010102@oracle.com> <20141204122845.3f9e3a04@tlielax.poochiereds.net>
+In-Reply-To: <20141204122845.3f9e3a04@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 02:39 AM, Hiroshi Shimamoto wrote:
-> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
->
-> The limitation of the number of multicast address for VF is not enough
-> for the large scale server with SR-IOV feature.
-> IPv6 requires the multicast MAC address for each IP address to handle
-> the Neighbor Solicitation message.
-> We couldn't assign over 30 IPv6 addresses to a single VF interface.
->
-> The easy way to solve this is enabling multicast promiscuous mode.
-> It is good to have a functionality to enable multicast promiscuous mode
-> for each VF from VF driver.
->
-> This patch introduces the new mbox API, IXGBE_VF_SET_MC_PROMISC, to
-> enable/disable multicast promiscuous mode in VF. If multicast promiscuous
-> mode is enabled the VF can receive all multicast packets.
->
-> With this patch, the ixgbevf driver automatically enable multicast
-> promiscuous mode when the number of multicast addresses is over than 30
-> if possible.
->
-> This also bump the API version up to 1.2 to check whether the API,
-> IXGBE_VF_SET_MC_PROMISC is available.
->
-> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> CC: Choi, Sy Jong <sy.jong.choi@intel.com>
-> Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
+On 12/04/2014 09:28 AM, Jeff Layton wrote:
+> On Thu, 04 Dec 2014 09:17:17 -0800
+> Shirley Ma <shirley.ma@oracle.com> wrote:
+> 
+>> > I am looking at how to reduce total RPC execution time in NFS/RDMA. mountstats output shows that RPC backlog wait is too long, but increasing the credit limit doesn't seem help. Would this patchset help reducing total RPC execution time? 
+>> > 
+>> > Shirley
+>> > 
+> I'm not sure. It depends on why you're seeing a backlog.
 
-This is a REALLY bad idea unless you plan to limit this to privileged VFs.
-
-I would recommend looking at adding an ndo operation to control this
-feature so that it could be disabled by default in the PF and only
-enabled on the host side if specifically requested.  Otherwise the
-problem is I can easily see this leading security issues as the VFs
-might begin getting access to messages that they aren't supposed to.
-
-- Alex
+What's the major factors contributing RPC backlog wait time? I guess I need to probe the backlog wait path to display fine-grained latency cost.
+ 
+> So far, my testing still shows this to be slightly (~2%) slower than the
+> same setup running a threaded nfsd, but that could be different with a
+> NUMA server or faster disks.
+> 
+> Probably there is some more tuning to do here before this is quite
+> ready for prime-time. It may be worth testing in your environment
+> though if you have the time and ability to do so.
+> 
+>> > On 12/04/2014 03:47 AM, Jeff Layton wrote:
+>>> > > I was using ftrace with the sunrpc:* and workqueue:* tracepoints, and
+>>> > > had a simple perl script to postprocess the trace info to figure out
+>>> > > average/min/max latency.
