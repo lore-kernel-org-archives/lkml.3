@@ -1,147 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976AbaLDR5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:57:55 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59100 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695AbaLDR5y (ORCPT
+	id S933029AbaLDR7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:59:23 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60964 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455AbaLDR7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:57:54 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Date: Thu, 4 Dec 2014 18:57:48 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <201412040148.31033@pali> <CAL_JsqKYpDD1Rq2n92FcspPWGJeQvtA4eRYPDK=xYPQN0=uQTg@mail.gmail.com>
-In-Reply-To: <CAL_JsqKYpDD1Rq2n92FcspPWGJeQvtA4eRYPDK=xYPQN0=uQTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2098087.kgLVLCanfX";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Thu, 4 Dec 2014 12:59:21 -0500
+Date: Thu, 4 Dec 2014 18:59:14 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH RFC 3/3] virtio_ccw: rev 1 devices set
+ VIRTIO_F_VERSION_1
+Message-ID: <20141204185914.4e989a7a.cornelia.huck@de.ibm.com>
+In-Reply-To: <1417713984-23771-3-git-send-email-mst@redhat.com>
+References: <1417713984-23771-1-git-send-email-mst@redhat.com>
+	<1417713984-23771-3-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412041857.49341@pali>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120417-0029-0000-0000-00000206C757
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2098087.kgLVLCanfX
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, 4 Dec 2014 19:26:50 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-On Thursday 04 December 2014 17:49:40 Rob Herring wrote:
-> On Wed, Dec 3, 2014 at 6:48 PM, Pali Roh=C3=A1r=20
-<pali.rohar@gmail.com> wrote:
-> > On Thursday 04 December 2014 01:33:08 Rob Herring wrote:
-> >> On Mon, Nov 24, 2014 at 4:19 PM, Pali Roh=C3=A1r
-> >=20
-> > <pali.rohar@gmail.com> wrote:
-> >> > On Wednesday 18 June 2014 22:46:19 Rob Herring wrote:
-> >> >> On Wed, Jun 18, 2014 at 2:22 PM, Pali Roh=C3=A1r
-> >> >=20
-> >> > <pali.rohar@gmail.com> wrote:
-> >> >> > On Wednesday 18 June 2014 21:07:35 Rob Herring wrote:
-> >> >> >> On Wed, Jun 18, 2014 at 11:54 AM, Pali Roh=C3=A1r
-> >> >> >=20
-> >> >> > <pali.rohar@gmail.com> wrote:
-> >> >> >> > Machine name from board description is some generic
-> >> >> >> > name on DT kernel. DT provides machine name
-> >> >> >> > property which is specific for board, so use it
-> >> >> >> > instead generic one when possible.
-> >>=20
-> >> [...]
-> >>=20
-> >> >> > Basically in DT kernel is missing Hardware, Revision
-> >> >> > and probably also Serial key. (Now I used only qemu
-> >> >> > for testing which set serial key to 0). All these
-> >> >> > informations is used by userspace applications which
-> >> >> > determinate how to behave.
-> >> >>=20
-> >> >> It is somewhat fragile to expect the name in the DT to
-> >> >> match the old name from the kernel. As your patch to
-> >> >> n900 dts shows, we'd probably have to update every dts
-> >> >> file to make them match. While I think we should work
-> >> >> to remove this string from the kernel, userspace
-> >> >> depending on the DT model string is a bad idea. For
-> >> >> example, if you had some platform with multiple OEMs
-> >> >> just rebranding the same base design, they may all want
-> >> >> to put their own model string into each product. The
-> >> >> true h/w id is the compatible string.
-> >> >>=20
-> >> >> Serial number is easy. There is already a standard
-> >> >> although not widely used property for it with
-> >> >> "/serial-number". You just need to wire it up to
-> >> >> cpuinfo.
-> >> >=20
-> >> > There is no "/serial-number" property in kernel:
-> >> >=20
-> >> > $ ls -l -a /sys/bus/soc/devices/soc0/
-> >> > drwxr-xr-x    3 0        0                0 Jan  1 00:00
-> >> > . drwxr-xr-x   18 0        0                0 Jan  1
-> >> > 00:00 .. -r--r--r--    1 0        0             4096 Jan
-> >> >  1 00:00 family -r--r--r--    1 0        0           =20
-> >> > 4096 Jan  1 00:00 machine drwxr-xr-x    2 0        0   =20
-> >> >            0 Jan  1 00:00 power -r--r--r--    1 0      =20
-> >> > 0
-> >> > 4096 Jan  1 00:00 revision lrwxrwxrwx    1 0        0
-> >> >=20
-> >> >          0 Jan  1 00:00 subsystem -> ../../bus/soc
-> >> >=20
-> >> > -r--r--r--    1 0        0             4096 Jan  1 00:00
-> >> > type -rw-r--r--    1 0        0             4096 Jan  1
-> >> > 00:00 uevent
-> >>=20
-> >> Wrong place. If you put /serial-number in your DT, then it
-> >> will be in /proc/device-tree/serial-number.
-> >>=20
-> >> If you want to wire that up to /proc/cpuinfo, I would be
-> >> fine with that.
-> >>=20
-> >> Rob
-> >=20
-> > I cannot hardcode it into DT, because it is set by
-> > bootloader. And bootloader tell it to kernel via ATAGs
-> > structure. Bootloader is closed and proprietary and cannot
-> > be replaced (there is no documentation for hw init).
->=20
-> Either the bootloader can put the serial number into the DTB
-> instead of ATAGs or the kernel decompressor can copy it from
-> ATAGs to DTB like is done already for other ATAGs. I presume
-> you cannot update the bootloader and will need the latter.
->=20
-> Rob
+> What does it mean if rev 1 device does not set
+> VIRTIO_F_VERSION_1? E.g. is it native endian?
+> 
+> Let's not even try to drive such devices:
+> skip attempts to finalize features or set status.
 
-Rob, thanks for info! Btw, theoretically I can update bootloader=20
-if someone write it. So in practise I need to use second option.
+Why not set status_failed?
 
-Can you tell me which CONFIG_ needs to be enabled for kernel=20
-decompressor (so it copy some ATAGs) and where to start looking=20
-at code (for adding new code for copying other ATAGs)?
+> virtio core will detect this and bail out.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/s390/kvm/virtio_ccw.c | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+I'm not sure yet whether I like this approach. I'll think about it over
+the weekend.
 
---nextPart2098087.kgLVLCanfX
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSAoJ0ACgkQi/DJPQPkQ1JBSQCdH4pyA0y1nOFjy5Vi0OtMK7sy
-ngsAn3Bs0cskOQh73isqQ34tDT96+gOj
-=FbNr
------END PGP SIGNATURE-----
-
---nextPart2098087.kgLVLCanfX--
