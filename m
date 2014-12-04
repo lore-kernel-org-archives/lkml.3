@@ -1,34 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaLDVNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:13:21 -0500
-Received: from na6sys009bog010.obsmtp.com ([74.125.150.60]:34738 "HELO
-	na6sys009bog010.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754630AbaLDVNU (ORCPT
+	id S1754779AbaLDVNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:13:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41406 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630AbaLDVNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:13:20 -0500
+	Thu, 4 Dec 2014 16:13:43 -0500
+Date: Thu, 4 Dec 2014 13:13:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Misc: pass miscdevice through file's private_data
+Message-ID: <20141204211342.GA22293@kroah.com>
+References: <1417727295-18989-1-git-send-email-tomvanbraeckel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1417720816.2404.11.camel@jtkirshe-mobl>
-References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
- <5480B1F0.9090407@cogentembedded.com> <1417720816.2404.11.camel@jtkirshe-mobl>
-From: Joe Stringer <joestringer@nicira.com>
-Date: Thu, 4 Dec 2014 13:12:58 -0800
-Message-ID: <CANr6G5zcPEZPWktNK3N2aCHma-o3_o1hvBzGeZ=nYQi5ijTheA@mail.gmail.com>
-Subject: Re: [linux-nics] [PATCHv3 net] i40e: Implement ndo_gso_check()
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        "linux.nics" <linux.nics@intel.com>, Jesse Gross <jesse@nicira.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417727295-18989-1-git-send-email-tomvanbraeckel@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > +#define MAX_TUNNEL_HDR_LEN 80
->>
->>     I'd #define this just above the function, if not at the start of the file...
+On Thu, Dec 04, 2014 at 10:08:15PM +0100, Tom Van Braeckel wrote:
+> Place the miscdevice in the file's private_data to be used by the file operations.
+> 
+> Previously, this was done only when an open() operation had been registered.
+> But it is also useful in the other file operations, so we pass it on unconditionally.
+> 
+> Signed-off-by: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+> ---
+>  drivers/char/misc.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+> index ffa97d2..c3681fb 100644
+> --- a/drivers/char/misc.c
+> +++ b/drivers/char/misc.c
+> @@ -140,10 +140,16 @@ static int misc_open(struct inode * inode, struct file * file)
+>  			goto fail;
+>  	}
+>  
+> +	/*
+> +	 * Place the miscdevice in the file's
+> +	 * private_data so it can be used by the
+> +	 * file operations, including f_op->open below
+> +	 */
+> +	file->private_data = c;
+> +
+>  	err = 0;
+>  	replace_fops(file, new_fops);
+>  	if (file->f_op->open) {
+> -		file->private_data = c;
+>  		err = file->f_op->open(inode,file);
+>  	}
 
-Right, the style for most of this file is to place the #define like
-this above the function. I'll do that.
+These braces aren't needed anymore, right?
+
+Also, what is this now going to break?  :)
+
+thanks,
+
+greg k-h
