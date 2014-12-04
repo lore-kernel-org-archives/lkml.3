@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321AbaLDOOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:14:37 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:39104 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952AbaLDOOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:14:36 -0500
-Date: Thu, 4 Dec 2014 15:14:32 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <19110649790.20141204151432@eikelenboom.it>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, bhelgaas@google.com,
-        <linux-pci@vger.kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot or bus with 'do_flr' SysFS attribute
-In-Reply-To: <308719815.20141204150909@eikelenboom.it>
-References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com> <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it> <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it>
+	id S1754526AbaLDOPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:15:52 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754096AbaLDOPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:15:50 -0500
+Message-ID: <54806C8C.6020504@nod.at>
+Date: Thu, 04 Dec 2014 15:15:40 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Harald Geyer <harald@ccbib.org>
+CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F0CFE.4010107@nod.at> <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at> <547F8925.3050308@nod.at> <E1XwWiq-00013A-NC@stardust.g4.wien.funkfeuer.at>
+In-Reply-To: <E1XwWiq-00013A-NC@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sander,
+Harald,
 
-Thursday, December 4, 2014, 3:09:09 PM, you wrote:
+Am 04.12.2014 um 14:45 schrieb Harald Geyer:
+> Richard Weinberger writes:
+>> Am 03.12.2014 um 15:08 schrieb Harald Geyer:
+>>>> I was asking because I see the "dht11: WARNING: decoding ambiguous"
+>>>> very often. (with and without my patches)
+>>>
+>>> Yes, your patches shouldn't have any effect on this.
+>>> "very often" in the sense of "not always"? This would be very surprising,
+>>> because this would involve variable length clock ticks, i think.
+>>>
+>>> I guess we should include timeres into the warning message.
+>>>
+>>> Also I guess now is the time to think about a smarter decoder.
+> 
+> I was wrong.
+>  
+>> Another question. Your driver defines:
+>> #define DHT11_DATA_BIT_LOW      27000
+>> #define DHT11_DATA_BIT_HIGH     70000
+>>
+>> If I read the manual [0] correctly these constants are T_h0/1.
+>> Why did you use 27000 for T_h0?
+>>
+>> [0] http://meteobox.tk/files/AM2302.pdf
+> 
+> It's a compromise between data sheets for various slightly different
+> sensors. In particular the data sheet for AM2303 specifies
+> 26-28us, so it's just in the middle. But note that DHT11_DATA_BIT_LOW
+> isn't used in the actual decoding. Just for printing the warning.
+> 
+> But looking at your data sheet I see the we currently use a start
+> command that's outside the specified range... I will have to look
+> up where the current 80ms value was suggested.
+> 
+>> Setting it to 26000 (the typical value as stated by the manual),
+>> I get the "decoding ambiguous" warning *always*. Setting it higher
+>> makes the message go away.
+> 
+> If you misstyped "always" and "go away" then this is to be expected.
 
+Nope, a lower value is bad and a higher makes the warning go away.
 
-> Thursday, December 4, 2014, 2:43:06 PM, you wrote:
+> Also I think I now understand what is going on:
+> Your board most probably has a clock much faster then 32kH and when
+> we calculate timeres, we don't actually calculate the timestamp
+> resolution but the length of the shortest pulse. The decoding
+> algorithm is robust in such cases, but it generates wrong warnings.
+> 
+> The proper fix is to drop messages about clock speed from the
+> decoding functin. If we want to keep such diagnostics, we should
+> have them at probe() time. - This will also resolve our disagreement
+> about proper formatting of log messages about clock issues. :)
 
->> On 04/12/14 13:10, Sander Eikelenboom wrote:
->>> 
->>> Thursday, December 4, 2014, 1:24:47 PM, you wrote:
->>> 
->>>> On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
->>>>>
->>>>> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
->>>>>>
->>>>>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
->>>>>>>
->>>>>>> Instead of doing all this complex dance, we depend on the toolstack 
->>>>>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
->>>>>>> which 'xl' uses when a device is detached or attached from/to a guest. 
->>>>>>> It bypasses the need to worry about the PCI lock. 
->>>>>>
->>>>>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
->>>>>> proposed). 
->>>>>>
->>>>>
->>>>> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
->>> 
->>>> It is only needed if the core won't provide one.
->>> 
->>>> +static int pcistub_try_create_reset_file(struct pci_dev *pci)
->>>> +{
->>>> +       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
->>>> +       struct device *dev = &pci->dev;
->>>> +       int ret;
->>>> +
->>>> +       /* Already have a per-function reset? */
->>>> +       if (pci_probe_reset_function(pci) == 0)
->>>> +               return 0;
->>>> +
->>>> +       ret = device_create_file(dev, &dev_attr_reset);
->>>> +       if (ret < 0)
->>>> +               return ret;
->>> +       dev_data->>created_reset_file = true;
->>>> +       return 0;
->>>> +}
->>> 
->>> Wouldn't the "core-reset-sysfs-file" be still wired to the end up calling 
->>> "pci.c:__pci_dev_reset" ?
->>> 
->>> The problem with that function is that from my testing it seems that the 
->>> first option "pci_dev_specific_reset" always seems to return succes, so all the
->>> other options are skipped (flr, pm, slot, bus). However the device it self is 
->>> not properly reset enough (perhaps the pci_dev_specific_reset is good enough for 
->>> none virtualization purposes and it's probably the least intrusive. For 
->>> virtualization however it would be nice to be sure it resets properly, or have a 
->>> way to force a specific reset routine.)
+Sounds sane.
 
->> Then you need work with the maintainer for those specific devices or
->> drivers to fix their specific reset function.
+> Optionally we can drop the calculation of timeres and just use a
+> constant threshold.
 
->> I'm not adding stuff to pciback to workaround broken quirks.
+Same here.
 
-> OK that's a pretty clear message there, so if one wants to use pci and vga
-> passthrough one should better use KVM and vfio-pci. 
-
-> vfio-pci has:
-> - logic to do the try-slot-bus-reset logic
-> - it has quirks specific to vga passthrough
-Hrmm have to correct my self because the vga-pt quirks are part of the vfio-pci 
-part in qemu.
-
-The try-slot-bus-reset logic is part of the kernel vfio-pci driver though and they faced the same locking issue it 
-seems:
-
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=61cf16d8bd38c3dc52033ea75d5b1f8368514a17
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=890ed578df82f5b7b5a874f9f2fa4f117305df5f
-
-> implemented in from the looks of it a quite clean driver.
-> (the main issue with it so far was you could only seize devices based on 
-> vendor and device id, which can be a problem when you have multiple devices.
-> However that was resolved recently if i am correct.)
-
-> And neither of those will be supported by xen-pciback if i get your message 
-> right ?
-
-> --
-> Sander
-
->> David
-
-
+Thanks,
+//richard
