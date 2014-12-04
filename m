@@ -1,212 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaLDKTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:19:35 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:56615 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbaLDKT2 (ORCPT
+	id S1753893AbaLDKVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:21:03 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:65299 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872AbaLDKVA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:19:28 -0500
-Message-ID: <5480355E.4050502@m2r.biz>
-Date: Thu, 04 Dec 2014 11:20:14 +0100
-From: Fabio Fantoni <fabio.fantoni@m2r.biz>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 4 Dec 2014 05:21:00 -0500
 MIME-Version: 1.0
-To: Jike Song <jike.song@intel.com>, xen-devel@lists.xen.org,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-CC: "Tian, Kevin" <kevin.tian@intel.com>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "Zhou, Chao" <chao.zhou@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>,
-        "Zhu, Libo" <libo.zhu@intel.com>
-Subject: Re: [Xen-devel] [Intel-gfx] [Announcement] 2014-Q3 release of XenGT
- - a Mediated Graphics Passthrough Solution from Intel
-References: <53D215D3.50608@intel.com> <547FCAAD.2060406@intel.com>
-In-Reply-To: <547FCAAD.2060406@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdVtHN6amVXP_uqEfrOyQG9S4fjeJPAe6Kvr94u_Sb6fPQ@mail.gmail.com>
+References: <20141203121753.5936.36253.sendpatchset@w520>
+	<20141203121813.5936.17433.sendpatchset@w520>
+	<20141204072153.GE25806@verge.net.au>
+	<CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
+	<CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
+	<CANqRtoQM8jrggMT7QFTQ1_1fKJgankkrUnF-wO8mJx3NqjxMTQ@mail.gmail.com>
+	<CAMuHMdVtHN6amVXP_uqEfrOyQG9S4fjeJPAe6Kvr94u_Sb6fPQ@mail.gmail.com>
+Date: Thu, 4 Dec 2014 19:20:58 +0900
+Message-ID: <CANqRtoRan=sNiN5Eo-CZhnTSFHBte8SyanGXnYsTC68K2_z=EQ@mail.gmail.com>
+Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM workaround
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/12/2014 03:45, Jike Song ha scritto:
-> Hi all,
->
-> We're pleased to announce a public release to Intel Graphics 
-> Virtualization Technology (Intel GVT-g, formerly known as XenGT). 
-> Intel GVT-g is a complete vGPU solution with mediated pass-through, 
-> supported today on 4th generation Intel Core(TM) processors with Intel 
-> Graphics processors. A virtual GPU instance is maintained for each VM, 
-> with part of performance critical resources directly assigned. The 
-> capability of running native graphics driver inside a VM, without 
-> hypervisor intervention in performance critical paths, achieves a good 
-> balance among performance, feature, and sharing capability. Though we 
-> only support Xen on Intel Processor Graphics so far, the core logic 
-> can be easily ported to other hypervisors.
->
->
-> The news of this update:
->
->
->     - kernel update from 3.11.6 to 3.14.1
->
->     - We plan to integrate Intel GVT-g as a feature in i915 driver. 
-> That effort is still under review, not included in this update yet
->
->     - Next update will be around early Jan, 2015
->
->
-> This update consists of:
->
->     - Windows HVM support with driver version 15.33.3910
->
->     - Stability fixes, e.g. stabilize GPU, the GPU hang occurrence 
-> rate becomes rare now
->
->     - Hardware Media Acceleration for Decoding/Encoding/Transcoding, 
-> VC1, H264 etc. format supporting
->
->     - Display enhancements, e.g. DP type is supported for virtual PORT
->
->     - Display port capability virtualization: with this feature, dom0 
-> manager could freely assign virtual DDI ports to VM, not necessary to 
-> check whether the corresponding physical DDI ports are available
->
->
->
-> Please refer to the new setup guide, which provides step-to-step 
-> details about building/configuring/running Intel GVT-g:
->
->
->     https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf 
->
->
->
->
-> The new source codes are available at the updated github repos:
->
->
->     Linux: https://github.com/01org/XenGT-Preview-kernel.git
->
->     Xen: https://github.com/01org/XenGT-Preview-xen.git
->
->     Qemu: https://github.com/01org/XenGT-Preview-qemu.git
->
->
-> More information about Intel GVT-g background, architecture, etc can 
-> be found at:
->
->
->     https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian 
->
->
->     http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf 
->
->
->     https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
->
->
-> The previous update can be found here:
->
->
->     http://lists.xen.org/archives/html/xen-devel/2014-07/msg03248.html
->
->
-> Appreciate your comments!
+Hi Geert,
 
-Thanks for this very good project.
-I did a fast look to xen patch about it, I have some small advices:
-change to tools/examples/xmexample.hvm should be to 
-tools/examples/xlexample.hvm instead since is implemented in xl and not xm.
-I think is good rebase the patch to latest xen-unstable git that have 
-many changes, for better reviews and for propose it upstream for xen 4.6 
-if will be good.
+On Thu, Dec 4, 2014 at 6:31 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Magnus,
+>
+> On Thu, Dec 4, 2014 at 10:24 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> On Thu, Dec 4, 2014 at 6:19 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> On Thu, Dec 4, 2014 at 8:33 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>>>>>> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
+>>>>>> +++ work/arch/arm/boot/dts/r8a7779.dtsi       2014-12-03 20:27:49.000000000 +0900
+>>>>>> @@ -139,7 +139,7 @@
+>>>>>>               interrupt-controller;
+>>>>>>       };
+>>>>>>
+>>>>>> -     irqpin0: irqpin@fe780010 {
+>>>>>> +     irqpin0: irqpin@fe780000 {
+>>>>>>               compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
+>>>>>>               #interrupt-cells = <2>;
+>>>>>>               status = "disabled";
+>>>>>> @@ -148,7 +148,8 @@
+>>>>>>                       <0xfe780010 4>,
+>>>>>>                       <0xfe780024 4>,
+>>>>>>                       <0xfe780044 4>,
+>>>>>> -                     <0xfe780064 4>;
+>>>>>> +                     <0xfe780064 4>,
+>>>>>> +                     <0xfe780000 4>;
+>>>>>
+>>>>> Is there any order implied by the above list?
+>>>>> Naïvely I would expect it to be sorted numerically.
+>>>>
+>>>> Yes, the driver assumes the register banks to be passed in a certain
+>>>> order. In the case of r8a7779 we add one more register bank at the end
+>>>> for IRLM setup. Register detail (base address, access size, order and
+>>>> bitfield width) varies with SoC version. So the IRLM register will be
+>>>> at different addresses depending on SoC, but the driver wants it at
+>>>> the end of the list.
+>>>
+>>> As these are all individual registers, and there are that many, I think
+>>> it's worth adding a reg-names property to identify the registers.
+>>> Of course the driver still has to support the old anonymous order
+>>> for backwards compatibility.
+>>
+>> If we should rework things, then I propose going the other way around.
+>> =) Basically only passing a single base address with a certain SoC
+>> specific compat string, and based on that letting the driver
+>> internally figure out which register is at what offset and the access
+>> size and bitfield size.
+>
+> That's gonna mean a complete new compatible value.
+> Seems like we shouldn't have added "renesas,intc-irqpin-r8a7779",
+> as the SoC-type was encoded in the reg properties...
 
-Thanks for any reply and sorry for my bad english.
+Yeah, having that SoC specific compat string in the DTS does not
+exactly help us that this point. We could however use a slightly
+different SoC compat string or something else that is unused if we
+wanted to change things around.
 
+>> Either way we have a limited number of SoCs and they are all old.
 >
->
-> -- 
-> Thanks,
-> Jike
->
-> On 07/25/2014 04:31 PM, Jike Song wrote:
->> Hi all,
->>
->> We're pleased to announce an update to Intel Graphics Virtualization 
->> Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a 
->> complete vGPU solution with mediated pass-through, supported today on 
->> 4th generation Intel Core(TM) processors with Intel Graphics 
->> processors. A virtual GPU instance is maintained for each VM, with 
->> part of performance critical resources directly assigned. The 
->> capability of running native graphics driver inside a VM, without 
->> hypervisor intervention in performance critical paths, achieves a 
->> good balance among performance, feature, and sharing capability. 
->> Though we only support Xen on Intel Processor Graphics so far, the 
->> core logic can be easily ported to other hypervisors.
->>
->> The news of this update:
->>
->>     - Project code name is "XenGT", now official name is Intel 
->> Graphics Virtualization Technology (Intel GVT-g)
->>     - Currently Intel GVT-g supports Intel Processor Graphics built 
->> into 4th generation Intel Core processors - Haswell platform
->>     - Moving forward, XenGT will change to quarterly release cadence. 
->> Next update will be around early October, 2014.
->>
->> This update consists of:
->>
->>     - Stability fixes, e.g. stable DP support
->>     - Display enhancements, e.g. virtual monitor support. Users can 
->> define a virtual monitor type with customized EDID for virtual 
->> machines, not necessarily the same as physical monitors.
->>     - Improved support for GPU recovery
->>     - Experimental Windows HVM support. To download the experimental 
->> version, see setup guide for details
->>     - Experimental Hardware Media Acceleration for decoding.
->>
->>
->> Please refer to the new setup guide, which provides step-to-step 
->> details about building/configuring/running Intel GVT-g:
->>
->>     https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf 
->>
->>
->>
->> The new source codes are available at the updated github repos:
->>
->>     Linux: https://github.com/01org/XenGT-Preview-kernel.git
->>     Xen: https://github.com/01org/XenGT-Preview-xen.git
->>     Qemu: https://github.com/01org/XenGT-Preview-qemu.git
->>
->>
->> More information about Intel GVT-g background, architecture, etc can 
->> be found at:
->>
->>     https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian 
->>
->>     http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf 
->>
->>     https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
->>
->> The previous update can be found here:
->>
->>     http://lists.xen.org/archives/html/xen-devel/2014-02/msg01848.html
->>
->> Appreciate your comments!
->>
->>
->>
->>
->> -- 
->> Thanks,
->> Jike
->>
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+> So your current patch looks like the best option for now
+> (can you promise future R-Car SoCs won't have an intc-irqpin hardware
+>  block ;-)?
 
+Hehe, almost. =)
+
+I think I can promise that R-Car hardware won't use that hardware -
+the IRQC hardware block replaced INTC-IRQPIN in R-Car Gen2 and it will
+most likely not make a comeback. However, other SoC product lines may
+show up with old interrupt controllers. But if so we can rework things
+at that point and make use of a fresh compatible string for a clean
+start.
+
+Cheers,
+
+/ magnus
