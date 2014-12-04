@@ -1,136 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193AbaLDTUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:20:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45460 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933114AbaLDTUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:20:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
-   d="asc'?scan'208";a="648423710"
-Message-ID: <1417720816.2404.11.camel@jtkirshe-mobl>
-Subject: Re: [linux-nics] [PATCHv3 net] i40e: Implement ndo_gso_check()
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Joe Stringer <joestringer@nicira.com>, netdev@vger.kernel.org,
-        linux.nics@intel.com, jesse@nicira.com, linux-kernel@vger.kernel.org,
-        therbert@google.com
-Date: Thu, 04 Dec 2014 11:20:16 -0800
-In-Reply-To: <5480B1F0.9090407@cogentembedded.com>
-References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-	 <5480B1F0.9090407@cogentembedded.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-u8MS4s+HN1vJycpTz1dK"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S933089AbaLDTaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:30:16 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:43585 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932921AbaLDTaM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 14:30:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <2556534.qktPW9tbxy@diego>
+References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com> <2556534.qktPW9tbxy@diego>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 4 Dec 2014 11:29:51 -0800
+X-Google-Sender-Auth: nuBlOE2lHUluZbxCVyz3YLDj9SY
+Message-ID: <CAGS+omAqkQaK99OX_uAf2Z6-fep2Euwn112Oj5gFpRca8ZAgew@mail.gmail.com>
+Subject: Re: [PATCH v15 0/3] Add drm driver for Rockchip Socs
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Mark Yao <mark.yao@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
+        linux-doc@vger.kernel.org, Kever Yang <kever.yang@rock-chips.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Airlie <airlied@gmail.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        simon xue <xxm@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dominik Behr <dbehr@chromium.org>,
+        =?UTF-8?B?6Zer5a2d5Yab?= <yxj@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        Rom Lemarchand <romlem@google.com>, xw@rock-chips.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-u8MS4s+HN1vJycpTz1dK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2014-12-04 at 22:11 +0300, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 12/04/2014 09:39 PM, Joe Stringer wrote:
->=20
-> > ndo_gso_check() was recently introduced to allow NICs to report the
-> > offloading support that they have on a per-skb basis. Add an
-> > implementation for this driver which checks for IPIP, GRE, UDP tunnels.
->=20
-> > Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> > ---
-> > v3: Drop IPIP and GRE (no driver support even though hw supports it).
-> >      Check for UDP outer protocol for UDP tunnels.
-> > v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
-> >      Add MAX_INNER_LENGTH (as 80).
-> > ---
-> >   drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++=
-++++++++
-> >   1 file changed, 26 insertions(+)
->=20
-> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/=
-ethernet/intel/i40e/i40e_main.c
-> > index c3a7f4a..0d6493a 100644
-> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> > @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb=
-,
-> >
-> >   #endif /* USE_DEFAULT_FDB_DEL_DUMP */
-> >   #endif /* HAVE_FDB_OPS */
->=20
->     Need empty line here, I think.
-
-Nope, look above the #endif's, that is the blank line that you are
-wanting if the above #ifdefs are defined and if not, the blank line is
-before the #ifdef's.  So if you were to add a blank line as you
-requested, there is a possibility of 2 blank lines in a row.  So it is
-not needed.
-
->=20
-> > +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev=
-)
-> > +{
-> > +	if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
-> > +		unsigned char *ihdr;
-> > +
-> > +		if (skb->protocol !=3D IPPROTO_UDP ||
-> > +		    skb->inner_protocol_type !=3D ENCAP_TYPE_ETHER)
-> > +			return false;
-> > +
-> > +		if (skb->inner_protocol =3D=3D htons(ETH_P_TEB))
-> > +			ihdr =3D skb_inner_mac_header(skb);
-> > +		else if (skb->inner_protocol =3D=3D htons(ETH_P_IP) ||
-> > +			 skb->inner_protocol =3D=3D htons(ETH_P_IPV6))
-> > +			ihdr =3D skb_inner_network_header(skb);
-> > +		else
-> > +			return false;
->=20
->     The above is asking to be a *switch* instead, no?
->=20
-> > +
-> > +#define MAX_TUNNEL_HDR_LEN	80
->=20
->     I'd #define this just above the function, if not at the start of the =
-file...
->=20
+On Tue, Dec 2, 2014 at 1:31 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Hi Mark,
+>
+> Am Dienstag, 2. Dezember 2014, 17:13:20 schrieb Mark Yao:
+>> This a series of patches is a DRM Driver for Rockchip Socs, add support
+>> for vop devices. Future patches will add additional encoders/connectors,
+>> such as eDP, HDMI.
+>>
+>> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+>> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+>> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+>> ARM_DMA_USE_IOMMU.
+>
 > [...]
->=20
-> WBR, Sergei
->=20
+>
+>> Changes in v15:
+>> - remove depends on ARM_DMA_USE_IOMMU & IOMMU_API which cause
+>>   recursive dependency problem
+
+I thought the recommended solution for this was to fix OMAP3 to not
+select  ARM_DMA_USE_IOMMU and OMAP_IOMMU, not to drop the 'depends on'
+in drm/rockchip?
+
+>> - fix compile problems when build as a module.
+>
+> maybe you could also already create a new pull request for this version [like
+> the last one based on the iommu branch], so that we save time and Dave can
+> pull it in easily for testing if he likes.
+>
+>
+> Heiko
+>
 > _______________________________________________
-> Linux-nics mailing list
-> Linux-nics@intel.com
-
-
-
---=-u8MS4s+HN1vJycpTz1dK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUgLPwAAoJEOVv75VaS+3OQAYP/RNGuutfuKML0bL5+EhzOzNF
-qk2EIQM/MXWSq2eVRzLADuML5FryDtkgmWsdyu1tmgvrnR4bZoGEjMLao9pLEFmA
-/YePjh0SOLj22qmaiE9nM7yty9EYV4ftJWDDQ5a+ssHC40cuKX515/lEDpoSu5o5
-roqOm1OOLPFdDyaKxzou++efief7XUB+6lvdtLByY7MeSbBhfdfFARr0ZcmYleMP
-yA/tm/lL0fQYOICEwZ4NbZh6oV1tJO+H8EyfiR/3JdaMqNCYqlLbwZX5ht1oeXZU
-B5gZMqRSFUIWCgV5h/xiL/PJTtFVhTBVlGZIUFDAa4WYFjfuJMvSnCmLvitSb9O0
-mH4f6UY3o9UTv5HbYFtfS0Vn8kthZUxajlDv+DDW5FhH0UnpQW9E4U4rLFhKGqp4
-HdXmiAqzYtkT8PQ0rooHbqRxBG/lB26Wq7PspELtFz1s5atO60x5lsjuYe2EIRbO
-ozgWghZB8pcAYutcQDOrfVblD2xCYPfBrxJbCoL20XvZp16WkEf3aYgUJgC3uzz7
-wvvZTX+k062H+I8S3uOmsNYJKSn8CgLTHLijzYgDQT1r5jmZPYAJE/S6zznaDu/U
-DgLZTOpivcWesbFfi/zv6MGJqtpH4VBAN7BAKNm615c+Lyopsv3kXbpSCTqAR81O
-Zkk2FMuqv0Of8jS4WG7S
-=KxC/
------END PGP SIGNATURE-----
-
---=-u8MS4s+HN1vJycpTz1dK--
-
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
