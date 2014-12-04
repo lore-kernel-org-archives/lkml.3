@@ -1,65 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaLDAuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:50:16 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:39169 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914AbaLDAuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:50:14 -0500
-Message-ID: <547FAFC3.40609@osg.samsung.com>
-Date: Wed, 03 Dec 2014 17:50:11 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752693AbaLDAul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:50:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60377 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752000AbaLDAuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:50:39 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] MMC / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Thu, 04 Dec 2014 02:12:01 +0100
+Message-ID: <14058791.TAS1lQ00cW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>, Tim Bird <tim.bird@sonymobile.com>
-CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v6] selftest: size: Add size test for Linux kernel
-References: <547F598D.7030205@sonymobile.com> <20141204003653.GA5004@thin>
-In-Reply-To: <20141204003653.GA5004@thin>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 05:36 PM, Josh Triplett wrote:
-> On Wed, Dec 03, 2014 at 10:42:21AM -0800, Tim Bird wrote:
->> This test shows the amount of memory used by the system.
->> Note that this is dependent on the user-space that is loaded
->> when this program runs.  Optimally, this program would be
->> run as the init program itself.
->>
->> The program is optimized for size itself, to avoid conflating
->> its own execution with that of the system software.
->> The code is compiled statically, with no stdlibs. On my x86_64 system,
->> this results in a statically linked binary of less than 5K.
->>
->> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
-> 
-> v6 looks good to me.
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> Should this go through the tinification tree or the selftests tree?
-> 
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Josh/Tim,
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-Thanks both. Yes v6 looks good. I will take this through kselftest
-tree. I will apply this to kselftes fixes.
+Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+drivers/misc/.
 
--- Shuah
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
 
+Please let me know if it is OK to take this one into linux-pm.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+---
+ drivers/mmc/core/bus.c             |    4 ++--
+ drivers/mmc/host/sdhci-acpi.c      |    2 +-
+ drivers/mmc/host/sdhci-esdhc-imx.c |    4 ++--
+ drivers/mmc/host/sdhci-pci.c       |   18 +++++++-----------
+ drivers/mmc/host/sdhci-pxav3.c     |    2 +-
+ drivers/mmc/host/sdhci-s3c.c       |    6 +++---
+ drivers/mmc/host/sdhci.c           |    7 ++-----
+ drivers/mmc/host/sdhci.h           |    3 ---
+ 8 files changed, 18 insertions(+), 28 deletions(-)
+
+Index: linux-pm/drivers/mmc/core/bus.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/core/bus.c
++++ linux-pm/drivers/mmc/core/bus.c
+@@ -179,7 +179,7 @@ static int mmc_bus_resume(struct device
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int mmc_runtime_suspend(struct device *dev)
+ {
+ 	struct mmc_card *card = mmc_dev_to_card(dev);
+@@ -195,7 +195,7 @@ static int mmc_runtime_resume(struct dev
+ 
+ 	return host->bus_ops->runtime_resume(host);
+ }
+-#endif /* !CONFIG_PM_RUNTIME */
++#endif /* !CONFIG_PM */
+ 
+ static const struct dev_pm_ops mmc_bus_pm_ops = {
+ 	SET_RUNTIME_PM_OPS(mmc_runtime_suspend, mmc_runtime_resume, NULL)
+Index: linux-pm/drivers/mmc/host/sdhci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci-acpi.c
++++ linux-pm/drivers/mmc/host/sdhci-acpi.c
+@@ -416,7 +416,7 @@ static int sdhci_acpi_resume(struct devi
+ 
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 
+ static int sdhci_acpi_runtime_suspend(struct device *dev)
+ {
+Index: linux-pm/drivers/mmc/host/sdhci-esdhc-imx.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci-esdhc-imx.c
++++ linux-pm/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -1172,7 +1172,7 @@ static int sdhci_esdhc_imx_remove(struct
+ 	pm_runtime_dont_use_autosuspend(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
++	if (!IS_ENABLED(CONFIG_PM)) {
+ 		clk_disable_unprepare(imx_data->clk_per);
+ 		clk_disable_unprepare(imx_data->clk_ipg);
+ 		clk_disable_unprepare(imx_data->clk_ahb);
+@@ -1183,7 +1183,7 @@ static int sdhci_esdhc_imx_remove(struct
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int sdhci_esdhc_runtime_suspend(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+Index: linux-pm/drivers/mmc/host/sdhci-pci.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci-pci.c
++++ linux-pm/drivers/mmc/host/sdhci-pci.c
+@@ -134,7 +134,7 @@ static int pch_hc_probe_slot(struct sdhc
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 
+ static irqreturn_t sdhci_pci_sd_cd(int irq, void *dev_id)
+ {
+@@ -1230,15 +1230,6 @@ static int sdhci_pci_resume(struct devic
+ 	return 0;
+ }
+ 
+-#else /* CONFIG_PM */
+-
+-#define sdhci_pci_suspend NULL
+-#define sdhci_pci_resume NULL
+-
+-#endif /* CONFIG_PM */
+-
+-#ifdef CONFIG_PM_RUNTIME
+-
+ static int sdhci_pci_runtime_suspend(struct device *dev)
+ {
+ 	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
+@@ -1310,7 +1301,12 @@ static int sdhci_pci_runtime_idle(struct
+ 	return 0;
+ }
+ 
+-#endif
++#else /* CONFIG_PM */
++
++#define sdhci_pci_suspend NULL
++#define sdhci_pci_resume NULL
++
++#endif /* CONFIG_PM */
+ 
+ static const struct dev_pm_ops sdhci_pci_pm_ops = {
+ 	.suspend = sdhci_pci_suspend,
+Index: linux-pm/drivers/mmc/host/sdhci-pxav3.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci-pxav3.c
++++ linux-pm/drivers/mmc/host/sdhci-pxav3.c
+@@ -436,7 +436,7 @@ static int sdhci_pxav3_resume(struct dev
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int sdhci_pxav3_runtime_suspend(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+Index: linux-pm/drivers/mmc/host/sdhci-s3c.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci-s3c.c
++++ linux-pm/drivers/mmc/host/sdhci-s3c.c
+@@ -609,7 +609,7 @@ static int sdhci_s3c_probe(struct platfo
+ 		goto err_req_regs;
+ 	}
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 	if (pdata->cd_type != S3C_SDHCI_CD_INTERNAL)
+ 		clk_disable_unprepare(sc->clk_io);
+ #endif
+@@ -635,7 +635,7 @@ static int sdhci_s3c_remove(struct platf
+ 	if (sc->ext_cd_irq)
+ 		free_irq(sc->ext_cd_irq, sc);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 	if (sc->pdata->cd_type != S3C_SDHCI_CD_INTERNAL)
+ 		clk_prepare_enable(sc->clk_io);
+ #endif
+@@ -667,7 +667,7 @@ static int sdhci_s3c_resume(struct devic
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int sdhci_s3c_runtime_suspend(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+Index: linux-pm/drivers/mmc/host/sdhci.c
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci.c
++++ linux-pm/drivers/mmc/host/sdhci.c
+@@ -56,7 +56,7 @@ static int sdhci_execute_tuning(struct m
+ static void sdhci_tuning_timer(unsigned long data);
+ static void sdhci_enable_preset_value(struct sdhci_host *host, bool enable);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int sdhci_runtime_pm_get(struct sdhci_host *host);
+ static int sdhci_runtime_pm_put(struct sdhci_host *host);
+ static void sdhci_runtime_pm_bus_on(struct sdhci_host *host);
+@@ -2654,9 +2654,6 @@ int sdhci_resume_host(struct sdhci_host
+ }
+ 
+ EXPORT_SYMBOL_GPL(sdhci_resume_host);
+-#endif /* CONFIG_PM */
+-
+-#ifdef CONFIG_PM_RUNTIME
+ 
+ static int sdhci_runtime_pm_get(struct sdhci_host *host)
+ {
+@@ -2757,7 +2754,7 @@ int sdhci_runtime_resume_host(struct sdh
+ }
+ EXPORT_SYMBOL_GPL(sdhci_runtime_resume_host);
+ 
+-#endif
++#endif /* CONFIG_PM */
+ 
+ /*****************************************************************************\
+  *                                                                           *
+Index: linux-pm/drivers/mmc/host/sdhci.h
+===================================================================
+--- linux-pm.orig/drivers/mmc/host/sdhci.h
++++ linux-pm/drivers/mmc/host/sdhci.h
+@@ -411,9 +411,6 @@ void sdhci_set_uhs_signaling(struct sdhc
+ extern int sdhci_suspend_host(struct sdhci_host *host);
+ extern int sdhci_resume_host(struct sdhci_host *host);
+ extern void sdhci_enable_irq_wakeups(struct sdhci_host *host);
+-#endif
+-
+-#ifdef CONFIG_PM_RUNTIME
+ extern int sdhci_runtime_suspend_host(struct sdhci_host *host);
+ extern int sdhci_runtime_resume_host(struct sdhci_host *host);
+ #endif
+
