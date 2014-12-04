@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144AbaLDRy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:54:58 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59881 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932817AbaLDRyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:54:55 -0500
-Date: Thu, 4 Dec 2014 18:54:47 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC 1/3] virtio: add API to detect legacy devices
-Message-ID: <20141204185447.28e9146d.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417713984-23771-1-git-send-email-mst@redhat.com>
-References: <1417713984-23771-1-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933149AbaLDR4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:56:07 -0500
+Received: from mail-bl2on0090.outbound.protection.outlook.com ([65.55.169.90]:21461
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932464AbaLDR4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:56:05 -0500
+Message-ID: <54809C88.8060601@caviumnetworks.com>
+Date: Thu, 4 Dec 2014 09:40:24 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+CC: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
+        <geert+renesas@glider.be>, <peterz@infradead.org>,
+        <paul.gortmaker@windriver.com>, <chenhc@lemote.com>, <cl@linux.com>,
+        Ingo Molnar <mingo@kernel.org>, <richard@nod.at>, <zajec5@gmail.com>,
+        <james.hogan@imgtec.com>, <keescook@chromium.org>, <tj@kernel.org>,
+        <alex@alex-smith.me.uk>, <pbonzini@redhat.com>, <blogic@openwrt.org>,
+        <paul.burton@imgtec.com>, <qais.yousef@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <markos.chandras@imgtec.com>,
+        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
+        <lars.persson@axis.com>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
+References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com> <547FA8D2.2030703@caviumnetworks.com> <alpine.LFD.2.11.1412040310100.22073@eddie.linux-mips.org>
+In-Reply-To: <alpine.LFD.2.11.1412040310100.22073@eddie.linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120417-0029-0000-0000-00000206C3F7
+X-Originating-IP: [64.2.3.194]
+X-ClientProxiedBy: BY2PR07CA076.namprd07.prod.outlook.com (10.141.251.51) To
+ CY1PR0701MB1114.namprd07.prod.outlook.com (25.160.145.21)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0701MB1114;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0701MB1114;
+X-Forefront-PRVS: 041517DFAB
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(24454002)(189002)(164054003)(377454003)(479174003)(199003)(69596002)(92566001)(87976001)(105586002)(68736005)(87266999)(40100003)(23756003)(54356999)(80316001)(99396003)(76176999)(99136001)(81156004)(120916001)(46102003)(77156002)(97736003)(122386002)(21056001)(50466002)(93886004)(64126003)(62966003)(107046002)(101416001)(106356001)(42186005)(20776003)(4396001)(33656002)(31966008)(53416004)(110136001)(36756003)(47776003)(64706001)(65816999)(50986999)(65956001)(65806001)(66066001)(83506001);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0701MB1114;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0701MB1114;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Dec 2014 19:26:42 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On 12/04/2014 03:49 AM, Maciej W. Rozycki wrote:
+> On Wed, 3 Dec 2014, David Daney wrote:
+>
+>>> but it doesn't support customized instructions,
+>>
+>> GCC will never put these in the delay slot of a FPU branch, so it is not
+>> needed.
+>>
+>>> multiple ASEs,
+>>
+>> Same as above.  But any instructions that are deemed necessary can easily be
+>> added.
+>
+>   GAS will happily schedule any instruction into a branch delay slot as
+> long as the instruction is not architecturally forbidden there (e.g.
+> ERET), there is no data dependency with the branch that would affect the
+> result produced and the instruction is not an explicit exception trap
+> operation (BREAK, SYSCALL, TEQ, etc.).  For some reason, unknown to me all
+> MT ASE instructions are disallowed too.  Anything else -- free to go in!
+>
+>   Of course instructions can be scheduled into branch delay slots manually
+> too, in handcoded assembly, and that has to continue working.
+>
 
-> transports need to be able to detect legacy-only
-> devices (ATM balloon only) to use legacy path
-> to drive them.
-> 
-> Add a core API to do just that.
-> The implementation just blacklists balloon:
-> not too pretty, but let's not over-engineer.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio.h  | 2 ++
->  drivers/virtio/virtio.c | 6 ++++++
->  2 files changed, 8 insertions(+)
+It is not difficult to also emulate the trapping instructions.  In order 
+to move forward, I will implement the trapping instructions in my 
+emulator for the next patch.
 
-Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Thanks,
+David Daney
 
