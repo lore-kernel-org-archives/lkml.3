@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbaLDR1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:27:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52237 "EHLO mx1.redhat.com"
+	id S932832AbaLDR1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:27:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40496 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaLDR1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:27:00 -0500
-Date: Thu, 4 Dec 2014 19:26:45 +0200
+	id S932164AbaLDR1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:27:05 -0500
+Date: Thu, 4 Dec 2014 19:26:50 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -16,8 +16,8 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH RFC 2/3] virtio_ccw: legacy: don't negotiate rev 1/features
-Message-ID: <1417713984-23771-2-git-send-email-mst@redhat.com>
+Subject: [PATCH RFC 3/3] virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
+Message-ID: <1417713984-23771-3-git-send-email-mst@redhat.com>
 References: <1417713984-23771-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,50 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Legacy balloon device doesn't pretend to support revision 1 or 64 bit
-features.
+What does it mean if rev 1 device does not set
+VIRTIO_F_VERSION_1? E.g. is it native endian?
 
-But just in case someone implements a broken one that does, let's not
-even try to drive legacy only devices using revision 1, and let's not
-give them a chance to say they support VIRTIO_F_VERSION_1 by not reading
-high feature bits.
+Let's not even try to drive such devices:
+skip attempts to finalize features or set status.
+virtio core will detect this and bail out.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/s390/kvm/virtio_ccw.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/s390/kvm/virtio_ccw.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 4a3e6e5..088bdf1 100644
+index 088bdf1..0ceeb25 100644
 --- a/drivers/s390/kvm/virtio_ccw.c
 +++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -733,6 +733,9 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
+@@ -65,6 +65,7 @@ struct virtio_ccw_device {
+ 	bool is_thinint;
+ 	bool going_away;
+ 	bool device_lost;
++	bool features_invalid;
+ 	void *airq_info;
+ };
  
- 	rc = le32_to_cpu(features->features);
+@@ -746,6 +747,12 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
+ 	if (ret == 0)
+ 		rc |= (u64)le32_to_cpu(features->features) << 32;
  
-+	if (vcdev->revision == 0)
-+		goto out_free;
-+
- 	/* Read second half of the feature bits from the host. */
- 	features->index = 1;
- 	ccw->cmd_code = CCW_CMD_READ_FEAT;
-@@ -1182,9 +1185,13 @@ static int virtio_ccw_online(struct ccw_device *cdev)
- 	vcdev->vdev.id.vendor = cdev->id.cu_type;
- 	vcdev->vdev.id.device = cdev->id.cu_model;
- 
--	ret = virtio_ccw_set_transport_rev(vcdev);
--	if (ret)
--		goto out_free;
-+	if (virtio_device_is_legacy_only(vcdev->vdev.id)) {
-+		ret = virtio_ccw_set_transport_rev(vcdev);
-+		if (ret)
-+			goto out_free;
-+	} else {
-+		vcdev->revision = 0;
++	/* Devices MUST set VIRTIO_F_VERSION_1 */
++	if (!(rc & BIT_ULL(VIRTIO_F_VERSION_1))) {
++		vcdev->features_invalid = true;
++		rc |= BIT_ULL(VIRTIO_F_VERSION_1);
 +	}
++
+ out_free:
+ 	kfree(features);
+ 	kfree(ccw);
+@@ -758,6 +765,10 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
+ 	struct virtio_feature_desc *features;
+ 	struct ccw1 *ccw;
  
- 	ret = register_virtio_device(&vcdev->vdev);
- 	if (ret) {
++	/* Invalid features? Let's not try to drive this device. */
++	if (vcdev->features_invalid)
++		return;
++
+ 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
+ 	if (!ccw)
+ 		return;
+@@ -869,6 +880,10 @@ static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
+ 	struct ccw1 *ccw;
+ 	int ret;
+ 
++	/* Invalid features? Let's not try to drive this device. */
++	if (vcdev->features_invalid)
++		return;
++
+ 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
+ 	if (!ccw)
+ 		return;
 -- 
 MST
 
