@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaLDEnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 23:43:52 -0500
-Received: from mout.gmx.net ([212.227.17.21]:58538 "EHLO mout.gmx.net"
+	id S1752862AbaLDEoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 23:44:12 -0500
+Received: from mout.gmx.net ([212.227.17.22]:54956 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896AbaLDEns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 23:43:48 -0500
+	id S1752700AbaLDEnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 23:43:49 -0500
 From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 To: eparis@redhat.com, jack@suse.cz
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH v2 1/3] fanotify: only destroy mark when both mask and ignored_mask are cleared
-Date: Thu,  4 Dec 2014 05:43:02 +0100
-Message-Id: <1417668184-14544-1-git-send-email-LinoSanfilippo@gmx.de>
+Subject: [PATCH v2 3/3] fanotify: dont set FAN_ONDIR implicitly on a marks ignored mask
+Date: Thu,  4 Dec 2014 05:43:04 +0100
+Message-Id: <1417668184-14544-3-git-send-email-LinoSanfilippo@gmx.de>
 X-Mailer: git-send-email 1.9.1
-X-Provags-ID: V03:K0:8kqJhmTeYxqWhTeLv80/1hZo4F4NiYXYN39IKLqwb5R8tWhX+Ni
- h/Ciin6dw8LyY6wXbGMYqUH7jqTop7ZFkbVSyODWhIRoq77wXMa/iJ6QlhHPz+OWYGDaj/h
- e0xixQgwRw7YJAcaoBd/+GMcr4zT6JzGfW0PtyLHfmY0DB3nyZRoWsEzRYw19iex9G8lYLu
- mm89Aw2V8IjcaoUlnm5Gw==
+In-Reply-To: <1417668184-14544-1-git-send-email-LinoSanfilippo@gmx.de>
+References: <1417668184-14544-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Provags-ID: V03:K0:dwHUauhGamgomuPVkd0cksKFem8ThQGpw698LGgL4VSb9L6iXC+
+ tBsHOOKb3t+AM+mTkp91NY5FfIlgbHfgLtShM27aUSztM11CKrspCxnMd/r9MnxIrY9noqk
+ taT0hVLVnwOz4gAAmVR1VBM/d8Qkt692qvNE1dhi87XJC2JD0HP/gXqDjGDcRNTa9bhzVgF
+ tZFASFDnG/KWHdoMp2R0g==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fanotify_mark_remove_from_mask() a mark is destroyed if only one of both
-bitmasks (mask or ignored_mask) of a mark is cleared. However the other mask
-may still be set and contain information that should not be lost. So only
-destroy a mark if both masks are cleared.
+Currently FAN_ONDIR is always set on a marks ignored mask when the event mask
+is extended without FAN_MARK_ONDIR being set. This may result in events for
+directories being ignored unexpectedly for call sequences like
+
+fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
+fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE, AT_FDCWD, "dir");
+
+Also FAN_MARK_ONDIR is only honored when adding events to a marks mask, but
+not for event removal. Fix both issues.
 
 Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
- fs/notify/fanotify/fanotify_user.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/notify/fanotify/fanotify.c      |  2 +-
+ fs/notify/fanotify/fanotify_user.c | 24 ++++++++++++++++--------
+ 2 files changed, 17 insertions(+), 9 deletions(-)
 
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index 30d3add..51ceb81 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -140,7 +140,7 @@ static bool fanotify_should_send_event(struct fsnotify_mark *inode_mark,
+ 	}
+ 
+ 	if (S_ISDIR(path->dentry->d_inode->i_mode) &&
+-	    (marks_ignored_mask & FS_ISDIR))
++	    !(marks_mask & FS_ISDIR & ~marks_ignored_mask))
+ 		return false;
+ 
+ 	if (event_mask & marks_mask & ~marks_ignored_mask)
 diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index c991616..ba31055 100644
+index ddc33fb..683d140 100644
 --- a/fs/notify/fanotify/fanotify_user.c
 +++ b/fs/notify/fanotify/fanotify_user.c
-@@ -497,10 +497,9 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
- 		oldmask = fsn_mark->ignored_mask;
- 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask & ~mask));
+@@ -491,10 +491,17 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+ 
+ 	spin_lock(&fsn_mark->lock);
+ 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
++		__u32 tmask = fsn_mark->mask & ~mask;
++		if (flags & FAN_MARK_ONDIR)
++			tmask &= ~FAN_ONDIR;
++
+ 		oldmask = fsn_mark->mask;
+-		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask & ~mask));
++		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
+ 	} else {
+ 		__u32 tmask = fsn_mark->ignored_mask & ~mask;
++		if (flags & FAN_MARK_ONDIR)
++			tmask &= ~FAN_ONDIR;
++
+ 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
  	}
-+	*destroy = !(fsn_mark->mask | fsn_mark->ignored_mask);
+ 	*destroy = !(fsn_mark->mask | fsn_mark->ignored_mask);
+@@ -568,20 +575,21 @@ static __u32 fanotify_mark_add_to_mask(struct fsnotify_mark *fsn_mark,
+ 
+ 	spin_lock(&fsn_mark->lock);
+ 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
++		__u32 tmask = fsn_mark->mask | mask;
++		if (flags & FAN_MARK_ONDIR)
++			tmask |= FAN_ONDIR;
++
+ 		oldmask = fsn_mark->mask;
+-		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask | mask));
++		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
+ 	} else {
+ 		__u32 tmask = fsn_mark->ignored_mask | mask;
++		if (flags & FAN_MARK_ONDIR)
++			tmask |= FAN_ONDIR;
++
+ 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+ 		if (flags & FAN_MARK_IGNORED_SURV_MODIFY)
+ 			fsn_mark->flags |= FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY;
+ 	}
+-
+-	if (!(flags & FAN_MARK_ONDIR)) {
+-		__u32 tmask = fsn_mark->ignored_mask | FAN_ONDIR;
+-		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+-	}
+-
  	spin_unlock(&fsn_mark->lock);
  
--	*destroy = !(oldmask & ~mask);
--
- 	return mask & oldmask;
- }
- 
+ 	return mask & ~oldmask;
 -- 
 1.9.1
 
