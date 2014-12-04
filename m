@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420AbaLDO2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:28:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932155AbaLDO2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:28:51 -0500
-Date: Thu, 4 Dec 2014 15:23:30 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com, namhyung@kernel.org
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20141204142330.GB10406@krava.brq.redhat.com>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+	id S1754300AbaLDOaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:30:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47819 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753826AbaLDOaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:30:04 -0500
+Date: Thu, 4 Dec 2014 15:27:41 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+Message-ID: <20141204142741.GQ30256@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com>
+ <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather>
+ <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+ <20141202161227.GH30256@lukather>
+ <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mzmkN2k+aDjaU9Rr"
 Content-Disposition: inline
-In-Reply-To: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+In-Reply-To: <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 10:06:51AM -0500, kan.liang@intel.com wrote:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> This is the user space patch for Haswell LBR call stack support.
-> For many profiling tasks we need the callgraph. For example we often
-> need to see the caller of a lock or the caller of a memcpy or other
-> library function to actually tune the program. Frame pointer unwinding
-> is efficient and works well. But frame pointers are off by default on
-> 64bit code (and on modern 32bit gccs), so there are many binaries around
-> that do not use frame pointers. Profiling unchanged production code is
-> very useful in practice. On some CPUs frame pointer also has a high
-> cost. Dwarf2 unwinding also does not always work and is extremely slow
-> (upto 20% overhead).
-> 
-> Haswell has a new feature that utilizes the existing Last Branch Record
-> facility to record call chains. When the feature is enabled, function
-> call will be collected as normal, but as return instructions are
-> executed the last captured branch record is popped from the on-chip LBR
-> registers. The LBR call stack facility provides an alternative to get
-> callgraph. It has some limitations too, but should work in most cases
-> and is significantly faster than dwarf. Frame pointer unwinding is still
-> the best default, but LBR call stack is a good alternative when nothing
-> else works.
-> 
-> Please find the kernel part patch at https://lkml.org/lkml/2014/11/6/432
-> 
-> Changes since v1
->  - Update help document
->  - Force exclude_user to 0 with warning in LBR call stack
->  - Dump both lbr and fp info when report -D
->  - Reconstruct thread__resolve_callchain_sample and split it into two patches
->  - Use has_branch_callstack function to check LBR call stack available
-> 
-> Changes since v2
->  - Rebase to 025ce5d33373
-> 
-> Changes since v3
->  - Rebase to cc502c23aadf
->  - Separated function for lbr call stack sample resolve and print
->  - Some minor changes according to comments
-> 
-> Changes since V4
->  - Rebase to 09a6a1b
->  - Falling back to framepointers if LBR not available, and warning user
 
-looks ok to me..
+--mzmkN2k+aDjaU9Rr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll test it once I get hands on Haswel server again, I guess we
-wait for the kernel change to go in first anyway, right?
+Hi,
 
-thanks,
-jirka
+On Thu, Dec 04, 2014 at 11:15:38PM +0900, Alexandre Courbot wrote:
+> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
+> >> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> w=
+rote:
+> >> > On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+> >> > <maxime.ripard@free-electrons.com> wrote:
+> >>
+> >> >> The only thing I'd like to have would be that the request here would
+> >> >> be non-exclusive, so that a later driver would still be allowed lat=
+er
+> >> >> on to request that GPIO later on and manage it itself (ideally using
+> >> >> the usual gpiod_request function).
+> >> >
+> >> > Actually we have a plan (and I have some code too) to allow multiple
+> >> > consumers per GPIO. Although like Benoit I wonder why you would want
+> >> > to hog a GPIO and then request it properly later. Also, that probably
+> >> > means we should abandon the hog since it actively drives the line and
+> >> > would interfere with the late requested. How to do that correctly is
+> >> > not really clear to me.
+> >>
+> >> I don't get the usecase. A hogged GPIO is per definition hogged.
+> >> This sounds more like "initial settings" or something, which is another
+> >> usecase altogether.
+> >
+> > We do have one board where we have a pin (let's say GPIO14 of the bank
+> > A) that enables a regulator that will provide VCC the bank B.
+> >
+> > Now, both banks are handled by the same driver, but in order to have a
+> > working output on the bank B, we do need to set GPIO14 as soon as
+> > we're probed.
+> >
+> > Just relying on the usual deferred probing introduces a circular
+> > dependency between the gpio-regulator that needs to grab its GPIO from
+> > a driver not there yet, and the gpio driver that needs to enable its
+> > gpio-regulator.
+>=20
+> I don't get it. According to what you said, the following order should
+> go through IIUC:
+>=20
+> 1) bank A is probed, gpio 14 is available
+> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is av=
+ailable
+> 3) bank B is probed, grabs its regulator and turn it on, probes.
+>=20
+> What am I missing?
+
+It would be true if bank A and B were exposed through different
+drivers (or at least different instances of the same driver), which is
+not the case.
+
+In our case, banks A and B are handled by the same instance.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--mzmkN2k+aDjaU9Rr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgG9dAAoJEBx+YmzsjxAgRwgP/iM8E5KZkUVV41J0U/z9uK39
+Quye8cUd15D9cdiFWGve7smzun9kFXJDmTJaqWjb7buwvl80KxR+UQEnQeaU7Kzc
+0ZH5M0qH9Kq6QySMzdGYUEAgdryKpRFbBglyfypQJUEfijk/iKIuFNs4EG5/9I/L
+6X+DJabUOf21DfHvQwl2Hn8Xy+0j3uPTLodG00+WfxAokxqRqE3JpRnBwmXwAcBd
+L5LyFhPudJaSrTaHfDbdQFWo3E0MknJq2hpjw8Di4H8cOs98UD47kYyst2naIZr+
+0b98pHtucXVuiJi6Q3SX/75q4bB/uAP9Ve/STitLe+xHGLW7UD5t/dZaTVFUPnCC
+cI/4d8wZgyujgMU6PAkIS+wTGxUfOVvWeZ6FcXziHanhoWC25SCg6GwASq0OC92s
+zM1vPRpXeaWUWBnmTRwzaSizOJCnJ8HTrYVJs0T7pqOhwZXyNYCgltZdePqYszJ2
+qlJkSSjf4zNzj+MMtGWvDgYLe2jSjUACvq1eqy+bb4gPtp1Pq0j6QFByauyFrJeY
+E6fD+IAqqNSphPCO1VN20XJnh4WQSDSqsrpSTwyMSNz4X/EvXlavU328nln2ABal
+pi8DarqO86NJVfhGnnvviS4rsewVzmvvIo25TDxvuiopMXzkAtIvZQ7AIlSw8tEf
+ujHEEDJiu3f1kFAQy4bl
+=6JAx
+-----END PGP SIGNATURE-----
+
+--mzmkN2k+aDjaU9Rr--
