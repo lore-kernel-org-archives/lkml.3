@@ -1,164 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158AbaLDN2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:28:06 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:40930 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970AbaLDN1z (ORCPT
+	id S1754190AbaLDN3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:29:46 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63159 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952AbaLDN3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:27:55 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: vladimir_zapolskiy@mentor.com
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <088d1b3a3d8d7cae66ec141fd249fd79>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54806150.6020206@rock-chips.com>
-Date: Thu, 04 Dec 2014 21:27:44 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Dec 2014 08:29:44 -0500
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
-Subject: Re: [PATCH v17 06/12] dt-bindings: add document for dw_hdmi
-References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>	 <1417687565-13206-1-git-send-email-andy.yan@rock-chips.com> <1417692637.3744.5.camel@pengutronix.de>
-In-Reply-To: <1417692637.3744.5.camel@pengutronix.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <548013B0.4080108@ti.com>
+References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
+	<547EF8CC.9030502@ti.com>
+	<CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>
+	<548007CA.7010900@ti.com>
+	<20141204074641.GB4311@sudip-PC>
+	<548013B0.4080108@ti.com>
+Date: Thu, 4 Dec 2014 14:29:42 +0100
+X-Google-Sender-Auth: w23sdLn3ReTxZrzGyM6zteQIkOk
+Message-ID: <CAMuHMdX6rbaPYFpSR7nGf6Di0G=cGL9yFZLLpjUDi7TLyu1wmw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp:
-On 2014年12月04日 19:30, Philipp Zabel wrote:
-> Hi Andy,
->
-> Am Donnerstag, den 04.12.2014, 18:06 +0800 schrieb Andy Yan:
->> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+On Thu, Dec 4, 2014 at 8:56 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 04/12/14 09:46, Sudip Mukherjee wrote:
+>> On Thu, Dec 04, 2014 at 09:05:46AM +0200, Tomi Valkeinen wrote:
+>>> On 03/12/14 20:29, Prabhakar Lad wrote:
+>>>> On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>>>>> On 27/11/14 00:07, Lad, Prabhakar wrote:
+>>>>>> this patch fixes following build warning:
+>>>>>> drivers/video/fbdev/vt8623fb.c: In function ‘vt8623_pci_probe’:
+>>>>>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+>>>>>>   par->state.vgabase = (void __iomem *) vga_res.start;
+>>>>>>                        ^
+>>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>>> ---
+>>>>>>  drivers/video/fbdev/vt8623fb.c | 2 +-
+>>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>>>
+>>>>>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt8623fb.c
+>>>>>> index 5c7cbc6..ea7f056 100644
+>>>>>> --- a/drivers/video/fbdev/vt8623fb.c
+>>>>>> +++ b/drivers/video/fbdev/vt8623fb.c
+>>>>>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>>>>>>
+>>>>>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
+>>>>>>
+>>>>>> -     par->state.vgabase = (void __iomem *) vga_res.start;
+>>>>>> +     par->state.vgabase = (void __iomem *) (unsigned long) vga_res.start;
+>>>>>
+>>>>> This does look quite ugly... Where does the warning come from in the
+>>>>> first place. Isn't vga_res.start (resource_size_t) the size of a pointer?
+>>>>>
+>>>> Yes looks ugly, I am not sure what you meant from 'where does this warning
+>>>> come from' its in the commit message.
+>>>
+>>> I meant why is there a warning at all. With a quick glance,
+>>> vga_res.start is the size of a pointer. So the sizes of the integer and
+>>> the pointer should be the same. But the warning still says "of different
+>>> size".
 >>
->> ---
->>
->> Changes in v17: None
->> Changes in v16:
->> - describe ddc-i2c-bus as optional
->> - add common clocks bindings
->>
->> Changes in v15: None
->> Changes in v14: None
->> Changes in v13: None
->> Changes in v12: None
->> Changes in v11: None
->> Changes in v10: None
->> Changes in v9: None
->> Changes in v8:
->> - correct some spelling mistake
->> - modify ddc-i2c-bus and interrupt description
->>
->> Changes in v7: None
->> Changes in v6: None
->> Changes in v5: None
->> Changes in v4: None
->> Changes in v3: None
->>
->>   .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 45 ++++++++++++++++++++++
->>   1 file changed, 45 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->>
->> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->> new file mode 100644
->> index 0000000..fb14730
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
->> @@ -0,0 +1,45 @@
->> +DesignWare HDMI bridge bindings
->> +
->> +Required properities:
->> +- compatible: platform specific such as:
->> +   * "snps,dw-hdmi-tx"
->> +   * "fsl,imx6q-hdmi"
->> +   * "fsl,imx6dl-hdmi"
->> +   * "rockchip,rk3288-dw-hdmi"
->> +- reg: Physical base address and length of the controller's registers.
->> +- interrupts: The HDMI interrupt number
->> +- clocks, clock-names : must have the phandles to the HDMI iahb and isrf clocks,
->> +  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
->> +  the clock-names should be "iahb", "isfr"
-> This is missing the port bindings, I think it should mention the port
-> property here and refer to the soc specific binding document.
+>> poking my nose into your discussion.
+>> I tried to see the warning, and I re-compiled like make W=1 M=drivers/video/fbdev/ (before that make clean M=drivers/video/fbdev was done)
+>> I can see warning with many other files, but drivers/video/fbdev/vt8623fb.o was quiet and there was no warning.
+>> I tested with next=20141203.
+>> did i miss something in checking the warning ?
 >
->   - port@...: SoC specific port nodes with endpoint definitions as defined
->     in Documentation/devicetree/bindings/media/video-interfaces.txt,
->     please refer to the SoC specific binding document:
->      * Documentation/devicetree/bindings/drm/imx/hdmi.txt
->      * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
->
-> This also makes be wonder, shouldn't dw_hdmi-rockchip be under drm/?
-    ok, I will add the port bindings
-    because rockchip drm binds are under video, so I put the 
-dw_hdmi-rockchip
-    under video to keep consistency.
->
->> +Optional properties
->> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
->> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
->> +- clkocks, clock-names: phandle to the HDMI cec clock, name should be "cec"
-> s/clkocks/clocks/, and I'd uppercase the HDMI CEC clock for consistency.
-     thanks for point it, I will correct it in next version
->
->> +
->> +Example:
->> +	hdmi: hdmi@0120000 {
->> +		compatible = "fsl,imx6q-hdmi";
-> Could you change this example to:
-> 		compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx"
->
->> +		reg = <0x00120000 0x9000>;
->> +		interrupts = <0 115 0x04>;
->> +		gpr = <&gpr>;
->> +		clocks = <&clks 123>, <&clks 124>;
->> +		clock-names = "iahb", "isfr";
->> +		ddc-i2c-bus = <&i2c2>;
->> +
->> +		port@0 {
->> +			reg = <0>;
->> +
->> +			hdmi_mux_0: endpoint {
->> +				remote-endpoint = <&ipu1_di0_hdmi>;
->> +			};
->> +		};
->> +
->> +		port@1 {
->> +			reg = <1>;
->> +
->> +			hdmi_mux_1: endpoint {
->> +				remote-endpoint = <&ipu1_di1_hdmi>;
->> +			};
->> +		};
->> +	};
->
->
->
->
+> I don't see the warning either when compiling for arm or x86_64. On what
+> architecture do you see the warning?
 
+On 32-bit systems with PHYS_ADDR_T_64BIT=y, resource_size_t is u64,
+while pointers are still 32-bit.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
