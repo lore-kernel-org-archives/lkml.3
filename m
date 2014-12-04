@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaLDOPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:15:52 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096AbaLDOPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:15:50 -0500
-Message-ID: <54806C8C.6020504@nod.at>
-Date: Thu, 04 Dec 2014 15:15:40 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754561AbaLDOQC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:16:02 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:53702 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366AbaLDOP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:15:59 -0500
 MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: iio: dht11 Updates
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F0CFE.4010107@nod.at> <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at> <547F8925.3050308@nod.at> <E1XwWiq-00013A-NC@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1XwWiq-00013A-NC@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141202161227.GH30256@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com> <20141202161227.GH30256@lukather>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 4 Dec 2014 23:15:38 +0900
+Message-ID: <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harald,
-
-Am 04.12.2014 um 14:45 schrieb Harald Geyer:
-> Richard Weinberger writes:
->> Am 03.12.2014 um 15:08 schrieb Harald Geyer:
->>>> I was asking because I see the "dht11: WARNING: decoding ambiguous"
->>>> very often. (with and without my patches)
->>>
->>> Yes, your patches shouldn't have any effect on this.
->>> "very often" in the sense of "not always"? This would be very surprising,
->>> because this would involve variable length clock ticks, i think.
->>>
->>> I guess we should include timeres into the warning message.
->>>
->>> Also I guess now is the time to think about a smarter decoder.
-> 
-> I was wrong.
->  
->> Another question. Your driver defines:
->> #define DHT11_DATA_BIT_LOW      27000
->> #define DHT11_DATA_BIT_HIGH     70000
+On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
+>> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> > On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+>> > <maxime.ripard@free-electrons.com> wrote:
 >>
->> If I read the manual [0] correctly these constants are T_h0/1.
->> Why did you use 27000 for T_h0?
+>> >> The only thing I'd like to have would be that the request here would
+>> >> be non-exclusive, so that a later driver would still be allowed later
+>> >> on to request that GPIO later on and manage it itself (ideally using
+>> >> the usual gpiod_request function).
+>> >
+>> > Actually we have a plan (and I have some code too) to allow multiple
+>> > consumers per GPIO. Although like Benoit I wonder why you would want
+>> > to hog a GPIO and then request it properly later. Also, that probably
+>> > means we should abandon the hog since it actively drives the line and
+>> > would interfere with the late requested. How to do that correctly is
+>> > not really clear to me.
 >>
->> [0] http://meteobox.tk/files/AM2302.pdf
-> 
-> It's a compromise between data sheets for various slightly different
-> sensors. In particular the data sheet for AM2303 specifies
-> 26-28us, so it's just in the middle. But note that DHT11_DATA_BIT_LOW
-> isn't used in the actual decoding. Just for printing the warning.
-> 
-> But looking at your data sheet I see the we currently use a start
-> command that's outside the specified range... I will have to look
-> up where the current 80ms value was suggested.
-> 
->> Setting it to 26000 (the typical value as stated by the manual),
->> I get the "decoding ambiguous" warning *always*. Setting it higher
->> makes the message go away.
-> 
-> If you misstyped "always" and "go away" then this is to be expected.
+>> I don't get the usecase. A hogged GPIO is per definition hogged.
+>> This sounds more like "initial settings" or something, which is another
+>> usecase altogether.
+>
+> We do have one board where we have a pin (let's say GPIO14 of the bank
+> A) that enables a regulator that will provide VCC the bank B.
+>
+> Now, both banks are handled by the same driver, but in order to have a
+> working output on the bank B, we do need to set GPIO14 as soon as
+> we're probed.
+>
+> Just relying on the usual deferred probing introduces a circular
+> dependency between the gpio-regulator that needs to grab its GPIO from
+> a driver not there yet, and the gpio driver that needs to enable its
+> gpio-regulator.
 
-Nope, a lower value is bad and a higher makes the warning go away.
+I don't get it. According to what you said, the following order should
+go through IIUC:
 
-> Also I think I now understand what is going on:
-> Your board most probably has a clock much faster then 32kH and when
-> we calculate timeres, we don't actually calculate the timestamp
-> resolution but the length of the shortest pulse. The decoding
-> algorithm is robust in such cases, but it generates wrong warnings.
-> 
-> The proper fix is to drop messages about clock speed from the
-> decoding functin. If we want to keep such diagnostics, we should
-> have them at probe() time. - This will also resolve our disagreement
-> about proper formatting of log messages about clock issues. :)
+1) bank A is probed, gpio 14 is available
+2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
+3) bank B is probed, grabs its regulator and turn it on, probes.
 
-Sounds sane.
+What am I missing?
 
-> Optionally we can drop the calculation of timeres and just use a
-> constant threshold.
+>
+> GPIO hogging needs to be the ideal solution for that, since we can
+> just enforce the GPIO14 value as the driver is probed, which provides
+> the guarantee that any driver using the bank B will actually drive the
+> GPIO it might use.
 
-Same here.
+At this point I start wondering if such initial setup should not be
+the job of the bootloader? GPIO hogging ought to be simple and
+definitive, adding the possibility to have it just as an initial value
+would considerably complexify it. E.g. when is the gpio chip driver
+supposed to release the hogged descriptor in such a case?
 
-Thanks,
-//richard
+Note that if the multiple GPIO consumer feature we are planning goes
+through, you should be able to use both hogging *and* a regulator on
+the same GPIO and achieve what you want. The expectation of multiple
+consumers is that the board designers know what they are doing, and
+this case would certainly fit (chip hogs the line and doesn't touch
+the value after that, letting the regulator control it without any
+conflict afterwards), although it would of course be better to solve
+the issue through regular probing...
