@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426AbaLDKZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:25:24 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:6522 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754400AbaLDKZS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:25:18 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Grant Likely'" <grant.likely@linaro.org>,
-        "'robh+dt@kernel.org'" <robh+dt@kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
-        "'pawel.moll@arm.com'" <pawel.moll@arm.com>,
-        "'mark.rutland@arm.com'" <mark.rutland@arm.com>,
-        "'ijc+devicetree@hellion.org.uk'" <ijc+devicetree@hellion.org.uk>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Dec 2014 18:23:19 +0800
-Subject: RE: [RFC] fdt:free the fdt reserved memory
-Thread-Topic: [RFC] fdt:free the fdt reserved memory
-Thread-Index: AdAPqdbUkiwRHWRAQXOaLyTHmEFB1wAAaXtw
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313E9@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
-	<20140924144520.697A8C40738@trevor.secretlab.ca>
-	<35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
- <20141204100453.49DF2C40992@trevor.secretlab.ca>
-In-Reply-To: <20141204100453.49DF2C40992@trevor.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754462AbaLDK0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:26:12 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44550 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024AbaLDK0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 05:26:09 -0500
+Date: Thu, 4 Dec 2014 10:26:12 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH v2 1/2] arm: perf: Prevent wraparound during overflow
+Message-ID: <20141204102612.GB14519@arm.com>
+References: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-> Sent: Thursday, December 04, 2014 6:05 PM
-> To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
-> 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
-> 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
-> Subject: RE: [RFC] fdt:free the fdt reserved memory
+On Fri, Nov 21, 2014 at 04:24:26PM +0000, Daniel Thompson wrote:
+> If the overflow threshold for a counter is set above or near the
+> 0xffffffff boundary then the kernel may lose track of the overflow
+> causing only events that occur *after* the overflow to be recorded.
+> Specifically the problem occurs when the value of the performance counter
+> overtakes its original programmed value due to wrap around.
 > 
-> On Thu, 4 Dec 2014 14:56:11 +0800
-> , "Wang, Yalin" <Yalin.Wang@sonymobile.com>
->  wrote:
-> > > -----Original Message-----
-> > > From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant
-> > > Likely
-> > > Sent: Wednesday, September 24, 2014 10:45 PM
-> > > To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
-> > > 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
-> > > 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
-> > > Subject: Re: [RFC] fdt:free the fdt reserved memory
-> > >
-> > > On Thu, 18 Sep 2014 17:25:12 +0800, "Wang, Yalin"
-> > > <Yalin.Wang@sonymobile.com> wrote:
-> > > > This patch make some change to unflatten_dt_node(), make sure the
-> > > > device_node don't reference to fdt raw blob memory, so that we can
-> > > > free the raw blob reserved memory after initcalls.
-> > > >
-> > > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> > >
-> > > Do you have any measurements showing a change in available memory
-> > > before and after the patch?
-> > >
-> > Does anyone have a look at this patch?
-> > It can save 12K on my platform,
-> > My dtb is 164K
+> Typical solutions to this problem are either to avoid programming in
+> values likely to be overtaken or to treat the overflow bit as the 33rd
+> bit of the counter.
 > 
-> Yes, I've been thinking about this one. Unfortunately there is a conflict
-> with another feature that I'm merging for v3.19. See commit 08d53aa5,
-> "of/fdt: export fdt blob as /sys/firmware/fdt" in linux-next.
-> That commit requires the original blob to be kept around.
+> Its somewhat fiddly to refactor the code to correctly handle the 33rd bit
+> during irqsave sections (context switches for example) so instead we take
+> the simpler approach of avoiding values likely to be overtaken.
 > 
-> In order to free the original dtb, the /sys/firmware/fdt feature will need
-> to be changed to let it be configured out. All things considered, that is
-> probably the right thing to do, but doing so increases the memory load for
-> the platforms that want /sys/firmware/fdt. I'd like to see what the impact
-> would be on the code to switch to this method when /sys/firmware/fdt is
-> configured out.
+> We set the limit to half of max_period because this matches the limit
+> imposed in __hw_perf_event_init(). This causes a doubling of the interrupt
+> rate for large threshold values, however even with a very fast counter
+> ticking at 4GHz the interrupt rate would only be ~1Hz.
 > 
-Oh, I understand,
-If enable /sys/firmware/fdt feature patch, doesn't need 
-My patch is fine,
-So need 2 method to unflatten dtb blob.
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
+You'll probably need to refresh this at -rc1 as there are a bunch of
+changes queued for this file already. Then you can stick it into rmk's
+patch system.
+
+Cheers,
+
+Will
+
+> ---
+>  arch/arm/kernel/perf_event.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 266cba46db3e..ab68833c1e31 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
+>  		ret = 1;
+>  	}
+>  
+> -	if (left > (s64)armpmu->max_period)
+> -		left = armpmu->max_period;
+> +	/*
+> +	 * Limit the maximum period to prevent the counter value
+> +	 * from overtaking the one we are about to program. In
+> +	 * effect we are reducing max_period to account for
+> +	 * interrupt latency (and we are being very conservative).
+> +	 */
+> +	if (left > (armpmu->max_period >> 1))
+> +		left = armpmu->max_period >> 1;
+>  
+>  	local64_set(&hwc->prev_count, (u64)-left);
+>  
+> -- 
+> 1.9.3
+> 
+> 
