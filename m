@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaLDPx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:53:26 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:34176 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335AbaLDPxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:53:25 -0500
-From: j.glisse@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] scripts/package: binrpm-pkg do not build source tar file v4
-Date: Thu,  4 Dec 2014 10:53:13 -0500
-Message-Id: <1417708393-14318-1-git-send-email-j.glisse@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754655AbaLDPyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:54:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753667AbaLDPyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:54:15 -0500
+From: Seth Jennings <sjenning@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCHv5 1/3] kernel: add TAINT_LIVEPATCH
+Date: Thu,  4 Dec 2014 09:53:29 -0600
+Message-Id: <1417708411-23655-2-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1417708411-23655-1-git-send-email-sjenning@redhat.com>
+References: <1417708411-23655-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jérôme Glisse <jglisse@redhat.com>
+This adds a new taint flag to indicate when the kernel or a kernel
+module has been live patched.  This will provide a clean indication in
+bug reports that live patching was used.
 
-When doing make binrpm-pkg we only want to build the binary and header
-package as the documentation of binrpm-pkg target claims. Hence this
-patch avoid building the source and devel package. This makes binrpm-pkg
-target lot faster and way more usefull.
+Additionally, if the crash occurs in a live patched function, the live
+patch module will appear beside the patched function in the backtrace.
 
-Changed since v3 :
-  - Avoid creating /usr/src/kernels directory.
-  - Avoid useless pre clean step of source and devel package.
-
-Changed since v2 :
-  - Avoid symlinks in /usr/src/kernel.
-  - Update subject line and changelog.
-
-Changed since v1 :
-  - Avoid building the devel package too.
-
-Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
 ---
- scripts/package/mkspec | 4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/oops-tracing.txt  | 2 ++
+ Documentation/sysctl/kernel.txt | 1 +
+ include/linux/kernel.h          | 1 +
+ kernel/panic.c                  | 2 ++
+ 4 files changed, 6 insertions(+)
 
-diff --git a/scripts/package/mkspec b/scripts/package/mkspec
-index 1395760..d9ab94b 100755
---- a/scripts/package/mkspec
-+++ b/scripts/package/mkspec
-@@ -117,6 +117,7 @@ echo 'mv vmlinux.bz2 $RPM_BUILD_ROOT'"/boot/vmlinux-$KERNELRELEASE.bz2"
- echo 'mv vmlinux.orig vmlinux'
- echo "%endif"
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index beefb9f..f3ac05c 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -270,6 +270,8 @@ characters, each representing a particular tainted value.
  
-+if ! $PREBUILT; then
- echo 'rm -f $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE/{build,source}"
- echo "mkdir -p "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNELRELEASE"
- echo "EXCLUDES=\"$RCS_TAR_IGNORE --exclude .tmp_versions --exclude=*vmlinux* --exclude=*.o --exclude=*.ko --exclude=*.cmd --exclude=Documentation --exclude=firmware --exclude .config.old --exclude .missing-syscalls.d\""
-@@ -124,6 +125,7 @@ echo "tar "'$EXCLUDES'" -cf- . | (cd "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNEL
- echo 'cd $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE"
- echo "ln -sf /usr/src/kernels/$KERNELRELEASE build"
- echo "ln -sf /usr/src/kernels/$KERNELRELEASE source"
-+fi
+  15: 'L' if a soft lockup has previously occurred on the system.
  
- echo ""
- echo "%clean"
-@@ -151,9 +153,11 @@ echo "%files headers"
- echo '%defattr (-, root, root)'
- echo "/usr/include"
- echo ""
-+if ! $PREBUILT; then
- echo "%files devel"
- echo '%defattr (-, root, root)'
- echo "/usr/src/kernels/$KERNELRELEASE"
- echo "/lib/modules/$KERNELRELEASE/build"
- echo "/lib/modules/$KERNELRELEASE/source"
- echo ""
-+fi
++ 16: 'K' if the kernel has been live patched.
++
+ The primary reason for the 'Tainted: ' string is to tell kernel
+ debuggers if this is a clean kernel or if anything unusual has
+ occurred.  Tainting is permanent: even if an offending module is
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 75511ef..83ab256 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -843,6 +843,7 @@ can be ORed together:
+ 8192 - An unsigned module has been loaded in a kernel supporting module
+        signature.
+ 16384 - A soft lockup has previously occurred on the system.
++32768 - The kernel has been live patched.
+ 
+ ==============================================================
+ 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 5449d2f..d03e3de 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -471,6 +471,7 @@ extern enum system_states {
+ #define TAINT_OOT_MODULE		12
+ #define TAINT_UNSIGNED_MODULE		13
+ #define TAINT_SOFTLOCKUP		14
++#define TAINT_LIVEPATCH			15
+ 
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4d8d6f9..8136ad7 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -226,6 +226,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+ 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
++	{ TAINT_LIVEPATCH,		'K', ' ' },
+ };
+ 
+ /**
+@@ -246,6 +247,7 @@ static const struct tnt tnts[] = {
+  *  'O' - Out-of-tree module has been loaded.
+  *  'E' - Unsigned module has been loaded.
+  *  'L' - A soft lockup has previously occurred.
++ *  'K' - Kernel has been live patched.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
 -- 
-1.8.3.1
+1.9.3
 
