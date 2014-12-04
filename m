@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaLDLYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:24:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50392 "EHLO mx2.suse.de"
+	id S1753727AbaLDLYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:24:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50479 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110AbaLDLYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:24:44 -0500
+	id S1753854AbaLDLYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:24:51 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
@@ -20,9 +20,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/10] mm: Convert p[te|md]_mknonnuma and remaining page table manipulations
-Date: Thu,  4 Dec 2014 11:24:28 +0000
-Message-Id: <1417692273-27170-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/10] mm: numa: Avoid unnecessary TLB flushes when setting NUMA hinting entries
+Date: Thu,  4 Dec 2014 11:24:33 +0000
+Message-Id: <1417692273-27170-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1417692273-27170-1-git-send-email-mgorman@suse.de>
 References: <1417692273-27170-1-git-send-email-mgorman@suse.de>
@@ -30,176 +30,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PROT_NONE, the traditional page table manipulation functions are
-sufficient.
+If a PTE or PMD is already marked NUMA when scanning to mark entries
+for NUMA hinting then it is not necessary to update the entry and
+incur a TLB flush penalty. Avoid the avoidhead where possible.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- include/linux/huge_mm.h |  3 +--
- mm/huge_memory.c        | 33 +++++++--------------------------
- mm/memory.c             | 10 ++++++----
- mm/mempolicy.c          |  2 +-
- mm/migrate.c            |  2 +-
- mm/mprotect.c           |  2 +-
- mm/pgtable-generic.c    |  2 --
- 7 files changed, 17 insertions(+), 37 deletions(-)
+ mm/huge_memory.c | 14 ++++++++------
+ mm/mprotect.c    |  4 ++++
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ad9051b..554bbe3 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -31,8 +31,7 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
- 			 unsigned long new_addr, unsigned long old_end,
- 			 pmd_t *old_pmd, pmd_t *new_pmd);
- extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, pgprot_t newprot,
--			int prot_numa);
-+			unsigned long addr, pgprot_t newprot);
- 
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f81fddf..5618e22 100644
+index 8546654..f2bf521 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1366,9 +1366,8 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	goto out;
- clear_pmdnuma:
- 	BUG_ON(!PageLocked(page));
--	pmd = pmd_mknonnuma(pmd);
-+	pmd = pmd_modify(pmd, vma->vm_page_prot);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
--	VM_BUG_ON(pmd_protnone(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
- 	unlock_page(page);
- out_unlock:
-@@ -1503,7 +1502,7 @@ out:
-  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-  */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, pgprot_t newprot, int prot_numa)
-+		unsigned long addr, pgprot_t newprot)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
-@@ -1512,29 +1511,11 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		pmd_t entry;
- 		ret = 1;
--		if (!prot_numa) {
--			entry = pmdp_get_and_clear_notify(mm, addr, pmd);
--			if (pmd_protnone(entry))
--				entry = pmd_mknonnuma(entry);
--			entry = pmd_modify(entry, newprot);
--			ret = HPAGE_PMD_NR;
--			set_pmd_at(mm, addr, pmd, entry);
--			BUG_ON(pmd_write(entry));
--		} else {
--			struct page *page = pmd_page(*pmd);
--
--			/*
--			 * Do not trap faults against the zero page. The
--			 * read-only data is likely to be read-cached on the
--			 * local CPU cache and it is less useful to know about
--			 * local vs remote hits on the zero page.
--			 */
--			if (!is_huge_zero_page(page) &&
--			    !pmd_protnone(*pmd)) {
--				pmdp_set_numa(mm, addr, pmd);
--				ret = HPAGE_PMD_NR;
--			}
--		}
-+		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
-+		entry = pmd_modify(entry, newprot);
-+		ret = HPAGE_PMD_NR;
-+		set_pmd_at(mm, addr, pmd, entry);
-+		BUG_ON(pmd_write(entry));
+@@ -1524,12 +1524,14 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 			return 0;
+ 		}
+ 
+-		ret = 1;
+-		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
+-		entry = pmd_modify(entry, newprot);
+-		ret = HPAGE_PMD_NR;
+-		set_pmd_at(mm, addr, pmd, entry);
+-		BUG_ON(pmd_write(entry));
++		if (!prot_numa || !pmd_protnone(*pmd)) {
++			ret = 1;
++			entry = pmdp_get_and_clear_notify(mm, addr, pmd);
++			entry = pmd_modify(entry, newprot);
++			ret = HPAGE_PMD_NR;
++			set_pmd_at(mm, addr, pmd, entry);
++			BUG_ON(pmd_write(entry));
++		}
  		spin_unlock(ptl);
  	}
  
-diff --git a/mm/memory.c b/mm/memory.c
-index eaa46f1..2100e0f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3114,9 +3114,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	* validation through pte_unmap_same(). It's of NUMA type but
- 	* the pfn may be screwed if the read is non atomic.
- 	*
--	* ptep_modify_prot_start is not called as this is clearing
--	* the _PAGE_NUMA bit and it is not really expected that there
--	* would be concurrent hardware modifications to the PTE.
-+	* We can safely just do a "set_pte_at()", because the old
-+	* page table entry is not accessible, so there would be no
-+	* concurrent hardware modifications to the PTE.
- 	*/
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
-@@ -3125,7 +3125,9 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out;
- 	}
- 
--	pte = pte_mknonnuma(pte);
-+	/* Make it present again */
-+	pte = pte_modify(pte, vma->vm_page_prot);
-+	pte = pte_mkyoung(pte);
- 	set_pte_at(mm, addr, ptep, pte);
- 	update_mmu_cache(vma, addr, ptep);
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index f22c559..530a0da 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -627,7 +627,7 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
- {
- 	int nr_updated;
- 
--	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
-+	nr_updated = change_protection(vma, addr, end, PAGE_NONE, 0, 1);
- 	if (nr_updated)
- 		count_vm_numa_events(NUMA_PTE_UPDATES, nr_updated);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 11d86b4..51ce492 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1891,7 +1891,7 @@ out_fail:
- out_dropref:
- 	ptl = pmd_lock(mm, pmd);
- 	if (pmd_same(*pmd, entry)) {
--		entry = pmd_mknonnuma(entry);
-+		entry = pmd_modify(entry, vma->vm_page_prot);
- 		set_pmd_at(mm, mmun_start, pmd, entry);
- 		update_mmu_cache_pmd(vma, address, &entry);
- 	}
 diff --git a/mm/mprotect.c b/mm/mprotect.c
-index e93ddac..dc65c0f 100644
+index 33dfafb..109e7aa 100644
 --- a/mm/mprotect.c
 +++ b/mm/mprotect.c
-@@ -141,7 +141,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else {
- 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
--						newprot, prot_numa);
-+						newprot);
+@@ -86,6 +86,10 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 				page = vm_normal_page(vma, addr, oldpte);
+ 				if (!page || PageKsm(page))
+ 					continue;
++
++				/* Avoid TLB flush if possible */
++				if (pte_protnone(oldpte))
++					continue;
+ 			}
  
- 				if (nr_ptes) {
- 					if (nr_ptes == HPAGE_PMD_NR) {
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index 4b8ad76..c25f94b 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -193,8 +193,6 @@ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 		     pmd_t *pmdp)
- {
- 	pmd_t entry = *pmdp;
--	if (pmd_protnone(entry))
--		entry = pmd_mknonnuma(entry);
- 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(entry));
- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
- }
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
 -- 
 2.1.2
 
