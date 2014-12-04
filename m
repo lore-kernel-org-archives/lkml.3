@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaLDKpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:45:14 -0500
-Received: from mx5-phx2.redhat.com ([209.132.183.37]:33198 "EHLO
-	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaLDKpN (ORCPT
+	id S932166AbaLDKpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:45:36 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:6059 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302AbaLDKpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:45:13 -0500
-Date: Thu, 4 Dec 2014 05:45:01 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
-        jiri@resnulli.us, sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <1038347703.8637611.1417689901567.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20141203094224.GB9487@redhat.com>
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-2-git-send-email-pagupta@redhat.com> <20141203094224.GB9487@redhat.com>
-Subject: Re: [PATCH v3 net-next 1/2] net: allow large number of rx queues
+	Thu, 4 Dec 2014 05:45:33 -0500
+Message-ID: <54803B4A.10201@imgtec.com>
+Date: Thu, 4 Dec 2014 10:45:30 +0000
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Paul Burton <paul.burton@imgtec.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
+        <geert+renesas@glider.be>, <peterz@infradead.org>,
+        <paul.gortmaker@windriver.com>, <macro@linux-mips.org>,
+        <chenhc@lemote.com>, <cl@linux.com>, <mingo@kernel.org>,
+        <richard@nod.at>, <zajec5@gmail.com>, <james.hogan@imgtec.com>,
+        <keescook@chromium.org>, <tj@kernel.org>, <alex@alex-smith.me.uk>,
+        <pbonzini@redhat.com>, <blogic@openwrt.org>,
+        <linux-kernel@vger.kernel.org>, <markos.chandras@imgtec.com>,
+        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
+        <lars.persson@axis.com>, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
+References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com> <547FA8D2.2030703@caviumnetworks.com> <547FB032.2000000@imgtec.com> <547FB8FB.7040803@caviumnetworks.com> <547FBF63.70802@imgtec.com> <547FC530.1060109@caviumnetworks.com> <20141204101229.GC5482@NP-P-BURTON>
+In-Reply-To: <20141204101229.GC5482@NP-P-BURTON>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: allow large number of rx queues
-Thread-Index: gpK0eqyMU6Yh1dMAgOlqtRoQkuOFBA==
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+By all means I don't really understand the whole issues surrounding this 
+but this approach looks better to me as well. It seems more generic and 
+future proof and at least I can understand the patch series.
 
-> 
-> On Wed, Dec 03, 2014 at 12:49:36PM +0530, Pankaj Gupta wrote:
-> > netif_alloc_rx_queues() uses kcalloc() to allocate memory
-> > for "struct netdev_queue *_rx" array.
-> > If we are doing large rx queue allocation kcalloc() might
-> > fail, so this patch does a fallback to vzalloc().
-> > Similar implementation is done for tx queue allocation in
-> > netif_alloc_netdev_queues().
-> > 
-> > We avoid failure of high order memory allocation
-> > with the help of vzalloc(), this allows us to do large
-> > rx and tx queue allocation which in turn helps us to
-> > increase the number of queues in tun.
-> > 
-> > As vmalloc() adds overhead on a critical network path,
-> > __GFP_REPEAT flag is used with kzalloc() to do this fallback
-> > only when really needed.
-> > 
-> > Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> > Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
-> > Reviewed-by: David Gibson <dgibson@redhat.com>
-> > ---
-> >  net/core/dev.c | 19 +++++++++++++------
-> >  1 file changed, 13 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/net/core/dev.c b/net/core/dev.c
-> > index e916ba8..abe9560 100644
-> > --- a/net/core/dev.c
-> > +++ b/net/core/dev.c
-> > @@ -6059,17 +6059,25 @@ void netif_stacked_transfer_operstate(const struct
-> > net_device *rootdev,
-> >  EXPORT_SYMBOL(netif_stacked_transfer_operstate);
-> >  
-> >  #ifdef CONFIG_SYSFS
-> > +static void netif_free_rx_queues(struct net_device *dev)
-> > +{
-> > +	kvfree(dev->_rx);
-> > +}
-> > +
-> 
-> I would just open-code this.
+But did I say I don't understand all of this? Would be nice to hear from 
+more people :)
 
-I will make the changes with the next version.
-Thanks,
-Pankaj
-> 
-> >  static int netif_alloc_rx_queues(struct net_device *dev)
-> >  {
-> >  	unsigned int i, count = dev->num_rx_queues;
-> >  	struct netdev_rx_queue *rx;
-> > +	size_t sz = count * sizeof(*rx);
-> >  
-> >  	BUG_ON(count < 1);
-> >  
-> > -	rx = kcalloc(count, sizeof(struct netdev_rx_queue), GFP_KERNEL);
-> > -	if (!rx)
-> > -		return -ENOMEM;
-> > -
-> > +	rx = kzalloc(sz, GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
-> > +	if (!rx) {
-> > +		rx = vzalloc(sz);
-> > +		if (!rx)
-> > +			return -ENOMEM;
-> > +	}
-> >  	dev->_rx = rx;
-> >  
-> >  	for (i = 0; i < count; i++)
-> > @@ -6698,9 +6706,8 @@ void free_netdev(struct net_device *dev)
-> >  
-> >  	netif_free_tx_queues(dev);
-> >  #ifdef CONFIG_SYSFS
-> > -	kfree(dev->_rx);
-> > +	netif_free_rx_queues(dev);
-> >  #endif
-> > -
-> 
-> and I think it's nicer with the empty line.
-> 
-> >  	kfree(rcu_dereference_protected(dev->ingress_queue, 1));
-> >  
-> >  	/* Flush device addresses */
-> > --
-> > 1.8.3.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Qais
+
+On 12/04/2014 10:16 AM, Paul Burton wrote:
+> Nice work David, I like this approach. It's so much simpler than hacking
+> atop the current dsemul code. I also imagine this could be reused for
+> emulation of instructions removed in r6, when running pre-r6 userland
+> binaries on r6 systems.
+>
+> On Wed, Dec 03, 2014 at 06:21:36PM -0800, David Daney wrote:
+>> On 12/03/2014 05:56 PM, Leonid Yegoshin wrote:
+>>> I see only two technical issues here which differs:
+>>>
+>>> 1.  You believe your GCC experts, I trust HW Architecture manual and
+>>> don't trust toolchain people too much ==> we see a different value in
+>>> fact that your approach has a subset of emulated ISAs (and it can't, of
+>>> course, emulate anything because some custom opcodes are reused).
+>> Yes, I agree that the emulation approach cannot handle some of the cases you
+>> mention (most would have to be the result of hand coded assembly
+>> specifically trying to break it).
+> I'm not sure I'd agree even with that - ASEs & vendor-specific
+> instructions could easily be added if necessary.
+>
+> On Thu, Dec 04, 2014 at 05:56:51PM -0800, Leonid Yehoshin wrote:
+>>> 2.  My approach is ready to use and is used right now, you still have a
+>>> framework which passed an initial boot.
+> Subjective.
+>
+> Thanks,
+>      Paul
+
