@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaLDBoE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:44:04 -0500
-Received: from smtprelay0200.hostedemail.com ([216.40.44.200]:52397 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751877AbaLDBoB (ORCPT
+	id S1752293AbaLDBuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:50:07 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:54485 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaLDBuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:44:01 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4250:4321:5007:6117:6119:6261:7901:7903:8531:9040:10004:10400:10471:10848:11232:11658:11914:12517:12519:12740:13069:13095:13255:13311:13357:21060:21080:21088,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: head62_3fe98f01f3260
-X-Filterd-Recvd-Size: 1820
-Message-ID: <1417657437.2902.27.camel@perches.com>
-Subject: Re: [PATCH] Staging: bcm: Fix lines exceeding 80 character limit in
- CmHost.h This is a patch to CmHost.h that fixes Exceeds 80 Character limits
- warning found by checkpatch.pl Signed-off-by: Arun Ayyer <arun267@gmail.com>
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: arun vijayshankar <arun267@gmail.com>, linux-kernel@vger.kernel.org,
+	Wed, 3 Dec 2014 20:50:05 -0500
+From: Kevin Pietsch <kevinpietsch@gmail.com>
+To: Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org
-Date: Wed, 03 Dec 2014 17:43:57 -0800
-In-Reply-To: <20141204013925.GA32401@kroah.com>
-References: <1417655529-8640-1-git-send-email-arun267@gmail.com>
-	 <20141204012517.GA31563@kroah.com>
-	 <CAJ8d=beEFz-wKaN4bodZFN9BCrUsZKy=F0e-R7fUVXsf+04g4A@mail.gmail.com>
-	 <20141204013925.GA32401@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, Kevin Pietsch <kevinpietsch@gmail.com>
+Subject: [PATCH 1/1] Staging: ft1000: fix some coding style issues
+Date: Wed,  3 Dec 2014 20:49:33 -0500
+Message-Id: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 17:39 -0800, Greg KH wrote:
-> On Wed, Dec 03, 2014 at 05:31:59PM -0800, arun vijayshankar wrote:
-> > Hi Greg,
-> 
-> If you turn off HTML email, your message will not get rejected by the
-> mailing lists :)
-> 
-> > I completely agree! I thought of keeping the patch summary as the subject, but
-> > I wasn't sure and ending up entering nothing. Git then used this by default.
-> 
-> You forgot a blank line after your first line in the git commit message,
-> which caused it to get all merged together.
-> 
-> Try fixing that up and resending please.
+Removed braces from two single line if-else statements
 
-No need.  This directory has been deleted.
+Signed-off-by: Kevin Pietsch <kevinpietsch@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-Please work against -next (or Greg's staging tree)
-
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 44575c7..fadd47d 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -176,11 +176,10 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+ 	/* check if we want to read upper or lower 32-bit word */
+-	if (Index) {
++	if (Index)
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
+-	} else {
++	else
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
+-	}
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ 
+ 	return data;
+@@ -208,11 +207,10 @@ static inline void ft1000_write_dpram_mag_16(struct net_device *dev,
+ 	/* Provide mutual exclusive access while reading ASIC registers. */
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+-	if (Index) {
++	if (Index)
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAL, value);
+-	} else {
++	else
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAH, value);
+-	}
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ }
+ 
+-- 
+2.1.0
 
