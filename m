@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaLDOb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:31:29 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:24280 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338AbaLDObP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:31:15 -0500
-X-IronPort-AV: E=Sophos;i="5.07,515,1413244800"; 
-   d="scan'208";a="199738434"
-Message-ID: <5480702F.2060004@citrix.com>
-Date: Thu, 4 Dec 2014 14:31:11 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1754578AbaLDOdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:33:49 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:40449 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034AbaLDOds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 09:33:48 -0500
 MIME-Version: 1.0
-To: Sander Eikelenboom <linux@eikelenboom.it>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com> <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it> <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it>
-In-Reply-To: <308719815.20141204150909@eikelenboom.it>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+In-Reply-To: <54806D6C.7060009@roeck-us.net>
+References: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com>
+	<1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
+	<54806D6C.7060009@roeck-us.net>
+Date: Thu, 4 Dec 2014 15:33:47 +0100
+Message-ID: <CAMpxmJUVQyU_NC=7wByinboM-n9kvQoDALZ3-ZiDmRatKQp8Rg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] hwmon: tmp401: add support for TI TMP435
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/14 14:09, Sander Eikelenboom wrote:
-> 
-> Thursday, December 4, 2014, 2:43:06 PM, you wrote:
-> 
->> On 04/12/14 13:10, Sander Eikelenboom wrote:
->>>
->>> Thursday, December 4, 2014, 1:24:47 PM, you wrote:
->>>
->>>> On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
->>>>>
->>>>> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
->>>>>>
->>>>>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
->>>>>>>
->>>>>>> Instead of doing all this complex dance, we depend on the toolstack 
->>>>>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
->>>>>>> which 'xl' uses when a device is detached or attached from/to a guest. 
->>>>>>> It bypasses the need to worry about the PCI lock. 
->>>>>>
->>>>>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
->>>>>> proposed). 
->>>>>>
->>>>>
->>>>> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
->>>
->>>> It is only needed if the core won't provide one.
->>>
->>>> +static int pcistub_try_create_reset_file(struct pci_dev *pci)
->>>> +{
->>>> +       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
->>>> +       struct device *dev = &pci->dev;
->>>> +       int ret;
->>>> +
->>>> +       /* Already have a per-function reset? */
->>>> +       if (pci_probe_reset_function(pci) == 0)
->>>> +               return 0;
->>>> +
->>>> +       ret = device_create_file(dev, &dev_attr_reset);
->>>> +       if (ret < 0)
->>>> +               return ret;
->>> +       dev_data->>created_reset_file = true;
->>>> +       return 0;
->>>> +}
->>>
->>> Wouldn't the "core-reset-sysfs-file" be still wired to the end up calling 
->>> "pci.c:__pci_dev_reset" ?
->>>
->>> The problem with that function is that from my testing it seems that the 
->>> first option "pci_dev_specific_reset" always seems to return succes, so all the
->>> other options are skipped (flr, pm, slot, bus). However the device it self is 
->>> not properly reset enough (perhaps the pci_dev_specific_reset is good enough for 
->>> none virtualization purposes and it's probably the least intrusive. For 
->>> virtualization however it would be nice to be sure it resets properly, or have a 
->>> way to force a specific reset routine.)
-> 
->> Then you need work with the maintainer for those specific devices or
->> drivers to fix their specific reset function.
-> 
->> I'm not adding stuff to pciback to workaround broken quirks.
-> 
-> OK that's a pretty clear message there, so if one wants to use pci and vga
-> passthrough one should better use KVM and vfio-pci.
+2014-12-04 15:19 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> The datasheet claims otherwise (0x31, specifically).
+> Is this based on real chip information ?
+> Can you send me the output from i2cdump for the chip ?
+>
 
-Have you (or anyone else) ever raised the problem with the broken reset
-quirk for certain devices with the relevant maintainer?
+This is what I'm reading:
 
-> vfio-pci has:
-> - logic to do the try-slot-bus-reset logic
+# i2cdump -y 1 0x4c
+No size specified (using byte-data access)
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: 1a 1b 00 00 05 55 00 55 00 00 05 55 00 55 00 0d    ??..?U.U..?U.U.?
+10: 70 00 00 00 00 90 00 00 00 55 1c XX XX XX XX 00    p....?...U?XXXX.
+20: 55 0a 70 XX XX 0f XX XX XX XX XX XX XX XX XX XX    U?pXX?XXXXXXXXXX
+30: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+40: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+50: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+60: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+70: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+80: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+90: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+a0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+b0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+c0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+d0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+e0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+f0: XX XX XX XX XX XX XX XX XX XX XX XX 00 35 55 35    XXXXXXXXXXXX.5U5
 
-Just because vfio-pci fixed it incorrectly doesn't mean pciback has to
-as well.
+# i2cget -y 1 0x4c 0xff b
+0x35
 
-It makes no sense for both pciback and vfio-pci to workaround problems
-with pci_function_reset() in different ways -- it should be fixed in the
-core PCI code so both can benefit and make use of the same code.
-
-David
-
+Bart
