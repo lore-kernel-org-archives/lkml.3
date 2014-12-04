@@ -1,70 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275AbaLDFtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 00:49:07 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:54058 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaLDFtF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 00:49:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141204031553.GA20193@ret.masoncoding.com>
-References: <20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141203190045.GB32005@redhat.com>
-	<CA+55aFxoBqHtSi3VyoTDrB_v8KA94HyLcn5Sfkma-r9mZ-xzjA@mail.gmail.com>
-	<CANcMJZA1NXUMLEveA2k5njFnWc1pCSwSeAOQH7VQCOR-QtiR8g@mail.gmail.com>
-	<alpine.DEB.2.11.1412032137210.16275@nanos>
-	<20141204031553.GA20193@ret.masoncoding.com>
-Date: Wed, 3 Dec 2014 21:49:04 -0800
-X-Google-Sender-Auth: So2Rv9-0atJVAVz5v7tfexxytnU
-Message-ID: <CA+55aFz-QhQOQuFPKbxBDAOjJ+fR02m3-unA4iD9kLwhWS38cA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Chris Mason <clm@fb.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752144AbaLDFtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 00:49:47 -0500
+Received: from mga03.intel.com ([134.134.136.65]:3751 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaLDFtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 00:49:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,513,1413270000"; 
+   d="scan'208";a="618370446"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v9 0/8] TPM 2.0 support
+Date: Thu,  4 Dec 2014 07:49:19 +0200
+Message-Id: <1417672167-3489-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 7:15 PM, Chris Mason <clm@fb.com> wrote:
->
-> One guess is that trinity is generating a huge number of tlb
-> invalidations over sparse and horrible ranges.  Perhaps the old code was
-> falling back to full tlb flushes before Dave Hansen's string of fixes?
+This patch set enables TPM2 protocol and provides drivers for FIFO and
+CRB interfaces. This patch set does not export any sysfs attributes for
+TPM 2.0 because existing sysfs attributes have three non-trivial issues:
 
-Hmm. I agree that we've had some of the backtraces look like TLB
-flushing might be involved. Not all, though. And I'm not seeing where
-a loop over up to 33 pages should matter over doing a full TLB flush.
+- They are associated with the platform device instead of character
+  device.
+- They are are not trivial key-value pairs but contain text that is
+  not easily parsed by a computer.
+- Raciness as described in
+  http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
 
-What *might* matter is if we somehow get that number wrong, and the loops like
+This is too big effort to be included into this patch set and requires
+more discussion.
 
-                        addr = f->flush_start;
-                        while (addr < f->flush_end) {
-                                __flush_tlb_single(addr);
-                                addr += PAGE_SIZE;
-                        }
+v2:
+- Improved struct tpm_chip life-cycle by taking advantage of devres
+  API.
+- Refined sysfs attributes as simple key-values thereby not repeating
+  mistakes in TPM1 sysfs attributes.
+- Documented functions in tpm-chip.c and tpm2-cmd.c.
+- Documented sysfs attributes.
 
-ends up looping a *lot* due to some bug, and then the IPI itself would
-take so long that the watchdog could trigger.
+v3:
+- Lots of fixes in calling order in device drivers (thanks to Jason
+  Gunthorpe for pointing these out!).
+- Attach sysfs attributes to the misc device because it represents
+  TPM device to the user space.
 
-But I do not see how that could actually happen. As far as I can tell,
-either the number of pages is limited to less than 33, or we have that
- TLB_FLUSH_ALL case.
+v4:
+- Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
+  best approach for them.
+- Fixed all the style issues found with checkpatch.pl.
 
-Do  you see something I don't?
+v5:
+- missing EXPORT_SYMBOL_GPL()
+- own class for TPM devices used for TPM 2.0 devices and onwards.
 
-                  Linus
+v6:
+- Non-racy initialization for sysfs attributes using struct device's
+  groups field.
+- The class 'tpm' is used now for all TPM devices. For the first device
+  node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
+  backwards compatability.
+
+v7:
+- Release device number and free struct tpm_chip memory inside
+  tpm_dev_release callback.
+- Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
+
+v8:
+- Cleaned up unneeded cast from tpm_transmit_cmd().
+- Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
+- Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
+- tpm_crb: in crb_recv, check that count can hold the TPM header at
+  minimum.
+- tpm_crb: add enumerations for bit flags in start and cancel fields
+  of the control area.
+- tpm_crb: use ioremap() for command and response buffer because
+  they might be anywhere.
+- tpm_crb: use IO access functions for reading ioremapped buffers
+  because using direct pointers is not portable.
+- tpm_crb: only apply ACPI start if start method reported by the
+  TPM2 ACPI table allows it.
+- In tpm2_pcr_read() just calculate index and bit and get rid of
+  hacky loop.
+- Do not add sysfs attributes for TPM 2.0 devices.
+
+v9:
+- Fixed compilation issues in v8 (sorry for not using the correct
+  tree).
+- Just do "return tpm_chip_register();" instead of copying return
+  value to a variable.
+- Removed unused tpm2_startup().
+- In the CRB driver ACPI TPM2 table could contain platform specific
+  and therefore inequality test does not work. Changed check whether
+  buffer size is less than mandatory fields in the ACPI TPM2 table.
+
+Jarkko Sakkinen (7):
+  tpm: merge duplicate transmit_cmd() functions
+  tpm: two-phase chip management functions
+  tpm: fix raciness of PPI interface lookup
+  tpm: rename chip->dev to chip->pdev
+  tpm: device class for tpm
+  tpm: TPM 2.0 baseline support
+  tpm: TPM 2.0 CRB Interface
+
+Will Arthur (1):
+  tpm: TPM 2.0 FIFO Interface
+
+ drivers/char/tpm/Kconfig            |   9 +
+ drivers/char/tpm/Makefile           |   3 +-
+ drivers/char/tpm/tpm-chip.c         | 251 +++++++++++++++++
+ drivers/char/tpm/tpm-dev.c          |  42 +--
+ drivers/char/tpm/tpm-interface.c    | 261 ++++++-----------
+ drivers/char/tpm/tpm-sysfs.c        |  29 +-
+ drivers/char/tpm/tpm.h              | 107 +++++--
+ drivers/char/tpm/tpm2-cmd.c         | 542 ++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_atmel.c        |  25 +-
+ drivers/char/tpm/tpm_crb.c          | 356 +++++++++++++++++++++++
+ drivers/char/tpm/tpm_i2c_atmel.c    |  55 ++--
+ drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
+ drivers/char/tpm/tpm_i2c_nuvoton.c  |  71 ++---
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  28 +-
+ drivers/char/tpm/tpm_ibmvtpm.c      |  17 +-
+ drivers/char/tpm/tpm_infineon.c     |  51 ++--
+ drivers/char/tpm/tpm_nsc.c          |  34 ++-
+ drivers/char/tpm/tpm_ppi.c          | 137 +++++----
+ drivers/char/tpm/tpm_tis.c          | 192 ++++++++-----
+ drivers/char/tpm/xen-tpmfront.c     |  14 +-
+ 20 files changed, 1689 insertions(+), 578 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm-chip.c
+ create mode 100644 drivers/char/tpm/tpm2-cmd.c
+ create mode 100644 drivers/char/tpm/tpm_crb.c
+
+-- 
+2.1.0
+
