@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaLDJTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:19:31 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:35761 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752639AbaLDJT1 (ORCPT
+	id S1753235AbaLDJT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:19:59 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:64362 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaLDJT4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:19:27 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, shawn.guo@linaro.org,
-        linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 1/4] video: fsl-dcfb: Add dcfb framebuffer driver for LS1021A platform
-Date: Thu, 04 Dec 2014 10:21:32 +0100
-Message-ID: <3011460.gQ3SqeWtnL@ws-stein>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1417598162-40433-2-git-send-email-Li.Xiubo@freescale.com>
-References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com> <1417598162-40433-2-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 4 Dec 2014 04:19:56 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
+References: <20141203121753.5936.36253.sendpatchset@w520>
+	<20141203121813.5936.17433.sendpatchset@w520>
+	<20141204072153.GE25806@verge.net.au>
+	<CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
+Date: Thu, 4 Dec 2014 10:19:54 +0100
+X-Google-Sender-Auth: opt7NcFdcfR_mi4QNZwMVNJpFa8
+Message-ID: <CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
+Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM workaround
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 17:15:59, Xiubo Li wrote:
-> +	tnp = of_find_node_by_name(dnp, "display-timings");
-> +	if (!tnp) {
-> +		dev_err(dcfb->dev, "failed to find \"display-timings\" node\n");
-> +		return -ENODEV;
-> +		goto put_dnp;
-> +	}
-> +
-> +	for (i = 0; i < of_get_child_count(tnp); i++) {
-> +		struct videomode vm;
-> +
-> +		ret = videomode_from_timings(timings, &vm, i);
-> +		if (ret < 0)
-> +			goto put_tnp;
-> +
-> +		ret = fb_videomode_from_videomode(&vm, &fb_vm);
-> +		if (ret < 0)
-> +			goto put_tnp;
-> +
-> +		fb_add_videomode(&fb_vm, &info->modelist);
-> +	}
-> +
-> +	ret = of_get_fb_videomode(dnp, &fb_vm, OF_USE_NATIVE_MODE);
-> +	if (ret)
-> +		goto put_dnp;
+Hi Magnus,
 
-Souldn't this be put_tnp like in the loop above? 
+On Thu, Dec 4, 2014 at 8:33 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>>> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
+>>> +++ work/arch/arm/boot/dts/r8a7779.dtsi       2014-12-03 20:27:49.000000000 +0900
+>>> @@ -139,7 +139,7 @@
+>>>               interrupt-controller;
+>>>       };
+>>>
+>>> -     irqpin0: irqpin@fe780010 {
+>>> +     irqpin0: irqpin@fe780000 {
+>>>               compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
+>>>               #interrupt-cells = <2>;
+>>>               status = "disabled";
+>>> @@ -148,7 +148,8 @@
+>>>                       <0xfe780010 4>,
+>>>                       <0xfe780024 4>,
+>>>                       <0xfe780044 4>,
+>>> -                     <0xfe780064 4>;
+>>> +                     <0xfe780064 4>,
+>>> +                     <0xfe780000 4>;
+>>
+>> Is there any order implied by the above list?
+>> Naïvely I would expect it to be sorted numerically.
+>
+> Yes, the driver assumes the register banks to be passed in a certain
+> order. In the case of r8a7779 we add one more register bank at the end
+> for IRLM setup. Register detail (base address, access size, order and
+> bitfield width) varies with SoC version. So the IRLM register will be
+> at different addresses depending on SoC, but the driver wants it at
+> the end of the list.
 
-> +	fb_videomode_to_var(&info->var, &fb_vm);
-> +	ret = fsl_dcfb_check_var(&info->var, info);
+As these are all individual registers, and there are that many, I think
+it's worth adding a reg-names property to identify the registers.
+Of course the driver still has to support the old anonymous order
+for backwards compatibility.
 
-But picking the native mode per default looks nice to be! :)
+Gr{oetje,eeting}s,
 
-Best regards,
-Alexander
--- 
-Dipl.-Inf. Alexander Stein
+                        Geert
 
-SYS TEC electronic GmbH
-Am Windrad 2
-08468 Heinsdorfergrund
-Tel.: 03765 38600-1156
-Fax: 03765 38600-4100
-Email: alexander.stein@systec-electronic.com
-Website: www.systec-electronic.com
- 
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Chemnitz, HRB 28082
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
