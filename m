@@ -1,290 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaLDPjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:39:16 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:53758 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681AbaLDPjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:39:14 -0500
-From: Sifan Naeem <sifan.naeem@imgtec.com>
-To: <james.hogan@imgtec.com>, <mchehab@osg.samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <james.hartley@imgtec.com>, <ezequiel.garcia@imgtec.com>,
-        Sifan Naeem <sifan.naeem@imgtec.com>
-Subject: [PATCH 1/5] rc: img-ir: add scancode requests to a struct
-Date: Thu, 4 Dec 2014 15:38:38 +0000
-Message-ID: <1417707523-7730-2-git-send-email-sifan.naeem@imgtec.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
-References: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.167.63]
+	id S1754659AbaLDPjV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:39:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44392 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681AbaLDPjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:39:19 -0500
+Message-ID: <1417707546.15750.100.camel@bling.home>
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset
+ slot or bus with 'do_flr' SysFS attribute
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: David Vrabel <david.vrabel@citrix.com>, bhelgaas@google.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-pci@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Date: Thu, 04 Dec 2014 08:39:06 -0700
+In-Reply-To: <1578910783.20141204155025@eikelenboom.it>
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
+	 <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it>
+	 <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it>
+	 <5480702F.2060004@citrix.com> <1578910783.20141204155025@eikelenboom.it>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The information being requested of hardware decode callbacks through
-the img-ir-hw scancode API is mounting up, so combine it into a struct
-which can be passed in with a single pointer rather than multiple
-pointer arguments. This allows it to be extended more easily without
-touching all the hardware decode callbacks.
+On Thu, 2014-12-04 at 15:50 +0100, Sander Eikelenboom wrote:
+> Thursday, December 4, 2014, 3:31:11 PM, you wrote:
+> 
+> > On 04/12/14 14:09, Sander Eikelenboom wrote:
+> >> 
+> >> Thursday, December 4, 2014, 2:43:06 PM, you wrote:
+> >> 
+> >>> On 04/12/14 13:10, Sander Eikelenboom wrote:
+> >>>>
+> >>>> Thursday, December 4, 2014, 1:24:47 PM, you wrote:
+> >>>>
+> >>>>> On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
+> >>>>>>
+> >>>>>> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> >>>>>>>
+> >>>>>>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
+> >>>>>>>>
+> >>>>>>>> Instead of doing all this complex dance, we depend on the toolstack 
+> >>>>>>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
+> >>>>>>>> which 'xl' uses when a device is detached or attached from/to a guest. 
+> >>>>>>>> It bypasses the need to worry about the PCI lock. 
+> >>>>>>>
+> >>>>>>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
+> >>>>>>> proposed). 
+> >>>>>>>
+> >>>>>>
+> >>>>>> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
+> >>>>
+> >>>>> It is only needed if the core won't provide one.
+> >>>>
+> >>>>> +static int pcistub_try_create_reset_file(struct pci_dev *pci)
+> >>>>> +{
+> >>>>> +       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
+> >>>>> +       struct device *dev = &pci->dev;
+> >>>>> +       int ret;
+> >>>>> +
+> >>>>> +       /* Already have a per-function reset? */
+> >>>>> +       if (pci_probe_reset_function(pci) == 0)
+> >>>>> +               return 0;
+> >>>>> +
+> >>>>> +       ret = device_create_file(dev, &dev_attr_reset);
+> >>>>> +       if (ret < 0)
+> >>>>> +               return ret;
+> >>>> +       dev_data->>created_reset_file = true;
+> >>>>> +       return 0;
+> >>>>> +}
+> >>>>
+> >>>> Wouldn't the "core-reset-sysfs-file" be still wired to the end up calling 
+> >>>> "pci.c:__pci_dev_reset" ?
+> >>>>
+> >>>> The problem with that function is that from my testing it seems that the 
+> >>>> first option "pci_dev_specific_reset" always seems to return succes, so all the
+> >>>> other options are skipped (flr, pm, slot, bus). However the device it self is 
+> >>>> not properly reset enough (perhaps the pci_dev_specific_reset is good enough for 
+> >>>> none virtualization purposes and it's probably the least intrusive. For 
+> >>>> virtualization however it would be nice to be sure it resets properly, or have a 
+> >>>> way to force a specific reset routine.)
+> >> 
+> >>> Then you need work with the maintainer for those specific devices or
+> >>> drivers to fix their specific reset function.
+> >> 
+> >>> I'm not adding stuff to pciback to workaround broken quirks.
+> >> 
+> >> OK that's a pretty clear message there, so if one wants to use pci and vga
+> >> passthrough one should better use KVM and vfio-pci.
+> 
+> > Have you (or anyone else) ever raised the problem with the broken reset
+> > quirk for certain devices with the relevant maintainer?
+> 
+> >> vfio-pci has:
+> >> - logic to do the try-slot-bus-reset logic
+> 
+> > Just because vfio-pci fixed it incorrectly doesn't mean pciback has to
+> > as well.
+> 
+> Depends on what you call an "incorrect fix" .. it fixes a quirk .. 
+> you can say that's incorrect, but then you would have to remove 50% of
+> the kernel and Xen code as well.
+> 
+> (i do in general agree it's better to strive for a generic solution though,
+> that's exactly why i brought up that that function doesn't seem to work perfect
+> for virtualization purposes) 
+> 
+> > It makes no sense for both pciback and vfio-pci to workaround problems
+> > with pci_function_reset() in different ways -- it should be fixed in the
+> > core PCI code so both can benefit and make use of the same code.
+> 
+> Well perhaps Bjorn knows why the order of resets and skipping the rest as
+> implemented in "pci.c:__pci_dev_reset" was implemented in that way ?
+> 
+> Especially what is the expectation about pci_dev_specific_reset doing a proper 
+> reset for say a vga-card:
+> - i know it doesn't work on a radeon card (doesn't blank screen, on next guest 
+>   boot reports it's already posted, powermanagement doesn't work).
+> - while with a slot/bus reset, that all just works fine, screen blanks 
+>   immediately and everything else also works.
+> 
+> Added Alex as well since he added this workaround for KVM/vfio-pci, perhaps he knows why
+> he introduced the workaround in vfio-pci instead of trying to fix it in core pci 
+> code ?
 
-Signed-off-by: Sifan Naeem <sifan.naeem@imgtec.com>
----
- drivers/media/rc/img-ir/img-ir-hw.c    |   16 +++++++++-------
- drivers/media/rc/img-ir/img-ir-hw.h    |   16 ++++++++++++++--
- drivers/media/rc/img-ir/img-ir-jvc.c   |    8 ++++----
- drivers/media/rc/img-ir/img-ir-nec.c   |   24 ++++++++++++------------
- drivers/media/rc/img-ir/img-ir-sanyo.c |    8 ++++----
- drivers/media/rc/img-ir/img-ir-sharp.c |    8 ++++----
- drivers/media/rc/img-ir/img-ir-sony.c  |   12 ++++++------
- 7 files changed, 53 insertions(+), 39 deletions(-)
+I don't know what workaround you're talking about.  As devices are
+released from the user, vfio-pci attempts to reset them.  If
+pci_reset_function() returns success we mark the device clean, otherwise
+it gets marked dirty.  Each time a device is released, if there are
+dirty devices we test whether we can try a bus/slot reset to clean them.
+In the case of assigning a GPU this typically means that the GPU or
+audio function come through first, there's no reset mechanism so it gets
+marked dirty, the next device comes through and we manage to try a bus
+reset.  vfio-pci does not have any device specific resets, all
+functionality is added to the PCI-core, thank-you-very-much.  I even
+posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
+bad so that pci_reset_function() won't claim that worked.  All VGA
+access quirks are done in QEMU, the kernel doesn't have any business in
+remapping config space over MMIO regions or trapping other config space
+backdoors.
 
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.c b/drivers/media/rc/img-ir/img-ir-hw.c
-index ec49f94..61850a6 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.c
-+++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -789,20 +789,22 @@ static void img_ir_handle_data(struct img_ir_priv *priv, u32 len, u64 raw)
- 	struct img_ir_priv_hw *hw = &priv->hw;
- 	const struct img_ir_decoder *dec = hw->decoder;
- 	int ret = IMG_IR_SCANCODE;
--	u32 scancode;
--	enum rc_type protocol = RC_TYPE_UNKNOWN;
-+	struct img_ir_scancode_req request;
-+
-+	request.protocol = RC_TYPE_UNKNOWN;
- 
- 	if (dec->scancode)
--		ret = dec->scancode(len, raw, &protocol, &scancode, hw->enabled_protocols);
-+		ret = dec->scancode(len, raw, hw->enabled_protocols, &request);
- 	else if (len >= 32)
--		scancode = (u32)raw;
-+		request.scancode = (u32)raw;
- 	else if (len < 32)
--		scancode = (u32)raw & ((1 << len)-1);
-+		request.scancode = (u32)raw & ((1 << len)-1);
- 	dev_dbg(priv->dev, "data (%u bits) = %#llx\n",
- 		len, (unsigned long long)raw);
- 	if (ret == IMG_IR_SCANCODE) {
--		dev_dbg(priv->dev, "decoded scan code %#x\n", scancode);
--		rc_keydown(hw->rdev, protocol, scancode, 0);
-+		dev_dbg(priv->dev, "decoded scan code %#x\n",
-+			request.scancode);
-+		rc_keydown(hw->rdev, request.protocol, request.scancode, 0);
- 		img_ir_end_repeat(priv);
- 	} else if (ret == IMG_IR_REPEATCODE) {
- 		if (hw->mode == IMG_IR_M_REPEATING) {
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.h b/drivers/media/rc/img-ir/img-ir-hw.h
-index 8fcc16c..1fc9583 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.h
-+++ b/drivers/media/rc/img-ir/img-ir-hw.h
-@@ -133,6 +133,18 @@ struct img_ir_timing_regvals {
- #define IMG_IR_REPEATCODE	1	/* repeat the previous code */
- 
- /**
-+ * struct img_ir_scancode_req - Scancode request data.
-+ * @protocol:	Protocol code of received message (defaults to
-+ *		RC_TYPE_UNKNOWN).
-+ * @scancode:	Scan code of received message (must be written by
-+ *		handler if IMG_IR_SCANCODE is returned).
-+ */
-+struct img_ir_scancode_req {
-+	enum rc_type protocol;
-+	u32 scancode;
-+};
-+
-+/**
-  * struct img_ir_decoder - Decoder settings for an IR protocol.
-  * @type:	Protocol types bitmap.
-  * @tolerance:	Timing tolerance as a percentage (default 10%).
-@@ -162,8 +174,8 @@ struct img_ir_decoder {
- 	struct img_ir_control		control;
- 
- 	/* scancode logic */
--	int (*scancode)(int len, u64 raw, enum rc_type *protocol,
--			u32 *scancode, u64 enabled_protocols);
-+	int (*scancode)(int len, u64 raw, u64 enabled_protocols,
-+			struct img_ir_scancode_req *request);
- 	int (*filter)(const struct rc_scancode_filter *in,
- 		      struct img_ir_filter *out, u64 protocols);
- };
-diff --git a/drivers/media/rc/img-ir/img-ir-jvc.c b/drivers/media/rc/img-ir/img-ir-jvc.c
-index a60dda8..d3e2fc0 100644
---- a/drivers/media/rc/img-ir/img-ir-jvc.c
-+++ b/drivers/media/rc/img-ir/img-ir-jvc.c
-@@ -12,8 +12,8 @@
- #include "img-ir-hw.h"
- 
- /* Convert JVC data to a scancode */
--static int img_ir_jvc_scancode(int len, u64 raw, enum rc_type *protocol,
--			       u32 *scancode, u64 enabled_protocols)
-+static int img_ir_jvc_scancode(int len, u64 raw, u64 enabled_protocols,
-+			       struct img_ir_scancode_req *request)
- {
- 	unsigned int cust, data;
- 
-@@ -23,8 +23,8 @@ static int img_ir_jvc_scancode(int len, u64 raw, enum rc_type *protocol,
- 	cust = (raw >> 0) & 0xff;
- 	data = (raw >> 8) & 0xff;
- 
--	*protocol = RC_TYPE_JVC;
--	*scancode = cust << 8 | data;
-+	request->protocol = RC_TYPE_JVC;
-+	request->scancode = cust << 8 | data;
- 	return IMG_IR_SCANCODE;
- }
- 
-diff --git a/drivers/media/rc/img-ir/img-ir-nec.c b/drivers/media/rc/img-ir/img-ir-nec.c
-index 7398975..27a7ea8 100644
---- a/drivers/media/rc/img-ir/img-ir-nec.c
-+++ b/drivers/media/rc/img-ir/img-ir-nec.c
-@@ -13,8 +13,8 @@
- #include <linux/bitrev.h>
- 
- /* Convert NEC data to a scancode */
--static int img_ir_nec_scancode(int len, u64 raw, enum rc_type *protocol,
--			       u32 *scancode, u64 enabled_protocols)
-+static int img_ir_nec_scancode(int len, u64 raw, u64 enabled_protocols,
-+			       struct img_ir_scancode_req *request)
- {
- 	unsigned int addr, addr_inv, data, data_inv;
- 	/* a repeat code has no data */
-@@ -30,23 +30,23 @@ static int img_ir_nec_scancode(int len, u64 raw, enum rc_type *protocol,
- 	if ((data_inv ^ data) != 0xff) {
- 		/* 32-bit NEC (used by Apple and TiVo remotes) */
- 		/* scan encoding: as transmitted, MSBit = first received bit */
--		*scancode = bitrev8(addr)     << 24 |
--			    bitrev8(addr_inv) << 16 |
--			    bitrev8(data)     <<  8 |
--			    bitrev8(data_inv);
-+		request->scancode = bitrev8(addr)     << 24 |
-+				bitrev8(addr_inv) << 16 |
-+				bitrev8(data)     <<  8 |
-+				bitrev8(data_inv);
- 	} else if ((addr_inv ^ addr) != 0xff) {
- 		/* Extended NEC */
- 		/* scan encoding: AAaaDD */
--		*scancode = addr     << 16 |
--			    addr_inv <<  8 |
--			    data;
-+		request->scancode = addr     << 16 |
-+				addr_inv <<  8 |
-+				data;
- 	} else {
- 		/* Normal NEC */
- 		/* scan encoding: AADD */
--		*scancode = addr << 8 |
--			    data;
-+		request->scancode = addr << 8 |
-+				data;
- 	}
--	*protocol = RC_TYPE_NEC;
-+	request->protocol = RC_TYPE_NEC;
- 	return IMG_IR_SCANCODE;
- }
- 
-diff --git a/drivers/media/rc/img-ir/img-ir-sanyo.c b/drivers/media/rc/img-ir/img-ir-sanyo.c
-index 6b0653e..f394994 100644
---- a/drivers/media/rc/img-ir/img-ir-sanyo.c
-+++ b/drivers/media/rc/img-ir/img-ir-sanyo.c
-@@ -23,8 +23,8 @@
- #include "img-ir-hw.h"
- 
- /* Convert Sanyo data to a scancode */
--static int img_ir_sanyo_scancode(int len, u64 raw, enum rc_type *protocol,
--				 u32 *scancode, u64 enabled_protocols)
-+static int img_ir_sanyo_scancode(int len, u64 raw, u64 enabled_protocols,
-+				 struct img_ir_scancode_req *request)
- {
- 	unsigned int addr, addr_inv, data, data_inv;
- 	/* a repeat code has no data */
-@@ -44,8 +44,8 @@ static int img_ir_sanyo_scancode(int len, u64 raw, enum rc_type *protocol,
- 		return -EINVAL;
- 
- 	/* Normal Sanyo */
--	*protocol = RC_TYPE_SANYO;
--	*scancode = addr << 8 | data;
-+	request->protocol = RC_TYPE_SANYO;
-+	request->scancode = addr << 8 | data;
- 	return IMG_IR_SCANCODE;
- }
- 
-diff --git a/drivers/media/rc/img-ir/img-ir-sharp.c b/drivers/media/rc/img-ir/img-ir-sharp.c
-index 3300a38..fe5acc4 100644
---- a/drivers/media/rc/img-ir/img-ir-sharp.c
-+++ b/drivers/media/rc/img-ir/img-ir-sharp.c
-@@ -12,8 +12,8 @@
- #include "img-ir-hw.h"
- 
- /* Convert Sharp data to a scancode */
--static int img_ir_sharp_scancode(int len, u64 raw, enum rc_type *protocol,
--				 u32 *scancode, u64 enabled_protocols)
-+static int img_ir_sharp_scancode(int len, u64 raw, u64 enabled_protocols,
-+				 struct img_ir_scancode_req *request)
- {
- 	unsigned int addr, cmd, exp, chk;
- 
-@@ -32,8 +32,8 @@ static int img_ir_sharp_scancode(int len, u64 raw, enum rc_type *protocol,
- 		/* probably the second half of the message */
- 		return -EINVAL;
- 
--	*protocol = RC_TYPE_SHARP;
--	*scancode = addr << 8 | cmd;
-+	request->protocol = RC_TYPE_SHARP;
-+	request->scancode = addr << 8 | cmd;
- 	return IMG_IR_SCANCODE;
- }
- 
-diff --git a/drivers/media/rc/img-ir/img-ir-sony.c b/drivers/media/rc/img-ir/img-ir-sony.c
-index 3a0f17b..7f7375f 100644
---- a/drivers/media/rc/img-ir/img-ir-sony.c
-+++ b/drivers/media/rc/img-ir/img-ir-sony.c
-@@ -12,8 +12,8 @@
- #include "img-ir-hw.h"
- 
- /* Convert Sony data to a scancode */
--static int img_ir_sony_scancode(int len, u64 raw, enum rc_type *protocol,
--				u32 *scancode, u64 enabled_protocols)
-+static int img_ir_sony_scancode(int len, u64 raw, u64 enabled_protocols,
-+				struct img_ir_scancode_req *request)
- {
- 	unsigned int dev, subdev, func;
- 
-@@ -25,7 +25,7 @@ static int img_ir_sony_scancode(int len, u64 raw, enum rc_type *protocol,
- 		raw    >>= 7;
- 		dev    = raw & 0x1f;	/* next 5 bits */
- 		subdev = 0;
--		*protocol = RC_TYPE_SONY12;
-+		request->protocol = RC_TYPE_SONY12;
- 		break;
- 	case 15:
- 		if (!(enabled_protocols & RC_BIT_SONY15))
-@@ -34,7 +34,7 @@ static int img_ir_sony_scancode(int len, u64 raw, enum rc_type *protocol,
- 		raw    >>= 7;
- 		dev    = raw & 0xff;	/* next 8 bits */
- 		subdev = 0;
--		*protocol = RC_TYPE_SONY15;
-+		request->protocol = RC_TYPE_SONY15;
- 		break;
- 	case 20:
- 		if (!(enabled_protocols & RC_BIT_SONY20))
-@@ -44,12 +44,12 @@ static int img_ir_sony_scancode(int len, u64 raw, enum rc_type *protocol,
- 		dev    = raw & 0x1f;	/* next 5 bits */
- 		raw    >>= 5;
- 		subdev = raw & 0xff;	/* next 8 bits */
--		*protocol = RC_TYPE_SONY20;
-+		request->protocol = RC_TYPE_SONY20;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
--	*scancode = dev << 16 | subdev << 8 | func;
-+	request->scancode = dev << 16 | subdev << 8 | func;
- 	return IMG_IR_SCANCODE;
- }
- 
--- 
-1.7.9.5
+I have never heard of problems with the dev specific reset claiming to
+work and not doing anything, there are only a few of these, it should be
+easy to debug.
+
+I didn't read the original patch, but the title alone of this patch is
+quite confusing.  FLR is specifically a function-level-reset, so one
+would expect 'do_flr' to be function specific.  The pci-sysfs 'reset'
+attribute is already function specific.  If pci_reset_function() isn't
+doing the job and we need to use bus/slot reset, it's clearly not an
+FLR.  Thanks,
+
+Alex
 
