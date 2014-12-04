@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaLDQpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:45:07 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33785 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092AbaLDQpF (ORCPT
+	id S1754434AbaLDQp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:45:58 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40701 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaLDQp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:45:05 -0500
-Message-ID: <54808F8B.6030807@codeaurora.org>
-Date: Thu, 04 Dec 2014 18:44:59 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com, Richard Weinberger <richard@nod.at>
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
- upon WL shutdown
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-4-git-send-email-richard@nod.at> <1417102739.5858.112.camel@sauron.fi.intel.com>
-In-Reply-To: <1417102739.5858.112.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 11:45:57 -0500
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Subject: [PATCH v3 0/3] hwmon: tmp401: support for TMP435 and fix for a probe issue
+Date: Thu,  4 Dec 2014 17:45:50 +0100
+Message-Id: <1417711553-21311-1-git-send-email-bgolaszewski@baylibre.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 5:38 PM, Artem Bityutskiy wrote:
-> On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
->> ...otherwise the deferred work might run after datastructures
->> got freed and corrupt memory.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>   drivers/mtd/ubi/wl.c | 3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->> index 7f135df..cb2e571 100644
->> --- a/drivers/mtd/ubi/wl.c
->> +++ b/drivers/mtd/ubi/wl.c
->> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->>   void ubi_wl_close(struct ubi_device *ubi)
->>   {
->>   	dbg_wl("close the WL sub-system");
->> +#ifdef CONFIG_MTD_UBI_FASTMAP
->> +	flush_work(&ubi->fm_work);
->> +#endif
->
-> If you are using the work infrastructure implemented in wl.c, then
-> fastmap work should be no different to any other work. And we do flush
-> all works in 'shutdown_work()'. The fastmap work should be flushed there
-> too.
+This series adds support for the TI TMP435 chip and fixes an issue similar
+to the one we observed for ina2xx - ignoring the write errors when probing the
+device.
 
-I tend to agree with Artem. Could you please move it to shutdown_work()? 
-I'm asking because I do want to pick up all the bug fixes patches, but 
-not going to pick up the "cleaning up" patches at this point.
+v3:
+- remove the copyright notice from tmp401.c
+- preinitialize status and skip an 'if'
 
->
-> I think we discussed this already - there should be one single queue of
-> works, managed by the same set of functions, all flushed in the same
-> place, one-by-one...
->
-> Obviously, there is some misunderstanding. This looks like lack of
-> separation and misuse of layering. I am missing explanations why I am
-> wrong...
->
->
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
->
+v2:
+- changed 'static const char *names' to 'static const char * const names'
+  as checkpatch.pl still complained about this one,
+- updated Documentation and Kconfig on TMP435,
+- added missing error check in tmp401_init_client(),
+- removed the redundant "Initialization failed" string since we'll get
+  'tmp401: probe of X-00XX failed with error -121' anyway in dmesg,
 
+v1:
+https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg781930.html
 
-Thanks,
-Tanya Brokhman
+Bartosz Golaszewski (2):
+  hwmon: tmp401: add TMP435 to the list of supported chips in docs and Kconfig
+  hwmon: tmp401: bail-out from tmp401_probe() in case of write errors
+
+Patrick Titiano (1):
+  hwmon: tmp401: add support for TI TMP435
+
+ Documentation/hwmon/tmp401 |  7 +++++--
+ drivers/hwmon/Kconfig      |  2 +-
+ drivers/hwmon/tmp401.c     | 45 ++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 38 insertions(+), 16 deletions(-)
+
 -- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
-Forum, a Linux Foundation Collaborative Project
+2.1.3
+
