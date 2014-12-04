@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168AbaLDPkp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:40:45 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:4291 "EHLO
+	id S932263AbaLDPlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:41:03 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:15960 "EHLO
 	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335AbaLDPjP (ORCPT
+	with ESMTP id S1753345AbaLDPjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:39:15 -0500
+	Thu, 4 Dec 2014 10:39:14 -0500
 From: Sifan Naeem <sifan.naeem@imgtec.com>
 To: <james.hogan@imgtec.com>, <mchehab@osg.samsung.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
         <james.hartley@imgtec.com>, <ezequiel.garcia@imgtec.com>,
         Sifan Naeem <sifan.naeem@imgtec.com>
-Subject: [PATCH 4/5] rc: img-ir: add philips rc5 decoder module
-Date: Thu, 4 Dec 2014 15:38:41 +0000
-Message-ID: <1417707523-7730-5-git-send-email-sifan.naeem@imgtec.com>
+Subject: [PATCH 3/5] rc: img-ir: biphase enabled with workaround
+Date: Thu, 4 Dec 2014 15:38:40 +0000
+Message-ID: <1417707523-7730-4-git-send-email-sifan.naeem@imgtec.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
 References: <1417707523-7730-1-git-send-email-sifan.naeem@imgtec.com>
@@ -25,165 +25,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add img-ir module for decoding Philips rc5 protocol.
+Biphase decoding in the current img-ir has got a quirk, where multiple
+Interrupts are generated when an incomplete IR code is received by the
+decoder.
+
+Patch adds a work around for the quirk and enables biphase decoding.
 
 Signed-off-by: Sifan Naeem <sifan.naeem@imgtec.com>
 ---
- drivers/media/rc/img-ir/Kconfig      |    7 +++
- drivers/media/rc/img-ir/Makefile     |    1 +
- drivers/media/rc/img-ir/img-ir-hw.c  |    3 ++
- drivers/media/rc/img-ir/img-ir-hw.h  |    1 +
- drivers/media/rc/img-ir/img-ir-rc5.c |   88 ++++++++++++++++++++++++++++++++++
- 5 files changed, 100 insertions(+)
- create mode 100644 drivers/media/rc/img-ir/img-ir-rc5.c
+ drivers/media/rc/img-ir/img-ir-hw.c |   56 +++++++++++++++++++++++++++++++++--
+ drivers/media/rc/img-ir/img-ir-hw.h |    2 ++
+ 2 files changed, 55 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/rc/img-ir/Kconfig b/drivers/media/rc/img-ir/Kconfig
-index 03ba9fc..b5b114f 100644
---- a/drivers/media/rc/img-ir/Kconfig
-+++ b/drivers/media/rc/img-ir/Kconfig
-@@ -59,3 +59,10 @@ config IR_IMG_SANYO
- 	help
- 	   Say Y here to enable support for the Sanyo protocol (used by Sanyo,
- 	   Aiwa, Chinon remotes) in the ImgTec infrared decoder block.
-+
-+config IR_IMG_RC5
-+	bool "Phillips RC5 protocol support"
-+	depends on IR_IMG_HW
-+	help
-+	   Say Y here to enable support for the RC5 protocol in the ImgTec
-+	   infrared decoder block.
-diff --git a/drivers/media/rc/img-ir/Makefile b/drivers/media/rc/img-ir/Makefile
-index 92a459d..898b1b8 100644
---- a/drivers/media/rc/img-ir/Makefile
-+++ b/drivers/media/rc/img-ir/Makefile
-@@ -6,6 +6,7 @@ img-ir-$(CONFIG_IR_IMG_JVC)	+= img-ir-jvc.o
- img-ir-$(CONFIG_IR_IMG_SONY)	+= img-ir-sony.o
- img-ir-$(CONFIG_IR_IMG_SHARP)	+= img-ir-sharp.o
- img-ir-$(CONFIG_IR_IMG_SANYO)	+= img-ir-sanyo.o
-+img-ir-$(CONFIG_IR_IMG_RC5)	+= img-ir-rc5.o
- img-ir-objs			:= $(img-ir-y)
- 
- obj-$(CONFIG_IR_IMG)		+= img-ir.o
 diff --git a/drivers/media/rc/img-ir/img-ir-hw.c b/drivers/media/rc/img-ir/img-ir-hw.c
-index a977467..322cdf8 100644
+index 4a1407b..a977467 100644
 --- a/drivers/media/rc/img-ir/img-ir-hw.c
 +++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -42,6 +42,9 @@ static struct img_ir_decoder *img_ir_decoders[] = {
- #ifdef CONFIG_IR_IMG_SANYO
- 	&img_ir_sanyo,
- #endif
-+#ifdef CONFIG_IR_IMG_RC5
-+	&img_ir_rc5,
-+#endif
- 	NULL
- };
+@@ -52,6 +52,11 @@ static struct img_ir_decoder *img_ir_decoders[] = {
  
+ #define IMG_IR_QUIRK_CODE_BROKEN	0x1	/* Decode is broken */
+ #define IMG_IR_QUIRK_CODE_LEN_INCR	0x2	/* Bit length needs increment */
++/*
++ * The decoder generates rapid interrupts without actually having
++ * received any new data after an incomplete IR code is decoded.
++ */
++#define IMG_IR_QUIRK_CODE_IRQ		0x4
+ 
+ /* functions for preprocessing timings, ensuring max is set */
+ 
+@@ -547,6 +552,7 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
+ 
+ 	/* stop the end timer and switch back to normal mode */
+ 	del_timer_sync(&hw->end_timer);
++	del_timer_sync(&hw->suspend_timer);
+ 	hw->mode = IMG_IR_M_NORMAL;
+ 
+ 	/* clear the wakeup scancode filter */
+@@ -843,6 +849,26 @@ static void img_ir_end_timer(unsigned long arg)
+ 	spin_unlock_irq(&priv->lock);
+ }
+ 
++/*
++ * Timer function to re-enable the current protocol after it had been
++ * cleared when invalid interrupts were generated due to a quirk in the
++ * img-ir decoder.
++ */
++static void img_ir_suspend_timer(unsigned long arg)
++{
++	struct img_ir_priv *priv = (struct img_ir_priv *)arg;
++
++	img_ir_write(priv, IMG_IR_IRQ_CLEAR,
++			IMG_IR_IRQ_ALL & ~IMG_IR_IRQ_EDGE);
++
++	/* Don't set IRQ if it has changed in a different context. */
++	if ((priv->hw.suspend_irqen & IMG_IR_IRQ_EDGE) ==
++				img_ir_read(priv, IMG_IR_IRQ_ENABLE))
++		img_ir_write(priv, IMG_IR_IRQ_ENABLE, priv->hw.suspend_irqen);
++	/* enable */
++	img_ir_write(priv, IMG_IR_CONTROL, priv->hw.reg_timings.ctrl);
++}
++
+ #ifdef CONFIG_COMMON_CLK
+ static void img_ir_change_frequency(struct img_ir_priv *priv,
+ 				    struct clk_notifier_data *change)
+@@ -908,15 +934,37 @@ void img_ir_isr_hw(struct img_ir_priv *priv, u32 irq_status)
+ 	if (!hw->decoder)
+ 		return;
+ 
++	ct = hw->decoder->control.code_type;
++
+ 	ir_status = img_ir_read(priv, IMG_IR_STATUS);
+-	if (!(ir_status & (IMG_IR_RXDVAL | IMG_IR_RXDVALD2)))
++	if (!(ir_status & (IMG_IR_RXDVAL | IMG_IR_RXDVALD2))) {
++		if (!(priv->hw.ct_quirks[ct] & IMG_IR_QUIRK_CODE_IRQ))
++			return;
++		/*
++		 * The below functionality is added as a work around to stop
++		 * multiple Interrupts generated when an incomplete IR code is
++		 * received by the decoder.
++		 * The decoder generates rapid interrupts without actually
++		 * having received any new data. After a single interrupt it's
++		 * expected to clear up, but instead multiple interrupts are
++		 * rapidly generated. only way to get out of this loop is to
++		 * reset the control register after a short delay.
++		 */
++		img_ir_write(priv, IMG_IR_CONTROL, 0);
++		hw->suspend_irqen = img_ir_read(priv, IMG_IR_IRQ_ENABLE);
++		img_ir_write(priv, IMG_IR_IRQ_ENABLE,
++			     hw->suspend_irqen & IMG_IR_IRQ_EDGE);
++
++		/* Timer activated to re-enable the protocol. */
++		mod_timer(&hw->suspend_timer,
++			  jiffies + msecs_to_jiffies(5));
+ 		return;
++	}
+ 	ir_status &= ~(IMG_IR_RXDVAL | IMG_IR_RXDVALD2);
+ 	img_ir_write(priv, IMG_IR_STATUS, ir_status);
+ 
+ 	len = (ir_status & IMG_IR_RXDLEN) >> IMG_IR_RXDLEN_SHIFT;
+ 	/* some versions report wrong length for certain code types */
+-	ct = hw->decoder->control.code_type;
+ 	if (hw->ct_quirks[ct] & IMG_IR_QUIRK_CODE_LEN_INCR)
+ 		++len;
+ 
+@@ -958,7 +1006,7 @@ static void img_ir_probe_hw_caps(struct img_ir_priv *priv)
+ 	hw->ct_quirks[IMG_IR_CODETYPE_PULSELEN]
+ 		|= IMG_IR_QUIRK_CODE_LEN_INCR;
+ 	hw->ct_quirks[IMG_IR_CODETYPE_BIPHASE]
+-		|= IMG_IR_QUIRK_CODE_BROKEN;
++		|= IMG_IR_QUIRK_CODE_IRQ;
+ 	hw->ct_quirks[IMG_IR_CODETYPE_2BITPULSEPOS]
+ 		|= IMG_IR_QUIRK_CODE_BROKEN;
+ }
+@@ -977,6 +1025,8 @@ int img_ir_probe_hw(struct img_ir_priv *priv)
+ 
+ 	/* Set up the end timer */
+ 	setup_timer(&hw->end_timer, img_ir_end_timer, (unsigned long)priv);
++	setup_timer(&hw->suspend_timer, img_ir_suspend_timer,
++				(unsigned long)priv);
+ 
+ 	/* Register a clock notifier */
+ 	if (!IS_ERR(priv->clk)) {
 diff --git a/drivers/media/rc/img-ir/img-ir-hw.h b/drivers/media/rc/img-ir/img-ir-hw.h
-index 8578aa7..f124ec5 100644
+index 5e59e8e..8578aa7 100644
 --- a/drivers/media/rc/img-ir/img-ir-hw.h
 +++ b/drivers/media/rc/img-ir/img-ir-hw.h
-@@ -187,6 +187,7 @@ extern struct img_ir_decoder img_ir_jvc;
- extern struct img_ir_decoder img_ir_sony;
- extern struct img_ir_decoder img_ir_sharp;
- extern struct img_ir_decoder img_ir_sanyo;
-+extern struct img_ir_decoder img_ir_rc5;
- 
- /**
-  * struct img_ir_reg_timings - Reg values for decoder timings at clock rate.
-diff --git a/drivers/media/rc/img-ir/img-ir-rc5.c b/drivers/media/rc/img-ir/img-ir-rc5.c
-new file mode 100644
-index 0000000..e1a0829
---- /dev/null
-+++ b/drivers/media/rc/img-ir/img-ir-rc5.c
-@@ -0,0 +1,88 @@
-+/*
-+ * ImgTec IR Decoder setup for Phillips RC-5 protocol.
-+ *
-+ * Copyright 2012-2014 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include "img-ir-hw.h"
-+
-+/* Convert RC5 data to a scancode */
-+static int img_ir_rc5_scancode(int len, u64 raw, u64 enabled_protocols,
-+				struct img_ir_scancode_req *request)
-+{
-+	unsigned int addr, cmd, tgl, start;
-+
-+	/* Quirk in the decoder shifts everything by 2 to the left. */
-+	raw   >>= 2;
-+
-+	start	=  (raw >> 13)	& 0x01;
-+	tgl	=  (raw >> 11)	& 0x01;
-+	addr	=  (raw >>  6)	& 0x1f;
-+	cmd	=   raw		& 0x3f;
-+	/*
-+	 * 12th bit is used to extend the command in extended RC5 and has
-+	 * no effect on standard RC5.
-+	 */
-+	cmd	+= ((raw >> 12) & 0x01) ? 0 : 0x40;
-+
-+	if (!start)
-+		return -EINVAL;
-+
-+	request->protocol = RC_TYPE_RC5;
-+	request->scancode = addr << 8 | cmd;
-+	request->toggle   = tgl;
-+	return IMG_IR_SCANCODE;
-+}
-+
-+/* Convert RC5 scancode to RC5 data filter */
-+static int img_ir_rc5_filter(const struct rc_scancode_filter *in,
-+				 struct img_ir_filter *out, u64 protocols)
-+{
-+	/* Not supported by the hw. */
-+	return -EINVAL;
-+}
-+
-+/*
-+ * RC-5 decoder
-+ * see http://www.sbprojects.com/knowledge/ir/rc5.php
-+ */
-+struct img_ir_decoder img_ir_rc5 = {
-+	.type      = RC_BIT_RC5,
-+	.control   = {
-+		.bitoriend2	= 1,
-+		.code_type	= IMG_IR_CODETYPE_BIPHASE,
-+		.decodend2	= 1,
-+	},
-+	/* main timings */
-+	.tolerance	= 16,
-+	.unit		= 888888, /* 1/36k*32=888.888microseconds */
-+	.timings	= {
-+		/* 10 symbol */
-+		.s10 = {
-+			.pulse	= { 1 },
-+			.space	= { 1 },
-+		},
-+
-+		/* 11 symbol */
-+		.s11 = {
-+			.pulse	= { 1 },
-+			.space	= { 1 },
-+		},
-+
-+		/* free time */
-+		.ft  = {
-+			.minlen = 14,
-+			.maxlen = 14,
-+			.ft_min = 5,
-+		},
-+	},
-+
-+	/* scancode logic */
-+	.scancode	= img_ir_rc5_scancode,
-+	.filter		= img_ir_rc5_filter,
-+};
+@@ -221,6 +221,7 @@ enum img_ir_mode {
+  * @rdev:		Remote control device
+  * @clk_nb:		Notifier block for clock notify events.
+  * @end_timer:		Timer until repeat timeout.
++ * @suspend_timer:	Timer to re-enable protocol.
+  * @decoder:		Current decoder settings.
+  * @enabled_protocols:	Currently enabled protocols.
+  * @clk_hz:		Current core clock rate in Hz.
+@@ -235,6 +236,7 @@ struct img_ir_priv_hw {
+ 	struct rc_dev			*rdev;
+ 	struct notifier_block		clk_nb;
+ 	struct timer_list		end_timer;
++	struct timer_list		suspend_timer;
+ 	const struct img_ir_decoder	*decoder;
+ 	u64				enabled_protocols;
+ 	unsigned long			clk_hz;
 -- 
 1.7.9.5
 
