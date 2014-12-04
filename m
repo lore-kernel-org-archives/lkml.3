@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaLDU2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:28:52 -0500
-Received: from mout.gmx.net ([212.227.17.21]:56765 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933256AbaLDU2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:28:50 -0500
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: Re: [PATCH v9 3/8] tpm: fix raciness of PPI interface lookup
-Date: Thu, 4 Dec 2014 21:34:15 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-4-git-send-email-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <1417672518-4530-4-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754651AbaLDUc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:32:29 -0500
+Received: from eddie.linux-mips.org ([148.251.95.138]:59122 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878AbaLDUc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:32:28 -0500
+Date: Thu, 4 Dec 2014 20:32:24 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: David Daney <ddaney@caviumnetworks.com>
+cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>, Zubair.Kakakhel@imgtec.com,
+        geert+renesas@glider.be, peterz@infradead.org,
+        paul.gortmaker@windriver.com, chenhc@lemote.com, cl@linux.com,
+        Ingo Molnar <mingo@kernel.org>, richard@nod.at, zajec5@gmail.com,
+        james.hogan@imgtec.com, keescook@chromium.org, tj@kernel.org,
+        alex@alex-smith.me.uk, pbonzini@redhat.com, blogic@openwrt.org,
+        paul.burton@imgtec.com, qais.yousef@imgtec.com,
+        linux-kernel@vger.kernel.org, markos.chandras@imgtec.com,
+        dengcheng.zhu@imgtec.com, manuel.lauss@gmail.com,
+        lars.persson@axis.com, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
+In-Reply-To: <54809C88.8060601@caviumnetworks.com>
+Message-ID: <alpine.LFD.2.11.1412042006560.22073@eddie.linux-mips.org>
+References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com> <547FA8D2.2030703@caviumnetworks.com> <alpine.LFD.2.11.1412040310100.22073@eddie.linux-mips.org>
+ <54809C88.8060601@caviumnetworks.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412042134.15776.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:zSX2g2+PlbdkGGvbgzrp7zFdV3lc13Viduh2fx1c0TC0b9Zq8Dj
- K6ljfrc9sxS7O/fBOB2x6FTxq5TOPttW2RnVFg42wbqJK2Wi7awJKlTM69XkMlFf9gLQGD/
- o6vQxK0S3WHAwpI1pF/NrqayBtuor1Hz4xYnWTI7LCt2LaPLWop8/byAyan/G9dLDaekmrY
- ZhY1Fjxww1SvnvlQVLndQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 4. Dezember 2014, 06:55:13 schrieb Jarkko Sakkinen:
-> Traversal of the ACPI device tree was not done right. PPI interface
-> should be looked up only from the ACPI device that is the platform
-> device for the TPM. This could cause problems with systems with
-> two TPM chips such as 4th gen Intel systems.
-> 
-> In addition, added the missing license and copyright platter to
-> the tpm_ppi.c.
-> 
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+On Thu, 4 Dec 2014, David Daney wrote:
 
-:(
-
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -580,8 +580,9 @@ static void tpm_tis_remove(struct tpm_chip *chip)
->  	release_locality(chip, chip->vendor.locality, 1);
->  }
+> >   GAS will happily schedule any instruction into a branch delay slot as
+> > long as the instruction is not architecturally forbidden there (e.g.
+> > ERET), there is no data dependency with the branch that would affect the
+> > result produced and the instruction is not an explicit exception trap
+> > operation (BREAK, SYSCALL, TEQ, etc.).  For some reason, unknown to me all
+> > MT ASE instructions are disallowed too.  Anything else -- free to go in!
+> >
+> >   Of course instructions can be scheduled into branch delay slots manually
+> > too, in handcoded assembly, and that has to continue working.
+> >
 > 
-> -static int tpm_tis_init(struct device *dev, resource_size_t start,
-> -			resource_size_t len, unsigned int irq)
-> +static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
-> +			resource_size_t start, resource_size_t len,
-> +			unsigned int irq)
->  {
->  	u32 vendor, intfcaps, intmask;
->  	int rc, i, irq_s, irq_e, probe;
-> @@ -597,6 +598,7 @@ static int tpm_tis_init(struct device *dev,
-> resource_size_t start, return PTR_ERR(chip);
-> 
->  	chip->vendor.priv = priv;
-> +	chip->acpi_dev_handle = acpi_dev_handle;
-> 
->  	chip->vendor.iobase = devm_ioremap(dev, start, len);
->  	if (!chip->vendor.iobase)
-> @@ -827,6 +829,7 @@ static int tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
->  {
->  	resource_size_t start, len;
->  	unsigned int irq = 0;
-> +	acpi_handle acpi_dev_handle = NULL;
-> 
->  	start = pnp_mem_start(pnp_dev, 0);
->  	len = pnp_mem_len(pnp_dev, 0);
-> @@ -839,7 +842,10 @@ static int tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
->  	if (is_itpm(pnp_dev))
->  		itpm = true;
-> 
-> -	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
-> +	if (pnp_acpi_device(pnp_dev))
-> +		acpi_dev_handle = pnp_acpi_device(pnp_dev)->handle;
-> +
-> +	return tpm_tis_init(&pnp_dev->dev, acpi_dev_handle, start, len, irq);
->  }
+> It is not difficult to also emulate the trapping instructions.  In order to
+> move forward, I will implement the trapping instructions in my emulator for
+> the next patch.
 
-With CONFIG_ACPI not set I get a build error :(
+ I'd be more concerned about getting the more exotic instructions or cases 
+right (did you get MADDU right for SmartMIPS processors and set the ACX 
+register on them?) -- how do you propose to validate and regression-test 
+the emulator in a reproducible manner?
 
-  CC [M]  drivers/char/tpm/tpm_tis.o
-drivers/char/tpm/tpm_tis.c: In function 'tpm_tis_init':
-drivers/char/tpm/tpm_tis.c:614:6: error: 'struct tpm_chip' has no member named 
-'acpi_dev_handle'
-scripts/Makefile.build:263: recipe for target 'drivers/char/tpm/tpm_tis.o' 
-failed
-make[3]: *** [drivers/char/tpm/tpm_tis.o] Error 1
-scripts/Makefile.build:404: recipe for target 'drivers/char/tpm' failed
-make[2]: *** [drivers/char/tpm] Error 2
-scripts/Makefile.build:404: recipe for target 'drivers/char' failed
-make[1]: *** [drivers/char] Error 2
-Makefile:929: recipe for target 'drivers' failed
-make: *** [drivers] Error 2
+ The combination of the rare case of an instruction being placed in an FP 
+branch delay slot and the rarity of some instructions themselves makes me 
+scared of bugs lurking there forever and occasionally biting people -- who 
+may not be aware that software emulation is involved let alone be capable 
+to track them down -- in the most frustrating way.  To say nothing of the 
+infinite amount of effort to maintain the emulator associated with adding 
+architectural and vendor-specific instructions.  See how much effort has 
+been put into QEMU and still it does not get all the MIPS instruction set 
+bits right.
 
-
-Please fix.
-Peter
+  Maciej
