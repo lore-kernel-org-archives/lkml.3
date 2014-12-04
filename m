@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053AbaLDSqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:46:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8540 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138AbaLDSqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:46:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,517,1413270000"; 
-   d="asc'?scan'208";a="648400657"
-Message-ID: <1417718785.2404.5.camel@jtkirshe-mobl>
-Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jesse@nicira.com,
-        shannon.nelson@intel.com, jesse.brandeburg@intel.com,
-        therbert@google.com, linux.nics@intel.com
-Date: Thu, 04 Dec 2014 10:46:25 -0800
-In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jC5Fd97JZ91L62YSU9P6"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1754657AbaLDStp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:49:45 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:14551 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753366AbaLDStn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:49:43 -0500
+Date: Thu, 4 Dec 2014 13:49:38 -0500
+From: Chris Mason <clm@fb.com>
+To: Davide Libenzi <davidel@xmailserver.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] eventfd: don't take the spinlock in eventfd_poll
+Message-ID: <20141204184937.GA28571@ret.masoncoding.com>
+Mail-Followup-To: Chris Mason <clm@fb.com>,
+	Davide Libenzi <davidel@xmailserver.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-04_08:2014-12-04,2014-12-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412040168
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The spinlock in eventfd_poll is trying to protect the count of events
+so it can decide if it should return POLLIN, POLLERR, or POLLOUT.  But,
+because of the way we drop the lock after calling poll_wait, and drop it
+again before returning, we have the same pile of races with the lock as
+we do with a single read of ctx->count().
 
---=-jC5Fd97JZ91L62YSU9P6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This replaces the lock with a read barrier and single read.
 
-On Thu, 2014-12-04 at 10:39 -0800, Joe Stringer wrote:
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for IPIP, GRE, UDP
-> tunnels.
->=20
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
-> v3: Drop IPIP and GRE (no driver support even though hw supports it).
->     Check for UDP outer protocol for UDP tunnels.
-> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
->     Add MAX_INNER_LENGTH (as 80).
-> ---
->  drivers/net/ethernet/intel/i40e/i40e_main.c |   26
-> ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
+eventfd_write does a single bump of ctx->count, so this should not add
+new races with adding events.  eventfd_read is similar, it will do a
+single decrement with the lock held, and so we're making the race with
+concurrent readers slightly larger.
 
-Thanks Joe, I will add your patch to my queue.
+This spinlock is the top CPU user in kernel code during one of our workloads.
+Removing it gives us a ~2% boost.
 
-Jesse Gross/Tom- If you guys are OK with the latest patch, I will move
-forward with adding this patch to my queue.
+Signed-off-by: Chris Mason <clm@fb.com>
+---
+ fs/eventfd.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---=-jC5Fd97JZ91L62YSU9P6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUgKwBAAoJEOVv75VaS+3OGSoP/3IiURx6dK43zFEZlCbTo1mz
-beoWD2k0SQylvCwxnbbDp9dmjsg3zKwiIaQhBFPfhrHMKETw4+EFPLcpYF45ugvF
-2v3sODD/UdtttJZ3Hi5F22fElQRmT5ZQHX0X+JkDMSwsOsHVG6CruGv2SpvD4kyE
-HSVJNAcokTzHqGVfSSaILM1KchafwzeWneSQfLhoIS1/c5sQsxo2o7By8C3KnT5v
-RDu+zYHIrdVarGoyx+Jz5OBn/WOv8x1ypyOmaVCu45VGrP21G4gfldw2bqSAJsBv
-9qhO2Z+T2RswRqOUI9wNyzmdM/oFT1w6LIS6QuADqubwRxkd7MUSZXw1650Iue7k
-yrCTuS4mXr3TWcq18AyWIinlopUmIzwEhnVm68fLUnPQhr55UmHZlb3xfaY28UJQ
-oMBvknLBGSfrrmmnhDLjeM9h7NmeI2XQPDar4sj9HElOKP7ri3796UbQP/TU4Xjx
-zDEmKlyttV7nwchyLziBtm9+SXNPUF4h5ltkQbcoV51O/oZYJvy4PfgtsO7F16T0
-ZY6LLqR9RxXsJDULpzFywm4R8WeiHBmjMG4HCYR1IsLmdLmEtxd22rm3tXXjlb+k
-X4ukVsO/AwJ0Qp3HeV66tACFDuCcRN95a6MZsmstJZOK2Kl4q56veRs3Sd4UOw+P
-3ANgpYr/6OPQPhvgA58x
-=OGxd
------END PGP SIGNATURE-----
-
---=-jC5Fd97JZ91L62YSU9P6--
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index d6a88e7..cdbdb96 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -119,17 +119,18 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
+ 	struct eventfd_ctx *ctx = file->private_data;
+ 	unsigned int events = 0;
+ 	unsigned long flags;
++	unsigned int count;
+ 
+ 	poll_wait(file, &ctx->wqh, wait);
++	smp_rmb();
++	count = ctx->count;
+ 
+-	spin_lock_irqsave(&ctx->wqh.lock, flags);
+-	if (ctx->count > 0)
++	if (count > 0)
+ 		events |= POLLIN;
+-	if (ctx->count == ULLONG_MAX)
++	if (count == ULLONG_MAX)
+ 		events |= POLLERR;
+-	if (ULLONG_MAX - 1 > ctx->count)
++	if (ULLONG_MAX - 1 > count)
+ 		events |= POLLOUT;
+-	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
+ 
+ 	return events;
+ }
+-- 
+1.8.1
 
