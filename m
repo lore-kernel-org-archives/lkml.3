@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbaLDQSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:18:13 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:45310 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbaLDQSL (ORCPT
+	id S932499AbaLDQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:18:27 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:59509 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335AbaLDQSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:18:11 -0500
+	Thu, 4 Dec 2014 11:18:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>
+Subject: Re: [PATCH 1/2] arm64: amd-seattle: Fix dma-ranges property
+Date: Thu, 04 Dec 2014 17:17:47 +0100
+Message-ID: <2491716.6gErSSjiAc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <D0A3B11F.AAC8%suravee.suthikulpanit@amd.com>
+References: <D0A3B11F.AAC8%suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <54801ea9.0ca5e00a.3c72.08ce@mx.google.com>
-References: <20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<20141201230813.GE25340@linux.vnet.ibm.com>
-	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
-	<20141202170407.GK25340@linux.vnet.ibm.com>
-	<547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
-	<20141202184202.GM25340@linux.vnet.ibm.com>
-	<547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
-	<20141202191143.GN25340@linux.vnet.ibm.com>
-	<547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
-	<20141202205636.GQ25340@linux.vnet.ibm.com>
-	<547e36d1.c54ae00a.2571.fffffd13@mx.google.com>
-	<CA+55aFxdZjJprk8t9NxcZmewAAQ5Gf1XQWV=5i+Vfc5uTSfWFg@mail.gmail.com>
-	<547e81ce.a1628c0a.4985.ffffb12a@mx.google.com>
-	<CA+55aFxumSXif01LigHBgZeXFTWT-7knX=a8LJZeaZZDPoHCBg@mail.gmail.com>
-	<CAEUsAPYthwHxopuiBcGg4_nnBDDsS2jrTw4pDFiov38awsFodA@mail.gmail.com>
-	<CA+55aFyBgyRS0zeE+LuHAvc=54v0de2KX=hRnr3imXwFFbftXw@mail.gmail.com>
-	<54801ea9.0ca5e00a.3c72.08ce@mx.google.com>
-Date: Thu, 4 Dec 2014 08:18:10 -0800
-X-Google-Sender-Auth: ev9hdSpTEG30aWABwjESrRfImgk
-Message-ID: <CA+55aFzJ2uOxHC8y25oTzkURPcXo9r=5cvcCzSxgOSKnET5voQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>
-Cc: Chris Rorvick <chris@rorvick.com>, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c1ee246c332d0509664ed6
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:VSfo7egLNy8Qyx3lE3y96VIov0i5+F9pYUojhWPNPPtTV92k2P9
+ 1YGLasRu/AAh42fdm+ZozlH3cF7HsewqtjdY+DZicpy0lmc1X2lg/YUpoFqfH/uYuok1pu6
+ hIo9Nt1wspETD47q8FZaWIRUMQ7TUKRSHVQxR4pezUoYDxeU/QPBtwCkvAMa05xQODNqCXw
+ 2QiEz4LgzptNHBuXXYbyw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c1ee246c332d0509664ed6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 02 December 2014 14:12:48 Suthikulpanit, Suravee wrote:
+> 
+> Would you minding adding the following detail in the commit message?
 
-On Thu, Dec 4, 2014 at 12:43 AM, D=C3=A2niel Fraga <fragabr@gmail.com> wrot=
-e:
->
->         Linus, today it's your lucky day, because I think I found the
-> real bad commit (if it isn't, then it's some very close to it). I
-> managed to narrow the bisect and here's the result:
+I was going to, but then decided not to. It's usually better if you
+just send a new patch when requested to update the changelog, so
+please do that.
+ 
+> - BEGIN -
+> AMD Seattle supports 40-bit DMA, which includes two ranges:
+>     1. GICv2m MSI register frame at 0xe0080000
+>     2. DRAM range [0x8000000000 to 0xffffffffff]
+> 
+> Since the current parsing logic handles only single range, this patch
+> specifies the range from zero to 0x10000000000 to cover the whole
+> 40-bit range.
+> 
+> However, it expects DMA allocation/mapping logic to check the specified
+> DMA range against the reported DRAM range, which starts from
+> 0x8000000000 in this case.
 
-Ok, that actually looks very reasonable, I had actually looked at it
-because of the whole "changes IPI" thing.
+Unfortunately the description is (for the most part) wrong:
 
-One more thing to try: does a revert fix it on current git?
+- It doesn't matter whatsoever what the target of the DMA is or
+  how large the DRAM can be. The only thing that matters is the
+  transformation that the bus physically performs. If the AXI bus
+  is (as you said earlier, though I'm no longer sure about it
+  after your text above) limited to 40 bit address, you should
+  use the 40-bit mask you gave above. If the 40-bit address is not
+  a result of a limitation of the AXI bus but of the memory
+  controller, you should just list a full 64-bit mask here.
+  In that case, you actually have to use '0xffffffff 0xffffffff'
+  as the length, which is one byte short as before, but we can't
+  express that otherwise.
 
-It doesn't revert entirely cleanly, but close enough - attached a
-quick rough patch that may or may not work, but looks like a good
-revert.
+- Furthermore it does not matter at all what the Linux implementation
+  does. If your hardware does a transformation that the current
+  code can't handle, we need to fix the code rather than work around
+  the implementation bug by putting incorrect data into the DT.
 
-Dave - this might be worth testing for you too, exactly because of
-that whole "it changes how we do IPI's". It was your bug report with
-TLB IPI's that made me look at that commit originally.
-
-                  Linus
-
----
-> fd2ac4f4a65a7f34b0bc6433fcca1192d7ba8b8e is the first bad commit
-> commit fd2ac4f4a65a7f34b0bc6433fcca1192d7ba8b8e
-> Author: Frederic Weisbecker <fweisbec@gmail.com>
-> Date:   Tue Mar 18 21:12:53 2014 +0100
->
->     nohz: Use nohz own full kick on 2nd task enqueue
-
---001a11c1ee246c332d0509664ed6
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i3abryuw0
-
-IGtlcm5lbC9zY2hlZC9jb3JlLmMgIHwgNSArKysrLQoga2VybmVsL3NjaGVkL3NjaGVkLmggfCAy
-ICstCiAyIGZpbGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRp
-ZmYgLS1naXQgYS9rZXJuZWwvc2NoZWQvY29yZS5jIGIva2VybmVsL3NjaGVkL2NvcmUuYwppbmRl
-eCA4OWU3MjgzMDE1YTYuLjFiNDBhZWQxMzkzMSAxMDA2NDQKLS0tIGEva2VybmVsL3NjaGVkL2Nv
-cmUuYworKysgYi9rZXJuZWwvc2NoZWQvY29yZS5jCkBAIC0xNTc3LDcgKzE1NzcsOSBAQCB2b2lk
-IHNjaGVkdWxlcl9pcGkodm9pZCkKIAkgKi8KIAlwcmVlbXB0X2ZvbGRfbmVlZF9yZXNjaGVkKCk7
-CiAKLQlpZiAobGxpc3RfZW1wdHkoJnRoaXNfcnEoKS0+d2FrZV9saXN0KSAmJiAhZ290X25vaHpf
-aWRsZV9raWNrKCkpCisJaWYgKGxsaXN0X2VtcHR5KCZ0aGlzX3JxKCktPndha2VfbGlzdCkKKwkJ
-CSYmICF0aWNrX25vaHpfZnVsbF9jcHUoc21wX3Byb2Nlc3Nvcl9pZCgpKQorCQkJJiYgIWdvdF9u
-b2h6X2lkbGVfa2ljaygpKQogCQlyZXR1cm47CiAKIAkvKgpAQCAtMTU5NCw2ICsxNTk2LDcgQEAg
-dm9pZCBzY2hlZHVsZXJfaXBpKHZvaWQpCiAJICogc29tZXdoYXQgcGVzc2ltaXplIHRoZSBzaW1w
-bGUgcmVzY2hlZCBjYXNlLgogCSAqLwogCWlycV9lbnRlcigpOworCXRpY2tfbm9oel9mdWxsX2No
-ZWNrKCk7CiAJc2NoZWRfdHR3dV9wZW5kaW5nKCk7CiAKIAkvKgpkaWZmIC0tZ2l0IGEva2VybmVs
-L3NjaGVkL3NjaGVkLmggYi9rZXJuZWwvc2NoZWQvc2NoZWQuaAppbmRleCAyZGY4ZWYwNjdjYzUu
-LmU5YTczMTQzZDMxOCAxMDA2NDQKLS0tIGEva2VybmVsL3NjaGVkL3NjaGVkLmgKKysrIGIva2Vy
-bmVsL3NjaGVkL3NjaGVkLmgKQEAgLTEyNDUsNyArMTI0NSw3IEBAIHN0YXRpYyBpbmxpbmUgdm9p
-ZCBhZGRfbnJfcnVubmluZyhzdHJ1Y3QgcnEgKnJxLCB1bnNpZ25lZCBjb3VudCkKIAkJCSAqIG5l
-dyB2YWx1ZSBvZiBycS0+bnJfcnVubmluZyBpcyB2aXNpYmxlIG9uIHJlY2VwdGlvbgogCQkJICog
-ZnJvbSB0aGUgdGFyZ2V0LgogCQkJICovCi0JCQl0aWNrX25vaHpfZnVsbF9raWNrX2NwdShycS0+
-Y3B1KTsKKwkJCXNtcF9zZW5kX3Jlc2NoZWR1bGUocnEtPmNwdSk7CiAJCX0KICNlbmRpZgogCX0K
---001a11c1ee246c332d0509664ed6--
+	Arnd
