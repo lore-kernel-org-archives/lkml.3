@@ -1,98 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaLDIaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:30:11 -0500
-Received: from mail-by2on0137.outbound.protection.outlook.com ([207.46.100.137]:5984
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753228AbaLDIaG convert rfc822-to-8bit (ORCPT
+	id S1753320AbaLDIax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:30:53 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38099 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822AbaLDIaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:30:06 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>, Arnd Bergmann <arnd@arndb.de>
-CC: "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "alexander.stein@systec-electronic.com" 
-	<alexander.stein@systec-electronic.com>
-Subject: RE: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Topic: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Index: AQHQDtn5j6GPqUxwWEaud+fx6yvb95x9n9SAgAELugCAAGolgIAAAmBw
-Date: Thu, 4 Dec 2014 08:30:01 +0000
-Message-ID: <BY2PR0301MB0613ABEA1410C04CF07C1C7C9B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
- <4810522.t9QFQYHtHI@wuerfel>
- <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <548016D9.6030006@ti.com>
-In-Reply-To: <548016D9.6030006@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-forefront-prvs: 041517DFAB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(199003)(51704005)(479174003)(377454003)(13464003)(189002)(24454002)(46102003)(76576001)(122556002)(40100003)(2656002)(93886004)(87936001)(19580395003)(19580405001)(99396003)(120916001)(97736003)(4396001)(92726001)(92566001)(21056001)(86362001)(20776003)(64706001)(66066001)(33656002)(101416001)(76176999)(54356999)(54206007)(68736005)(50986999)(54606007)(74316001)(62966003)(106356001)(99286002)(105586002)(77156002)(106116001)(31966008)(95666004)(107046002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Dec 2014 03:30:52 -0500
+Date: Thu, 4 Dec 2014 14:00:43 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Fred Chou <fred.chou.nd@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] staging: rtl8192u: fix sparse warnings
+Message-ID: <20141204083042.GA15299@sudip-PC>
+References: <1417661443-17574-1-git-send-email-fred.chou.nd@gmail.com>
+ <20141204073437.GA4311@sudip-PC>
+ <5480177F.90309@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5480177F.90309@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
-
-
-
-> -----Original Message-----
-> From: Tomi Valkeinen [mailto:tomi.valkeinen@ti.com]
-> Sent: Thursday, December 04, 2014 4:10 PM
-> To: Xiubo Li-B47053; Arnd Bergmann
-> Cc: plagnioj@jcrosoft.com; linux-fbdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; shawn.guo@linaro.org; alexander.stein@systec-
-> electronic.com
-> Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
+On Thu, Dec 04, 2014 at 04:12:47PM +0800, Fred Chou wrote:
 > 
-> Hi Xiubo,
 > 
-> On 04/12/14 03:56, Li.Xiubo@freescale.com wrote:
-> > Hi Arnd,
-> >
-> > Thanks for you advice.
-> >
-> > Because this is very emergency for customers and have delayed for monthes,
-> and the
-> > DRM/KMS will have a little long time to be supported. So I'd like to add
-> this first
-> > and will add DRM/KMS version later.
+> On 4/12/2014 3:34 PM, Sudip Mukherjee wrote:
+> > On Thu, Dec 04, 2014 at 10:50:43AM +0800, Fred Chou wrote:
+> >> From: Fred Chou <fred.chou.nd@gmail.com>
+> >>
+> >> Fixed the following warnings in sparse:
+> >>
+> >> drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
+> >>  	symbol 'dump_eprom' was not declared.
+> >> 	Should it be static?
+> >> drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
+> >>  	symbol 'ComputeTxTime' was not declared.
+> >> 	Should it be static?
+> >> drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
+> >> 	symbol 'txqueue2outpipe' was not declared.
+> >> 	Should it be static?
+> >> drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
+> >> 	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
+> >> 	Should it be static?
+> >>
+> >> Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
+> >>
+> >> ---
+> >> change in v3: fixed alignment to match open parenthesis 
+> > have u fixed?
+> > your v2 was having one problem of alignment, but v3 is again having 3 problems.
+> > and your patch doesnot apply to next-20141203
+> > 
 > 
-> I would also suggest to just write a drm driver for this. I don't see
-> anything special in this driver that would be better supported via
-> fbdev. With drm you'll get a more modern framework, and you will still
-> have the same /dev/fbX device to use for legacy userspace software.
+> The alignment issue is fixed when I apply the patch against my local
+> kernel source tree. Wondering why there are still alignment problems.
+> Let me test with next-20141203 and send v4 again. My apologies...
+
+i think you have created your v3 on top of your v2.
+reset the source before doing this one. and check the patch with checkpatch before sending.
+
+thanks
+sudip
 > 
-> What do you mean with "delayed for months"? The first version of this
-> series (that I can find) was posted less than two weeks ago.
+> Fred
 > 
-
-Sorry for confusing, it was delayed for other reasons internal.
-
-I am not familiar about the DRM, and I'd like to know if the DRM driver will be
-support, should I also develop the libdrm too ? Or just coding in kernel level ?
-Is there any Document about how to have /dev/fbX device to use ?
-
-If possible, I'd like this could be accept for this time. And I will add the DRM
-Version later(for developing and testing will take a long time).
-
-Thanks very much,
-
-BRs
-Xiubo
-
-
->  Tomi
-> 
-
+> > sudip
+> > 
+> >>
+> >>  drivers/staging/rtl8192u/r8192U_core.c | 12 +++++++-----
+> >>  1 file changed, 7 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+> >> index 7640386..2c61801 100644
+> >> --- a/drivers/staging/rtl8192u/r8192U_core.c
+> >> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+> >> @@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
+> >>  
+> >>  
+> >>  /* this is only for debug */
+> >> -void dump_eprom(struct net_device *dev)
+> >> +static void dump_eprom(struct net_device *dev)
+> >>  {
+> >>  	int i;
+> >>  	for (i = 0; i < 63; i++)
+> >> @@ -1486,8 +1486,8 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
+> >>  
+> >>  u16 N_DBPSOfRate(u16 DataRate);
+> >>  
+> >> -u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+> >> -		  u8 bShortPreamble)
+> >> +static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
+> >> +			  u8 bShortPreamble)
+> >>  {
+> >>  	u16	FrameTime;
+> >>  	u16	N_DBPS;
+> >> @@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
+> >>  	return N_DBPS;
+> >>  }
+> >>  
+> >> -unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
+> >> +static unsigned int txqueue2outpipe(struct r8192_priv *priv,
+> >> +				     unsigned int tx_queue)
+> >>  {
+> >>  	if (tx_queue >= 9) {
+> >>  		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
+> >> @@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
+> >>  
+> >>  }
+> >>  
+> >> -u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
+> >> +static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
+> >> +					 bool bIsRxAggrSubframe)
+> >>  {
+> >>  #ifdef USB_RX_AGGREGATION_SUPPORT
+> >>  	if (bIsRxAggrSubframe)
+> >> -- 
+> >> 1.9.1
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
