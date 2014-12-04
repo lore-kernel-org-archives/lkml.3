@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaLDKjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:39:25 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:63382 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLDKjW (ORCPT
+	id S932073AbaLDKmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:42:03 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47098 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLDKl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:39:22 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 1/3] devicetree: of: Add bindings for chosen
- =?iso-8859-1?Q?node=2C=0D?= stdout-path
-To: frowand.list@gmail.com
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Ian Campbell <ijc@debian.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <547F97C5.7020202@gmail.com>
-References: <1417110967-16284-1-git-send-email-leif.lindholm@linaro.org>
-	<1417110967-16284-2-git-send-email-leif.lindholm@linaro.org>
-	<547E7455.6090009@gmail.com>
-	<CACxGe6vdbURE3=W3Uerwy90piGKhv7-m+-vpUhCiUTKB4AzTsw@mail.gmail.com>
-	<547F6881.20400@gmail.com>
-	<CACxGe6ugLyV50gKCe83wCL0=qy+oHeExf9murW+qFuoVQ_TzsA@mail.gmail.com>
-	<547F97C5.7020202@gmail.com>
-Date: Thu, 04 Dec 2014 10:39:14 +0000
-Message-Id: <20141204103914.B2BACC40992@trevor.secretlab.ca>
+	Thu, 4 Dec 2014 05:41:59 -0500
+Date: Thu, 4 Dec 2014 11:42:28 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout
+ correctly
+Message-ID: <20141204104228.GJ32117@phenom.ffwll.local>
+Mail-Followup-To: John Stultz <john.stultz@linaro.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20141202163506.GG18921@nuc-i3427.alporthouse.com>
+ <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+ <20141203143029.GF32117@phenom.ffwll.local>
+ <CALAqxLUYL91khoW=oLAp_FtPBrDnSazfYqVpkXYTBJsTjDsv+g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALAqxLUYL91khoW=oLAp_FtPBrDnSazfYqVpkXYTBJsTjDsv+g@mail.gmail.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Dec 2014 15:07:49 -0800
-, Frank Rowand <frowand.list@gmail.com>
- wrote:
-> On 12/3/2014 1:45 PM, Grant Likely wrote:
-> > On Wed, Dec 3, 2014 at 7:46 PM, Frank Rowand <frowand.list@gmail.com> wrote:
-> >> On 12/3/2014 7:12 AM, Grant Likely wrote:
-> >>> On Wed, Dec 3, 2014 at 2:24 AM, Frank Rowand <frowand.list@gmail.com> wrote:
-> >>>> On 11/27/2014 9:56 AM, Leif Lindholm wrote:
-> >>>>> Add a global binding for the chosen node.
-> >>>>> Include a description of the stdout-path, and an explicit statement on
-> >>>>> its extra options in the context of a UART console.
-> >>>>>
-> >>>>> Opening description stolen from www.devicetree.org, and part of the
-> >>>>> remaining text provided by Mark Rutland.
-> >>>>>
-> >>>>> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> >>>>> ---
-> >>>>>  Documentation/devicetree/bindings/chosen.txt |   42 ++++++++++++++++++++++++++
-> >>>>>  1 file changed, 42 insertions(+)
-> >>>>>  create mode 100644 Documentation/devicetree/bindings/chosen.txt
-> >>>>>
-> >>>>> diff --git a/Documentation/devicetree/bindings/chosen.txt b/Documentation/devicetree/bindings/chosen.txt
-> >>>>> new file mode 100644
-> >>>>> index 0000000..9cd74e9
-> >>>>> --- /dev/null
-> >>>>> +++ b/Documentation/devicetree/bindings/chosen.txt
-> >>>>> @@ -0,0 +1,42 @@
-> >>>>> +The chosen node
-> >>>>> +---------------
-> >>>>> +
-> >>>>> +The chosen node does not represent a real device, but serves as a place
-> >>>>> +for passing data between firmware and the operating system, like boot
-> >>>>> +arguments. Data in the chosen node does not represent the hardware.
-> >>>>> +
-> >>>>> +
-> >>>>> +stdout-path property
-> >>>>
-> >>>> The code in patch 3/3 adds the extra options feature to the properties:
-> >>>>
-> >>>>   stdout-path
-> >>>>   linux,stdout-path
-> >>>>   stdout  [if (IS_ENABLED(CONFIG_PPC) ... ]
-> >>>
-> >>> I don't understand what you mean here. Are you suggesting a change to
-> >>> this patch? Is there something deficient in it?
+On Wed, Dec 03, 2014 at 11:07:08AM -0800, John Stultz wrote:
+> On Wed, Dec 3, 2014 at 6:30 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Tue, Dec 02, 2014 at 08:54:13AM -0800, John Stultz wrote:
+> >> On Tue, Dec 2, 2014 at 8:35 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >> > On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
+> >> >> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
+> >> >> +{
+> >> >> +     u64 usecs = div_u64(m + 999, 1000);
+> >> >> +     unsigned long j = usecs_to_jiffies(usecs);
+> >> >> +
+> >> >> +     return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+> >> >
+> >> > Or more concisely and review friendly:
+> >> >
+> >> > static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
+> >> > {
+> >> >         return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
+> >> > }
 > >>
-> >> Assuming that the code change in patch 3 is as desired, then the chosen.txt
-> >> documentation applies to all three properties, not just stdout-path.  So
-> >> yes, a change is suggested for the documentation.
-> > 
-> > how about if this is added:
-> > 
-> > Implementation note: Linux will look for the property "linux,stdout-path" or
-> > on PowerPC "stdout" if "stdout-path" is not found.  However, the
-> > "linux,stdout-path" and "stdout" properties are deprecated. New platforms
-> > should only use the "stdout-path" property.
-> > 
-> > g.
-> > 
+> >> Yea. This looks much nicer. Seems generic enough it might be better
+> >> added next to nsec_to_jiffies64() in kernel/time/time.c or jiffies.h
+> >> rather then in a driver header.
+> >
+> > Ok, that needs an EXPORT_SYMBOL for nsecs_to_jiffies64. Can I count your
+> > "Yea" above as an ack for adding that and pulling it in through
+> > drm-intel.git?
 > 
-> Yep, perfect.
+> Do you need an EXPORT_SYMBOL if you add the _timeout version next to
+> nsecs_to_jiffies64 in time.c?
 
-Great, thanks. Merged.
+I wouldn't but the patch from Imre to add all the _timeout was killed with
+a few bikesheds so really not volunteering. And just moving this single
+one doesn't make a lot of sense imo. Also the next patch I'll do is just
+add the +1 that we lost to the code and call it a day, really ;-)
 
-g.
+> Otherwise no objections to the approach, but I'd like to properly do
+> an Acked-by: after I see the patch. :)
+
+I'll send it out.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
