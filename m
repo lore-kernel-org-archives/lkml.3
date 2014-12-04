@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaLDNgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:36:32 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:36033 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285AbaLDNga convert rfc822-to-8bit (ORCPT
+	id S1754184AbaLDNlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:41:04 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35242 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaLDNlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:36:30 -0500
+	Thu, 4 Dec 2014 08:41:03 -0500
+Message-ID: <54806463.5040409@ti.com>
+Date: Thu, 4 Dec 2014 15:40:51 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1408495538-27480-9-git-send-email-linux@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-	<1408495538-27480-9-git-send-email-linux@roeck-us.net>
-Date: Thu, 4 Dec 2014 14:36:27 +0100
-X-Google-Sender-Auth: _ltH-7zw6ETl2kT06ZtMOXbxaBE
-Message-ID: <CAMuHMdVqCa+m1oMkuRHcTZKw2CWNHJVotWBwfTnfBNT11UPEjw@mail.gmail.com>
-Subject: Re: [PATCH v7 08/11] arm/arm64: Unexport restart handlers
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
+References: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>	<547EF8CC.9030502@ti.com>	<CA+V-a8vnv4B77XvbzwNkJk=vqGCFWoXxFoyUf0ZNiKwa+gY2ug@mail.gmail.com>	<548007CA.7010900@ti.com>	<20141204074641.GB4311@sudip-PC>	<548013B0.4080108@ti.com> <CAMuHMdX6rbaPYFpSR7nGf6Di0G=cGL9yFZLLpjUDi7TLyu1wmw@mail.gmail.com>
+In-Reply-To: <CAMuHMdX6rbaPYFpSR7nGf6Di0G=cGL9yFZLLpjUDi7TLyu1wmw@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="NsbF5ITsVQRmFFKbXk2qEQJ4mLUJCQqxa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Günther,
+--NsbF5ITsVQRmFFKbXk2qEQJ4mLUJCQqxa
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Aug 20, 2014 at 2:45 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> Implementing a restart handler in a module don't make sense
-> as there would be no guarantee that the module is loaded when
-> a restart is needed. Unexport arm_pm_restart to ensure that
-> no one gets the idea to do it anyway.
+On 04/12/14 15:29, Geert Uytterhoeven wrote:
+> On Thu, Dec 4, 2014 at 8:56 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> =
+wrote:
+>> On 04/12/14 09:46, Sudip Mukherjee wrote:
+>>> On Thu, Dec 04, 2014 at 09:05:46AM +0200, Tomi Valkeinen wrote:
+>>>> On 03/12/14 20:29, Prabhakar Lad wrote:
+>>>>> On Wed, Dec 3, 2014 at 11:49 AM, Tomi Valkeinen <tomi.valkeinen@ti.=
+com> wrote:
+>>>>>> On 27/11/14 00:07, Lad, Prabhakar wrote:
+>>>>>>> this patch fixes following build warning:
+>>>>>>> drivers/video/fbdev/vt8623fb.c: In function =E2=80=98vt8623_pci_p=
+robe=E2=80=99:
+>>>>>>> drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer f=
+rom integer of different size [-Wint-to-pointer-cast]
+>>>>>>>   par->state.vgabase =3D (void __iomem *) vga_res.start;
+>>>>>>>                        ^
+>>>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>>>> ---
+>>>>>>>  drivers/video/fbdev/vt8623fb.c | 2 +-
+>>>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev=
+/vt8623fb.c
+>>>>>>> index 5c7cbc6..ea7f056 100644
+>>>>>>> --- a/drivers/video/fbdev/vt8623fb.c
+>>>>>>> +++ b/drivers/video/fbdev/vt8623fb.c
+>>>>>>> @@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *d=
+ev, const struct pci_device_id *id)
+>>>>>>>
+>>>>>>>       pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
+>>>>>>>
+>>>>>>> -     par->state.vgabase =3D (void __iomem *) vga_res.start;
+>>>>>>> +     par->state.vgabase =3D (void __iomem *) (unsigned long) vga=
+_res.start;
+>>>>>>
+>>>>>> This does look quite ugly... Where does the warning come from in t=
+he
+>>>>>> first place. Isn't vga_res.start (resource_size_t) the size of a p=
+ointer?
+>>>>>>
+>>>>> Yes looks ugly, I am not sure what you meant from 'where does this =
+warning
+>>>>> come from' its in the commit message.
+>>>>
+>>>> I meant why is there a warning at all. With a quick glance,
+>>>> vga_res.start is the size of a pointer. So the sizes of the integer =
+and
+>>>> the pointer should be the same. But the warning still says "of diffe=
+rent
+>>>> size".
+>>>
+>>> poking my nose into your discussion.
+>>> I tried to see the warning, and I re-compiled like make W=3D1 M=3Ddri=
+vers/video/fbdev/ (before that make clean M=3Ddrivers/video/fbdev was don=
+e)
+>>> I can see warning with many other files, but drivers/video/fbdev/vt86=
+23fb.o was quiet and there was no warning.
+>>> I tested with next=3D20141203.
+>>> did i miss something in checking the warning ?
+>>
+>> I don't see the warning either when compiling for arm or x86_64. On wh=
+at
+>> architecture do you see the warning?
+>=20
+> On 32-bit systems with PHYS_ADDR_T_64BIT=3Dy, resource_size_t is u64,
+> while pointers are still 32-bit.
 
-Why not? I was just going to do that, but I got greeted by:
+Ah, I see. Yes, I can reproduce the warning with that config.
 
-ERROR: "arm_pm_restart" [drivers/power/reset/rmobile-reset.ko] undefined!
+So, still rather ugly, but looks correct to me, so I'll apply the series.=
 
-So now we have to make sure all reset drivers for a zillion different
-hardware devices are builtin, and can't be modular?
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Heiko Stuebner <heiko@sntech.de>
-> ---
-> v7: No change
-> v6: No change
-> v5: No change
-> v4: No change
-> v3: No change
-> v2: No change
->
->  arch/arm/kernel/process.c   | 1 -
->  arch/arm64/kernel/process.c | 1 -
->  2 files changed, 2 deletions(-)
->
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index ea279f7..250b6f6 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -121,7 +121,6 @@ void (*pm_power_off)(void);
->  EXPORT_SYMBOL(pm_power_off);
->
->  void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
-> -EXPORT_SYMBOL_GPL(arm_pm_restart);
->
->  /*
->   * This is our default idle handler.
-> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> index 0d3fb9f..398ab05 100644
-> --- a/arch/arm64/kernel/process.c
-> +++ b/arch/arm64/kernel/process.c
-> @@ -98,7 +98,6 @@ void (*pm_power_off)(void);
->  EXPORT_SYMBOL_GPL(pm_power_off);
->
->  void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
-> -EXPORT_SYMBOL_GPL(arm_pm_restart);
->
->  /*
->   * This is our default idle handler.
+ Tomi
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--NsbF5ITsVQRmFFKbXk2qEQJ4mLUJCQqxa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgGRjAAoJEPo9qoy8lh71A9IP/1PK9qkl/Ga8bULBmYAU7IAe
+PiLRUxylPKeEfGoNPVVVdfp3DI/8Sq0zUAcDM6mXjAjHqPpS4o16j4apBFgeWoyM
++hU4bhGHOAS5KqqdYOU13mNUnCCxHl3lp56SgvgwwXNn3ohupRO5QwT72XTlD61p
+sHds4nHfyatsjqKKk2Xuf+d67z02IDXyuFGE3MdFDxzvO4u1hMQRvIJuxUQrXgRn
+UbqgDWZLaJAlFQgFfeMYaq4ClftOzkmonf1KjjNlXi+h279Cm9J17Rujom7TkGWN
+fT7Z31d16mIbdZ4S5eZ6ws2uWmqPevxZQ6/RoZIG9J1JrY9kM4hC44Kw6EwcwLud
+ifcpmQEV3hi0pR7tne24f8+wMfQtJZXUL9ZpnD2rrutyXPi443yg2+UzGUcembgb
+UY6zfY72gXpBXi+ezm39d28pH66QAM23hcUVUEa+/30/RLPuQt/1FBYGSvDdARRB
+BysuRhfuUnxeg06SUQewUFAFZU4fhXotB8SEQKezmfkF8px19bHVbcI8fl6pm2Wp
+8W3yKG+9WU1iF4Tb46DJHUKipTCBkOpP/MukESppJERmsJLzlSrIoD+d5/S/NUMR
+7UH/fp+cyrLf1mmw8ZH2Y7Oy8/EIb6L4j3Zsy2Z/SGMHQXu/a/NS9mupZL60Hrs4
+cgwtB2rSjvC/0k+T6Ohw
+=nbOq
+-----END PGP SIGNATURE-----
+
+--NsbF5ITsVQRmFFKbXk2qEQJ4mLUJCQqxa--
