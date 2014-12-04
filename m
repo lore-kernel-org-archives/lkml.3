@@ -1,89 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaLDAdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:33:31 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:42215 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaLDAda convert rfc822-to-8bit (ORCPT
+	id S1752575AbaLDAfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:35:50 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50028 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751322AbaLDAfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:33:30 -0500
+	Wed, 3 Dec 2014 19:35:48 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Eric Piel <eric.piel@tremplin-utc.net>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] misc / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Thu, 04 Dec 2014 01:57:13 +0100
+Message-ID: <2262178.AG1kTbXfTd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <201411242319.27481@pali>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201406182122.29623@pali> <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
- <201411242319.27481@pali>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 3 Dec 2014 18:33:08 -0600
-Message-ID: <CAL_JsqJuSa-zHTPynH3vAEOK1D2xYRYtVjZJ5zDR0UHAyGYXuA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 4:19 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Wednesday 18 June 2014 22:46:19 Rob Herring wrote:
->> On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár
-> <pali.rohar@gmail.com> wrote:
->> > On Wednesday 18 June 2014 21:07:35 Rob Herring wrote:
->> >> On Wed, Jun 18, 2014 at 11:54 AM, Pali Rohár
->> >
->> > <pali.rohar@gmail.com> wrote:
->> >> > Machine name from board description is some generic name
->> >> > on DT kernel. DT provides machine name property which is
->> >> > specific for board, so use it instead generic one when
->> >> > possible.
->> >> >
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-[...]
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
->> > Basically in DT kernel is missing Hardware, Revision and
->> > probably also Serial key. (Now I used only qemu for testing
->> > which set serial key to 0). All these informations is used
->> > by userspace applications which determinate how to behave.
->>
->> It is somewhat fragile to expect the name in the DT to match
->> the old name from the kernel. As your patch to n900 dts
->> shows, we'd probably have to update every dts file to make
->> them match. While I think we should work to remove this
->> string from the kernel, userspace depending on the DT model
->> string is a bad idea. For example, if you had some platform
->> with multiple OEMs just rebranding the same base design, they
->> may all want to put their own model string into each product.
->> The true h/w id is the compatible string.
->>
->> Serial number is easy. There is already a standard although
->> not widely used property for it with "/serial-number". You
->> just need to wire it up to cpuinfo.
->>
->
-> There is no "/serial-number" property in kernel:
->
-> $ ls -l -a /sys/bus/soc/devices/soc0/
-> drwxr-xr-x    3 0        0                0 Jan  1 00:00 .
-> drwxr-xr-x   18 0        0                0 Jan  1 00:00 ..
-> -r--r--r--    1 0        0             4096 Jan  1 00:00 family
-> -r--r--r--    1 0        0             4096 Jan  1 00:00 machine
-> drwxr-xr-x    2 0        0                0 Jan  1 00:00 power
-> -r--r--r--    1 0        0             4096 Jan  1 00:00 revision
-> lrwxrwxrwx    1 0        0                0 Jan  1 00:00
-> subsystem -> ../../bus/soc
-> -r--r--r--    1 0        0             4096 Jan  1 00:00 type
-> -rw-r--r--    1 0        0             4096 Jan  1 00:00 uevent
+Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+drivers/misc/.
 
-Wrong place. If you put /serial-number in your DT, then it will be in
-/proc/device-tree/serial-number.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-If you want to wire that up to /proc/cpuinfo, I would be fine with that.
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
 
-Rob
+Please let me know if it is OK to take this one into linux-pm.
+
+---
+ drivers/misc/apds990x.c                |    4 ++--
+ drivers/misc/bh1770glc.c               |    2 +-
+ drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    4 ++--
+ drivers/misc/mei/mei_dev.h             |    4 ++--
+ drivers/misc/mei/pci-me.c              |    8 ++++----
+ drivers/misc/mei/pci-txe.c             |    8 +++-----
+ 6 files changed, 14 insertions(+), 16 deletions(-)
+
+Index: linux-pm/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+===================================================================
+--- linux-pm.orig/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
++++ linux-pm/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
+@@ -235,7 +235,7 @@ static int lis3lv02d_i2c_resume(struct d
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int lis3_i2c_runtime_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
+@@ -253,7 +253,7 @@ static int lis3_i2c_runtime_resume(struc
+ 	lis3lv02d_poweron(lis3);
+ 	return 0;
+ }
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ static const struct i2c_device_id lis3lv02d_id[] = {
+ 	{"lis3lv02d", LIS3LV02D},
+Index: linux-pm/drivers/misc/mei/mei_dev.h
+===================================================================
+--- linux-pm.orig/drivers/misc/mei/mei_dev.h
++++ linux-pm/drivers/misc/mei/mei_dev.h
+@@ -530,9 +530,9 @@ struct mei_device {
+ 	 * Power Gating support
+ 	 */
+ 	enum mei_pg_event pg_event;
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ 	struct dev_pm_domain pg_domain;
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ 	unsigned char rd_msg_buf[MEI_RD_MSG_BUF_SIZE];
+ 	u32 rd_msg_hdr;
+Index: linux-pm/drivers/misc/mei/pci-me.c
+===================================================================
+--- linux-pm.orig/drivers/misc/mei/pci-me.c
++++ linux-pm/drivers/misc/mei/pci-me.c
+@@ -89,13 +89,13 @@ static const struct pci_device_id mei_me
+ 
+ MODULE_DEVICE_TABLE(pci, mei_me_pci_tbl);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static inline void mei_me_set_pm_domain(struct mei_device *dev);
+ static inline void mei_me_unset_pm_domain(struct mei_device *dev);
+ #else
+ static inline void mei_me_set_pm_domain(struct mei_device *dev) {}
+ static inline void mei_me_unset_pm_domain(struct mei_device *dev) {}
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ /**
+  * mei_me_quirk_probe - probe for devices that doesn't valid ME interface
+@@ -357,7 +357,7 @@ static int mei_me_pci_resume(struct devi
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int mei_me_pm_runtime_idle(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+@@ -453,7 +453,7 @@ static inline void mei_me_unset_pm_domai
+ 	/* stop using pm callbacks if any */
+ 	dev->dev->pm_domain = NULL;
+ }
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ #ifdef CONFIG_PM
+ static const struct dev_pm_ops mei_me_pm_ops = {
+Index: linux-pm/drivers/misc/mei/pci-txe.c
+===================================================================
+--- linux-pm.orig/drivers/misc/mei/pci-txe.c
++++ linux-pm/drivers/misc/mei/pci-txe.c
+@@ -42,13 +42,13 @@ static const struct pci_device_id mei_tx
+ };
+ MODULE_DEVICE_TABLE(pci, mei_txe_pci_tbl);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static inline void mei_txe_set_pm_domain(struct mei_device *dev);
+ static inline void mei_txe_unset_pm_domain(struct mei_device *dev);
+ #else
+ static inline void mei_txe_set_pm_domain(struct mei_device *dev) {}
+ static inline void mei_txe_unset_pm_domain(struct mei_device *dev) {}
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ static void mei_txe_pci_iounmap(struct pci_dev *pdev, struct mei_txe_hw *hw)
+ {
+@@ -295,7 +295,7 @@ static int mei_txe_pci_resume(struct dev
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int mei_txe_pm_runtime_idle(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+@@ -401,9 +401,7 @@ static inline void mei_txe_unset_pm_doma
+ 	/* stop using pm callbacks if any */
+ 	dev->dev->pm_domain = NULL;
+ }
+-#endif /* CONFIG_PM_RUNTIME */
+ 
+-#ifdef CONFIG_PM
+ static const struct dev_pm_ops mei_txe_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(mei_txe_pci_suspend,
+ 				mei_txe_pci_resume)
+Index: linux-pm/drivers/misc/apds990x.c
+===================================================================
+--- linux-pm.orig/drivers/misc/apds990x.c
++++ linux-pm/drivers/misc/apds990x.c
+@@ -609,7 +609,7 @@ static int apds990x_detect(struct apds99
+ 	return ret;
+ }
+ 
+-#if defined(CONFIG_PM) || defined(CONFIG_PM_RUNTIME)
++#ifdef CONFIG_PM
+ static int apds990x_chip_on(struct apds990x_chip *chip)
+ {
+ 	int err	 = regulator_bulk_enable(ARRAY_SIZE(chip->regs),
+@@ -1237,7 +1237,7 @@ static int apds990x_resume(struct device
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int apds990x_runtime_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
+Index: linux-pm/drivers/misc/bh1770glc.c
+===================================================================
+--- linux-pm.orig/drivers/misc/bh1770glc.c
++++ linux-pm/drivers/misc/bh1770glc.c
+@@ -1358,7 +1358,7 @@ static int bh1770_resume(struct device *
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int bh1770_runtime_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
+
