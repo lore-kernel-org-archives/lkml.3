@@ -1,184 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaLDWfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:35:05 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:40275 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989AbaLDWfC (ORCPT
+	id S1754948AbaLDWf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:35:29 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:9326 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879AbaLDWf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:35:02 -0500
-Date: Thu, 4 Dec 2014 22:34:34 +0000
-From: Luis de Bethencourt <luis@debethencourt.com>
-To: m.chehab@samsung.com
-Cc: jarod@wilsonet.com, gregkh@linuxfoundation.org,
-        mahfouz.saif.elyazal@gmail.com, gulsah.1004@gmail.com,
-        tuomas.tynkkynen@iki.fi, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/2] staging: media: lirc: lirc_zilog.c: fix quoted
- strings split across lines
-Message-ID: <20141204223434.GA17555@biggie>
+	Thu, 4 Dec 2014 17:35:27 -0500
+X-IronPort-AV: E=Sophos;i="5.07,518,1413270000"; 
+   d="scan'208";a="52158773"
+Message-ID: <5480E1AA.4060108@broadcom.com>
+Date: Thu, 4 Dec 2014 14:35:22 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Belisko Marek <marek.belisko@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
+References: <rjui@broadcom.com>	<1417730171-30455-1-git-send-email-rjui@broadcom.com>	<1417730171-30455-2-git-send-email-rjui@broadcom.com> <CAAfyv37Z=Bs1Ggydg5bX5z=005P+LOXNp0qNMA43a3BsAPSA7w@mail.gmail.com>
+In-Reply-To: <CAAfyv37Z=Bs1Ggydg5bX5z=005P+LOXNp0qNMA43a3BsAPSA7w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch makes an exception to the 80-column rule for quotes strings, and
-Documentation/CodingStyle recommends not splitting quotes strings across lines
-because it breaks the ability to grep for the string. Fixing these.
 
-WARNING: quoted string split across lines
 
-Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
----
- drivers/staging/media/lirc/lirc_zilog.c | 61 ++++++++++++++++++---------------
- 1 file changed, 34 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index dca806a..8814a7e 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -372,14 +372,14 @@ static int add_to_buf(struct IR *ir)
- 					   ret);
- 			if (failures >= 3) {
- 				mutex_unlock(&ir->ir_lock);
--				dev_err(ir->l.dev, "unable to read from the IR chip "
--					    "after 3 resets, giving up\n");
-+				dev_err(ir->l.dev,
-+					"unable to read from the IR chip after 3 resets, giving up\n");
- 				break;
- 			}
- 
- 			/* Looks like the chip crashed, reset it */
--			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
--				    "trying reset\n");
-+			dev_err(ir->l.dev,
-+				"polling the IR receiver chip failed, trying reset\n");
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			if (kthread_should_stop()) {
-@@ -405,8 +405,9 @@ static int add_to_buf(struct IR *ir)
- 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
- 		mutex_unlock(&ir->ir_lock);
- 		if (ret != sizeof(keybuf)) {
--			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
--				    "keeping last read buffer\n", ret);
-+			dev_err(ir->l.dev,
-+				"i2c_master_recv failed with %d -- keeping last read buffer\n",
-+				ret);
- 		} else {
- 			rx->b[0] = keybuf[3];
- 			rx->b[1] = keybuf[4];
-@@ -713,8 +714,9 @@ static int send_boot_data(struct IR_tx *tx)
- 				       buf[0]);
- 		return 0;
- 	}
--	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
--		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
-+	dev_notice(tx->ir->l.dev,
-+		   "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
-+		   buf[1], buf[2], buf[3]);
- 
- 	return 0;
- }
-@@ -794,9 +796,9 @@ static int fw_load(struct IR_tx *tx)
- 	if (!read_uint8(&data, tx_data->endp, &version))
- 		goto corrupt;
- 	if (version != 1) {
--		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
--			    "1) -- please upgrade to a newer driver",
--			    version);
-+		dev_err(tx->ir->l.dev,
-+			"unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
-+			version);
- 		fw_unload_locked();
- 		ret = -EFAULT;
- 		goto out;
-@@ -983,8 +985,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 	ret = get_key_data(data_block, code, key);
- 
- 	if (ret == -EPROTO) {
--		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
--			    "lircd.conf entries\n", code, key);
-+		dev_err(tx->ir->l.dev,
-+			"failed to get data for code %u, key %u -- check lircd.conf entries\n",
-+			code, key);
- 		return ret;
- 	} else if (ret != 0)
- 		return ret;
-@@ -1059,12 +1062,14 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 		ret = i2c_master_send(tx->c, buf, 1);
- 		if (ret == 1)
- 			break;
--		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
--			"failed with %d (try %d)\n", ret, i+1);
-+		dev_dbg(tx->ir->l.dev,
-+			"NAK expected: i2c_master_send failed with %d (try %d)\n",
-+			ret, i+1);
- 	}
- 	if (ret != 1) {
--		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
--			    "failed with %d\n", ret);
-+		dev_err(tx->ir->l.dev,
-+			"IR TX chip never got ready: last i2c_master_send failed with %d\n",
-+			ret);
- 		return ret < 0 ? ret : -EFAULT;
- 	}
- 
-@@ -1167,12 +1172,12 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
- 		 */
- 		if (ret != 0) {
- 			/* Looks like the chip crashed, reset it */
--			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
--				    "failed, trying reset\n");
-+			dev_err(tx->ir->l.dev,
-+				"sending to the IR transmitter chip failed, trying reset\n");
- 
- 			if (failures >= 3) {
--				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
--					    "after 3 resets, giving up\n");
-+				dev_err(tx->ir->l.dev,
-+					"unable to send to the IR chip after 3 resets, giving up\n");
- 				mutex_unlock(&ir->ir_lock);
- 				mutex_unlock(&tx->client_lock);
- 				put_ir_tx(tx, false);
-@@ -1542,8 +1547,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 		/* Proceed only if the Rx client is also ready or not needed */
- 		if (rx == NULL && !tx_only) {
--			dev_info(tx->ir->l.dev, "probe of IR Tx on %s (i2c-%d) done. Waiting"
--				   " on IR Rx.\n", adap->name, adap->nr);
-+			dev_info(tx->ir->l.dev,
-+				 "probe of IR Tx on %s (i2c-%d) done. Waiting on IR Rx.\n",
-+				 adap->name, adap->nr);
- 			goto out_ok;
- 		}
- 	} else {
-@@ -1581,8 +1587,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 				       "zilog-rx-i2c-%d", adap->nr);
- 		if (IS_ERR(rx->task)) {
- 			ret = PTR_ERR(rx->task);
--			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
--				    "\n", __func__);
-+			dev_err(tx->ir->l.dev,
-+				"%s: could not start IR Rx polling thread\n",
-+				__func__);
- 			/* Failed kthread, so put back the ir ref */
- 			put_ir_device(ir, true);
- 			/* Failure exit, so put back rx ref from i2c_client */
-@@ -1594,8 +1601,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 		/* Proceed only if the Tx client is also ready */
- 		if (tx == NULL) {
--			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
--				   " on IR Tx.\n", adap->name, adap->nr);
-+			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
-+				   adap->name, adap->nr);
- 			goto out_ok;
- 		}
- 	}
--- 
-2.1.3
-
+On 12/4/2014 2:16 PM, Belisko Marek wrote:
+> On Thu, Dec 4, 2014 at 10:56 PM, Ray Jui <rjui@broadcom.com> wrote:
+>> Device tree binding documentation for Broadcom Cygnus pinctrl driver
+>>
+>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+>> ---
+>>   .../bindings/pinctrl/brcm,cygnus-pinctrl.txt       |   92 ++++++++++++++++++++
+>>   1 file changed, 92 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+>> new file mode 100644
+>> index 0000000..86e4579
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+>> @@ -0,0 +1,92 @@
+>> +Broadcom Cygnus Pin Controller
+>> +
+>> +The Cygnus pin controller supports setting the alternate functions of groups
+>> +of pins. Pinmux configuration on individual pins is not supported by the
+>> +Cygnus A0 SoC.
+>> +
+>> +Required properties:
+>> +
+>> +- compatible:
+>> +    Must be "brcm,cygnus-pinctrl"
+>> +
+>> +- reg:
+>> +    Define the base and range of the I/O address space that contain the Cygnus
+>> +pin control registers
+>> +
+>> +- brcm,groups:
+>> +    This can be strings of one or more group names. This defines the group(s)
+>> +that one wants to configure
+>> +
+>> +- brcm,function:
+>> +    This is the alternate function that one wants to configure to. Valid
+>> +alternate functions are "alt1", "alt2", "alt3", "alt4"
+>> +
+>> +Each child node represents a configuration. Client devices reference the the
+>> +child node to enable the mux configuration.
+>> +
+>> +For example:
+>> +
+>> +       pinctrl: pinctrl@0x0301d0c8 {
+>> +               compatible = "brcm,cygnus-pinctrl";
+>> +               reg = <0x0301d0c8 0x2c>;
+>> +
+>> +               i2s_0: i2s_0 {
+>> +                       brcm,groups = "smart_card0", "smart_card0_fcb";
+>> +                       brcm,function = "alt2";
+>> +               };
+>> +
+>> +               i2s_1: i2s_1 {
+>> +                       brcm,groups = "smart_card1", "smart_card1_fcb";
+>> +                       brcm,function = "alt2";
+>> +               };
+>> +
+>> +               spi_0: spi_0 {
+>> +                       brcm,groups = "spi0";
+>> +                       brcm,function = "alt1";
+>> +               };
+>> +       }
+>> +
+>> +       spi0@18028000 {
+>> +                       compatible = "arm,pl022", "arm,primecell";
+>> +                       reg = <0x18028000 0x1000>;
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
+>> +                       pinctrl-0 = <&spi_0>;
+>> +                       clocks = <&axi81_clk>;
+>> +                       clock-names = "apb_pclk";
+>> +       };
+>> +
+>> +Consider the following snapshot of Cygnus pinmux table:
+>> +
+>> +number    pin            group              alt1             alt2        alt3        alt4
+>> +------    ---            ----               ----             ----        ----        ----
+>> +42        sc0_clk        smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio24
+>> +43        sc0_cmdvcc_l   smart_card0        SMART CARD0      I2S_0       N/A         STRAP
+>> +44        sc0_detect     smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio25
+>> +45        sc0_fcb        smart_card0_fcb    SMART CARD0_FCB  I2S_0       N/A         chip_gpio26
+>> +46        sc0_io         smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio27
+>> +47        sc0_rst_l      smart_card0        SMART CARD0      SPDIF       N/A         STRAP
+>> +
+>> +Note due to limitation of the Cygnus hardware, pinmux configuration can only
+>> +be group based. To enable I2S_0 function, one needs the following child node
+>> +configuration:
+>> +
+>> +       i2s_0: i2s_0 {
+>> +               brcm,groups = "smart_card0", "smart_card0_fcb";
+>> +               brcm,function = "alt2";
+>> +       };
+>> +
+>> +This tells the Cygnus pin controller to configure groups "smart_card0" and
+>> +"smart_card0_fcb" to I2S_0. With this configuration, pins 42, 43, 44, 45, 46
+>> +become I2C_0, and pin 47 becomes SPDIF
+>                    ^^^^ typo - should be I2S_0
+Oh yeah. Will change from I2C_0 to I2S_0. Thanks.
+>> +
+>> +Consider another example, that one wants to configure the above pins as GPIO:
+>> +
+>> +       gpio_24_27: gpio_24_27 {
+>> +               brcm,groups = "smart_card0", "smart_card0_fcb";
+>> +               brcm,function = "alt4";
+>> +       };
+>> +
+>> +With the above configuration, pins 42, 44, 45, 46 become GPIO, and 43 and 47
+>> +become reserved for STRAP
+>> --
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
+> BR,
+>
+> marek
+>
