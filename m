@@ -1,154 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaLDDdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 22:33:00 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:25279 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaLDDc6 convert rfc822-to-8bit (ORCPT
+	id S1752696AbaLDDnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 22:43:19 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:59164 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaLDDnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 22:32:58 -0500
-X-AuditID: cbfee68d-f79296d000004278-27-547fd5d72dba
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 8BIT
-Message-id: <547FD5C6.3030308@samsung.com>
-Date: Thu, 04 Dec 2014 09:02:22 +0530
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-To: jonghwa3.lee@samsung.com
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        amit.daniel@samsung.com, kgene.kim@samsung.com, arnd@arndb.de,
-        thomas.ab@samsung.com
-Subject: Re: [PATCH] soc: samsung: pmu: split up SoC specific PMU data
-References: <1417364162-29981-1-git-send-email-pankaj.dubey@samsung.com>
- <547EA0DC.70800@samsung.com>
-In-reply-to: <547EA0DC.70800@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsWyRsSkRvf61foQg66VUhYNV0Ms/k46xm6x
-	ccZ6VovOs0+YLXoXXGWz2PT4GqvF5V1z2CxmnN/HZNGxjNGB0+P3r0mMHpuX1Hv0bVnF6PF5
-	k1wASxSXTUpqTmZZapG+XQJXxuZjh5kKbspW7O2cwNTAuFKii5GDQ0LARGJ9i10XIyeQKSZx
-	4d56ti5GLg4hgaWMEms3N7BAJEwkrk3YwgyRmM4ocefpPHaQBK+AoMSPyffAipgFzCS+vDzM
-	CmGLSKyd9ocRwtaWWLbwNVRzK5PEvhW9jBDNWhL3V0EUsQioSpx50c8MYrMJ6Eo8eT8XzBYV
-	iJC4smYOWI2IgIzEyqs/mUAGMQvcZ5S40D0brEhYwE1i1u5/YBcJCaRL/Lt2mwnE5hTQlFh1
-	uZsdpEFC4BK7xIIlTWwQ2wQkvk0+xALxv6zEpgPMEG9KShxccYNlAqP4LCTPzULy3Cwkz81C
-	8twCRpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGIHRevrfs94djLcPWB9iFOBgVOLhLdhd
-	HyLEmlhWXJl7iNEU6KKJzFKiyfnAlJBXEm9obGZkYWpiamxkbmmmJM6rKPUzGOixxJLU7NTU
-	gtSi+KLSnNTiQ4xMHJxSDYzdW9SnWFw4muvIoJ2Zb1VUFRb+7d2O/Mkb305dKZzJ8cvr6Ixo
-	6aUb7y56JWTAul3a4triP3PuSfkIllb5cM1W3uI24Txr4tRmy/jvNgenWq/xkCufk9P44rl4
-	yMm+ZKPQmWsuVkWoM/hbit8wTTQ17+T/rqikyFg75xIDf+riGI/yr58vPVJiKc5INNRiLipO
-	BAAB8qhq0QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd3rV+tDDC7tELBouBpi8XfSMXaL
-	jTPWs1p0nn3CbNG74CqbxabH11gtLu+aw2Yx4/w+JouOZYwOnB6/f01i9Ni8pN6jb8sqRo/P
-	m+QCWKIaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJz
-	gC5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGZMvHmYueC4bMWD85OZ
-	GxinS3QxcnJICJhIXJuwhRnCFpO4cG89WxcjF4eQwHRGiTtP57GDJHgFBCV+TL7H0sXIwcEs
-	IC9x5FI2SJhZwEziy8vDrBD1rUwS+1b0MkLUa0ncX/UHzGYRUJU486IfbAGbgK7Ek/dzwWxR
-	gQiJK2vmgNWICMhIrLz6kwlkELPAfUaJC92zwYqEBdwkZu3+B3aEkEC6xL9rt5lAbE4BTYlV
-	l7vZJzAKzEJy3yyE+2YhuW8BI/MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODIfia9g3FV
-	g8UhRgEORiUe3oLd9SFCrIllxZW5hxglOJiVRHjnHQEK8aYkVlalFuXHF5XmpBYfYjQF+m4i
-	s5Rocj4w6eSVxBsam5ibGptamliYmFkqifPeuJkbAnR2YklqdmpqQWoRTB8TB6dUA6NQfuW5
-	FVzT/V4Lb3MtnzPHYRuD2wx37etP+Njvv292lb23XsHk0crGnh/XL8yU+SVRn3Eus4Fxf5RI
-	5lL93nmNT8RXWx5krqiN3bjwQfjB6vfnPC45bLSUDNz7WTWDNf7D5N9VH71ubW96JlUixP5T
-	YWqbApM/x9bfMSfsaxVDU9zEmAq5nJRYijMSDbWYi4oTAXlrfZQCAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 3 Dec 2014 22:43:18 -0500
+MIME-Version: 1.0
+Date: Thu, 4 Dec 2014 11:43:17 +0800
+Message-ID: <CAA+hA=R2x5dUkZAh9=nHLsmaqA5YiAjEya-vQnjLx6i7fruV1w@mail.gmail.com>
+Subject: WARNING: at fs/fs-writeback.c when plug out SD card after system suspend/resume
+From: Dong Aisheng <dongas86@gmail.com>
+To: tj@kernel.org, jack@suse.cz, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.or>,
+        Dong Aisheng-B29396 <b29396@freescale.com>, r64343@freescale.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 December 2014 11:04 AM, jonghwa3.lee@samsung.com wrote:
-> On 2014년 12월 01일 01:16, Pankaj Dubey wrote:
->
->> This patch splits up exynos-pmu.c file, and moves PMU configuration data
->> and functions handing those data into SoC specific PMU files, keeping
->> driver structure and common functionality into exynos-pmu.c.
->>
->> At the same time it also separates compilation of these different SoC PMU files
->> based on CONFIG_ARM64 and CONFIG_ARM. This way we can reduce overhead of ARM64
->> SoC's PMU getting compiled when kernel is built for ARM and vice-versa.
->>
->> This patch also removes .owner field from exynos-pmu.c as it's redundant for
->> drivers calling platform_driver_register to register platform_driver.
->>
->> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
->> ---
->> This patch is prepared on top of kgene/for-next and following patch [1] from
->> Amit Daniel.
->>
->> [1]: http://www.spinics.net/lists/linux-samsung-soc/msg39797.html
->>
->> This patch tries to address some of concerns raised for using exynos-pmu.c for
->> ARM and ARM64 based SoC at these threads [2], [3].
->>
->> [2]: http://www.spinics.net/lists/linux-samsung-soc/msg39809.html
->> [3]: https://lkml.org/lkml/2014/11/24/322
->>
->> Since Exynos SoC's has similar PMU IP, and already existing bindings can be
->> used, it makes sense to keep single driver for both ARM and ARM64 based SoCs.
->> All common functionalties are in exynos-pmu.c whereas SoC specific data and
->> handling are moved into SoC specific exynosNNNN-pmu files.
->>
->> All changes are compiled tested only. Any improvements/suggestions are most
->> welcome.
->>
->>   drivers/soc/samsung/Makefile         |    9 +-
->>   drivers/soc/samsung/exynos-pmu.c     | 1293 +---------------------------------
->>   drivers/soc/samsung/exynos-pmu.h     |   63 ++
->>   drivers/soc/samsung/exynos3250-pmu.c |  176 +++++
->>   drivers/soc/samsung/exynos4-pmu.c    |  223 ++++++
->>   drivers/soc/samsung/exynos5250-pmu.c |  196 ++++++
->>   drivers/soc/samsung/exynos5420-pmu.c |  298 ++++++++
->>   drivers/soc/samsung/exynos7-pmu.c    |  441 ++++++++++++
->>   8 files changed, 1412 insertions(+), 1287 deletions(-)
->>   create mode 100644 drivers/soc/samsung/exynos-pmu.h
->>   create mode 100644 drivers/soc/samsung/exynos3250-pmu.c
->>   create mode 100644 drivers/soc/samsung/exynos4-pmu.c
->>   create mode 100644 drivers/soc/samsung/exynos5250-pmu.c
->>   create mode 100644 drivers/soc/samsung/exynos5420-pmu.c
->>   create mode 100644 drivers/soc/samsung/exynos7-pmu.c
->>
->
-> ...
->
->> diff --git a/drivers/soc/samsung/exynos-pmu.h b/drivers/soc/samsung/exynos-pmu.h
->> new file mode 100644
->> index 0000000..4adc5a3
->> --- /dev/null
->> +++ b/drivers/soc/samsung/exynos-pmu.h
->> @@ -0,0 +1,63 @@
->> +/*
->> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
->> + *		http://www.samsung.com
->> + *
->> + * Header for EXYNOS PMU Driver support
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#ifndef __EXYNOSPMU_H
->> +#define __EXYNOSPMU_H
->> +
->> +#include <linux/io.h>
->> +
->> +#define PMU_TABLE_END	(-1U)
->> +
->> +static void __iomem *pmu_base_addr;
->> +
->
-> AFAIK, static variable in header file can't be used globally. It would be placed
-> in exynos-pmu.c or elsewhere and then only extern declaration is allowed here.
-> If I'm wrong, please let me know.
->
+Hi ALL,
 
-Thanks for review.
-You are right. I will change this.
-I am waiting for review from other concerned people so that if any 
-suggestions or improvements I can do it in next version.
+We met an filesystem issue when do stable kernel upgrade from 3.10.31 to
+3.10.53. And we found it's caused by the following commit bf0972039 which
+introduced in 3.10.53.
+After applying this patch, after system suspend/resume, plug out a SD card
+will cause the following WARNING if SD card has a filesystem mounted.
+If revert it, no such WARNING shows.
 
-> Thanks.
-> Jonghwa
->
+I also tried the latest linux-next tree, it also has such issue.
+
+Looks the patch is used to fixing a potential system crashing.
+We're not sure whether this WARNING is as expected and reasonable
+or a BUG because there's no such WARNING before this patch.
+
+Can someone explain about it?
+
+Reproduce step is as follows:
+root@imx6qdlsolo:~# mmc2: mmc_rescan_try_freq: trying to init card at 400000 Hz
+mmc2: Problem setting current limit!
+mmc2: new ultra high speed DDR50 SDHC card at address aaaa
+mmcblk2: mmc2:aaaa SL32G 29.7 GiB
+ mmcblk2: p1 p2
+wm8962 3-001a: Failed to get supply 'DCVDD': -517
+wm8962 3-001a: Failed to request supplies: -517
+i2c 3-001a: Driver wm8962 requests probe deferral
+kjournald starting.  Commit interval 5 seconds
+EXT3-fs (mmcblk2p2): using internal journal
+EXT3-fs (mmcblk2p2): recovery complete
+EXT3-fs (mmcblk2p2): mounted filesystem with ordered data mode
+FAT-fs (mmcblk2p1): Volume was not properly unmounted. Some data may
+be corrupt. Please run fsck.
+
+root@imx6qdlsolo:~#
+root@imx6qdlsolo:~# echo mem > /sys/power/state
+PM: Syncing filesystems ... done.
+Freezing user space processes ... (elapsed 0.01 seconds) done.
+Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+Suspending console(s) (use no_console_suspend to debug)
+PM: suspend of devices complete after 45.436 msecs
+PM: suspend devices took 0.050 seconds
+PM: late suspend of devices complete after 0.599 msecs
+PM: noirq suspend of devices complete after 0.704 msecs
+Disabling non-boot CPUs ...
+Turn off M/F mix!
+PM: noirq resume of devices complete after 0.380 msecs
+PM: early resume of devices complete after 0.498 msecs
+imx-sdma 20ec000.sdma: loaded firmware 1.1
+mmc2: Problem setting current limit!
+PM: resume of devices complete after 409.704 msecs
+PM: resume devices took 0.410 seconds
+Restarting tasks ... done.
+root@imx6qdlsolo:~#
+root@imx6qdlsolo:~# libphy: 2188000.ethernet:01 - Link is Up - 100/Full
+mmc2: card aaaa removed
+------------[ cut here ]------------
+WARNING: at fs/fs-writeback.c:1196 __mark_inode_dirty+0x1d0/0x1d4()
+bdi-block not registered
+Modules linked in:
+CPU: 0 PID: 927 Comm: umount Not tainted 3.10.53-02602-g89aa41e #751
+[<80013b00>] (unwind_backtrace+0x0/0xf4) from [<80011524>]
+(show_stack+0x10/0x14)
+[<80011524>] (show_stack+0x10/0x14) from [<8002c290>]
+(warn_slowpath_common+0x54/0x6c)
+[<8002c290>] (warn_slowpath_common+0x54/0x6c) from [<8002c2d8>]
+(warn_slowpath_fmt+0x30/0x40)
+[<8002c2d8>] (warn_slowpath_fmt+0x30/0x40) from [<800e8bbc>]
+(__mark_inode_dirty+0x1d0/0x1d4)
+[<800e8bbc>] (__mark_inode_dirty+0x1d0/0x1d4) from [<80131ba8>]
+(ext3_put_super+0x20c/0x23c)
+[<80131ba8>] (ext3_put_super+0x20c/0x23c) from [<800c88e0>]
+(generic_shutdown_super+0x58/0xc4)
+[<800c88e0>] (generic_shutdown_super+0x58/0xc4) from [<800c8b14>]
+(kill_block_super+0x18/0x68)
+[<800c8b14>] (kill_block_super+0x18/0x68) from [<800c8e60>]
+(deactivate_locked_super+0x48/0x64)
+[<800c8e60>] (deactivate_locked_super+0x48/0x64) from [<800e271c>]
+(SyS_umount+0x94/0x38c)
+[<800e271c>] (SyS_umount+0x94/0x38c) from [<8000e080>]
+(ret_fast_syscall+0x0/0x30)
+---[ end trace a52c980ef229d9da ]---
+EXT3-fs (mmcblk2p2): I/O error while writing superblock
+
+Caused by following commit:
+commit bf0972039ddc483a9cb79edae73076c635876568
+Author: Jan Kara <jack@suse.cz>
+Date:   Thu Apr 3 14:46:23 2014 -0700
+
+    bdi: avoid oops on device removal
+
+    commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
+
+    After commit 839a8e8660b6 ("writeback: replace custom worker pool
+    implementation with unbound workqueue") when device is removed while we
+    are writing to it we crash in bdi_writeback_workfn() ->
+    set_worker_desc() because bdi->dev is NULL.
+
+    This can happen because even though bdi_unregister() cancels all pending
+    flushing work, nothing really prevents new ones from being queued from
+    balance_dirty_pages() or other places.
+
+    Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+    checking it before scheduling of any flushing work.
+
+    Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+
+    Reviewed-by: Tejun Heo <tj@kernel.org>
+    Signed-off-by: Jan Kara <jack@suse.cz>
+    Cc: Derek Basehore <dbasehore@chromium.org>
+    Cc: Jens Axboe <axboe@kernel.dk>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Regards
+Dong Aisheng
