@@ -1,205 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaLDAfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:35:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50028 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751322AbaLDAfs (ORCPT
+	id S1752652AbaLDAhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:37:07 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:45295 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaLDAhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:35:48 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Eric Piel <eric.piel@tremplin-utc.net>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] misc / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Thu, 04 Dec 2014 01:57:13 +0100
-Message-ID: <2262178.AG1kTbXfTd@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Wed, 3 Dec 2014 19:37:05 -0500
+X-Originating-IP: 50.43.43.148
+Date: Wed, 3 Dec 2014 16:36:54 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Tim Bird <tim.bird@sonymobile.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6] selftest: size: Add size test for Linux kernel
+Message-ID: <20141204003653.GA5004@thin>
+References: <547F598D.7030205@sonymobile.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547F598D.7030205@sonymobile.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Dec 03, 2014 at 10:42:21AM -0800, Tim Bird wrote:
+> This test shows the amount of memory used by the system.
+> Note that this is dependent on the user-space that is loaded
+> when this program runs.  Optimally, this program would be
+> run as the init program itself.
+> 
+> The program is optimized for size itself, to avoid conflating
+> its own execution with that of the system software.
+> The code is compiled statically, with no stdlibs. On my x86_64 system,
+> this results in a statically linked binary of less than 5K.
+> 
+> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+v6 looks good to me.
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-drivers/misc/.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Should this go through the tinification tree or the selftests tree?
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+- Josh Triplett
 
-Please let me know if it is OK to take this one into linux-pm.
-
----
- drivers/misc/apds990x.c                |    4 ++--
- drivers/misc/bh1770glc.c               |    2 +-
- drivers/misc/lis3lv02d/lis3lv02d_i2c.c |    4 ++--
- drivers/misc/mei/mei_dev.h             |    4 ++--
- drivers/misc/mei/pci-me.c              |    8 ++++----
- drivers/misc/mei/pci-txe.c             |    8 +++-----
- 6 files changed, 14 insertions(+), 16 deletions(-)
-
-Index: linux-pm/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-===================================================================
---- linux-pm.orig/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-+++ linux-pm/drivers/misc/lis3lv02d/lis3lv02d_i2c.c
-@@ -235,7 +235,7 @@ static int lis3lv02d_i2c_resume(struct d
- }
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int lis3_i2c_runtime_suspend(struct device *dev)
- {
- 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-@@ -253,7 +253,7 @@ static int lis3_i2c_runtime_resume(struc
- 	lis3lv02d_poweron(lis3);
- 	return 0;
- }
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- static const struct i2c_device_id lis3lv02d_id[] = {
- 	{"lis3lv02d", LIS3LV02D},
-Index: linux-pm/drivers/misc/mei/mei_dev.h
-===================================================================
---- linux-pm.orig/drivers/misc/mei/mei_dev.h
-+++ linux-pm/drivers/misc/mei/mei_dev.h
-@@ -530,9 +530,9 @@ struct mei_device {
- 	 * Power Gating support
- 	 */
- 	enum mei_pg_event pg_event;
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	struct dev_pm_domain pg_domain;
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- 	unsigned char rd_msg_buf[MEI_RD_MSG_BUF_SIZE];
- 	u32 rd_msg_hdr;
-Index: linux-pm/drivers/misc/mei/pci-me.c
-===================================================================
---- linux-pm.orig/drivers/misc/mei/pci-me.c
-+++ linux-pm/drivers/misc/mei/pci-me.c
-@@ -89,13 +89,13 @@ static const struct pci_device_id mei_me
- 
- MODULE_DEVICE_TABLE(pci, mei_me_pci_tbl);
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static inline void mei_me_set_pm_domain(struct mei_device *dev);
- static inline void mei_me_unset_pm_domain(struct mei_device *dev);
- #else
- static inline void mei_me_set_pm_domain(struct mei_device *dev) {}
- static inline void mei_me_unset_pm_domain(struct mei_device *dev) {}
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- /**
-  * mei_me_quirk_probe - probe for devices that doesn't valid ME interface
-@@ -357,7 +357,7 @@ static int mei_me_pci_resume(struct devi
- }
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int mei_me_pm_runtime_idle(struct device *device)
- {
- 	struct pci_dev *pdev = to_pci_dev(device);
-@@ -453,7 +453,7 @@ static inline void mei_me_unset_pm_domai
- 	/* stop using pm callbacks if any */
- 	dev->dev->pm_domain = NULL;
- }
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- #ifdef CONFIG_PM
- static const struct dev_pm_ops mei_me_pm_ops = {
-Index: linux-pm/drivers/misc/mei/pci-txe.c
-===================================================================
---- linux-pm.orig/drivers/misc/mei/pci-txe.c
-+++ linux-pm/drivers/misc/mei/pci-txe.c
-@@ -42,13 +42,13 @@ static const struct pci_device_id mei_tx
- };
- MODULE_DEVICE_TABLE(pci, mei_txe_pci_tbl);
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static inline void mei_txe_set_pm_domain(struct mei_device *dev);
- static inline void mei_txe_unset_pm_domain(struct mei_device *dev);
- #else
- static inline void mei_txe_set_pm_domain(struct mei_device *dev) {}
- static inline void mei_txe_unset_pm_domain(struct mei_device *dev) {}
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- static void mei_txe_pci_iounmap(struct pci_dev *pdev, struct mei_txe_hw *hw)
- {
-@@ -295,7 +295,7 @@ static int mei_txe_pci_resume(struct dev
- }
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int mei_txe_pm_runtime_idle(struct device *device)
- {
- 	struct pci_dev *pdev = to_pci_dev(device);
-@@ -401,9 +401,7 @@ static inline void mei_txe_unset_pm_doma
- 	/* stop using pm callbacks if any */
- 	dev->dev->pm_domain = NULL;
- }
--#endif /* CONFIG_PM_RUNTIME */
- 
--#ifdef CONFIG_PM
- static const struct dev_pm_ops mei_txe_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(mei_txe_pci_suspend,
- 				mei_txe_pci_resume)
-Index: linux-pm/drivers/misc/apds990x.c
-===================================================================
---- linux-pm.orig/drivers/misc/apds990x.c
-+++ linux-pm/drivers/misc/apds990x.c
-@@ -609,7 +609,7 @@ static int apds990x_detect(struct apds99
- 	return ret;
- }
- 
--#if defined(CONFIG_PM) || defined(CONFIG_PM_RUNTIME)
-+#ifdef CONFIG_PM
- static int apds990x_chip_on(struct apds990x_chip *chip)
- {
- 	int err	 = regulator_bulk_enable(ARRAY_SIZE(chip->regs),
-@@ -1237,7 +1237,7 @@ static int apds990x_resume(struct device
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int apds990x_runtime_suspend(struct device *dev)
- {
- 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-Index: linux-pm/drivers/misc/bh1770glc.c
-===================================================================
---- linux-pm.orig/drivers/misc/bh1770glc.c
-+++ linux-pm/drivers/misc/bh1770glc.c
-@@ -1358,7 +1358,7 @@ static int bh1770_resume(struct device *
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int bh1770_runtime_suspend(struct device *dev)
- {
- 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-
+> Changes from v5:
+>   - remove #ifdef in Makefile (doh!)
+>   - use variables in build command
+>   - use different num_to_str, with less conversions
+> 
+> Changes from v4:
+>   - make most routines static
+>   - replace strip with gcc -s
+>   - remove explicit reference to _start
+>   - change --static to -static
+>   - remove explicit reference to LIBGCC
+>   - fix test description for ok and not ok paths, for test 1
+> 
+> Changes from v3:
+>   - add more human-readable output
+>   - put libgcc reference into a variable in Makefile
+> 
+> Changes from v2:
+>   - fix copyright string (again!)
+>   - use __builtin_strlen instead of my own strlen
+>   - replace main with _start
+> 
+> Changes from v1:
+>   - add return values to print routines
+>   - add .gitignore file
+>   - use more correct Copyright string in get_size.c
+> 
+>  tools/testing/selftests/Makefile        |   1 +
+>  tools/testing/selftests/size/.gitignore |   1 +
+>  tools/testing/selftests/size/Makefile   |  12 ++++
+>  tools/testing/selftests/size/get_size.c | 100 ++++++++++++++++++++++++++++++++
+>  4 files changed, 114 insertions(+)
+>  create mode 100644 tools/testing/selftests/size/.gitignore
+>  create mode 100644 tools/testing/selftests/size/Makefile
+>  create mode 100644 tools/testing/selftests/size/get_size.c
+> 
+> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+> index 45f145c..fa91aef 100644
+> --- a/tools/testing/selftests/Makefile
+> +++ b/tools/testing/selftests/Makefile
+> @@ -15,6 +15,7 @@ TARGETS += user
+>  TARGETS += sysctl
+>  TARGETS += firmware
+>  TARGETS += ftrace
+> +TARGETS += size
+>  
+>  TARGETS_HOTPLUG = cpu-hotplug
+>  TARGETS_HOTPLUG += memory-hotplug
+> diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
+> new file mode 100644
+> index 0000000..189b781
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/.gitignore
+> @@ -0,0 +1 @@
+> +get_size
+> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+> new file mode 100644
+> index 0000000..04dc25e
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/Makefile
+> @@ -0,0 +1,12 @@
+> +CC = $(CROSS_COMPILE)gcc
+> +
+> +all: get_size
+> +
+> +get_size: get_size.c
+> +	$(CC) -static -ffreestanding -nostartfiles -s $< -o $@
+> +
+> +run_tests: all
+> +	./get_size
+> +
+> +clean:
+> +	$(RM) get_size
+> diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
+> new file mode 100644
+> index 0000000..2d1af7c
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/get_size.c
+> @@ -0,0 +1,100 @@
+> +/*
+> + * Copyright 2014 Sony Mobile Communications Inc.
+> + *
+> + * Licensed under the terms of the GNU GPL License version 2
+> + *
+> + * Selftest for runtime system size
+> + *
+> + * Prints the amount of RAM that the currently running system is using.
+> + *
+> + * This program tries to be as small as possible itself, to
+> + * avoid perturbing the system memory utilization with its
+> + * own execution.  It also attempts to have as few dependencies
+> + * on kernel features as possible.
+> + *
+> + * It should be statically linked, with startup libs avoided.
+> + * It uses no library calls, and only the following 3 syscalls:
+> + *   sysinfo(), write(), and _exit()
+> + *
+> + * For output, it avoids printf (which in some C libraries
+> + * has large external dependencies) by  implementing it's own
+> + * number output and print routines, and using __builtin_strlen()
+> + */
+> +
+> +#include <sys/sysinfo.h>
+> +#include <unistd.h>
+> +
+> +#define STDOUT_FILENO 1
+> +
+> +static int print(const char *s)
+> +{
+> +	return write(STDOUT_FILENO, s, __builtin_strlen(s));
+> +}
+> +
+> +static inline char *num_to_str(unsigned long num, char *buf, int len)
+> +{
+> +	unsigned int digit;
+> +
+> +	/* put digits in buffer from back to front */
+> +	buf += len - 1;
+> +	*buf = 0;
+> +	do {
+> +		digit = num % 10;
+> +		*(--buf) = digit + '0';
+> +		num /= 10;
+> +	} while (num > 0);
+> +
+> +	return buf;
+> +}
+> +
+> +static int print_num(unsigned long num)
+> +{
+> +	char num_buf[30];
+> +
+> +	return print(num_to_str(num, num_buf, sizeof(num_buf)));
+> +}
+> +
+> +static int print_k_value(const char *s, unsigned long num, unsigned long units)
+> +{
+> +	unsigned long long temp;
+> +	int ccode;
+> +
+> +	print(s);
+> +
+> +	temp = num;
+> +	temp = (temp * units)/1024;
+> +	num = temp;
+> +	ccode = print_num(num);
+> +	print("\n");
+> +	return ccode;
+> +}
+> +
+> +/* this program has no main(), as startup libraries are not used */
+> +void _start(void)
+> +{
+> +	int ccode;
+> +	struct sysinfo info;
+> +	unsigned long used;
+> +
+> +	print("Testing system size.\n");
+> +	print("1..1\n");
+> +
+> +	ccode = sysinfo(&info);
+> +	if (ccode < 0) {
+> +		print("not ok 1 get runtime memory use\n");
+> +		print("# could not get sysinfo\n");
+> +		_exit(ccode);
+> +	}
+> +	/* ignore cache complexities for now */
+> +	used = info.totalram - info.freeram - info.bufferram;
+> +	print_k_value("ok 1 get runtime memory use # size = ", used,
+> +		info.mem_unit);
+> +
+> +	print("# System runtime memory report (units in Kilobytes):\n");
+> +	print_k_value("#   Total:  ", info.totalram, info.mem_unit);
+> +	print_k_value("#   Free:   ", info.freeram, info.mem_unit);
+> +	print_k_value("#   Buffer: ", info.bufferram, info.mem_unit);
+> +	print_k_value("#   In use: ", used, info.mem_unit);
+> +
+> +	_exit(0);
+> +}
+> -- 
+> 1.8.2.2
+> 
