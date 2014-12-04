@@ -1,49 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaLDPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:14:29 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:41729 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbaLDPO2 (ORCPT
+	id S932426AbaLDPQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:16:21 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:63765 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094AbaLDPQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:14:28 -0500
-Date: Thu, 4 Dec 2014 10:14:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.19] workqueue: cosmetic update in rescuer_thread()
-Message-ID: <20141204151413.GF15219@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 4 Dec 2014 10:16:19 -0500
+X-AuditID: cbfec373-b7f6b6d00000271d-c7-54807ac10ae1
+Date: Thu, 04 Dec 2014 13:16:11 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Luis de Bethencourt <luis@debethencourt.com>
+Cc: linux-kernel@vger.kernel.org, jarod@wilsonet.com,
+        gregkh@linuxfoundation.org, mahfouz.saif.elyazal@gmail.com,
+        dan.carpenter@oracle.com, tuomas.tynkkynen@iki.fi,
+        gulsah.1004@gmail.com, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH v2] staging: media: lirc: lirc_zilog.c: fix quoted strings
+ split across lines
+Message-id: <20141204131611.69d00ba1.m.chehab@samsung.com>
+In-reply-to: <20141125203629.GA12059@biggie>
+References: <20141125203629.GA12059@biggie>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/hEN2DVQ0hBj33uSxe/5vOYrHnzC92
+	i+bF69ks5jc+ZLe4+uIEk8XlXXPYLHo2bGW1eHJDz2L9uTusFnPXbmN34PJYe3Y9i8e9fYdZ
+	PHbOusvucfjrQhaP/XPXsHt8fHqLxePzJjmPqSf7WAM4orhsUlJzMstSi/TtErgyLvZfYik4
+	ZVKx+ItpA+Mj9S5GTg4JAROJ3vOzmSBsMYkL99azdTFycQgJLGGUWD/5FjOE08Ak8X/zEzaQ
+	KhYBVYknCzcxgthsAkYSrxpbWEFsEQEDiZuHr7CDNDAL/GSU+L78A1iDsECyRMeLpSwgNq+A
+	lcTar//YQWxOAR2JK2euga0WEtCWOPL4JdQZzhJXfpxigqgXlPgx+R5YL7OAlsTmbU2sELa8
+	xOY1b5knMArMQlI2C0nZLCRlCxiZVzGKlhYnFxQnpeca6RUn5haX5qXrJefnbmKEREjxDsYX
+	G6wOMQpwMCrx8DacrA8RYk0sK67MPcQowcGsJMKr5dsQIsSbklhZlVqUH19UmpNafIiRiYNT
+	qoGRPXCnXn3BpJVrt1Vx2uet+8Oa/r2gc0n3mw/Sv4VMvN5d3rFOLLTI5eSu9Qvaeh9fON+n
+	tEo2a9ntlZNcVLc/y6i5LNpzdXOhgaPRctd/k3N+3GQyfnAliOl3x5+kpnVpXaJ3mAUC/RsW
+	nRT8tbSU02u3a8/uS2+lqr38f4W3i4mwFB86vZBdiaU4I9FQi7moOBEAXmLCTG4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rescuer_thread() caches &rescuer->scheduled in a local variable
-scheduled for convenience.  There's one WARN_ON_ONCE() which was using
-&rescuer->scheduled directly.  Replace it with the local variable.
+Hi Luis,
 
-This patch causes no functional difference.
+Em Tue, 25 Nov 2014 20:36:29 +0000
+Luis de Bethencourt <luis@debethencourt.com> escreveu:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applying to wq/for-3.19.
+> checkpatch makes an exception to the 80-colum rule for quotes strings, and
+> Documentation/CodingStyle recommends not splitting quotes strings across lines
+> because it breaks the ability to grep for the string. Fixing these.
+> 
+> WARNING: quoted string split across lines
+> 
+> Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+> ---
+> Changes in v2:
+> 	- As pointed out by Joe Perches I missed a space when joining a set of strings
+> 
+> Thanks for the review Joe
+>  drivers/staging/media/lirc/lirc_zilog.c | 39 ++++++++++++++-------------------
+>  1 file changed, 17 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+> index dca806a..a35d6f2 100644
+> --- a/drivers/staging/media/lirc/lirc_zilog.c
+> +++ b/drivers/staging/media/lirc/lirc_zilog.c
+> @@ -372,14 +372,12 @@ static int add_to_buf(struct IR *ir)
+>  					   ret);
+>  			if (failures >= 3) {
+>  				mutex_unlock(&ir->ir_lock);
+> -				dev_err(ir->l.dev, "unable to read from the IR chip "
+> -					    "after 3 resets, giving up\n");
+> +				dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
 
-Thanks.
+This patch didn't apply on my tree, as what I have there is a driver
+custom macro. Probably I'm missing some patch (or it got merged via some
+other tree):
 
- kernel/workqueue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
++<<<<<<<
+                                zilog_error("unable to read from the IR chip "
+                                            "after 3 resets, giving up\n");
++=======
++                               dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
++>>>>>>>
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2246,7 +2246,7 @@ repeat:
- 		 * Slurp in all works issued via this workqueue and
- 		 * process'em.
- 		 */
--		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
-+		WARN_ON_ONCE(!list_empty(scheduled));
- 		list_for_each_entry_safe(work, n, &pool->worklist, entry)
- 			if (get_work_pwq(work) == pwq)
- 				move_linked_works(work, scheduled, &n);
+One general note about this patch: those strings are already big, so
+the best is to put them at the beginning of the second line, aligned with
+the parenthesis, e. g:
+				dev_err(ir->l.dev,
+					"unable to read from the IR chip after 3 resets, giving up\n");
+
+Ok, on some, the second line will still violate the 80-cols max, but
+on others it may actually fit. So, better to do the same thing along
+the entire driver, as it makes easier to read it if all similar lines
+use the same criteria.
+
+Regards,
+Mauro.
+
+>  				break;
+>  			}
+>  
+>  			/* Looks like the chip crashed, reset it */
+> -			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
+> -				    "trying reset\n");
+> +			dev_err(ir->l.dev, "polling the IR receiver chip failed, trying reset\n");
+>  
+>  			set_current_state(TASK_UNINTERRUPTIBLE);
+>  			if (kthread_should_stop()) {
+> @@ -405,8 +403,8 @@ static int add_to_buf(struct IR *ir)
+>  		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
+>  		mutex_unlock(&ir->ir_lock);
+>  		if (ret != sizeof(keybuf)) {
+> -			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
+> -				    "keeping last read buffer\n", ret);
+> +			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- keeping last read buffer\n",
+> +				    ret);
+>  		} else {
+>  			rx->b[0] = keybuf[3];
+>  			rx->b[1] = keybuf[4];
+> @@ -713,8 +711,8 @@ static int send_boot_data(struct IR_tx *tx)
+>  				       buf[0]);
+>  		return 0;
+>  	}
+> -	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
+> -		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
+> +	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
+> +		     buf[1], buf[2], buf[3]);
+>  
+>  	return 0;
+>  }
+> @@ -794,8 +792,7 @@ static int fw_load(struct IR_tx *tx)
+>  	if (!read_uint8(&data, tx_data->endp, &version))
+>  		goto corrupt;
+>  	if (version != 1) {
+> -		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
+> -			    "1) -- please upgrade to a newer driver",
+> +		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
+>  			    version);
+>  		fw_unload_locked();
+>  		ret = -EFAULT;
+> @@ -983,8 +980,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+>  	ret = get_key_data(data_block, code, key);
+>  
+>  	if (ret == -EPROTO) {
+> -		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
+> -			    "lircd.conf entries\n", code, key);
+> +		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check lircd.conf entries\n",
+> +			    code, key);
+>  		return ret;
+>  	} else if (ret != 0)
+>  		return ret;
+> @@ -1059,8 +1056,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+>  		ret = i2c_master_send(tx->c, buf, 1);
+>  		if (ret == 1)
+>  			break;
+> -		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
+> -			"failed with %d (try %d)\n", ret, i+1);
+> +		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send failed with %d (try %d)\n",
+> +			ret, i+1);
+>  	}
+>  	if (ret != 1) {
+>  		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
+> @@ -1167,12 +1164,10 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
+>  		 */
+>  		if (ret != 0) {
+>  			/* Looks like the chip crashed, reset it */
+> -			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
+> -				    "failed, trying reset\n");
+> +			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip failed, trying reset\n");
+>  
+>  			if (failures >= 3) {
+> -				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
+> -					    "after 3 resets, giving up\n");
+> +				dev_err(tx->ir->l.dev, "unable to send to the IR chip after 3 resets, giving up\n");
+>  				mutex_unlock(&ir->ir_lock);
+>  				mutex_unlock(&tx->client_lock);
+>  				put_ir_tx(tx, false);
+> @@ -1581,8 +1576,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  				       "zilog-rx-i2c-%d", adap->nr);
+>  		if (IS_ERR(rx->task)) {
+>  			ret = PTR_ERR(rx->task);
+> -			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
+> -				    "\n", __func__);
+> +			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread\n",
+> +				    __func__);
+>  			/* Failed kthread, so put back the ir ref */
+>  			put_ir_device(ir, true);
+>  			/* Failure exit, so put back rx ref from i2c_client */
+> @@ -1594,8 +1589,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  
+>  		/* Proceed only if the Tx client is also ready */
+>  		if (tx == NULL) {
+> -			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
+> -				   " on IR Tx.\n", adap->name, adap->nr);
+> +			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
+> +				   adap->name, adap->nr);
+>  			goto out_ok;
+>  		}
+>  	}
