@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaLDABy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:01:54 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:63096 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaLDABw (ORCPT
+	id S1752630AbaLDADB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:03:01 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:52120 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaLDADA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:01:52 -0500
+	Wed, 3 Dec 2014 19:03:00 -0500
+Message-ID: <547FA4B1.6050200@linaro.org>
+Date: Wed, 03 Dec 2014 19:02:57 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141203155352.ea5322ff45c6200238c7ef51@linux-foundation.org>
-References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
- <alpine.DEB.2.11.1410291908290.5308@nanos> <CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com>
- <20141110.211319.1983610686941713044.davem@davemloft.net> <5461EA6B.9020305@nod.at>
- <CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
- <20141203153721.30b32472145aa560921bdc1e@linux-foundation.org>
- <CALCETrVk0EBL0vk8kjOhjkMAOaxXukCdSptzfHU=g1s7JChXiQ@mail.gmail.com> <20141203155352.ea5322ff45c6200238c7ef51@linux-foundation.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Dec 2014 16:01:30 -0800
-Message-ID: <CALCETrX7HFqurW066+UL92GnR3Ue32xG0-etb7g97Y5+jN+rQg@mail.gmail.com>
-Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct task_struct
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: William Cohen <wcohen@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steve Capper <steve.capper@linaro.org>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org>
+In-Reply-To: <547F94B0.1000902@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 3:53 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 3 Dec 2014 15:38:29 -0800 Andy Lutomirski <luto@amacapital.net> wrote:
+On 12/03/14 17:54, David Long wrote:
+> On 12/03/14 09:54, William Cohen wrote:
+>> On 12/01/2014 04:37 AM, Masami Hiramatsu wrote:
+>>> (2014/11/29 1:01), Steve Capper wrote:
+
+[...]
+
+>>>> That would explain why the state of play of the interrupts is in an
+>>>> unexpected state in the crash I reported:
+>>>> "The point of failure in the panic was:
+>>>> fs/buffer.c:1257
+>>>>
+>>>> static inline void check_irqs_on(void)
+>>>> {
+>>>> #ifdef irqs_disabled
+>>>>          BUG_ON(irqs_disabled());
+>>>> #endif
+>>>> }
+>>>> "
+>>>>
+>>>> This is all new to me so I'm still at the head-scratching stage.
+>>>
+>>> Ah, I see.
+>>>
+>>> Thank you,
+>>>
+>>>>
+>>>> David,
+>>>> Does the above make sense to you? Have you managed to reproduce the
+>>>> crash I get?
+>>>>
+>>>> Cheers,
+>>>> --
+>>>> Steve
 >
->> Yes, exactly.
->>
->> >
->> > Spelling this out in the changelog would be useful for the ignorant and
->> > the forgetful ;)
->>
->> Want a new version, or will you fix it up yourself?
->>
+> I have easily produced a crash although it doesn't look to me like the
+> same one.  I'm getting a NULL pointer dereference.  The PMU stuff (used
+> by perf record|stat -e) should be quite independent of kprobes though.
 >
-> I think I can work that out.
+> -dl
 >
-> A couple of linux-next things to check:
->
-> - arch/arm/include/asm/thread_info.h:arm_restart_block has
->   disappeared from the thread_info.
->
-> - the reference to ti->restart_block in arch/arm/kernel/traps.c has
->   vanished.  I couldn't find anywhere where it was moved to.
 
-This looks like it's:
+Oops, never mind the above bit.  I see this is not PMU-related, but use 
+of kprobes through perf.  My bad.
 
-commit 3f4aa45ceea5789a4aade536acc27f2e0d3da5e1
-Author: Vladimir Murzin <vladimir.murzin@arm.com>
-Date:   Thu Nov 27 11:39:04 2014 +0100
+-dl
 
-    ARM: 8226/1: cacheflush: get rid of restarting block
-
-    We cannot restart cacheflush safely if a process provides user-defined
-    signal handler and signal is pending. In this case -EINTR is returned
-    and it is expected that process re-invokes syscall. However, there are
-    a few problems with that:
-     * looks like nobody bothers checking return value from cacheflush
-     * but if it did, we don't provide the restart address for that, so the
-       process has to use the same range again
-     * ...and again, what might lead to looping forever
-
-    So, remove cacheflush restarting code and terminate cache flushing
-    as early as fatal signal is pending.
-
-If you haven't already done the obvious fixup (just drop the offending
-hunk), I can send a new version.
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
