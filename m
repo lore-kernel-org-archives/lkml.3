@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907AbaLDRqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:46:51 -0500
-Received: from sauhun.de ([89.238.76.85]:34037 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932854AbaLDRqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:46:48 -0500
-Date: Thu, 4 Dec 2014 18:46:42 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linuxppc-dev@ozlabs.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [RFC 2/2] sound: ppc: keywest: drop using attach
-	adapter
-Message-ID: <20141204174642.GA7944@katana>
-References: <1417711313-7257-1-git-send-email-wsa@the-dreams.de>
- <1417711313-7257-3-git-send-email-wsa@the-dreams.de>
- <s5hiohrpd0w.wl-tiwai@suse.de>
+	id S932789AbaLDRrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:47:46 -0500
+Received: from mx2.compro.net ([12.186.155.30]:59818 "HELO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932343AbaLDRro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:47:44 -0500
+X-BYPSHEADER: 2124884
+X-SMScore: -200
+Message-ID: <54809E3F.7050605@compro.net>
+Date: Thu, 04 Dec 2014 12:47:43 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <s5hiohrpd0w.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Joe Perches <joe@perches.com>, Sean Cleator <seancleator@hotmail.co.uk>
+CC: lidza.louina@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: dgnc: Fix long line coding style issues in
+ dgnc_cls.h
+References: <BLU437-SMTP3735424C7098C20996EFF8E97B0@phx.gbl> <1723574984.368832.1417649865878.JavaMail.root@mx2.compro.net>
+In-Reply-To: <1723574984.368832.1417649865878.JavaMail.root@mx2.compro.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/03/2014 06:37 PM, Joe Perches wrote:
+> On Wed, 2014-12-03 at 21:30 +0000, Sean Cleator wrote:
+>> A patch to fix the rest of the long line warnings in the dgnc_cls.h file
+>> found by the checkpatch.pl tool
+>
+> checkpatch is a brainless little tool.
+>
+> You should prefer to develop a readable style rather than
+> pay too close attention to precisely what checkpatch says.
+>
+> fyi: There is this warning in the file:
+>
+>   *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+>
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That comment should be removed. It was put there when this driver was 
+under Digi's CVS control. Some of their user land apps, delivered with 
+the driver package, also used it. They probably had different people 
+working on the kernel and user land side.
 
-
-> > +
-> > +	/* We assume Macs have consecutive I2C bus numbers starting at 0 */
-> > +	while (adap) {
-> > +		err =3D keywest_attach_adapter(adap);
-> > +		if (!err)
-> > +			break;
-> > +		i2c_put_adapter(adap);
-> > +		adap =3D i2c_get_adapter(++i);
-> > +	}
-> > +
-> >  	return 0;
->=20
-> What if adap is NULL in the last while loop?  Isn't it supposed to
-> return an error?
-
-True, we probably should have something like
-
-	return adap ? 0 : -ENODEV;
-
-Thanks!
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgJ4BAAoJEBQN5MwUoCm2DcYP/iXD/LXZnNZdGJK9LJLFk46C
-9o07m4srk91m4GeJJw7pmiF8y8BhEHtwNZfEFokXuOhLHczMHslyzspOJH/rGjFA
-MVPIUX1/apojiAjUj2rxxqtfDUorOQ3WR0pwlZatTwQYV7xRnH1jqC5o+PXYOyfL
-RtAhmEmqUHYLgJSDtRoeqBPYEC8rvWl1ylGZmzURQ7Pwe6Em+lqDk1rFwfSYiOCK
-Wi7dOP9Ra+aVKWWrHQ1yyD2c0cliOEV33s4UMLjYA7ZtvbldtqwR7neUkpBJhbQY
-axCjuK+/AvZvKplnSEHUrnkFM1pWqEmP9SSI1b3EXK+DUKwe+DpghjuDjF36tXRy
-jKfJnocFzFhgBzKEspWZ9CA5nd+nmB/StoC5XHSrh2QiZgB/SFs/tITEs5BsEccC
-Ae1qypm2YlO/646kXvkeMmceobIai+t6KlhVPoLUgomjwhVVwkZlg806Ma6Z1GZw
-QrbdLRk6rxeNoxgrpYoQmz0bbfu+eGPdtwEPdmF/kXiNhvdPJ+Ll04Yl6HJIF/Qo
-D6Q4j7WDpTjjO6ay6uBocPJlZTM2izMwNP7ikmWSp/behold/BnFVB6CvrOmZPEX
-eRA2nItjKCBItIMmPsxhXJTJ0f3ZGqpFb53yWH1LnLicK5RyN3/1gW4nzHHCVgzn
-/w1YkBdn3r/uu0+nIZPS
-=Fcnn
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+Mark
