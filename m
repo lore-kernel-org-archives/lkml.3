@@ -1,149 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaLDAEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:04:54 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:33511 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaLDAEw convert rfc822-to-8bit (ORCPT
+	id S1752142AbaLDAH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:07:56 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34243 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLDAHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:04:52 -0500
+	Wed, 3 Dec 2014 19:07:54 -0500
+Date: Wed, 3 Dec 2014 16:07:49 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
+Message-ID: <20141204000749.GX25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
+ <1417645821-54731-2-git-send-email-borntraeger@de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20141203235835.GE31369@lerouge>
-References: <20141203220836.GC31369@lerouge> <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
- <20141203235835.GE31369@lerouge>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Dec 2014 16:04:31 -0800
-Message-ID: <CALCETrXbEheevmNKsuEd0NEpCrDz06W5z_OphMOUHqT7qNUTyA@mail.gmail.com>
-Subject: Re: [PATCH] context_tracking: Restore previous state in schedule_user
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417645821-54731-2-git-send-email-borntraeger@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120400-8236-0000-0000-000007720928
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Wed, Dec 03, 2014 at 03:18:41PM -0800, Andy Lutomirski wrote:
->> It appears that some SCHEDULE_USER (asm for schedule_user) callers
->> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
->> and schedule_user will return in RCU user context.  This causes RCU
->> warnings and possible failures.
->>
->> This is intended to be a minimal fix suitable for 3.18.
->>
->> Reported-by: Dave Jones <davej@redhat.com>
->> Cc: Oleg Nesterov <oleg@redhat.com>
->> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
->> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->
-> Ah, we sent it about at the same time :-)
->
-> Might be too late for 3.18 though because it's not a regression.
->
->> ---
->>
->> Hi all-
->>
->> This is intended to be a suitable last-minute fix for the RCU issue that
->> Dave saw.
->>
->> Dave, can you confirm that this fixes it?
->>
->> Frédéric, can you confirm that you think that this will have no effect
->> on correct callers of schedule_user and that will do the right thing
->> for incorrect callers of schedule_user?
->
-> Yes it should be fine.
->
->>
->> I don't like the x86 asm that calls this at all, and I don't really
->> like the fragility of the mechanism is general, but I think that this
->> improves the situation enough to avoid problems in the short term.
->
-> At best we should have only one call to user_enter() at the end of the
-> syscall and exception path once we've completed everything (pending reschedule,
-> tracing, signals, ...) instead of context tracking fixups on functions that
-> can be called after syscall_trace_leave(), but that would impact the fastpath.
->
-> Although it should be possible to tweak the slow path to do that...
+On Wed, Dec 03, 2014 at 11:30:13PM +0100, Christian Borntraeger wrote:
+> ACCESS_ONCE does not work reliably on non-scalar types. For
+> example gcc 4.6 and 4.7 might remove the volatile tag for such
+> accesses during the SRA (scalar replacement of aggregates) step
+> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+> 
+> Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
+> scalar types as suggested by Linus Torvalds. Accesses larger than
+> the machines word size cannot be guaranteed to be atomic. These
+> macros will use memcpy and emit a build warning.
+> 
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-My eventual goal for x86 is rewrite the entire slow path in C.  Step
-1: delete sysret_audit, etc.
+With or without some nits below addressed:
 
->
->>
->> With the obvious warning added, I get:
->>
->> [    0.751022] ------------[ cut here ]------------
->> [    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
->> [    0.753477] Modules linked in:
->> [    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
->> [    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
->> [    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
->> [    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
->> [    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
->> [    0.762294] Call Trace:
->> [    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
->> [    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
->> [    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
->> [    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
->> [    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
->> [    0.768011] ---[ end trace 329f34db2b3be966 ]---
->>
->> So, yes, we have a bug, and this could cause any number of strange
->> problems.
->>
->>  kernel/sched/core.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 24beb9bb4c3e..39d9d95331b7 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
->>        * or we have been woken up remotely but the IPI has not yet arrived,
->>        * we haven't yet exited the RCU idle mode. Do it here manually until
->>        * we find a better solution.
->
-> Just need to fix the above comment.
->
->> +      *
->> +      * NB: There are buggy callers of this function.  Ideally we
->> +      * should warn if prev_state != IN_USER, but that will trigger
->> +      * to frequently to make sense yet.
->
-> It's not really the callers of this function that are buggy but the
-> way we handled context tracking.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Yeah, one could debate exactly where the bug is.
+> ---
+>  include/linux/compiler.h | 64 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 64 insertions(+)
+> 
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index d5ad7b1..947710e 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -186,6 +186,70 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>  # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+>  #endif
+> 
+> +#include <linux/types.h>
+> +
+> +void data_access_exceeds_word_size(void)
+> +__compiletime_warning("data access exceeds word size and won't be atomic");
+> +
+> +static __always_inline void __read_once_size(volatile void *p, void *res, int size)
+> +{
+> +	switch (size) {
+> +	case 1: *(u8 *)res = *(volatile u8 *)p; break;
+> +	case 2: *(u16 *)res = *(volatile u16 *)p; break;
+> +	case 4: *(u32 *)res = *(volatile u32 *)p; break;
+> +#ifdef CONFIG_64BIT
+> +	case 8: *(u64 *)res = *(volatile u64 *)p; break;
+> +#endif
 
-Anyway, if you're doing this for 3.19, adding a WARN_ON_ONCE and
-trying to fix the callers might make sense.
+You could get rid of the #ifdef above by doing "case sizeof(long)"
+and switching the casts from u64 to unsigned long.
 
---Andy
+> +	default:
+> +		barrier();
+> +		__builtin_memcpy((void *)res, (const void *)p, size);
+> +		data_access_exceeds_word_size();
+> +		barrier();
+> +	}
+> +}
+> +
+> +static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
+> +{
+> +	switch (size) {
+> +	case 1: *(volatile u8 *)p = *(u8 *)res; break;
+> +	case 2: *(volatile u16 *)p = *(u16 *)res; break;
+> +	case 4: *(volatile u32 *)p = *(u32 *)res; break;
+> +#ifdef CONFIG_64BIT
+> +	case 8: *(volatile u64 *)p = *(u64 *)res; break;
+> +#endif
 
->
->>        */
->> -     user_exit();
->> +     enum ctx_state prev_state = exception_enter();
->>       schedule();
->> -     user_enter();
->> +     exception_exit(prev_state);
->>  }
->>  #endif
->>
->> --
->> 1.9.3
->>
+Ditto.
 
+> +	default:
+> +		barrier();
+> +		__builtin_memcpy((void *)p, (const void *)res, size);
+> +		data_access_exceeds_word_size();
+> +		barrier();
+> +	}
+> +}
+> +
+> +/*
+> + * Prevent the compiler from merging or refetching reads or writes. The compiler
+> + * is also forbidden from reordering successive instances of READ_ONCE,
+> + * ASSIGN_ONCE and ACCESS_ONCE (see below), but only when the compiler is aware
+> + * of some particular ordering.  One way to make the compiler aware of ordering
+> + * is to put the two invocations of READ_ONCE, ASSIGN_ONCE or ACCESS_ONCE() in
+> + * different C statements.
+> + *
+> + * In contrast to ACCESS_ONCE these two macros will also work on aggregate data
+> + * types like structs or unions. If the size of the accessed data type exceeds
+> + * the word size of the machine (e.g. 32bit or 64bit), the access might happen
+> + * in multiple chunks, though.
 
+This last sentence might be more clear if it was something like the
+following:
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+	If the size of the accessed data type exceeeds the word size of
+	the machine (e.g., 32 bits or 64 bits), ACCESS_ONCE() might
+	carry out the access in multiple chunks, but READ_ONCE() and
+	ASSIGN_ONCE() will give a link-time error.
+
+> + *
+> + * These macros do absolutely -nothing- to prevent the CPU from reordering,
+> + * merging, or refetching absolutely anything at any time.  Their main intended
+> + * use is to mediate communication between process-level code and irq/NMI
+> + * handlers, all running on the same CPU.
+
+This last sentence is now obsolete.  How about something like this?
+
+	Their two major use cases are: (1) Mediating communication
+	between process-level code and irq/NMI handlers, all running
+	on the same CPU, and (2) Ensuring that the compiler does not
+	fold, spindle, or otherwise mutilate accesses that either do
+	not require ordering or that interact with an explicit memory
+	barrier or atomic instruction that provides the required ordering.
+
+> + */
+> +
+> +#define READ_ONCE(p) \
+> +      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
+> +
+> +#define ASSIGN_ONCE(val, p) \
+> +      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
+> +
+>  #endif /* __KERNEL__ */
+> 
+>  #endif /* __ASSEMBLY__ */
+> -- 
+> 1.9.3
+> 
+
