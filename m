@@ -1,149 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaLDLbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:31:23 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43794 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbaLDLbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:31:21 -0500
-Message-ID: <1417692637.3744.5.camel@pengutronix.de>
-Subject: Re: [PATCH v17 06/12] dt-bindings: add document for dw_hdmi
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
-Date: Thu, 04 Dec 2014 12:30:37 +0100
-In-Reply-To: <1417687565-13206-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417687565-13206-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754000AbaLDLbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:31:34 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40557 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753879AbaLDLbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:31:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="424996369"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <nadav.amit@gmail.com>, <rkrcmar@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v2 1/4] kvm: vmx: add nested virtualization support for xsaves
+Date: Thu,  4 Dec 2014 19:11:07 +0800
+Message-Id: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Add nested virtualization support for xsaves.
 
-Am Donnerstag, den 04.12.2014, 18:06 +0800 schrieb Andy Yan:
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> 
-> ---
-> 
-> Changes in v17: None
-> Changes in v16:
-> - describe ddc-i2c-bus as optional
-> - add common clocks bindings
-> 
-> Changes in v15: None
-> Changes in v14: None
-> Changes in v13: None
-> Changes in v12: None
-> Changes in v11: None
-> Changes in v10: None
-> Changes in v9: None
-> Changes in v8:
-> - correct some spelling mistake
-> - modify ddc-i2c-bus and interrupt description
-> 
-> Changes in v7: None
-> Changes in v6: None
-> Changes in v5: None
-> Changes in v4: None
-> Changes in v3: None
-> 
->  .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 45 ++++++++++++++++++++++
->  1 file changed, 45 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-> new file mode 100644
-> index 0000000..fb14730
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-> @@ -0,0 +1,45 @@
-> +DesignWare HDMI bridge bindings
-> +
-> +Required properities:
-> +- compatible: platform specific such as:
-> +   * "snps,dw-hdmi-tx"
-> +   * "fsl,imx6q-hdmi"
-> +   * "fsl,imx6dl-hdmi"
-> +   * "rockchip,rk3288-dw-hdmi"
-> +- reg: Physical base address and length of the controller's registers.
-> +- interrupts: The HDMI interrupt number
-> +- clocks, clock-names : must have the phandles to the HDMI iahb and isrf clocks,
-> +  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
-> +  the clock-names should be "iahb", "isfr"
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ arch/x86/kvm/vmx.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-This is missing the port bindings, I think it should mention the port
-property here and refer to the soc specific binding document.
-
- - port@...: SoC specific port nodes with endpoint definitions as defined
-   in Documentation/devicetree/bindings/media/video-interfaces.txt,
-   please refer to the SoC specific binding document:
-    * Documentation/devicetree/bindings/drm/imx/hdmi.txt
-    * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-
-This also makes be wonder, shouldn't dw_hdmi-rockchip be under drm/?
-
-> +Optional properties
-> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-> +- clkocks, clock-names: phandle to the HDMI cec clock, name should be "cec"
-
-s/clkocks/clocks/, and I'd uppercase the HDMI CEC clock for consistency.
-
-> +
-> +Example:
-> +	hdmi: hdmi@0120000 {
-> +		compatible = "fsl,imx6q-hdmi";
-
-Could you change this example to:
-		compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx"
-
-> +		reg = <0x00120000 0x9000>;
-> +		interrupts = <0 115 0x04>;
-> +		gpr = <&gpr>;
-> +		clocks = <&clks 123>, <&clks 124>;
-> +		clock-names = "iahb", "isfr";
-> +		ddc-i2c-bus = <&i2c2>;
-> +
-> +		port@0 {
-> +			reg = <0>;
-> +
-> +			hdmi_mux_0: endpoint {
-> +				remote-endpoint = <&ipu1_di0_hdmi>;
-> +			};
-> +		};
-> +
-> +		port@1 {
-> +			reg = <1>;
-> +
-> +			hdmi_mux_1: endpoint {
-> +				remote-endpoint = <&ipu1_di1_hdmi>;
-> +			};
-> +		};
-> +	};
-
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6e3a448..e5bc349 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -216,6 +216,7 @@ struct __packed vmcs12 {
+ 	u64 virtual_apic_page_addr;
+ 	u64 apic_access_addr;
+ 	u64 ept_pointer;
++	u64 xss_exit_bitmap;
+ 	u64 guest_physical_address;
+ 	u64 vmcs_link_pointer;
+ 	u64 guest_ia32_debugctl;
+@@ -618,6 +619,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
+ 	FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
+ 	FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
+ 	FIELD64(EPT_POINTER, ept_pointer),
++	FIELD64(XSS_EXIT_BITMAP, xss_exit_bitmap),
+ 	FIELD64(GUEST_PHYSICAL_ADDRESS, guest_physical_address),
+ 	FIELD64(VMCS_LINK_POINTER, vmcs_link_pointer),
+ 	FIELD64(GUEST_IA32_DEBUGCTL, guest_ia32_debugctl),
+@@ -1104,6 +1106,12 @@ static inline int nested_cpu_has_ept(struct vmcs12 *vmcs12)
+ 	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_ENABLE_EPT);
+ }
+ 
++static inline bool nested_cpu_has_xsaves(struct vmcs12 *vmcs12)
++{
++	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES) &&
++		vmx_xsaves_supported();
++}
++
+ static inline bool is_exception(u32 intr_info)
+ {
+ 	return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
+@@ -2392,7 +2400,8 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+ 	nested_vmx_secondary_ctls_high &=
+ 		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+ 		SECONDARY_EXEC_UNRESTRICTED_GUEST |
+-		SECONDARY_EXEC_WBINVD_EXITING;
++		SECONDARY_EXEC_WBINVD_EXITING |
++		SECONDARY_EXEC_XSAVES;
+ 
+ 	if (enable_ept) {
+ 		/* nested EPT: emulate EPT also to L1 */
+@@ -7285,6 +7294,8 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+ 		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_WBINVD_EXITING);
+ 	case EXIT_REASON_XSETBV:
+ 		return 1;
++	case EXIT_REASON_XSAVES: case EXIT_REASON_XRSTORS:
++		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES);
+ 	default:
+ 		return 1;
+ 	}
+@@ -8341,6 +8352,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 	vmcs_writel(GUEST_SYSENTER_ESP, vmcs12->guest_sysenter_esp);
+ 	vmcs_writel(GUEST_SYSENTER_EIP, vmcs12->guest_sysenter_eip);
+ 
++	if (nested_cpu_has_xsaves(vmcs12))
++		vmcs_write64(XSS_EXIT_BITMAP, vmcs12->xss_exit_bitmap);
+ 	vmcs_write64(VMCS_LINK_POINTER, -1ull);
+ 
+ 	exec_control = vmcs12->pin_based_vm_exec_control;
+@@ -8981,6 +8994,8 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12,
+ 	vmcs12->guest_sysenter_eip = vmcs_readl(GUEST_SYSENTER_EIP);
+ 	if (vmx_mpx_supported())
+ 		vmcs12->guest_bndcfgs = vmcs_read64(GUEST_BNDCFGS);
++	if (nested_cpu_has_xsaves(vmcs12))
++		vmcs12->xss_exit_bitmap = vmcs_read64(XSS_EXIT_BITMAP);
+ 
+ 	/* update exit information fields: */
+ 
+-- 
+1.9.1
 
