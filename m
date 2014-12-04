@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaLDK70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:59:26 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:37155 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751391AbaLDK7Z (ORCPT
+	id S1753565AbaLDLAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:00:20 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35593 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLDLAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:59:25 -0500
-Date: Thu, 4 Dec 2014 10:59:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20141204105908.GM11285@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201406182122.29623@pali>
- <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
- <201411242319.27481@pali>
- <CAL_JsqJuSa-zHTPynH3vAEOK1D2xYRYtVjZJ5zDR0UHAyGYXuA@mail.gmail.com>
+	Thu, 4 Dec 2014 06:00:18 -0500
+Message-ID: <54803EBF.9060609@codeaurora.org>
+Date: Thu, 04 Dec 2014 13:00:15 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqJuSa-zHTPynH3vAEOK1D2xYRYtVjZJ5zDR0UHAyGYXuA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/35] UBI: Fix stale pointers in ubi->lookuptbl
+References: <1414586758-9972-1-git-send-email-richard@nod.at> <1414586758-9972-3-git-send-email-richard@nod.at>
+In-Reply-To: <1414586758-9972-3-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 06:33:08PM -0600, Rob Herring wrote:
-> On Mon, Nov 24, 2014 at 4:19 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> > There is no "/serial-number" property in kernel:
-> >
-> > $ ls -l -a /sys/bus/soc/devices/soc0/
-> > drwxr-xr-x    3 0        0                0 Jan  1 00:00 .
-> > drwxr-xr-x   18 0        0                0 Jan  1 00:00 ..
-> > -r--r--r--    1 0        0             4096 Jan  1 00:00 family
-> > -r--r--r--    1 0        0             4096 Jan  1 00:00 machine
-> > drwxr-xr-x    2 0        0                0 Jan  1 00:00 power
-> > -r--r--r--    1 0        0             4096 Jan  1 00:00 revision
-> > lrwxrwxrwx    1 0        0                0 Jan  1 00:00
-> > subsystem -> ../../bus/soc
-> > -r--r--r--    1 0        0             4096 Jan  1 00:00 type
-> > -rw-r--r--    1 0        0             4096 Jan  1 00:00 uevent
-> 
-> Wrong place. If you put /serial-number in your DT, then it will be in
-> /proc/device-tree/serial-number.
-> 
-> If you want to wire that up to /proc/cpuinfo, I would be fine with that.
+Hi Richard
 
-That would be fine for me too.  Then it's just a matter of how to copy
-the contents of the ATAG into the DT (I assume it's possible in a
-similar way to the memory and command line information.)  That's
-something I know nothing about though.
+On 10/29/2014 2:45 PM, Richard Weinberger wrote:
+> In some error paths the WL sub-system gives up on a PEB
+> and frees it's ubi_wl_entry struct but does not set
+> the entry in ubi->lookuptbl to NULL.
+> Fastmap can stumble over such a stale pointer as it uses
+> ubi->lookuptbl to find all PEBs.
+>
+> Fix this by setting the pointers to free'd ubi_wl_entry to NULL.
 
+There are 2 more places:
+tree_destroy() and protection_queue_destroy() where ubi_wl_entry is 
+released. Both functions used on power down so all should be good as is, 
+just wanted to make sure you didn't add ubi->lookuptbl[e2->pnum] = NULL 
+there on purpose.
+
+
+Thanks,
+Tanya Brokhman
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
+Forum, a Linux Foundation Collaborative Project
