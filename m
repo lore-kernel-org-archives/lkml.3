@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaLDVNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:13:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41406 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630AbaLDVNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:13:43 -0500
-Date: Thu, 4 Dec 2014 13:13:42 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tom Van Braeckel <tomvanbraeckel@gmail.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Misc: pass miscdevice through file's private_data
-Message-ID: <20141204211342.GA22293@kroah.com>
-References: <1417727295-18989-1-git-send-email-tomvanbraeckel@gmail.com>
+	id S932821AbaLDVOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:14:21 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:39283 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381AbaLDVOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 16:14:20 -0500
+Message-ID: <5480CEA9.30706@osg.samsung.com>
+Date: Thu, 04 Dec 2014 14:14:17 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417727295-18989-1-git-send-email-tomvanbraeckel@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/101] 3.12.34-stable review
+References: <cover.1417605922.git.jslaby@suse.cz>
+In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 10:08:15PM +0100, Tom Van Braeckel wrote:
-> Place the miscdevice in the file's private_data to be used by the file operations.
+On 12/03/2014 04:26 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.34 release.
+> There are 101 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Previously, this was done only when an open() operation had been registered.
-> But it is also useful in the other file operations, so we pass it on unconditionally.
+> Responses should be made by Fri Dec  5 12:25:22 CET 2014.
+> Anything received after that time might be too late.
 > 
-> Signed-off-by: Tom Van Braeckel <tomvanbraeckel@gmail.com>
-> ---
->  drivers/char/misc.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.34-rc1.xz
+> and the diffstat can be found below.
 > 
-> diff --git a/drivers/char/misc.c b/drivers/char/misc.c
-> index ffa97d2..c3681fb 100644
-> --- a/drivers/char/misc.c
-> +++ b/drivers/char/misc.c
-> @@ -140,10 +140,16 @@ static int misc_open(struct inode * inode, struct file * file)
->  			goto fail;
->  	}
->  
-> +	/*
-> +	 * Place the miscdevice in the file's
-> +	 * private_data so it can be used by the
-> +	 * file operations, including f_op->open below
-> +	 */
-> +	file->private_data = c;
-> +
->  	err = 0;
->  	replace_fops(file, new_fops);
->  	if (file->f_op->open) {
-> -		file->private_data = c;
->  		err = file->f_op->open(inode,file);
->  	}
+> thanks,
+> js
+> 
 
-These braces aren't needed anymore, right?
+Compiled and booted on my test system. No dmesg regressions.
 
-Also, what is this now going to break?  :)
+-- Shuah
 
-thanks,
 
-greg k-h
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Open Source Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
