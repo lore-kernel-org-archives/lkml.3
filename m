@@ -1,161 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaLDG4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:56:21 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:18164 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752893AbaLDG4U convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:56:20 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Grant Likely'" <grant.likely@linaro.org>,
-        "'robh+dt@kernel.org'" <robh+dt@kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>,
-        "'pawel.moll@arm.com'" <pawel.moll@arm.com>,
-        "'mark.rutland@arm.com'" <mark.rutland@arm.com>,
-        "'ijc+devicetree@hellion.org.uk'" <ijc+devicetree@hellion.org.uk>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Dec 2014 14:56:11 +0800
-Subject: RE: [RFC] fdt:free the fdt reserved memory
-Thread-Topic: [RFC] fdt:free the fdt reserved memory
-Thread-Index: Ac/YBi8XwgJNR38BT0CTo0LQUv1Jiw3iPwJg
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
- <20140924144520.697A8C40738@trevor.secretlab.ca>
-In-Reply-To: <20140924144520.697A8C40738@trevor.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751482AbaLDG5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:57:38 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49692 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaLDG5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 01:57:34 -0500
+Date: Wed, 3 Dec 2014 22:57:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        dave@stgolabs.net, peterz@infradead.org, dvyukov@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] locking: Add volatile to arch_spinlock_t structures
+Message-ID: <20141204065727.GI25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141204062005.GA2553@linux.vnet.ibm.com>
+ <CA+55aFzn-6asfWHB8SAvz4GJWz7uEriujgVLfaqoo_VPtNBLuA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzn-6asfWHB8SAvz4GJWz7uEriujgVLfaqoo_VPtNBLuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120406-8236-0000-0000-00000773D767
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-> Sent: Wednesday, September 24, 2014 10:45 PM
-> To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
-> 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
-> 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
-> Subject: Re: [RFC] fdt:free the fdt reserved memory
-> 
-> On Thu, 18 Sep 2014 17:25:12 +0800, "Wang, Yalin"
-> <Yalin.Wang@sonymobile.com> wrote:
-> > This patch make some change to unflatten_dt_node(), make sure the
-> > device_node don't reference to fdt raw blob memory, so that we can
-> > free the raw blob reserved memory after initcalls.
-> >
-> > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> 
-> Do you have any measurements showing a change in available memory before
-> and after the patch?
-> 
-Does anyone have a look at this patch?
-It can save 12K on my platform,
-My dtb is 164K
+One point of the patch is "one more thing to watch for" in generated code,
+namely temporary clobbering of synchronization variables, locks included,
+due to overzealous optimization.  If this happens to the kernel, I guess
+that the other quick workaround is to add alignment directives or padding.
+(And yes, I have seen reports of non-kernel examples where gcc actually
+does this sort of thing.)
 
-Thanks
+But I don't feel strongly about this patch, not yet anyway, so will set
+it aside for the time being.
 
+							Thanx, Paul
+
+On Wed, Dec 03, 2014 at 10:31:06PM -0800, Linus Torvalds wrote:
+> NAK. Volatile on data structures (as opposed to in code) is a disease. This
+> is wrong.
 > 
-> > ---
-> >  drivers/of/fdt.c       | 27 +++++++++++++++++++++++----
-> >  include/linux/of_fdt.h |  2 ++
-> >  2 files changed, 25 insertions(+), 4 deletions(-)
+> We very much pass spinlock values around. They aren't volatile. The only
+> thing volatile is when you load the value from the lock itself. See for
+> example the stuff we do when we load a reflock from memory. Once we've
+> loaded the value into registers it's no longer volatile, and putting
+> violators into the data structures is actively *wrong*.
+> 
+> So no, no, no. C got this wrong. Volatile data structures are a fundamental
+> mistake and a bug. The only good volatile is in an access (ie like
+> ACCESS_ONCE() and anything else is making things worse.
+> 
+> We're not catering to crazy compiler people that can't understand that
+> fact. I'm not even seeing the point of your patch, since it seems to be
+> entirely about "let's make excuses for crap compilers"
+> 
+>    Linus
+> On Dec 3, 2014 10:20 PM, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> wrote:
+> 
+> > More concern about compilers...
 > >
-> > diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c index
-> > 79cb831..e891ef6 100644
-> > --- a/drivers/of/fdt.c
-> > +++ b/drivers/of/fdt.c
-> > @@ -240,6 +240,7 @@ static void * unflatten_dt_node(void *blob,
-> >  	     (offset = fdt_next_property_offset(blob, offset))) {
-> >  		const char *pname;
-> >  		u32 sz;
-> > +		int name_len;
+> > Most architectures mark the fields in their arch_spinlock_t structures
+> > as volatile, which forces the compiler to respect the integrity of
+> > those fields.  Without volatile markings, the compiler is within its
+> > rights to overwrite these fields, for example, by using a wide store
+> > to update an adjacent field as long as it fixes them up later.  This
+> > sort of thing could come as a rather nasty surprise to any task attempting
+> > to concurrently acquire that lock.
 > >
-> >  		if (!(p = fdt_getprop_by_offset(blob, offset, &pname, &sz))) {
-> >  			offset = -FDT_ERR_INTERNAL;
-> > @@ -250,10 +251,12 @@ static void * unflatten_dt_node(void *blob,
-> >  			pr_info("Can't find property name in list !\n");
-> >  			break;
-> >  		}
-> > +		name_len = strlen(pname);
-> >  		if (strcmp(pname, "name") == 0)
-> >  			has_name = 1;
-> > -		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
-> > -					__alignof__(struct property));
-> > +		pp = unflatten_dt_alloc(&mem,
-> > +				ALIGN(sizeof(struct property) + name_len + 1, 4)
-> > +				+ sz, __alignof__(struct property));
-> >  		if (allnextpp) {
-> >  			/* We accept flattened tree phandles either in
-> >  			 * ePAPR-style "phandle" properties, or the @@ -270,9
-> +273,11 @@
-> > static void * unflatten_dt_node(void *blob,
-> >  			 * stuff */
-> >  			if (strcmp(pname, "ibm,phandle") == 0)
-> >  				np->phandle = be32_to_cpup(p);
-> > -			pp->name = (char *)pname;
-> > +			pp->name = (char *)memcpy(pp + 1, pname, name_len + 1);
-> >  			pp->length = sz;
-> > -			pp->value = (__be32 *)p;
-> > +			pp->value = (__be32 *)memcpy((void *)pp +
-> > +					ALIGN(sizeof(struct property) +
-> > +						name_len + 1, 4), p, sz);
-> >  			*prev_pp = pp;
-> >  			prev_pp = &pp->next;
-> >  		}
-> > @@ -564,6 +569,20 @@ void __init early_init_fdt_scan_reserved_mem(void)
-> >  	fdt_init_reserved_mem();
-> >  }
+> > For example, on x86 for smallish NR_CPUS, arch_spinlock_t is 16 bits wide.
+> > If there were three adjacent 16-bit fields in the structure containing
+> > the arch_spinlock_t, a compiler might reasonably use 64-bit accesses
+> > for those three fields.  After a 64-bit load, the arch_spinlock_t's
+> > value would be available in a register, so that the compiler might use
+> > a 64-bit store followed by a 16-bit fixup store to update the three
+> > adjacent 16-bit fields.
 > >
-> > +void __init free_early_init_fdt_scan_reserved_mem(void)
-> > +{
-> > +	unsigned long start, end, size;
-> > +	if (!initial_boot_params)
-> > +		return;
-> > +
-> > +	size = fdt_totalsize(initial_boot_params);
-> > +	memblock_free(__pa(initial_boot_params), size);
-> > +	start = round_down((unsigned long)initial_boot_params, PAGE_SIZE);
-> > +	end = round_up((unsigned long)initial_boot_params + size, PAGE_SIZE);
-> > +	free_reserved_area((void *)start, (void *)end, 0, "fdt");
-> > +	initial_boot_params = 0;
-> > +}
-> > +
-> >  /**
-> >   * of_scan_flat_dt - scan flattened tree blob and call callback on each.
-> >   * @it: callback function
-> > diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h index
-> > 0ff360d..21d51ce 100644
-> > --- a/include/linux/of_fdt.h
-> > +++ b/include/linux/of_fdt.h
-> > @@ -62,6 +62,7 @@ extern int early_init_dt_scan_chosen(unsigned long
-> > node, const char *uname,  extern int early_init_dt_scan_memory(unsigned
-> long node, const char *uname,
-> >  				     int depth, void *data);
-> >  extern void early_init_fdt_scan_reserved_mem(void);
-> > +extern void free_early_init_fdt_scan_reserved_mem(void);
-> >  extern void early_init_dt_add_memory_arch(u64 base, u64 size);
-> > extern int early_init_dt_reserve_memory_arch(phys_addr_t base,
-> phys_addr_t size,
-> >  					     bool no_map);
-> > @@ -89,6 +90,7 @@ extern u64 fdt_translate_address(const void *blob,
-> > int node_offset);  extern void of_fdt_limit_memory(int limit);  #else
-> > /* CONFIG_OF_FLATTREE */  static inline void
-> > early_init_fdt_scan_reserved_mem(void) {}
-> > +static inline void free_early_init_fdt_scan_reserved_mem(void) {}
-> >  static inline const char *of_flat_dt_get_machine_name(void) { return
-> > NULL; }  static inline void unflatten_device_tree(void) {}  static
-> > inline void unflatten_and_copy_device_tree(void) {}
-> > --
-> > 2.1.0
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> > This commit therefore adds volatile to the arch_spinlock_t and
+> > arch_rwlock_t fields that don't already have them.
+> >
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: linux-arch@vger.kernel.org
+> > Cc: Dmitry Vyukov <dvyukov@google.com>
+> > Cc: Davidlohr Bueso <dave@stgolabs.net>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> >
+> > diff --git a/arch/arm/include/asm/spinlock_types.h
+> > b/arch/arm/include/asm/spinlock_types.h
+> > index 47663fcb10ad..7d3b6ecb5301 100644
+> > --- a/arch/arm/include/asm/spinlock_types.h
+> > +++ b/arch/arm/include/asm/spinlock_types.h
+> > @@ -9,14 +9,14 @@
+> >
+> >  typedef struct {
+> >         union {
+> > -               u32 slock;
+> > +               volatile u32 slock;
+> >                 struct __raw_tickets {
+> >  #ifdef __ARMEB__
+> > -                       u16 next;
+> > -                       u16 owner;
+> > +                       volatile u16 next;
+> > +                       volatile u16 owner;
+> >  #else
+> > -                       u16 owner;
+> > -                       u16 next;
+> > +                       volatile u16 owner;
+> > +                       volatile u16 next;
+> >  #endif
+> >                 } tickets;
+> >         };
+> > @@ -25,7 +25,7 @@ typedef struct {
+> >  #define __ARCH_SPIN_LOCK_UNLOCKED      { { 0 } }
+> >
+> >  typedef struct {
+> > -       u32 lock;
+> > +       volatile u32 lock;
+> >  } arch_rwlock_t;
+> >
+> >  #define __ARCH_RW_LOCK_UNLOCKED                { 0 }
+> > diff --git a/arch/arm64/include/asm/spinlock_types.h
+> > b/arch/arm64/include/asm/spinlock_types.h
+> > index b8d383665f56..0f841378f0f3 100644
+> > --- a/arch/arm64/include/asm/spinlock_types.h
+> > +++ b/arch/arm64/include/asm/spinlock_types.h
+> > @@ -24,11 +24,11 @@
+> >
+> >  typedef struct {
+> >  #ifdef __AARCH64EB__
+> > -       u16 next;
+> > -       u16 owner;
+> > +       volatile u16 next;
+> > +       volatile u16 owner;
+> >  #else
+> > -       u16 owner;
+> > -       u16 next;
+> > +       volatile u16 owner;
+> > +       volatile u16 next;
+> >  #endif
+> >  } __aligned(4) arch_spinlock_t;
+> >
+> > diff --git a/arch/mips/include/asm/spinlock_types.h
+> > b/arch/mips/include/asm/spinlock_types.h
+> > index 9b2528e612c0..10f04a0482dd 100644
+> > --- a/arch/mips/include/asm/spinlock_types.h
+> > +++ b/arch/mips/include/asm/spinlock_types.h
+> > @@ -14,14 +14,14 @@ typedef union {
+> >          * bits  0..15 : serving_now
+> >          * bits 16..31 : ticket
+> >          */
+> > -       u32 lock;
+> > +       volatile u32 lock;
+> >         struct {
+> >  #ifdef __BIG_ENDIAN
+> > -               u16 ticket;
+> > -               u16 serving_now;
+> > +               volatile u16 ticket;
+> > +               volatile u16 serving_now;
+> >  #else
+> > -               u16 serving_now;
+> > -               u16 ticket;
+> > +               volatile u16 serving_now;
+> > +               volatile u16 ticket;
+> >  #endif
+> >         } h;
+> >  } arch_spinlock_t;
+> > diff --git a/arch/mn10300/include/asm/spinlock_types.h
+> > b/arch/mn10300/include/asm/spinlock_types.h
+> > index 653dc519b405..04fd2c622f81 100644
+> > --- a/arch/mn10300/include/asm/spinlock_types.h
+> > +++ b/arch/mn10300/include/asm/spinlock_types.h
+> > @@ -6,13 +6,13 @@
+> >  #endif
+> >
+> >  typedef struct arch_spinlock {
+> > -       unsigned int slock;
+> > +       volatile unsigned int slock;
+> >  } arch_spinlock_t;
+> >
+> >  #define __ARCH_SPIN_LOCK_UNLOCKED      { 0 }
+> >
+> >  typedef struct {
+> > -       unsigned int lock;
+> > +       volatile unsigned int lock;
+> >  } arch_rwlock_t;
+> >
+> >  #define __ARCH_RW_LOCK_UNLOCKED                { RW_LOCK_BIAS }
+> > diff --git a/arch/s390/include/asm/spinlock_types.h
+> > b/arch/s390/include/asm/spinlock_types.h
+> > index d84b6939237c..0ccdda3b6842 100644
+> > --- a/arch/s390/include/asm/spinlock_types.h
+> > +++ b/arch/s390/include/asm/spinlock_types.h
+> > @@ -6,14 +6,14 @@
+> >  #endif
+> >
+> >  typedef struct {
+> > -       unsigned int lock;
+> > +       volatile unsigned int lock;
+> >  } __attribute__ ((aligned (4))) arch_spinlock_t;
+> >
+> >  #define __ARCH_SPIN_LOCK_UNLOCKED { .lock = 0, }
+> >
+> >  typedef struct {
+> > -       unsigned int lock;
+> > -       unsigned int owner;
+> > +       volatile unsigned int lock;
+> > +       volatile unsigned int owner;
+> >  } arch_rwlock_t;
+> >
+> >  #define __ARCH_RW_LOCK_UNLOCKED                { 0 }
+> > diff --git a/arch/tile/include/asm/spinlock_types.h
+> > b/arch/tile/include/asm/spinlock_types.h
+> > index a71f59b49c50..29f70a14b979 100644
+> > --- a/arch/tile/include/asm/spinlock_types.h
+> > +++ b/arch/tile/include/asm/spinlock_types.h
+> > @@ -23,14 +23,14 @@
+> >
+> >  /* Low 15 bits are "next"; high 15 bits are "current". */
+> >  typedef struct arch_spinlock {
+> > -       unsigned int lock;
+> > +       volatile unsigned int lock;
+> >  } arch_spinlock_t;
+> >
+> >  #define __ARCH_SPIN_LOCK_UNLOCKED      { 0 }
+> >
+> >  /* High bit is "writer owns"; low 31 bits are a count of readers. */
+> >  typedef struct arch_rwlock {
+> > -       unsigned int lock;
+> > +       volatile unsigned int lock;
+> >  } arch_rwlock_t;
+> >
+> >  #define __ARCH_RW_LOCK_UNLOCKED                { 0 }
+> > @@ -39,9 +39,9 @@ typedef struct arch_rwlock {
+> >
+> >  typedef struct arch_spinlock {
+> >         /* Next ticket number to hand out. */
+> > -       int next_ticket;
+> > +       volatile int next_ticket;
+> >         /* The ticket number that currently owns this lock. */
+> > -       int current_ticket;
+> > +       volatile int current_ticket;
+> >  } arch_spinlock_t;
+> >
+> >  #define __ARCH_SPIN_LOCK_UNLOCKED      { 0, 0 }
+> > diff --git a/arch/x86/include/asm/spinlock_types.h
+> > b/arch/x86/include/asm/spinlock_types.h
+> > index 5f9d7572d82b..fead0ca82468 100644
+> > --- a/arch/x86/include/asm/spinlock_types.h
+> > +++ b/arch/x86/include/asm/spinlock_types.h
+> > @@ -25,9 +25,9 @@ typedef u32 __ticketpair_t;
+> >
+> >  typedef struct arch_spinlock {
+> >         union {
+> > -               __ticketpair_t head_tail;
+> > +               volatile __ticketpair_t head_tail;
+> >                 struct __raw_tickets {
+> > -                       __ticket_t head, tail;
+> > +                       volatile __ticket_t head, tail;
+> >                 } tickets;
+> >         };
+> >  } arch_spinlock_t;
+> >
+> >
 
