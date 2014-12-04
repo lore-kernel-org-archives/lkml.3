@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaLDSPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:15:53 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:36057 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422AbaLDSPv (ORCPT
+	id S932862AbaLDSQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:16:56 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62365 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaLDSQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:15:51 -0500
-Date: Thu, 4 Dec 2014 19:15:48 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: Andreas Ruprecht <mail@rupran.de>
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, sfeldma@gmail.com,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: ethernet: rocker: Add select to CONFIG_BRIDGE in
- Kconfig
-Message-ID: <20141204181548.GH1861@nanopsycho.orion>
-References: <CA+r1ZhhJQuwXbs+Et-ihsGP3QXDUWZ1nJ-5_hcjioFt5s8zMrA@mail.gmail.com>
- <54809BA5.7030901@rupran.de>
+	Thu, 4 Dec 2014 13:16:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54809BA5.7030901@rupran.de>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <CAKMK7uHQzqqtg=HBDfyMdZbOGNuzaMz10XeDdCnxkta+R8Sv9Q@mail.gmail.com>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+	<20141202163506.GG18921@nuc-i3427.alporthouse.com>
+	<CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+	<20141203143029.GF32117@phenom.ffwll.local>
+	<CALAqxLUYL91khoW=oLAp_FtPBrDnSazfYqVpkXYTBJsTjDsv+g@mail.gmail.com>
+	<20141204104228.GJ32117@phenom.ffwll.local>
+	<CALAqxLX0hvv5DeLRji7g+jVX+F2ipU_f04YtehjFnSV4i==q4w@mail.gmail.com>
+	<CAKMK7uHQzqqtg=HBDfyMdZbOGNuzaMz10XeDdCnxkta+R8Sv9Q@mail.gmail.com>
+Date: Thu, 4 Dec 2014 10:16:54 -0800
+Message-ID: <CALAqxLUGh=2LF4kvK231P7AbChUmXGsHVvsD2PQcM_SHPpGvyw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout correctly
+From: John Stultz <john.stultz@linaro.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thu, Dec 04, 2014 at 06:36:37PM CET, mail@rupran.de wrote:
->On 04.12.2014 17:34, Jim Davis wrote:
->> Building with the attached random configuration file,
->> 
->> drivers/built-in.o: In function `rocker_port_fdb_learn_work':
->> /home/jim/linux/drivers/net/ethernet/rocker/rocker.c:3014: undefined
->> reference to `br_fdb_external_learn_del'
->> /home/jim/linux/drivers/net/ethernet/rocker/rocker.c:3016: undefined
->> reference to `br_fdb_external_learn_add'
->> 
+On Thu, Dec 4, 2014 at 9:50 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Thu, Dec 4, 2014 at 6:42 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> Sigh. So you're going to make me write a separate patch that moves it over?
 >
->Hi,
+> We've written it already, Imre posted the link to the old discussion:
 >
->the problem here is that CONFIG_BRIDGE is set to 'm' (leading to
->inclusion of the two functions above in the kernel module) while
->CONFIG_ROCKER is set to 'y', requiring the functions at link time.
+> https://lkml.org/lkml/2013/5/10/187
 >
->Is the attached patch sufficient to fix this?
->
->Regards,
->
->Andreas
+> But if the first attempt doesn't sufficiently stick I tend to chase
+> the patches any more. But if you want to resurrect this I could ping
+> Imre and ask him to pick it up again or you could rebase his patches.
 
->From 0529c3cbe381338dc3337e07a71e15b3d22a3255 Mon Sep 17 00:00:00 2001
->From: Andreas Ruprecht <rupran@einserver.de>
->Date: Thu, 4 Dec 2014 18:28:09 +0100
->Subject: [PATCH] net: ethernet: rocker: Add select to CONFIG_BRIDGE in Kconfig
->
->In a configuration with CONFIG_BRIDGE set to 'm' and CONFIG_ROCKER
->set to 'y', undefined references occur at link time:
->
->> drivers/built-in.o: In function `rocker_port_fdb_learn_work':
->> /home/jim/linux/drivers/net/ethernet/rocker/rocker.c:3014: undefined
->> reference to `br_fdb_external_learn_del'
->> /home/jim/linux/drivers/net/ethernet/rocker/rocker.c:3016: undefined
->> reference to `br_fdb_external_learn_add'
->
->This patch fixes these by selecting CONFIG_BRIDGE from CONFIG_ROCKER.
->
->Reported-by: Jim Davis <jim.epost@gmail.com>
->Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
-Acked-by: Jiri Pirko <jiri@resnulli.us>
+Well, last I saw the initial patch was buggy, no? I don't think I saw
+it being resubmitted.
 
-this is ok for now. There is a plan to replace
-br_fdb_external_learn_add/del a by notifier which will fix this as well.
 
-Thanks.
-
->---
-> drivers/net/ethernet/rocker/Kconfig | 1 +
-> 1 file changed, 1 insertion(+)
+>> But still, I do see our change broke you here, so I'm not going to object.
 >
->diff --git a/drivers/net/ethernet/rocker/Kconfig b/drivers/net/ethernet/rocker/Kconfig
->index 11a850eab628..ade10ec4c78d 100644
->--- a/drivers/net/ethernet/rocker/Kconfig
->+++ b/drivers/net/ethernet/rocker/Kconfig
->@@ -18,6 +18,7 @@ if NET_VENDOR_ROCKER
-> config ROCKER
-> 	tristate "Rocker switch driver (EXPERIMENTAL)"
-> 	depends on PCI && NET_SWITCHDEV
->+	select BRIDGE
-> 	---help---
-> 	  This driver supports Rocker switch device.
-> 
->-- 
->1.9.1
->
+> Ok, thanks I'll pull this in through drm-intel for 3.19 (3.18 is kinda
+> done already I guess) with cc: stable.
 
+You probably should submit it for 3.18 and let Linus decide if its too
+late. I've already gotten yelled at by Ingo for pushing patches in the
+merge window that cc stable. Even if its out of a desire to let the
+patches get wider testing, its something of a hot-button item for
+folks. :)
+
+thanks
+-john
