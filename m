@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaLDMpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:45:49 -0500
-Received: from smtp-out-020.synserver.de ([212.40.185.20]:1066 "EHLO
-	smtp-out-017.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753908AbaLDMpr (ORCPT
+	id S1754129AbaLDMqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:46:19 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:48573 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbaLDMqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:45:47 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5949
-Message-ID: <5480577D.4010106@metafoo.de>
-Date: Thu, 04 Dec 2014 13:45:49 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Thu, 4 Dec 2014 07:46:18 -0500
 MIME-Version: 1.0
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master
- clock
-References: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
-In-Reply-To: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E9@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103D6DB49161A@CNBJMBX05.corpusers.net>
+ <20140924144520.697A8C40738@trevor.secretlab.ca> <35FD53F367049845BC99AC72306C23D103E688B313E7@CNBJMBX05.corpusers.net>
+ <20141204100453.49DF2C40992@trevor.secretlab.ca> <35FD53F367049845BC99AC72306C23D103E688B313E9@CNBJMBX05.corpusers.net>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Thu, 4 Dec 2014 12:45:54 +0000
+X-Google-Sender-Auth: 9XOo8fUHhw1TwKerNC5UPMGTxRs
+Message-ID: <CACxGe6ubYkz+noEsn15JeKFHz1JoL_EEaT5V126SyEqDugrCcw@mail.gmail.com>
+Subject: Re: [RFC] fdt:free the fdt reserved memory
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 07:52 AM, Mike Looijmans wrote:
-> If the master clock supports programmable rates, program it to generate
-> the desired frequency. Only apply constraints when the clock is fixed.
-> This allows proper clock generation for both 44100 and 48000 Hz based
-> sampling rates if the platform supports it.
->
-> The clock frequency must be set before enabling it. Enabling the clock
-> was done in "startup", but that occurs before "hw_params" where the rate
-> is known. Move the clock start to the hw_params routine, and keep track
-> of whether the clock has been started, because shutdown may be called
-> without having called hw_params first.
+On Thu, Dec 4, 2014 at 10:23 AM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
+>> -----Original Message-----
+>> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+>> Sent: Thursday, December 04, 2014 6:05 PM
+>> To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
+>> 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
+>> 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
+>> Subject: RE: [RFC] fdt:free the fdt reserved memory
+>>
+>> On Thu, 4 Dec 2014 14:56:11 +0800
+>> , "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+>>  wrote:
+>> > > -----Original Message-----
+>> > > From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant
+>> > > Likely
+>> > > Sent: Wednesday, September 24, 2014 10:45 PM
+>> > > To: Wang, Yalin; 'robh+dt@kernel.org'; 'devicetree@vger.kernel.org';
+>> > > 'pawel.moll@arm.com'; 'mark.rutland@arm.com';
+>> > > 'ijc+devicetree@hellion.org.uk'; 'linux-kernel@vger.kernel.org'
+>> > > Subject: Re: [RFC] fdt:free the fdt reserved memory
+>> > >
+>> > > On Thu, 18 Sep 2014 17:25:12 +0800, "Wang, Yalin"
+>> > > <Yalin.Wang@sonymobile.com> wrote:
+>> > > > This patch make some change to unflatten_dt_node(), make sure the
+>> > > > device_node don't reference to fdt raw blob memory, so that we can
+>> > > > free the raw blob reserved memory after initcalls.
+>> > > >
+>> > > > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+>> > >
+>> > > Do you have any measurements showing a change in available memory
+>> > > before and after the patch?
+>> > >
+>> > Does anyone have a look at this patch?
+>> > It can save 12K on my platform,
+>> > My dtb is 164K
+>>
+>> Yes, I've been thinking about this one. Unfortunately there is a conflict
+>> with another feature that I'm merging for v3.19. See commit 08d53aa5,
+>> "of/fdt: export fdt blob as /sys/firmware/fdt" in linux-next.
+>> That commit requires the original blob to be kept around.
+>>
+>> In order to free the original dtb, the /sys/firmware/fdt feature will need
+>> to be changed to let it be configured out. All things considered, that is
+>> probably the right thing to do, but doing so increases the memory load for
+>> the platforms that want /sys/firmware/fdt. I'd like to see what the impact
+>> would be on the code to switch to this method when /sys/firmware/fdt is
+>> configured out.
+>>
+> Oh, I understand,
+> If enable /sys/firmware/fdt feature patch, doesn't need
+> My patch is fine,
+> So need 2 method to unflatten dtb blob.
 
-Usually that shouldn't be a problem. If your clock chip requires it to be 
-disabled in order to be reprogrammed than the CLK_SET_RATE_GATE flag should 
-be set. This will tell the core to disable the clock before changing it.
+I don't want to duplicate the function. It would instead need to be a
+build time configuration to the function that if /sys/firmware/fdt is
+enabled, then copying the property on unflatten is disabled.
 
-[...]
->   static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
-> @@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
->   	spdif->dma_data.addr_width = 4;
->   	spdif->dma_data.maxburst = 1;
->
-> -	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
-> -	spdif->ratnum.den_step = 1;
-> -	spdif->ratnum.den_min = 1;
-> -	spdif->ratnum.den_max = 64;
-> -
-> -	spdif->rate_constraints.rats = &spdif->ratnum;
-> -	spdif->rate_constraints.nrats = 1;
-> +	/* Determine if the clock rate is fixed. If it cannot change frequency,
-> +	 * it returns an error here. */
-> +	if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
-
-I don't think this works. For a fixed clock clk_round_rate() will return the 
-fixed rate rather than an error. I tried the patch and even though I have a 
-fixed clock the constraints are no longer set.
-
-There is unfortunately no good way to enumerate which frequencies are 
-supported by a clock other than just calling round_rate for all possible rates.
-
-I think the best way to implement this for now is to try e.g. 32000 * 128, 
-44100 * 128, 48000 * 128 and then check if clk_round_rate returns the 
-expected rate and if it does set up a rate constraint for that rate.
+g.
