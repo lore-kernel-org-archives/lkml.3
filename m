@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422AbaLDRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:21:58 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S932662AbaLDRZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:25:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58410 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932182AbaLDRV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:21:57 -0500
-Message-ID: <54809831.1060503@nod.at>
-Date: Thu, 04 Dec 2014 18:21:53 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
- upon WL shutdown
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-4-git-send-email-richard@nod.at> <1417102739.5858.112.camel@sauron.fi.intel.com> <54808F8B.6030807@codeaurora.org>
-In-Reply-To: <54808F8B.6030807@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S932164AbaLDRZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 12:25:24 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, David Safford <safford@us.ibm.com>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] KEYS: Fix stale key registration at error path
+Date: Thu,  4 Dec 2014 18:25:19 +0100
+Message-Id: <1417713919-5342-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.12.2014 um 17:44 schrieb Tanya Brokhman:
-> On 11/27/2014 5:38 PM, Artem Bityutskiy wrote:
->> On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
->>> ...otherwise the deferred work might run after datastructures
->>> got freed and corrupt memory.
->>>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>> ---
->>>   drivers/mtd/ubi/wl.c | 3 +++
->>>   1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>> index 7f135df..cb2e571 100644
->>> --- a/drivers/mtd/ubi/wl.c
->>> +++ b/drivers/mtd/ubi/wl.c
->>> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->>>   void ubi_wl_close(struct ubi_device *ubi)
->>>   {
->>>       dbg_wl("close the WL sub-system");
->>> +#ifdef CONFIG_MTD_UBI_FASTMAP
->>> +    flush_work(&ubi->fm_work);
->>> +#endif
->>
->> If you are using the work infrastructure implemented in wl.c, then
->> fastmap work should be no different to any other work. And we do flush
->> all works in 'shutdown_work()'. The fastmap work should be flushed there
->> too.
-> 
-> I tend to agree with Artem. Could you please move it to shutdown_work()? I'm asking because I do want to pick up all the bug fixes patches, but not going to pick up the "cleaning
-> up" patches at this point.
+When loading encrypted-keys module, if the last check of
+aes_get_sizes() in init_encrypted() fails, the driver just returns an
+error without unregistering its key type.  This results in the stale
+entry in the list.  In addition to memory leaks, this leads to a kernel
+crash when registering a new key type later.
 
-Okay. You have overruled me. :-)
+This patch fixes the problem by swapping the calls of aes_get_sizes()
+and register_key_type(), and releasing resources properly at the error
+paths.
 
-Thanks,
-//richard
+Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ security/keys/encrypted-keys/encrypted.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index db9675db1026..7bed4ad7cd76 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -1017,10 +1017,13 @@ static int __init init_encrypted(void)
+ 	ret = encrypted_shash_alloc();
+ 	if (ret < 0)
+ 		return ret;
++	ret = aes_get_sizes();
++	if (ret < 0)
++		goto out;
+ 	ret = register_key_type(&key_type_encrypted);
+ 	if (ret < 0)
+ 		goto out;
+-	return aes_get_sizes();
++	return 0;
+ out:
+ 	encrypted_shash_release();
+ 	return ret;
+-- 
+2.1.3
 
