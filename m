@@ -1,146 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaLDB3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:29:40 -0500
-Received: from mail-bn1bon0085.outbound.protection.outlook.com ([157.56.111.85]:5664
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750833AbaLDB3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:29:39 -0500
-X-Greylist: delayed 3201 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Dec 2014 20:29:38 EST
-Message-ID: <547FB8FB.7040803@caviumnetworks.com>
-Date: Wed, 3 Dec 2014 17:29:31 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752556AbaLDB3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:29:46 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:63310 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477AbaLDB3n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 20:29:43 -0500
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <peterz@infradead.org>,
-        <paul.gortmaker@windriver.com>, <macro@linux-mips.org>,
-        <chenhc@lemote.com>, <cl@linux.com>, <mingo@kernel.org>,
-        <richard@nod.at>, <zajec5@gmail.com>, <james.hogan@imgtec.com>,
-        <keescook@chromium.org>, <tj@kernel.org>, <alex@alex-smith.me.uk>,
-        <pbonzini@redhat.com>, <blogic@openwrt.org>, <paul.burton@imgtec.com>,
-        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <markos.chandras@imgtec.com>, <dengcheng.zhu@imgtec.com>,
-        <manuel.lauss@gmail.com>, <lars.persson@axis.com>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
-References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com> <547FA8D2.2030703@caviumnetworks.com> <547FB032.2000000@imgtec.com>
-In-Reply-To: <547FB032.2000000@imgtec.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.194]
-X-ClientProxiedBy: BY2PR07CA055.namprd07.prod.outlook.com (10.141.251.30) To
- DM2PR0701MB1120.namprd07.prod.outlook.com (25.160.246.151)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0701MB1120;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0701MB1120;
-X-Forefront-PRVS: 041517DFAB
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(979002)(6009001)(24454002)(51704005)(199003)(377454003)(189002)(479174003)(31966008)(36756003)(68736005)(53416004)(21056001)(42186005)(92726001)(92566001)(40100003)(97736003)(110136001)(107046002)(69596002)(4396001)(122386002)(81156004)(106356001)(65806001)(83506001)(64706001)(105586002)(59896002)(47776003)(20776003)(95666004)(87976001)(65816999)(23746002)(87266999)(54356999)(102836001)(76176999)(50986999)(33656002)(93886004)(77156002)(62966003)(80316001)(50466002)(46102003)(66066001)(99396003)(65956001)(64126003)(101416001)(120916001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0701MB1120;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0701MB1120;
-X-OriginatorOrg: caviumnetworks.com
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 3 Dec 2014 17:29:21 -0800
+Message-ID: <CALCETrULjLf=WHn9TfRyFH+hac7FYKUWmfDm4_aZ3mP4jEpU3w@mail.gmail.com>
+Subject: 3.18 nohz + audit regression (Re: [PATCH] context_tracking: Restore
+ previous state in schedule_user)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 04:52 PM, Leonid Yegoshin wrote:
-> On 12/03/2014 04:20 PM, David Daney wrote:
->> On 12/03/2014 03:55 PM, Leonid Yegoshin wrote:
->>> On 12/03/2014 03:44 PM, David Daney wrote:
->>>
->>> (...)
->>>
->>> Big work
+On Wed, Dec 3, 2014 at 5:13 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Dec 03, 2014 at 04:38:46PM -0800, Andy Lutomirski wrote:
+>> On Wed, Dec 3, 2014 at 4:30 PM, Dave Jones <davej@redhat.com> wrote:
+>> > On Wed, Dec 03, 2014 at 04:04:31PM -0800, Andy Lutomirski wrote:
+>> >  > On Wed, Dec 3, 2014 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >  > > On Wed, Dec 03, 2014 at 03:18:41PM -0800, Andy Lutomirski wrote:
+>> >  > >> It appears that some SCHEDULE_USER (asm for schedule_user) callers
+>> >  > >> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
+>> >  > >> and schedule_user will return in RCU user context.  This causes RCU
+>> >  > >> warnings and possible failures.
+>> >  > >>
+>> >  > >> This is intended to be a minimal fix suitable for 3.18.
+>> >  > >>
+>> >  > >> Reported-by: Dave Jones <davej@redhat.com>
+>> >  > >> Cc: Oleg Nesterov <oleg@redhat.com>
+>> >  > >> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+>> >  > >> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+>> >  > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> >  > >
+>> >  > > Ah, we sent it about at the same time :-)
+>> >  > >
+>> >  > > Might be too late for 3.18 though because it's not a regression.
+>> >
+>> > Wait, so how come that trace didn't start showing up until recently ?
 >>
->> Not really, although by number of lines of code, it is about 3x the
->> size of your patch, it only touches the existing code in one place. It
->> only took about 3 days to write, adding full MIPS64 and R6 support
->> would probably be less than another week of work.
+>> Looking at the code, it's because int_careful has the same bug, but
+>> syscall_trace_leave does:
 >>
->> microMIPS I haven't looked at as we don't have anything to test it on.
+>>     /*
+>>      * We may come here right after calling schedule_user()
+>>      * or do_notify_resume(), in which case we can be in RCU
+>>      * user mode.
+>>      */
+>>     user_exit();
 >>
->>> but it doesn't support customized instructions,
->>
->> GCC will never put these in the delay slot of a FPU branch, so it is
->> not needed.
+>> which means that this issue was anticipated when that comment was written.
 >
-> I doubt that it is correct in all situations and with any GCC parameter
-> combination.
-
-My GCC experts assert that it is true.
-
+> Indeed, in fact it was expected to work as long as the code that follows the
+> syscall is limited to schedule_user(), syscall_trace_leave() and do_notify_resume().
+> But if anything else is called and uses RCU, this doesn't work anymore.
 >
-> Never say never, if it is about toolchain. IMG Arch team was assured
-> that branch likely are never used and removed it in MIPS R6, but BGEZL
-> (or so) was a first which I hit then I ran GLIBC.
-
-The fact that the Arch Team designed R6 without bothering to determine 
-what legacy code does is not relevant to this conversation.
-
->
-> Besides GCC there are LLVM and another JITs.
->
-
-They don't do it either.  But that is not really important.  We can 
-easily emulate faulting instructions if needed.
-
->>
->>> multiple ASEs,
->>
->> Same as above.  But any instructions that are deemed necessary can
->> easily be added.
->>
->>> MIPS R6
->>
->> It is a proof of concept.  R6 can easily be added if needed.
->>
->> Your XOL emulation doesn't handle R6 either, so this is no worse than
->> your patch in that respect.
->
-> You probably didn't research it well. A lot of changes in
-> arch/mips/kernel/branch.c and and arch/mips/math-emu/cp1emu.c, all of it
-> related with R6.
->
-
-I looked at:
-commit 3a18ca061311f2f1ee9c44012f89c7436d392117
-
-And I saw no R6 support.
-
-Is it there, or in some other branch that isn't merged?
-
-
->>
->>> etc.
->>
->> GCC will never put trapping instructions in the delay slot either.
->
-> It seems like it is not correct and requires a more accurate statement.
-> FPU instructions may trap, LWL and LWR traps on R6 with RI, etc. Yes,
-> there are restrictions but basing a kernel on that assumptions is
-> unsafe. The only safe is HW architecture document.
->
-> Finally, there is a manual encoding too.
+> So user_enter() and user_exit() have been designed to be re-entrant on purpose.
 >
 >>
->> All we have to support are non-trapping and non-branch/jump
->> instructions from the ISA manuals that can be executed from userspace
->> processes. That makes it slightly simpler than complete ISA emulation.
->>
->>>
->>> Well, it is still not a replacement of XOL emulation.
->>
->> For use by the FPU emulator, it is probably good enough
->>
->>> Even close.
->>
->> I disagree, that is why I took the time to do it.
->>
->>>
->>>
->>
+>> Prior to the 3.18 seccomp changes and the _TIF_WORK typo fix, it would
+>> have been difficult to hit sysret_audit when context tracking was on
+>> (you could do it once on the way out from a syscall that enabled
+>> context tracking).  So this is 3.18 regression.
 >
+> I see now.
+>
+> So the real problem is not on schedule_user(). It's rather that __audit_syscall_exit()
+> should we wrapped inside user_exit()/user_enter() or exception_foo(). The latter
+> is safer in a sensitive patch. That would be the real and simple regression fix.
+> Tweaking schedule_user() is more risky.
+>
+> Then, if you like, we can rethink the whole later, define syscall_trace_leave()
+> as the only place that calls user_enter() and all the other syscall exit functions
+> (schedule_user(), do_notify_resume(), __audit_syscall_exit()) can just call
+> exception_enter() - exception_exit() if they can be called after syscall_trace_leave().
+> Then finally we can make user_enter and user_exit non-reentrant after careful audit
+> of how other archs use it (sounds scary though).
+>
+> Or better yet: if you rework the syscall exit slow path, lets call user_enter() at the
+> very end of the syscall.
 
+So, to summarize the choices for 3.18:
+
+1. Revert everything that caused this.  Probably a bad idea -- that
+will be quite invasive, and it will no longer revert cleanly, and the
+changes themselves were all correct as far as we know.
+
+2. Add a giant hack to phase 1 tracing: if _TIF_WORK, then force phase
+2.  That would (I think) restore the 3.17 status quo.  Yuck.
+
+3. My asm deletion patch
+(https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/entry&id=1072a16a8d4ad1b11b8062f76e3236b9771b0fb6).
+By itself, that will cause a huge performance hit to syscall auditing
+users.
+
+4. This patch.
+
+5. Do something specific to fix __audit_syscall_exit.  That seems a
+bit silly to be, since we'll want to revert it as soon as we fix the
+larger problem.
+
+I think I prefer choice 4, but 2 and 5 seem okay, too.  Or, if we're
+okay with the temporary performance hit (Eric, rgb?) and someone wants
+to review it (tglx? hpa? Oleg?) *and* confirm that its parent looks
+reasonable in principle for 3.19, we could go with #3.
+
+FWIW, choice 2 might be as simple as commenting out:
+
+        work &= ~_TIF_NOHZ;
+
+in syscall_trace_enter_phase1 and adding a comment that it's a
+workaround pending some 3.19 fixes.  However, *it does not fix the
+bug* -- it just makes it as hard to trigger as it was in 3.17 as
+opposed to being really easy to trigger as in 3.18-rc7.
+
+In the long run, I think that we need to fix SCHEDULE_USER *and* do
+something like #3, since sysret_audit appears to have more issues than
+just this.
+
+--Andy
+
+>
+>>
+>> The sysret_audit code is still totally screwed up AFAICT.  At the very
+>> least, the whole mess rather strongly suggests that, if both context
+>> tracking and audit are on, then __audit_syscall_exit is called *twice*
+>> on each syscall.  __audit_syscall_exit seems to be idempotent, so
+>> maybe no one has noticed that little glitch.
+>>
+>> I'll ask the x86 people to include my sysret_audit removal for 3.19,
+>> since I think that this schedule_user change is a better last-minute
+>> fix than removing a whole chunk of asm.
+>>
+>> --Andy
+>>
+>> >
+>> >         Dave
+>> >
+>>
+>>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
