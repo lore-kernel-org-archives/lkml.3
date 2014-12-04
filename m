@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349AbaLDO4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:56:25 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37410 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128AbaLDO4X (ORCPT
+	id S932387AbaLDO47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:56:59 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:55099 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128AbaLDO46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:56:23 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] power: bq24190_charger: suppress build warning
-Date: Thu,  4 Dec 2014 14:56:04 +0000
-Message-Id: <1417704964-23155-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 4 Dec 2014 09:56:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] optimize ktime_divns for constant divisors
+Date: Thu, 04 Dec 2014 15:56:47 +0100
+Message-ID: <2362381.LDAGLC19vb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.LFD.2.11.1412040837130.470@knanqh.ubzr>
+References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <2165831.DQoLFmGhIf@wuerfel> <alpine.LFD.2.11.1412040837130.470@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:6Fv7MVajYT45HH5qaKRsC5oqTQbGdWHxsXwYNq/XaWESBP2kIru
+ zBoh3BIBeqRnJy/HefAO9DUo6rEaiyllR24F05RvFG8f1bq53lq/SM8983zDwHITbk7LgVC
+ mwEe0i8jlI7GHhNnokB/RPuN5Nne4BlF1kRNQfEpi1nQRrcQZJ/CjyWc80xJDXoGNqyZEXd
+ ryTE7gR0Ya0aJHDIekmGA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes following build warning:
+On Thursday 04 December 2014 08:46:27 Nicolas Pitre wrote:
+> On Thu, 4 Dec 2014, Arnd Bergmann wrote:
+> Note the above code is for 32-bit architectures that support a 32x32=64 
+> bit multiply instruction.  And even then, what kills performances is the 
+> inhability to efficiently deal with carry bits from C code.  Hence the 
+> far better output from do_div() on ARM.
+> 
+> If x86-64 has a 64x64=128 bit multiply instruction then the above may 
+> greatly be simplified to a single multiply and a shift.  That would 
+> possibly outperform do_div().
 
-In file included from include/linux/printk.h:261:0,
-                 from include/linux/kernel.h:13,
-                 from include/linux/list.h:8,
-                 from include/linux/module.h:9,
-                 from drivers/power/bq24190_charger.c:11:
-drivers/power/bq24190_charger.c: In function ‘bq24190_irq_handler_thread’:
-include/linux/dynamic_debug.h:86:20: warning: ‘ss_reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-   __dynamic_dev_dbg(&descriptor, dev, fmt, \
-                    ^
-drivers/power/bq24190_charger.c:1211:5: note: ‘ss_reg’ was declared here
-  u8 ss_reg, f_reg;
-     ^
-In file included from include/linux/printk.h:261:0,
-                 from include/linux/kernel.h:13,
-                 from include/linux/list.h:8,
-                 from include/linux/module.h:9,
-                 from drivers/power/bq24190_charger.c:11:
-include/linux/dynamic_debug.h:86:20: warning: ‘f_reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-   __dynamic_dev_dbg(&descriptor, dev, fmt, \
-                    ^
-drivers/power/bq24190_charger.c:1211:13: note: ‘f_reg’ was declared here
-  u8 ss_reg, f_reg;
+I was trying this in 32-bit mode to see how it would work in x86-32
+kernels. Since that architecture has a 64-by-32 divide instruction,
+that gets used here.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/power/bq24190_charger.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+x86-64 has a 64x64=128 multiply instruction and gcc uses that for
+any 64-bit division by constant, so that's what already happens
+in do_div. I assume for any 64-bit architecture, the result will
+be similar.
 
-diff --git a/drivers/power/bq24190_charger.c b/drivers/power/bq24190_charger.c
-index ad3ff8f..72e552d 100644
---- a/drivers/power/bq24190_charger.c
-+++ b/drivers/power/bq24190_charger.c
-@@ -1208,7 +1208,7 @@ static irqreturn_t bq24190_irq_handler_thread(int irq, void *data)
- {
- 	struct bq24190_dev_info *bdi = data;
- 	bool alert_userspace = false;
--	u8 ss_reg, f_reg;
-+	u8 ss_reg = 0, f_reg = 0;
- 	int ret;
- 
- 	pm_runtime_get_sync(bdi->dev);
--- 
-1.9.1
+I guess the only architectures that would benefit from your implementation
+above are the ones that do not have any optimization for constant
+64-by-32-bit division and just call do_div.
 
+> > On a related note, I wonder if we can come up with a more efficient
+> > implementation for do_div on ARMv7ve, and I think we should add the
+> > Makefile logic to build with -march=armv7ve when we know that we do
+> > not need to support processors without idiv.
+> 
+> Multiplications will always be faster than divisions.  However the idiv 
+> instruction would come very handy in the slow path when the divisor is 
+> not constant.
+
+Makes sense. I also just checked the gcc sources and it seems that the
+idiv/udiv instructions on ARM are not even used for implementing
+__aeabi_uldivmod there. Not sure if that's intentional, but we probably
+don't need to bother optimizing this in the kernel before user space
+does. Building with -march=armv7ve still sounds helpful to avoid the
+__aeabi_uidiv calls though.
+
+	Arnd
