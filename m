@@ -1,178 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaLDJY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:24:58 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51395 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLDJYy (ORCPT
+	id S1753498AbaLDJ0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:26:35 -0500
+Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:55489 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752526AbaLDJ0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:24:54 -0500
-Message-ID: <5480285F.1070501@de.ibm.com>
-Date: Thu, 04 Dec 2014 10:24:47 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
-References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com> <1417645821-54731-2-git-send-email-borntraeger@de.ibm.com> <20141204000749.GX25340@linux.vnet.ibm.com>
-In-Reply-To: <20141204000749.GX25340@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
+	Thu, 4 Dec 2014 04:26:32 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3871:4321:4605:5007:6119:6261:6742:8603:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12555:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: steel14_1b7c37cf6343b
+X-Filterd-Recvd-Size: 1965
+Message-ID: <1417685187.2721.1.camel@perches.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+From: Joe Perches <joe@perches.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Dec 2014 01:26:27 -0800
+In-Reply-To: <1417114175.4305.3.camel@perches.com>
+References: <CAADnVQK3iui8cAmhi28=65p2CJbTu45fR98ri8Uh8xLRb=cwnA@mail.gmail.com>
+	 <1417032059.16355.4.camel@perches.com>
+	 <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
+	 <1417114175.4305.3.camel@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120409-0013-0000-0000-000002173EBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.12.2014 um 01:07 schrieb Paul E. McKenney:
-> On Wed, Dec 03, 2014 at 11:30:13PM +0100, Christian Borntraeger wrote:
->> ACCESS_ONCE does not work reliably on non-scalar types. For
->> example gcc 4.6 and 4.7 might remove the volatile tag for such
->> accesses during the SRA (scalar replacement of aggregates) step
->> https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
->>
->> Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
->> scalar types as suggested by Linus Torvalds. Accesses larger than
->> the machines word size cannot be guaranteed to be atomic. These
->> macros will use memcpy and emit a build warning.
->>
->> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+On Thu, 2014-11-27 at 10:49 -0800, Joe Perches wrote:
+> On Thu, 2014-11-27 at 12:25 +0000, David Laight wrote:
+> > Why the change in data?
 > 
-> With or without some nits below addressed:
+> btw: without gcov and using -O2
 > 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
->> ---
->>  include/linux/compiler.h | 64 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 64 insertions(+)
->>
->> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
->> index d5ad7b1..947710e 100644
->> --- a/include/linux/compiler.h
->> +++ b/include/linux/compiler.h
->> @@ -186,6 +186,70 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->>  # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
->>  #endif
->>
->> +#include <linux/types.h>
->> +
->> +void data_access_exceeds_word_size(void)
->> +__compiletime_warning("data access exceeds word size and won't be atomic");
->> +
->> +static __always_inline void __read_once_size(volatile void *p, void *res, int size)
->> +{
->> +	switch (size) {
->> +	case 1: *(u8 *)res = *(volatile u8 *)p; break;
->> +	case 2: *(u16 *)res = *(volatile u16 *)p; break;
->> +	case 4: *(u32 *)res = *(volatile u32 *)p; break;
->> +#ifdef CONFIG_64BIT
->> +	case 8: *(u64 *)res = *(volatile u64 *)p; break;
->> +#endif
-> 
-> You could get rid of the #ifdef above by doing "case sizeof(long)"
-> and switching the casts from u64 to unsigned long.
+> $ size arch/x86/net/bpf_jit_comp.o*
+>    text	   data	    bss	    dec	    hex	filename
+>    9671	      4	      0	   9675	   25cb	arch/x86/net/bpf_jit_comp.o.new
+>   10679	      4	      0	  10683	   29bb	arch/x86/net/bpf_jit_comp.o.old
 
-Wouldnt that cause a compile warning because we have two case statements
-with the same size?
+Alexei?
 
-> 
->> +	default:
->> +		barrier();
->> +		__builtin_memcpy((void *)res, (const void *)p, size);
->> +		data_access_exceeds_word_size();
->> +		barrier();
->> +	}
->> +}
->> +
->> +static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
->> +{
->> +	switch (size) {
->> +	case 1: *(volatile u8 *)p = *(u8 *)res; break;
->> +	case 2: *(volatile u16 *)p = *(u16 *)res; break;
->> +	case 4: *(volatile u32 *)p = *(u32 *)res; break;
->> +#ifdef CONFIG_64BIT
->> +	case 8: *(volatile u64 *)p = *(u64 *)res; break;
->> +#endif
-> 
-> Ditto.
-> 
->> +	default:
->> +		barrier();
->> +		__builtin_memcpy((void *)p, (const void *)res, size);
->> +		data_access_exceeds_word_size();
->> +		barrier();
->> +	}
->> +}
->> +
->> +/*
->> + * Prevent the compiler from merging or refetching reads or writes. The compiler
->> + * is also forbidden from reordering successive instances of READ_ONCE,
->> + * ASSIGN_ONCE and ACCESS_ONCE (see below), but only when the compiler is aware
->> + * of some particular ordering.  One way to make the compiler aware of ordering
->> + * is to put the two invocations of READ_ONCE, ASSIGN_ONCE or ACCESS_ONCE() in
->> + * different C statements.
->> + *
->> + * In contrast to ACCESS_ONCE these two macros will also work on aggregate data
->> + * types like structs or unions. If the size of the accessed data type exceeds
->> + * the word size of the machine (e.g. 32bit or 64bit), the access might happen
->> + * in multiple chunks, though.
-> 
-> This last sentence might be more clear if it was something like the
-> following:
-> 
-> 	If the size of the accessed data type exceeeds the word size of
-> 	the machine (e.g., 32 bits or 64 bits), ACCESS_ONCE() might
-> 	carry out the access in multiple chunks, but READ_ONCE() and
-> 	ASSIGN_ONCE() will give a link-time error.
-
-The code in v4 now combines Linus (memcpy) and your (error) suggestion. We do a memcpy and a compile time _warning_
-
-So I will do 
-
- * In contrast to ACCESS_ONCE these two macros will also work on aggregate
- * data types like structs or unions. If the size of the accessed data
- * type exceeds the word size of the machine (e.g., 32 bits or 64 bits)
- * READ_ONCE() and ASSIGN_ONCE()  will fall back to memcpy and print a
- * compile-time warning.
-
-
-
-> 
->> + *
->> + * These macros do absolutely -nothing- to prevent the CPU from reordering,
->> + * merging, or refetching absolutely anything at any time.  Their main intended
->> + * use is to mediate communication between process-level code and irq/NMI
->> + * handlers, all running on the same CPU.
-> 
-> This last sentence is now obsolete.  How about something like this?
-> 
-> 	Their two major use cases are: (1) Mediating communication
-> 	between process-level code and irq/NMI handlers, all running
-> 	on the same CPU, and (2) Ensuring that the compiler does not
-> 	fold, spindle, or otherwise mutilate accesses that either do
-> 	not require ordering or that interact with an explicit memory
-> 	barrier or atomic instruction that provides the required ordering.
-
-sounds good. Will change.
-
-Thanks
-
-> 
->> + */
->> +
->> +#define READ_ONCE(p) \
->> +      ({ typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
->> +
->> +#define ASSIGN_ONCE(val, p) \
->> +      ({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
->> +
->>  #endif /* __KERNEL__ */
->>
->>  #endif /* __ASSEMBLY__ */
->> -- 
->> 1.9.3
->>
+Is this 10% reduction in size a good reason to change the code?
 
