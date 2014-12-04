@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaLDMCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:02:44 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:55797 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700AbaLDMCn (ORCPT
+	id S932139AbaLDMDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:03:08 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:36910 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaLDMDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:02:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] optimize ktime_divns for constant divisors
-Date: Thu, 04 Dec 2014 13:02:33 +0100
-Message-ID: <2165831.DQoLFmGhIf@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr>
-References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <3913269.qTFsa05Ysv@wuerfel> <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr>
+	Thu, 4 Dec 2014 07:03:06 -0500
+Message-ID: <54804D27.1020901@linaro.org>
+Date: Thu, 04 Dec 2014 13:01:43 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:7zMQyL+Ffcw5NRKbWEGld2HTdZTz1MHaFWuvrQ+nL7boRUUf9uh
- MeHhfJXsNH9x6T2XpWily1FzJps7ZEMBRloOTOOZUHjZdOI0iefHzcIlnVvnUalp7H2kvZe
- 8cfVlSO8N02ppnaWVXp2VvofRVyocvGP7OOX2NxMSiewbPRDPhux93QsPsN149WeBa+y96u
- q1RfhuHnP+t4uCXwp8dZA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: eric.auger@st.com, Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Alexander Graf <agraf@suse.de>, "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
+References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org> <CAFEAcA9YmAVYAOFbmV53Y3zBdcmK9MGSVR4gaLCjKxbyrZ6Xaw@mail.gmail.com> <547DFCD6.3000406@linaro.org> <CAFEAcA_pSiMXX52xUhNBCwiNdZomspFhr_Y+9+F2yb7P_D26bg@mail.gmail.com>
+In-Reply-To: <CAFEAcA_pSiMXX52xUhNBCwiNdZomspFhr_Y+9+F2yb7P_D26bg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 December 2014 02:23:37 Nicolas Pitre wrote:
-> On Wed, 3 Dec 2014, Arnd Bergmann wrote:
+On 12/04/2014 11:02 AM, Peter Maydell wrote:
+> On 2 December 2014 at 17:54, Eric Auger <eric.auger@linaro.org> wrote:
+>> as soon as VFIO signaling is set up (the device IRQ index is linked to
+>> an eventfd, the physical IRQ VFIO handler is installed and the physical
+>> IRQ is enabled at interrupt controller level), virtual IRQs are likely
+>> to be injected. With current QEMU code, we setup this VFIO signaling
+>> *before* the vgic readiness (either on machine init done or reset
+>> notifier) and we face that issue of early injection. QEMU related
+>> patches to follow ...
 > 
-> > On Wednesday 03 December 2014 14:43:06 Nicolas Pitre wrote:
-> > > At least on ARM, do_div() is optimized to turn constant divisors into
-> > > an inline multiplication by the reciprocal value at compile time. 
-> > > However this optimization is missed entirely whenever ktime_divns() is
-> > > used and the slow out-of-line division code is used all the time.
-> > > 
-> > > Let ktime_divns() use do_div() inline whenever the divisor is constant
-> > > and small enough.  This will make things like ktime_to_us() and 
-> > > ktime_to_ms() much faster.
-> > > 
-> > > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > 
-> > Very cool. I've been thinking about doing something similar for the
-> > general case but couldn't get the math to work.
-> > 
-> > Can you think of an architecture-independent way to ktime_to_sec,
-> > ktime_to_ms, and ktime_to_us efficiently based on what you did for
-> > the ARM do_div implementation?
-> 
-> Sure.  gcc generates rather shitty code on ARM compared to the output 
-> from my do_div() implementation. But here it is:
-> 
-> u64 ktime_to_us(ktime_t kt)
-> {
->         u64 ns = ktime_to_ns(kt);
->         u32 x_lo, x_hi, y_lo, y_hi;
->         u64 res, carry;
-> 
->         x_hi = ns >> 32;
->         x_lo = ns;
->         y_hi = 0x83126e97;
->         y_lo = 0x8d4fdf3b;
-> 
->         res = (u64)x_lo * y_lo;
->         carry = (u64)(u32)res + y_lo;
->         res = (res >> 32) + (carry >> 32);
-> 
->         res += (u64)x_lo * y_hi;
->         carry = (u64)(u32)res + (u64)x_hi * y_lo;
->         res = (res >> 32) + (carry >> 32);
-> 
->         res += (u64)x_hi * y_hi;
->         return res >> 9;
-> }
+> So can you describe in QEMU terms how the lifecycle of these
+> things works? How do we ensure that we don't start trying
+> to inject VFIO IRQs before we've even created the vgic, for
+> instance?
 
-Ok, I see, thanks for the example. I also tried this on x86, and it takes
-about twice as long as do_div on my Opteron, so it wouldn't be as helpful
-as I hoped.
+Hi Peter,
 
-On a related note, I wonder if we can come up with a more efficient
-implementation for do_div on ARMv7ve, and I think we should add the
-Makefile logic to build with -march=armv7ve when we know that we do
-not need to support processors without idiv.
+Here is the sequence:
+1) The VGIC early initialization is initiated in a machine init done
+notifier. This notifier is registered in kvm_arm_gic_realize
+(http://lists.gnu.org/archive/html/qemu-devel/2014-12/msg00220.html). It
+executes after vcpu instantiations + dist/cpu interface base address
+setting + nb irq setting.
+2) the VFIO signaling and irqfd setup is done in a reset notifier
+http://lists.gnu.org/archive/html/qemu-devel/2014-11/msg04365.html
 
-	Arnd
+Besides https://lkml.org/lkml/2014/12/3/601 now prevents the irqfd setup
+if the vgic is not initialized.
+
+QEMU tear down:
+in kvm_vm_release, kvm_irqfd_release is called before kvm_vgic_destroy.
+This means the irqfd injection is stopped before vgic initialization.
+VFIO driver will also will be released by QEMU process, independently on
+KVM life cycle. If it still exist while KVM has been released, VFIO
+signaling may still be up, meaning eventfd can be signaled but there is
+no registered handler anymore, hence no risk of virtual IRQ injection.
+
+Best Regards
+
+Eric
+
+
+> 
+> thanks
+> -- PMM
+> 
+
