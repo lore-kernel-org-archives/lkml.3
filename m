@@ -1,97 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaLDTEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:04:04 -0500
-Received: from sauhun.de ([89.238.76.85]:34600 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaLDTEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:04:01 -0500
-Date: Thu, 4 Dec 2014 20:03:43 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
-        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?utf-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Subject: Re: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns
- doesn't meet I2C spec
-Message-ID: <20141204190342.GM7944@katana>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
- <1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
- <20141203111518.GB1039@katana>
- <CAD=FV=X5inPWZakhgDX0dX=1CWXygEi3_AH9FVFWXYT3LZA5bg@mail.gmail.com>
- <20141204184046.GL7944@katana>
- <CAD=FV=Vp3hwxbDzb+FUhNXy8qW8fTCkgd67jRDV3foT0o9HQuQ@mail.gmail.com>
+	id S932995AbaLDTFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:05:32 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39242 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440AbaLDTFa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 14:05:30 -0500
+Date: Thu, 4 Dec 2014 14:05:14 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>, alex.williamson@redhat.com
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, bhelgaas@google.com,
+        linux-pci@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
+ or bus with 'do_flr' SysFS attribute
+Message-ID: <20141204190514.GB4545@laptop.dumpdata.com>
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
+ <5480528F.8010106@citrix.com>
+ <1107877503.20141204141054@eikelenboom.it>
+ <548064EA.8090905@citrix.com>
+ <308719815.20141204150909@eikelenboom.it>
+ <5480702F.2060004@citrix.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AQYPrgrEUc/1pSX1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=Vp3hwxbDzb+FUhNXy8qW8fTCkgd67jRDV3foT0o9HQuQ@mail.gmail.com>
+In-Reply-To: <5480702F.2060004@citrix.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 04, 2014 at 02:31:11PM +0000, David Vrabel wrote:
+> On 04/12/14 14:09, Sander Eikelenboom wrote:
+> > 
+> > Thursday, December 4, 2014, 2:43:06 PM, you wrote:
+> > 
+> >> On 04/12/14 13:10, Sander Eikelenboom wrote:
+> >>>
+> >>> Thursday, December 4, 2014, 1:24:47 PM, you wrote:
+> >>>
+> >>>> On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
+> >>>>>
+> >>>>> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> >>>>>>
+> >>>>>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
+> >>>>>>>
+> >>>>>>> Instead of doing all this complex dance, we depend on the toolstack 
+> >>>>>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
+> >>>>>>> which 'xl' uses when a device is detached or attached from/to a guest. 
+> >>>>>>> It bypasses the need to worry about the PCI lock. 
+> >>>>>>
+> >>>>>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
+> >>>>>> proposed). 
+> >>>>>>
+> >>>>>
+> >>>>> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
+> >>>
+> >>>> It is only needed if the core won't provide one.
+> >>>
+> >>>> +static int pcistub_try_create_reset_file(struct pci_dev *pci)
+> >>>> +{
+> >>>> +       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
+> >>>> +       struct device *dev = &pci->dev;
+> >>>> +       int ret;
+> >>>> +
+> >>>> +       /* Already have a per-function reset? */
+> >>>> +       if (pci_probe_reset_function(pci) == 0)
+> >>>> +               return 0;
+> >>>> +
+> >>>> +       ret = device_create_file(dev, &dev_attr_reset);
+> >>>> +       if (ret < 0)
+> >>>> +               return ret;
+> >>> +       dev_data->>created_reset_file = true;
+> >>>> +       return 0;
+> >>>> +}
+> >>>
+> >>> Wouldn't the "core-reset-sysfs-file" be still wired to the end up calling 
+> >>> "pci.c:__pci_dev_reset" ?
+> >>>
+> >>> The problem with that function is that from my testing it seems that the 
+> >>> first option "pci_dev_specific_reset" always seems to return succes, so all the
+> >>> other options are skipped (flr, pm, slot, bus). However the device it self is 
+> >>> not properly reset enough (perhaps the pci_dev_specific_reset is good enough for 
+> >>> none virtualization purposes and it's probably the least intrusive. For 
+> >>> virtualization however it would be nice to be sure it resets properly, or have a 
+> >>> way to force a specific reset routine.)
+> > 
+> >> Then you need work with the maintainer for those specific devices or
+> >> drivers to fix their specific reset function.
+> > 
+> >> I'm not adding stuff to pciback to workaround broken quirks.
+> > 
+> > OK that's a pretty clear message there, so if one wants to use pci and vga
+> > passthrough one should better use KVM and vfio-pci.
+> 
+> Have you (or anyone else) ever raised the problem with the broken reset
+> quirk for certain devices with the relevant maintainer?
+> 
+> > vfio-pci has:
+> > - logic to do the try-slot-bus-reset logic
+> 
+> Just because vfio-pci fixed it incorrectly doesn't mean pciback has to
+> as well.
+> 
+> It makes no sense for both pciback and vfio-pci to workaround problems
+> with pci_function_reset() in different ways -- it should be fixed in the
+> core PCI code so both can benefit and make use of the same code.
 
---AQYPrgrEUc/1pSX1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We seem to be going in circles.
 
+This thread: http://patchwork.ozlabs.org/patch/368668/
 
-> > New binding should have the "-ns" suffix, right? So, I'd vote to add the
-> > suffix to the new bindings and deprecate the ones used in the designware
-> > driver: "i2c-scl-rising-time-ns" and "i2c-scl-falling-time-ns"
-> >
-> > It might be a little more work now, but it will help us in the future,
-> > because it is the correct way to do it.
->=20
-> OK, that sounds fair.  You're OK with my proposal otherwise?
+has an interesting discussion that pretty much touches all of this
+and I believe it ends with David agreeing with Alex that an
+bus-reset is a perfect use-case.
 
-Yes.
+I believe the contention was on how to expose this interface
+to the user-space. David's was thinking to use 'reset' while
+I used 'do_flr' (which is a misleading name but hte toolstack
+already does it). Perhaps we should just have (as David suggested)
+an 'bus_reset' on the devices.
 
-> Are you looking for Addy or me to submit a patch supporting the "-ns"
-> suffix on the Designware i2c driver, or should we just use the "-ns"
-> suffix in the Rockchip driver and assume someone will later add
-> support for the new binding in the Designware i2c driver?
+I am going to go on a limb and presume that David was thinking
+that this 'bus_reset' would be exposed in the generic PCI land?
 
-I'd be really happy if you can do it. I'd love to have consistency right
-away.
-
-
---AQYPrgrEUc/1pSX1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgLAOAAoJEBQN5MwUoCm2MZoP/2+ZtwoRTOxH7xJMmnmngJTI
-y4CXTCTr8ES9GRvGizq0oeMS6/B0JCVKHgwAuD99WXXFM9oRuVwP1XpiuJ2D9AZv
-6h0kA4My4RqS0G+HDWvvVTsgNIisBg0X3yY20Me3iE4dG1DRTKPSf4L8UDRaBIkG
-86xF1lmJqDHCrdGEoGeL0GPkdQwx5JZuryUf1xJdG6A64lYWljf6jCPbT7Z5JzoL
-6kBTSCDmS2hnrEs+iCXjelzsv/DRZNZaQnCxUbhS+nPMkJJ+zU6tm98OQsTaURB2
-vg4NVXpiOlSp9bEeTYe5HlYZQzHucdMlsv/s09BBdh8nrVnrcUQx4oC526+8165Z
-P4dNfiAbZjR+bVcouSOMcqkh6QJFqtaBdN1v//7rI83iQiNw3onpxFDsLhZsjESA
-h4YRBLcyXHv6qQJos+BMgE7FvTkCuV2C34bEnzVHnVvanquNvCx4cPe1oAKwJpKG
-OLvMQH6wdpp9wXNXiVMvWLoQBgLbkFgw1McVg+KV01ah1E6Er3YxFL0u/blJYJyC
-/6urwqUrA1VJCf9XyvPWlKpJjSv8EpWK4VyY9fbHUt88hkLEWQQPem7Yv0QNhZ41
-bVYbliN5VcopeBucrNhsPlEjxOO68EeWA1JqhyLmyAdbI6eqysA+6ml807QOEe2G
-joRwygOCCnlnq3Fw9j5h
-=nKGV
------END PGP SIGNATURE-----
-
---AQYPrgrEUc/1pSX1--
+> 
+> David
+> 
