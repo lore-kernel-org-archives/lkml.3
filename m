@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390AbaLDPoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:44:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57447 "EHLO mx1.redhat.com"
+	id S932449AbaLDPpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:45:22 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:14409 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaLDPoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:44:06 -0500
-Message-ID: <54808123.8000704@redhat.com>
-Date: Thu, 04 Dec 2014 16:43:31 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932407AbaLDPpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:45:20 -0500
+X-IronPort-AV: E=Sophos;i="5.07,516,1413244800"; 
+   d="scan'208";a="199780131"
+Message-ID: <54808175.8040801@citrix.com>
+Date: Thu, 4 Dec 2014 15:44:53 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Where exactly will arch_fast_hash be used
-References: <20141204081147.GA19030@gondor.apana.org.au> <20141204152637.GA32140@casper.infradead.org> <20141204152929.GA22075@gondor.apana.org.au> <20141204153938.GC32140@casper.infradead.org>
-In-Reply-To: <20141204153938.GC32140@casper.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <andrew.cooper3@citrix.com>
+Subject: Re: [Xen-devel] [PATCH V4 00/10] xen: Switch to virtual mapped linear
+ p2m list
+References: <1417172039-8627-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1417172039-8627-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 04:39 PM, Thomas Graf wrote:
-> On 12/04/14 at 11:29pm, Herbert Xu wrote:
->> On Thu, Dec 04, 2014 at 03:26:37PM +0000, Thomas Graf wrote:
->>>
->>> As Daniel pointed out, this work originated for the OVS edge use
->>> case where security is of less concern and the rehashing is
->>> sufficient. Identifying collisions is less of interest as the user
->>> space fall back provides a greater surface for an attack.
->>
->> Well in that case the current setup I think is very misleading.
->> It's inviting unsuspecting kernel developers to use it as a hash
->> function for general hash tables, which AFAICS is something that
->> it fails at miserably.
->
-> Well, it's called fast hash and not secure hash ;-) but a clear hint
-> definitely wouldn't hurt.
+On 28/11/14 10:53, Juergen Gross wrote:
+> Paravirtualized kernels running on Xen use a three level tree for
+> translation of guest specific physical addresses to machine global
+> addresses. This p2m tree is used for construction of page table
+> entries, so the p2m tree walk is performance critical.
+> 
+> By using a linear virtual mapped p2m list accesses to p2m elements
+> can be sped up while even simplifying code. To achieve this goal
+> some p2m related initializations have to be performed later in the
+> boot process, as the final p2m list can be set up only after basic
+> memory management functions are available.
 
-Hm, I thought the kernel doc on arch_fast_hash() in include/linux/hash.h
-would give enough of a hint ...
+Applied to devel/for-linus-3.19.
+
+Thanks.
+
+David
