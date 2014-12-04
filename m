@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071AbaLDTF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 14:05:57 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:36300 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440AbaLDTFy (ORCPT
+	id S932956AbaLDTLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 14:11:50 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:54777 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932716AbaLDTLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 14:05:54 -0500
-Date: Thu, 4 Dec 2014 11:05:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Nishanth Menon <nm@ti.com>
-Cc: Jean Delvare <jdelvare@suse.de>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (gpio-fan) Add a shutdown handler to poweroff the
- fans
-Message-ID: <20141204190550.GB16925@roeck-us.net>
-References: <1417712336-31070-1-git-send-email-nm@ti.com>
+	Thu, 4 Dec 2014 14:11:49 -0500
+Message-ID: <5480B1F0.9090407@cogentembedded.com>
+Date: Thu, 04 Dec 2014 22:11:44 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417712336-31070-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.5480B092.023B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Joe Stringer <joestringer@nicira.com>, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, jesse@nicira.com, shannon.nelson@intel.com,
+        jesse.brandeburg@intel.com, jeffrey.t.kirsher@intel.com,
+        therbert@google.com, linux.nics@intel.com
+Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
+References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 10:58:56AM -0600, Nishanth Menon wrote:
-> Poweroff the fans when shutting down the system. Else,
-> echo '1' > /sys/class/hwmon/hwmon0/fan1_target; poweroff leaves the
-> fan running if the System power off does not drive the gpio expander
-> which might control the fan power supply.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+Hello.
+
+On 12/04/2014 09:39 PM, Joe Stringer wrote:
+
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an
+> implementation for this driver which checks for IPIP, GRE, UDP tunnels.
+
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
 > ---
+> v3: Drop IPIP and GRE (no driver support even though hw supports it).
+>      Check for UDP outer protocol for UDP tunnels.
+> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+>      Add MAX_INNER_LENGTH (as 80).
+> ---
+>   drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++++++++++
+>   1 file changed, 26 insertions(+)
 
-Applied to hwmon-next.
+> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> index c3a7f4a..0d6493a 100644
+> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
+>
+>   #endif /* USE_DEFAULT_FDB_DEL_DUMP */
+>   #endif /* HAVE_FDB_OPS */
 
-Thanks,
-Guenter
+    Need empty line here, I think.
+
+> +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +	if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
+> +		unsigned char *ihdr;
+> +
+> +		if (skb->protocol != IPPROTO_UDP ||
+> +		    skb->inner_protocol_type != ENCAP_TYPE_ETHER)
+> +			return false;
+> +
+> +		if (skb->inner_protocol == htons(ETH_P_TEB))
+> +			ihdr = skb_inner_mac_header(skb);
+> +		else if (skb->inner_protocol == htons(ETH_P_IP) ||
+> +			 skb->inner_protocol == htons(ETH_P_IPV6))
+> +			ihdr = skb_inner_network_header(skb);
+> +		else
+> +			return false;
+
+    The above is asking to be a *switch* instead, no?
+
+> +
+> +#define MAX_TUNNEL_HDR_LEN	80
+
+    I'd #define this just above the function, if not at the start of the file...
+
+[...]
+
+WBR, Sergei
+
