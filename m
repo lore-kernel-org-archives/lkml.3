@@ -1,59 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433AbaLDXMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 18:12:16 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:38779 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260AbaLDXMM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 18:12:12 -0500
+	id S933418AbaLDXMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:12:14 -0500
+Received: from mout.gmx.net ([212.227.17.21]:51324 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933235AbaLDXML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 18:12:11 -0500
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: Re: [PATCH v9 6/8] tpm: TPM 2.0 baseline support
+Date: Fri, 5 Dec 2014 00:17:40 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Will Arthur <will.c.arthur@intel.com>
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417672518-4530-7-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1417672518-4530-7-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1417734048.2721.22.camel@perches.com>
-References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
-	<1417734048.2721.22.camel@perches.com>
-Date: Thu, 4 Dec 2014 15:12:11 -0800
-Message-ID: <CAADnVQKJHXbhJFtibj34ZQ2HLbYUFURt0S3Ho4bX7LFf_GsPQw@mail.gmail.com>
-Subject: Re: [PATCH] x86: bpf_jit_comp: Reduce is_ereg() code size
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Joe Perches <joe@perches.com>, Daniel Borkmann <dborkman@redhat.com>
-Cc: Quentin Lambert <lambert.quentin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412050017.40668.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:39j9UpuaAYvj8K+js6EUzLLb2Ba7YE5bRVCaxMOe92mZSkXb3JQ
+ 4phU1kmEI0mR96lI15iq3LAdNc7sDdrLafTt7UYV4Tu8d12YAR2kDTTmsKgWj+ulZIOh9uO
+ sCugXCQEU+8lPieQHWvgxfqBTc3fPkjPnwkQt4k0k8TX+peSZ9M2+UmZTs8Hy/UsrvvKyl/
+ FQFE521WyEOq7bQ/s4R/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 3:00 PM, Joe Perches <joe@perches.com> wrote:
-> Use the (1 << reg) & mask trick to reduce code size.
->
-> x86-64 size difference -O2 without profiling for various
-> gcc versions:
->
-> $ size arch/x86/net/bpf_jit_comp.o*
->    text    data     bss     dec     hex filename
->    9266       4       0    9270    2436 arch/x86/net/bpf_jit_comp.o.4.4.new
->   10042       4       0   10046    273e arch/x86/net/bpf_jit_comp.o.4.4.old
->    9109       4       0    9113    2399 arch/x86/net/bpf_jit_comp.o.4.6.new
->    9717       4       0    9721    25f9 arch/x86/net/bpf_jit_comp.o.4.6.old
->    8789       4       0    8793    2259 arch/x86/net/bpf_jit_comp.o.4.7.new
->   10245       4       0   10249    2809 arch/x86/net/bpf_jit_comp.o.4.7.old
->    9671       4       0    9675    25cb arch/x86/net/bpf_jit_comp.o.4.9.new
->   10679       4       0   10683    29bb arch/x86/net/bpf_jit_comp.o.4.9.old
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+Am Donnerstag, 4. Dezember 2014, 06:55:16 schrieb Jarkko Sakkinen:
+> TPM 2.0 devices are separated by adding a field 'flags' to struct
+> tpm_chip and defining a flag TPM_CHIP_FLAG_TPM2 for tagging them.
+> 
+> This patch adds the following internal functions:
+> 
+> - tpm2_get_random()
+> - tpm2_get_tpm_pt()
+> - tpm2_pcr_extend()
+> - tpm2_pcr_read()
+> - tpm2_startup()
+> 
+> Additionally, the following exported functions are implemented for
+> implementing TPM 2.0 device drivers:
+> 
+> - tpm2_do_selftest()
+> - tpm2_calc_ordinal_durations()
+> - tpm2_gen_interrupt()
+> 
+> The existing functions that are exported for the use for existing
+> subsystems have been changed to check the flags field in struct
+> tpm_chip and use appropriate TPM 2.0 counterpart if
+> TPM_CHIP_FLAG_TPM2 is est.
+> 
+> The code for tpm2_calc_ordinal_duration() and tpm2_startup() were
+> originally written by Will Arthur.
+> 
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> ---
+>  drivers/char/tpm/Makefile        |   2 +-
+>  drivers/char/tpm/tpm-chip.c      |  27 +-
+>  drivers/char/tpm/tpm-interface.c |  24 +-
+>  drivers/char/tpm/tpm.h           |  61 +++++
+>  drivers/char/tpm/tpm2-cmd.c      | 542
+> +++++++++++++++++++++++++++++++++++++++ 5 files changed, 641
+> insertions(+), 15 deletions(-)
+>  create mode 100644 drivers/char/tpm/tpm2-cmd.c
+> 
+> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+> index c715596..88848ed 100644
+> --- a/drivers/char/tpm/Makefile
+> +++ b/drivers/char/tpm/Makefile
+> @@ -2,7 +2,7 @@
+>  # Makefile for the kernel tpm device drivers.
+>  #
+>  obj-$(CONFIG_TCG_TPM) += tpm.o
+> -tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o
+> +tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o
+>  tpm-$(CONFIG_ACPI) += tpm_ppi.o
+> 
+>  ifdef CONFIG_ACPI
+> diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
+> index 7741e28..3f3f2de 100644
+> --- a/drivers/char/tpm/tpm-chip.c
+> +++ b/drivers/char/tpm/tpm-chip.c
+> @@ -195,15 +195,18 @@ int tpm_chip_register(struct tpm_chip *chip)
+>  	if (rc)
+>  		return rc;
+> 
+> -	rc = tpm_sysfs_add_device(chip);
+> -	if (rc)
+> -		goto del_misc;
+> +	/* Populate sysfs for TPM1 devices. */
+> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
+> +		rc = tpm_sysfs_add_device(chip);
+> +		if (rc)
+> +			goto del_misc;
+> 
+> -	rc = tpm_add_ppi(chip);
+> -	if (rc)
+> -		goto del_sysfs;
+> +		rc = tpm_add_ppi(chip);
+> +		if (rc)
+> +			goto del_sysfs;
+> 
+> -	chip->bios_dir = tpm_bios_log_setup(chip->devname);
+> +		chip->bios_dir = tpm_bios_log_setup(chip->devname);
+> +	}
+> 
+>  	/* Make the chip available. */
+>  	spin_lock(&driver_lock);
+> @@ -236,10 +239,12 @@ void tpm_chip_unregister(struct tpm_chip *chip)
+>  	spin_unlock(&driver_lock);
+>  	synchronize_rcu();
+> 
+> -	if (chip->bios_dir)
+> -		tpm_bios_log_teardown(chip->bios_dir);
+> -	tpm_remove_ppi(chip);
+> -	tpm_sysfs_del_device(chip);
+> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
+> +		if (chip->bios_dir)
+> +			tpm_bios_log_teardown(chip->bios_dir);
+> +		tpm_remove_ppi(chip);
+> +		tpm_sysfs_del_device(chip);
+> +	}
+> 
+>  	tpm_dev_del_device(chip);
+>  }
+> diff --git a/drivers/char/tpm/tpm-interface.c
+> b/drivers/char/tpm/tpm-interface.c index b6f6b17..8a14887 100644
+> --- a/drivers/char/tpm/tpm-interface.c
+> +++ b/drivers/char/tpm/tpm-interface.c
+> @@ -360,7 +360,10 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char
+> *buf, if (chip->vendor.irq)
+>  		goto out_recv;
+> 
+> -	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
+> +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> +		stop = jiffies + tpm2_calc_ordinal_duration(chip, ordinal);
+> +	else
+> +		stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
+>  	do {
+>  		u8 status = chip->ops->status(chip);
+>  		if ((status & chip->ops->req_complete_mask) ==
+> @@ -483,7 +486,7 @@ static const struct tpm_input_header tpm_startup_header
+> = { static int tpm_startup(struct tpm_chip *chip, __be16 startup_type) {
+>  	struct tpm_cmd_t start_cmd;
+> -	start_cmd.header.in = tpm_startup_header;
+> +
+WHY?!? This renders tpm_startup useless.
 
-probably it was worth noting in comment that
-reg is 4-bit value and AUX_REG==12, so it won't overflow.
+So NACK for this part.
+>  	start_cmd.params.startup_in.startup_type = startup_type;
+>  	return tpm_transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
+>  				"attempting to start the TPM");
 
-Dave, it's for net-next of course.
+I'll get you an TPM1.2 :)
 
-Suggested-by: Alexei Starovoitov <ast@plumgrid.com>
-Tested-by: Alexei Starovoitov <ast@plumgrid.com>
+Thanks
+Peter
