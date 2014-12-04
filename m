@@ -1,96 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaLDKnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:43:51 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58011 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbaLDKnt (ORCPT
+	id S1753901AbaLDKoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:44:08 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:35615 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424AbaLDKoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:43:49 -0500
-Message-ID: <54803ADD.2090201@hitachi.com>
-Date: Thu, 04 Dec 2014 19:43:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 4 Dec 2014 05:44:06 -0500
 MIME-Version: 1.0
-To: Steve Capper <steve.capper@linaro.org>
-Cc: David Long <dave.long@linaro.org>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com> <547FCB73.1010707@linaro.org> <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com>
-In-Reply-To: <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com>
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01EEA337@SHSMSX101.ccr.corp.intel.com>
+References: <007f01d00fa1$68bf6770$3a3e3650$@alibaba-inc.com>
+ <CAKfTPtAOTJ1i5HPad4j91SWNiK5m_JRmg6Z4COiC8pADhi3dng@mail.gmail.com> <27240C0AC20F114CBF8149A2696CBE4A01EEA337@SHSMSX101.ccr.corp.intel.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 4 Dec 2014 11:43:45 +0100
+Message-ID: <CAKfTPtDWpu=nEQ7yyt86y7EUL0=rXGHj7i4KYGH=TSuoJfkEdw@mail.gmail.com>
+Subject: Re: [PATCH] sched/fair: fix select_task_rq_fair return -1
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: Hillf Danton <hillf.zj@alibaba-inc.com>,
+        "Zhang, Jun" <jun.zhang@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Liu, Changcheng" <changcheng.liu@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/04 19:21), Steve Capper wrote:
-> On 4 December 2014 at 02:48, David Long <dave.long@linaro.org> wrote:
->> On 12/03/14 20:16, William Cohen wrote:
+On 4 December 2014 at 11:23, Liu, Chuansheng <chuansheng.liu@intel.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Vincent Guittot [mailto:vincent.guittot@linaro.org]
+>> Sent: Thursday, December 04, 2014 6:08 PM
+>> To: Hillf Danton
+>> Cc: Zhang, Jun; Ingo Molnar; Peter Zijlstra; linux-kernel; Liu, Chuansheng; Liu,
+>> Changcheng
+>> Subject: Re: [PATCH] sched/fair: fix select_task_rq_fair return -1
 >>
->> [...]
+>> On 4 December 2014 at 10:05, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
+>> >>
+>> >> From: zhang jun <jun.zhang@intel.com>
+>> >>
+>> >> when cpu == -1 and sd->child == NULL, select_task_rq_fair return -1, system
+>> panic.
+>> >>
+>> >> [ 0.738326] BUG: unable to handle kernel paging request at
+>> ffff8800997ea928
+>> >> [ 0.746138] IP: [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
+>> >> [ 0.752886] PGD 25df067 PUD 0
+>> >> [ 0.756321] Oops: 0000 1 PREEMPT SMP
+>> >> [ 0.760743] Modules linked in:
+>> >> [ 0.764179] CPU: 0 PID: 6 Comm: kworker/u8:0 Not tainted
+>> 3.14.19-quilt-b27ac761 #2
+>> >> [ 0.772651] Hardware name: Intel Corporation CHERRYVIEW B1
+>> PLATFORM/Cherry Trail CR, BIOS CHTTRVP1.X64.0003.R08.1411110453
+>> >> 11/11/2014
+>> >> [ 0.786084] Workqueue: khelper __call_usermodehelper
+>> >> [ 0.791649] task: ffff88007955a150 ti: ffff88007955c000 task.ti:
+>> ffff88007955c000
+>> >> [ 0.800021] RIP: 0010:[<ffffffff810b15d3>] [<ffffffff810b15d3>]
+>> wake_up_new_task+0x43/0x1b0
+>> >> [ 0.809478] RSP: 0000:ffff88007955dd58 EFLAGS: 00010092
+>> >> [ 0.815422] RAX: 00000000ffffffff RBX: 0000000000000001 RCX:
+>> 0000000000000020
+>> >> [ 0.823404] RDX: 00000000ffffffff RSI: 0000000000000020 RDI:
+>> 0000000000000020
+>> >> [ 0.831386] RBP: ffff88007955dd80 R08: ffff880079604b58 R09:
+>> 00000000ffffffff
+>> >> [ 0.839368] R10: 0000000000000004 R11: eae0000000000000 R12:
+>> ffff8800797ea650
+>> >> [ 0.847350] R13: 0000000000004000 R14: ffff8800797ead52 R15:
+>> 0000000000000206
+>> >> [ 0.855335] FS: 0000000000000000(0000) GS:ffff88007aa00000(0000)
+>> knlGS:0000000000000000
+>> >> [ 0.864387] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> >> [ 0.870817] CR2: ffff8800997ea928 CR3: 000000000220b000 CR4:
+>> 00000000001007f0
+>> >> [ 0.878796] Stack:
+>> >> [ 0.881046] 0000000000000001 ffff8800797ea650 0000000000004000
+>> 0000000000000000
+>> >> [ 0.889363] 000000000000003c ffff88007955ddf0 ffffffff8107ddfd
+>> ffffffff810b6a95
+>> >> [ 0.897680] 0000000000000000 ffff8800796beb00 ffff880000000000
+>> ffffffff81000000
+>> >> [ 0.905998] Call Trace:
+>> >> [ 0.908752] [<ffffffff8107ddfd>] do_fork+0x12d/0x3b0
+>> >> [ 0.914416] [<ffffffff810b6a95>] ? set_next_entity+0x95/0xb0
+>> >> [ 0.920856] [<ffffffff8107e0a6>] kernel_thread+0x26/0x30
+>> >> [ 0.926903] [<ffffffff8109703e>] __call_usermodehelper+0x2e/0x90
+>> >> [ 0.933730] [<ffffffff8109ad31>] process_one_work+0x171/0x490
+>> >> [ 0.940264] [<ffffffff8109ba4b>] worker_thread+0x11b/0x3a0
+>> >> [ 0.946508] [<ffffffff8109b930>] ? manage_workers.isra.27+0x2b0/0x2b0
+>> >> [ 0.953821] [<ffffffff810a1802>] kthread+0xd2/0xf0
+>> >> [ 0.959289] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
+>> >> [ 0.966602] [<ffffffff81af81ac>] ret_from_fork+0x7c/0xb0
+>> >> [ 0.972652] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
+>> >> [ 0.979956] Code: 49 89 fc 4c 89 f7 53 e8 bc 5c a4 00 49 8b 54 24 08 31 c9 49
+>> 89 c7 49 8b 44 24 60 4c 89 e7 8b 72 18 ba 08 00 00 00 ff 50 40 89
+>> >> c2 <49> 0f a3 94 24 e0 02 00 00 19 c9 85 c9 0f 84 34 01 00 00 48 8b
+>> >> [ 1.001809] RIP [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
+>> >> [ 1.008641] RSP <ffff88007955dd58>
+>> >> [ 1.012544] CR2: ffff8800997ea928
+>> >> [ 1.016279] --[ end trace 9737aaa337a5ca10 ]--
+>> >>
+>> >> Signed-off-by: zhang jun <jun.zhang@intel.com>
+>> >> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+>> >> Signed-off-by: Changcheng Liu <changcheng.liu@intel.com>
+>> >> ---
+>> >>  kernel/sched/fair.c |    2 ++
+>> >>  1 file changed, 2 insertions(+)
+>> >>
+>> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> >> index 34baa60..123153f 100644
+>> >> --- a/kernel/sched/fair.c
+>> >> +++ b/kernel/sched/fair.c
+>> >> @@ -4587,6 +4587,8 @@ select_task_rq_fair(struct task_struct *p, int
+>> prev_cpu, int sd_flag, int wake_f
+>> >>               if (new_cpu == -1 || new_cpu == cpu) {
+>> >>                       /* Now try balancing at a lower domain level of
+>> cpu */
+>> >>                       sd = sd->child;
+>> >> +                     if ((!sd) && (new_cpu == -1))
+>> >> +                             new_cpu = smp_processor_id();
+>> >>                       continue;
+>> >>               }
+>> >>
+>> > In 3.18-rc7 is -1 still selected?
 >>
->>>
->>> The perf issue seems to be independent and can be reproduced without using
->>> any kprobe support.  I need to get a simple reproducer and mention it on the
->>> linux-perf-user list.
->>>
->>> -Will
->>>
->>
->>
->> OK, my confusion came from all the different things perf can use.  I have
->> not yet been able to reproduce the "perf stat" failure, but I do see the
->> failure with Steve's example using tracepoints.  I had thought that was
->> using kprobes, but apparently it just uses tracepoints.  These look like two
->> different failures to me:  One related to tracepoints, and one in the PMU
->> driver.
->>
->> Since this seems unrelated to kprobes I don't plan on pursuing these
->> particular problems.
->>
->> -dl
->>
-> 
-> Sorry for the late reply...
-> 
-> The example I had was:
-> echo "p:memcpy memcpy %x2" > /sys/kernel/debug/tracing/kprobe_events
-> perf record -e kprobes:memcpy -a sleep 5
-> 
-> [then crash due to IRQs being unexpectedly disabled in the ext4 code]
-> 
-> Isn't that a kprobe problem?
-> 
+>> find_idlest_cpu doesn't return -1 anymore but always a valid cpu. The
+>> local cpu will be used if no better cpu has been found
+>
+> So I guess we can make one similar patch based on 3.14.x branch?
+> Latest:
+> find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+> return shallowest_idle_cpu != -1 ? shallowest_idle_cpu : least_loaded_cpu;
+>
+> 3.14.X:
+> find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+> return idlest;
 
-It should be a kprobe problem. As I mentioned, if you set a probe on
-trace_event_buffer_lock_reserve() instead of memcpy(), the same problem
-may happen without using perf. (It is enough enabling the new event to
-reproduce the problem, I guess)
+The change below  will give a similar behavior than 3.18 for 3.14 and
+we still match the condition if (new_cpu == -1 || new_cpu == cpu) in
+order to go in the child level
 
-The problem what Will reported was different one. He used "perf stat"
-which never touch the kprobes itself, and solved in newer kernel (as
-he reported)
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4151,7 +4151,7 @@ static int
+ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ {
+        unsigned long load, min_load = ULONG_MAX;
+-       int idlest = -1;
++       int idlest = this_cpu;
+        int i;
 
-I'd like to ask you to try my fix on your machine, with my reproducing
-methods. (do not use sytemtap nor perf, those can have other issues)
+        /* Traverse only the allowed CPUs */
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>
