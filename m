@@ -1,333 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaLDCUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:20:43 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:41676 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaLDCUm (ORCPT
+	id S1752353AbaLDCVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:21:43 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:58439 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLDCVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:20:42 -0500
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix "'foo * bar' should be 'foo *bar'" errors
-Date: Wed,  3 Dec 2014 20:19:59 -0600
-Message-Id: <1417659599-29423-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 3 Dec 2014 21:21:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417658046-4538-1-git-send-email-bobby.prani@gmail.com>
+References: <1417658046-4538-1-git-send-email-bobby.prani@gmail.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 3 Dec 2014 21:21:10 -0500
+Message-ID: <CAJhHMCBC6q1p-D=pqZ65dsZHgyDR1rGtp7Mp9s1rTfeU+VreAQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] tinification: Introduce CONFIG_SRCU to make SRCU optional
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "'foo * bar' should be 'foo *bar'" errors
+On Wed, Dec 3, 2014 at 8:54 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> (CC list restricted since this is just for initial feedback)
+>
+> SRCU is not necessary to be compiled by default in all cases. For tinification
+> efforts not compiling SRCU unless necessary is desirable.
+>
+> The current patch tries to make compiling SRCU optional by introducing a new
+> Kconfig option CONFIG_SRCU which is selected when any of the components making
+> use of SRCU are selected.
+>
+> The current tinyconfig on x86 enables SRCU by default since x86 enables
+> PERF_EVENTS which in-turn require SRCU support. If we disable PERF_EVENTS, we
+> can disable compiling SRCU for tiny configs on x86 systems.
+>
+> I tested this using randconfig and building about 15 kernels. This is definitely
+> not complete and could use more testing. Sticking it in next might help in that
+> regards.
+>
+> Comments and suggestions are welcome. Please let me know if I should split
+> up this patch.
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- .../rtl8723au/include/rtl8723a_bt-coexist.h        | 177 +++++++++++----------
- drivers/staging/rtl8723au/include/rtl8723a_recv.h  |   4 +-
- drivers/staging/rtl8723au/include/rtw_cmd.h        |   8 +-
- drivers/staging/rtl8723au/include/rtw_mlme_ext.h   |   2 +-
- 4 files changed, 102 insertions(+), 89 deletions(-)
+So it looks like I missed a few places where this needs to be
+set(cpufreq, devfreq, notifier etc.,)
 
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_bt-coexist.h b/drivers/staging/rtl8723au/include/rtl8723a_bt-coexist.h
-index 0506965..7add5df 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_bt-coexist.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_bt-coexist.h
-@@ -31,8 +31,8 @@ enum rt_media_status {
- 
- void BT_SignalCompensation(struct rtw_adapter *padapter,
- 			   u8 *rssi_wifi, u8 *rssi_bt);
--void BT_HaltProcess(struct rtw_adapter * padapter);
--void BT_LpsLeave(struct rtw_adapter * padapter);
-+void BT_HaltProcess(struct rtw_adapter *padapter);
-+void BT_LpsLeave(struct rtw_adapter *padapter);
- 
- 
- #define	BT_HsConnectionEstablished(Adapter)		false
-@@ -1092,17 +1092,20 @@ enum hci_ext_bp_operation {
- 	BTHCI_StateMachine(_Adapter, _StateToEnter, _StateCmd, _EntryNum);\
- }
- 
--void BTHCI_EventParse(struct rtw_adapter * padapter, void *pEvntData, u32 dataLen);
-+void BTHCI_EventParse(struct rtw_adapter *padapter, void *pEvntData,
-+		      u32 dataLen);
- #define BT_EventParse BTHCI_EventParse
--u8 BTHCI_HsConnectionEstablished(struct rtw_adapter * padapter);
--void BTHCI_UpdateBTProfileRTKToMoto(struct rtw_adapter * padapter);
--void BTHCI_WifiScanNotify(struct rtw_adapter * padapter, u8 scanType);
--void BTHCI_StateMachine(struct rtw_adapter * padapter, u8 StateToEnter, enum hci_state_with_cmd StateCmd, u8 EntryNum);
--void BTHCI_DisconnectPeer(struct rtw_adapter * padapter, u8 EntryNum);
--void BTHCI_EventNumOfCompletedDataBlocks(struct rtw_adapter * padapter);
--void BTHCI_EventAMPStatusChange(struct rtw_adapter * padapter, u8 AMP_Status);
--void BTHCI_DisconnectAll(struct rtw_adapter * padapter);
--enum hci_status BTHCI_HandleHCICMD(struct rtw_adapter * padapter, struct packet_irp_hcicmd_data *pHciCmd);
-+u8 BTHCI_HsConnectionEstablished(struct rtw_adapter *padapter);
-+void BTHCI_UpdateBTProfileRTKToMoto(struct rtw_adapter *padapter);
-+void BTHCI_WifiScanNotify(struct rtw_adapter *padapter, u8 scanType);
-+void BTHCI_StateMachine(struct rtw_adapter *padapter, u8 StateToEnter,
-+			enum hci_state_with_cmd StateCmd, u8 EntryNum);
-+void BTHCI_DisconnectPeer(struct rtw_adapter *padapter, u8 EntryNum);
-+void BTHCI_EventNumOfCompletedDataBlocks(struct rtw_adapter *padapter);
-+void BTHCI_EventAMPStatusChange(struct rtw_adapter *padapter, u8 AMP_Status);
-+void BTHCI_DisconnectAll(struct rtw_adapter *padapter);
-+enum hci_status BTHCI_HandleHCICMD(struct rtw_adapter *padapter,
-+				   struct packet_irp_hcicmd_data *pHciCmd);
- 
- /*  ===== End of sync from SD7 driver COMMON/bt_hci.h ===== */
- 
-@@ -1157,9 +1160,10 @@ struct btdm_8723a_1ant {
- 	u8		bRAChanged;
- };
- 
--void BTDM_1AntSignalCompensation(struct rtw_adapter * padapter, u8 *rssi_wifi, u8 *rssi_bt);
--void BTDM_1AntForDhcp(struct rtw_adapter * padapter);
--void BTDM_1AntBtCoexist8723A(struct rtw_adapter * padapter);
-+void BTDM_1AntSignalCompensation(struct rtw_adapter *padapter,
-+				 u8 *rssi_wifi, u8 *rssi_bt);
-+void BTDM_1AntForDhcp(struct rtw_adapter *padapter);
-+void BTDM_1AntBtCoexist8723A(struct rtw_adapter *padapter);
- 
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtc87231Ant.h ===== */
- 
-@@ -1241,7 +1245,7 @@ struct btdm_8723a_2ant {
- 	u8	btStatus;
- };
- 
--void BTDM_2AntBtCoexist8723A(struct rtw_adapter * padapter);
-+void BTDM_2AntBtCoexist8723A(struct rtw_adapter *padapter);
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtc87232Ant.h ===== */
- 
- /*  ===== Below this line is sync from SD7 driver HAL/BTCoexist/HalBtc8723.h ===== */
-@@ -1310,15 +1314,17 @@ struct bt_coexist_8723a {
- 	struct btdm_8723a_1ant			btdm1Ant;
- };
- 
--void BTDM_SetFwChnlInfo(struct rtw_adapter * padapter, enum rt_media_status mstatus);
--u8 BTDM_IsWifiConnectionExist(struct rtw_adapter * padapter);
--void BTDM_SetFw3a(struct rtw_adapter * padapter, u8 byte1, u8 byte2, u8 byte3, u8 byte4, u8 byte5);
--void BTDM_QueryBtInformation(struct rtw_adapter * padapter);
--void BTDM_SetSwRfRxLpfCorner(struct rtw_adapter * padapter, u8 type);
--void BTDM_SetSwPenaltyTxRateAdaptive(struct rtw_adapter * padapter, u8 raType);
--void BTDM_SetFwDecBtPwr(struct rtw_adapter * padapter, u8 bDecBtPwr);
--u8 BTDM_BtProfileSupport(struct rtw_adapter * padapter);
--void BTDM_LpsLeave(struct rtw_adapter * padapter);
-+void BTDM_SetFwChnlInfo(struct rtw_adapter *padapter,
-+			enum rt_media_status mstatus);
-+u8 BTDM_IsWifiConnectionExist(struct rtw_adapter *padapter);
-+void BTDM_SetFw3a(struct rtw_adapter *padapter, u8 byte1, u8 byte2, u8 byte3,
-+		  u8 byte4, u8 byte5);
-+void BTDM_QueryBtInformation(struct rtw_adapter *padapter);
-+void BTDM_SetSwRfRxLpfCorner(struct rtw_adapter *padapter, u8 type);
-+void BTDM_SetSwPenaltyTxRateAdaptive(struct rtw_adapter *padapter, u8 raType);
-+void BTDM_SetFwDecBtPwr(struct rtw_adapter *padapter, u8 bDecBtPwr);
-+u8 BTDM_BtProfileSupport(struct rtw_adapter *padapter);
-+void BTDM_LpsLeave(struct rtw_adapter *padapter);
- 
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtc8723.h ===== */
- 
-@@ -1340,8 +1346,9 @@ enum BT_A2DP_INDEX{
- #define BTDM_ANT_BT						2
- 
- 
--void BTDM_SingleAnt(struct rtw_adapter * padapter, u8 bSingleAntOn, u8 bInterruptOn, u8 bMultiNAVOn);
--void BTDM_CheckBTIdleChange1Ant(struct rtw_adapter * padapter);
-+void BTDM_SingleAnt(struct rtw_adapter *padapter, u8 bSingleAntOn,
-+		    u8 bInterruptOn, u8 bMultiNAVOn);
-+void BTDM_CheckBTIdleChange1Ant(struct rtw_adapter *padapter);
- 
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtcCsr1Ant.h ===== */
- 
-@@ -1361,7 +1368,8 @@ void BTDM_CheckBTIdleChange1Ant(struct rtw_adapter * padapter);
- #define	BT_DACSWING_M7				2
- #define	BT_DACSWING_M10				3
- 
--void BTDM_DiminishWiFi(struct rtw_adapter * Adapter, u8 bDACOn, u8 bInterruptOn, u8 DACSwingLevel, u8 bNAVOn);
-+void BTDM_DiminishWiFi(struct rtw_adapter *Adapter, u8 bDACOn, u8 bInterruptOn,
-+		       u8 DACSwingLevel, u8 bNAVOn);
- 
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtcCsr2Ant.h ===== */
- 
-@@ -1534,58 +1542,63 @@ struct bt_coexist_str {
- 	u8			fw3aVal[5];
- };
- 
--void BTDM_CheckAntSelMode(struct rtw_adapter * padapter);
--void BTDM_FwC2hBtRssi(struct rtw_adapter * padapter, u8 *tmpBuf);
-+void BTDM_CheckAntSelMode(struct rtw_adapter *padapter);
-+void BTDM_FwC2hBtRssi(struct rtw_adapter *padapter, u8 *tmpBuf);
- #define BT_FwC2hBtRssi BTDM_FwC2hBtRssi
--void BTDM_DisplayBtCoexInfo(struct rtw_adapter * padapter);
-+void BTDM_DisplayBtCoexInfo(struct rtw_adapter *padapter);
- #define BT_DisplayBtCoexInfo BTDM_DisplayBtCoexInfo
--void BTDM_RejectAPAggregatedPacket(struct rtw_adapter * padapter, u8 bReject);
--u8 BTDM_IsHT40(struct rtw_adapter * padapter);
--u8 BTDM_Legacy(struct rtw_adapter * padapter);
--void BTDM_CheckWiFiState(struct rtw_adapter * padapter);
--s32 BTDM_GetRxSS(struct rtw_adapter * padapter);
--u8 BTDM_CheckCoexBcnRssiState(struct rtw_adapter * padapter, u8 levelNum, u8 RssiThresh, u8 RssiThresh1);
--u8 BTDM_CheckCoexRSSIState1(struct rtw_adapter * padapter, u8 levelNum, u8 RssiThresh, u8 RssiThresh1);
--u8 BTDM_CheckCoexRSSIState(struct rtw_adapter * padapter, u8 levelNum, u8 RssiThresh, u8 RssiThresh1);
--void BTDM_Balance(struct rtw_adapter * padapter, u8 bBalanceOn, u8 ms0, u8 ms1);
--void BTDM_AGCTable(struct rtw_adapter * padapter, u8 type);
--void BTDM_BBBackOffLevel(struct rtw_adapter * padapter, u8 type);
--void BTDM_FWCoexAllOff(struct rtw_adapter * padapter);
--void BTDM_SWCoexAllOff(struct rtw_adapter * padapter);
--void BTDM_HWCoexAllOff(struct rtw_adapter * padapter);
--void BTDM_CoexAllOff(struct rtw_adapter * padapter);
--void BTDM_TurnOffBtCoexistBeforeEnterIPS(struct rtw_adapter * padapter);
--void BTDM_SignalCompensation(struct rtw_adapter * padapter, u8 *rssi_wifi, u8 *rssi_bt);
--void BTDM_UpdateCoexState(struct rtw_adapter * padapter);
--u8 BTDM_IsSameCoexistState(struct rtw_adapter * padapter);
--void BTDM_PWDBMonitor(struct rtw_adapter * padapter);
--u8 BTDM_IsBTBusy(struct rtw_adapter * padapter);
-+void BTDM_RejectAPAggregatedPacket(struct rtw_adapter *padapter, u8 bReject);
-+u8 BTDM_IsHT40(struct rtw_adapter *padapter);
-+u8 BTDM_Legacy(struct rtw_adapter *padapter);
-+void BTDM_CheckWiFiState(struct rtw_adapter *padapter);
-+s32 BTDM_GetRxSS(struct rtw_adapter *padapter);
-+u8 BTDM_CheckCoexBcnRssiState(struct rtw_adapter *padapter, u8 levelNum,
-+			      u8 RssiThresh, u8 RssiThresh1);
-+u8 BTDM_CheckCoexRSSIState1(struct rtw_adapter *padapter, u8 levelNum,
-+			    u8 RssiThresh, u8 RssiThresh1);
-+u8 BTDM_CheckCoexRSSIState(struct rtw_adapter *padapter, u8 levelNum,
-+			   u8 RssiThresh, u8 RssiThresh1);
-+void BTDM_Balance(struct rtw_adapter *padapter, u8 bBalanceOn, u8 ms0, u8 ms1);
-+void BTDM_AGCTable(struct rtw_adapter *padapter, u8 type);
-+void BTDM_BBBackOffLevel(struct rtw_adapter *padapter, u8 type);
-+void BTDM_FWCoexAllOff(struct rtw_adapter *padapter);
-+void BTDM_SWCoexAllOff(struct rtw_adapter *padapter);
-+void BTDM_HWCoexAllOff(struct rtw_adapter *padapter);
-+void BTDM_CoexAllOff(struct rtw_adapter *padapter);
-+void BTDM_TurnOffBtCoexistBeforeEnterIPS(struct rtw_adapter *padapter);
-+void BTDM_SignalCompensation(struct rtw_adapter *padapter, u8 *rssi_wifi,
-+			     u8 *rssi_bt);
-+void BTDM_UpdateCoexState(struct rtw_adapter *padapter);
-+u8 BTDM_IsSameCoexistState(struct rtw_adapter *padapter);
-+void BTDM_PWDBMonitor(struct rtw_adapter *padapter);
-+u8 BTDM_IsBTBusy(struct rtw_adapter *padapter);
- #define BT_IsBtBusy BTDM_IsBTBusy
--u8 BTDM_IsWifiBusy(struct rtw_adapter * padapter);
--u8 BTDM_IsCoexistStateChanged(struct rtw_adapter * padapter);
--u8 BTDM_IsWifiUplink(struct rtw_adapter * padapter);
--u8 BTDM_IsWifiDownlink(struct rtw_adapter * padapter);
--u8 BTDM_IsBTHSMode(struct rtw_adapter * padapter);
--u8 BTDM_IsBTUplink(struct rtw_adapter * padapter);
--u8 BTDM_IsBTDownlink(struct rtw_adapter * padapter);
--void BTDM_AdjustForBtOperation(struct rtw_adapter * padapter);
--void BTDM_ForHalt(struct rtw_adapter * padapter);
--void BTDM_WifiScanNotify(struct rtw_adapter * padapter, u8 scanType);
--void BTDM_WifiAssociateNotify(struct rtw_adapter * padapter, u8 action);
--void BTDM_MediaStatusNotify(struct rtw_adapter * padapter, enum rt_media_status mstatus);
--void BTDM_ForDhcp(struct rtw_adapter * padapter);
--void BTDM_ResetActionProfileState(struct rtw_adapter * padapter);
--void BTDM_SetBtCoexCurrAntNum(struct rtw_adapter * padapter, u8 antNum);
-+u8 BTDM_IsWifiBusy(struct rtw_adapter *padapter);
-+u8 BTDM_IsCoexistStateChanged(struct rtw_adapter *padapter);
-+u8 BTDM_IsWifiUplink(struct rtw_adapter *padapter);
-+u8 BTDM_IsWifiDownlink(struct rtw_adapter *padapter);
-+u8 BTDM_IsBTHSMode(struct rtw_adapter *padapter);
-+u8 BTDM_IsBTUplink(struct rtw_adapter *padapter);
-+u8 BTDM_IsBTDownlink(struct rtw_adapter *padapter);
-+void BTDM_AdjustForBtOperation(struct rtw_adapter *padapter);
-+void BTDM_ForHalt(struct rtw_adapter *padapter);
-+void BTDM_WifiScanNotify(struct rtw_adapter *padapter, u8 scanType);
-+void BTDM_WifiAssociateNotify(struct rtw_adapter *padapter, u8 action);
-+void BTDM_MediaStatusNotify(struct rtw_adapter *padapter,
-+			    enum rt_media_status mstatus);
-+void BTDM_ForDhcp(struct rtw_adapter *padapter);
-+void BTDM_ResetActionProfileState(struct rtw_adapter *padapter);
-+void BTDM_SetBtCoexCurrAntNum(struct rtw_adapter *padapter, u8 antNum);
- #define BT_SetBtCoexCurrAntNum BTDM_SetBtCoexCurrAntNum
--u8 BTDM_IsActionSCO(struct rtw_adapter * padapter);
--u8 BTDM_IsActionHID(struct rtw_adapter * padapter);
--u8 BTDM_IsActionA2DP(struct rtw_adapter * padapter);
--u8 BTDM_IsActionPAN(struct rtw_adapter * padapter);
--u8 BTDM_IsActionHIDA2DP(struct rtw_adapter * padapter);
--u8 BTDM_IsActionHIDPAN(struct rtw_adapter * padapter);
--u8 BTDM_IsActionPANA2DP(struct rtw_adapter * padapter);
--u32 BTDM_BtTxRxCounterH(struct rtw_adapter * padapter);
--u32 BTDM_BtTxRxCounterL(struct rtw_adapter * padapter);
-+u8 BTDM_IsActionSCO(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionHID(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionA2DP(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionPAN(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionHIDA2DP(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionHIDPAN(struct rtw_adapter *padapter);
-+u8 BTDM_IsActionPANA2DP(struct rtw_adapter *padapter);
-+u32 BTDM_BtTxRxCounterH(struct rtw_adapter *padapter);
-+u32 BTDM_BtTxRxCounterL(struct rtw_adapter *padapter);
- 
- /*  ===== End of sync from SD7 driver HAL/BTCoexist/HalBtCoexist.h ===== */
- 
-@@ -1593,14 +1606,14 @@ u32 BTDM_BtTxRxCounterL(struct rtw_adapter * padapter);
- 
- #define RTS_CTS_NO_LEN_LIMIT	0
- 
--u8 HALBT_GetPGAntNum(struct rtw_adapter * padapter);
-+u8 HALBT_GetPGAntNum(struct rtw_adapter *padapter);
- #define BT_GetPGAntNum HALBT_GetPGAntNum
--void HALBT_SetKey(struct rtw_adapter * padapter, u8 EntryNum);
--void HALBT_RemoveKey(struct rtw_adapter * padapter, u8 EntryNum);
--u8 HALBT_IsBTExist(struct rtw_adapter * padapter);
-+void HALBT_SetKey(struct rtw_adapter *padapter, u8 EntryNum);
-+void HALBT_RemoveKey(struct rtw_adapter *padapter, u8 EntryNum);
-+u8 HALBT_IsBTExist(struct rtw_adapter *padapter);
- #define BT_IsBtExist HALBT_IsBTExist
--u8 HALBT_BTChipType(struct rtw_adapter * padapter);
--void HALBT_SetRtsCtsNoLenLimit(struct rtw_adapter * padapter);
-+u8 HALBT_BTChipType(struct rtw_adapter *padapter);
-+void HALBT_SetRtsCtsNoLenLimit(struct rtw_adapter *padapter);
- 
- /*  ===== End of sync from SD7 driver HAL/HalBT.c ===== */
- 
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_recv.h b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-index 0177bbc..875d37b 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-@@ -56,8 +56,8 @@ struct interrupt_msg_format {
- 	unsigned int  MSG_EX;
- };
- 
--int rtl8723au_init_recv_priv(struct rtw_adapter * padapter);
--void rtl8723au_free_recv_priv(struct rtw_adapter * padapter);
-+int rtl8723au_init_recv_priv(struct rtw_adapter *padapter);
-+void rtl8723au_free_recv_priv(struct rtw_adapter *padapter);
- void rtl8723a_process_phy_info(struct rtw_adapter *padapter, void *prframe);
- void update_recvframe_attrib(struct recv_frame *precvframe, struct recv_stat *prxstat);
- void update_recvframe_phyinfo(struct recv_frame *precvframe, struct phy_stat *pphy_info);
-diff --git a/drivers/staging/rtl8723au/include/rtw_cmd.h b/drivers/staging/rtl8723au/include/rtw_cmd.h
-index 7104410..92c8ec4 100644
---- a/drivers/staging/rtl8723au/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8723au/include/rtw_cmd.h
-@@ -689,10 +689,10 @@ int rtw_disassoc_cmd23a(struct rtw_adapter *padapter, u32 deauth_timeout_ms, boo
- int rtw_setopmode_cmd23a(struct rtw_adapter *padapter, enum nl80211_iftype ifmode);
- int rtw_setdatarate_cmd(struct rtw_adapter  *padapter, u8 *rateset);
- int rtw_setbasicrate_cmd(struct rtw_adapter  *padapter, u8 *rateset);
--int rtw_setbbreg_cmd(struct rtw_adapter * padapter, u8 offset, u8 val);
--int rtw_setrfreg_cmd(struct rtw_adapter * padapter, u8 offset, u32 val);
--int rtw_getbbreg_cmd(struct rtw_adapter * padapter, u8 offset, u8 * pval);
--int rtw_getrfreg_cmd(struct rtw_adapter * padapter, u8 offset, u8 * pval);
-+int rtw_setbbreg_cmd(struct rtw_adapter *padapter, u8 offset, u8 val);
-+int rtw_setrfreg_cmd(struct rtw_adapter *padapter, u8 offset, u32 val);
-+int rtw_getbbreg_cmd(struct rtw_adapter *padapter, u8 offset, u8 *pval);
-+int rtw_getrfreg_cmd(struct rtw_adapter *padapter, u8 offset, u8 *pval);
- int rtw_setrfintfs_cmd(struct rtw_adapter  *padapter, u8 mode);
- int rtw_setrttbl_cmd(struct rtw_adapter  *padapter, struct setratable_parm *prate_table);
- int rtw_getrttbl_cmd(struct rtw_adapter  *padapter, struct getratable_rsp *pval);
-diff --git a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-index 51dba1f..ffb37b2 100644
---- a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-+++ b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-@@ -509,7 +509,7 @@ int rtw_check_bcn_info23a(struct rtw_adapter *Adapter,
- 			  struct ieee80211_mgmt *mgmt, u32 packet_len);
- void update_IOT_info23a(struct rtw_adapter *padapter);
- void update_capinfo23a(struct rtw_adapter *Adapter, u16 updateCap);
--void update_wireless_mode23a(struct rtw_adapter * padapter);
-+void update_wireless_mode23a(struct rtw_adapter *padapter);
- void update_tx_basic_rate23a(struct rtw_adapter *padapter, u8 modulation);
- void update_bmc_sta_support_rate23a(struct rtw_adapter *padapter, u32 mac_id);
- int update_sta_support_rate23a(struct rtw_adapter *padapter, u8 *pvar_ie,
+I will update the patch and send it in.
+
+Thanks!
+
+> CC: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> CC: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  arch/arm/kvm/Kconfig     |  1 +
+>  arch/arm64/kvm/Kconfig   |  1 +
+>  arch/ia64/kvm/Kconfig    |  1 +
+>  arch/mips/kvm/Kconfig    |  1 +
+>  arch/powerpc/kvm/Kconfig |  1 +
+>  arch/s390/kvm/Kconfig    |  1 +
+>  arch/tile/kvm/Kconfig    |  1 +
+>  arch/x86/kvm/Kconfig     |  1 +
+>  drivers/md/Kconfig       |  1 +
+>  drivers/net/Kconfig      |  1 +
+>  fs/btrfs/Kconfig         |  1 +
+>  fs/notify/Kconfig        |  1 +
+>  init/Kconfig             | 10 ++++++++++
+>  kernel/rcu/Makefile      |  3 ++-
+>  lib/Kconfig.debug        |  1 +
+>  mm/Kconfig               |  1 +
+>  security/tomoyo/Kconfig  |  1 +
+>  17 files changed, 27 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+> index 466bd29..3afee5f 100644
+> --- a/arch/arm/kvm/Kconfig
+> +++ b/arch/arm/kvm/Kconfig
+> @@ -23,6 +23,7 @@ config KVM
+>         select HAVE_KVM_CPU_RELAX_INTERCEPT
+>         select KVM_MMIO
+>         select KVM_ARM_HOST
+> +       select SRCU
+>         depends on ARM_VIRT_EXT && ARM_LPAE
+>         ---help---
+>           Support hosting virtualized guest machines. You will also
+> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
+> index 8ba85e9..b334084 100644
+> --- a/arch/arm64/kvm/Kconfig
+> +++ b/arch/arm64/kvm/Kconfig
+> @@ -26,6 +26,7 @@ config KVM
+>         select KVM_ARM_HOST
+>         select KVM_ARM_VGIC
+>         select KVM_ARM_TIMER
+> +       select SRCU
+>         ---help---
+>           Support hosting virtualized guest machines.
+>
+> diff --git a/arch/ia64/kvm/Kconfig b/arch/ia64/kvm/Kconfig
+> index 3d50ea9..f7d380b 100644
+> --- a/arch/ia64/kvm/Kconfig
+> +++ b/arch/ia64/kvm/Kconfig
+> @@ -29,6 +29,7 @@ config KVM
+>         select HAVE_KVM_IRQ_ROUTING
+>         select KVM_APIC_ARCHITECTURE
+>         select KVM_MMIO
+> +       select SRCU
+>         ---help---
+>           Support hosting fully virtualized guest machines using hardware
+>           virtualization extensions.  You will need a fairly recent
+> diff --git a/arch/mips/kvm/Kconfig b/arch/mips/kvm/Kconfig
+> index 30e334e..2ae1282 100644
+> --- a/arch/mips/kvm/Kconfig
+> +++ b/arch/mips/kvm/Kconfig
+> @@ -20,6 +20,7 @@ config KVM
+>         select PREEMPT_NOTIFIERS
+>         select ANON_INODES
+>         select KVM_MMIO
+> +       select SRCU
+>         ---help---
+>           Support for hosting Guest kernels.
+>           Currently supported on MIPS32 processors.
+> diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
+> index 602eb51..af18e0f 100644
+> --- a/arch/powerpc/kvm/Kconfig
+> +++ b/arch/powerpc/kvm/Kconfig
+> @@ -21,6 +21,7 @@ config KVM
+>         select PREEMPT_NOTIFIERS
+>         select ANON_INODES
+>         select HAVE_KVM_EVENTFD
+> +       select SRCU
+>
+>  config KVM_BOOK3S_HANDLER
+>         bool
+> diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
+> index 646db9c..5fce52c 100644
+> --- a/arch/s390/kvm/Kconfig
+> +++ b/arch/s390/kvm/Kconfig
+> @@ -28,6 +28,7 @@ config KVM
+>         select HAVE_KVM_IRQCHIP
+>         select HAVE_KVM_IRQFD
+>         select HAVE_KVM_IRQ_ROUTING
+> +       select SRCU
+>         ---help---
+>           Support hosting paravirtualized guest machines using the SIE
+>           virtualization capability on the mainframe. This should work
+> diff --git a/arch/tile/kvm/Kconfig b/arch/tile/kvm/Kconfig
+> index 2298cb1..1e968f7 100644
+> --- a/arch/tile/kvm/Kconfig
+> +++ b/arch/tile/kvm/Kconfig
+> @@ -21,6 +21,7 @@ config KVM
+>         depends on HAVE_KVM && MODULES
+>         select PREEMPT_NOTIFIERS
+>         select ANON_INODES
+> +       select SRCU
+>         ---help---
+>           Support hosting paravirtualized guest machines.
+>
+> diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> index f9d16ff..7dc7ba5 100644
+> --- a/arch/x86/kvm/Kconfig
+> +++ b/arch/x86/kvm/Kconfig
+> @@ -40,6 +40,7 @@ config KVM
+>         select HAVE_KVM_MSI
+>         select HAVE_KVM_CPU_RELAX_INTERCEPT
+>         select KVM_VFIO
+> +       select SRCU
+>         ---help---
+>           Support hosting fully virtualized guest machines using hardware
+>           virtualization extensions.  You will need a fairly recent
+> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+> index 5bdedf6..c355a22 100644
+> --- a/drivers/md/Kconfig
+> +++ b/drivers/md/Kconfig
+> @@ -5,6 +5,7 @@
+>  menuconfig MD
+>         bool "Multiple devices driver support (RAID and LVM)"
+>         depends on BLOCK
+> +       select SRCU
+>         help
+>           Support multiple physical spindles through a single logical device.
+>           Required for RAID and logical volume management.
+> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+> index 4706386..221e623 100644
+> --- a/drivers/net/Kconfig
+> +++ b/drivers/net/Kconfig
+> @@ -176,6 +176,7 @@ config NETCONSOLE_DYNAMIC
+>
+>  config NETPOLL
+>         def_bool NETCONSOLE
+> +       select SRCU
+>
+>  config NET_POLL_CONTROLLER
+>         def_bool NETPOLL
+> diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
+> index a66768e..80e9c18 100644
+> --- a/fs/btrfs/Kconfig
+> +++ b/fs/btrfs/Kconfig
+> @@ -8,6 +8,7 @@ config BTRFS_FS
+>         select LZO_DECOMPRESS
+>         select RAID6_PQ
+>         select XOR_BLOCKS
+> +       select SRCU
+>
+>         help
+>           Btrfs is a general purpose copy-on-write filesystem with extents,
+> diff --git a/fs/notify/Kconfig b/fs/notify/Kconfig
+> index 22c629e..2a24249 100644
+> --- a/fs/notify/Kconfig
+> +++ b/fs/notify/Kconfig
+> @@ -1,5 +1,6 @@
+>  config FSNOTIFY
+>         def_bool n
+> +       select SRCU
+>
+>  source "fs/notify/dnotify/Kconfig"
+>  source "fs/notify/inotify/Kconfig"
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 3ee28ae..80ac0a4 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -501,6 +501,14 @@ config TINY_RCU
+>
+>  endchoice
+>
+> +config SRCU
+> +       bool "Sleepable form of RCU"
+> +       def_bool n
+> +       help
+> +         This option selects the sleepable version of RCU. This version
+> +         permits arbitrary sleeping or blocking within RCU read-side critical
+> +         sections.
+> +
+>  config PREEMPT_RCU
+>         def_bool TREE_PREEMPT_RCU
+>         help
+> @@ -510,6 +518,7 @@ config PREEMPT_RCU
+>  config TASKS_RCU
+>         bool "Task_based RCU implementation using voluntary context switch"
+>         default n
+> +       select SRCU
+>         help
+>           This option enables a task-based RCU implementation that uses
+>           only voluntary context switch (not preemption!), idle, and
+> @@ -1586,6 +1595,7 @@ config PERF_EVENTS
+>         depends on HAVE_PERF_EVENTS
+>         select ANON_INODES
+>         select IRQ_WORK
+> +       select SRCU
+>         help
+>           Enable kernel support for various performance events provided
+>           by software and hardware.
+> diff --git a/kernel/rcu/Makefile b/kernel/rcu/Makefile
+> index 807ccfb..a484080 100644
+> --- a/kernel/rcu/Makefile
+> +++ b/kernel/rcu/Makefile
+> @@ -1,4 +1,5 @@
+> -obj-y += update.o srcu.o
+> +obj-y += update.o
+> +obj-$(CONFIG_SRCU) += srcu.o
+>  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
+>  obj-$(CONFIG_TREE_RCU) += tree.o
+>  obj-$(CONFIG_TREE_PREEMPT_RCU) += tree.o
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 4e35a5d..797511a 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -1199,6 +1199,7 @@ config RCU_TORTURE_TEST
+>         tristate "torture tests for RCU"
+>         depends on DEBUG_KERNEL
+>         select TORTURE_TEST
+> +       select SRCU
+>         default n
+>         help
+>           This option provides a kernel module that runs torture tests
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 1d1ae6b..4395b12 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -325,6 +325,7 @@ config VIRT_TO_BUS
+>
+>  config MMU_NOTIFIER
+>         bool
+> +       select SRCU
+>
+>  config KSM
+>         bool "Enable KSM for page merging"
+> diff --git a/security/tomoyo/Kconfig b/security/tomoyo/Kconfig
+> index 8eb779b9d..604e718 100644
+> --- a/security/tomoyo/Kconfig
+> +++ b/security/tomoyo/Kconfig
+> @@ -5,6 +5,7 @@ config SECURITY_TOMOYO
+>         select SECURITYFS
+>         select SECURITY_PATH
+>         select SECURITY_NETWORK
+> +       select SRCU
+>         default n
+>         help
+>           This selects TOMOYO Linux, pathname-based access control.
+> --
+> 1.9.1
+>
+
+
+
 -- 
-1.9.1
-
+Pranith
