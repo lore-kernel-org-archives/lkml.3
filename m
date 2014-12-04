@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428AbaLDXbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 18:31:03 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:49067 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933215AbaLDXbA (ORCPT
+	id S933505AbaLDXeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 18:34:19 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56938 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295AbaLDXeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 18:31:00 -0500
+	Thu, 4 Dec 2014 18:34:15 -0500
+Date: Thu, 4 Dec 2014 15:34:11 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Dec 4
+Message-ID: <20141204233411.GA1223@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20141204195928.4a5b93f4@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1417734891.22424.2.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
-	<1417734048.2721.22.camel@perches.com>
-	<1417734891.22424.2.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Thu, 4 Dec 2014 15:31:00 -0800
-Message-ID: <CAADnVQ+3jiYOYReRLPUsFeG1p66ezo-TXBLX3BGQQh7V8QX0tQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: bpf_jit_comp: Reduce is_ereg() code size
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Quentin Lambert <lambert.quentin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204195928.4a5b93f4@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 3:14 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Thu, 2014-12-04 at 15:00 -0800, Joe Perches wrote:
->> Use the (1 << reg) & mask trick to reduce code size.
->>
->> x86-64 size difference -O2 without profiling for various
->> gcc versions:
->
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->> ---
->>
->> compiled, untested by me, but per Alexei Starovoitov this passes
->> the test_bpf suite
->
-> Really, the root cause of this is the 'inline' abuse in non fast paths
-> for non trivial functions.
+all,
 
-well, it is a trivial function even from compiler point of view.
-Dropping inline keyword doesn't help. gcc still inlines them.
-Changing all 3 functions to _noinline_ doesn't help either.
-So I think this patch is actually quite helpful to reduce code size.
+On Thu, Dec 04, 2014 at 07:59:28PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20141203:
+> 
+> The usb tree still had its build failure so I used the version from
+> next-20141128.
+> 
+> Non-merge commits (relative to Linus' tree): 10075
+>  9350 files changed, 375991 insertions(+), 275936 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" and checkout or reset to the new
+> master.
+> 
+> You can see which trees have been included by looking in the Next/Trees
+> file in the source.  There are also quilt-import.log and merge.log files
+> in the Next directory.  Between each merge, the tree was built with
+> a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
+> multi_v7_defconfig for arm. After the final fixups (if any), it is also
+> built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
+> allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
+> defconfig.
+> 
+> Below is a summary of the state of the merge.
+> 
+> I am currently merging 229 trees (counting Linus' and 32 trees of patches
+> pending for Linus' tree).
+> 
+> Stats about the size of the tree over time can be seen at
+> http://neuling.org/linux-next-size.html .
+> 
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
+> 
+> Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+> Gortmaker for triage and bug fixes.
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+[...]
+
+linux-next 20141204 is broken on all my machines, 20141203 worked fine.
+
+They fail very early in the boot process and are unable to mount root.
+There are lots of "ext4_check_descriptors: Checksum for group ...
+failed" messages.
+
+Any suggestions for where to start looking?
+
+-- 
+- Jeremiah Mahler
