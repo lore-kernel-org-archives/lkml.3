@@ -1,47 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188AbaLDR5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:57:18 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:64826 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464AbaLDR5R (ORCPT
+	id S932976AbaLDR5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:57:55 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:59100 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932695AbaLDR5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:57:17 -0500
-Date: Thu, 4 Dec 2014 12:57:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Leonard Crestez <lcrestez@ixiacom.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Sorin Dumitru <sdumitru@ixiacom.com>
-Subject: Re: [RFC v2] percpu: Add a separate function to merge free areas
-Message-ID: <20141204175713.GE2995@htj.dyndns.org>
-References: <547E3E57.3040908@ixiacom.com>
+	Thu, 4 Dec 2014 12:57:54 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+Date: Thu, 4 Dec 2014 18:57:48 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <201412040148.31033@pali> <CAL_JsqKYpDD1Rq2n92FcspPWGJeQvtA4eRYPDK=xYPQN0=uQTg@mail.gmail.com>
+In-Reply-To: <CAL_JsqKYpDD1Rq2n92FcspPWGJeQvtA4eRYPDK=xYPQN0=uQTg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547E3E57.3040908@ixiacom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart2098087.kgLVLCanfX";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412041857.49341@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--nextPart2098087.kgLVLCanfX
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 03, 2014 at 12:33:59AM +0200, Leonard Crestez wrote:
-> It seems that free_percpu performance is very bad when working with small 
-> objects. The easiest way to reproduce this is to allocate and then free a large 
-> number of percpu int counters in order. Small objects (reference counters and 
-> pointers) are common users of alloc_percpu and I think this should be fast.
-> This particular issue can be encountered with very large number of net_device
-> structs.
+On Thursday 04 December 2014 17:49:40 Rob Herring wrote:
+> On Wed, Dec 3, 2014 at 6:48 PM, Pali Roh=C3=A1r=20
+<pali.rohar@gmail.com> wrote:
+> > On Thursday 04 December 2014 01:33:08 Rob Herring wrote:
+> >> On Mon, Nov 24, 2014 at 4:19 PM, Pali Roh=C3=A1r
+> >=20
+> > <pali.rohar@gmail.com> wrote:
+> >> > On Wednesday 18 June 2014 22:46:19 Rob Herring wrote:
+> >> >> On Wed, Jun 18, 2014 at 2:22 PM, Pali Roh=C3=A1r
+> >> >=20
+> >> > <pali.rohar@gmail.com> wrote:
+> >> >> > On Wednesday 18 June 2014 21:07:35 Rob Herring wrote:
+> >> >> >> On Wed, Jun 18, 2014 at 11:54 AM, Pali Roh=C3=A1r
+> >> >> >=20
+> >> >> > <pali.rohar@gmail.com> wrote:
+> >> >> >> > Machine name from board description is some generic
+> >> >> >> > name on DT kernel. DT provides machine name
+> >> >> >> > property which is specific for board, so use it
+> >> >> >> > instead generic one when possible.
+> >>=20
+> >> [...]
+> >>=20
+> >> >> > Basically in DT kernel is missing Hardware, Revision
+> >> >> > and probably also Serial key. (Now I used only qemu
+> >> >> > for testing which set serial key to 0). All these
+> >> >> > informations is used by userspace applications which
+> >> >> > determinate how to behave.
+> >> >>=20
+> >> >> It is somewhat fragile to expect the name in the DT to
+> >> >> match the old name from the kernel. As your patch to
+> >> >> n900 dts shows, we'd probably have to update every dts
+> >> >> file to make them match. While I think we should work
+> >> >> to remove this string from the kernel, userspace
+> >> >> depending on the DT model string is a bad idea. For
+> >> >> example, if you had some platform with multiple OEMs
+> >> >> just rebranding the same base design, they may all want
+> >> >> to put their own model string into each product. The
+> >> >> true h/w id is the compatible string.
+> >> >>=20
+> >> >> Serial number is easy. There is already a standard
+> >> >> although not widely used property for it with
+> >> >> "/serial-number". You just need to wire it up to
+> >> >> cpuinfo.
+> >> >=20
+> >> > There is no "/serial-number" property in kernel:
+> >> >=20
+> >> > $ ls -l -a /sys/bus/soc/devices/soc0/
+> >> > drwxr-xr-x    3 0        0                0 Jan  1 00:00
+> >> > . drwxr-xr-x   18 0        0                0 Jan  1
+> >> > 00:00 .. -r--r--r--    1 0        0             4096 Jan
+> >> >  1 00:00 family -r--r--r--    1 0        0           =20
+> >> > 4096 Jan  1 00:00 machine drwxr-xr-x    2 0        0   =20
+> >> >            0 Jan  1 00:00 power -r--r--r--    1 0      =20
+> >> > 0
+> >> > 4096 Jan  1 00:00 revision lrwxrwxrwx    1 0        0
+> >> >=20
+> >> >          0 Jan  1 00:00 subsystem -> ../../bus/soc
+> >> >=20
+> >> > -r--r--r--    1 0        0             4096 Jan  1 00:00
+> >> > type -rw-r--r--    1 0        0             4096 Jan  1
+> >> > 00:00 uevent
+> >>=20
+> >> Wrong place. If you put /serial-number in your DT, then it
+> >> will be in /proc/device-tree/serial-number.
+> >>=20
+> >> If you want to wire that up to /proc/cpuinfo, I would be
+> >> fine with that.
+> >>=20
+> >> Rob
+> >=20
+> > I cannot hardcode it into DT, because it is set by
+> > bootloader. And bootloader tell it to kernel via ATAGs
+> > structure. Bootloader is closed and proprietary and cannot
+> > be replaced (there is no documentation for hw init).
+>=20
+> Either the bootloader can put the serial number into the DTB
+> instead of ATAGs or the kernel decompressor can copy it from
+> ATAGs to DTB like is done already for other ATAGs. I presume
+> you cannot update the bootloader and will need the latter.
+>=20
+> Rob
 
-Do you actually experience this with an actual workload?  The thing is
-allocation has the same quadratic complexity.  If this is actually an
-issue (which can definitely be the case), I'd much prefer implementing
-a properly scalable area allocator than mucking with the current
-implementation.
+Rob, thanks for info! Btw, theoretically I can update bootloader=20
+if someone write it. So in practise I need to use second option.
 
-Thanks.
+Can you tell me which CONFIG_ needs to be enabled for kernel=20
+decompressor (so it copy some ATAGs) and where to start looking=20
+at code (for adding new code for copying other ATAGs)?
 
--- 
-tejun
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2098087.kgLVLCanfX
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSAoJ0ACgkQi/DJPQPkQ1JBSQCdH4pyA0y1nOFjy5Vi0OtMK7sy
+ngsAn3Bs0cskOQh73isqQ34tDT96+gOj
+=FbNr
+-----END PGP SIGNATURE-----
+
+--nextPart2098087.kgLVLCanfX--
