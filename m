@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaLDDHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 22:07:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18356 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248AbaLDDHw (ORCPT
+	id S1752754AbaLDDMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 22:12:23 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:3109 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaLDDMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 22:07:52 -0500
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: jejb@kernel.org, hch@infradead.org, martin.petersen@oracle.com,
-        linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
-        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/22] [SCSI] mpt2sas, mpt3sas: Update Attribution Language to Avago
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-	<1416467155-16869-9-git-send-email-Sreekanth.Reddy@avagotech.com>
-Date: Wed, 03 Dec 2014 22:07:19 -0500
-In-Reply-To: <1416467155-16869-9-git-send-email-Sreekanth.Reddy@avagotech.com>
-	(Sreekanth Reddy's message of "Thu, 20 Nov 2014 12:35:41 +0530")
-Message-ID: <yq161dsi048.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 3 Dec 2014 22:12:22 -0500
+Message-ID: <547FD10C.8040900@huawei.com>
+Date: Thu, 4 Dec 2014 11:12:12 +0800
+From: Qin Chuanyu <qinchuanyu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Rick Jones <rick.jones2@hp.com>, <netdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: What's the concern about setting irq thread's policy as SCHED_FIFO
+References: <547EC4A3.6060408@huawei.com> <547F3F92.2050501@hp.com>
+In-Reply-To: <547F3F92.2050501@hp.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.21.101]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+On 2014/12/4 0:51, Rick Jones wrote:
+> On 12/03/2014 12:06 AM, Qin Chuanyu wrote:
+>> I am doing network performance test under suse11sp3 and intel 82599 nic,
+>> Becasuse the softirq is out of schedule policy's control, so netserver
+>> thread couldn't always get 100% cpu usage, then packet dropped in kernel
+>> udp socket's receive queue.
+>>
+>> In order to get a stable result, I did some patch in ixgbe driver and
+>> then use irq_thread instead of softirq to handle rx.
+>> It seems work well, but irq_thread's SCHED_FIFO schedule policy cause
+>> that when the cpu is limited, netserver couldn't work at all.
+>
+> I cannot speak to any scheduling issues/questions, but can ask if you
+> tried binding netserver to a CPU other than the one servicing the
+> interrupts via the -T option on the netperf command line:
+>
+> netperf -T <netperfCPU>,<netserverCPU>  ...
+>
+> http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#index-g_t_002dT_002c-Global-41
+>
+Yes, I had done this try, the irq_thread and netserver worked well 
+without competition after binding them separately.
+I also had tried this test case in kernel 3.10, and without binding 
+irq_thread and netserver work well separately.
 
-Sreekanth> Copyright, Trademark & Confidentiality legal statements
-Sreekanth> throughout source code changed from LSI to Avago.
+So, the question is:
+	3.10:    irq_thread netserver  good
+	3.0.93:  irq_thread netserver  bad(compete single cpu)
+normal thread in both kernel version is OK.
 
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+There must be a schedule policy change lead to this difference.
+Could anyone give some hint?
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+>
+> happy benchnmarking,
+>
+> rick jones
+>
+>>
+>> So I change the irq_thread's schedule policy from SCHED_FIFO to
+>> SCHED_NORMAL, then the irq_thread could share the cpu usage with
+>> netserver thread.
+>>
+>> the question is:
+>> What's the concrete reason about setting irq thread's policy as
+>> SCHED_FIFO?
+>> Except the priority affecting the cpu usage, any function would be
+>> broken if irq thread change to SCHED_NORMAL?
+>>
+
+
