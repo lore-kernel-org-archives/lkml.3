@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaLDCd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:33:29 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:39186 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896AbaLDCd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:33:27 -0500
-Message-ID: <547FC7F5.10804@osg.samsung.com>
-Date: Wed, 03 Dec 2014 19:33:25 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
+	id S1752651AbaLDCd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:33:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45442 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056AbaLDCdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 21:33:55 -0500
+Message-ID: <547FC807.6040000@oracle.com>
+Date: Wed, 03 Dec 2014 21:33:43 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>, Tim Bird <tim.bird@sonymobile.com>
-CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v6] selftest: size: Add size test for Linux kernel
-References: <547F598D.7030205@sonymobile.com> <20141204003653.GA5004@thin> <547FAFC3.40609@osg.samsung.com>
-In-Reply-To: <547FAFC3.40609@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: shmem: avoid overflowing in shmem_fallocate
+References: <1417652657-1801-1-git-send-email-sasha.levin@oracle.com> <20141204015120.GA2522@hori1.linux.bs1.fc.nec.co.jp>
+In-Reply-To: <20141204015120.GA2522@hori1.linux.bs1.fc.nec.co.jp>
+Content-Type: text/plain; charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 05:50 PM, Shuah Khan wrote:
-> On 12/03/2014 05:36 PM, Josh Triplett wrote:
->> On Wed, Dec 03, 2014 at 10:42:21AM -0800, Tim Bird wrote:
->>> This test shows the amount of memory used by the system.
->>> Note that this is dependent on the user-space that is loaded
->>> when this program runs.  Optimally, this program would be
->>> run as the init program itself.
->>>
->>> The program is optimized for size itself, to avoid conflating
->>> its own execution with that of the system software.
->>> The code is compiled statically, with no stdlibs. On my x86_64 system,
->>> this results in a statically linked binary of less than 5K.
->>>
->>> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
->>
->> v6 looks good to me.
->>
->> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->>
->> Should this go through the tinification tree or the selftests tree?
->>
+On 12/03/2014 08:51 PM, Naoya Horiguchi wrote:
+> On Wed, Dec 03, 2014 at 07:24:07PM -0500, Sasha Levin wrote:
+>> > "offset + len" has the potential of overflowing. Validate this user input
+>> > first to avoid undefined behaviour.
+>> > 
+>> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> > ---
+>> >  mm/shmem.c |    3 +++
+>> >  1 file changed, 3 insertions(+)
+>> > 
+>> > diff --git a/mm/shmem.c b/mm/shmem.c
+>> > index 185836b..5a0e344 100644
+>> > --- a/mm/shmem.c
+>> > +++ b/mm/shmem.c
+>> > @@ -2098,6 +2098,9 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+>> >  	}
+>> >  
+>> >  	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+>> > +	error = -EOVERFLOW;
+>> > +	if ((u64)len + offset < (u64)len)
+>> > +		goto out;
+> Hi Sasha,
 > 
-> Josh/Tim,
+> It seems to me that we already do some overflow check in common path,
+> do_fallocate():
 > 
-> Thanks both. Yes v6 looks good. I will take this through kselftest
-> tree. I will apply this to kselftes fixes.
+>         /* Check for wrap through zero too */
+>         if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
+>                 return -EFBIG;
 > 
+> Do we really need another check?
 
-Applied to kselftest fixes branch.
+It looks like we actually need to fix this snippet you pasted rather than shmem_fallocate().
 
--- Shuah
+We can't check for ((offset + len) < 0) since both offset and length are signed integers. I'll
+send a patch to deal with that rather that this shmem specific one. Thanks!
 
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Open Source Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Thanks,
+Sasha
