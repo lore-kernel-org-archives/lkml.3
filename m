@@ -1,52 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbaLDKGM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:06:12 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:34363 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753448AbaLDKFy (ORCPT
+	id S1753969AbaLDKGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:06:17 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:40397 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaLDKGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:05:54 -0500
-Date: Thu, 4 Dec 2014 11:05:51 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Sanchayan Maity <maitysanchayan@gmail.com>
-Cc: rtc-linux@googlegroups.com, stefan@agner.ch, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [RESEND PATCHv2] drivers/rtc/rtc-snvs: Add clock support
-Message-ID: <20141204110551.0837304e@linux.lan.towertech.it>
-In-Reply-To: <bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
-References: <cover.1417585458.git.maitysanchayan@gmail.com>
-	<bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
-Organization: Tower Technologies
+	Thu, 4 Dec 2014 05:06:12 -0500
+Message-ID: <548031C1.9020701@linaro.org>
+Date: Thu, 04 Dec 2014 11:04:49 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
+        gleb@kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        patches@linaro.org, a.motakis@virtualopensystems.com
+Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
+References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org> <20141203104510.GE17502@cbox>
+In-Reply-To: <20141203104510.GE17502@cbox>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Dec 2014 11:28:55 +0530
-Sanchayan Maity <maitysanchayan@gmail.com> wrote:
-
-> The clock is not strictly enforced, as this would
-> break the i.MX devices. The clocking for the i.MX
-> devices seems to be enabled elsewhere and enabling
-> RTC SNVS for Vybrid results in a crash. This patch
-> adds the clock support but also makes it optional
-> so Vybrid platform can use the clock if defined
-> while making sure not to break i.MX .
+Hi Christoffer
+On 12/03/2014 11:45 AM, Christoffer Dall wrote:
+> On Tue, Dec 02, 2014 at 06:27:31PM +0100, Eric Auger wrote:
+>> Since the advent of dynamic initialization of VGIC, this latter is
+>> initialized very late, on the first vcpu run. This initialization
+>> could be initiated much earlier by the user, as soon as it has
+>> provided the requested dimensioning parameters:
+>> - number of IRQs and number of vCPUs,
+>> - DIST and CPU interface base address.
+>>
+>> One motivation behind being able to initialize the VGIC sooner is
+>> related to the setup of IRQ injection in VFIO use case. The VFIO
+>> signaling, especially when used along with irqfd must be set *after*
+>> vgic initialization to prevent any virtual IRQ injection before
+>> VGIC initialization. If virtual IRQ injection occurs before the VGIC
+>> init, the IRQ cannot be injected and subsequent injection is blocked
+>> due to VFIO completion mechanism (unmask/mask or forward/unforward).
+>>
+>> This patch adds a new entry to the VGIC KVM device that allows
+>> the user to manually request the VGIC init:
+>> - a new KVM_DEV_ARM_VGIC_GRP_CTRL group is introduced.
+>> - Its first attribute is KVM_DEV_ARM_VGIC_CTRL_INIT
+>>
+>> The rationale behind introducing a group is to be able to add other
+>> controls later on, if needed.
+>>
+>> Obviously, as soon as the init is done, the dimensioning parameters
+>> cannot be changed.
 > 
-> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+> you would need to add a check in the vcpu_create path,
+check added in v2
+ which I don't
+> believe we currently have.  That may conflict with Andre's series so we
+> need to coordinate.
+> 
+> We're also seeing this potentially being useful for migration, so my
+> feeling is that the GICv3 patches should be rebased on this patch and
+> this patch should include a check in the vcpu create path.
+> 
+>>
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>> ---
+>>  Documentation/virtual/kvm/devices/arm-vgic.txt | 11 +++++++++++
+>>  arch/arm/include/uapi/asm/kvm.h                |  2 ++
+>>  arch/arm64/include/uapi/asm/kvm.h              |  2 ++
+>>  virt/kvm/arm/vgic.c                            | 14 +++++++++++++-
+>>  4 files changed, 28 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/virtual/kvm/devices/arm-vgic.txt b/Documentation/virtual/kvm/devices/arm-vgic.txt
+>> index df8b0c7..80db43f 100644
+>> --- a/Documentation/virtual/kvm/devices/arm-vgic.txt
+>> +++ b/Documentation/virtual/kvm/devices/arm-vgic.txt
+>> @@ -81,3 +81,14 @@ Groups:
+>>      -EINVAL: Value set is out of the expected range
+>>      -EBUSY: Value has already be set, or GIC has already been initialized
+>>              with default values.
+>> +
+>> +  KVM_DEV_ARM_VGIC_GRP_CTRL
+>> +  Attributes:
+>> +    KVM_DEV_ARM_VGIC_CTRL_INIT
+>> +      request the initialization of the VGIC, no additional parameter in
+>> +      kvm_device_attr.addr.
+>> +  Errors:
+>> +    -ENXIO: distributor or CPU interface base address were not set prior
+>> +            to that call
+> 
+> this should be more generic to also apply to GICv3, I would suggest:
+> 
+> "VGIC not properly configured as required prior to calling this
+> attribute."
+corrected
+> 
+> alternatively, the attribute should be KVM_DEV_ARM_VGIC_V2_CTRL_INIT.
+> 
+>> +    -EINVAL: number of vcpus is not known
+> 
+> can we have a different error code for this case?  ENODEV for example?
+corrected
 
-
- Acked-by: Alessandro Zummo <a.zummo@towertech.it>
-
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
+Thanks
+Eric
+> 
+>> +    -ENOMEM: memory shortage when allocating vgic internal data
+> 
+>> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+>> index 77547bb..2499867 100644
+>> --- a/arch/arm/include/uapi/asm/kvm.h
+>> +++ b/arch/arm/include/uapi/asm/kvm.h
+>> @@ -175,6 +175,8 @@ struct kvm_arch_memory_slot {
+>>  #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
+>>  #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
+>>  #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
+>> +#define KVM_DEV_ARM_VGIC_GRP_CTRL       4
+>> +#define   KVM_DEV_ARM_VGIC_CTRL_INIT    0
+>>  
+>>  /* KVM_IRQ_LINE irq field index values */
+>>  #define KVM_ARM_IRQ_TYPE_SHIFT		24
+>> diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
+>> index 1ed4417..b35c95a 100644
+>> --- a/arch/arm64/include/uapi/asm/kvm.h
+>> +++ b/arch/arm64/include/uapi/asm/kvm.h
+>> @@ -161,6 +161,8 @@ struct kvm_arch_memory_slot {
+>>  #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
+>>  #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
+>>  #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
+>> +#define KVM_DEV_ARM_VGIC_GRP_CTRL	4
+>> +#define   KVM_DEV_ARM_VGIC_CTRL_INIT	0
+>>  
+>>  /* KVM_IRQ_LINE irq field index values */
+>>  #define KVM_ARM_IRQ_TYPE_SHIFT		24
+>> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+>> index b76c38c..2fe5bdb 100644
+>> --- a/virt/kvm/arm/vgic.c
+>> +++ b/virt/kvm/arm/vgic.c
+>> @@ -2474,7 +2474,14 @@ static int vgic_set_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
+>>  
+>>  		return ret;
+>>  	}
+>> -
+>> +	case KVM_DEV_ARM_VGIC_GRP_CTRL: {
+>> +		switch (attr->attr) {
+>> +		case KVM_DEV_ARM_VGIC_CTRL_INIT:
+>> +			r = kvm_vgic_init(dev->kvm);
+>> +			return r;
+>> +		}
+>> +		break;
+>> +	}
+>>  	}
+>>  
+>>  	return -ENXIO;
+>> @@ -2553,6 +2560,11 @@ static int vgic_has_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
+>>  		return vgic_has_attr_regs(vgic_cpu_ranges, offset);
+>>  	case KVM_DEV_ARM_VGIC_GRP_NR_IRQS:
+>>  		return 0;
+>> +	case KVM_DEV_ARM_VGIC_GRP_CTRL:
+>> +		switch (attr->attr) {
+>> +		case KVM_DEV_ARM_VGIC_CTRL_INIT:
+>> +			return 0;
+>> +		}
+>>  	}
+>>  	return -ENXIO;
+>>  }
+>> -- 
+>> 1.9.1
+>>
 
