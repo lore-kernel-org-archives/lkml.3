@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaLDVCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:02:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46355 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754823AbaLDVCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:02:40 -0500
-From: Benoit Parrot <bparrot@ti.com>
-To: <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Benoit Parrot <bparrot@ti.com>
-Subject: [Patch v3 2/2] gpio: Document GPIO hogging mechanism
-Date: Thu, 4 Dec 2014 15:02:02 -0600
-Message-ID: <1417726922-10376-3-git-send-email-bparrot@ti.com>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1417726922-10376-1-git-send-email-bparrot@ti.com>
-References: <1417726922-10376-1-git-send-email-bparrot@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754688AbaLDVIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:08:43 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59256 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaLDVIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 16:08:42 -0500
+From: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+Subject: [PATCH] Misc: pass miscdevice through file's private_data
+Date: Thu,  4 Dec 2014 22:08:15 +0100
+Message-Id: <1417727295-18989-1-git-send-email-tomvanbraeckel@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add GPIO hogging documentation to gpio.txt
+Place the miscdevice in the file's private_data to be used by the file operations.
 
-Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Previously, this was done only when an open() operation had been registered.
+But it is also useful in the other file operations, so we pass it on unconditionally.
+
+Signed-off-by: Tom Van Braeckel <tomvanbraeckel@gmail.com>
 ---
-Changes since v2:
- * Updated to the latest hog syntax.
+ drivers/char/misc.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Changes since v1:
- * Split the devicetree bindings documentation in its own patch.
-
- Documentation/devicetree/bindings/gpio/gpio.txt | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
-index 3fb8f53..6d88133 100644
---- a/Documentation/devicetree/bindings/gpio/gpio.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio.txt
-@@ -103,6 +103,22 @@ Every GPIO controller node must contain both an empty "gpio-controller"
- property, and a #gpio-cells integer property, which indicates the number of
- cells in a gpio-specifier.
+diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+index ffa97d2..c3681fb 100644
+--- a/drivers/char/misc.c
++++ b/drivers/char/misc.c
+@@ -140,10 +140,16 @@ static int misc_open(struct inode * inode, struct file * file)
+ 			goto fail;
+ 	}
  
-+The GPIO chip may contain GPIO hog definitions. GPIO hogging is a mechanism
-+providing automatic GPIO request and configuration as part of the
-+gpio-controller's driver probe function.
++	/*
++	 * Place the miscdevice in the file's
++	 * private_data so it can be used by the
++	 * file operations, including f_op->open below
++	 */
++	file->private_data = c;
 +
-+Each GPIO hog definition is represented as a child node of the GPIO controller.
-+Required properties:
-+- gpio-hog:  A property specifying that this child node represent a gpio-hog.
-+- gpios:     Store the gpio information (id, flags, ...). Shall contain the
-+	     number of cells specified in its parent node (GPIO controller
-+	     node).
-+- direction: A property specifying the direction/value needed. This property
-+	     can take the folowing values: input, output-high, output-low.
-+
-+Optional properties:
-+- line-name: The GPIO label name. If not present the node name is used.
-+
- Example of two SOC GPIO banks defined as gpio-controller nodes:
- 
- 	qe_pio_a: gpio-controller@1400 {
-@@ -110,6 +126,13 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
- 		reg = <0x1400 0x18>;
- 		gpio-controller;
- 		#gpio-cells = <2>;
-+
-+		line_b {
-+			gpio-hog;
-+			gpios = <6 0>;
-+			direction = "output-low";
-+			line-name = "foo-bar-gpio";
-+		};
- 	};
- 
- 	qe_pio_e: gpio-controller@1460 {
+ 	err = 0;
+ 	replace_fops(file, new_fops);
+ 	if (file->f_op->open) {
+-		file->private_data = c;
+ 		err = file->f_op->open(inode,file);
+ 	}
+ fail:
 -- 
-1.8.5.1
+1.9.1
 
