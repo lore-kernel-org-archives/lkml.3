@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaLDADX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:03:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56235 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbaLDADV (ORCPT
+	id S1752624AbaLDAEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:04:54 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:33511 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaLDAEw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:03:21 -0500
-Date: Thu, 4 Dec 2014 01:03:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-cc: Stefan Agner <stefan@agner.ch>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Sricharan R <r.sricharan@ti.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 03/12] irqchip: gic: define register_routable_domain_ops
- conditional
-In-Reply-To: <547F5EBD.6040705@arm.com>
-Message-ID: <alpine.DEB.2.11.1412040057090.16275@nanos>
-References: <1417565531-4507-1-git-send-email-stefan@agner.ch> <1417565531-4507-4-git-send-email-stefan@agner.ch> <5174649.NxPq80uDz8@wuerfel> <alpine.DEB.2.11.1412031303000.16275@nanos> <8eccedc781df2636a132dae449cbe774@agner.ch>
- <547F5EBD.6040705@arm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 3 Dec 2014 19:04:52 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20141203235835.GE31369@lerouge>
+References: <20141203220836.GC31369@lerouge> <c6a6c2246188d25b9997848bbf39d5363c7a3da9.1417648389.git.luto@amacapital.net>
+ <20141203235835.GE31369@lerouge>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 3 Dec 2014 16:04:31 -0800
+Message-ID: <CALCETrXbEheevmNKsuEd0NEpCrDz06W5z_OphMOUHqT7qNUTyA@mail.gmail.com>
+Subject: Re: [PATCH] context_tracking: Restore previous state in schedule_user
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Marc Zyngier wrote:
-> On 03/12/14 17:28, Stefan Agner wrote:
-> > On 2014-12-03 14:04, Thomas Gleixner wrote:
-> >> The shared interrupts are allocated through the router domain which
-> >> decides whether the interrupt can be assigned to a particular core or
-> >> not. If it can be assigned it allocates the corresponding interrupt in
-> >> the parent domain, sets up the routing and everything just works.
-> > 
-> > What do you mean by the shared state in the drawing above? Currently, I
-> > check whether a interrupt is already used by the other core by reading
-> > the register (do this configuration register reflect the "shared state"
-> > in your drawing?).
-> 
-> I think that is basically it. It should only be the register that
-> decides on the actual routing. BTW, how do you arbitrate between
-> concurrent accesses to this register? Or is only the A5 allowed to
-> change it?
+On Wed, Dec 3, 2014 at 3:58 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Dec 03, 2014 at 03:18:41PM -0800, Andy Lutomirski wrote:
+>> It appears that some SCHEDULE_USER (asm for schedule_user) callers
+>> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
+>> and schedule_user will return in RCU user context.  This causes RCU
+>> warnings and possible failures.
+>>
+>> This is intended to be a minimal fix suitable for 3.18.
+>>
+>> Reported-by: Dave Jones <davej@redhat.com>
+>> Cc: Oleg Nesterov <oleg@redhat.com>
+>> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+>> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>
+> Ah, we sent it about at the same time :-)
+>
+> Might be too late for 3.18 though because it's not a regression.
+>
+>> ---
+>>
+>> Hi all-
+>>
+>> This is intended to be a suitable last-minute fix for the RCU issue that
+>> Dave saw.
+>>
+>> Dave, can you confirm that this fixes it?
+>>
+>> Frédéric, can you confirm that you think that this will have no effect
+>> on correct callers of schedule_user and that will do the right thing
+>> for incorrect callers of schedule_user?
+>
+> Yes it should be fine.
+>
+>>
+>> I don't like the x86 asm that calls this at all, and I don't really
+>> like the fragility of the mechanism is general, but I think that this
+>> improves the situation enough to avoid problems in the short term.
+>
+> At best we should have only one call to user_enter() at the end of the
+> syscall and exception path once we've completed everything (pending reschedule,
+> tracing, signals, ...) instead of context tracking fixups on functions that
+> can be called after syscall_trace_leave(), but that would impact the fastpath.
+>
+> Although it should be possible to tweak the slow path to do that...
 
-What I meant with 'shared state' is basically the configuration
-register space. Plus depending on the mechanism you want to use for
-correlating the routing between the A5 and the M4 some shared memory
-state, locking, IPC or whatever you need for this.
- 
-> >> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/log/?h=irq/irqdomain-arm
-> >>
-> > 
-> > Thanks for the link. So my work would involve to support domain
-> > hierarchy for NVIC (proper irq_domain_ops, introduce arm,routable-irqs
-> > property, anything else?) and then make use of the hierarchy code in my
-> > MSCM driver like for instance the mtk-sysirq driver...?
-> 
-> I don't think we need the arm,routable-irq property at all, and I'm
-> looking at refactoring the crossbar thingy to remove most of its
-> entanglement with the GIC.
-> 
-> All you need to know is the range of interrupts you're allowed to
-> request through the "routable" domain. The inner-most irqchip shouldn't
-> even know about it (after all, they are just wires coming in). It should
-> be the duty of the outer-most irqchip (the "router") to generate the
-> correct request to the GIC/NVIC. So all the knowledge should be at the
-> router level.
-> 
-> The mtk-sysrq code is indeed a good example of what you can do.
+My eventual goal for x86 is rewrite the entire slow path in C.  Step
+1: delete sysret_audit, etc.
 
-The gic-v2m MSI stuff is probably helpful as well.
- 
-> > What is the state of the IRQ domain hierarchy, when will it go upstream?
-> 
-> Scheduled for 3.19, if everything goes according to plan. Don't think we
-> can go back anyway... ;-)
+>
+>>
+>> With the obvious warning added, I get:
+>>
+>> [    0.751022] ------------[ cut here ]------------
+>> [    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
+>> [    0.753477] Modules linked in:
+>> [    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
+>> [    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+>> [    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
+>> [    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
+>> [    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
+>> [    0.762294] Call Trace:
+>> [    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
+>> [    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
+>> [    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
+>> [    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
+>> [    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
+>> [    0.768011] ---[ end trace 329f34db2b3be966 ]---
+>>
+>> So, yes, we have a bug, and this could cause any number of strange
+>> problems.
+>>
+>>  kernel/sched/core.c | 8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 24beb9bb4c3e..39d9d95331b7 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
+>>        * or we have been woken up remotely but the IPI has not yet arrived,
+>>        * we haven't yet exited the RCU idle mode. Do it here manually until
+>>        * we find a better solution.
+>
+> Just need to fix the above comment.
+>
+>> +      *
+>> +      * NB: There are buggy callers of this function.  Ideally we
+>> +      * should warn if prev_state != IN_USER, but that will trigger
+>> +      * to frequently to make sense yet.
+>
+> It's not really the callers of this function that are buggy but the
+> way we handled context tracking.
 
-Indeed. That would be a major headache...
+Yeah, one could debate exactly where the bug is.
 
-Thanks,
+Anyway, if you're doing this for 3.19, adding a WARN_ON_ONCE and
+trying to fix the callers might make sense.
 
-	tglx
+--Andy
 
+>
+>>        */
+>> -     user_exit();
+>> +     enum ctx_state prev_state = exception_enter();
+>>       schedule();
+>> -     user_enter();
+>> +     exception_exit(prev_state);
+>>  }
+>>  #endif
+>>
+>> --
+>> 1.9.3
+>>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
