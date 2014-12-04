@@ -1,104 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaLDC4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 21:56:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51707 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752027AbaLDC4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 21:56:08 -0500
-Date: Thu, 04 Dec 2014 03:03:34 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
- tun.
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com
-Message-Id: <1417661734.16500.0@smtp.corp.redhat.com>
-In-Reply-To: <20141203095210.GC9487@redhat.com>
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com>
-	<1417591177-7985-3-git-send-email-pagupta@redhat.com>
-	<20141203095210.GC9487@redhat.com>
+	id S1752842AbaLDC6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 21:58:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51803 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaLDC6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 21:58:18 -0500
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: jejb@kernel.org, hch@infradead.org, martin.petersen@oracle.com,
+        linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
+        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/22] [PATCH] mpt2sas, mpt3sas: Fail the host reset initiated due to discovery related I/O timeouts at driver load time
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	<1416467155-16869-4-git-send-email-Sreekanth.Reddy@avagotech.com>
+Date: Wed, 03 Dec 2014 21:57:45 -0500
+In-Reply-To: <1416467155-16869-4-git-send-email-Sreekanth.Reddy@avagotech.com>
+	(Sreekanth Reddy's message of "Thu, 20 Nov 2014 12:35:36 +0530")
+Message-ID: <yq1r3wgi0k6.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
 
+Sreekanth> When a flaky disk is there in a topology then during driver
+Sreekanth> load, discovery related I/O times out; which results in SCSI
+Sreekanth> error recovery initiating host reset and then the controller
+Sreekanth> won't see any disk.
 
-On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com> 
-wrote:
-> On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
->>  Networking under kvm works best if we allocate a per-vCPU RX and TX
->>  queue in a virtual NIC. This requires a per-vCPU queue on the host 
->> side.
->>  
->>  It is now safe to increase the maximum number of queues.
->>  Preceding patche: 'net: allow large number of rx queues'
-> 
-> s/patche/patch/
-> 
->>  made sure this won't cause failures due to high order memory
->>  allocations. Increase it to 256: this is the max number of vCPUs
->>  KVM supports.
->>  
->>  Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->>  Reviewed-by: David Gibson <dgibson@redhat.com>
-> 
-> Hmm it's kind of nasty that each tun device is now using x16 memory.
-> Maybe we should look at using a flex array instead, and removing the
-> limitation altogether (e.g. make it INT_MAX)?
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-But this only happens when IFF_MULTIQUEUE were used.
-And core has vmalloc() fallback.
-So probably not a big issue?
-
-> 
-> 
-> 
->>  ---
->>   drivers/net/tun.c | 9 +++++----
->>   1 file changed, 5 insertions(+), 4 deletions(-)
->>  
->>  diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>  index e3fa65a..a19dc5f8 100644
->>  --- a/drivers/net/tun.c
->>  +++ b/drivers/net/tun.c
->>  @@ -113,10 +113,11 @@ struct tap_filter {
->>   	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
->>   };
->>   
->>  -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues 
->> allocated for
->>  - * the netdevice to be fit in one page. So we can make sure the 
->> success of
->>  - * memory allocation. TODO: increase the limit. */
->>  -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
->>  +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
->>  + * to max number of vCPUS in guest. Also, we are making sure here
->>  + * queue memory allocation do not fail.
-> 
-> It's not queue memory allocation anymore, is it?
-> I would say "
-> This also helps the tfiles field fit in 4K, so the whole tun
-> device only needs an order-1 allocation.
-> "
-> 
->>  + */
->>  +#define MAX_TAP_QUEUES 256
->>   #define MAX_TAP_FLOWS  4096
->>   
->>   #define TUN_FLOW_EXPIRE (3 * HZ)
->>  -- 
->>  1.8.3.1
->>  
->>  --
->>  To unsubscribe from this list: send the line "unsubscribe netdev" in
->>  the body of a message to majordomo@vger.kernel.org
->>  More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
