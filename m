@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaLDQS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:18:27 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:59509 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932335AbaLDQSY (ORCPT
+	id S932527AbaLDQTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:19:13 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:44167 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287AbaLDQTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:18:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>
-Subject: Re: [PATCH 1/2] arm64: amd-seattle: Fix dma-ranges property
-Date: Thu, 04 Dec 2014 17:17:47 +0100
-Message-ID: <2491716.6gErSSjiAc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <D0A3B11F.AAC8%suravee.suthikulpanit@amd.com>
-References: <D0A3B11F.AAC8%suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:VSfo7egLNy8Qyx3lE3y96VIov0i5+F9pYUojhWPNPPtTV92k2P9
- 1YGLasRu/AAh42fdm+ZozlH3cF7HsewqtjdY+DZicpy0lmc1X2lg/YUpoFqfH/uYuok1pu6
- hIo9Nt1wspETD47q8FZaWIRUMQ7TUKRSHVQxR4pezUoYDxeU/QPBtwCkvAMa05xQODNqCXw
- 2QiEz4LgzptNHBuXXYbyw==
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 4 Dec 2014 11:19:10 -0500
+Date: Thu, 4 Dec 2014 17:19:00 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH v8 17/50] KVM: s390: Set virtio-ccw transport revision
+Message-ID: <20141204171900.3c31bfbe.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141204161022.GA23199@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	<1417449619-24896-18-git-send-email-mst@redhat.com>
+	<20141204161022.GA23199@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120416-0009-0000-0000-00000242D27F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 December 2014 14:12:48 Suthikulpanit, Suravee wrote:
+On Thu, 4 Dec 2014 18:10:22 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> On Mon, Dec 01, 2014 at 06:04:11PM +0200, Michael S. Tsirkin wrote:
+> > From: Thomas Huth <thuth@linux.vnet.ibm.com>
+> > 
+> > With the new SET-VIRTIO-REVISION command of the virtio 1.0 standard, we
+> > can now negotiate the virtio-ccw revision after setting a channel online.
+> > 
+> > Note that we don't negotiate version 1 yet.
+> > 
+> > [Cornelia Huck: reworked revision loop a bit]
+> > Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+> > Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > 
-> Would you minding adding the following detail in the commit message?
-
-I was going to, but then decided not to. It's usually better if you
-just send a new patch when requested to update the changelog, so
-please do that.
- 
-> - BEGIN -
-> AMD Seattle supports 40-bit DMA, which includes two ranges:
->     1. GICv2m MSI register frame at 0xe0080000
->     2. DRAM range [0x8000000000 to 0xffffffffff]
+> Looking at this some more: to me it looks
+> like this command should be repeated whenever we reset
+> the device.
 > 
-> Since the current parsing logic handles only single range, this patch
-> specifies the range from zero to 0x10000000000 to cover the whole
-> 40-bit range.
-> 
-> However, it expects DMA allocation/mapping logic to check the specified
-> DMA range against the reported DRAM range, which starts from
-> 0x8000000000 in this case.
+> No?
 
-Unfortunately the description is (for the most part) wrong:
+It should, when we re-setup.
 
-- It doesn't matter whatsoever what the target of the DMA is or
-  how large the DRAM can be. The only thing that matters is the
-  transformation that the bus physically performs. If the AXI bus
-  is (as you said earlier, though I'm no longer sure about it
-  after your text above) limited to 40 bit address, you should
-  use the 40-bit mask you gave above. If the 40-bit address is not
-  a result of a limitation of the AXI bus but of the memory
-  controller, you should just list a full 64-bit mask here.
-  In that case, you actually have to use '0xffffffff 0xffffffff'
-  as the length, which is one byte short as before, but we can't
-  express that otherwise.
-
-- Furthermore it does not matter at all what the Linux implementation
-  does. If your hardware does a transformation that the current
-  code can't handle, we need to fix the code rather than work around
-  the implementation bug by putting incorrect data into the DT.
-
-	Arnd
