@@ -1,200 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426AbaLDPQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:16:21 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:63765 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaLDPQT (ORCPT
+	id S932447AbaLDPSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:18:04 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:40700 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094AbaLDPSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:16:19 -0500
-X-AuditID: cbfec373-b7f6b6d00000271d-c7-54807ac10ae1
-Date: Thu, 04 Dec 2014 13:16:11 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: linux-kernel@vger.kernel.org, jarod@wilsonet.com,
-        gregkh@linuxfoundation.org, mahfouz.saif.elyazal@gmail.com,
-        dan.carpenter@oracle.com, tuomas.tynkkynen@iki.fi,
-        gulsah.1004@gmail.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH v2] staging: media: lirc: lirc_zilog.c: fix quoted strings
- split across lines
-Message-id: <20141204131611.69d00ba1.m.chehab@samsung.com>
-In-reply-to: <20141125203629.GA12059@biggie>
-References: <20141125203629.GA12059@biggie>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/hEN2DVQ0hBj33uSxe/5vOYrHnzC92
-	i+bF69ks5jc+ZLe4+uIEk8XlXXPYLHo2bGW1eHJDz2L9uTusFnPXbmN34PJYe3Y9i8e9fYdZ
-	PHbOusvucfjrQhaP/XPXsHt8fHqLxePzJjmPqSf7WAM4orhsUlJzMstSi/TtErgyLvZfYik4
-	ZVKx+ItpA+Mj9S5GTg4JAROJ3vOzmSBsMYkL99azdTFycQgJLGGUWD/5FjOE08Ak8X/zEzaQ
-	KhYBVYknCzcxgthsAkYSrxpbWEFsEQEDiZuHr7CDNDAL/GSU+L78A1iDsECyRMeLpSwgNq+A
-	lcTar//YQWxOAR2JK2euga0WEtCWOPL4JdQZzhJXfpxigqgXlPgx+R5YL7OAlsTmbU2sELa8
-	xOY1b5knMArMQlI2C0nZLCRlCxiZVzGKlhYnFxQnpeca6RUn5haX5qXrJefnbmKEREjxDsYX
-	G6wOMQpwMCrx8DacrA8RYk0sK67MPcQowcGsJMKr5dsQIsSbklhZlVqUH19UmpNafIiRiYNT
-	qoGRPXCnXn3BpJVrt1Vx2uet+8Oa/r2gc0n3mw/Sv4VMvN5d3rFOLLTI5eSu9Qvaeh9fON+n
-	tEo2a9ntlZNcVLc/y6i5LNpzdXOhgaPRctd/k3N+3GQyfnAliOl3x5+kpnVpXaJ3mAUC/RsW
-	nRT8tbSU02u3a8/uS2+lqr38f4W3i4mwFB86vZBdiaU4I9FQi7moOBEAXmLCTG4CAAA=
+	Thu, 4 Dec 2014 10:18:02 -0500
+Date: Thu, 4 Dec 2014 16:17:58 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Qiang Huang <h.huangqiang@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, oom: remove gfp helper function
+Message-ID: <20141204151758.GC25001@dhcp22.suse.cz>
+References: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
+ <20141127102547.GA18833@dhcp22.suse.cz>
+ <20141201233040.GB29642@phnom.home.cmpxchg.org>
+ <20141203155222.GH23236@dhcp22.suse.cz>
+ <20141203181509.GA24567@phnom.home.cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141203181509.GA24567@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
-
-Em Tue, 25 Nov 2014 20:36:29 +0000
-Luis de Bethencourt <luis@debethencourt.com> escreveu:
-
-> checkpatch makes an exception to the 80-colum rule for quotes strings, and
-> Documentation/CodingStyle recommends not splitting quotes strings across lines
-> because it breaks the ability to grep for the string. Fixing these.
+On Wed 03-12-14 13:15:09, Johannes Weiner wrote:
+> On Wed, Dec 03, 2014 at 04:52:22PM +0100, Michal Hocko wrote:
+> > On Mon 01-12-14 18:30:40, Johannes Weiner wrote:
+> > > On Thu, Nov 27, 2014 at 11:25:47AM +0100, Michal Hocko wrote:
+> > > > On Wed 26-11-14 14:17:32, David Rientjes wrote:
+> > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > --- a/mm/page_alloc.c
+> > > > > +++ b/mm/page_alloc.c
+> > > > > @@ -2706,7 +2706,7 @@ rebalance:
+> > > > >  	 * running out of options and have to consider going OOM
+> > > > >  	 */
+> > > > >  	if (!did_some_progress) {
+> > > > > -		if (oom_gfp_allowed(gfp_mask)) {
+> > > > 		/*
+> > > > 		 * Do not attempt to trigger OOM killer for !__GFP_FS
+> > > > 		 * allocations because it would be premature to kill
+> > > > 		 * anything just because the reclaim is stuck on
+> > > > 		 * dirty/writeback pages.
+> > > > 		 * __GFP_NORETRY allocations might fail and so the OOM
+> > > > 		 * would be more harmful than useful.
+> > > > 		 */
+> > > 
+> > > I don't think we need to explain the individual flags, but it would
+> > > indeed be useful to remark here that we shouldn't OOM kill from
+> > > allocations contexts with (severely) limited reclaim abilities.
+> > 
+> > Is __GFP_NORETRY really related to limited reclaim abilities? I thought
+> > it was merely a way to tell the allocator to fail rather than spend too
+> > much time reclaiming.
 > 
-> WARNING: quoted string split across lines
+> And you wouldn't call that "limited reclaim ability"?
+
+I really do not want to go into language lawyering here. But to me the
+reclaim ability is what the reclaim is capable to do with the given gfp.
+And __GFP_NORETRY is completely irrelevant for the reclaim. It tells the
+allocator how hard it should try (similar like __GFP_REPEAT or
+__GFP_NOFAIL) unlike __GFP_FS which restricts the reclaim in its
+operation.
+
+> I guess it's a
+> matter of phrasing, but the point is that we don't want anybody to OOM
+> kill that didn't exhaust all other options that are usually available
+> to allocators.  This includes the ability to enter the FS, the ability
+> to do IO in general, and the ability to retry reclaim.  Possibly more.
+
+Right.
+
+> > If you are referring to __GFP_FS part then I have
+> > no objections to be less specific, of course, but __GFP_IO would fall
+> > into the same category but we are not checking for it. I have no idea
+> > why we consider the first and not the later one, to be honest...
 > 
-> Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> ---
-> Changes in v2:
-> 	- As pointed out by Joe Perches I missed a space when joining a set of strings
-> 
-> Thanks for the review Joe
->  drivers/staging/media/lirc/lirc_zilog.c | 39 ++++++++++++++-------------------
->  1 file changed, 17 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-> index dca806a..a35d6f2 100644
-> --- a/drivers/staging/media/lirc/lirc_zilog.c
-> +++ b/drivers/staging/media/lirc/lirc_zilog.c
-> @@ -372,14 +372,12 @@ static int add_to_buf(struct IR *ir)
->  					   ret);
->  			if (failures >= 3) {
->  				mutex_unlock(&ir->ir_lock);
-> -				dev_err(ir->l.dev, "unable to read from the IR chip "
-> -					    "after 3 resets, giving up\n");
-> +				dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
+> Which proves my point that we should document high-level intent rather
+> than implementation.  Suddenly, that missing __GFP_IO is sticking out
+> like a sore thumb...
 
-This patch didn't apply on my tree, as what I have there is a driver
-custom macro. Probably I'm missing some patch (or it got merged via some
-other tree):
+I am obviously not insisting on the above wording. I am for everything
+that would clarify the test and do not force me to go through several
+hops of the git blame to find the original intention again after year
+when I forget this again.
 
-+<<<<<<<
-                                zilog_error("unable to read from the IR chip "
-                                            "after 3 resets, giving up\n");
-+=======
-+                               dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
-+>>>>>>>
-
-One general note about this patch: those strings are already big, so
-the best is to put them at the beginning of the second line, aligned with
-the parenthesis, e. g:
-				dev_err(ir->l.dev,
-					"unable to read from the IR chip after 3 resets, giving up\n");
-
-Ok, on some, the second line will still violate the 80-cols max, but
-on others it may actually fit. So, better to do the same thing along
-the entire driver, as it makes easier to read it if all similar lines
-use the same criteria.
-
-Regards,
-Mauro.
-
->  				break;
->  			}
->  
->  			/* Looks like the chip crashed, reset it */
-> -			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
-> -				    "trying reset\n");
-> +			dev_err(ir->l.dev, "polling the IR receiver chip failed, trying reset\n");
->  
->  			set_current_state(TASK_UNINTERRUPTIBLE);
->  			if (kthread_should_stop()) {
-> @@ -405,8 +403,8 @@ static int add_to_buf(struct IR *ir)
->  		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
->  		mutex_unlock(&ir->ir_lock);
->  		if (ret != sizeof(keybuf)) {
-> -			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
-> -				    "keeping last read buffer\n", ret);
-> +			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- keeping last read buffer\n",
-> +				    ret);
->  		} else {
->  			rx->b[0] = keybuf[3];
->  			rx->b[1] = keybuf[4];
-> @@ -713,8 +711,8 @@ static int send_boot_data(struct IR_tx *tx)
->  				       buf[0]);
->  		return 0;
->  	}
-> -	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
-> -		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
-> +	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
-> +		     buf[1], buf[2], buf[3]);
->  
->  	return 0;
->  }
-> @@ -794,8 +792,7 @@ static int fw_load(struct IR_tx *tx)
->  	if (!read_uint8(&data, tx_data->endp, &version))
->  		goto corrupt;
->  	if (version != 1) {
-> -		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
-> -			    "1) -- please upgrade to a newer driver",
-> +		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
->  			    version);
->  		fw_unload_locked();
->  		ret = -EFAULT;
-> @@ -983,8 +980,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
->  	ret = get_key_data(data_block, code, key);
->  
->  	if (ret == -EPROTO) {
-> -		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
-> -			    "lircd.conf entries\n", code, key);
-> +		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check lircd.conf entries\n",
-> +			    code, key);
->  		return ret;
->  	} else if (ret != 0)
->  		return ret;
-> @@ -1059,8 +1056,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
->  		ret = i2c_master_send(tx->c, buf, 1);
->  		if (ret == 1)
->  			break;
-> -		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
-> -			"failed with %d (try %d)\n", ret, i+1);
-> +		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send failed with %d (try %d)\n",
-> +			ret, i+1);
->  	}
->  	if (ret != 1) {
->  		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
-> @@ -1167,12 +1164,10 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
->  		 */
->  		if (ret != 0) {
->  			/* Looks like the chip crashed, reset it */
-> -			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
-> -				    "failed, trying reset\n");
-> +			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip failed, trying reset\n");
->  
->  			if (failures >= 3) {
-> -				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
-> -					    "after 3 resets, giving up\n");
-> +				dev_err(tx->ir->l.dev, "unable to send to the IR chip after 3 resets, giving up\n");
->  				mutex_unlock(&ir->ir_lock);
->  				mutex_unlock(&tx->client_lock);
->  				put_ir_tx(tx, false);
-> @@ -1581,8 +1576,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  				       "zilog-rx-i2c-%d", adap->nr);
->  		if (IS_ERR(rx->task)) {
->  			ret = PTR_ERR(rx->task);
-> -			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
-> -				    "\n", __func__);
-> +			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread\n",
-> +				    __func__);
->  			/* Failed kthread, so put back the ir ref */
->  			put_ir_device(ir, true);
->  			/* Failure exit, so put back rx ref from i2c_client */
-> @@ -1594,8 +1589,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  
->  		/* Proceed only if the Tx client is also ready */
->  		if (tx == NULL) {
-> -			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
-> -				   " on IR Tx.\n", adap->name, adap->nr);
-> +			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
-> +				   adap->name, adap->nr);
->  			goto out_ok;
->  		}
->  	}
+-- 
+Michal Hocko
+SUSE Labs
