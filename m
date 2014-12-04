@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079AbaLDSnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:43:22 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:42274 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaLDSnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:43:20 -0500
+	id S1754422AbaLDSow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:44:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaLDSou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 13:44:50 -0500
+Date: Thu, 4 Dec 2014 20:44:34 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH RFC v2 1/4] virtio: add API to detect legacy devices
+Message-ID: <1417718645-25678-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20141204184046.GL7944@katana>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
-	<1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
-	<20141203111518.GB1039@katana>
-	<CAD=FV=X5inPWZakhgDX0dX=1CWXygEi3_AH9FVFWXYT3LZA5bg@mail.gmail.com>
-	<20141204184046.GL7944@katana>
-Date: Thu, 4 Dec 2014 10:43:19 -0800
-X-Google-Sender-Auth: 5rUOYghFS_RVLeYqFzLzhSmpbZ0
-Message-ID: <CAD=FV=Vp3hwxbDzb+FUhNXy8qW8fTCkgd67jRDV3foT0o9HQuQ@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns doesn't
- meet I2C spec
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram,
+transports need to be able to detect legacy-only
+devices (ATM balloon only) to use legacy path
+to drive them.
 
-On Thu, Dec 4, 2014 at 10:40 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> If you don't read all the below, my belief is that we should simply
->> rename the strings in Addy's patch.  We should change "rise-ns" to
->> "i2c-scl-rising-time" and "fall-ns" to "i2c-scl-falling-time".
->> Wolfram: can you confirm this is OK?  I'm voting to leave the "-ns"
->> off the end of both to avoid asymmetry.
->
-> New binding should have the "-ns" suffix, right? So, I'd vote to add the
-> suffix to the new bindings and deprecate the ones used in the designware
-> driver: "i2c-scl-rising-time-ns" and "i2c-scl-falling-time-ns"
->
-> It might be a little more work now, but it will help us in the future,
-> because it is the correct way to do it.
+Add a core API to do just that.
+The implementation just blacklists balloon:
+not too pretty, but let's not over-engineer.
 
-OK, that sounds fair.  You're OK with my proposal otherwise?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+---
+ include/linux/virtio.h  | 2 ++
+ drivers/virtio/virtio.c | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
-Are you looking for Addy or me to submit a patch supporting the "-ns"
-suffix on the Designware i2c driver, or should we just use the "-ns"
-suffix in the Rockchip driver and assume someone will later add
-support for the new binding in the Designware i2c driver?
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 2bbf626..d666bcb 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -108,6 +108,8 @@ struct virtio_device {
+ 	void *priv;
+ };
+ 
++bool virtio_device_is_legacy_only(struct virtio_device_id id);
++
+ static inline struct virtio_device *dev_to_virtio(struct device *_dev)
+ {
+ 	return container_of(_dev, struct virtio_device, dev);
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index fa6b75d..6b4c1113 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -267,6 +267,12 @@ static struct bus_type virtio_bus = {
+ 	.remove = virtio_dev_remove,
+ };
+ 
++bool virtio_device_is_legacy_only(struct virtio_device_id id)
++{
++	return id.device == VIRTIO_ID_BALLOON;
++}
++EXPORT_SYMBOL_GPL(register_virtio_driver);
++
+ int register_virtio_driver(struct virtio_driver *driver)
+ {
+ 	/* Catch this early. */
+-- 
+MST
 
--Doug
