@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaLDSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 13:41:57 -0500
-Received: from na6sys009bog021.obsmtp.com ([74.125.150.82]:32815 "HELO
-	na6sys009bog021.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932215AbaLDSlz (ORCPT
+	id S933062AbaLDSmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 13:42:21 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33154 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215AbaLDSmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 13:41:55 -0500
+	Thu, 4 Dec 2014 13:42:19 -0500
+Date: Thu, 4 Dec 2014 10:42:12 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Bartosz Golaszewski <bgolaszewski@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 1/2] hwmon: tmp401: add support for TI TMP435
+Message-ID: <20141204184212.GA15458@roeck-us.net>
+References: <1417687048-21455-1-git-send-email-bgolaszewski@baylibre.com>
+ <1417687048-21455-2-git-send-email-bgolaszewski@baylibre.com>
+ <54806D6C.7060009@roeck-us.net>
+ <CAMpxmJUVQyU_NC=7wByinboM-n9kvQoDALZ3-ZiDmRatKQp8Rg@mail.gmail.com>
+ <20141204183228.0b8cbbe3@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
-References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
- <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
- <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
- <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
- <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com>
- <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com>
- <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com> <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
-From: Joe Stringer <joestringer@nicira.com>
-Date: Thu, 4 Dec 2014 10:41:34 -0800
-Message-ID: <CANr6G5zVA=hZLuo5Z2MaXy9A7zzt1-3RQCAS6aZY2iFudOGfYQ@mail.gmail.com>
-Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
-To: Jesse Gross <jesse@nicira.com>
-Cc: Tom Herbert <therbert@google.com>, netdev <netdev@vger.kernel.org>,
-        Shannon Nelson <shannon.nelson@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204183228.0b8cbbe3@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.5480AB0A.0148,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 December 2014 at 10:26, Jesse Gross <jesse@nicira.com> wrote:
-> On Mon, Dec 1, 2014 at 4:09 PM, Tom Herbert <therbert@google.com> wrote:
->> On Mon, Dec 1, 2014 at 3:53 PM, Jesse Gross <jesse@nicira.com> wrote:
->>> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
->>>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
->>>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
->>>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
->>>>>>> I don't know if we need to have the check at all for IPIP though -
->>>>>>> after all the driver doesn't expose support for it all (actually it
->>>>>>> doesn't expose GRE either). This raises kind of an interesting
->>>>>>> question about the checks though - it's pretty easy to add support to
->>>>>>> the driver for a new GSO type (and I imagine that people will be
->>>>>>> adding GRE soon) and forget to update the check.
->>>>>>
->>>>>> If the check is more conservative, then testing would show that it's
->>>>>> not working and lead people to figure out why (and update the check).
->>>>>
->>>>> More concretely, one suggestion would be something like following at
->>>>> the start of each gso_check():
->>>>>
->>>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
->>>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
->>>>> +
->>>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
->>>>> +               return false;
->>>>
->>>> This should already be handled by net_gso_ok.
->>>
->>> My original point wasn't so much that this isn't handled at the moment
->>> but that it's easy to add a supported GSO type but then forget to
->>> update this check - i.e. if a driver already supports UDP_TUNNEL and
->>> adds support for GRE with the same constraints. It seems not entirely
->>> ideal that this function is acting as a blacklist rather than a
->>> whitelist.
->>
->> Agreed, it would be nice to have all the checking logic in one place.
->> If all the drivers end up implementing ndo_gso_check then we could
->> potentially get rid of the GSO types as features. This probably
->> wouldn't be a bad thing since we already know that the features
->> mechanism doesn't scale (for instance there's no way to indicate that
->> certain combinations of GSO types are supported by a device).
->
-> This crossed my mind and I agree that it's pretty clear that the
-> features mechanism isn't scaling very well. Presumably, the logical
-> extension of this is that each driver would have a function that looks
-> at a packet and returns a set of offload operations that it can
-> support rather than exposing a set of protocols. However, it seems
-> like it would probably result in a bunch of duplicate code in each
-> driver.
+On Thu, Dec 04, 2014 at 06:32:28PM +0100, Jean Delvare wrote:
+> On Thu, 4 Dec 2014 15:33:47 +0100, Bartosz Golaszewski wrote:
+> > 2014-12-04 15:19 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> > > The datasheet claims otherwise (0x31, specifically).
+> > > Is this based on real chip information ?
+> > > Can you send me the output from i2cdump for the chip ?
+> > >
+> > 
+> > This is what I'm reading:
+> > 
+> > # i2cdump -y 1 0x4c
+> > No size specified (using byte-data access)
+> >      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+> > 00: 1a 1b 00 00 05 55 00 55 00 00 05 55 00 55 00 0d    ??..?U.U..?U.U.?
+> > 10: 70 00 00 00 00 90 00 00 00 55 1c XX XX XX XX 00    p....?...U?XXXX.
+> > 20: 55 0a 70 XX XX 0f XX XX XX XX XX XX XX XX XX XX    U?pXX?XXXXXXXXXX
+> > 30: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 40: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 50: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 60: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 70: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 80: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > 90: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > a0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > b0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > c0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > d0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > e0: XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX XX    XXXXXXXXXXXXXXXX
+> > f0: XX XX XX XX XX XX XX XX XX XX XX XX 00 35 55 35    XXXXXXXXXXXX.5U5
+> > 
+> > # i2cget -y 1 0x4c 0xff b
+> > 0x35
+> 
+> That makes sense for a chip named TMP435. Looks like TI forgot to
+> update the value when copying the datasheet from TMP431 to TMP435.
+> 
+Guess so.
 
-Given the discussion is still pretty open-ended, I've made the basic
-feedback changes for v3 and haven't tried to address the concern about
-forgetting to update this check when a driver adds support.
+I'll make the necessary updates to sensors-detect and the web page.
+
+> Thanks for the dump, by the way :)
+> 
+
+Same here .. that also helps for writing module test scripts.
+
+Thanks,
+Guenter
