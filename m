@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527AbaLDQTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:19:13 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:44167 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287AbaLDQTK (ORCPT
+	id S932540AbaLDQTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:19:50 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:65118 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161AbaLDQTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:19:10 -0500
-Date: Thu, 4 Dec 2014 17:19:00 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH v8 17/50] KVM: s390: Set virtio-ccw transport revision
-Message-ID: <20141204171900.3c31bfbe.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141204161022.GA23199@redhat.com>
-References: <1417449619-24896-1-git-send-email-mst@redhat.com>
-	<1417449619-24896-18-git-send-email-mst@redhat.com>
-	<20141204161022.GA23199@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120416-0009-0000-0000-00000242D27F
+	Thu, 4 Dec 2014 11:19:49 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] kernfs: Fix kernfs_name_compare
+Date: Thu,  4 Dec 2014 17:19:34 +0100
+Message-Id: <1417709976-31551-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Dec 2014 18:10:22 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+If the void pointers ns and kn->ns happen to differ by a multiple of
+2^32, kernfs_name_compare returns 0, falsely reporting a match to the
+caller.
 
-> On Mon, Dec 01, 2014 at 06:04:11PM +0200, Michael S. Tsirkin wrote:
-> > From: Thomas Huth <thuth@linux.vnet.ibm.com>
-> > 
-> > With the new SET-VIRTIO-REVISION command of the virtio 1.0 standard, we
-> > can now negotiate the virtio-ccw revision after setting a channel online.
-> > 
-> > Note that we don't negotiate version 1 yet.
-> > 
-> > [Cornelia Huck: reworked revision loop a bit]
-> > Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> > Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
-> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Looking at this some more: to me it looks
-> like this command should be repeated whenever we reset
-> the device.
-> 
-> No?
+If the return type was changed to long, returning ns - kn->ns would
+still be wrong (see acbbe6fbb240 "kcmp: fix standard comparison bug"),
+and it would also break the primary comparison of the hashes: The
+expression hash - kn->hash has type unsigned int; on 64-bit, long is
+perfectly capable of representing all unsigned int values, hence the
+return value would always be positive if the hashes are
+different. Since the latter is slightly subtle and since returning
+hash - kn->hash in the first place is only ok because the hashes are
+restricted to 31 bits, add a comment explaining that.
 
-It should, when we re-setup.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ fs/kernfs/dir.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 1c771931bb60..64959716936d 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -201,10 +201,17 @@ static unsigned int kernfs_name_hash(const char *name, const void *ns)
+ static int kernfs_name_compare(unsigned int hash, const char *name,
+ 			       const void *ns, const struct kernfs_node *kn)
+ {
++	/*
++	 * This is ok because the hash values are restricted to [0,
++	 * 2^31-1] and because we are returning int (it would be wrong
++	 * had the return type been wider!).
++	 */
+ 	if (hash != kn->hash)
+ 		return hash - kn->hash;
+-	if (ns != kn->ns)
+-		return ns - kn->ns;
++	if (ns < kn->ns)
++		return -1;
++	if (ns > kn->ns)
++		return 1;
+ 	return strcmp(name, kn->name);
+ }
+ 
+-- 
+2.0.4
 
