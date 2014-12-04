@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaLDNoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:44:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57094 "EHLO mx1.redhat.com"
+	id S1754396AbaLDNqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:46:03 -0500
+Received: from h1.radempa.de ([176.9.142.194]:49809 "EHLO mail.cosmopool.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231AbaLDNoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:44:16 -0500
-Date: Thu, 4 Dec 2014 11:43:52 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Luiz Capitulino <lcapitulino@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org
-Subject: Re: [patch -rt 2/2] KVM: lapic: mark LAPIC timer handler as irqsafe
-Message-ID: <20141204134352.GA28510@amt.cnet>
-References: <20141125172108.992070524@redhat.com>
- <20141125172329.580701786@redhat.com>
- <5474BE7C.5040909@redhat.com>
+	id S1753946AbaLDNqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:46:01 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Richard Weinberger <richard@nod.at>
+cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+In-reply-to: <547F8925.3050308@nod.at>
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F0CFE.4010107@nod.at> <E1XwAbX-0001Ht-Jg@stardust.g4.wien.funkfeuer.at> <547F8925.3050308@nod.at>
+Comments: In-reply-to Richard Weinberger <richard@nod.at>
+   message dated "Wed, 03 Dec 2014 23:05:25 +0100."
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5474BE7C.5040909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4038.1417700732.1@stardust.g4.wien.funkfeuer.at>
+Date: Thu, 04 Dec 2014 14:45:32 +0100
+Message-Id: <E1XwWiq-00013A-NC@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 06:38:04PM +0100, Paolo Bonzini wrote:
+Richard Weinberger writes:
+> Am 03.12.2014 um 15:08 schrieb Harald Geyer:
+> >> I was asking because I see the "dht11: WARNING: decoding ambiguous"
+> >> very often. (with and without my patches)
+> > 
+> > Yes, your patches shouldn't have any effect on this.
+> > "very often" in the sense of "not always"? This would be very surprising,
+> > because this would involve variable length clock ticks, i think.
+> > 
+> > I guess we should include timeres into the warning message.
+> > 
+> > Also I guess now is the time to think about a smarter decoder.
+
+I was wrong.
+ 
+> Another question. Your driver defines:
+> #define DHT11_DATA_BIT_LOW      27000
+> #define DHT11_DATA_BIT_HIGH     70000
 > 
-> 
-> On 25/11/2014 18:21, Marcelo Tosatti wrote:
-> > +
-> > +	if (r == HRTIMER_RESTART) {
-> > +		do {
-> > +			ret = hrtimer_start_expires(data, HRTIMER_MODE_ABS);
-> > +			if (ret == -ETIME)
-> > +				hrtimer_add_expires_ns(&ktimer->timer,
-> > +							ktimer->period);
-> 
-> Is it possible to just compute the time where the next interrupt
-> happens?  
+> If I read the manual [0] correctly these constants are T_h0/1.
+> Why did you use 27000 for T_h0?
+>
+> [0] http://meteobox.tk/files/AM2302.pdf
 
-Yes but there is no guarantee hrtimer_start_expires will not fail.
+It's a compromise between data sheets for various slightly different
+sensors. In particular the data sheet for AM2303 specifies
+26-28us, so it's just in the middle. But note that DHT11_DATA_BIT_LOW
+isn't used in the actual decoding. Just for printing the warning.
 
-> I suspect the printk and WARN_ON below can be easily triggered
-> by a guest.
+But looking at your data sheet I see the we currently use a start
+command that's outside the specified range... I will have to look
+up where the current 80ms value was suggested.
 
-I'll remove those, thanks.
+> Setting it to 26000 (the typical value as stated by the manual),
+> I get the "decoding ambiguous" warning *always*. Setting it higher
+> makes the message go away.
 
+If you misstyped "always" and "go away" then this is to be expected.
 
+Also I think I now understand what is going on:
+Your board most probably has a clock much faster then 32kH and when
+we calculate timeres, we don't actually calculate the timestamp
+resolution but the length of the shortest pulse. The decoding
+algorithm is robust in such cases, but it generates wrong warnings.
+
+The proper fix is to drop messages about clock speed from the
+decoding functin. If we want to keep such diagnostics, we should
+have them at probe() time. - This will also resolve our disagreement
+about proper formatting of log messages about clock issues. :)
+
+Optionally we can drop the calculation of timeres and just use a
+constant threshold.
+
+Thanks,
+Harald
