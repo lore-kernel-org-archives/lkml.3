@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaLDLbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:31:36 -0500
+	id S1754173AbaLDLbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:31:42 -0500
 Received: from mga01.intel.com ([192.55.52.88]:40557 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010AbaLDLbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:31:34 -0500
+	id S1753995AbaLDLbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:31:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="424996383"
+   d="scan'208";a="424996400"
 From: Wanpeng Li <wanpeng.li@linux.intel.com>
 To: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Nadav Amit <nadav.amit@gmail.com>, <rkrcmar@redhat.com>,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v2 2/4] kvm: cpuid: fix the size of xsaves area
-Date: Thu,  4 Dec 2014 19:11:08 +0800
-Message-Id: <1417691470-5221-2-git-send-email-wanpeng.li@linux.intel.com>
+Subject: [PATCH v2 4/4] kvm: vmx: fix VMfailValid when write vmcs02/vmcs01
+Date: Thu,  4 Dec 2014 19:11:10 +0800
+Message-Id: <1417691470-5221-4-git-send-email-wanpeng.li@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
 References: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
@@ -24,40 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The section of CPUID(EAX=0xd, ECX=1) in the spec which commit
-f5c2290cd01e (KVM: cpuid: mask more bits in leaf 0xd and subleaves)
-mentioned is older than SDM.
+SDM 30.3 VMWRITE
 
-EBX: Bits 31-00: The size in bytes of the XSAVE area containing all
-states enabled by XCR0|IA32_XSS.
+ELSIF secondary source operand does not correspond to any VMCS field
+   THEN VMfailValid(VMREAD/VMWRITE from/to unsupported VMCS component);
 
-The the value of EBX should represent the size of XCR0 related XSAVE
-area since IA32_XSS is not used currently.
+We can't suppose L1 VMM expose MPX to L2 just if L0 support MPX. There
+will be VMfailValid if L0 doesn't support MPX and L1 expose MPX to L2
+when L0 writes vmcs02/vmcs01, in addition, there is no need to read
+GUEST_BNDCFGS if L1 VMM doesn't expose it to L2. This patch fix it by
+both check L0 support xsaves and L1 expose MPX to L2.
 
 Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
-v1 -> v2:
- * add F(XSAVEC) check
+ arch/x86/kvm/vmx.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
- arch/x86/kvm/cpuid.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 646e6e8..5b78e9b 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -477,7 +477,10 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 			do_cpuid_1_ent(&entry[i], function, idx);
- 			if (idx == 1) {
- 				entry[i].eax &= kvm_supported_word10_x86_features;
--				entry[i].ebx = 0;
-+				if (entry[i].eax & (F(XSAVES) | F(XSAVEC)))
-+					entry[i].ebx = xstate_required_size(supported, true);
-+				else
-+					entry[i].ebx = xstate_required_size(supported, false);
- 			} else {
- 				if (entry[i].eax == 0 || !(supported & mask))
- 					continue;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index e5bc349..1233159 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -8496,7 +8496,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 
+ 	set_cr4_guest_host_mask(vmx);
+ 
+-	if (vmcs12->vm_entry_controls & VM_ENTRY_LOAD_BNDCFGS)
++	if (vmx_mpx_supported() &&
++		(vmcs12->vm_entry_controls & VM_ENTRY_LOAD_BNDCFGS))
+ 		vmcs_write64(GUEST_BNDCFGS, vmcs12->guest_bndcfgs);
+ 
+ 	if (vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_TSC_OFFSETING)
+@@ -8992,7 +8993,8 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12,
+ 	vmcs12->guest_sysenter_cs = vmcs_read32(GUEST_SYSENTER_CS);
+ 	vmcs12->guest_sysenter_esp = vmcs_readl(GUEST_SYSENTER_ESP);
+ 	vmcs12->guest_sysenter_eip = vmcs_readl(GUEST_SYSENTER_EIP);
+-	if (vmx_mpx_supported())
++	if (vmx_mpx_supported() &&
++		(vmcs12->vm_entry_controls & VM_ENTRY_LOAD_BNDCFGS))
+ 		vmcs12->guest_bndcfgs = vmcs_read64(GUEST_BNDCFGS);
+ 	if (nested_cpu_has_xsaves(vmcs12))
+ 		vmcs12->xss_exit_bitmap = vmcs_read64(XSS_EXIT_BITMAP);
+@@ -9106,7 +9108,8 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
+ 	vmcs_writel(GUEST_GDTR_BASE, vmcs12->host_gdtr_base);
+ 
+ 	/* If not VM_EXIT_CLEAR_BNDCFGS, the L2 value propagates to L1.  */
+-	if (vmcs12->vm_exit_controls & VM_EXIT_CLEAR_BNDCFGS)
++	if (vmx_mpx_supported() &&
++		(vmcs12->vm_exit_controls & VM_EXIT_CLEAR_BNDCFGS))
+ 		vmcs_write64(GUEST_BNDCFGS, 0);
+ 
+ 	if (vmcs12->vm_exit_controls & VM_EXIT_LOAD_IA32_PAT) {
 -- 
 1.9.1
 
