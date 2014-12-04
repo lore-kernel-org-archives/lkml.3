@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582AbaLDP5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:57:43 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:51258 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932479AbaLDP5l (ORCPT
+	id S932601AbaLDP6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:58:13 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:56981 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932527AbaLDP5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:57:41 -0500
+	Thu, 4 Dec 2014 10:57:39 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
 Cc: rkrcmar@redhat.com, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH 9/9] kvm: vmx: add nested virtualization support for xsaves
-Date: Thu,  4 Dec 2014 16:57:14 +0100
-Message-Id: <1417708634-24333-10-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 8/9] kvm: vmx: add MSR logic for XSAVES
+Date: Thu,  4 Dec 2014 16:57:13 +0100
+Message-Id: <1417708634-24333-9-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
 References: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
@@ -22,90 +22,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-Add vmcs12 support for xsaves.
+Add logic to get/set the XSS model-specific register.
 
 Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/vmx.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/kvm_host.h |  1 +
+ arch/x86/kvm/vmx.c              | 29 ++++++++++++++++++++++++++++-
+ 2 files changed, 29 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 0271f6bcf123..0c4c88c008ce 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -362,6 +362,7 @@ struct kvm_vcpu_arch {
+ 	int mp_state;
+ 	u64 ia32_misc_enable_msr;
+ 	bool tpr_access_reporting;
++	u64 ia32_xss;
+ 
+ 	/*
+ 	 * Paging state of the vcpu
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index ad1153a725a2..9bcc871f0635 100644
+index 88048c72b6b1..ad1153a725a2 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -216,6 +216,7 @@ struct __packed vmcs12 {
- 	u64 virtual_apic_page_addr;
- 	u64 apic_access_addr;
- 	u64 ept_pointer;
-+	u64 xss_exit_bitmap;
- 	u64 guest_physical_address;
- 	u64 vmcs_link_pointer;
- 	u64 guest_ia32_debugctl;
-@@ -618,6 +619,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
- 	FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
- 	FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
- 	FIELD64(EPT_POINTER, ept_pointer),
-+	FIELD64(XSS_EXIT_BITMAP, xss_exit_bitmap),
- 	FIELD64(GUEST_PHYSICAL_ADDRESS, guest_physical_address),
- 	FIELD64(VMCS_LINK_POINTER, vmcs_link_pointer),
- 	FIELD64(GUEST_IA32_DEBUGCTL, guest_ia32_debugctl),
-@@ -1104,6 +1106,12 @@ static inline int nested_cpu_has_ept(struct vmcs12 *vmcs12)
- 	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_ENABLE_EPT);
- }
+@@ -99,6 +99,8 @@ module_param_named(enable_shadow_vmcs, enable_shadow_vmcs, bool, S_IRUGO);
+ static bool __read_mostly nested = 0;
+ module_param(nested, bool, S_IRUGO);
  
-+static inline bool nested_cpu_has_xsaves(struct vmcs12 *vmcs12)
-+{
-+	return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES) &&
-+		vmx_xsaves_supported();
-+}
++static u64 __read_mostly host_xss;
 +
- static inline bool is_exception(u32 intr_info)
- {
- 	return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
-@@ -2392,7 +2400,8 @@ static __init void nested_vmx_setup_ctls_msrs(void)
- 	nested_vmx_secondary_ctls_high &=
- 		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
- 		SECONDARY_EXEC_UNRESTRICTED_GUEST |
--		SECONDARY_EXEC_WBINVD_EXITING;
-+		SECONDARY_EXEC_WBINVD_EXITING |
-+		SECONDARY_EXEC_XSAVES;
- 
- 	if (enable_ept) {
- 		/* nested EPT: emulate EPT also to L1 */
-@@ -7286,6 +7295,14 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
- 		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_WBINVD_EXITING);
- 	case EXIT_REASON_XSETBV:
- 		return 1;
-+	case EXIT_REASON_XSAVES: case EXIT_REASON_XRSTORS:
+ #define KVM_GUEST_CR0_MASK (X86_CR0_NW | X86_CR0_CD)
+ #define KVM_VM_CR0_ALWAYS_ON_UNRESTRICTED_GUEST (X86_CR0_WP | X86_CR0_NE)
+ #define KVM_VM_CR0_ALWAYS_ON						\
+@@ -2570,6 +2572,11 @@ static int vmx_get_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 *pdata)
+ 		if (!nested_vmx_allowed(vcpu))
+ 			return 1;
+ 		return vmx_get_vmx_msr(vcpu, msr_index, pdata);
++	case MSR_IA32_XSS:
++		if (!vmx_xsaves_supported())
++			return 1;
++		data = vcpu->arch.ia32_xss;
++		break;
+ 	case MSR_TSC_AUX:
+ 		if (!to_vmx(vcpu)->rdtscp_enabled)
+ 			return 1;
+@@ -2661,6 +2668,22 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 		break;
+ 	case MSR_IA32_VMX_BASIC ... MSR_IA32_VMX_VMFUNC:
+ 		return 1; /* they are read-only */
++	case MSR_IA32_XSS:
++		if (!vmx_xsaves_supported())
++			return 1;
 +		/*
-+		 * This should never happen, since it is not possible to
-+		 * set XSS to a non-zero value---neither in L1 nor in L2.
-+		 * If if it were, XSS would have to be checked against
-+		 * the XSS exit bitmap in vmcs12.
++		 * The only supported bit as of Skylake is bit 8, but
++		 * it is not supported on KVM.
 +		 */
-+		return nested_cpu_has2(vmcs12, SECONDARY_EXEC_XSAVES);
- 	default:
- 		return 1;
++		if (data != 0)
++			return 1;
++		vcpu->arch.ia32_xss = data;
++		if (vcpu->arch.ia32_xss != host_xss)
++			add_atomic_switch_msr(vmx, MSR_IA32_XSS,
++				vcpu->arch.ia32_xss, host_xss);
++		else
++			clear_atomic_switch_msr(vmx, MSR_IA32_XSS);
++		break;
+ 	case MSR_TSC_AUX:
+ 		if (!vmx->rdtscp_enabled)
+ 			return 1;
+@@ -2896,7 +2919,8 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
+ 			SECONDARY_EXEC_ENABLE_INVPCID |
+ 			SECONDARY_EXEC_APIC_REGISTER_VIRT |
+ 			SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
+-			SECONDARY_EXEC_SHADOW_VMCS;
++			SECONDARY_EXEC_SHADOW_VMCS |
++			SECONDARY_EXEC_XSAVES;
+ 		if (adjust_vmx_controls(min2, opt2,
+ 					MSR_IA32_VMX_PROCBASED_CTLS2,
+ 					&_cpu_based_2nd_exec_control) < 0)
+@@ -3019,6 +3043,9 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
+ 		}
  	}
-@@ -8342,6 +8359,8 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
- 	vmcs_writel(GUEST_SYSENTER_ESP, vmcs12->guest_sysenter_esp);
- 	vmcs_writel(GUEST_SYSENTER_EIP, vmcs12->guest_sysenter_eip);
  
-+	if (nested_cpu_has_xsaves(vmcs12))
-+		vmcs_write64(XSS_EXIT_BITMAP, vmcs12->xss_exit_bitmap);
- 	vmcs_write64(VMCS_LINK_POINTER, -1ull);
- 
- 	exec_control = vmcs12->pin_based_vm_exec_control;
-@@ -8982,6 +9001,8 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12,
- 	vmcs12->guest_sysenter_eip = vmcs_readl(GUEST_SYSENTER_EIP);
- 	if (vmx_mpx_supported())
- 		vmcs12->guest_bndcfgs = vmcs_read64(GUEST_BNDCFGS);
-+	if (nested_cpu_has_xsaves(vmcs12))
-+		vmcs12->xss_exit_bitmap = vmcs_read64(XSS_EXIT_BITMAP);
- 
- 	/* update exit information fields: */
++	if (cpu_has_xsaves)
++		rdmsrl(MSR_IA32_XSS, host_xss);
++
+ 	return 0;
+ }
  
 -- 
 1.8.3.1
+
 
