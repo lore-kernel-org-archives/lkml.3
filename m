@@ -1,55 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaLDRos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:44:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28905 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632AbaLDRoq (ORCPT
+	id S1754327AbaLDRpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:45:46 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:54678 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaLDRpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:44:46 -0500
-Message-ID: <54809D7F.4020901@oracle.com>
-Date: Thu, 04 Dec 2014 09:44:31 -0800
-From: Shirley Ma <shirley.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 4 Dec 2014 12:45:44 -0500
 MIME-Version: 1.0
-To: Jeff Layton <jeff.layton@primarydata.com>
-CC: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
- nfsd
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>	<20141203121118.21a32fe1@notabene.brown>	<20141202202946.1e0f399b@tlielax.poochiereds.net>	<20141203155649.GB5013@htj.dyndns.org>	<20141203110405.5ecc85df@tlielax.poochiereds.net>	<20141203140202.7865bedb@tlielax.poochiereds.net>	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>	<20141203142034.5c14529d@tlielax.poochiereds.net>	<CAHQdGtSoep_F82tDUoxKar+QvmL1tdHsYgYSrYtktndYJP8g5A@mail.gmail.com>	<20141203152147.2ca6c6fd@tlielax.poochiereds.net>	<CAHQdGtSbkvkGnDykEn0RnDJ5infX39N8cQObhDod+Vy4KX3Gnw@mail.gmail.com>	<20141204064711.72d48317@tlielax.poochiereds.net>	<5480971D.9010102@oracle.com> <20141204122845.3f9e3a04@tlielax.poochiereds.net>
-In-Reply-To: <20141204122845.3f9e3a04@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1417687974-18681-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1417166995-10803-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1417687974-18681-1-git-send-email-daniel.vetter@ffwll.ch>
+Date: Thu, 4 Dec 2014 09:45:44 -0800
+Message-ID: <CALAqxLWU-jo_V6A1s0Wvr3VA0P0pkPxv-JmOFBFDZdKCM_8etQ@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: compute wait_ioctl timeout correctly
+From: John Stultz <john.stultz@linaro.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Gordon <david.s.gordon@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 09:28 AM, Jeff Layton wrote:
-> On Thu, 04 Dec 2014 09:17:17 -0800
-> Shirley Ma <shirley.ma@oracle.com> wrote:
-> 
->> > I am looking at how to reduce total RPC execution time in NFS/RDMA. mountstats output shows that RPC backlog wait is too long, but increasing the credit limit doesn't seem help. Would this patchset help reducing total RPC execution time? 
->> > 
->> > Shirley
->> > 
-> I'm not sure. It depends on why you're seeing a backlog.
+On Thu, Dec 4, 2014 at 2:12 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> We've lost the +1 required for correct timeouts in
+>
+> commit 5ed0bdf21a85d78e04f89f15ccf227562177cbd9
+> Author: Thomas Gleixner <tglx@linutronix.de>
+> Date:   Wed Jul 16 21:05:06 2014 +0000
+>
+>     drm: i915: Use nsec based interfaces
+>
+>     Use ktime_get_raw_ns() and get rid of the back and forth timespec
+>     conversions.
+>
+>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>     Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>     Signed-off-by: John Stultz <john.stultz@linaro.org>
+>
+> So fix this up by reinstating our handrolled _timeout function. While
+> at it bother with handling MAX_JIFFIES.
+>
+> v2: Convert to usecs (we don't care about the accuracy anyway) first
+> to avoid overflow issues Dave Gordon spotted.
+>
+> v3: Drop the explicit MAX_JIFFY_OFFSET check, usecs_to_jiffies should
+> take care of that already. It might be a bit too enthusiastic about it
+> though.
+>
+> v4: Chris has a much nicer color, so use his implementation.
+>
+> This requires to export nsec_to_jiffies from time.c.
+>
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: Dave Gordon <david.s.gordon@intel.com>
+> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82749
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+> ---
+>  drivers/gpu/drm/i915/i915_drv.h | 5 +++++
+>  drivers/gpu/drm/i915/i915_gem.c | 3 ++-
+>  kernel/time/time.c              | 1 +
+>  3 files changed, 8 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+> index 049482f5d9ac..564a45f4a0ab 100644
+> --- a/drivers/gpu/drm/i915/i915_drv.h
+> +++ b/drivers/gpu/drm/i915/i915_drv.h
+> @@ -3097,6 +3097,11 @@ static inline unsigned long msecs_to_jiffies_timeout(const unsigned int m)
+>         return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+>  }
+>
+> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
+> +{
+> +        return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
+> +}
+> +
+>  static inline unsigned long
+>  timespec_to_jiffies_timeout(const struct timespec *value)
+>  {
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index 9d362d320d82..04a9f26407ae 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -1226,7 +1226,8 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
+>         if (i915_gem_request_completed(req, true))
+>                 return 0;
+>
+> -       timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)*timeout) : 0;
+> +       timeout_expire = timeout ?
+> +               jiffies + nsecs_to_jiffies_timeout((u64)*timeout) : 0;
+>
+>         if (INTEL_INFO(dev)->gen >= 6 && ring->id == RCS && can_wait_boost(file_priv)) {
+>                 gen6_rps_boost(dev_priv);
+> diff --git a/kernel/time/time.c b/kernel/time/time.c
+> index a9ae20fb0b11..8fae82ca5cbf 100644
+> --- a/kernel/time/time.c
+> +++ b/kernel/time/time.c
+> @@ -745,6 +745,7 @@ u64 nsecs_to_jiffies64(u64 n)
+>         return div_u64(n * 9, (9ull * NSEC_PER_SEC + HZ / 2) / HZ);
+>  #endif
+>  }
+> +EXPORT_SYMBOL(nsecs_to_jiffies64);
 
-What's the major factors contributing RPC backlog wait time? I guess I need to probe the backlog wait path to display fine-grained latency cost.
- 
-> So far, my testing still shows this to be slightly (~2%) slower than the
-> same setup running a threaded nfsd, but that could be different with a
-> NUMA server or faster disks.
-> 
-> Probably there is some more tuning to do here before this is quite
-> ready for prime-time. It may be worth testing in your environment
-> though if you have the time and ability to do so.
-> 
->> > On 12/04/2014 03:47 AM, Jeff Layton wrote:
->>> > > I was using ftrace with the sunrpc:* and workqueue:* tracepoints, and
->>> > > had a simple perl script to postprocess the trace info to figure out
->>> > > average/min/max latency.
+
+For the sake of the fix,
+Acked-by: John Stultz <john.stultz@linaro.org>
+
+But I'll likely follow this (eventually - since its going through the
+drm tree) with a cleanup patch moving nsecs_to_jiffies_timeout over to
+time.c.
+
+thanks
+-john
