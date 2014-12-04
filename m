@@ -1,106 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaLDUR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:17:27 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50159 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaLDURZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:17:25 -0500
+	id S1754622AbaLDUTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:19:18 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:60025 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877AbaLDUTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 15:19:17 -0500
+Date: Thu, 4 Dec 2014 15:19:05 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Qiang Huang <h.huangqiang@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, oom: remove gfp helper function
+Message-ID: <20141204201905.GA17790@phnom.home.cmpxchg.org>
+References: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
+ <20141127102547.GA18833@dhcp22.suse.cz>
+ <20141201233040.GB29642@phnom.home.cmpxchg.org>
+ <20141203155222.GH23236@dhcp22.suse.cz>
+ <20141203181509.GA24567@phnom.home.cmpxchg.org>
+ <20141204151758.GC25001@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-References: <1417718366-14310-1-git-send-email-joestringer@nicira.com>
-Date: Thu, 4 Dec 2014 12:17:24 -0800
-Message-ID: <CA+mtBx_BiJ526jop1tLhx1ji4beRufQRhiN9nfFBWLnr25DMww@mail.gmail.com>
-Subject: Re: [PATCHv3 net] i40e: Implement ndo_gso_check()
-From: Tom Herbert <therbert@google.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: Linux Netdev List <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jesse Gross <jesse@nicira.com>,
-        Shannon Nelson <shannon.nelson@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204151758.GC25001@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 10:39 AM, Joe Stringer <joestringer@nicira.com> wrote:
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for IPIP, GRE, UDP tunnels.
->
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
-> v3: Drop IPIP and GRE (no driver support even though hw supports it).
->     Check for UDP outer protocol for UDP tunnels.
-> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
->     Add MAX_INNER_LENGTH (as 80).
-> ---
->  drivers/net/ethernet/intel/i40e/i40e_main.c |   26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
->
-> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> index c3a7f4a..0d6493a 100644
-> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> @@ -7447,6 +7447,31 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
->
->  #endif /* USE_DEFAULT_FDB_DEL_DUMP */
->  #endif /* HAVE_FDB_OPS */
-> +static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
-> +{
-> +       if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
-> +               unsigned char *ihdr;
-> +
-> +               if (skb->protocol != IPPROTO_UDP ||
-> +                   skb->inner_protocol_type != ENCAP_TYPE_ETHER)
-> +                       return false;
-> +
-> +               if (skb->inner_protocol == htons(ETH_P_TEB))
-> +                       ihdr = skb_inner_mac_header(skb);
-> +               else if (skb->inner_protocol == htons(ETH_P_IP) ||
-> +                        skb->inner_protocol == htons(ETH_P_IPV6))
-> +                       ihdr = skb_inner_network_header(skb);
-> +               else
-> +                       return false;
-> +
+On Thu, Dec 04, 2014 at 04:17:58PM +0100, Michal Hocko wrote:
+> On Wed 03-12-14 13:15:09, Johannes Weiner wrote:
+> > On Wed, Dec 03, 2014 at 04:52:22PM +0100, Michal Hocko wrote:
+> > > On Mon 01-12-14 18:30:40, Johannes Weiner wrote:
+> > > > On Thu, Nov 27, 2014 at 11:25:47AM +0100, Michal Hocko wrote:
+> > > > > On Wed 26-11-14 14:17:32, David Rientjes wrote:
+> > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > > --- a/mm/page_alloc.c
+> > > > > > +++ b/mm/page_alloc.c
+> > > > > > @@ -2706,7 +2706,7 @@ rebalance:
+> > > > > >  	 * running out of options and have to consider going OOM
+> > > > > >  	 */
+> > > > > >  	if (!did_some_progress) {
+> > > > > > -		if (oom_gfp_allowed(gfp_mask)) {
+> > > > > 		/*
+> > > > > 		 * Do not attempt to trigger OOM killer for !__GFP_FS
+> > > > > 		 * allocations because it would be premature to kill
+> > > > > 		 * anything just because the reclaim is stuck on
+> > > > > 		 * dirty/writeback pages.
+> > > > > 		 * __GFP_NORETRY allocations might fail and so the OOM
+> > > > > 		 * would be more harmful than useful.
+> > > > > 		 */
+> > > > 
+> > > > I don't think we need to explain the individual flags, but it would
+> > > > indeed be useful to remark here that we shouldn't OOM kill from
+> > > > allocations contexts with (severely) limited reclaim abilities.
+> > > 
+> > > Is __GFP_NORETRY really related to limited reclaim abilities? I thought
+> > > it was merely a way to tell the allocator to fail rather than spend too
+> > > much time reclaiming.
+> > 
+> > And you wouldn't call that "limited reclaim ability"?
+> 
+> I really do not want to go into language lawyering here. But to me the
+> reclaim ability is what the reclaim is capable to do with the given gfp.
 
-Wow, this is getting complicated! :-( It's not clear that the protocol
-specific checks are needed here since it looks like the header length
-is being passed to the device later on. Also, I think we need
-skb_inner_mac_header(skb) - skb_transport_header(skb) to always work
-to give the length of the encapsulation headers (in case there is no
-real inner mac header, then that offset should be for the network
-header).
+I was explicitely talking about the reclaim abilities of the
+allocation context, in the context of the allocator.  Surely that
+includes how often the task can call try_to_free_pages()?
 
-So would a simple check like this work:
+> And __GFP_NORETRY is completely irrelevant for the reclaim. It tells the
+> allocator how hard it should try (similar like __GFP_REPEAT or
+> __GFP_NOFAIL) unlike __GFP_FS which restricts the reclaim in its
+> operation.
 
-if (skb->encapsulation &&
-    (skb_inner_mac_header(skb) - skb_transport_header(skb)) >
-MAX_TUNNEL_HDR_LEN)
-       return false;
+Tells the allocator how hard to try *what*?  It's not just looking at
+the freelists in a tight loop.  It's reclaiming memory.
 
-> +#define MAX_TUNNEL_HDR_LEN     80
-> +               if (ihdr - skb_transport_header(skb) > MAX_TUNNEL_HDR_LEN)
-> +                       return false;
-> +       }
-> +
-> +       return true;
-> +}
-> +
->  static const struct net_device_ops i40e_netdev_ops = {
->         .ndo_open               = i40e_open,
->         .ndo_stop               = i40e_close,
-> @@ -7487,6 +7512,7 @@ static const struct net_device_ops i40e_netdev_ops = {
->         .ndo_fdb_dump           = i40e_ndo_fdb_dump,
->  #endif
->  #endif
-> +       .ndo_gso_check          = i40e_gso_check,
->  };
->
->  /**
-> --
-> 1.7.10.4
->
+You're still thinking about the implementation and get distracted by
+the detail that the allocator's reclaim logic is living in a separate
+code file.  Look at the architecture.  The GFP flags apply to the
+freelist manager and the reclaim code as one big allocator machine
+that goes off to get pages, from wherever.  And anything that is
+taking pages that are not already on the freelist must be reclaiming
+them from somewhere else, by definition.  Thus, the allocation
+context's reclaim ability includes whether it can free or migrate used
+pages on its own (__GFP_WAIT), whether it can scan and migrate pages
+indefinitely or not (__GFP_NOFAIL and __GFP_NORETRY), and whether it
+can write and wait for the pages it looks at (__GFP_FS and __GFP_IO).
+
+OOM killing is just another way to reclaim, but the point here is that
+it's so disruptive that we want to avoid it unless all other means to
+reclaim memory are exhausted.  And yes, continuing to scan pages *is*
+a means for the allocator to reclaim memory, and we don't OOM kill
+when that is still making progress!
+
+That being said, you ARE right that __GFP_FS and __GFP_NORETRY apply
+to different components of the allocator.  While they should have the
+same effect on OOM-killing, the fact that they are checked together in
+the same branch is a strong signal of how weird this code actually is.
+
+How about the following?  It changes the code flow to clarify what's
+actually going on there and gets rid of oom_gfp_allowed() altogether,
+instead of awkwardly trying to explain something that has no meaning.
+
+Btw, it looks like there is a bug with oom_killer_disabled, because it
+will return NULL for __GFP_NOFAIL.
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: page_alloc: embed OOM killing naturally into allocation
+ slowpath
+
+The OOM killing invocation does a lot of duplicative checks against
+the task's allocation context.  Rework it to take advantage of the
+existing checks in the allocator slowpath.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/oom.h |  5 ----
+ mm/page_alloc.c     | 80 +++++++++++++++++++++++------------------------------
+ 2 files changed, 35 insertions(+), 50 deletions(-)
+
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index e8d6e1058723..4971874f54db 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -85,11 +85,6 @@ static inline void oom_killer_enable(void)
+ 	oom_killer_disabled = false;
+ }
+ 
+-static inline bool oom_gfp_allowed(gfp_t gfp_mask)
+-{
+-	return (gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY);
+-}
+-
+ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+ 
+ /* sysctls */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 616a2c956b4b..2df99ca56e28 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2232,12 +2232,21 @@ static inline struct page *
+ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int classzone_idx, int migratetype)
++	int classzone_idx, int migratetype, unsigned long *did_some_progress)
+ {
+ 	struct page *page;
+ 
+-	/* Acquire the per-zone oom lock for each zone */
++	*did_some_progress = 0;
++
++	if (oom_killer_disabled)
++		return NULL;
++
++	/*
++	 * Acquire the per-zone oom lock for each zone.  If that
++	 * fails, somebody else is making progress for us.
++	 */
+ 	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
++		*did_some_progress = 1;
+ 		schedule_timeout_uninterruptible(1);
+ 		return NULL;
+ 	}
+@@ -2263,12 +2272,18 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 		goto out;
+ 
+ 	if (!(gfp_mask & __GFP_NOFAIL)) {
++		/* Coredumps can quickly deplete all memory reserves */
++		if (current->flags & PF_DUMPCORE)
++			goto out;
+ 		/* The OOM killer will not help higher order allocs */
+ 		if (order > PAGE_ALLOC_COSTLY_ORDER)
+ 			goto out;
+ 		/* The OOM killer does not needlessly kill tasks for lowmem */
+ 		if (high_zoneidx < ZONE_NORMAL)
+ 			goto out;
++		/* The OOM killer does not compensate for light reclaim */
++		if (!(gfp_mask & __GFP_FS))
++			goto out;
+ 		/*
+ 		 * GFP_THISNODE contains __GFP_NORETRY and we never hit this.
+ 		 * Sanity check for bare calls of __GFP_THISNODE, not real OOM.
+@@ -2281,7 +2296,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	}
+ 	/* Exhausted what can be done so it's blamo time */
+ 	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
+-
++	*did_some_progress = 1;
+ out:
+ 	oom_zonelist_unlock(zonelist, gfp_mask);
+ 	return page;
+@@ -2571,7 +2586,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
+ 
+-restart:
+ 	if (!(gfp_mask & __GFP_NO_KSWAPD))
+ 		wake_all_kswapds(order, zonelist, high_zoneidx,
+ 				preferred_zone, nodemask);
+@@ -2701,51 +2715,27 @@ rebalance:
+ 	if (page)
+ 		goto got_pg;
+ 
+-	/*
+-	 * If we failed to make any progress reclaiming, then we are
+-	 * running out of options and have to consider going OOM
+-	 */
+-	if (!did_some_progress) {
+-		if (oom_gfp_allowed(gfp_mask)) {
+-			if (oom_killer_disabled)
+-				goto nopage;
+-			/* Coredumps can quickly deplete all memory reserves */
+-			if ((current->flags & PF_DUMPCORE) &&
+-			    !(gfp_mask & __GFP_NOFAIL))
+-				goto nopage;
+-			page = __alloc_pages_may_oom(gfp_mask, order,
+-					zonelist, high_zoneidx,
+-					nodemask, preferred_zone,
+-					classzone_idx, migratetype);
+-			if (page)
+-				goto got_pg;
+-
+-			if (!(gfp_mask & __GFP_NOFAIL)) {
+-				/*
+-				 * The oom killer is not called for high-order
+-				 * allocations that may fail, so if no progress
+-				 * is being made, there are no other options and
+-				 * retrying is unlikely to help.
+-				 */
+-				if (order > PAGE_ALLOC_COSTLY_ORDER)
+-					goto nopage;
+-				/*
+-				 * The oom killer is not called for lowmem
+-				 * allocations to prevent needlessly killing
+-				 * innocent tasks.
+-				 */
+-				if (high_zoneidx < ZONE_NORMAL)
+-					goto nopage;
+-			}
+-
+-			goto restart;
+-		}
+-	}
+-
+ 	/* Check if we should retry the allocation */
+ 	pages_reclaimed += did_some_progress;
+ 	if (should_alloc_retry(gfp_mask, order, did_some_progress,
+ 						pages_reclaimed)) {
++		/*
++		 * If we fail to make progress by freeing individual
++		 * pages, but the allocation wants us to keep going,
++		 * start OOM killing tasks.
++		 */
++		if (!did_some_progress) {
++			page = __alloc_pages_may_oom(gfp_mask, order, zonelist,
++						high_zoneidx, nodemask,
++						preferred_zone, classzone_idx,
++						migratetype,&did_some_progress);
++			if (page)
++				goto got_pg;
++			if (!did_some_progress) {
++				BUG_ON(gfp_mask & __GFP_NOFAIL);
++				goto nopage;
++			}
++		}
+ 		/* Wait for some write requests to complete then retry */
+ 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+-- 
+2.1.3
+
