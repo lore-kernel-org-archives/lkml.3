@@ -1,271 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262AbaLDVbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:31:33 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:58614 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaLDVbc (ORCPT
+	id S1754808AbaLDVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:31:56 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61105 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754759AbaLDVby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:31:32 -0500
-Subject: [PATCH 5/5] pcmcia: add a new resource manager for non ISA systems
-From: Alan Cox <alan@linux.intel.com>
-To: linux-kernel@vger.kernel.org, linux-pcmica@lists.infradead.org
-Date: Thu, 04 Dec 2014 21:31:22 +0000
-Message-ID: <20141204213108.1351.2478.stgit@localhost.localdomain>
-In-Reply-To: <20141204212746.1351.89165.stgit@localhost.localdomain>
-References: <20141204212746.1351.89165.stgit@localhost.localdomain>
-User-Agent: StGit/0.17-dirty
+	Thu, 4 Dec 2014 16:31:54 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com, Al Stone <al.stone@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+Date: Thu, 04 Dec 2014 22:53:21 +0100
+Message-ID: <2093670.E6uys7cU8v@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141204104819.25015C40992@trevor.secretlab.ca>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <1926483.B4ieFnCBlM@vostro.rjw.lan> <20141204104819.25015C40992@trevor.secretlab.ca>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a pure PCI platform we don't actually need all the complexity of the
-rsrc_nonstatic manager, in fact we can just work directly with the pci
-allocators and avoid all the complexity (and code bloat).
+On Thursday, December 04, 2014 10:48:19 AM Grant Likely wrote:
+> On Tue, 25 Nov 2014 22:40:53 +0100
+> , "Rafael J. Wysocki" <rjw@rjwysocki.net>
+>  wrote:
+> > On Tuesday, November 25, 2014 08:27:22 PM Mark Brown wrote:
+> > > 
+> > > --ReaqsoxgOBHFXBhH
+> > > Content-Type: text/plain; charset=us-ascii
+> > > Content-Disposition: inline
+> > > 
+> > > On Tue, Nov 25, 2014 at 09:31:27PM +0100, Rafael J. Wysocki wrote:
+> > > > On Tuesday, November 25, 2014 11:07:06 AM Darren Hart wrote:
+> > > 
+> > > > > This is a current topic with the ACPI working group. We have the
+> > > > > following document:
+> > > 
+> > > > > http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
+> > > 
+> > > > This hasn't been discussed a lot at the meetings I attended.
+> > > 
+> > > > The bindings management process is being set up within the UEFI Forum, but I'm
+> > > > not sure if/how the existing DT bindings documented in the kernel tree are
+> > > > going to be covered by it ATM.
+> > > 
+> > > Al Stone (CCed) pointed me at the following two documents:
+> > > 
+> > > http://www.uefi.org/sites/default/files/resources/web-page-v2.pdf
+> > > http://www.uefi.org/sites/default/files/resources/nic-request-v2.pdf
+> > > 
+> > > (the first one being the actual process in so far as it exists).  The
+> > > process appears to be to mail requests in a specific format to the ASWG
+> > > chairperson (the address is apparently supposed to be awsg@uefi.org).
+> > > It looks like all the properties are expected to end up in one or more
+> > > PDF files like the second one.
+> > > 
+> > > My initial thought would be to require that we send any DT properties
+> > > defined for devices with ACPI identifiers registered there and hope the
+> > > volume doesn't DoS them.
+> > 
+> > We absolutely need to start registering the existing bindings in there, but
+> > that needs to be rate limited somehow, because the process may not be very
+> > efficient to start with.
+> 
+> Beyond having the document point to the existing DT binding
+> documentation, I think this is a non-starter. It won't be helpful for
+> anyone to have two separate repositories containing the same bindings.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- drivers/pcmcia/Kconfig    |   12 ++-
- drivers/pcmcia/Makefile   |    1 
- drivers/pcmcia/rsrc_pci.c |  172 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 182 insertions(+), 3 deletions(-)
- create mode 100644 drivers/pcmcia/rsrc_pci.c
+If they *are* the same, it won't.  But at least in some cases (eg. GPIO)
+they won't be the same.
 
-diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
-index b0ce7cd..2bd21a6 100644
---- a/drivers/pcmcia/Kconfig
-+++ b/drivers/pcmcia/Kconfig
-@@ -69,7 +69,8 @@ config YENTA
- 	tristate "CardBus yenta-compatible bridge support"
- 	depends on PCI
- 	select CARDBUS if !EXPERT
--	select PCCARD_NONSTATIC if PCMCIA != n
-+	select PCCARD_NONSTATIC if PCMCIA != n && ISA
-+	select PCCARD_PCI if PCMCIA !=n && !ISA
- 	---help---
- 	  This option enables support for CardBus host bridges.  Virtually
- 	  all modern PCMCIA bridges are CardBus compatible.  A "bridge" is
-@@ -109,7 +110,8 @@ config YENTA_TOSHIBA
- config PD6729
- 	tristate "Cirrus PD6729 compatible bridge support"
- 	depends on PCMCIA && PCI
--	select PCCARD_NONSTATIC
-+	select PCCARD_NONSTATIC if PCMCIA != n && ISA
-+	select PCCARD_PCI if PCMCIA !=n && !ISA
- 	help
- 	  This provides support for the Cirrus PD6729 PCI-to-PCMCIA bridge
- 	  device, found in some older laptops and PCMCIA card readers.
-@@ -117,7 +119,8 @@ config PD6729
- config I82092
- 	tristate "i82092 compatible bridge support"
- 	depends on PCMCIA && PCI
--	select PCCARD_NONSTATIC
-+	select PCCARD_NONSTATIC if PCMCIA != n && ISA
-+	select PCCARD_PCI if PCMCIA !=n && !ISA
- 	help
- 	  This provides support for the Intel I82092AA PCI-to-PCMCIA bridge device,
- 	  found in some older laptops and more commonly in evaluation boards for the
-@@ -289,6 +292,9 @@ config ELECTRA_CF
- 	  Say Y here to support the CompactFlash controller on the
- 	  PA Semi Electra eval board.
- 
-+config PCCARD_PCI
-+	bool
-+
- config PCCARD_NONSTATIC
- 	bool
- 
-diff --git a/drivers/pcmcia/Makefile b/drivers/pcmcia/Makefile
-index 27e94b3..f1a7ca0 100644
---- a/drivers/pcmcia/Makefile
-+++ b/drivers/pcmcia/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_PCMCIA)				+= pcmcia.o
- pcmcia_rsrc-y					+= rsrc_mgr.o
- pcmcia_rsrc-$(CONFIG_PCCARD_NONSTATIC)		+= rsrc_nonstatic.o
- pcmcia_rsrc-$(CONFIG_PCCARD_IODYN)		+= rsrc_iodyn.o
-+pcmcia_rsrc-$(CONFIG_PCCARD_PCI)		+= rsrc_pci.o
- obj-$(CONFIG_PCCARD)				+= pcmcia_rsrc.o
- 
- 
-diff --git a/drivers/pcmcia/rsrc_pci.c b/drivers/pcmcia/rsrc_pci.c
-new file mode 100644
-index 0000000..8934d3c
---- /dev/null
-+++ b/drivers/pcmcia/rsrc_pci.c
-@@ -0,0 +1,172 @@
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+
-+#include <pcmcia/ss.h>
-+#include <pcmcia/cistpl.h>
-+#include "cs_internal.h"
-+
-+
-+struct pcmcia_align_data {
-+	unsigned long	mask;
-+	unsigned long	offset;
-+};
-+
-+static resource_size_t pcmcia_align(void *align_data,
-+				const struct resource *res,
-+				resource_size_t size, resource_size_t align)
-+{
-+	struct pcmcia_align_data *data = align_data;
-+	resource_size_t start;
-+
-+	start = (res->start & ~data->mask) + data->offset;
-+	if (start < res->start)
-+		start += data->mask + 1;
-+	return start;
-+}
-+
-+static struct resource *find_io_region(struct pcmcia_socket *s,
-+					unsigned long base, int num,
-+					unsigned long align)
-+{
-+	struct resource *res = pcmcia_make_resource(0, num, IORESOURCE_IO,
-+						dev_name(&s->dev));
-+	struct pcmcia_align_data data;
-+	int ret;
-+
-+	data.mask = align - 1;
-+	data.offset = base & data.mask;
-+
-+	ret = pci_bus_alloc_resource(s->cb_dev->bus, res, num, 1,
-+					     base, 0, pcmcia_align, &data);
-+	if (ret != 0) {
-+		kfree(res);
-+		res = NULL;
-+	}
-+	return res;
-+}
-+
-+static int res_pci_find_io(struct pcmcia_socket *s, unsigned int attr,
-+			unsigned int *base, unsigned int num,
-+			unsigned int align, struct resource **parent)
-+{
-+	int i, ret = 0;
-+
-+	/* Check for an already-allocated window that must conflict with
-+	 * what was asked for.  It is a hack because it does not catch all
-+	 * potential conflicts, just the most obvious ones.
-+	 */
-+	for (i = 0; i < MAX_IO_WIN; i++) {
-+		if (!s->io[i].res)
-+			continue;
-+
-+		if (!*base)
-+			continue;
-+
-+		if ((s->io[i].res->start & (align-1)) == *base)
-+			return -EBUSY;
-+	}
-+
-+	for (i = 0; i < MAX_IO_WIN; i++) {
-+		struct resource *res = s->io[i].res;
-+		unsigned int try;
-+
-+		if (res && (res->flags & IORESOURCE_BITS) !=
-+			(attr & IORESOURCE_BITS))
-+			continue;
-+
-+		if (!res) {
-+			if (align == 0)
-+				align = 0x10000;
-+
-+			res = s->io[i].res = find_io_region(s, *base, num,
-+								align);
-+			if (!res)
-+				return -EINVAL;
-+
-+			*base = res->start;
-+			s->io[i].res->flags =
-+				((res->flags & ~IORESOURCE_BITS) |
-+					(attr & IORESOURCE_BITS));
-+			s->io[i].InUse = num;
-+			*parent = res;
-+			return 0;
-+		}
-+
-+		/* Try to extend top of window */
-+		try = res->end + 1;
-+		if ((*base == 0) || (*base == try)) {
-+			ret = adjust_resource(s->io[i].res, res->start,
-+					      resource_size(res) + num);
-+			if (ret)
-+				continue;
-+			*base = try;
-+			s->io[i].InUse += num;
-+			*parent = res;
-+			return 0;
-+		}
-+
-+		/* Try to extend bottom of window */
-+		try = res->start - num;
-+		if ((*base == 0) || (*base == try)) {
-+			ret = adjust_resource(s->io[i].res,
-+					      res->start - num,
-+					      resource_size(res) + num);
-+			if (ret)
-+				continue;
-+			*base = try;
-+			s->io[i].InUse += num;
-+			*parent = res;
-+			return 0;
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
-+static struct resource *res_pci_find_mem(u_long base, u_long num,
-+		u_long align, int low, struct pcmcia_socket *s)
-+{
-+	struct resource *res = pcmcia_make_resource(0, num, IORESOURCE_MEM,
-+						dev_name(&s->dev));
-+	struct pcmcia_align_data data;
-+	unsigned long min;
-+	int ret;
-+
-+	if (align < 0x20000)
-+		align = 0x20000;
-+	data.mask = align - 1;
-+	data.offset = base & data.mask;
-+
-+	min = 0;
-+	if (!low)
-+		min = 0x100000UL;
-+
-+	ret = pci_bus_alloc_resource(s->cb_dev->bus,
-+			res, num, 1, min, 0,
-+			pcmcia_align, &data);
-+
-+	if (ret != 0) {
-+		kfree(res);
-+		res = NULL;
-+	}
-+	return res;
-+}
-+
-+
-+static int res_pci_init(struct pcmcia_socket *s)
-+{
-+	if (!s->cb_dev || (!s->features & SS_CAP_PAGE_REGS)) {
-+		dev_err(&s->dev, "not supported by res_pci\n");
-+		return -EOPNOTSUPP;
-+	}
-+	return 0;
-+}
-+
-+struct pccard_resource_ops pccard_nonstatic_ops = {
-+	.validate_mem = NULL,
-+	.find_io = res_pci_find_io,
-+	.find_mem = res_pci_find_mem,
-+	.init = res_pci_init,
-+	.exit = NULL,
-+};
-+EXPORT_SYMBOL(pccard_nonstatic_ops);
+Also we need a way to say "this binding has been documented elsewhere, see XYZ
+and this is how to translate the format" in the UEFI documentation for the
+existing bindings that will be the same.
 
+> They will get out of sync and we will have pain as a result.
+> 
+> For existing bindings we need to have a way to share the documentation,
+> and I don't think we can even talk about whether it makes sense to
+> migrate the documetation to the UEFI managed repo before the UEFI process is
+> fully flushed out.
+
+Agreed.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
