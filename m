@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688AbaLDKTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:19:07 -0500
-Received: from mail-bn1bon0118.outbound.protection.outlook.com ([157.56.111.118]:30529
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752992AbaLDKTF convert rfc822-to-8bit (ORCPT
+	id S1753843AbaLDKTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:19:23 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:62749 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762AbaLDKTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:19:05 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "alexander.stein@systec-electronic.com" 
-	<alexander.stein@systec-electronic.com>
-Subject: RE: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Topic: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Index: AQHQDtn5j6GPqUxwWEaud+fx6yvb95x9n9SAgAELugCAAGolgIAAAmBwgAAOO4CAAAulAIAAAmaAgAAAsHA=
-Date: Thu, 4 Dec 2014 10:03:43 +0000
-Message-ID: <BY2PR0301MB0613088FB4D7A4796AEAF2219B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
- <4810522.t9QFQYHtHI@wuerfel>
- <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <548016D9.6030006@ti.com>
- <BY2PR0301MB0613ABEA1410C04CF07C1C7C9B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <548024C7.3060004@ti.com>
- <BY2PR0301MB061372E00518F169BCF2FFFA9B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <5480308F.6070607@ti.com>
-In-Reply-To: <5480308F.6070607@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-forefront-prvs: 041517DFAB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(479174003)(377454003)(13464003)(189002)(24454002)(46102003)(76576001)(92726001)(122556002)(40100003)(2656002)(93886004)(87936001)(19580405001)(19580395003)(99396003)(120916001)(97736003)(4396001)(92566001)(21056001)(86362001)(20776003)(64706001)(66066001)(33656002)(101416001)(76176999)(54356999)(54206007)(68736005)(50986999)(54606007)(110136001)(74316001)(62966003)(106356001)(106116001)(105586002)(77156002)(99286002)(31966008)(95666004)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Dec 2014 05:19:19 -0500
+Date: Thu, 4 Dec 2014 02:19:15 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ net-next tree
+Message-ID: <20141204101915.GA9689@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org
+References: <20141201181933.6dfaad66@canb.auug.org.au>
+ <547C19ED.10201@broadcom.com>
+ <20141203083655.GA5418@hudson.localdomain>
+ <20141203105148.GA7633@hudson.localdomain>
+ <547F06BC.8060000@broadcom.com>
+ <20141203210659.GA8974@hudson.localdomain>
+ <20141203214128.GB8974@hudson.localdomain>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141203214128.GB8974@hudson.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+Arend,
 
-Thanks very much for your help.
+I haven't heard if you have looked at this bug at all yet.  I was
+curious so I looked at it some more and I have some more information
+that might be helpful.
 
-I will have a try these days.
+On Wed, Dec 03, 2014 at 01:41:28PM -0800, Jeremiah Mahler wrote:
+> On Wed, Dec 03, 2014 at 01:06:59PM -0800, Jeremiah Mahler wrote:
+> > Arend,
+> > 
+[...]
+> > > >
+> > > >I took a look at the patch that is causing this problem (d32394fae95).
+> > > >My config negates everything in the patch except for a one line change
+> > > >to ath9k/pci.c.  If I remove this change (shown below) the problem goes
+> > > >away.
+> > > 
+> > > Ok. But then it will likely crash when you cat one of the changed debugfs
+> > > files. Guess this commit needs to be reverted entirely.
+> > > 
+[...]
 
-BRs
-Xiubo
+Referring to the code snippet below, notice that both pci_set_drvdata()
+and dev_set_drvdata() are called.  If the call to dev_set_drvdata() is
+removed the bug goes away.
 
+  drivers/net/wireless/ath/ath9k/pci.c
 
-> -----Original Message-----
-> From: Tomi Valkeinen [mailto:tomi.valkeinen@ti.com]
-> Sent: Thursday, December 04, 2014 6:00 PM
-> To: Xiubo Li-B47053
-> Cc: Arnd Bergmann; plagnioj@jcrosoft.com; linux-fbdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; shawn.guo@linaro.org; alexander.stein@systec-
-> electronic.com
-> Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-> 
-> On 04/12/14 11:54, Li.Xiubo@freescale.com wrote:
-> > Hi Tomi,
-> >
-> > Thanks for your information very much.
-> >
-> >>> Sorry for confusing, it was delayed for other reasons internal.
-> >>>
-> >>> I am not familiar about the DRM, and I'd like to know if the DRM driver
-> will
-> >> be
-> >>> support, should I also develop the libdrm too ? Or just coding in kernel
-> >> level ?
-> >>
-> >> For simple drm drivers (this looks like it would be a simple one), I
-> >> don't think there's any need for libdrm support. The generic DRM
-> >> interfaces should be enough, so just kernel level coding needed.
-> >>
-> >
-> > That's to say, if I am using the X11 server without any code in usrspace,
-> > If the DRM driver will support /dev/fbX, it could work correctly ?
-> 
-> Yes. DRM offers helper code to add /dev/fbX with not too many lines. You
-> can look at the docs and drm_fb_helper.c.
-> 
-> And X11 should work fine on top of that, using the X11 fbdev support.
-> 
->  Tomi
-> 
+  861     SET_IEEE80211_DEV(hw, &pdev->dev);
+  862     pci_set_drvdata(pdev, hw);
+  863
+  864     sc = hw->priv;
+  865     sc->hw = hw;
+  866     sc->dev = &pdev->dev;
+  867     dev_set_drvdata(sc->dev, sc);
+  868     sc->mem = pcim_iomap_table(pdev)[0];
+  869     sc->driver_data = id->driver_data;
 
+Translating the call to pci_set_drvdata() produces the following.
+
+  pci_set_drvdata(pdev, hw);
+    (translating from include/linux/pci.h)
+    dev_set_drvdata(&pdev->dev, hw)
+      (translating from include/linux/device.h)
+      &pdev->dev->driver = hw;
+
+And doing the same for dev_set_drvdata().
+
+  dev_set_drvdata(sc->dev, sc)
+    (sc->dev = &pdev->dev)
+    dev_set_drvdata(&pdev->dev, sc)
+      (translating from include/linux/device.h)
+      &pdev->dev->driver = sc;
+
+The same destination is being set with two different values.  Then calls
+to pci_get_drvdata(), which expect hw, are getting sc, and it breaks.
+
+-- 
+- Jeremiah Mahler
