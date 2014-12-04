@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaLDAOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:14:03 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60829 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806AbaLDAN7 (ORCPT
+	id S1752663AbaLDAOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:14:39 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53358 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131AbaLDAOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:13:59 -0500
+	Wed, 3 Dec 2014 19:14:00 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
@@ -16,9 +16,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 3/4] perf tools: add hardware breakpoint bp_len test cases
-Date: Thu,  4 Dec 2014 01:13:44 +0100
-Message-Id: <1417652025-2305-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/4] perf/x86: Remove get_hbp_len and replace with bp_len
+Date: Thu,  4 Dec 2014 01:13:45 +0100
+Message-Id: <1417652025-2305-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
 References: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
@@ -27,6 +27,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jacob Shin <jacob.w.shin@gmail.com>
+
+Clean up the logic for determining the breakpoint length
 
 Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
 Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
@@ -39,85 +41,52 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: xiakaixu <xiakaixu@huawei.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/tests/parse-events.c | 58 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ arch/x86/kernel/hw_breakpoint.c | 25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 7f2f51f..4169f46 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1145,6 +1145,49 @@ static int test__pinned_group(struct perf_evlist *evlist)
- 	return 0;
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index b5cb0c5..7114ba2 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -167,29 +167,6 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
+ 		set_dr_addr_mask(0, i);
  }
  
-+static int test__checkevent_breakpoint_len(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = perf_evlist__first(evlist);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type", (HW_BREAKPOINT_R | HW_BREAKPOINT_W) ==
-+					 evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_1 ==
-+					evsel->attr.bp_len);
-+
-+	return 0;
-+}
-+
-+static int test__checkevent_breakpoint_len_w(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = perf_evlist__first(evlist);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type", HW_BREAKPOINT_W ==
-+					 evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len", HW_BREAKPOINT_LEN_2 ==
-+					evsel->attr.bp_len);
-+
-+	return 0;
-+}
-+
-+static int
-+test__checkevent_breakpoint_len_rw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = perf_evlist__first(evlist);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint_rw(evlist);
-+}
-+
- static int count_tracepoints(void)
- {
- 	char events_path[PATH_MAX];
-@@ -1420,6 +1463,21 @@ static struct evlist_test test__events[] = {
- 		.check = test__pinned_group,
- 		.id    = 41,
- 	},
-+	{
-+		.name  = "mem:0/1",
-+		.check = test__checkevent_breakpoint_len,
-+		.id    = 42,
-+	},
-+	{
-+		.name  = "mem:0/2:w",
-+		.check = test__checkevent_breakpoint_len_w,
-+		.id    = 43,
-+	},
-+	{
-+		.name  = "mem:0/4:rw:u",
-+		.check = test__checkevent_breakpoint_len_rw_modifier,
-+		.id    = 44
-+	},
- #if defined(__s390x__)
- 	{
- 		.name  = "kvm-s390:kvm_s390_create_vm",
+-static int get_hbp_len(u8 hbp_len)
+-{
+-	unsigned int len_in_bytes = 0;
+-
+-	switch (hbp_len) {
+-	case X86_BREAKPOINT_LEN_1:
+-		len_in_bytes = 1;
+-		break;
+-	case X86_BREAKPOINT_LEN_2:
+-		len_in_bytes = 2;
+-		break;
+-	case X86_BREAKPOINT_LEN_4:
+-		len_in_bytes = 4;
+-		break;
+-#ifdef CONFIG_X86_64
+-	case X86_BREAKPOINT_LEN_8:
+-		len_in_bytes = 8;
+-		break;
+-#endif
+-	}
+-	return len_in_bytes;
+-}
+-
+ /*
+  * Check for virtual address in kernel space.
+  */
+@@ -200,7 +177,7 @@ int arch_check_bp_in_kernelspace(struct perf_event *bp)
+ 	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
+ 
+ 	va = info->address;
+-	len = get_hbp_len(info->len);
++	len = bp->attr.bp_len;
+ 
+ 	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
+ }
 -- 
 2.1.3
 
