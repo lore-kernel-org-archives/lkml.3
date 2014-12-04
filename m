@@ -1,457 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988AbaLDRwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 12:52:00 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:38100 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655AbaLDRvy (ORCPT
+	id S933005AbaLDRwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:52:04 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:27960 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932655AbaLDRwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:51:54 -0500
-From: Pieter Smith <pieter@boesman.nl>
-To: linux-kernel@vger.kernel.org
-Cc: Josh Triplett <josh@joshtriplett.org>, Pieter Smith <pieter@boesman.nl>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bertrand Jacquin <beber@meleeweb.net>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        fuse-devel@lists.sourceforge.net (open list:FUSE: FILESYSTEM...),
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hugh Dickins <hughd@google.com>, Iulia Manda <iulia.manda21@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        linux-api@vger.kernel.org (open list:ABI/API),
-        linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org (open list:KERNEL NFSD, SUNR...),
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
-        Oleg Nesterov <oleg@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
-        Tom Herbert <therbert@google.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
-Subject: [PATCH v6 1/7] fs: move sendfile syscall into fs/splice
-Date: Thu,  4 Dec 2014 18:50:49 +0100
-Message-Id: <1417715473-24110-2-git-send-email-pieter@boesman.nl>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1417715473-24110-1-git-send-email-pieter@boesman.nl>
-References: <1417715473-24110-1-git-send-email-pieter@boesman.nl>
+	Thu, 4 Dec 2014 12:52:01 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup for 3.19 #5
+Date: Thu, 4 Dec 2014 18:52:00 +0100
+Message-ID: <1417715520-30412-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sendfile functionally forms part of the splice group of syscalls (splice,
-vmsplice and tee). Grouping sendfile with splice paves the way to compiling out
-the splice group of syscalls for embedded systems that do not need these.
+Arnd, Olof, Kevin,
 
-add/remove: 0/0 grow/shrink: 7/2 up/down: 86/-61 (25)
-function                                     old     new   delta
-file_start_write                              34      68     +34
-file_end_write                                29      58     +29
-sys_pwritev                                  115     122      +7
-sys_preadv                                   115     122      +7
-fdput_pos                                     29      36      +7
-sys_pwrite64                                 115     116      +1
-sys_pread64                                  115     116      +1
-sys_tee                                      497     491      -6
-sys_splice                                  1075    1020     -55
+This is the last "cleanup" pull-request for 3.19 on my side. Most of the work
+was done by Arnd actually ;-)
+This simplifies even more the mach-at91 directory and remove a bunch of dead
+code. Arnd also wrote some more cleanup patches that I will keep for 3.20 as
+they modify files in a larger extent.
 
-Signed-off-by: Pieter Smith <pieter@boesman.nl>
----
- fs/read_write.c | 175 -------------------------------------------------------
- fs/splice.c     | 178 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 178 insertions(+), 175 deletions(-)
+Thanks, best regards,
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 7d9318c..d9451ba 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -1191,178 +1191,3 @@ COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
- }
- #endif
- 
--static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
--		  	   size_t count, loff_t max)
--{
--	struct fd in, out;
--	struct inode *in_inode, *out_inode;
--	loff_t pos;
--	loff_t out_pos;
--	ssize_t retval;
--	int fl;
--
--	/*
--	 * Get input file, and verify that it is ok..
--	 */
--	retval = -EBADF;
--	in = fdget(in_fd);
--	if (!in.file)
--		goto out;
--	if (!(in.file->f_mode & FMODE_READ))
--		goto fput_in;
--	retval = -ESPIPE;
--	if (!ppos) {
--		pos = in.file->f_pos;
--	} else {
--		pos = *ppos;
--		if (!(in.file->f_mode & FMODE_PREAD))
--			goto fput_in;
--	}
--	retval = rw_verify_area(READ, in.file, &pos, count);
--	if (retval < 0)
--		goto fput_in;
--	count = retval;
--
--	/*
--	 * Get output file, and verify that it is ok..
--	 */
--	retval = -EBADF;
--	out = fdget(out_fd);
--	if (!out.file)
--		goto fput_in;
--	if (!(out.file->f_mode & FMODE_WRITE))
--		goto fput_out;
--	retval = -EINVAL;
--	in_inode = file_inode(in.file);
--	out_inode = file_inode(out.file);
--	out_pos = out.file->f_pos;
--	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
--	if (retval < 0)
--		goto fput_out;
--	count = retval;
--
--	if (!max)
--		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
--
--	if (unlikely(pos + count > max)) {
--		retval = -EOVERFLOW;
--		if (pos >= max)
--			goto fput_out;
--		count = max - pos;
--	}
--
--	fl = 0;
--#if 0
--	/*
--	 * We need to debate whether we can enable this or not. The
--	 * man page documents EAGAIN return for the output at least,
--	 * and the application is arguably buggy if it doesn't expect
--	 * EAGAIN on a non-blocking file descriptor.
--	 */
--	if (in.file->f_flags & O_NONBLOCK)
--		fl = SPLICE_F_NONBLOCK;
--#endif
--	file_start_write(out.file);
--	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
--	file_end_write(out.file);
--
--	if (retval > 0) {
--		add_rchar(current, retval);
--		add_wchar(current, retval);
--		fsnotify_access(in.file);
--		fsnotify_modify(out.file);
--		out.file->f_pos = out_pos;
--		if (ppos)
--			*ppos = pos;
--		else
--			in.file->f_pos = pos;
--	}
--
--	inc_syscr(current);
--	inc_syscw(current);
--	if (pos > max)
--		retval = -EOVERFLOW;
--
--fput_out:
--	fdput(out);
--fput_in:
--	fdput(in);
--out:
--	return retval;
--}
--
--SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
--{
--	loff_t pos;
--	off_t off;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(get_user(off, offset)))
--			return -EFAULT;
--		pos = off;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
--{
--	loff_t pos;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
--			return -EFAULT;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--#ifdef CONFIG_COMPAT
--COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
--		compat_off_t __user *, offset, compat_size_t, count)
--{
--	loff_t pos;
--	off_t off;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(get_user(off, offset)))
--			return -EFAULT;
--		pos = off;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--
--COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
--		compat_loff_t __user *, offset, compat_size_t, count)
--{
--	loff_t pos;
--	ssize_t ret;
--
--	if (offset) {
--		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
--			return -EFAULT;
--		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
--		if (unlikely(put_user(pos, offset)))
--			return -EFAULT;
--		return ret;
--	}
--
--	return do_sendfile(out_fd, in_fd, NULL, count, 0);
--}
--#endif
-diff --git a/fs/splice.c b/fs/splice.c
-index f5cb9ba..c1a2861 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -28,6 +28,7 @@
- #include <linux/export.h>
- #include <linux/syscalls.h>
- #include <linux/uio.h>
-+#include <linux/fsnotify.h>
- #include <linux/security.h>
- #include <linux/gfp.h>
- #include <linux/socket.h>
-@@ -2039,3 +2040,180 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
- 
- 	return error;
- }
-+
-+static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
-+			   size_t count, loff_t max)
-+{
-+	struct fd in, out;
-+	struct inode *in_inode, *out_inode;
-+	loff_t pos;
-+	loff_t out_pos;
-+	ssize_t retval;
-+	int fl;
-+
-+	/*
-+	 * Get input file, and verify that it is ok..
-+	 */
-+	retval = -EBADF;
-+	in = fdget(in_fd);
-+	if (!in.file)
-+		goto out;
-+	if (!(in.file->f_mode & FMODE_READ))
-+		goto fput_in;
-+	retval = -ESPIPE;
-+	if (!ppos) {
-+		pos = in.file->f_pos;
-+	} else {
-+		pos = *ppos;
-+		if (!(in.file->f_mode & FMODE_PREAD))
-+			goto fput_in;
-+	}
-+	retval = rw_verify_area(READ, in.file, &pos, count);
-+	if (retval < 0)
-+		goto fput_in;
-+	count = retval;
-+
-+	/*
-+	 * Get output file, and verify that it is ok..
-+	 */
-+	retval = -EBADF;
-+	out = fdget(out_fd);
-+	if (!out.file)
-+		goto fput_in;
-+	if (!(out.file->f_mode & FMODE_WRITE))
-+		goto fput_out;
-+	retval = -EINVAL;
-+	in_inode = file_inode(in.file);
-+	out_inode = file_inode(out.file);
-+	out_pos = out.file->f_pos;
-+	retval = rw_verify_area(WRITE, out.file, &out_pos, count);
-+	if (retval < 0)
-+		goto fput_out;
-+	count = retval;
-+
-+	if (!max)
-+		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
-+
-+	if (unlikely(pos + count > max)) {
-+		retval = -EOVERFLOW;
-+		if (pos >= max)
-+			goto fput_out;
-+		count = max - pos;
-+	}
-+
-+	fl = 0;
-+#if 0
-+	/*
-+	 * We need to debate whether we can enable this or not. The
-+	 * man page documents EAGAIN return for the output at least,
-+	 * and the application is arguably buggy if it doesn't expect
-+	 * EAGAIN on a non-blocking file descriptor.
-+	 */
-+	if (in.file->f_flags & O_NONBLOCK)
-+		fl = SPLICE_F_NONBLOCK;
-+#endif
-+	file_start_write(out.file);
-+	retval = do_splice_direct(in.file, &pos, out.file, &out_pos, count, fl);
-+	file_end_write(out.file);
-+
-+	if (retval > 0) {
-+		add_rchar(current, retval);
-+		add_wchar(current, retval);
-+		fsnotify_access(in.file);
-+		fsnotify_modify(out.file);
-+		out.file->f_pos = out_pos;
-+		if (ppos)
-+			*ppos = pos;
-+		else
-+			in.file->f_pos = pos;
-+	}
-+
-+	inc_syscr(current);
-+	inc_syscw(current);
-+	if (pos > max)
-+		retval = -EOVERFLOW;
-+
-+fput_out:
-+	fdput(out);
-+fput_in:
-+	fdput(in);
-+out:
-+	return retval;
-+}
-+
-+SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd, off_t __user *, offset, size_t, count)
-+{
-+	loff_t pos;
-+	off_t off;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(get_user(off, offset)))
-+			return -EFAULT;
-+		pos = off;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd, loff_t __user *, offset, size_t, count)
-+{
-+	loff_t pos;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-+			return -EFAULT;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+#ifdef CONFIG_COMPAT
-+COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
-+		compat_off_t __user *, offset, compat_size_t, count)
-+{
-+	loff_t pos;
-+	off_t off;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(get_user(off, offset)))
-+			return -EFAULT;
-+		pos = off;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+
-+COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
-+		compat_loff_t __user *, offset, compat_size_t, count)
-+{
-+	loff_t pos;
-+	ssize_t ret;
-+
-+	if (offset) {
-+		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
-+			return -EFAULT;
-+		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
-+		if (unlikely(put_user(pos, offset)))
-+			return -EFAULT;
-+		return ret;
-+	}
-+
-+	return do_sendfile(out_fd, in_fd, NULL, count, 0);
-+}
-+#endif
-+
+The following changes since commit 4a109c50d1958a2783df01980b55508fe47bb79c:
+
+  ARM: at91: remove unused IRQ function declarations (2014-11-27 16:33:06 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup5
+
+for you to fetch changes up to ba62a8593d15f3f353acdc8ab32c18dd40a275bb:
+
+  ARM: at91: remove unused board.h file (2014-12-03 14:16:07 +0100)
+
+----------------------------------------------------------------
+Fifth batch of cleanup/SoC for 3.19:
+- removal of now dead code and AT91-specific driver
+- removal of !DT initialization in some core AT91 drivers
+- simplification of Kconfig DT board file selection: now automatic
+
+----------------------------------------------------------------
+Arnd Bergmann (6):
+      ARM: at91/Kconfig: select board files automatically
+      ARM: at91: cleanup initilisation code by removing dead code
+      ARM: at91: remove old AT91-specific drivers
+      ARM: at91: at91rm9200 ST initialization is now DT only
+      ARM: at91/clocksource: remove !DT PIT initializations
+      ARM: at91: remove unused board.h file
+
+Nicolas Ferre (1):
+      ARM: at91: remove unneeded header files
+
+ arch/arm/mach-at91/Kconfig                 |  14 +-
+ arch/arm/mach-at91/Makefile                |   5 +-
+ arch/arm/mach-at91/at91_tc.h               | 146 -----
+ arch/arm/mach-at91/at91rm9200_time.c       |  23 -
+ arch/arm/mach-at91/board-dt-rm9200.c       |   2 -
+ arch/arm/mach-at91/board-dt-sam9.c         |   1 -
+ arch/arm/mach-at91/board.h                 | 123 ----
+ arch/arm/mach-at91/generic.h               |  33 -
+ arch/arm/mach-at91/gpio.c                  | 982 -----------------------------
+ arch/arm/mach-at91/gpio.h                  | 214 -------
+ arch/arm/mach-at91/gsia18s.h               |  33 -
+ arch/arm/mach-at91/include/mach/hardware.h |   5 -
+ arch/arm/mach-at91/leds.c                  |  56 --
+ arch/arm/mach-at91/pm.c                    |  11 +-
+ arch/arm/mach-at91/setup.c                 |  54 --
+ arch/arm/mach-at91/soc.h                   |   6 -
+ drivers/clocksource/timer-atmel-pit.c      |  32 -
+ 17 files changed, 5 insertions(+), 1735 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/at91_tc.h
+ delete mode 100644 arch/arm/mach-at91/board.h
+ delete mode 100644 arch/arm/mach-at91/gpio.c
+ delete mode 100644 arch/arm/mach-at91/gpio.h
+ delete mode 100644 arch/arm/mach-at91/gsia18s.h
+ delete mode 100644 arch/arm/mach-at91/leds.c
+
 -- 
-2.1.0
-
+Nicolas Ferre
