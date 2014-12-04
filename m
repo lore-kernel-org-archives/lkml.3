@@ -1,92 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515AbaLDJpD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:45:03 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:38062 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaLDJo4 (ORCPT
+	id S1753359AbaLDJqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:46:43 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:22631 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712AbaLDJqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:44:56 -0500
-Message-ID: <54802D14.9030509@suse.cz>
-Date: Thu, 04 Dec 2014 10:44:52 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: f.wiessner@smart-weblications.de, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-References: <547F2462.6040405@smart-weblications.de>
-In-Reply-To: <547F2462.6040405@smart-weblications.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 04:46:40 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-4f-54802d7e3b7a
+Content-transfer-encoding: 8BIT
+Message-id: <1417686396.3314.4.camel@AMDC1943>
+Subject: Re: [PATCH v2 2/5] clk: samsung: Fix clock disable failure because
+ domain being gated
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Thu, 04 Dec 2014 10:46:36 +0100
+In-reply-to: <547F1A5F.8000502@samsung.com>
+References: <1417011857-10419-1-git-send-email-k.kozlowski@samsung.com>
+ <1417011857-10419-3-git-send-email-k.kozlowski@samsung.com>
+ <547F1A5F.8000502@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xq7p1ug0hBvcOslhsnLGe1aLtykF2
+	i6O/Cyz6H79mtni6+TGTxdmmN+wWmx5fY7W4vGsOm8WM8/uYLG5f5rVYe+Quu8XTCRfZLA6/
+	aWe1WLXrD6MDn0dLcw+bx9/n11k8ds66y+6xaVUnm8eda3vYPDYvqffo27KK0ePzJrkAjigu
+	m5TUnMyy1CJ9uwSujK1nmpkLblpVLLt5m72BsUevi5GTQ0LARGLSgvvMELaYxIV769m6GLk4
+	hASWMkp86f/ADpLgFRCU+DH5HksXIwcHs4C8xJFL2SBhZgF1iUnzFjFD1H9mlOha8JIRol5P
+	Ysfl5WBDhQUSJCYsm8MEYrMJGEtsXr6EDcQWEdCXWLLqIhvEoCUsEn92soLYLAKqEnMOzwSz
+	OQW0JT5f+g+1YBmjxKqXC9lAjpAQUJZo7HebwCgwC8l5sxDOm4XkvAWMzKsYRVNLkwuKk9Jz
+	DfWKE3OLS/PS9ZLzczcxQiLoyw7GxcesDjEKcDAq8fAueFofIsSaWFZcmXuIUYKDWUmEl/Ev
+	UIg3JbGyKrUoP76oNCe1+BAjEwenVAOjGM+2WgVXtdqT03bdXvvzfKFN+a+wHbW8wpY96wML
+	38l++eJvIrGr6q0FX+WqVOnJJ4w++L06If46JnRjUFWdG8v/liWbzrSyXLRY8W3/gd54DcvA
+	3U0eos9Cdbu3bZn9rm/Jha3/a5rKpkys0Yg7Hfxya1mgeNxWcS6hJKF3Nme3bVKSFeVQYinO
+	SDTUYi4qTgQAWn++IX4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014, 03:55 PM, Smart Weblications GmbH - Florian Wiessner wrote:
-> [16623.095403] BUG: unable to handle kernel paging request at 00000000010600d0
-> [16623.095445] IP: [<ffffffff81547767>] xfrm_selector_match+0x25/0x2f6
-> [16623.095480] PGD aeaea067 PUD 85d95067 PMD 0
-> [16623.095513] Oops: 0000 [#1] SMP
-> [16623.095543] Modules linked in: netconsole xt_nat xt_multiport veth ip_vs_rr
-...
-> [16623.096062] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.33 #1
-> [16623.096091] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 1.1a
-> 09/28/2011
-> [16623.096137] task: ffffffff81804450 ti: ffffffff817f4000 task.ti: ffffffff817f4000
-> [16623.096182] RIP: 0010:[<ffffffff81547767>]  [<ffffffff81547767>]
-> xfrm_selector_match+0x25/0x2f6
-> [16623.096233] RSP: 0018:ffff88083fc03900  EFLAGS: 00010246
-> [16623.096261] RAX: 0000000000000001 RBX: ffff88083fc03a20 RCX: ffff880787fb1200
-> [16623.096292] RDX: 0000000000000002 RSI: ffff88083fc03a20 RDI: 00000000010600a6
-> [16623.096323] RBP: 00000000010600a6 R08: 0000000000000000 R09: ffff88083fc039a0
-> [16623.096353] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88083fc03a20
-> [16623.096383] R13: 0000000000000001 R14: ffffffff818a9700 R15: ffffffffa01c73e0
-> [16623.096414] FS:  0000000000000000(0000) GS:ffff88083fc00000(0000)
-> knlGS:0000000000000000
-> [16623.096469] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [16623.096498] CR2: 00000000010600d0 CR3: 0000000085f0b000 CR4: 00000000000407f0
-> [16623.096528] Stack:
-> [16623.096550]  0000000000000000 0000000001060002 ffff880787fb1200 ffff88083fc03a20
-> [16623.096602]  0000000000000001 ffffffff81547a7c 0000000000000000 ffff8800baad5480
-> [16623.096655]  ffffffff81804450 ffffffff818a9700 000000003c9041bc ffffffff81547ef7
-> [16623.096721] Call Trace:
-> [16623.096744]  <IRQ>
-> [16623.096749]  [<ffffffff81547a7c>] ? xfrm_sk_policy_lookup+0x44/0x9b
-> [16623.096802]  [<ffffffff81547ef7>] ? xfrm_lookup+0x91/0x446
-> [16623.096832]  [<ffffffff81541316>] ? ip_route_me_harder+0x150/0x1b0
-> [16623.096865]  [<ffffffffa01b6457>] ? ip_vs_route_me_harder+0x86/0x91 [ip_vs]
-> [16623.096899]  [<ffffffffa01b797a>] ? ip_vs_out+0x2d3/0x5bc [ip_vs]
-> [16623.096930]  [<ffffffff81501420>] ? ip_rcv_finish+0x2b8/0x2b8
-> [16623.096959]  [<ffffffff814fc2d3>] ? nf_iterate+0x42/0x80
-> [16623.096989]  [<ffffffff814fc37a>] ? nf_hook_slow+0x69/0xff
-> [16623.097017]  [<ffffffff81501420>] ? ip_rcv_finish+0x2b8/0x2b8
-> [16623.097047]  [<ffffffff81501744>] ? ip_local_deliver+0x6f/0x7e
-> [16623.097078]  [<ffffffff814d82a6>] ? __netif_receive_skb_core+0x5f0/0x66c
-> [16623.097108]  [<ffffffff814d84b7>] ? process_backlog+0x13e/0x13e
-> [16623.097140]  [<ffffffffa04b4e09>] ? br_handle_frame_finish+0x382/0x382 [bridge]
-> [16623.097187]  [<ffffffff814d8503>] ? netif_receive_skb+0x4c/0x7d
-> [16623.097218]  [<ffffffffa04b4d95>] ? br_handle_frame_finish+0x30e/0x382 [bridge]
-> [16623.097265]  [<ffffffffa04b4fda>] ? br_handle_frame+0x1d1/0x217 [bridge]
-> [16623.097297]  [<ffffffffa048e4aa>] ? bond_handle_frame+0x86/0x1bd [bonding]
-> [16623.097328]  [<ffffffff814d8155>] ? __netif_receive_skb_core+0x49f/0x66c
-> [16623.097358]  [<ffffffff814d8503>] ? netif_receive_skb+0x4c/0x7d
-> [16623.097388]  [<ffffffff814d9091>] ? napi_gro_receive+0x35/0x76
-> [16623.097418]  [<ffffffff813eae17>] ? e1000_clean_rx_irq+0x26d/0x2f5
-> [16623.097448]  [<ffffffff813ef48e>] ? e1000e_poll+0x65/0x23d
-> [16623.097477]  [<ffffffff814d8709>] ? net_rx_action+0xa2/0x1c0
-...
-> This happens again and again with 3.12.33
+On śro, 2014-12-03 at 15:12 +0100, Sylwester Nawrocki wrote:
+> On 26/11/14 15:24, Krzysztof Kozlowski wrote:
+> > Audio subsystem clocks are located in separate block. If clock for this
+> > block (from main clock domain) 'mau_epll' is gated then any read or
+> > write to audss registers will block.
+> > 
+> > This was observed on Exynos 5420 platforms (Arndale Octa and Peach
+> > Pi/Pit) after introducing runtime PM to pl330 DMA driver. After that
+> > commit the 'mau_epll' was gated, because the "amba" clock was disabled
+> > and there were no more users of mau_epll. The system hang on disabling
+> > unused clocks from audss block.
+> > 
+> > Unfortunately the 'mau_epll' clock is not parent of some of audss clocks.
+> > 
+> > Whenever system wants to operate on audss clocks it has to enable epll
+> > clock. The solution reuses common clk-gate/divider/mux code and duplicates
+> > clk_register_*() functions. In the same time the patch tries to limit
+> > functional changes of the driver so it does not fix minor issues with existing
+> > code (like leaking memory allocated for clk-gate/clk-mux/clk-divider code).
+> > This is addressed later.
 > 
-> 
-> see also: http://www.spinics.net/lists/netdev/msg306283.html
-> 
-> is this already fixed somehow?
+> It seems we need separate functions for unregistering the standard
+> mux/gate/div clocks.
 
-Hi, I doubt so, as you are the first one letting me know. Could you
-check whether 3.12.30 works OK for you?
+Yep, I put it on our TODO list...
 
-thanks,
--- 
-js
-suse labs
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Reported-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> > Reported-by: Kevin Hilman <khilman@kernel.org>
+> > ---
+> >  drivers/clk/samsung/clk-exynos-audss.c | 346 +++++++++++++++++++++++++++++----
+> >  1 file changed, 311 insertions(+), 35 deletions(-)
+> > 
+> > diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
+> > index 7c4368e75ede..9ec7de866ab4 100644
+> > --- a/drivers/clk/samsung/clk-exynos-audss.c
+> > +++ b/drivers/clk/samsung/clk-exynos-audss.c
+> > @@ -29,6 +29,7 @@ static DEFINE_SPINLOCK(lock);
+> >  static struct clk **clk_table;
+> >  static void __iomem *reg_base;
+> >  static struct clk_onecell_data clk_data;
+> > +static struct clk *pll_in;
+> >  
+> >  #define ASS_CLK_SRC 0x0
+> >  #define ASS_CLK_DIV 0x4
+> > @@ -75,6 +76,276 @@ static const struct of_device_id exynos_audss_clk_of_match[] = {
+> >  	{},
+> >  };
+> >  
+> > +static int pll_clk_enable(void)
+> > +{
+> > +	if (!IS_ERR(pll_in))
+> > +		return clk_enable(pll_in);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void pll_clk_disable(void)
+> > +{
+> > +	if (!IS_ERR(pll_in))
+> > +		clk_disable(pll_in);
+> > +}
+> > +
+> > +static int audss_clk_gate_enable(struct clk_hw *hw)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = pll_clk_enable();
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = clk_gate_ops.enable(hw);
+> > +
+> > +	pll_clk_disable();
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static void audss_clk_gate_disable(struct clk_hw *hw)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = pll_clk_enable();
+> > +	if (ret)
+> > +		return;
+> > +
+> > +	clk_gate_ops.disable(hw);
+> > +
+> > +	pll_clk_disable();
+> > +}
+> > +
+> > +static int audss_clk_gate_is_enabled(struct clk_hw *hw)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = pll_clk_enable();
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = clk_gate_ops.is_enabled(hw);
+> > +
+> > +	pll_clk_disable();
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static const struct clk_ops audss_clk_gate_ops = {
+> > +	.enable = audss_clk_gate_enable,
+> > +	.disable = audss_clk_gate_disable,
+> > +	.is_enabled = audss_clk_gate_is_enabled,
+> > +};
+> 
+> As Tomasz suggested a better approach could be to use regmap
+> and let it handle the PLL clock. Unfortunately there the regmap
+> is not supported for the base clock types in the clock core and
+> that would require even more work and more added code.
+> 
+> > +/*
+> > + * A simplified copy of clk-gate.c:clk_register_gate() to mimic
+> > + * clk-gate behavior while using customized ops.
+> > + *
+> > + * TODO: just like clk-gate it leaks memory for struct clk_gate.
+> 
+> Please squash patch 5/5 into this one for the next iteration.
+
+Sure.
+
+> 
+> > + */
+> > +static struct clk *audss_clk_register_gate(struct device *dev, const char *name,
+> > +		const char *parent_name, unsigned long flags, u8 bit_idx)
+> > +{
+> > +	struct clk_gate *gate;
+> > +	struct clk *clk;
+> > +	struct clk_init_data init;
+> > +
+> > +	/* allocate the gate */
+> > +	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
+> > +	if (!gate)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	init.name = name;
+> > +	init.ops = &audss_clk_gate_ops;
+> > +	init.flags = flags | CLK_IS_BASIC;
+> > +	init.parent_names = (parent_name ? &parent_name : NULL);
+> > +	init.num_parents = (parent_name ? 1 : 0);
+> > +
+> > +	/* struct clk_gate assignments */
+> > +	gate->reg = reg_base + ASS_CLK_GATE;
+> > +	gate->bit_idx = bit_idx;
+> > +	gate->flags = 0;
+> > +	gate->lock = &lock;
+> > +	gate->hw.init = &init;
+> > +
+> > +	clk = clk_register(dev, &gate->hw);
+> > +
+> > +	if (IS_ERR(clk))
+> > +		kfree(gate);
+> > +
+> > +	return clk;
+> > +}
+> > +
+> 
+> >  /* register exynos_audss clocks */
+> >  static int exynos_audss_clk_probe(struct platform_device *pdev)
+> >  {
+> > @@ -83,7 +354,7 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+> >  	const char *mout_audss_p[] = {"fin_pll", "fout_epll"};
+> >  	const char *mout_i2s_p[] = {"mout_audss", "cdclk0", "sclk_audio0"};
+> >  	const char *sclk_pcm_p = "sclk_pcm0";
+> > -	struct clk *pll_ref, *pll_in, *cdclk, *sclk_audio, *sclk_pcm_in;
+> 
+> How about pll_in locally, using a different name for the global pointer
+> and ensuring the global pointer is properly initialized to ERR_PTR value
+> for cases where we don't need to touch the APLL clock ?
+
+OK.
+
+> 
+> > +	struct clk *pll_ref, *cdclk, *sclk_audio, *sclk_pcm_in;
+> >  	const struct of_device_id *match;
+> >  	enum exynos_audss_clk_type variant;
+> >  
+> > @@ -115,12 +386,21 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
+> >  	pll_in = devm_clk_get(&pdev->dev, "pll_in");
+> >  	if (!IS_ERR(pll_ref))
+> >  		mout_audss_p[0] = __clk_get_name(pll_ref);
+> > -	if (!IS_ERR(pll_in))
+> > +	if (!IS_ERR(pll_in)) {
+> >  		mout_audss_p[1] = __clk_get_name(pll_in);
+> > -	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
+> > +
+> > +		ret = clk_prepare(pll_in);
+> > +		if (ret) {
+> > +			dev_err(&pdev->dev,
+> > +				"failed to prepare the pll_in clock\n");
+> > +			return ret;
+> > +		}
+> 
+> Let's introduce such chnages only for SoC's where that's really necessary,
+> AFAICS it seems to be needed only for "samsung,exynos5420-audss-clock"
+> compatible.
+
+Yes, it turned out that only Exynos 5420 has mau_epll clock. On
+Exynos4412 for example such problem does not exist.
+
+> > +	}
+> > +
+> > +	clk_table[EXYNOS_MOUT_AUDSS] = audss_clk_register_mux(NULL, "mout_audss",
+> >  				mout_audss_p, ARRAY_SIZE(mout_audss_p),
+> > -				CLK_SET_RATE_NO_REPARENT,
+> > -				reg_base + ASS_CLK_SRC, 0, 1, 0, &lock);
+> > +				CLK_SET_RATE_NO_REPARENT, 0, 1);
+> 
+> I would prefer leaving the register's address in the arguments list.
+> Now you're passing the bit index but not the actual register.
+
+Hmm... that would extend the arguments list without any information (the
+register is the same)... but sure, I'll add it.
+
+> 
+> >  	cdclk = devm_clk_get(&pdev->dev, "cdclk");
+> >  	sclk_audio = devm_clk_get(&pdev->dev, "sclk_audio");
+> 
+
+Thanks for reviewing!
+Krzysztof
+
+
