@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaLDBuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:50:07 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54485 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaLDBuF (ORCPT
+	id S1752531AbaLDBv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:51:58 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:64054 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaLDBv5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:50:05 -0500
-From: Kevin Pietsch <kevinpietsch@gmail.com>
-To: Marek Belisko <marek.belisko@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org, Kevin Pietsch <kevinpietsch@gmail.com>
-Subject: [PATCH 1/1] Staging: ft1000: fix some coding style issues
-Date: Wed,  3 Dec 2014 20:49:33 -0500
-Message-Id: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Wed, 3 Dec 2014 20:51:57 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: shmem: avoid overflowing in shmem_fallocate
+Thread-Topic: [PATCH] mm: shmem: avoid overflowing in shmem_fallocate
+Thread-Index: AQHQD2TPMqZEAd4qU0mtvy1pFC2HGA==
+Date: Thu, 4 Dec 2014 01:51:25 +0000
+Message-ID: <20141204015120.GA2522@hori1.linux.bs1.fc.nec.co.jp>
+References: <1417652657-1801-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1417652657-1801-1-git-send-email-sasha.levin@oracle.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.29]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <45D0DB6519F4164CA50E8EAA753C59A7@gisp.nec.co.jp>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed braces from two single line if-else statements
+On Wed, Dec 03, 2014 at 07:24:07PM -0500, Sasha Levin wrote:
+> "offset + len" has the potential of overflowing. Validate this user input
+> first to avoid undefined behaviour.
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  mm/shmem.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 185836b..5a0e344 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2098,6 +2098,9 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+>  	}
+>  
+>  	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+> +	error = -EOVERFLOW;
+> +	if ((u64)len + offset < (u64)len)
+> +		goto out;
 
-Signed-off-by: Kevin Pietsch <kevinpietsch@gmail.com>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+Hi Sasha,
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index 44575c7..fadd47d 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -176,11 +176,10 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
- 	spin_lock_irqsave(&info->dpram_lock, flags);
- 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
- 	/* check if we want to read upper or lower 32-bit word */
--	if (Index) {
-+	if (Index)
- 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
--	} else {
-+	else
- 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
--	}
- 	spin_unlock_irqrestore(&info->dpram_lock, flags);
- 
- 	return data;
-@@ -208,11 +207,10 @@ static inline void ft1000_write_dpram_mag_16(struct net_device *dev,
- 	/* Provide mutual exclusive access while reading ASIC registers. */
- 	spin_lock_irqsave(&info->dpram_lock, flags);
- 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
--	if (Index) {
-+	if (Index)
- 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAL, value);
--	} else {
-+	else
- 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAH, value);
--	}
- 	spin_unlock_irqrestore(&info->dpram_lock, flags);
- }
- 
--- 
-2.1.0
+It seems to me that we already do some overflow check in common path,
+do_fallocate():
 
+        /* Check for wrap through zero too */
+        if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
+                return -EFBIG;
+
+Do we really need another check?
+
+And this patch changes the return value of fallocate(2), so you need
+update man document.
+
+BTW, when I'm reading your patch, I noticed that returning -EOVERFLOW
+(rather than -EFBIG) looks better when ((offset + len) < 0) in
+do_fallocate() is true.
+
+Thanks,
+Naoya Horiguchi
