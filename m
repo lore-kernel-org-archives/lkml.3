@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaLDIzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 03:55:09 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61036 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493AbaLDIzH (ORCPT
+	id S1753416AbaLDI5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 03:57:46 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:39430 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753125AbaLDI5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 03:55:07 -0500
-Message-ID: <5480215A.7010300@gmail.com>
-Date: Thu, 04 Dec 2014 16:54:50 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 4 Dec 2014 03:57:45 -0500
+Message-ID: <548021E2.2080506@arm.com>
+Date: Thu, 04 Dec 2014 08:57:06 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] kvm: cpuid: fix xsave area size of XSAVEC
-References: <1417681468-7165-1-git-send-email-wanpeng.li@linux.intel.com> <1417681468-7165-3-git-send-email-wanpeng.li@linux.intel.com> <1EDEA01D-B396-4F17-947A-22CA4AA4BC61@gmail.com>
-In-Reply-To: <1EDEA01D-B396-4F17-947A-22CA4AA4BC61@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH 1/5] ASoC: dwc: Allocate resources with devm_ioremap_resource
+References: <547F3C96.9070509@arm.com> <547F3DD0.10405@metafoo.de>
+In-Reply-To: <547F3DD0.10405@metafoo.de>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nadav,
-On 12/4/14, 4:30 PM, Nadav Amit wrote:
-> Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
->
->> XSAVEC also use the compacted format for the extended region
->> of the XSAVE area. This patch fix it by caculate the size of
->> XSAVEC extended region of XSAVE area as compact format.
->>
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->> arch/x86/kvm/cpuid.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
->> index 70f0fa1..e16a0c7 100644
->> --- a/arch/x86/kvm/cpuid.c
->> +++ b/arch/x86/kvm/cpuid.c
->> @@ -92,7 +92,7 @@ int kvm_update_cpuid(struct kvm_vcpu *vcpu)
->> 	}
->>
->> 	best = kvm_find_cpuid_entry(vcpu, 0xD, 1);
->> -	if (best && (best->eax & F(XSAVES)))
->> +	if (best && (best->eax & (F(XSAVES) || F(XSAVEC))))
-> Did you want to use | (bitwise or) instead of II (logical or) ?
+On 12/03/14 16:44, Lars-Peter Clausen wrote:
+> On 12/03/2014 05:38 PM, Andrew Jackson wrote:
+> [,,,[
+>> +	dw_i2s_dai = devm_kzalloc(&pdev->dev, sizeof(*dw_i2s_dai), GFP_KERNEL);
+>> +	if (!dw_i2s_dai) {
+>> +		dev_err(&pdev->dev, "mem allocation failed for dai driver\n");
+> 
+> All the memory alloc functions already print a error message.
 
-I make a mistake here, I will fix it in next version.
+I will remove the error message(s).
 
-Regards,
-Wanpeng Li
+>>   		return -ENOMEM;
+>>   	}
+>>
+>> +	dw_i2s_dai->ops = &dw_i2s_dai_ops;
+>> +	dw_i2s_dai->suspend = dw_i2s_suspend;
+>> +	dw_i2s_dai->resume = dw_i2s_resume;
+> 
+> This seems to be separate from the devm_ioremap_resource() change.
 
->
->> 		best->ebx = xstate_required_size(vcpu->arch.xcr0, true);
->>
->> 	/*
->> -- 
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Nadav
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+It seemed reasonable to assign these known values to the dw_i2s_dai as soon as it had been allocated. Would you prefer this in a separate patch?
+
+>> +
+>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!res) {
+> 
+> You don't actually have to check it devm_ioremap_resource does this for you.
+
+Oh, thanks, paranoia was taking over.
+
+>> +		dev_err(&pdev->dev, "no i2s resource defined\n");
+>> +		return -ENODEV;
+>> +	}
+>> +
+>> +	dev->i2s_base = devm_ioremap_resource(&pdev->dev, res);
+>> +	if (IS_ERR(dev->i2s_base)) {
+>> +		dev_err(&pdev->dev, "ioremap fail for i2s_region\n");
+> 
+> Same here devm_ioremap_resource() will already print a appropriate error 
+> message.
+> 
+>> +		return PTR_ERR(dev->i2s_base);
+>> +	}
+> 
+> 
 
