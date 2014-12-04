@@ -1,177 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293AbaLDPLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:11:15 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:46106 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754268AbaLDPLM convert rfc822-to-8bit (ORCPT
+	id S932364AbaLDPM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:12:28 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:59341 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932317AbaLDPM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:11:12 -0500
+	Thu, 4 Dec 2014 10:12:26 -0500
+Date: Thu, 4 Dec 2014 10:12:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dongsu Park <dongsu.park@profitbricks.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH workqueue/for-3.18-fixes 2/2] workqueue: allow rescuer thread
+ to do more work
+Message-ID: <20141204151223.GE15219@htj.dyndns.org>
+References: <545C368C.5040704@cn.fujitsu.com>
+ <20141110162848.6f2246bb@notabene.brown>
+ <20141110085250.GB15948@quack.suse.cz>
+ <20141111090402.35fa0700@notabene.brown>
+ <20141118152754.60b0c75e@notabene.brown>
+ <20141202204304.GR10918@htj.dyndns.org>
+ <20141203114011.5d02dc43@notabene.brown>
+ <20141203172010.GC5013@htj.dyndns.org>
+ <20141203180241.GD5013@htj.dyndns.org>
+ <20141204151104.GD15219@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <D73736E8-DC33-4F98-82DD-DF42B989A453@antoniou-consulting.com>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
- <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
- <20141202161227.GH30256@lukather> <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
- <0EF6A712-5FF1-41BE-B8A9-21ABE7FE37F9@antoniou-consulting.com>
- <CAAVeFu+kfPi8CUR-YergQv9P1wMBzOik_Q1KBKMTVY1Gg_FBzg@mail.gmail.com>
- <C9DBE2F0-A725-4D05-BEC6-F083F3F83B9F@antoniou-consulting.com>
- <CAAVeFuKx1uWVh-TQeFKN4uS9TyzQH4BbQ2q1yM4uJsnQdfdzPQ@mail.gmail.com> <D73736E8-DC33-4F98-82DD-DF42B989A453@antoniou-consulting.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 5 Dec 2014 00:10:50 +0900
-Message-ID: <CAAVeFu+d5R6cKaXOgkU-ve8uy4jPGWJrDUrnARXs=ufe_p+RFg@mail.gmail.com>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Parrot <bparrot@ti.com>, Jiri Prchal <jiri.prchal@aksignal.cz>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204151104.GD15219@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 12:02 AM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> Hi Alexandre,
->
->> On Dec 4, 2014, at 16:58 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>
->> On Thu, Dec 4, 2014 at 11:47 PM, Pantelis Antoniou
->> <panto@antoniou-consulting.com> wrote:
->>> Hi Alexandre,
->>>
->>>> On Dec 4, 2014, at 16:41 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>
->>>> On Thu, Dec 4, 2014 at 11:27 PM, Pantelis Antoniou
->>>> <panto@antoniou-consulting.com> wrote:
->>>>> Hi Alexandre,
->>>>>
->>>>> I tried to stay away while things are being fleshed out but…
->>>>>
->>>>>> On Dec 4, 2014, at 16:15 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>>>
->>>>>> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
->>>>>> <maxime.ripard@free-electrons.com> wrote:
->>>>>>> On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
->>>>>>>> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>>>>>> On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
->>>>>>>>> <maxime.ripard@free-electrons.com> wrote:
->>>>>>>>
->>>>>>>>>> The only thing I'd like to have would be that the request here would
->>>>>>>>>> be non-exclusive, so that a later driver would still be allowed later
->>>>>>>>>> on to request that GPIO later on and manage it itself (ideally using
->>>>>>>>>> the usual gpiod_request function).
->>>>>>>>>
->>>>>>>>> Actually we have a plan (and I have some code too) to allow multiple
->>>>>>>>> consumers per GPIO. Although like Benoit I wonder why you would want
->>>>>>>>> to hog a GPIO and then request it properly later. Also, that probably
->>>>>>>>> means we should abandon the hog since it actively drives the line and
->>>>>>>>> would interfere with the late requested. How to do that correctly is
->>>>>>>>> not really clear to me.
->>>>>>>>
->>>>>>>> I don't get the usecase. A hogged GPIO is per definition hogged.
->>>>>>>> This sounds more like "initial settings" or something, which is another
->>>>>>>> usecase altogether.
->>>>>>>
->>>>>>> We do have one board where we have a pin (let's say GPIO14 of the bank
->>>>>>> A) that enables a regulator that will provide VCC the bank B.
->>>>>>>
->>>>>>> Now, both banks are handled by the same driver, but in order to have a
->>>>>>> working output on the bank B, we do need to set GPIO14 as soon as
->>>>>>> we're probed.
->>>>>>>
->>>>>>> Just relying on the usual deferred probing introduces a circular
->>>>>>> dependency between the gpio-regulator that needs to grab its GPIO from
->>>>>>> a driver not there yet, and the gpio driver that needs to enable its
->>>>>>> gpio-regulator.
->>>>>>
->>>>>> I don't get it. According to what you said, the following order should
->>>>>> go through IIUC:
->>>>>>
->>>>>> 1) bank A is probed, gpio 14 is available
->>>>>> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
->>>>>> 3) bank B is probed, grabs its regulator and turn it on, probes.
->>>>>>
->>>>>> What am I missing?
->>>>>>
->>>>>>>
->>>>>>> GPIO hogging needs to be the ideal solution for that, since we can
->>>>>>> just enforce the GPIO14 value as the driver is probed, which provides
->>>>>>> the guarantee that any driver using the bank B will actually drive the
->>>>>>> GPIO it might use.
->>>>>>
->>>>>> At this point I start wondering if such initial setup should not be
->>>>>> the job of the bootloader? GPIO hogging ought to be simple and
->>>>>> definitive, adding the possibility to have it just as an initial value
->>>>>> would considerably complexify it. E.g. when is the gpio chip driver
->>>>>> supposed to release the hogged descriptor in such a case?
->>>>>>
->>>>>
->>>>> Do not count on the bootloader setting up anything. The trend is
->>>>> for the bootloader to setup the minimal environment to load your kernel
->>>>> and jump to it.
->>>>>
->>>>> http://www.denx.de/wiki/pub/U-Boot/MiniSummitELCE2013/2013-ELCE-U-Boot-Falcon-Boot.pdf
->>>>
->>>> Just wondering. :)
->>>>
->>>> But yeah, there are some use-cases (such as this one or
->>>> Linux-as-a-bootloader) for which this would not play nicely.
->>>>
->>>>>
->>>>>
->>>>>> Note that if the multiple GPIO consumer feature we are planning goes
->>>>>> through, you should be able to use both hogging *and* a regulator on
->>>>>> the same GPIO and achieve what you want. The expectation of multiple
->>>>>> consumers is that the board designers know what they are doing, and
->>>>>> this case would certainly fit (chip hogs the line and doesn't touch
->>>>>> the value after that, letting the regulator control it without any
->>>>>> conflict afterwards), although it would of course be better to solve
->>>>>> the issue through regular probing...
->>>>>
->>>>>
->>>>> That’s why I was advocating a simple probing driver for all this.
->>>>> Figure out a way for this driver to be probed first would be an easier
->>>>> solution that what’s going on here.
->>>>
->>>> Do you mean, a driver whose sole job is to probe other drivers in the
->>>> right order? :/
->>>
->>> $DEITY no :)
->>>
->>> I mean instead of having the gpio hog in the gpio adapter driver, have
->>> a gpio-hog driver, that’s using an undisclosed method to make sure that
->>> it’s the first one to be probed afterwards.
->>
->> IIUC that would not solve this particular issue - here the GPIO
->> controller is both a provider and (indirect) consumer of a GPIO for
->> itself. If the hog is in a separate node, if would have to be probed
->> from inside the probe() function of the GPIO controller to do the job,
->> which would be the same effect as having the hogs directly under the
->> controller node, only with more hassle.
->>
->> Again, IIUC. >_<
->
-> If you had a way to specify the order of probing that would work no?
-> You don’t have to do it in the gpio-controller, you can do it in the
-> platform bus probe.
+From: NeilBrown <neilb@suse.de>
 
-A probe order that works would be the following:
+When there is serious memory pressure, all workers in a pool could be
+blocked, and a new thread cannot be created because it requires memory
+allocation.
 
-1) bank A is probed, gpio 14 is available
-2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
-3) bank B is probed, grabs its regulator and turn it on, probes.
+In this situation a WQ_MEM_RECLAIM workqueue will wake up the
+rescuer thread to do some work.
 
-The problem is that in the present case, 1) and 3) are the same
-operation because both banks are the same device.
+The rescuer will only handle requests that are already on ->worklist.
+If max_requests is 1, that means it will handle a single request.
 
-You could probably solve this by making bank A and bank B separate
-devices, then even EPROBE_DEFER would allow you to probe everything in
-the right order. But since the DT bindings are (supposedly) already
-published this is likely not an option (?). And logically speaking,
-these banks form one device anyway.
+The rescuer will be woken again in 100ms to handle another max_requests
+requests.
+
+I've seen a machine (running a 3.0 based "enterprise" kernel) with
+thousands of requests queued for xfslogd, which has a max_requests of
+1, and is needed for retiring all 'xfs' write requests.  When one of
+the worker pools gets into this state, it progresses extremely slowly
+and possibly never recovers (only waited an hour or two).
+
+With this patch we leave a pool_workqueue on mayday list
+until it is clearly no longer in need of assistance.  This allows
+all requests to be handled in a timely fashion.
+
+We keep each pool_workqueue on the mayday list until
+need_to_create_worker() is false, and no work for this workqueue is
+found in the pool.
+
+I have tested this in combination with a (hackish) patch which forces
+all work items to be handled by the rescuer thread.  In that context
+it significantly improves performance.  A similar patch for a 3.0
+kernel significantly improved performance on a heavy work load.
+
+Thanks to Jan Kara for some design ideas, and to Dongsu Park for
+some comments and testing.
+
+tj: Inverted the lock order between wq_mayday_lock and pool->lock with
+    a preceding patch and simplified this patch.  Added comment and
+    updated changelog accordingly.  Dongsu spotted missing get_pwq()
+    in the simplified code.
+
+Cc: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Hello,
+
+I'll apply these two patches to workqueue/for-3.18-fixes.  It'd be
+great if other ppl can also confirm this actually works.
+
+Thanks.
+
+ kernel/workqueue.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2251,7 +2251,25 @@ repeat:
+ 			if (get_work_pwq(work) == pwq)
+ 				move_linked_works(work, scheduled, &n);
+ 
+-		process_scheduled_works(rescuer);
++		if (!list_empty(scheduled)) {
++			process_scheduled_works(rescuer);
++
++			/*
++			 * The above execution of rescued work items could
++			 * have created more to rescue through
++			 * pwq_activate_first_delayed() or chained
++			 * queueing.  Let's put @pwq back on mayday list so
++			 * that such back-to-back work items, which may be
++			 * being used to relieve memory pressure, don't
++			 * incur MAYDAY_INTERVAL delay inbetween.
++			 */
++			if (need_to_create_worker(pool)) {
++				spin_lock(&wq_mayday_lock);
++				get_pwq(pwq);
++				list_move_tail(&pwq->mayday_node, &wq->maydays);
++				spin_unlock(&wq_mayday_lock);
++			}
++		}
+ 
+ 		/*
+ 		 * Put the reference grabbed by send_mayday().  @pool won't
