@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaLDB4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:56:35 -0500
-Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:25952
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751911AbaLDB4d convert rfc822-to-8bit (ORCPT
+	id S1752635AbaLDB6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:58:33 -0500
+Received: from smtprelay0074.hostedemail.com ([216.40.44.74]:60190 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751302AbaLDB6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:56:33 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "alexander.stein@systec-electronic.com" 
-	<alexander.stein@systec-electronic.com>
-Subject: RE: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Topic: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-Thread-Index: AQHQDtn5j6GPqUxwWEaud+fx6yvb95x9n9SAgAELugA=
-Date: Thu, 4 Dec 2014 01:56:28 +0000
-Message-ID: <BY2PR0301MB06131C2C901351E8592ED3D89B780@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1417598162-40433-1-git-send-email-Li.Xiubo@freescale.com>
- <4810522.t9QFQYHtHI@wuerfel>
-In-Reply-To: <4810522.t9QFQYHtHI@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-forefront-prvs: 041517DFAB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(13464003)(24454002)(189002)(199003)(51704005)(54356999)(76176999)(54206007)(54606007)(110136001)(50986999)(62966003)(74316001)(68736005)(66066001)(20776003)(86362001)(64706001)(33656002)(101416001)(15975445006)(107046002)(31966008)(95666004)(77156002)(105586002)(106356001)(99286002)(106116001)(15202345003)(122556002)(40100003)(76576001)(46102003)(92726001)(92566001)(97736003)(4396001)(21056001)(120916001)(87936001)(19580395003)(19580405001)(2656002)(99396003)(422495003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Wed, 3 Dec 2014 20:58:32 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3352:3622:3867:3871:4250:4321:5007:6261:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13311:13357:13972:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: able70_2d3614fe35757
+X-Filterd-Recvd-Size: 2628
+Message-ID: <1417658309.2902.29.camel@perches.com>
+Subject: Re: [PATCH 1/1] Staging: ft1000: fix some coding style issues
+From: Joe Perches <joe@perches.com>
+To: Kevin Pietsch <kevinpietsch@gmail.com>
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 03 Dec 2014 17:58:29 -0800
+In-Reply-To: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
+References: <1417657773-29027-1-git-send-email-kevinpietsch@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, 2014-12-03 at 20:49 -0500, Kevin Pietsch wrote:
+> Removed braces from two single line if-else statements
 
-Thanks for you advice.
+Another perhaps better option is to use ?: like:
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-Because this is very emergency for customers and have delayed for monthes, and the
-DRM/KMS will have a little long time to be supported. So I'd like to add this first
-and will add DRM/KMS version later.
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 0038a3a..8743516 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -172,11 +172,8 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+ 	/* check if we want to read upper or lower 32-bit word */
+-	if (Index) {
+-		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
+-	} else {
+-		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
+-	}
++	data = ft1000_read_reg(dev, index ? FT1000_REG_MAG_DPDATAL
++					  : FT1000_REG_MAG_DPDATAH);
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ 
+ 	return data;
+@@ -204,11 +201,8 @@ static inline void ft1000_write_dpram_mag_16(struct net_device *dev,
+ 	/* Provide mutual exclusive access while reading ASIC registers. */
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+-	if (Index) {
+-		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAL, value);
+-	} else {
+-		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAH, value);
+-	}
++	ft1000_write_reg(dev, index ? FT1000_REG_MAG_DPDATAL
++				    : FT1000_REG_MAG_DPDATAH, value);
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ }
+ 
 
-Thanks very much,
 
-BRs
-Xiubo
-
-
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Arnd Bergmann
-> Sent: Wednesday, December 03, 2014 5:52 PM
-> To: linux-arm-kernel@lists.infradead.org
-> Cc: Xiubo Li-B47053; plagnioj@jcrosoft.com; tomi.valkeinen@ti.com; linux-
-> fbdev@vger.kernel.org; linux-kernel@vger.kernel.org; shawn.guo@linaro.org;
-> alexander.stein@systec-electronic.com
-> Subject: Re: [PATCHv2 0/4] LS1021A: Add dcfb framebuffer driver support.
-> 
-> On Wednesday 03 December 2014 17:15:58 Xiubo Li wrote:
-> > Framebuffer driver for the Freescale SoC Display Controller.
-> >
-> >
-> > Change in V2:
-> > - Use the native-mode timing as default.
-> > - Add to_fsl_private().
-> 
-> <standard reply>
-> 
-> We try to not have any new framebuffer drivers. Please consider making
-> this a DRM/KMS driver instead.
-> 
-> </standard reply>
-> 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
