@@ -1,125 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067AbaLDMXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:23:19 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:34719 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753666AbaLDMXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:23:16 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44501973"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Richard Weinberger" <richard.weinberger@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        "David Howells" <dhowells@redhat.com>
-Subject: RE: [PATCH v9 1/3] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCH v9 1/3] procfs: show hierarchy of pid namespace
-Thread-Index: AQHQDVbo85P9O1VhQU61c81DpQtueZx/KqRQ
-Date: Thu, 4 Dec 2014 12:23:11 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E737803A9@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1417431978-24723-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1417431978-24723-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1417431978-24723-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
+	id S1753993AbaLDMZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:25:26 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:3501 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248AbaLDMZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 07:25:24 -0500
+X-IronPort-AV: E=Sophos;i="5.07,515,1413244800"; 
+   d="scan'208,223";a="200035145"
+Message-ID: <5480528F.8010106@citrix.com>
+Date: Thu, 4 Dec 2014 12:24:47 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
+ or bus with 'do_flr' SysFS attribute
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
+In-Reply-To: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
+Content-Type: multipart/mixed;
+	boundary="------------040006050709030007030805"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB4CNSA5001398
+
+--------------040006050709030007030805
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+On 04/12/14 12:06, Konrad Rzeszutek Wilk wrote:
+> 
+> On Dec 4, 2014 6:30 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+>>
+>> On 03/12/14 21:40, Konrad Rzeszutek Wilk wrote: 
+>>>
+>>> Instead of doing all this complex dance, we depend on the toolstack 
+>>> doing the right thing. As such implement the 'do_flr' SysFS attribute 
+>>> which 'xl' uses when a device is detached or attached from/to a guest. 
+>>> It bypasses the need to worry about the PCI lock. 
+>>
+>> No.  Get pciback to add its own "reset" sysfs file (as I have repeatedly 
+>> proposed). 
+>>
+> 
+> Which does not work as the kobj will complain (as there is already an 'reset' associated with the PCI device).
+
+It is only needed if the core won't provide one.
+
++static int pcistub_try_create_reset_file(struct pci_dev *pci)
++{
++       struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
++       struct device *dev = &pci->dev;
++       int ret;
++
++       /* Already have a per-function reset? */
++       if (pci_probe_reset_function(pci) == 0)
++               return 0;
++
++       ret = device_create_file(dev, &dev_attr_reset);
++       if (ret < 0)
++               return ret;
++       dev_data->created_reset_file = true;
++       return 0;
++}
+
+David
 
 
 
-> -----Original Message-----
-> From: containers-bounces@lists.linux-foundation.org
-> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
-> Hanxiao
-> Sent: Monday, December 01, 2014 7:06 PM
-> To: Eric W. Biederman; Serge Hallyn; Oleg Nesterov; Richard Weinberger; Andrew
-> Morton
-> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
-> Mateusz Guzik; David Howells
-> Subject: [PATCH v9 1/3] procfs: show hierarchy of pid namespace
-> 
-> We lack of pid hierarchy information, and this will lead to:
-> a) we don't know pids' relationship, who is whose child:
->    /proc/PID/ns/pid only tell us whether two pids live in different ns
-> b) bring trouble to nested lxc container check/restore/migration
-> c) bring trouble to pid translation between containers;
-> 
-> This patch will show the hierarchy of pid namespace
-> by pidns_hierarchy like:
-> 
-> <init_PID> <parent_of_init_PID> <relative PID level>
-> 
-> Ex:
-> [root@localhost ~]#cat /proc/pidns_hierarchy
-> 18060 1 1
-> 18102 18060 2
-> 1534  18102 3
-> 1600  18102 3
-> 1550  1 1
-> *Note: numbers represent the pid 1 in different ns
-> 
-> It shows the pid hierarchy below:
-> 
->       init_pid_ns 1
->               â”‚
-> â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-> ns1                      ns2
-> â”‚                        â”‚
-> 1550                    18060
->                           â”‚
->                           â”‚
->                          ns3
->                           â”‚
->                         18102
->                           â”‚
->                  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
->                  ns4                   ns5
->                  â”‚                    â”‚
->                 1534                  1600
-> 
-> Every pid printed in pidns_hierarchy
-> is the init pid of that pid ns level.
-> 
-> Acked-by: Richard Weinberer <richard@nod.at>
-> 
-> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-> ---
-> v9: fix codes be included if CONFIG_PID_NS=n
-> v8: use max() from kernel.h
->     fix some improper comments
-> v7: change stype to be consistent with current interface like
->     <init_PID> <parent_of_init_PID> <relative PID level>
->     remove EXPERT dependent in Kconfig
-> v6: fix a get_pid leak and do some cleanups;
-> v5: collect pid by find_ge_pid;
->     use local list inside nslist_proc_show;
->     use get_pid, remove mutex lock.
-> v4: simplify pid collection and some performance optimizamtion
->     fix another race issue.
-> v3: fix a race issue and memory leak issue
-> v2: use a procfs text file instead of dirs under /proc
-> 
+--------------040006050709030007030805
+Content-Type: text/x-diff;
+	name="0002-xen-pciback-provide-a-reset-sysfs-file-to-try-harder.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0002-xen-pciback-provide-a-reset-sysfs-file-to-try-harder.pa";
+	filename*1="tch"
 
-Hi,
+>From e65a814106bc9994ec47b5317f7cdc975270d27f Mon Sep 17 00:00:00 2001
+From: David Vrabel <david.vrabel@citrix.com>
+Date: Thu, 10 Jul 2014 13:09:25 +0100
+Subject: [PATCH 2/2] xen-pciback: provide a "reset" sysfs file to try harder
+ at an SBR
 
-Any comments?
+The standard implementation of pci_reset_function() does not try an
+SBR if there are other sibling devices.  This is a common
+configuration for multi-function devices (e.g., GPUs with a HDMI audio
+device function).
 
-Thanks,
-- Chen
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If all the functions are co-assigned to the same domain at the same
+time, then it is safe to perform an SBR to reset all functions at the
+same time.
+
+Add a "reset" sysfs file with the same interface as the standard one
+(i.e., write 1 to reset) that will try an SBR if all sibling devices
+are unbound or bound to pciback.
+
+Note that this is weaker than the requirement for functions to be
+simultaneously co-assigned, but the toolstack is expected to ensure
+this.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index 4e8ba38..d6c29aa 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -14,6 +14,7 @@
+ #include <linux/wait.h>
+ #include <linux/sched.h>
+ #include <linux/atomic.h>
++#include <linux/delay.h>
+ #include <xen/events.h>
+ #include <asm/xen/pci.h>
+ #include <asm/xen/hypervisor.h>
+@@ -60,6 +61,114 @@ static LIST_HEAD(pcistub_devices);
+ static int initialize_devices;
+ static LIST_HEAD(seized_devices);
+ 
++/*
++ * pci_reset_function() will only work if there is a mechanism to
++ * reset that single function (e.g., FLR or a D-state transition).
++ * For PCI hardware that has two or more functions but no per-function
++ * reset, we can do a bus reset iff all the functions are co-assigned
++ * to the same domain.
++ *
++ * If a function has no per-function reset mechanism the 'reset' sysfs
++ * file that the toolstack uses to reset a function prior to assigning
++ * the device will be missing.  In this case, pciback adds its own
++ * which will try a bus reset.
++ *
++ * Note: pciback does not check for co-assigment before doing a bus
++ * reset, only that the devices are bound to pciback.  The toolstack
++ * is assumed to have done the right thing.
++ */
++static int __pcistub_reset_function(struct pci_dev *dev)
++{
++	struct pci_dev *pdev;
++	u16 ctrl;
++	int ret;
++
++	ret = __pci_reset_function_locked(dev);
++	if (ret == 0)
++		return 0;
++
++	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
++		return -ENOTTY;
++
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list) {
++		if (pdev != dev && (!pdev->driver
++				    || strcmp(pdev->driver->name, "pciback")))
++			return -ENOTTY;
++		pci_save_state(pdev);
++	}
++
++	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
++	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	msleep(200);
++
++	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	msleep(200);
++
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
++		pci_restore_state(pdev);
++
++	return 0;
++}
++
++static int pcistub_reset_function(struct pci_dev *dev)
++{
++	int ret;
++
++	device_lock(&dev->dev);
++	ret = __pcistub_reset_function(dev);
++	device_unlock(&dev->dev);
++
++	return ret;
++}
++
++static ssize_t pcistub_reset_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t count)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	unsigned long val;
++	ssize_t result = strict_strtoul(buf, 0, &val);
++
++	if (result < 0)
++		return result;
++
++	if (val != 1)
++		return -EINVAL;
++
++	result = pcistub_reset_function(pdev);
++	if (result < 0)
++		return result;
++	return count;
++}
++static DEVICE_ATTR(reset, 0200, NULL, pcistub_reset_store);
++
++static int pcistub_try_create_reset_file(struct pci_dev *pci)
++{
++	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
++	struct device *dev = &pci->dev;
++	int ret;
++
++	/* Already have a per-function reset? */
++	if (pci_probe_reset_function(pci) == 0)
++		return 0;
++
++	ret = device_create_file(dev, &dev_attr_reset);
++	if (ret < 0)
++		return ret;
++	dev_data->created_reset_file = true;
++	return 0;
++}
++
++static void pcistub_remove_reset_file(struct pci_dev *pci)
++{
++	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci);
++
++	if (dev_data && dev_data->created_reset_file)
++		device_remove_file(&pci->dev, &dev_attr_reset);
++}
++
+ static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
+ {
+ 	struct pcistub_device *psdev;
+@@ -100,7 +209,8 @@ static void pcistub_device_release(struct kref *kref)
+ 	/* Call the reset function which does not take lock as this
+ 	 * is called from "unbind" which takes a device_lock mutex.
+ 	 */
+-	__pci_reset_function_locked(dev);
++	__pcistub_reset_function(psdev->dev);
++
+ 	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+ 		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+ 	else
+@@ -268,7 +378,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	/* This is OK - we are running from workqueue context
+ 	 * and want to inhibit the user from fiddling with 'reset'
+ 	 */
+-	pci_reset_function(dev);
++	pcistub_reset_function(dev);
+ 	pci_restore_state(psdev->dev);
+ 
+ 	/* This disables the device. */
+@@ -392,7 +502,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+ 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
+ 	else {
+ 		dev_dbg(&dev->dev, "resetting (FLR, D3, etc) the device\n");
+-		__pci_reset_function_locked(dev);
++		__pcistub_reset_function(dev);
+ 		pci_restore_state(dev);
+ 	}
+ 	/* Now disable the device (this also ensures some private device
+@@ -401,6 +511,10 @@ static int pcistub_init_device(struct pci_dev *dev)
+ 	dev_dbg(&dev->dev, "reset device\n");
+ 	xen_pcibk_reset_device(dev);
+ 
++	err = pcistub_try_create_reset_file(dev);
++	if (err < 0)
++		goto config_release;
++
+ 	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+ 	return 0;
+ 
+@@ -526,6 +640,8 @@ static void pcistub_remove(struct pci_dev *dev)
+ 
+ 	dev_dbg(&dev->dev, "removing\n");
+ 
++	pcistub_remove_reset_file(dev);
++
+ 	spin_lock_irqsave(&pcistub_devices_lock, flags);
+ 
+ 	xen_pcibk_config_quirk_release(dev);
+diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
+index f72af87..708ade9 100644
+--- a/drivers/xen/xen-pciback/pciback.h
++++ b/drivers/xen/xen-pciback/pciback.h
+@@ -42,6 +42,7 @@ struct xen_pcibk_device {
+ struct xen_pcibk_dev_data {
+ 	struct list_head config_fields;
+ 	struct pci_saved_state *pci_saved_state;
++	bool created_reset_file;
+ 	unsigned int permissive:1;
+ 	unsigned int warned_on_write:1;
+ 	unsigned int enable_intx:1;
+
+--------------040006050709030007030805--
