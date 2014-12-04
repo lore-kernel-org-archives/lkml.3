@@ -1,123 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaLDOw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:52:57 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34841 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142AbaLDOw4 (ORCPT
+	id S932340AbaLDOzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:55:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47973 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932176AbaLDOzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:52:56 -0500
-Message-ID: <54807505.2000406@roeck-us.net>
-Date: Thu, 04 Dec 2014 06:51:49 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 4 Dec 2014 09:55:04 -0500
+Date: Thu, 4 Dec 2014 15:52:06 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+Message-ID: <20141204145206.GR30256@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com>
+ <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather>
+ <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+ <20141202161227.GH30256@lukather>
+ <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v7 08/11] arm/arm64: Unexport restart handlers
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>	<1408495538-27480-9-git-send-email-linux@roeck-us.net>	<CAMuHMdVqCa+m1oMkuRHcTZKw2CWNHJVotWBwfTnfBNT11UPEjw@mail.gmail.com>	<54806F2A.7070107@roeck-us.net> <CAMuHMdX-WsVErpiZ_EbFSGxeJEfpu3cRaZzitupiSAA2hXEJ8g@mail.gmail.com>
-In-Reply-To: <CAMuHMdX-WsVErpiZ_EbFSGxeJEfpu3cRaZzitupiSAA2hXEJ8g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.54807548.010D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 8
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kAOhhqH5290wydqT"
+Content-Disposition: inline
+In-Reply-To: <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2014 06:44 AM, Geert Uytterhoeven wrote:
-> Hi Günther,
->
-> On Thu, Dec 4, 2014 at 3:26 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 12/04/2014 05:36 AM, Geert Uytterhoeven wrote:
->>> On Wed, Aug 20, 2014 at 2:45 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>> Implementing a restart handler in a module don't make sense
->>>> as there would be no guarantee that the module is loaded when
->>>> a restart is needed. Unexport arm_pm_restart to ensure that
->>>> no one gets the idea to do it anyway.
->>>
->>> Why not? I was just going to do that, but I got greeted by:
->>
->> Because you should register a restart handler instead, like the other
->> drivers in the same directory now do.
->
-> That's a different thing. "there would be no guarantee that the module is
-> loaded when a restart is needed" is also valid for restart handlers...
->
 
-Not really, because you are supposed to unregister the restart handler
-on unload. Sure, you can instead clear arm_pm_reastart and leave the system
-with no means to restart ...
+--kAOhhqH5290wydqT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Guenter
+Hi again,
 
->>> ERROR: "arm_pm_restart" [drivers/power/reset/rmobile-reset.ko] undefined!
->>>
->>> So now we have to make sure all reset drivers for a zillion different
->>> hardware devices are builtin, and can't be modular?
->>>
->> No. All those drivers need to do is to register a restart handler using
->> the API provided in the patch series.
->>
->> Ultimately all restart handlers should do that and arm_pm_restart should
->> go away entirely. That was the point of the patch series.
->
-> Good. That's what I'm doing right know ;-)
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
+It looks like I missed some part of it.
 
+On Thu, Dec 04, 2014 at 11:15:38PM +0900, Alexandre Courbot wrote:
+> > GPIO hogging needs to be the ideal solution for that, since we can
+> > just enforce the GPIO14 value as the driver is probed, which provides
+> > the guarantee that any driver using the bank B will actually drive the
+> > GPIO it might use.
+>=20
+> At this point I start wondering if such initial setup should not be
+> the job of the bootloader? GPIO hogging ought to be simple and
+> definitive, adding the possibility to have it just as an initial value
+> would considerably complexify it. E.g. when is the gpio chip driver
+> supposed to release the hogged descriptor in such a case?
+
+Relying on the bootloader for such trivial (and critical) things may
+not work at all. You don't always have the option to replace it,
+either because you physically can't, or just because you don't have
+any alternative.
+
+I agree that in general this is something that should go in the
+bootloader, but we should have a way to deal with the case where it's
+not done.
+
+> Note that if the multiple GPIO consumer feature we are planning goes
+> through, you should be able to use both hogging *and* a regulator on
+> the same GPIO and achieve what you want. The expectation of multiple
+> consumers is that the board designers know what they are doing, and
+> this case would certainly fit (chip hogs the line and doesn't touch
+> the value after that, letting the regulator control it without any
+> conflict afterwards), although it would of course be better to solve
+> the issue through regular probing...
+
+If such an effort is on-going, then I'm totally fine waiting for it
+and leaving that outside the hogging mechanism. As long as it works,
+I'm happy.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--kAOhhqH5290wydqT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgHUWAAoJEBx+YmzsjxAgTBoP/0cyxruXX3Z2vhWeZIQ/Hy0b
+y8bh9eN+pvm4/d0X/qyf6RgfOS+brBOPaQfsMykaRs4QrKwa433a6W0xWk3lP/zR
+evZQZhWxij/QsnXmlLt6jEkXrX+Eqrgro7pb5X2FHyV6RuXBumKxitx/bXpnN1qt
+9GLBOxdZtXW3xukbDPawaDEu5OxazT87bd7PtVRRdhEvqiVSnPGShQXY7kDWbGvd
+uFybcTt79awAxEJwOivCKWuA2NQufGo/xbSa68Kl3/dwIEKI+vRf/aUhvg2ATM8x
+XWs8X4eZaHpofC1lKlBdOKo40rkcqrpW7NrFo6VEv/euf/I841BRo9tM/CoAgqD5
+LchQ8BBlraOK0SZiPd+zKURrYQN7uC0NLX1G/paU2dWnWM6ncADVWS1ywqPH5q1z
+0OEtlkLORhjcxVd/BkHcZEVyvioQaR98kS7AKqeN7L57+bYktRM5KCGA4q1WZi1Q
++l5ry9xGBlu8pw5jY5o9UHgd+2TcGnve7kcUY4K/koir75IgEFfBmCkVJDeeJ3j7
+xcGF2XwORQS8Vlse4/CPZ5kO/I+9+IIpw43O8R3vB2dkJASGzrp/6qIbuRXvJNvJ
+wRapCKuG1lrer/AQtG9pe0ftbw6+z49jQYfesYroxljutjopxZUM7Mviv6S49UY6
+TQJk65eCo8DitpMSxlMi
+=gYz0
+-----END PGP SIGNATURE-----
+
+--kAOhhqH5290wydqT--
