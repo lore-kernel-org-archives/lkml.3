@@ -1,75 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaLDKpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:45:36 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:6059 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaLDKpd (ORCPT
+	id S1753551AbaLDKsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:48:06 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:46375 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752992AbaLDKsD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:45:33 -0500
-Message-ID: <54803B4A.10201@imgtec.com>
-Date: Thu, 4 Dec 2014 10:45:30 +0000
-From: Qais Yousef <qais.yousef@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 4 Dec 2014 05:48:03 -0500
+Date: Thu, 4 Dec 2014 11:47:57 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v5 06/11] memory: atmel-ebi: add DT bindings
+ documentation
+Message-ID: <20141204114757.1fa5cd9a@bbrezillon>
+In-Reply-To: <548037CF.7090500@atmel.com>
+References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417639455-17410-7-git-send-email-boris.brezillon@free-electrons.com>
+	<548037CF.7090500@atmel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Paul Burton <paul.burton@imgtec.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <peterz@infradead.org>,
-        <paul.gortmaker@windriver.com>, <macro@linux-mips.org>,
-        <chenhc@lemote.com>, <cl@linux.com>, <mingo@kernel.org>,
-        <richard@nod.at>, <zajec5@gmail.com>, <james.hogan@imgtec.com>,
-        <keescook@chromium.org>, <tj@kernel.org>, <alex@alex-smith.me.uk>,
-        <pbonzini@redhat.com>, <blogic@openwrt.org>,
-        <linux-kernel@vger.kernel.org>, <markos.chandras@imgtec.com>,
-        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
-        <lars.persson@axis.com>, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
-References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com> <547FA8D2.2030703@caviumnetworks.com> <547FB032.2000000@imgtec.com> <547FB8FB.7040803@caviumnetworks.com> <547FBF63.70802@imgtec.com> <547FC530.1060109@caviumnetworks.com> <20141204101229.GC5482@NP-P-BURTON>
-In-Reply-To: <20141204101229.GC5482@NP-P-BURTON>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.94]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By all means I don't really understand the whole issues surrounding this 
-but this approach looks better to me as well. It seems more generic and 
-future proof and at least I can understand the patch series.
+On Thu, 4 Dec 2014 11:30:39 +0100
+Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-But did I say I don't understand all of this? Would be nice to hear from 
-more people :)
+> Le 03/12/2014 21:44, Boris Brezillon a écrit :
+> > The EBI (External Bus Interface) is used to access external peripherals
+> > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+> > Each device is assigned a CS line and an address range and can have its
+> > own configuration (timings, access mode, bus width, ...).
+> > This driver provides a generic DT binding to configure a device according
+> > to its requirements.
+> > For specific device controllers (like the NAND one) the SMC timings
+> > should be configured by the controller driver through the matrix and smc
+> > syscon regmaps.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >  .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++++++++++++++++++
+> >  1 file changed, 155 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > new file mode 100644
+> > index 0000000..3749ea1
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> > @@ -0,0 +1,155 @@
+> > +* Device tree bindings for Atmel EBI
+> > +
+> > +The External Bus Interface (EBI) controller is a bus where you can connect
+> > +asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
+> > +The EBI provides a glue-less interface to asynchronous memories though the SMC
+> > +(Static Memory Controller).
+> > +Synchronous memories (and some asynchronous memories like NANDs) can be
+> > +attached to specialized controllers which are responsible for configuring the
+> > +bus appropriately according to the connected device.
+> > +In the other hand, the bus interface can be automated for simple asynchronous
+> > +devices.
+> > +
+> > +Required properties:
+> > +
+> > +- compatible:		"atmel,at91sam9260-ebi"
+> > +			"atmel,at91sam9261-ebi"
+> > +			"atmel,at91sam9263-ebi0"
+> > +			"atmel,at91sam9263-ebi1"
+> > +			"atmel,at91sam9g45-ebi"
+> > +			"atmel,at91sam9x5-ebi"
+> > +			"atmel,sama5d3-ebi"
+> > +
+> > +- reg:			Contains offset/length value for EBI memory mapping.
+> > +			This property might contain several entries if the EBI
+> > +			memory range is not contiguous
+> > +
+> > +- #address-cells:	Must be 2.
+> > +			The first cell encodes the CS.
+> > +			The second cell encode the offset into the CS memory
+> > +			range.
+> > +
+> > +- #size-cells:		Must be set to 1.
+> > +
+> > +- ranges:		Encodes CS to memory region association.
+> > +
+> > +- clocks:		Clock feeding the EBI controller.
+> > +			See clock-bindings.txt
+> > +
+> > +Child chip-select (cs) nodes contain the memory devices nodes connected to
+> > +such as NOR (e.g. cfi-flash) and NAND.
+> > +There might be board specific devices like FPGAs.
+> > +You'll define you device requirements in these child nodes.
+> > +
+> > +Required child cs node properties:
+> > +
+> > +- #address-cells:	Must be 2.
+> > +
+> > +- #size-cells:		Must be 1.
+> > +
+> > +- ranges:		Empty property indicating that child nodes can inherit
+> > +			memory layout.
+> > +
+> > +Optional child cs node properties:
+> > +- atmel,generic-dev		boolean property specifying if the device is
+> > +				a generic device.
+> 
+> Here, you mean: "atmel,specialized-logic" and the corresponding text...
+> 
 
-Qais
+Yep, apparently I squashed the doc fixes in the wrong commit :-(.
+I'll fix that.
 
-On 12/04/2014 10:16 AM, Paul Burton wrote:
-> Nice work David, I like this approach. It's so much simpler than hacking
-> atop the current dsemul code. I also imagine this could be reused for
-> emulation of instructions removed in r6, when running pre-r6 userland
-> binaries on r6 systems.
->
-> On Wed, Dec 03, 2014 at 06:21:36PM -0800, David Daney wrote:
->> On 12/03/2014 05:56 PM, Leonid Yegoshin wrote:
->>> I see only two technical issues here which differs:
->>>
->>> 1.  You believe your GCC experts, I trust HW Architecture manual and
->>> don't trust toolchain people too much ==> we see a different value in
->>> fact that your approach has a subset of emulated ISAs (and it can't, of
->>> course, emulate anything because some custom opcodes are reused).
->> Yes, I agree that the emulation approach cannot handle some of the cases you
->> mention (most would have to be the result of hand coded assembly
->> specifically trying to break it).
-> I'm not sure I'd agree even with that - ASEs & vendor-specific
-> instructions could easily be added if necessary.
->
-> On Thu, Dec 04, 2014 at 05:56:51PM -0800, Leonid Yehoshin wrote:
->>> 2.  My approach is ready to use and is used right now, you still have a
->>> framework which passed an initial boot.
-> Subjective.
->
-> Thanks,
->      Paul
+Thanks,
 
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
