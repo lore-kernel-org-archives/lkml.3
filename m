@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884AbaLDRqs (ORCPT <rfc822;w@1wt.eu>);
+	id S932907AbaLDRqv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 12:46:51 -0500
+Received: from sauhun.de ([89.238.76.85]:34037 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932854AbaLDRqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Dec 2014 12:46:48 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:43992 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768AbaLDRqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 12:46:46 -0500
-Date: Thu, 4 Dec 2014 09:46:41 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dudley Du <dudl@cypress.com>
-Cc: Dudley Du <dudley.dulixin@gmail.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        "bleung@google.com" <bleung@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read
- firmware image function support
-Message-ID: <20141204174641.GB4806@dtor-ws>
-References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
- <1415003590-30485-16-git-send-email-dudl@cypress.com>
- <20141110083955.GD39688@dtor-ws>
- <ad3bf85500174b25a4dc8f796d10d0a3@BN1PR06MB070.namprd06.prod.outlook.com>
+Date: Thu, 4 Dec 2014 18:46:42 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linuxppc-dev@ozlabs.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [RFC 2/2] sound: ppc: keywest: drop using attach
+	adapter
+Message-ID: <20141204174642.GA7944@katana>
+References: <1417711313-7257-1-git-send-email-wsa@the-dreams.de>
+ <1417711313-7257-3-git-send-email-wsa@the-dreams.de>
+ <s5hiohrpd0w.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <ad3bf85500174b25a4dc8f796d10d0a3@BN1PR06MB070.namprd06.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hiohrpd0w.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 11:05:39AM +0000, Dudley Du wrote:
-> Thanks, Dmitry
-> 
-> > -----Original Message-----
-> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> > Sent: 2014?11?10? 16:40
-> > To: Dudley Du
-> > Cc: rydberg@euromail.se; Dudley Du; bleung@google.com;
-> > linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read
-> > firmware image function support
-> >
-> > On Mon, Nov 03, 2014 at 04:33:07PM +0800, Dudley Du wrote:
-> > > Add read firmware image function supported for gen3 trackpad device,
-> > > it can be used through debugfs read_fw interface.
-> >
-> > Why do we need this? Can we do the same via usespace program accessing
-> > the i2c device through /dev/i2c-N?
-> 
-> This interface is used to test and debug only. It's defined and required by the chromium projects.
-> 
-> And in the driver side, becase the firmware image read process is done based on interrupt signal,
-> if do this in userspace through /dev/i2c-N, there will be two issues:
-> 1) for gen5, after each command, an interrupt will be asserted, so if throug /dev/i2c-N,
-> userspace program cannot get the interrupt signal.
-> 2) and when the interrupt signal assert, driver won't know it’s a command signal for image read,
-> so it will try to process it as data report.
-> To avoid this, additional interface must be added to mark the image read status and
-> block interrupt signal to be process as data report.
 
-I believe that while userspace acc4esses the device through /dev/i2c-N
-you should unbind the cyapa driver from the device (via sysfs driver
-core bind/unbind attribute) so that it doe snot get in the way. Once
-diagnostics is done you can bind the driver back to device, restoring
-normal operation.
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That is how we are planning to handle other devices at factory as
-well.
 
-Thanks.
+> > +
+> > +	/* We assume Macs have consecutive I2C bus numbers starting at 0 */
+> > +	while (adap) {
+> > +		err =3D keywest_attach_adapter(adap);
+> > +		if (!err)
+> > +			break;
+> > +		i2c_put_adapter(adap);
+> > +		adap =3D i2c_get_adapter(++i);
+> > +	}
+> > +
+> >  	return 0;
+>=20
+> What if adap is NULL in the last while loop?  Isn't it supposed to
+> return an error?
 
--- 
-Dmitry
+True, we probably should have something like
+
+	return adap ? 0 : -ENODEV;
+
+Thanks!
+
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgJ4BAAoJEBQN5MwUoCm2DcYP/iXD/LXZnNZdGJK9LJLFk46C
+9o07m4srk91m4GeJJw7pmiF8y8BhEHtwNZfEFokXuOhLHczMHslyzspOJH/rGjFA
+MVPIUX1/apojiAjUj2rxxqtfDUorOQ3WR0pwlZatTwQYV7xRnH1jqC5o+PXYOyfL
+RtAhmEmqUHYLgJSDtRoeqBPYEC8rvWl1ylGZmzURQ7Pwe6Em+lqDk1rFwfSYiOCK
+Wi7dOP9Ra+aVKWWrHQ1yyD2c0cliOEV33s4UMLjYA7ZtvbldtqwR7neUkpBJhbQY
+axCjuK+/AvZvKplnSEHUrnkFM1pWqEmP9SSI1b3EXK+DUKwe+DpghjuDjF36tXRy
+jKfJnocFzFhgBzKEspWZ9CA5nd+nmB/StoC5XHSrh2QiZgB/SFs/tITEs5BsEccC
+Ae1qypm2YlO/646kXvkeMmceobIai+t6KlhVPoLUgomjwhVVwkZlg806Ma6Z1GZw
+QrbdLRk6rxeNoxgrpYoQmz0bbfu+eGPdtwEPdmF/kXiNhvdPJ+Ll04Yl6HJIF/Qo
+D6Q4j7WDpTjjO6ay6uBocPJlZTM2izMwNP7ikmWSp/behold/BnFVB6CvrOmZPEX
+eRA2nItjKCBItIMmPsxhXJTJ0f3ZGqpFb53yWH1LnLicK5RyN3/1gW4nzHHCVgzn
+/w1YkBdn3r/uu0+nIZPS
+=Fcnn
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
