@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbaLDVOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 16:14:21 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:39283 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381AbaLDVOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 16:14:20 -0500
-Message-ID: <5480CEA9.30706@osg.samsung.com>
-Date: Thu, 04 Dec 2014 14:14:17 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S933060AbaLDVPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 16:15:16 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:35738 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845AbaLDVPN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 16:15:13 -0500
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/101] 3.12.34-stable review
-References: <cover.1417605922.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417605922.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2620:0:1000:157d:8d6d:5f31:5f6:cc86]
+In-Reply-To: <1417707993-82290-1-git-send-email-agraf@suse.de>
+References: <1417707993-82290-1-git-send-email-agraf@suse.de>
+Date: Thu, 4 Dec 2014 13:15:12 -0800
+Message-ID: <CAOesGMhv+0_SZb2eSiwCGaD77hd=a6EhMp6tVvcrZoBnrHKQjA@mail.gmail.com>
+Subject: Re: [PATCH] arm64: Enable CONFIG_COMPAT also for 64k page size
+From: Olof Johansson <olof@lixom.net>
+To: Alexander Graf <agraf@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 04:26 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.34 release.
-> There are 101 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Dec  5 12:25:22 CET 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.34-rc1.xz
-> and the diffstat can be found below.
-> 
-> thanks,
-> js
-> 
+On Thu, Dec 4, 2014 at 7:46 AM, Alexander Graf <agraf@suse.de> wrote:
+> With binutils 2.25 the default alignment for 32bit arm sections changed to
+> have everything 64k aligned. Armv7 binaries built with this binutils version
+> run successfully on an arm64 system.
+>
+> Since effectively there is now the chance to run armv7 code on arm64 even
+> with 64k page size, it doesn't make sense to block people from enabling
+> CONFIG_COMPAT on those configurations.
+>
+> Signed-off-by: Alexander Graf <agraf@suse.de>
+> ---
+>  arch/arm64/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 9532f8d..3cf4f238 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -409,7 +409,6 @@ source "fs/Kconfig.binfmt"
+>
+>  config COMPAT
+>         bool "Kernel support for 32-bit EL0"
+> -       depends on !ARM64_64K_PAGES
+>         select COMPAT_BINFMT_ELF
+>         select HAVE_UID16
+>         select OLD_SIGSUSPEND3
 
-Compiled and booted on my test system. No dmesg regressions.
+This is hardly "compat". Sure, it's great to have a new binutils that
+has larger alignment, but practically not a single existing binary
+will work today if someone tries to do this.
 
--- Shuah
+So, it seems very premature to take this off. At the very least
+document it like Will requested, and make it depend on !ARM_64K_PAGES
+|| EXPERT.
 
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Open Source Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+-Olof
