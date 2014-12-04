@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaLDQIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:08:38 -0500
-Received: from h1.radempa.de ([176.9.142.194]:38470 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137AbaLDQIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:08:37 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Richard Weinberger <richard@nod.at>
-cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: iio: dht11 Updates
-In-reply-to: <547F7092.8080001@nod.at>
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F7092.8080001@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Wed, 03 Dec 2014 21:20:34 +0100."
+	id S932341AbaLDQJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:09:00 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:44121 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaLDQI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 11:08:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4459.1417709282.1@stardust.g4.wien.funkfeuer.at>
-Date: Thu, 04 Dec 2014 17:08:02 +0100
-Message-Id: <E1XwYwk-00019x-LZ@stardust.g4.wien.funkfeuer.at>
+In-Reply-To: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
+References: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
+Date: Thu, 4 Dec 2014 08:08:57 -0800
+X-Google-Sender-Auth: FZnTXpxHKAV5vMdp2a8O2457QqU
+Message-ID: <CAD=FV=U8eGRFs5G+QfuRF0z1y_7G540r+uCQzPtgOT=KKD7s0g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: rockchip: set dw_mmc max-freq 150Mhz
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Alexandru Stan <amstan@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>, han jiang <hj@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>, wei.luo@rock-chips.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger writes:
-> Harald,
-> 
-> Am 03.12.2014 um 13:18 schrieb Harald Geyer:
-> > Hi Richard,
-> > 
-> > thanks for all the work you put into this!
-> > 
-> > Richard Weinberger writes:
-> >> Please see my current patches for your driver.
-> >> As discussed in an earlier mail I'm testing with the DHT22 sensor only.
-> >> With the IRQ changes I see 84 edges.
-> > 
-> > This still surprises me. With the IRQ changes I would expect the
-> > preamble to be 2 edges only. I must be missing something. Can you
-> > explain this to me?
-> 
-> Did some more tests.
-> With my IRQ changes applied I get as stated 84 edges,
-> without I get 85. So we're only losing one edge.
+Addy,
 
-Ok, finally had time to look into this and it's a simple off-by-one
-issue (no bug) that confused me:
-Without your patch the full number of edges per data transmission
-is 86. But since the last edge is not significant, we only store
-85 edges. - There should be a comment about this in the source...
+On Wed, Dec 3, 2014 at 6:49 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> All of mmc controllers include SDMMC, SDIO0, SDIO1, and EMMC on RK3288
+> are limited to 150Mhz. It was mainly caused by two reasons:
+> - RK3288's IO pad(except DDR IO pad) is generic, which can only support
+>   the max of 150Mhz.
+> - Mmc controller was designed at 150Mhz, and the pressure test by IC team
+>   was based on this freequency point.
+>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+>  arch/arm/boot/dts/rk3288.dtsi | 4 ++++
+>  1 file changed, 4 insertions(+)
 
-With your patch the preamble is shortened by two edges as expected,
-but since there is a workaround for sensors where the preamble wasn't
-properly recorded, nobody notices unless they are looking closely at
-the number of edges recorded. The next thing to do is check on DHT11
-if the workaround is still needed.
+Your explanation is reasonable.  The 150MHz rate is also listed in the
+latest datasheet.  It's unfortunate that we won't get full speed of
+SDR104 or hs200 on this SoC, but correctness certainly outweighs
+performance.
 
-Note that the old behaviour was nice for debugging wiring problems:
-With my standard setup (3.3V, pin drive strenght 4 mA) I got the
-following:
-supply not connected: 0 edges (sensor always pulls the data line low)
-data not connected: 2 edges (we only see the signal we generate ourselves)
-gnd not connected: random amount of edges
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-With the new behaviour we will get 0 edges in both of the first two
-cases. So we are really losing a tiny bit of functionality... :-(
+I have tested that this prevents the speed from going above 150MHz on
+rk3288-pinky on SD Cards, so:
 
-HTH,
-Harald
+Tested-by: Doug Anderson <dianders@chromium.org>
+
+-Doug
