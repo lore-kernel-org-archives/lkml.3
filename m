@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaLDNKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 08:10:06 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:34851 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614AbaLDNKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 08:10:03 -0500
-Date: Thu, 4 Dec 2014 05:09:57 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Dong Aisheng <dongas86@gmail.com>, tj@kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.or>,
-        Dong Aisheng-B29396 <b29396@freescale.com>, r64343@freescale.com
-Subject: Re: WARNING: at fs/fs-writeback.c when plug out SD card after system
- suspend/resume
-Message-ID: <20141204130957.GA3957@infradead.org>
-References: <CAA+hA=R2x5dUkZAh9=nHLsmaqA5YiAjEya-vQnjLx6i7fruV1w@mail.gmail.com>
- <20141204124139.GC8569@quack.suse.cz>
+	id S1754160AbaLDNPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 08:15:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46369 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754083AbaLDNPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 08:15:01 -0500
+Date: Thu, 4 Dec 2014 14:14:55 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <nadav.amit@gmail.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] kvm: cpuid: fix the size of xsaves area
+Message-ID: <20141204131454.GA17050@potion.brq.redhat.com>
+References: <1417691470-5221-1-git-send-email-wanpeng.li@linux.intel.com>
+ <1417691470-5221-2-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141204124139.GC8569@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1417691470-5221-2-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 01:41:39PM +0100, Jan Kara wrote:
-> We should fix bdi lifetime issues by making bdi live as long as the
-> filesystem on top of it but someone has to find time to do that...
+2014-12-04 19:11+0800, Wanpeng Li:
+> The section of CPUID(EAX=0xd, ECX=1) in the spec which commit
+> f5c2290cd01e (KVM: cpuid: mask more bits in leaf 0xd and subleaves)
+> mentioned is older than SDM.
+> 
+> EBX: Bits 31-00: The size in bytes of the XSAVE area containing all
+> states enabled by XCR0|IA32_XSS.
 
-I've started that project a couple of times, but never managed to finish
-it.  Let me try to resurrect it..
+Well, CPUs without XSAVES return 0 there, so we would emulate them
+incorrectly ... (I don't mind much, it is reserved.)
+
+> The the value of EBX should represent the size of XCR0 related XSAVE
+> area since IA32_XSS is not used currently.
+
+True, but 'supported' is not the state of XCR0, just its supremum.
+EBX should be set in kvm_update_cpuid(), like [3/4] does.
+(We can safely drop [2/4].)
+
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * add F(XSAVEC) check
+> 
+>  arch/x86/kvm/cpuid.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index 646e6e8..5b78e9b 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -477,7 +477,10 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  			do_cpuid_1_ent(&entry[i], function, idx);
+>  			if (idx == 1) {
+>  				entry[i].eax &= kvm_supported_word10_x86_features;
+> -				entry[i].ebx = 0;
+> +				if (entry[i].eax & (F(XSAVES) | F(XSAVEC)))
+> +					entry[i].ebx = xstate_required_size(supported, true);
+> +				else
+> +					entry[i].ebx = xstate_required_size(supported, false);
+>  			} else {
+>  				if (entry[i].eax == 0 || !(supported & mask))
+>  					continue;
+> -- 
+> 1.9.1
+> 
