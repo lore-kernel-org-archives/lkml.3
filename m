@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaLDMv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:51:58 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:43602 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbaLDMv4 (ORCPT
+	id S1753997AbaLDMwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:52:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753876AbaLDMwJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:51:56 -0500
+	Thu, 4 Dec 2014 07:52:09 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <54805034.9030808@samsung.com>
+References: <54805034.9030808@samsung.com> <20141126141709.3944.66589.stgit@warthog.procyon.org.uk> <20141126141720.3944.40497.stgit@warthog.procyon.org.uk>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, mmarek@suse.cz,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/5] X.509: Extract both parts of the AuthorityKeyIdentifier [ver #2]
 MIME-Version: 1.0
-In-Reply-To: <20141203205237.GE31246@pd.tnic>
-References: <CANVTcTaChssJEU48iS6a1WwFf59Tqz2T9VrnsSM9ZLwnRC+SWw@mail.gmail.com>
-	<20141203205237.GE31246@pd.tnic>
-Date: Thu, 4 Dec 2014 20:51:54 +0800
-Message-ID: <CANVTcTbaGxDPQx503m91KqUY1oGPMTQR3ZCXNrfC5LKs44pBmw@mail.gmail.com>
-Subject: Re: Bug: Fatal errors result in infinite stream of error messages
-From: rui wang <ruiv.wang@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, aris@redhat.com,
-        rui.y.wang@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <25116.1417697512.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Dec 2014 12:51:52 +0000
+Message-ID: <25117.1417697512@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/4/14, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, Dec 03, 2014 at 05:11:49PM +0800, rui wang wrote:
->> The problem is because kdump fails to load a new kernel, and we're
->> executing past crash_kexec() in panic(). And it calls
->> bust_spinlocks(0) which calls into the GPU driver trying to unblank
->> the screen, which eventually calls __schedule() while waiting for a
->> mutex to be released. But we're still in the machine check context.
->> The infinite stream of errors is because there's a for(;;) loop in
->> __mutex_lock_common(), so we enter __schedule() again and again.
->
-> Hmm, there's a bust_spinlocks(1) call in mce_panic() for which I have no
-> idea what it is for? To stop us from scheduling?
->
-> If so, why doesn't it stop us...?
->
-> There's also this:
->
-> void console_unblank(void)
-> {
->         struct console *c;
->
->         /*
->          * console_unblank can no longer be called in interrupt context
-> unless
-> ====>    * oops_in_progress is set to 1..
->          */
->         if (oops_in_progress) {
->                 if (down_trylock_console_sem() != 0)
->                         return;
->         } else
->                 console_lock();
->
+Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
 
-That points to the direction of a potential fix. There are places
-under drivers/gpu/drm/ which should do this kind of check in order to
-make it work in panic. An existing example is here :
+> > +	struct asymmetric_key_id *auth_id;	/* CA AuthKeyId matching ->id (optional) */
+> > +	struct asymmetric_key_id *auth_skid;	/* CA AuthKeyId matching ->skid (optional) */
+> 
+> Hi David,
+> 
+> Why do you call it "auth_skid", not just akid in similar way as 'skid'?
+> Why it is "auth & skid"?
 
-void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
-{
-        struct drm_crtc *crtc;
+Because both auth_skid and auth_id derive from the akid.
 
-        /* Locking is currently fubar in the panic handler. */
-        if (oops_in_progress) <======
-                return;
-
-        list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
-                WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
-
-        WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
-        WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
-}
-
-I'll send a patch later.
-
-Thanks
-Rui
+David
