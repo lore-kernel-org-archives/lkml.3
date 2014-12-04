@@ -1,166 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaLDKHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:07:31 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:36343 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaLDKH1 (ORCPT
+	id S1753865AbaLDKH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:07:58 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:37236 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaLDKHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:07:27 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <16dfe34d854550d073a7740c3575bea2>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v17 07/12] drm: bridge/dw_hdmi: add support for multi-byte register width access
-Date: Thu,  4 Dec 2014 18:06:57 +0800
-Message-Id: <1417687617-13253-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417686826-12687-1-git-send-email-andy.yan@rock-chips.com>
+	Thu, 4 Dec 2014 05:07:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <007f01d00fa1$68bf6770$3a3e3650$@alibaba-inc.com>
+References: <007f01d00fa1$68bf6770$3a3e3650$@alibaba-inc.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 4 Dec 2014 11:07:35 +0100
+Message-ID: <CAKfTPtAOTJ1i5HPad4j91SWNiK5m_JRmg6Z4COiC8pADhi3dng@mail.gmail.com>
+Subject: Re: [PATCH] sched/fair: fix select_task_rq_fair return -1
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+Cc: jun.zhang@intel.com, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Changcheng Liu <changcheng.liu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On rockchip rk3288, only word(32-bit) accesses are
-permitted for hdmi registers.  Byte width accesses (writeb,
-readb) generate an imprecise external abort.
+On 4 December 2014 at 10:05, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
+>>
+>> From: zhang jun <jun.zhang@intel.com>
+>>
+>> when cpu == -1 and sd->child == NULL, select_task_rq_fair return -1, system panic.
+>>
+>> [ 0.738326] BUG: unable to handle kernel paging request at ffff8800997ea928
+>> [ 0.746138] IP: [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
+>> [ 0.752886] PGD 25df067 PUD 0
+>> [ 0.756321] Oops: 0000 1 PREEMPT SMP
+>> [ 0.760743] Modules linked in:
+>> [ 0.764179] CPU: 0 PID: 6 Comm: kworker/u8:0 Not tainted 3.14.19-quilt-b27ac761 #2
+>> [ 0.772651] Hardware name: Intel Corporation CHERRYVIEW B1 PLATFORM/Cherry Trail CR, BIOS CHTTRVP1.X64.0003.R08.1411110453
+>> 11/11/2014
+>> [ 0.786084] Workqueue: khelper __call_usermodehelper
+>> [ 0.791649] task: ffff88007955a150 ti: ffff88007955c000 task.ti: ffff88007955c000
+>> [ 0.800021] RIP: 0010:[<ffffffff810b15d3>] [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
+>> [ 0.809478] RSP: 0000:ffff88007955dd58 EFLAGS: 00010092
+>> [ 0.815422] RAX: 00000000ffffffff RBX: 0000000000000001 RCX: 0000000000000020
+>> [ 0.823404] RDX: 00000000ffffffff RSI: 0000000000000020 RDI: 0000000000000020
+>> [ 0.831386] RBP: ffff88007955dd80 R08: ffff880079604b58 R09: 00000000ffffffff
+>> [ 0.839368] R10: 0000000000000004 R11: eae0000000000000 R12: ffff8800797ea650
+>> [ 0.847350] R13: 0000000000004000 R14: ffff8800797ead52 R15: 0000000000000206
+>> [ 0.855335] FS: 0000000000000000(0000) GS:ffff88007aa00000(0000) knlGS:0000000000000000
+>> [ 0.864387] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [ 0.870817] CR2: ffff8800997ea928 CR3: 000000000220b000 CR4: 00000000001007f0
+>> [ 0.878796] Stack:
+>> [ 0.881046] 0000000000000001 ffff8800797ea650 0000000000004000 0000000000000000
+>> [ 0.889363] 000000000000003c ffff88007955ddf0 ffffffff8107ddfd ffffffff810b6a95
+>> [ 0.897680] 0000000000000000 ffff8800796beb00 ffff880000000000 ffffffff81000000
+>> [ 0.905998] Call Trace:
+>> [ 0.908752] [<ffffffff8107ddfd>] do_fork+0x12d/0x3b0
+>> [ 0.914416] [<ffffffff810b6a95>] ? set_next_entity+0x95/0xb0
+>> [ 0.920856] [<ffffffff8107e0a6>] kernel_thread+0x26/0x30
+>> [ 0.926903] [<ffffffff8109703e>] __call_usermodehelper+0x2e/0x90
+>> [ 0.933730] [<ffffffff8109ad31>] process_one_work+0x171/0x490
+>> [ 0.940264] [<ffffffff8109ba4b>] worker_thread+0x11b/0x3a0
+>> [ 0.946508] [<ffffffff8109b930>] ? manage_workers.isra.27+0x2b0/0x2b0
+>> [ 0.953821] [<ffffffff810a1802>] kthread+0xd2/0xf0
+>> [ 0.959289] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
+>> [ 0.966602] [<ffffffff81af81ac>] ret_from_fork+0x7c/0xb0
+>> [ 0.972652] [<ffffffff810a1730>] ? kthread_create_on_node+0x170/0x170
+>> [ 0.979956] Code: 49 89 fc 4c 89 f7 53 e8 bc 5c a4 00 49 8b 54 24 08 31 c9 49 89 c7 49 8b 44 24 60 4c 89 e7 8b 72 18 ba 08 00 00 00 ff 50 40 89
+>> c2 <49> 0f a3 94 24 e0 02 00 00 19 c9 85 c9 0f 84 34 01 00 00 48 8b
+>> [ 1.001809] RIP [<ffffffff810b15d3>] wake_up_new_task+0x43/0x1b0
+>> [ 1.008641] RSP <ffff88007955dd58>
+>> [ 1.012544] CR2: ffff8800997ea928
+>> [ 1.016279] --[ end trace 9737aaa337a5ca10 ]--
+>>
+>> Signed-off-by: zhang jun <jun.zhang@intel.com>
+>> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+>> Signed-off-by: Changcheng Liu <changcheng.liu@intel.com>
+>> ---
+>>  kernel/sched/fair.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 34baa60..123153f 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -4587,6 +4587,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+>>               if (new_cpu == -1 || new_cpu == cpu) {
+>>                       /* Now try balancing at a lower domain level of cpu */
+>>                       sd = sd->child;
+>> +                     if ((!sd) && (new_cpu == -1))
+>> +                             new_cpu = smp_processor_id();
+>>                       continue;
+>>               }
+>>
+> In 3.18-rc7 is -1 still selected?
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+find_idlest_cpu doesn't return -1 anymore but always a valid cpu. The
+local cpu will be used if no better cpu has been found
 
----
-
-Changes in v17: None
-Changes in v16: None
-Changes in v15:
-- remove unio of the multi-byte register access, adviced by Philipp Zabel
-
-Changes in v14: None
-Changes in v13: None
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6:
-- refactor register access without reg_shift
-
-Changes in v5:
-- refactor reg-io-width
-
-Changes in v4: None
-Changes in v3:
-- split multi-register access to one indepent patch
-
- drivers/gpu/drm/bridge/dw_hdmi.c | 44 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index b69057d..37966f4 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -128,18 +128,41 @@ struct dw_hdmi {
- 
- 	unsigned int sample_rate;
- 	int ratio;
-+
-+	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
-+	u8 (*read)(struct dw_hdmi *hdmi, int offset);
- };
- 
--static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
-+static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
-+{
-+	writel(val, hdmi->regs + (offset << 2));
-+}
-+
-+static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
-+{
-+	return readl(hdmi->regs + (offset << 2));
-+}
-+
-+static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
- {
- 	writeb(val, hdmi->regs + offset);
- }
- 
--static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
-+static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
- {
- 	return readb(hdmi->regs + offset);
- }
- 
-+static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
-+{
-+	hdmi->write(hdmi, val, offset);
-+}
-+
-+static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
-+{
-+	return hdmi->read(hdmi, offset);
-+}
-+
- static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
- {
- 	u8 val = hdmi_readb(hdmi, reg) & ~mask;
-@@ -1511,6 +1534,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 	struct device_node *ddc_node;
- 	struct dw_hdmi *hdmi;
- 	int ret;
-+	u32 val = 1;
- 
- 	hdmi = devm_kzalloc(dev, sizeof(*hdmi), GFP_KERNEL);
- 	if (!hdmi)
-@@ -1523,6 +1547,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 	hdmi->ratio = 100;
- 	hdmi->encoder = encoder;
- 
-+	of_property_read_u32(np, "reg-io-width", &val);
-+
-+	switch (val) {
-+	case 4:
-+		hdmi->write = dw_hdmi_writel;
-+		hdmi->read = dw_hdmi_readl;
-+		break;
-+	case 1:
-+		hdmi->write = dw_hdmi_writeb;
-+		hdmi->read = dw_hdmi_readb;
-+		break;
-+	default:
-+		dev_err(dev, "reg-io-width must be 1 or 4\n");
-+		return -EINVAL;
-+	}
-+
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--- 
-1.9.1
-
-
+>
+> Hillf
+>
