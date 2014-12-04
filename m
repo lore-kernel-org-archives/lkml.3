@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaLDMe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 07:34:27 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:25680
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753806AbaLDMeZ convert rfc822-to-8bit (ORCPT
+	id S1754054AbaLDMee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 07:34:34 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38852 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754013AbaLDMeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 07:34:25 -0500
-From: Zidan Wang <B50113@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "ckeepax@opensource.wolfsonmicro.com" 
-	<ckeepax@opensource.wolfsonmicro.com>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel][PATCH v2] ASoC: wm8960: Let wm8960 codec driver
- manage its own MCLK
-Thread-Topic: [alsa-devel][PATCH v2] ASoC: wm8960: Let wm8960 codec driver
- manage its own MCLK
-Thread-Index: AQHQD5uHBipu5Wzgq0uo7TZDsuUQHpx/SrgAgAACTNA=
-Date: Thu, 4 Dec 2014 12:34:20 +0000
-Message-ID: <BY1PR0301MB1253AD2792540463CD7D70F68D780@BY1PR0301MB1253.namprd03.prod.outlook.com>
-References: <1417681425-4360-1-git-send-email-b50113@freescale.com>
- <20141204112512.GS7712@sirena.org.uk>
-In-Reply-To: <20141204112512.GS7712@sirena.org.uk>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
-x-forefront-prvs: 041517DFAB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(13464003)(377454003)(24454002)(199003)(40100003)(76576001)(31966008)(122556002)(107046002)(54356999)(4396001)(21056001)(76176999)(54606007)(50986999)(68736005)(106116001)(106356001)(64706001)(20776003)(105586002)(66066001)(120916001)(77156002)(99396003)(62966003)(97736003)(101416001)(46102003)(99286002)(2656002)(87936001)(95666004)(19580405001)(19580395003)(92726001)(92566001)(110136001)(86362001)(33656002)(54206007)(74316001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0620;H:BY1PR0301MB1253.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Thu, 4 Dec 2014 07:34:31 -0500
+X-Sasl-enc: LIaRC03vd8bG1ZvmfxKzzI9oNdTBkqKU03pD/08wPvNW 1417696470
+Message-ID: <1417696468.5386.23.camel@localhost>
+Subject: Re: Where exactly will arch_fast_hash be used
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Thomas Graf <tgraf@suug.ch>, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Dec 2014 13:34:28 +0100
+In-Reply-To: <20141204081147.GA19030@gondor.apana.org.au>
+References: <20141204081147.GA19030@gondor.apana.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your reply. 
-You are right, the machine driver should disable the PLL.
+Hi Herbert,
+
+On Do, 2014-12-04 at 16:11 +0800, Herbert Xu wrote:
+> While working on rhashtable it came to me that this whole concept
+> of arch_fast_hash is flawed.  CRCs are linear functions so it's
+> fairly easy for an attacker to identify collisions or at least
+> eliminate a large amount of search space (e.g., controlling the
+> last bit of the hash result is almost trivial, even when you add
+> a random seed).
+> 
+> So what exactly are we going to use arch_fast_hash for? Presumably
+> it's places where security is never goint to be an issue, right?
+> 
+> Even if security wasn't an issue, straight CRC32 has really poor
+> lower-order bit distribution, which makes it a terrible choice for
+> a hash table that simply uses the lower-order bits.
+
+I wondered the same while trying to use arch_fast_hash in a lot more
+places (I did a new implementation in assembler I'll send later on, it
+is mostly optimized to deal with ovs flow keys).
+
+While the uniformity of crc32 does actually look good and IMHO this even
+holds for the lower bits of the hash, I totally agree on the linearity
+matters.
+
+The easiest way to make arch_fast_hash non-linear would be to build up
+on the crc32 instruction like e.g. the cityhash function family does and
+it seems not too hard to do that by combining two crc32c outputs of the
+original and cyclic shifted input data. I have doubts if this is faster
+than jhash in the end. There are proposals from Intel to do so, but they
+are patent encumbered. :/
+
+For most consumers in the networking stack, security and DoS resistence
+is an issue. OVS, for which this was designed at first does do rehashing
+from time to time, but still there is a possible DoS attack vector with
+this hashing algorithm.
+
+Bye,
+Hannes
 
 
-Best Regards,
-Zidan
-
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Thursday, December 04, 2014 7:25 PM
-To: Wang Zidan-B50113
-Cc: lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de; lars@metafoo.de; ckeepax@opensource.wolfsonmicro.com; Xiubo Li-B47053; patches@opensource.wolfsonmicro.com; alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH v2] ASoC: wm8960: Let wm8960 codec driver manage its own MCLK
-
-On Thu, Dec 04, 2014 at 04:23:45PM +0800, Zidan Wang wrote:
-
-> If we use PLL to generate sysclk, wm8960_set_dai_pll() will enable 
-> PLL. But PLL doesn't power down after using codec. So power down PLL in suspend().
-
-That would be a bug in the machine driver, the machine driver should be disabling the PLL when it suspends since the startup and shutdown of the PLL need to be coordinated with the input clocks.  Besides, if we were doing this in the CODEC driver then as I said last time the PLL needs to be restored on resume since the machine driver should be able to expect that settings it has made are preserved (eg, if it sets things up on init).
