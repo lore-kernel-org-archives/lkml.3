@@ -1,71 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341AbaLDQJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:09:00 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:44121 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbaLDQI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:08:58 -0500
+	id S932433AbaLDQKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:10:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753665AbaLDQKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 11:10:43 -0500
+Date: Thu, 4 Dec 2014 18:10:22 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH v8 17/50] KVM: s390: Set virtio-ccw transport revision
+Message-ID: <20141204161022.GA23199@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+ <1417449619-24896-18-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
-References: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
-Date: Thu, 4 Dec 2014 08:08:57 -0800
-X-Google-Sender-Auth: FZnTXpxHKAV5vMdp2a8O2457QqU
-Message-ID: <CAD=FV=U8eGRFs5G+QfuRF0z1y_7G540r+uCQzPtgOT=KKD7s0g@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: rockchip: set dw_mmc max-freq 150Mhz
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Alexandru Stan <amstan@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, han jiang <hj@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>, wei.luo@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417449619-24896-18-git-send-email-mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+On Mon, Dec 01, 2014 at 06:04:11PM +0200, Michael S. Tsirkin wrote:
+> From: Thomas Huth <thuth@linux.vnet.ibm.com>
+> 
+> With the new SET-VIRTIO-REVISION command of the virtio 1.0 standard, we
+> can now negotiate the virtio-ccw revision after setting a channel online.
+> 
+> Note that we don't negotiate version 1 yet.
+> 
+> [Cornelia Huck: reworked revision loop a bit]
+> Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+> Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-On Wed, Dec 3, 2014 at 6:49 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> All of mmc controllers include SDMMC, SDIO0, SDIO1, and EMMC on RK3288
-> are limited to 150Mhz. It was mainly caused by two reasons:
-> - RK3288's IO pad(except DDR IO pad) is generic, which can only support
->   the max of 150Mhz.
-> - Mmc controller was designed at 150Mhz, and the pressure test by IC team
->   was based on this freequency point.
->
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Looking at this some more: to me it looks
+like this command should be repeated whenever we reset
+the device.
+
+No?
+
+
 > ---
->  arch/arm/boot/dts/rk3288.dtsi | 4 ++++
->  1 file changed, 4 insertions(+)
-
-Your explanation is reasonable.  The 150MHz rate is also listed in the
-latest datasheet.  It's unfortunate that we won't get full speed of
-SDR104 or hs200 on this SoC, but correctness certainly outweighs
-performance.
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-
-I have tested that this prevents the speed from going above 150MHz on
-rk3288-pinky on SD Cards, so:
-
-Tested-by: Doug Anderson <dianders@chromium.org>
-
--Doug
+>  drivers/s390/kvm/virtio_ccw.c | 63 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 63 insertions(+)
+> 
+> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> index 65d0c80..f6eb47b 100644
+> --- a/drivers/s390/kvm/virtio_ccw.c
+> +++ b/drivers/s390/kvm/virtio_ccw.c
+> @@ -55,6 +55,7 @@ struct virtio_ccw_device {
+>  	struct ccw_device *cdev;
+>  	__u32 curr_io;
+>  	int err;
+> +	unsigned int revision; /* Transport revision */
+>  	wait_queue_head_t wait_q;
+>  	spinlock_t lock;
+>  	struct list_head virtqueues;
+> @@ -86,6 +87,15 @@ struct virtio_thinint_area {
+>  	u8 isc;
+>  } __packed;
+>  
+> +struct virtio_rev_info {
+> +	__u16 revision;
+> +	__u16 length;
+> +	__u8 data[];
+> +};
+> +
+> +/* the highest virtio-ccw revision we support */
+> +#define VIRTIO_CCW_REV_MAX 0
+> +
+>  struct virtio_ccw_vq_info {
+>  	struct virtqueue *vq;
+>  	int num;
+> @@ -122,6 +132,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
+>  #define CCW_CMD_WRITE_STATUS 0x31
+>  #define CCW_CMD_READ_VQ_CONF 0x32
+>  #define CCW_CMD_SET_IND_ADAPTER 0x73
+> +#define CCW_CMD_SET_VIRTIO_REV 0x83
+>  
+>  #define VIRTIO_CCW_DOING_SET_VQ 0x00010000
+>  #define VIRTIO_CCW_DOING_RESET 0x00040000
+> @@ -134,6 +145,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
+>  #define VIRTIO_CCW_DOING_READ_VQ_CONF 0x02000000
+>  #define VIRTIO_CCW_DOING_SET_CONF_IND 0x04000000
+>  #define VIRTIO_CCW_DOING_SET_IND_ADAPTER 0x08000000
+> +#define VIRTIO_CCW_DOING_SET_VIRTIO_REV 0x10000000
+>  #define VIRTIO_CCW_INTPARM_MASK 0xffff0000
+>  
+>  static struct virtio_ccw_device *to_vc_device(struct virtio_device *vdev)
+> @@ -933,6 +945,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
+>  		case VIRTIO_CCW_DOING_RESET:
+>  		case VIRTIO_CCW_DOING_READ_VQ_CONF:
+>  		case VIRTIO_CCW_DOING_SET_IND_ADAPTER:
+> +		case VIRTIO_CCW_DOING_SET_VIRTIO_REV:
+>  			vcdev->curr_io &= ~activity;
+>  			wake_up(&vcdev->wait_q);
+>  			break;
+> @@ -1048,6 +1061,51 @@ static int virtio_ccw_offline(struct ccw_device *cdev)
+>  	return 0;
+>  }
+>  
+> +static int virtio_ccw_set_transport_rev(struct virtio_ccw_device *vcdev)
+> +{
+> +	struct virtio_rev_info *rev;
+> +	struct ccw1 *ccw;
+> +	int ret;
+> +
+> +	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
+> +	if (!ccw)
+> +		return -ENOMEM;
+> +	rev = kzalloc(sizeof(*rev), GFP_DMA | GFP_KERNEL);
+> +	if (!rev) {
+> +		kfree(ccw);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/* Set transport revision */
+> +	ccw->cmd_code = CCW_CMD_SET_VIRTIO_REV;
+> +	ccw->flags = 0;
+> +	ccw->count = sizeof(*rev);
+> +	ccw->cda = (__u32)(unsigned long)rev;
+> +
+> +	vcdev->revision = VIRTIO_CCW_REV_MAX;
+> +	do {
+> +		rev->revision = vcdev->revision;
+> +		/* none of our supported revisions carry payload */
+> +		rev->length = 0;
+> +		ret = ccw_io_helper(vcdev, ccw,
+> +				    VIRTIO_CCW_DOING_SET_VIRTIO_REV);
+> +		if (ret == -EOPNOTSUPP) {
+> +			if (vcdev->revision == 0)
+> +				/*
+> +				 * The host device does not support setting
+> +				 * the revision: let's operate it in legacy
+> +				 * mode.
+> +				 */
+> +				ret = 0;
+> +			else
+> +				vcdev->revision--;
+> +		}
+> +	} while (ret == -EOPNOTSUPP);
+> +
+> +	kfree(ccw);
+> +	kfree(rev);
+> +	return ret;
+> +}
+>  
+>  static int virtio_ccw_online(struct ccw_device *cdev)
+>  {
+> @@ -1088,6 +1146,11 @@ static int virtio_ccw_online(struct ccw_device *cdev)
+>  	spin_unlock_irqrestore(get_ccwdev_lock(cdev), flags);
+>  	vcdev->vdev.id.vendor = cdev->id.cu_type;
+>  	vcdev->vdev.id.device = cdev->id.cu_model;
+> +
+> +	ret = virtio_ccw_set_transport_rev(vcdev);
+> +	if (ret)
+> +		goto out_free;
+> +
+>  	ret = register_virtio_device(&vcdev->vdev);
+>  	if (ret) {
+>  		dev_warn(&cdev->dev, "Failed to register virtio device: %d\n",
+> -- 
+> MST
+> 
