@@ -1,73 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaLDWPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 17:15:17 -0500
-Received: from mout.web.de ([212.227.15.14]:56691 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014AbaLDWPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 17:15:15 -0500
-Message-ID: <5480DCEE.4070803@users.sourceforge.net>
-Date: Thu, 04 Dec 2014 23:15:10 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754852AbaLDWQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 17:16:34 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46553 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaLDWQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 17:16:32 -0500
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v2 3/6] net-PPP: Deletion of unnecessary checks before the
- function call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net> <547CA157.1080401@cogentembedded.com> <5480DA32.8000201@users.sourceforge.net>
-In-Reply-To: <5480DA32.8000201@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:XZC8Tu0UNS6rWgRke8VSCOWa0jDvIYibSf55H3cgLM9SS+yDQEV
- m7JDbPkHd6pTUvNbYPP+5IZPH8NON2IunTR/my6ljjjH8En0GfRcuwvfFUkkc4wOmNz2THW
- qQTxNZ5oGCcMy2q/zItq2A2R0GqkVl+b3Ohj+zoMtW3lf9FN+cHaavOAkoI61I1XxzlR85s
- MX0FYgs7ulLPeOsMiY1xg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1417730171-30455-2-git-send-email-rjui@broadcom.com>
+References: <rjui@broadcom.com>
+	<1417730171-30455-1-git-send-email-rjui@broadcom.com>
+	<1417730171-30455-2-git-send-email-rjui@broadcom.com>
+Date: Thu, 4 Dec 2014 23:16:30 +0100
+Message-ID: <CAAfyv37Z=Bs1Ggydg5bX5z=005P+LOXNp0qNMA43a3BsAPSA7w@mail.gmail.com>
+Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Scott Branden <sbranden@broadcom.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 4 Dec 2014 22:22:23 +0100
+On Thu, Dec 4, 2014 at 10:56 PM, Ray Jui <rjui@broadcom.com> wrote:
+> Device tree binding documentation for Broadcom Cygnus pinctrl driver
+>
+> Signed-off-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  .../bindings/pinctrl/brcm,cygnus-pinctrl.txt       |   92 ++++++++++++++++++++
+>  1 file changed, 92 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+>
+> diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+> new file mode 100644
+> index 0000000..86e4579
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/brcm,cygnus-pinctrl.txt
+> @@ -0,0 +1,92 @@
+> +Broadcom Cygnus Pin Controller
+> +
+> +The Cygnus pin controller supports setting the alternate functions of groups
+> +of pins. Pinmux configuration on individual pins is not supported by the
+> +Cygnus A0 SoC.
+> +
+> +Required properties:
+> +
+> +- compatible:
+> +    Must be "brcm,cygnus-pinctrl"
+> +
+> +- reg:
+> +    Define the base and range of the I/O address space that contain the Cygnus
+> +pin control registers
+> +
+> +- brcm,groups:
+> +    This can be strings of one or more group names. This defines the group(s)
+> +that one wants to configure
+> +
+> +- brcm,function:
+> +    This is the alternate function that one wants to configure to. Valid
+> +alternate functions are "alt1", "alt2", "alt3", "alt4"
+> +
+> +Each child node represents a configuration. Client devices reference the the
+> +child node to enable the mux configuration.
+> +
+> +For example:
+> +
+> +       pinctrl: pinctrl@0x0301d0c8 {
+> +               compatible = "brcm,cygnus-pinctrl";
+> +               reg = <0x0301d0c8 0x2c>;
+> +
+> +               i2s_0: i2s_0 {
+> +                       brcm,groups = "smart_card0", "smart_card0_fcb";
+> +                       brcm,function = "alt2";
+> +               };
+> +
+> +               i2s_1: i2s_1 {
+> +                       brcm,groups = "smart_card1", "smart_card1_fcb";
+> +                       brcm,function = "alt2";
+> +               };
+> +
+> +               spi_0: spi_0 {
+> +                       brcm,groups = "spi0";
+> +                       brcm,function = "alt1";
+> +               };
+> +       }
+> +
+> +       spi0@18028000 {
+> +                       compatible = "arm,pl022", "arm,primecell";
+> +                       reg = <0x18028000 0x1000>;
+> +                       #address-cells = <1>;
+> +                       #size-cells = <0>;
+> +                       interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
+> +                       pinctrl-0 = <&spi_0>;
+> +                       clocks = <&axi81_clk>;
+> +                       clock-names = "apb_pclk";
+> +       };
+> +
+> +Consider the following snapshot of Cygnus pinmux table:
+> +
+> +number    pin            group              alt1             alt2        alt3        alt4
+> +------    ---            ----               ----             ----        ----        ----
+> +42        sc0_clk        smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio24
+> +43        sc0_cmdvcc_l   smart_card0        SMART CARD0      I2S_0       N/A         STRAP
+> +44        sc0_detect     smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio25
+> +45        sc0_fcb        smart_card0_fcb    SMART CARD0_FCB  I2S_0       N/A         chip_gpio26
+> +46        sc0_io         smart_card0        SMART CARD0      I2S_0       N/A         chip_gpio27
+> +47        sc0_rst_l      smart_card0        SMART CARD0      SPDIF       N/A         STRAP
+> +
+> +Note due to limitation of the Cygnus hardware, pinmux configuration can only
+> +be group based. To enable I2S_0 function, one needs the following child node
+> +configuration:
+> +
+> +       i2s_0: i2s_0 {
+> +               brcm,groups = "smart_card0", "smart_card0_fcb";
+> +               brcm,function = "alt2";
+> +       };
+> +
+> +This tells the Cygnus pin controller to configure groups "smart_card0" and
+> +"smart_card0_fcb" to I2S_0. With this configuration, pins 42, 43, 44, 45, 46
+> +become I2C_0, and pin 47 becomes SPDIF
+                  ^^^^ typo - should be I2S_0
+> +
+> +Consider another example, that one wants to configure the above pins as GPIO:
+> +
+> +       gpio_24_27: gpio_24_27 {
+> +               brcm,groups = "smart_card0", "smart_card0_fcb";
+> +               brcm,function = "alt4";
+> +       };
+> +
+> +With the above configuration, pins 42, 44, 45, 46 become GPIO, and 43 and 47
+> +become reserved for STRAP
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-The kfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+BR,
 
-This issue was detected by using the Coccinelle software.
+marek
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ppp/ppp_mppe.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-index b80af29..94ff216 100644
---- a/drivers/net/ppp/ppp_mppe.c
-+++ b/drivers/net/ppp/ppp_mppe.c
-@@ -237,8 +237,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
- 	return (void *)state;
- 
- out_free:
--	if (state->sha1_digest)
--		kfree(state->sha1_digest);
-+	kfree(state->sha1_digest);
- 	if (state->sha1)
- 		crypto_free_hash(state->sha1);
- 	if (state->arc4)
-@@ -255,8 +254,7 @@ static void mppe_free(void *arg)
- {
- 	struct ppp_mppe_state *state = (struct ppp_mppe_state *) arg;
- 	if (state) {
--		if (state->sha1_digest)
--			kfree(state->sha1_digest);
-+		kfree(state->sha1_digest);
- 		if (state->sha1)
- 			crypto_free_hash(state->sha1);
- 		if (state->arc4)
 -- 
-2.1.3
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
