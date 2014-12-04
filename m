@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783AbaLDLeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:34:14 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48062 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaLDLeN (ORCPT
+	id S1753875AbaLDLfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:35:31 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42048 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500AbaLDLfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:34:13 -0500
-Date: Thu, 4 Dec 2014 11:33:46 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>
-Message-ID: <20141204113346.GT7712@sirena.org.uk>
-References: <547F3CAC.9050105@arm.com>
- <2240364.fL8B0EDbFB@wuerfel>
- <20141204110746.GR7712@sirena.org.uk>
- <2090131.rL6S1lx8Ky@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SQKdhnb/5YOpdZ6f"
-Content-Disposition: inline
-In-Reply-To: <2090131.rL6S1lx8Ky@wuerfel>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/5] ASoC: dwc: Add devicetree support for Designware I2S
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 4 Dec 2014 06:35:30 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-7a-548046ff8714
+Message-id: <548046F8.5020001@samsung.com>
+Date: Thu, 04 Dec 2014 14:35:20 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        David Rientjes <rientjes@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Nadia.Derbey@bull.net, aquini@redhat.com,
+        Joe Perches <joe@perches.com>, manfred@colorfullife.com,
+        avagin@openvz.org, LKML <linux-kernel@vger.kernel.org>,
+        Kostya Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        kasan-dev <kasan-dev@googlegroups.com>
+Subject: Re: [PATCH] kernel: sysctl: use 'unsigned long' type for 'zero'
+ variable
+References: <547F0486.7020400@samsung.com>
+ <1417610481-11590-1-git-send-email-a.ryabinin@samsung.com>
+ <20141203152524.4e2916fdbec5ebb16f1fe4d3@linux-foundation.org>
+ <20141203161917.33350777442ce949fb8e98f4@linux-foundation.org>
+In-reply-to: <20141203161917.33350777442ce949fb8e98f4@linux-foundation.org>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e/4Vd3/bg0hBh9+a1jMWb+GzaJn904m
+	ixkPf7FYrFh6jcXi+cOH7BYTHraxW8y+/xgo9uw+k8X2Z2+ZLG4+n8NisbLzAatF/+Pv7BaX
+	d81hs9h3fwqrxYe1p1gsTvStZbJoW7KRyUHQ48XCLcweE5/OZPV4uX0Dm8fOWXfZPRZsKvXY
+	M/Ekm8eJGb9ZPOadDPSYdPgzk8eXVdeYPd7vu8rm8XmTXABPFJdNSmpOZllqkb5dAlfG5ZuP
+	2AquCle82tjI2sB4hb+LkZNDQsBE4sPl6WwQtpjEhXvrgWwuDiGBpYwSxx5fZYVwmpkk7jcu
+	Ywep4hXQktg69SBQgoODRUBV4uTCLJAwm4CexL9Z28EGiQpESFxZM4cRolxQ4sfkeywgc0QE
+	/rJIrLt3GCwhLBAssX1BI9SCl4wSt6duAUtwCnhL/FrTwAiygBlo6v2LWiBhZgF5ic1r3jJP
+	YOSfhWTuLISqWUiqFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQIibmvOxiXHrM6xCjA
+	wajEwzvhen2IEGtiWXFl7iFGCQ5mJRHeU9YNIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYZ7v6
+	tp7deWP6h5gzAmonvZoSuEVNF8nOe/muwSvmhE9k8o7o7TXX7jNM3851S2nrUk8WyUnfNhky
+	HnC/2yUiPvmwyN0L68tO/s64LXdH7ofeoRIxRcWDT9wT7aMMhStVWJ/U2ivMTJqhZmvTnDDb
+	L7Cp5/3sx78Tf3z/v2Mz0wKZ87ZvVIOrlViKMxINtZiLihMBgc7/aZcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/04/2014 03:19 AM, Andrew Morton wrote:
+> On Wed, 3 Dec 2014 15:25:24 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+>> On Wed, 03 Dec 2014 15:41:21 +0300 Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+>>
+>>>
+>>> Use the 'unsigned long' type for 'zero' variable to fix this.
+>>> Changing type to 'unsigned long' shouldn't affect any other users
+>>> of this variable.
+>>>
+>>> Reported-by: Dmitry Vyukov <dvyukov@google.com>
+>>> Fixes: ed4d4902ebdd ("mm, hugetlb: remove hugetlb_zero and hugetlb_infinity")
+>>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>>> ---
+>>>  kernel/sysctl.c | 2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>>> index 15f2511..45c45c9 100644
+>>> --- a/kernel/sysctl.c
+>>> +++ b/kernel/sysctl.c
+>>> @@ -120,7 +120,7 @@ static int sixty = 60;
+>>>  
+>>>  static int __maybe_unused neg_one = -1;
+>>>  
+>>> -static int zero;
+>>> +static unsigned long zero;
+>>>  static int __maybe_unused one = 1;
+>>>  static int __maybe_unused two = 2;
+>>>  static int __maybe_unused four = 4;
+>>
+>> Yeah, this is ghastly.
+>>
+>> Look at 
+>>
+>> 	{
+>> 		.procname	= "numa_balancing",
+>> 		.data		= NULL, /* filled in by handler */
+>> 		.maxlen		= sizeof(unsigned int),
+>> 		.mode		= 0644,
+>> 		.proc_handler	= sysctl_numa_balancing,
+>> 		.extra1		= &zero,
+>> 		.extra2		= &one,
+>> 	},
+>>
+>> Now extra1 points at a long and extra2 points at an int. 
+>> sysctl_numa_balancing() calls proc_dointvec_minmax() and I think your
+>> patch just broke big-endian 64-bit machines.  "sched_autogroup_enabled"
+>> breaks as well.
+> 
+> Taking another look at this...
+> 
+> numa_balancing will continue to work on big-endian because of course
+> zero is still zero when byteswapped.  But that's such a hack, isn't
+> documented and doesn't work for "one", "sixty", etc.
+> 
 
---SQKdhnb/5YOpdZ6f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, I agree it's a bit hacky.
 
-On Thu, Dec 04, 2014 at 12:17:15PM +0100, Arnd Bergmann wrote:
-> On Thursday 04 December 2014 11:07:46 Mark Brown wrote:
+> I'm thinking a better fix here is to switch hugetlb_sysctl_handler to
+> use `int's.  2^32 hugepages is enough for anybody.
+> 
 
-> > It's relatively common with newer companies - it's like UARTs, any
-> > company that's been around for a long time will have a homebrew IP
-> > already but places that don't (or get fed up with their existing IP)
-> > will tend to buy something in.
+It's 8 petabytes for 2MB pages, so yeah should be enough.
+Perhaps it also makes sense to change types for counters in 'struct hstate' from longs to ints.
 
-> I see, but are any of the newer designs going to use platform_data?
-> My general feeling was that the only places that still depend on that
-> are legacy platforms and architectures.
 
-And x86 which does have things like PCI cards.
 
---SQKdhnb/5YOpdZ6f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> hugetlb_overcommit_handler() will need conversion also.
+> 
+> Perhaps auditing all the proc_doulongvec_minmax callsites is the way to
+> attack this.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I've looked through this yesterday and didn't found anything obviously wrong.
+Though I could easily miss something.
 
-iQEcBAEBAgAGBQJUgEaZAAoJECTWi3JdVIfQ6oAH/j7/+GnToU54d8lUYEOk7/BK
-3fmMJ7FjjgTy7OUqlnvoGFgz6e6tj2CIiDT/QAH+u9Nifw3ZqndaByf9Shs021gv
-MaUlSPjdMQ4F6AO3Wb7ft4J+fCa2N5sRDAlMQXWRWHGr9r3sOuuUe/aYtYhDNX0m
-qS8mJ+oCDRgtb9YqD+RMknc+9vY9hzc4Sab445FzghosWVvwnEuYgrhAIyNaixNG
-zv685ysEeQD4vFbwzDQBd8R2s+ENWNbpUBSg5d7otfdszd9Qf5RGrZf4ZQeYK5+I
-H6bKOC9t21pGJKexMWgv6/KlHuEfzSQn7k7MYHzwKPy13rXE0cWyXg9H9iA60dc=
-=HDXC
------END PGP SIGNATURE-----
 
---SQKdhnb/5YOpdZ6f--
