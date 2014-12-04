@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaLDLYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 06:24:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50376 "EHLO mx2.suse.de"
+	id S1753517AbaLDLYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 06:24:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50458 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110AbaLDLYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 06:24:39 -0500
+	id S1753854AbaLDLYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 06:24:48 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
@@ -20,9 +20,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA balancing
-Date: Thu,  4 Dec 2014 11:24:25 +0000
-Message-Id: <1417692273-27170-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/10] x86: mm: Restore original pte_special check
+Date: Thu,  4 Dec 2014 11:24:31 +0000
+Message-Id: <1417692273-27170-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1417692273-27170-1-git-send-email-mgorman@suse.de>
 References: <1417692273-27170-1-git-send-email-mgorman@suse.de>
@@ -30,104 +30,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch that introduces protnone helpers for automatic
-NUMA balancing.
+Commit b38af4721f59 ("x86,mm: fix pte_special versus pte_numa") adjusted
+the pte_special check to take into account that a special pte had SPECIAL
+and neither PRESENT nor PROTNONE. Now that NUMA hinting PTEs are no
+longer modifying _PAGE_PRESENT it should be safe to restore the original
+pte_special behaviour.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- arch/powerpc/include/asm/pgtable.h | 16 ++++++++++++++++
- arch/x86/include/asm/pgtable.h     | 16 ++++++++++++++++
- include/asm-generic/pgtable.h      | 20 ++++++++++++++++++++
- 3 files changed, 52 insertions(+)
+ arch/x86/include/asm/pgtable.h | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index a8805fe..7b889a3 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -39,6 +39,22 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
- static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
- 
- #ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * These work without NUMA balancing but the kernel does not care. See the
-+ * comment in include/asm-generic/pgtable.h . On powerpc, this will only
-+ * work for user pages and always return true for kernel pages.
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return (pte_val(pte) &
-+		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return pte_protnone(pmd_pte(pmd));
-+}
-+
- static inline int pte_present(pte_t pte)
- {
- 	return pte_val(pte) & _PAGE_NUMA_MASK;
 diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 081d6f4..2e25780 100644
+index cf428a7..0dd5be3 100644
 --- a/arch/x86/include/asm/pgtable.h
 +++ b/arch/x86/include/asm/pgtable.h
-@@ -502,6 +502,22 @@ static inline int pmd_present(pmd_t pmd)
- 				 _PAGE_NUMA);
- }
+@@ -136,13 +136,7 @@ static inline int pte_exec(pte_t pte)
  
-+#ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * These work without NUMA balancing but the kernel does not care. See the
-+ * comment in include/asm-generic/pgtable.h
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return pte_flags(pte) & _PAGE_PROTNONE;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return pmd_flags(pmd) & _PAGE_PROTNONE;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- static inline int pmd_none(pmd_t pmd)
+ static inline int pte_special(pte_t pte)
  {
- 	/* Only check low word on 32-bit platforms, since it might be
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 177d597..d497d08 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -688,6 +688,26 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #endif
+-	/*
+-	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
+-	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
+-	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
+-	 */
+-	return (pte_flags(pte) & _PAGE_SPECIAL) &&
+-		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
++	return pte_flags(pte) & _PAGE_SPECIAL;
  }
  
-+#ifndef CONFIG_NUMA_BALANCING
-+/*
-+ * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
-+ * the only case the kernel cares is for NUMA balancing and is only ever set
-+ * when the VMA is accessible. For PROT_NONE VMAs, the PTEs are not marked
-+ * _PAGE_PROTNONE so by by default, implement the helper as "always no". It
-+ * is the responsibility of the caller to distinguish between PROT_NONE
-+ * protections and NUMA hinting fault protections.
-+ */
-+static inline int pte_protnone(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+static inline int pmd_protnone(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
+ static inline unsigned long pte_pfn(pte_t pte)
 -- 
 2.1.2
 
