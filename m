@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105AbaLDKnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 05:43:11 -0500
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:45186 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820AbaLDKnG (ORCPT
+	id S932127AbaLDKnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 05:43:51 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58011 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443AbaLDKnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 05:43:06 -0500
-Date: Thu, 4 Dec 2014 05:42:54 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <1304846070.8636858.1417689774302.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20141204102013.GC17122@redhat.com>
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-3-git-send-email-pagupta@redhat.com> <20141203095210.GC9487@redhat.com> <1417661734.16500.0@smtp.corp.redhat.com> <20141204102013.GC17122@redhat.com>
-Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
- tun.
+	Thu, 4 Dec 2014 05:43:49 -0500
+Message-ID: <54803ADD.2090201@hitachi.com>
+Date: Thu, 04 Dec 2014 19:43:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Steve Capper <steve.capper@linaro.org>
+Cc: David Long <dave.long@linaro.org>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com> <547FCB73.1010707@linaro.org> <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com>
+In-Reply-To: <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in tun.
-Thread-Index: ZFm6s8BF1IB0XWCNv603+a0iQRBuNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/12/04 19:21), Steve Capper wrote:
+> On 4 December 2014 at 02:48, David Long <dave.long@linaro.org> wrote:
+>> On 12/03/14 20:16, William Cohen wrote:
+>>
+>> [...]
+>>
+>>>
+>>> The perf issue seems to be independent and can be reproduced without using
+>>> any kprobe support.  I need to get a simple reproducer and mention it on the
+>>> linux-perf-user list.
+>>>
+>>> -Will
+>>>
+>>
+>>
+>> OK, my confusion came from all the different things perf can use.  I have
+>> not yet been able to reproduce the "perf stat" failure, but I do see the
+>> failure with Steve's example using tracepoints.  I had thought that was
+>> using kprobes, but apparently it just uses tracepoints.  These look like two
+>> different failures to me:  One related to tracepoints, and one in the PMU
+>> driver.
+>>
+>> Since this seems unrelated to kprobes I don't plan on pursuing these
+>> particular problems.
+>>
+>> -dl
+>>
+> 
+> Sorry for the late reply...
+> 
+> The example I had was:
+> echo "p:memcpy memcpy %x2" > /sys/kernel/debug/tracing/kprobe_events
+> perf record -e kprobes:memcpy -a sleep 5
+> 
+> [then crash due to IRQs being unexpectedly disabled in the ext4 code]
+> 
+> Isn't that a kprobe problem?
+> 
 
-> 
-> On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
-> > 
-> > 
-> > On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
-> > >> Networking under kvm works best if we allocate a per-vCPU RX and TX
-> > >> queue in a virtual NIC. This requires a per-vCPU queue on the host
-> > >>side.
-> > >> It is now safe to increase the maximum number of queues.
-> > >> Preceding patche: 'net: allow large number of rx queues'
-> > >
-> > >s/patche/patch/
-> > >
-> > >> made sure this won't cause failures due to high order memory
-> > >> allocations. Increase it to 256: this is the max number of vCPUs
-> > >> KVM supports.
-> > >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> > >> Reviewed-by: David Gibson <dgibson@redhat.com>
-> > >
-> > >Hmm it's kind of nasty that each tun device is now using x16 memory.
-> > >Maybe we should look at using a flex array instead, and removing the
-> > >limitation altogether (e.g. make it INT_MAX)?
-> > 
-> > But this only happens when IFF_MULTIQUEUE were used.
-> 
-> I refer to this field:
->         struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
-> if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
-> apparently unconditionally.
+It should be a kprobe problem. As I mentioned, if you set a probe on
+trace_event_buffer_lock_reserve() instead of memcpy(), the same problem
+may happen without using perf. (It is enough enabling the new event to
+reproduce the problem, I guess)
 
-Are you saying use flow array for tfiles in-place of array of tun_file
-pointer and grow dynamically when/if needed?
+The problem what Will reported was different one. He used "perf stat"
+which never touch the kprobes itself, and solved in newer kernel (as
+he reported)
 
-If yes, I agree it will be all order-1 allocation but it will add some level
-of indirection as pointed by DaveM for flow, this time for tfiles. But yes, dynamically
-allocating flex array as per usage will help to minimise memory pressure which in this
-case is high, 256.
+I'd like to ask you to try my fix on your machine, with my reproducing
+methods. (do not use sytemtap nor perf, those can have other issues)
 
-> 
-> 
-> > And core has vmalloc() fallback.
-> > So probably not a big issue?
-> > >
-> > >
-> > >
-> > >> ---
-> > >>  drivers/net/tun.c | 9 +++++----
-> > >>  1 file changed, 5 insertions(+), 4 deletions(-)
-> > >> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > >> index e3fa65a..a19dc5f8 100644
-> > >> --- a/drivers/net/tun.c
-> > >> +++ b/drivers/net/tun.c
-> > >> @@ -113,10 +113,11 @@ struct tap_filter {
-> > >>  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
-> > >>  };
-> > >>    -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues
-> > >>allocated for
-> > >> - * the netdevice to be fit in one page. So we can make sure the
-> > >>success of
-> > >> - * memory allocation. TODO: increase the limit. */
-> > >> -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
-> > >> +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
-> > >> + * to max number of vCPUS in guest. Also, we are making sure here
-> > >> + * queue memory allocation do not fail.
-> > >
-> > >It's not queue memory allocation anymore, is it?
-> > >I would say "
-> > >This also helps the tfiles field fit in 4K, so the whole tun
-> > >device only needs an order-1 allocation.
-> > >"
-> > >
-> > >> + */
-> > >> +#define MAX_TAP_QUEUES 256
-> > >>  #define MAX_TAP_FLOWS  4096
-> > >>  #define TUN_FLOW_EXPIRE (3 * HZ)
-> > >> --  1.8.3.1
-> > >> --
-> > >> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > >> the body of a message to majordomo@vger.kernel.org
-> > >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
