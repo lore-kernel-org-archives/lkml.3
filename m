@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaLDHW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:22:26 -0500
-Received: from smtprelay06.ispgateway.de ([80.67.31.104]:41559 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaLDHWZ (ORCPT
+	id S1753015AbaLDHXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:23:42 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:57269 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaLDHXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:22:25 -0500
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1417184452-11884-1-git-send-email-peter@piie.net> <1417184452-11884-4-git-send-email-peter@piie.net> <20141203090436.GC52608@vmdeb7> <cone.1417677032.220767.18692.1000@mups>
-Message-ID: <cone.1417677666.882029.18692.1000@mups>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Darren Hart <dvhart@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [RESEND PATCH v5 3/5] acerhdf: Use bang-bang thermal governor
-Date: Thu, 04 Dec 2014 08:21:06 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+	Thu, 4 Dec 2014 02:23:41 -0500
+Date: Thu, 4 Dec 2014 02:23:37 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] optimize ktime_divns for constant divisors
+In-Reply-To: <3913269.qTFsa05Ysv@wuerfel>
+Message-ID: <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr>
+References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <3913269.qTFsa05Ysv@wuerfel>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
+On Wed, 3 Dec 2014, Arnd Bergmann wrote:
 
-Peter Feuerer writes:
+> On Wednesday 03 December 2014 14:43:06 Nicolas Pitre wrote:
+> > At least on ARM, do_div() is optimized to turn constant divisors into
+> > an inline multiplication by the reciprocal value at compile time. 
+> > However this optimization is missed entirely whenever ktime_divns() is
+> > used and the slow out-of-line division code is used all the time.
+> > 
+> > Let ktime_divns() use do_div() inline whenever the divisor is constant
+> > and small enough.  This will make things like ktime_to_us() and 
+> > ktime_to_ms() much faster.
+> > 
+> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> 
+> Very cool. I've been thinking about doing something similar for the
+> general case but couldn't get the math to work.
+> 
+> Can you think of an architecture-independent way to ktime_to_sec,
+> ktime_to_ms, and ktime_to_us efficiently based on what you did for
+> the ARM do_div implementation?
 
-> Hi Darren,
-> 
-> thank you very much for your reply.
-> 
-> 
-> Darren Hart writes:
-> 
->> On Fri, Nov 28, 2014 at 03:20:50PM +0100, Peter Feuerer wrote:
->>> acerhdf has been doing an on-off fan control using hysteresis by
->>> post-manipulating the outcome of thermal subsystem trip point handling.
->>> This patch enables acerhdf to use the bang-bang governor, which is
->>> intended for on-off controlled fans.
->>> 
->>> Cc: platform-driver-x86@vger.kernel.org
->>> Cc: Darren Hart <dvhart@infradead.org>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> CC: Zhang Rui <rui.zhang@intel.com>
->>> Cc: Andreas Mohr <andi@lisas.de>
->>> Cc: Javi Merino <javi.merino@arm.com>
->>> Acked-and-tested-by: Borislav Petkov <bp@suse.de>
->>> Signed-off-by: Peter Feuerer <peter@piie.net>
->>> ---
->>>  drivers/platform/x86/Kconfig   |  3 ++-
->>>  drivers/platform/x86/acerhdf.c | 36 +++++++++++++++++++++++++++++++-----
->>>  2 files changed, 33 insertions(+), 6 deletions(-)
->>> 
->>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
->>> index a2eabe6..c173266 100644
->>> --- a/drivers/platform/x86/Kconfig
->>> +++ b/drivers/platform/x86/Kconfig
->>> @@ -38,7 +38,8 @@ config ACER_WMI
->>>  
->>>  config ACERHDF
->>>  	tristate "Acer Aspire One temperature and fan driver"
->>> -	depends on THERMAL && ACPI
->>> +	select THERMAL_GOV_BANG_BANG
->> 
->> So we use select sparingly as it does implicit things.
->> 
->> I checked the THERMAL_GOV_BANG_BANG Kconfig entry, and the help says acerhdf
->> already depends on it (which it doesn't appear to). Any particular reason to add
->> select here instead of adding it as a depends.
->> 
->> Why did you drop THERMAL?
-> 
-> I had it like this in my first version of patches:
-> + depends on THERMAL && ACPI && THERMAL_GOV_BANG_BANG
-> 
-> But after some discussion with lkml community we ended up with the select 
-> line and dropped THERMAL dependency, as it is implied by 
-> THEMAL_GOV_BANG_BANG.  I'm not so experienced with Kconfig, so I must rely 
-> on the statements of the community in this case.
+Sure.  gcc generates rather shitty code on ARM compared to the output 
+from my do_div() implementation. But here it is:
 
-Just found the link about this discussion I had with Rui and Boris:
-http://linux-kernel.2935.n7.nabble.com/PATCH-0-4-acerhdf-thermal-adding-new-models-and-appropriate-governor-tp848572p908256.html
+u64 ktime_to_us(ktime_t kt)
+{
+	u64 ns = ktime_to_ns(kt);
+	u32 x_lo, x_hi, y_lo, y_hi;
+	u64 res, carry;
 
-[...]
+	x_hi = ns >> 32;
+	x_lo = ns;
+	y_hi = 0x83126e97;
+	y_lo = 0x8d4fdf3b;
 
--- 
-kind regards,
---peter;
+	res = (u64)x_lo * y_lo;
+	carry = (u64)(u32)res + y_lo;
+	res = (res >> 32) + (carry >> 32);
+
+	res += (u64)x_lo * y_hi;
+	carry = (u64)(u32)res + (u64)x_hi * y_lo;
+	res = (res >> 32) + (carry >> 32);
+
+	res += (u64)x_hi * y_hi;
+	return res >> 9;
+}
+
+For ktime_to_ms() the constants would be as follows:
+
+	y_hi = 0x8637bd05;
+	y_lo = 0xaf6c69b5;
+	final shift = 19
+
+For ktime_to_sec() that would be:
+
+	y_hi = 0x89705f41;
+	y_lo = 0x36b4a597;
+	final shift = 29
+
+
+Nicolas
