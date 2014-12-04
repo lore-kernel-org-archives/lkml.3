@@ -1,162 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaLDGw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:52:29 -0500
-Received: from atl4mhob18.myregisteredsite.com ([209.17.115.111]:34469 "EHLO
-	atl4mhob18.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751878AbaLDGw2 (ORCPT
+	id S1753027AbaLDGww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:52:52 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45888 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaLDGwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:52:28 -0500
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: lars@metafoo.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] sound/soc/adi/axi-spdif.c: Support programmable master clock
-Date: Thu,  4 Dec 2014 07:52:19 +0100
-Message-Id: <1417675940-3754-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 4 Dec 2014 01:52:51 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 4 Dec 2014 15:56:22 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Chintan Pandya <cpandya@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Dave Hansen <dave@sr71.net>, Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 6/8] mm/page_owner: keep track of page owners
+Message-ID: <20141204065622.GB12141@js1304-P5Q-DELUXE>
+References: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1416816926-7756-7-git-send-email-iamjoonsoo.kim@lge.com>
+ <547F0EF8.5030402@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547F0EF8.5030402@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the master clock supports programmable rates, program it to generate
-the desired frequency. Only apply constraints when the clock is fixed.
-This allows proper clock generation for both 44100 and 48000 Hz based
-sampling rates if the platform supports it.
+On Wed, Dec 03, 2014 at 06:54:08PM +0530, Chintan Pandya wrote:
+> Hi Kim,
 
-The clock frequency must be set before enabling it. Enabling the clock
-was done in "startup", but that occurs before "hw_params" where the rate
-is known. Move the clock start to the hw_params routine, and keep track
-of whether the clock has been started, because shutdown may be called
-without having called hw_params first.
+Hello, Chintan.
 
-Starting the clock and enabling the SPDIF output AFTER programming the
-dividers is a more logical order anyway.
+> 
+> This is really useful stuff that you are doing. And the runtime
+> allocation for storing page owner stack is a good call.
+> 
+> Along with that, we also use extended version of the original
+> page_owner patch. The extension is, to store stack trace at the time
+> of freeing the page. That will indeed eat up space like anything
+> (just double of original page_owner) but it helps in debugging some
+> crucial issues. Like, illegitimate free, finding leaked pages (if we
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- sound/soc/adi/axi-spdif.c |   56 ++++++++++++++++++++++++++++-----------------
- 1 file changed, 35 insertions(+), 21 deletions(-)
+Sound really interesting. I hope to see it.
 
-diff --git a/sound/soc/adi/axi-spdif.c b/sound/soc/adi/axi-spdif.c
-index 198e3a4..d67e010 100644
---- a/sound/soc/adi/axi-spdif.c
-+++ b/sound/soc/adi/axi-spdif.c
-@@ -4,7 +4,6 @@
-  *
-  * Licensed under the GPL-2.
-  */
--
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -44,6 +43,8 @@ struct axi_spdif {
- 
- 	struct snd_ratnum ratnum;
- 	struct snd_pcm_hw_constraint_ratnums rate_constraints;
-+
-+	bool clk_ref_running;
- };
- 
- static int axi_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
-@@ -79,6 +80,7 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
- 	unsigned int rate = params_rate(params);
- 	unsigned int clkdiv, stat;
-+	int ret;
- 
- 	switch (params_rate(params)) {
- 	case 32000:
-@@ -95,6 +97,9 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 		break;
- 	}
- 
-+	/* Try to set the master clock */
-+	clk_set_rate(spdif->clk_ref, rate * 128);
-+
- 	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
- 			rate * 64 * 2) - 1;
- 	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
-@@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
- 		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
- 
-+	ret = clk_prepare_enable(spdif->clk_ref);
-+	if (ret)
-+		return ret;
-+	spdif->clk_ref_running = true;
-+
-+	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
-+		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
-+
- 	return 0;
- }
- 
-@@ -121,18 +134,13 @@ static int axi_spdif_startup(struct snd_pcm_substream *substream,
- 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
- 	int ret;
- 
--	ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
--			   SNDRV_PCM_HW_PARAM_RATE,
--			   &spdif->rate_constraints);
--	if (ret)
--		return ret;
--
--	ret = clk_prepare_enable(spdif->clk_ref);
--	if (ret)
--		return ret;
--
--	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
--		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
-+	if (spdif->rate_constraints.nrats) {
-+		ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
-+				SNDRV_PCM_HW_PARAM_RATE,
-+				&spdif->rate_constraints);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	return 0;
- }
-@@ -145,7 +153,10 @@ static void axi_spdif_shutdown(struct snd_pcm_substream *substream,
- 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
- 		AXI_SPDIF_CTRL_TXEN, 0);
- 
--	clk_disable_unprepare(spdif->clk_ref);
-+	if (spdif->clk_ref_running) {
-+		clk_disable_unprepare(spdif->clk_ref);
-+		spdif->clk_ref_running = false;
-+	}
- }
- 
- static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
-@@ -216,14 +227,17 @@ static int axi_spdif_probe(struct platform_device *pdev)
- 	spdif->dma_data.addr_width = 4;
- 	spdif->dma_data.maxburst = 1;
- 
--	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
--	spdif->ratnum.den_step = 1;
--	spdif->ratnum.den_min = 1;
--	spdif->ratnum.den_max = 64;
--
--	spdif->rate_constraints.rats = &spdif->ratnum;
--	spdif->rate_constraints.nrats = 1;
-+	/* Determine if the clock rate is fixed. If it cannot change frequency,
-+	 * it returns an error here. */
-+	if (clk_round_rate(spdif->clk_ref, 128 * 44100) < 0) {
-+		spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
-+		spdif->ratnum.den_step = 1;
-+		spdif->ratnum.den_min = 1;
-+		spdif->ratnum.den_max = 64;
- 
-+		spdif->rate_constraints.rats = &spdif->ratnum;
-+		spdif->rate_constraints.nrats = 1;
-+	}
- 	ret = devm_snd_soc_register_component(&pdev->dev, &axi_spdif_component,
- 					 &axi_spdif_dai, 1);
- 	if (ret)
--- 
-1.7.9.5
+> store their time stamps) etc. The same has been useful in finding
+> double-free cases in drivers. But we have never got a chance to
+> upstream that. Now that these patches are being discussed again, do
+> you think it would be good idea to integrate in the same league of
+> patches ?
 
+Good to hear. I think that you can upstream it separately. If you send
+the patch, I will review it and help to merge it.
+
+Thanks.
