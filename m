@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366AbaLDOtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 09:49:43 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39338 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924AbaLDOtl (ORCPT
+	id S932385AbaLDOt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 09:49:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40392 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877AbaLDOt5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 09:49:41 -0500
+	Thu, 4 Dec 2014 09:49:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,515,1413270000"; 
+   d="scan'208";a="642373172"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Jiri Olsa <jolsa@redhat.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>
+CC: "acme@kernel.org" <acme@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>
+Subject: RE: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Thread-Topic: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Thread-Index: AQHQDkRfJnDNoBLJ7kWTuaSxvb8h+5x++RsAgACMFfA=
+Date: Thu, 4 Dec 2014 14:49:52 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+ <20141204142330.GB10406@krava.brq.redhat.com>
+In-Reply-To: <20141204142330.GB10406@krava.brq.redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20141204142741.GQ30256@lukather>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
- <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
- <20141202161227.GH30256@lukather> <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com>
- <20141204142741.GQ30256@lukather>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 4 Dec 2014 23:49:19 +0900
-Message-ID: <CAAVeFuJTjWPzQYYkV3jW3+h6uigzzeKS9d7pY2cQ-dK119msXg@mail.gmail.com>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Benoit Parrot <bparrot@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 11:27 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi,
->
-> On Thu, Dec 04, 2014 at 11:15:38PM +0900, Alexandre Courbot wrote:
->> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
->> <maxime.ripard@free-electrons.com> wrote:
->> > On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
->> >> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->> >> > On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
->> >> > <maxime.ripard@free-electrons.com> wrote:
->> >>
->> >> >> The only thing I'd like to have would be that the request here would
->> >> >> be non-exclusive, so that a later driver would still be allowed later
->> >> >> on to request that GPIO later on and manage it itself (ideally using
->> >> >> the usual gpiod_request function).
->> >> >
->> >> > Actually we have a plan (and I have some code too) to allow multiple
->> >> > consumers per GPIO. Although like Benoit I wonder why you would want
->> >> > to hog a GPIO and then request it properly later. Also, that probably
->> >> > means we should abandon the hog since it actively drives the line and
->> >> > would interfere with the late requested. How to do that correctly is
->> >> > not really clear to me.
->> >>
->> >> I don't get the usecase. A hogged GPIO is per definition hogged.
->> >> This sounds more like "initial settings" or something, which is another
->> >> usecase altogether.
->> >
->> > We do have one board where we have a pin (let's say GPIO14 of the bank
->> > A) that enables a regulator that will provide VCC the bank B.
->> >
->> > Now, both banks are handled by the same driver, but in order to have a
->> > working output on the bank B, we do need to set GPIO14 as soon as
->> > we're probed.
->> >
->> > Just relying on the usual deferred probing introduces a circular
->> > dependency between the gpio-regulator that needs to grab its GPIO from
->> > a driver not there yet, and the gpio driver that needs to enable its
->> > gpio-regulator.
->>
->> I don't get it. According to what you said, the following order should
->> go through IIUC:
->>
->> 1) bank A is probed, gpio 14 is available
->> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
->> 3) bank B is probed, grabs its regulator and turn it on, probes.
->>
->> What am I missing?
->
-> It would be true if bank A and B were exposed through different
-> drivers (or at least different instances of the same driver), which is
-> not the case.
->
-> In our case, banks A and B are handled by the same instance.
 
-Ok, so both banks A and B are part of the same device/DT node. Now I
-think I understand the issue. You need to hog the pin so that bank B
-will work right after the device is probed.
 
-But you will still have the problem that the regulator device will
-*not* be available when your device is probed, so you cannot call
-regulator_get() for bank B anyway. I guess your only choice is to hog
-that pin and leave it active ad vitam eternam.
+> On Tue, Dec 02, 2014 at 10:06:51AM -0500, kan.liang@intel.com wrote:
+> > From: Kan Liang <kan.liang@intel.com>
+> >
+> > This is the user space patch for Haswell LBR call stack support.
+> > For many profiling tasks we need the callgraph. For example we often
+> > need to see the caller of a lock or the caller of a memcpy or other
+> > library function to actually tune the program. Frame pointer unwinding
+> > is efficient and works well. But frame pointers are off by default on
+> > 64bit code (and on modern 32bit gccs), so there are many binaries
+> > around that do not use frame pointers. Profiling unchanged production
+> > code is very useful in practice. On some CPUs frame pointer also has a
+> > high cost. Dwarf2 unwinding also does not always work and is extremely
+> > slow (upto 20% overhead).
+> >
+> > Haswell has a new feature that utilizes the existing Last Branch
+> > Record facility to record call chains. When the feature is enabled,
+> > function call will be collected as normal, but as return instructions
+> > are executed the last captured branch record is popped from the
+> > on-chip LBR registers. The LBR call stack facility provides an
+> > alternative to get callgraph. It has some limitations too, but should
+> > work in most cases and is significantly faster than dwarf. Frame
+> > pointer unwinding is still the best default, but LBR call stack is a
+> > good alternative when nothing else works.
+> >
+> > Please find the kernel part patch at
+> > https://lkml.org/lkml/2014/11/6/432
+> >
+> > Changes since v1
+> >  - Update help document
+> >  - Force exclude_user to 0 with warning in LBR call stack
+> >  - Dump both lbr and fp info when report -D
+> >  - Reconstruct thread__resolve_callchain_sample and split it into two
+> > patches
+> >  - Use has_branch_callstack function to check LBR call stack available
+> >
+> > Changes since v2
+> >  - Rebase to 025ce5d33373
+> >
+> > Changes since v3
+> >  - Rebase to cc502c23aadf
+> >  - Separated function for lbr call stack sample resolve and print
+> >  - Some minor changes according to comments
+> >
+> > Changes since V4
+> >  - Rebase to 09a6a1b
+> >  - Falling back to framepointers if LBR not available, and warning
+> > user
+> 
+> looks ok to me..
+> 
+
+Thanks for the review.
+
+> I'll test it once I get hands on Haswel server again, I guess we wait for the
+> kernel change to go in first anyway, right?
+>
+
+I'm not sure, let's ask Peter.
+
+Peter?
+
+Thanks,
+Kan
+ 
+> thanks,
+> jirka
