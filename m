@@ -1,150 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaLDBRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 20:17:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36229 "EHLO mx1.redhat.com"
+	id S1752257AbaLDBTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 20:19:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43020 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaLDBRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 20:17:02 -0500
-Message-ID: <547FB5DD.901@redhat.com>
-Date: Wed, 03 Dec 2014 20:16:13 -0500
-From: William Cohen <wcohen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751106AbaLDBTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 20:19:14 -0500
+Date: Thu, 4 Dec 2014 12:19:03 +1100
+From: NeilBrown <neilb@suse.de>
+To: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH - v3?] workqueue: allow rescuer thread to do more work.
+Message-ID: <20141204121903.12be2d23@notabene.brown>
+In-Reply-To: <20141203223116.GA17014@gmail.com>
+References: <20141106165811.GA2338@gmail.com>
+	<545C368C.5040704@cn.fujitsu.com>
+	<20141110162848.6f2246bb@notabene.brown>
+	<20141110085250.GB15948@quack.suse.cz>
+	<20141111090402.35fa0700@notabene.brown>
+	<20141118152754.60b0c75e@notabene.brown>
+	<20141202204304.GR10918@htj.dyndns.org>
+	<20141203114011.5d02dc43@notabene.brown>
+	<20141203172010.GC5013@htj.dyndns.org>
+	<20141203180241.GD5013@htj.dyndns.org>
+	<20141203223116.GA17014@gmail.com>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: David Long <dave.long@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steve Capper <steve.capper@linaro.org>
-CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org>
-In-Reply-To: <547F94B0.1000902@linaro.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/7=M9Ocnul7NOx/ddue1p0UC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 05:54 PM, David Long wrote:
-> On 12/03/14 09:54, William Cohen wrote:
->> On 12/01/2014 04:37 AM, Masami Hiramatsu wrote:
->>> (2014/11/29 1:01), Steve Capper wrote:
->>>> On 27 November 2014 at 06:07, Masami Hiramatsu
->>>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>> (2014/11/27 3:59), Steve Capper wrote:
->>>>>> The crash is extremely easy to reproduce.
->>>>>>
->>>>>> I've not observed any missed events on a kprobe on an arm64 system
->>>>>> that's still alive.
->>>>>> My (limited!) understanding is that this suggests there could be a
->>>>>> problem with how missed events from a recursive call to memcpy are
->>>>>> being handled.
->>>>>
->>>>> I think so too. BTW, could you bisect that? :)
->>>>>
->>>>
->>>> I can't bisect, but the following functions look suspicious to me
->>>> (again I'm new to kprobes...):
->>>> kprobes_save_local_irqflag
->>>> kprobes_restore_local_irqflag
->>>>
->>>> I think these are breaking somehow when nested (i.e. from a recursive probe).
->>>
->>> Agreed. On x86, prev_kprobe has old_flags and saved_flags, this
->>> at least must have saved_irqflag and save/restore it in
->>> save/restore_previous_kprobe().
->>>
->>> What about adding this?
->>>
->>>   struct prev_kprobe {
->>>       struct kprobe *kp;
->>>       unsigned int status;
->>> +    unsigned long saved_irqflag;
->>>   };
->>>
->>> and
->>>
->>>   static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
->>>   {
->>>       kcb->prev_kprobe.kp = kprobe_running();
->>>       kcb->prev_kprobe.status = kcb->kprobe_status;
->>> +    kcb->prev_kprobe.saved_irqflag = kcb->saved_irqflag;
->>>   }
->>>
->>>   static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
->>>   {
->>>       __this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
->>>       kcb->kprobe_status = kcb->prev_kprobe.status;
->>> +    kcb->saved_irqflag = kcb->prev_kprobe.saved_irqflag;
->>>   }
->>>
->>>
->>
->> I have noticed with the aarch64 kprobe patches and recent kernel I can get the machine to end up getting stuck and printing out endless strings of
->>
->> [187694.855843] Unexpected kernel single-step exception at EL1
->> [187694.861385] Unexpected kernel single-step exception at EL1
->> [187694.866926] Unexpected kernel single-step exception at EL1
->> [187694.872467] Unexpected kernel single-step exception at EL1
->> [187694.878009] Unexpected kernel single-step exception at EL1
->> [187694.883550] Unexpected kernel single-step exception at EL1
->>
->> I can reproduce this pretty easily on my machine with functioncallcount.stp from https://sourceware.org/systemtap/examples/profiling/functioncallcount.stp and the following steps:
->>
->> # stap -p4 -k -m mm_probes -w functioncallcount.stp "*@mm/*.c" -c "sleep 1"
->> # staprun mm_probes.ko -c "sleep 1"
->>
->> -Will
-> 
-> I did a fresh checkout and build of systemtap and tried the above.  I'm not yet seeing this problem.  It does remind me of the problem we saw before debug exception handling in entry.S was patched in v3.18-rc1, but you say you are using recent kernel sources.
-> 
+--Sig_/7=M9Ocnul7NOx/ddue1p0UC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+On Wed, 3 Dec 2014 23:31:16 +0100 Dongsu Park <dongsu.park@profitbricks.com>
+wrote:
 
-I saw this problem with a 3.18.0-rc5 based kernel.  Today I built a kernel based on  3.18.0-0.rc6.git0.1.x1 with the patches and I didn't see the problem with the unexpected kernel single-step exception.  I am not sure if maybe there was some problem function being probed in the 3.18.0-rc5 kernel but not with the 3.18.0-rc6 kernel or maybe some difference in the config between the kernels. It seemed wiser to mention it.
+> Hi Tejun,
+>=20
+> On 03.12.2014 13:02, Tejun Heo wrote:
+> > So, something like the following.  Only compile tested.  I'll test it
+> > and post proper patches w/ due credits.
+>=20
+> I have been already satisfied with Neil's patch,
+> but your patch looks indeed a lot cleaner, I like it.
+> I just compiled and tested it shortly, which seems to work.
+> Though there's one nitpick. (see below)
+>=20
+> > Thanks.
+> >=20
+> > Index: work/kernel/workqueue.c
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > --- work.orig/kernel/workqueue.c
+> > +++ work/kernel/workqueue.c
+> > @@ -1804,8 +1804,8 @@ static void pool_mayday_timeout(unsigned
+> >  	struct worker_pool *pool =3D (void *)__pool;
+> >  	struct work_struct *work;
+> > =20
+> > -	spin_lock_irq(&wq_mayday_lock);		/* for wq->maydays */
+> > -	spin_lock(&pool->lock);
+> > +	spin_lock_irq(&pool->lock);
+> > +	spin_lock(&wq_mayday_lock);		/* for wq->maydays */
+> > =20
+> >  	if (need_to_create_worker(pool)) {
+> >  		/*
+> > @@ -1818,8 +1818,8 @@ static void pool_mayday_timeout(unsigned
+> >  			send_mayday(work);
+> >  	}
+> > =20
+> > -	spin_unlock(&pool->lock);
+> > -	spin_unlock_irq(&wq_mayday_lock);
+> > +	spin_unlock(&wq_mayday_lock);
+> > +	spin_unlock_irq(&pool->lock);
+> > =20
+> >  	mod_timer(&pool->mayday_timer, jiffies + MAYDAY_INTERVAL);
+> >  }
+> > @@ -2248,12 +2248,29 @@ repeat:
+> >  		 * Slurp in all works issued via this workqueue and
+> >  		 * process'em.
+> >  		 */
+> > -		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
+> > +		WARN_ON_ONCE(!list_empty(scheduled));
+> >  		list_for_each_entry_safe(work, n, &pool->worklist, entry)
+> >  			if (get_work_pwq(work) =3D=3D pwq)
+> >  				move_linked_works(work, scheduled, &n);
+> > =20
+> > -		process_scheduled_works(rescuer);
+> > +		if (!list_empty(scheduled)) {
+> > +			process_scheduled_works(rescuer);
+> > +
+> > +			/*
+> > +			 * The above execution of rescued work items could
+> > +			 * have created more to rescue through
+> > +			 * pwq_activate_first_delayed() or chained
+> > +			 * queueing.  Let's put @pwq back on mayday list so
+> > +			 * that such back-to-back work items, which may be
+> > +			 * being used to relieve memory pressure, don't
+> > +			 * incur MAYDAY_INTERVAL delay inbetween.
+> > +			 */
+> > +			if (need_to_create_worker(pool)) {
+> > +				spin_lock(&wq_mayday_lock);
+>=20
+> Does it need to call get_pwq(pwq), doesn't it?
 
->>>
->>>
->>>> That would explain why the state of play of the interrupts is in an
->>>> unexpected state in the crash I reported:
->>>> "The point of failure in the panic was:
->>>> fs/buffer.c:1257
->>>>
->>>> static inline void check_irqs_on(void)
->>>> {
->>>> #ifdef irqs_disabled
->>>>          BUG_ON(irqs_disabled());
->>>> #endif
->>>> }
->>>> "
->>>>
->>>> This is all new to me so I'm still at the head-scratching stage.
->>>
->>> Ah, I see.
->>>
->>> Thank you,
->>>
->>>>
->>>> David,
->>>> Does the above make sense to you? Have you managed to reproduce the crash I get?
->>>>
->>>> Cheers,
->>>> -- 
->>>> Steve
-> 
-> I have easily produced a crash although it doesn't look to me like the same one.  I'm getting a NULL pointer dereference.  The PMU stuff (used by perf record|stat -e) should be quite independent of kprobes though.
-> 
-> -dl
+Yes, I think it does.
 
-The perf issue seems to be independent and can be reproduced without using any kprobe support.  I need to get a simple reproducer and mention it on the linux-perf-user list.
+Swapping the order of the locks make it so much nicer, doesn't it!!
 
--Will
+Thanks,
+NeilBrown
+
+
+>=20
+> Thanks,
+> Dongsu
+>=20
+> > +				list_move_tail(&pwq->mayday_node, &wq->maydays);
+> > +				spin_unlock(&wq_mayday_lock);
+> > +			}
+> > +		}
+> > =20
+> >  		/*
+> >  		 * Put the reference grabbed by send_mayday().  @pool won't
+> >=20
+> > --=20
+> > tejun
+
+
+--Sig_/7=M9Ocnul7NOx/ddue1p0UC
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVH+2hznsnt1WYoG5AQIV5g//fNlEa16pQ1K8uz5WY6UGsrP9A6Bx4piX
+045zWBM9nW8uY/0l4gCYow5ieOCxT/AaB94ngEAb9KecJp6v9M1rtYZtPo9c/miH
+0L8CbLvCrY3q1E9/HZ5O7RZYL2C66BoE8n856Qrl80+101ZZk2Lww22Rv5++eCMn
+E8jfh1BMq2kXu1g34Lz+L8fNaHH+CkDmAx8PVe59+CcA4QpaCJF2c0ybIgTGcjmB
+PeGvzBCaUHNywaJOo45vtcKcN8Z0lGPkszAWv30vrUZ2nx2rgrc61qkYAFg8/Rh0
+0jd0IBuaFG42ZQLoTPNyFhWnh/HPpwzGAGtDqnaoz8H019txW6SGCviH0Fp462JY
+irUn38386He0manqog+17FcvAGGJMbMuErmssHtFFROswTStLISowp7Ig1u98vt9
+mV0pCBppacl5FQsqWR7MRGiHC9MOMD6DNQjfbgm3FLSMH68GZsWURhqIqSoescwM
+nKQGAlgBavbW0ky+0B8n/7LIxA07Jvdqk/pmGFOcJ5z5lcQo8aK3Om1z3kA8G+14
+Ol9VhbS2xCKEJshUrfF8JyKDJxHAN38MstSCenmSXlh9VOf3G8KQvgdgh0J5zuyE
+dqJeCxNW0vr6COHyXvmseFlR7biYXf8JSexjdWbgH7KBhwiiOJNtal+Z6VNEsn0Y
+6pvc0EAfEw0=
+=pMpg
+-----END PGP SIGNATURE-----
+
+--Sig_/7=M9Ocnul7NOx/ddue1p0UC--
