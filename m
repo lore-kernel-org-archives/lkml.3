@@ -1,211 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaLDPW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 10:22:58 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:49198 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932236AbaLDPW4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 10:22:56 -0500
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CAAVeFu+d5R6cKaXOgkU-ve8uy4jPGWJrDUrnARXs=ufe_p+RFg@mail.gmail.com>
-Date: Thu, 4 Dec 2014 17:22:50 +0200
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Parrot <bparrot@ti.com>, Jiri Prchal <jiri.prchal@aksignal.cz>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8717617A-56AE-495C-B873-0B2E3EA83060@antoniou-consulting.com>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com> <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com> <20141201163639.GI25249@lukather> <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com> <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com> <20141202161227.GH30256@lukather> <CAAVeFu+Gms6ptyK6j1Zy_wWg+9URs+9zBu=pOiwiEERO=8NjNw@mail.gmail.com> <0EF6A712-5FF1-41BE-B8A9-21ABE7FE37F9@antoniou-consulting.com> <CAAVeFu+kfPi8CUR-YergQv9P1wMBzOik_Q1KBKMTVY1Gg_FBzg@mail.gmail.com> <C9DBE2F0-A725-4D05-BEC6-F083F3F83B9F@antoniou-consulting.com> <CAAVeFuKx1uWVh-TQeFKN4uS9TyzQH4BbQ2q1yM4uJsnQdfdzPQ@mail.gmail.com> <D73736E8-DC33-4F98-82DD-DF42B989A453@antoniou-consulting.com> <CAAVeFu+d5R6cKaXOgkU-ve8uy4jPGWJrDUrnARXs=ufe_p+RFg@mail.gmail.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	id S932536AbaLDPXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 10:23:12 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59656 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503AbaLDPXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 10:23:08 -0500
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Subject: [PATCH v2 3/3] hwmon: tmp401: bail-out from tmp401_probe() in case of write errors
+Date: Thu,  4 Dec 2014 16:22:54 +0100
+Message-Id: <1417706574-1023-4-git-send-email-bgolaszewski@baylibre.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417706574-1023-1-git-send-email-bgolaszewski@baylibre.com>
+References: <1417706574-1023-1-git-send-email-bgolaszewski@baylibre.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+The return value of i2c_smbus_read_byte_data() is checked in
+tmp401_init_client(), but only a warning is printed and the device is
+registered anyway. This leads to devices being registered even if they
+cannot be physically detected.
 
-> On Dec 4, 2014, at 17:10 , Alexandre Courbot <gnurou@gmail.com> wrote:
-> 
-> On Fri, Dec 5, 2014 at 12:02 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
->> Hi Alexandre,
->> 
->>> On Dec 4, 2014, at 16:58 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>> 
->>> On Thu, Dec 4, 2014 at 11:47 PM, Pantelis Antoniou
->>> <panto@antoniou-consulting.com> wrote:
->>>> Hi Alexandre,
->>>> 
->>>>> On Dec 4, 2014, at 16:41 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>> 
->>>>> On Thu, Dec 4, 2014 at 11:27 PM, Pantelis Antoniou
->>>>> <panto@antoniou-consulting.com> wrote:
->>>>>> Hi Alexandre,
->>>>>> 
->>>>>> I tried to stay away while things are being fleshed out but…
->>>>>> 
->>>>>>> On Dec 4, 2014, at 16:15 , Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>>>> 
->>>>>>> On Wed, Dec 3, 2014 at 1:12 AM, Maxime Ripard
->>>>>>> <maxime.ripard@free-electrons.com> wrote:
->>>>>>>> On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
->>>>>>>>> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->>>>>>>>>> On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
->>>>>>>>>> <maxime.ripard@free-electrons.com> wrote:
->>>>>>>>> 
->>>>>>>>>>> The only thing I'd like to have would be that the request here would
->>>>>>>>>>> be non-exclusive, so that a later driver would still be allowed later
->>>>>>>>>>> on to request that GPIO later on and manage it itself (ideally using
->>>>>>>>>>> the usual gpiod_request function).
->>>>>>>>>> 
->>>>>>>>>> Actually we have a plan (and I have some code too) to allow multiple
->>>>>>>>>> consumers per GPIO. Although like Benoit I wonder why you would want
->>>>>>>>>> to hog a GPIO and then request it properly later. Also, that probably
->>>>>>>>>> means we should abandon the hog since it actively drives the line and
->>>>>>>>>> would interfere with the late requested. How to do that correctly is
->>>>>>>>>> not really clear to me.
->>>>>>>>> 
->>>>>>>>> I don't get the usecase. A hogged GPIO is per definition hogged.
->>>>>>>>> This sounds more like "initial settings" or something, which is another
->>>>>>>>> usecase altogether.
->>>>>>>> 
->>>>>>>> We do have one board where we have a pin (let's say GPIO14 of the bank
->>>>>>>> A) that enables a regulator that will provide VCC the bank B.
->>>>>>>> 
->>>>>>>> Now, both banks are handled by the same driver, but in order to have a
->>>>>>>> working output on the bank B, we do need to set GPIO14 as soon as
->>>>>>>> we're probed.
->>>>>>>> 
->>>>>>>> Just relying on the usual deferred probing introduces a circular
->>>>>>>> dependency between the gpio-regulator that needs to grab its GPIO from
->>>>>>>> a driver not there yet, and the gpio driver that needs to enable its
->>>>>>>> gpio-regulator.
->>>>>>> 
->>>>>>> I don't get it. According to what you said, the following order should
->>>>>>> go through IIUC:
->>>>>>> 
->>>>>>> 1) bank A is probed, gpio 14 is available
->>>>>>> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
->>>>>>> 3) bank B is probed, grabs its regulator and turn it on, probes.
->>>>>>> 
->>>>>>> What am I missing?
->>>>>>> 
->>>>>>>> 
->>>>>>>> GPIO hogging needs to be the ideal solution for that, since we can
->>>>>>>> just enforce the GPIO14 value as the driver is probed, which provides
->>>>>>>> the guarantee that any driver using the bank B will actually drive the
->>>>>>>> GPIO it might use.
->>>>>>> 
->>>>>>> At this point I start wondering if such initial setup should not be
->>>>>>> the job of the bootloader? GPIO hogging ought to be simple and
->>>>>>> definitive, adding the possibility to have it just as an initial value
->>>>>>> would considerably complexify it. E.g. when is the gpio chip driver
->>>>>>> supposed to release the hogged descriptor in such a case?
->>>>>>> 
->>>>>> 
->>>>>> Do not count on the bootloader setting up anything. The trend is
->>>>>> for the bootloader to setup the minimal environment to load your kernel
->>>>>> and jump to it.
->>>>>> 
->>>>>> http://www.denx.de/wiki/pub/U-Boot/MiniSummitELCE2013/2013-ELCE-U-Boot-Falcon-Boot.pdf
->>>>> 
->>>>> Just wondering. :)
->>>>> 
->>>>> But yeah, there are some use-cases (such as this one or
->>>>> Linux-as-a-bootloader) for which this would not play nicely.
->>>>> 
->>>>>> 
->>>>>> 
->>>>>>> Note that if the multiple GPIO consumer feature we are planning goes
->>>>>>> through, you should be able to use both hogging *and* a regulator on
->>>>>>> the same GPIO and achieve what you want. The expectation of multiple
->>>>>>> consumers is that the board designers know what they are doing, and
->>>>>>> this case would certainly fit (chip hogs the line and doesn't touch
->>>>>>> the value after that, letting the regulator control it without any
->>>>>>> conflict afterwards), although it would of course be better to solve
->>>>>>> the issue through regular probing...
->>>>>> 
->>>>>> 
->>>>>> That’s why I was advocating a simple probing driver for all this.
->>>>>> Figure out a way for this driver to be probed first would be an easier
->>>>>> solution that what’s going on here.
->>>>> 
->>>>> Do you mean, a driver whose sole job is to probe other drivers in the
->>>>> right order? :/
->>>> 
->>>> $DEITY no :)
->>>> 
->>>> I mean instead of having the gpio hog in the gpio adapter driver, have
->>>> a gpio-hog driver, that’s using an undisclosed method to make sure that
->>>> it’s the first one to be probed afterwards.
->>> 
->>> IIUC that would not solve this particular issue - here the GPIO
->>> controller is both a provider and (indirect) consumer of a GPIO for
->>> itself. If the hog is in a separate node, if would have to be probed
->>> from inside the probe() function of the GPIO controller to do the job,
->>> which would be the same effect as having the hogs directly under the
->>> controller node, only with more hassle.
->>> 
->>> Again, IIUC. >_<
->> 
->> If you had a way to specify the order of probing that would work no?
->> You don’t have to do it in the gpio-controller, you can do it in the
->> platform bus probe.
-> 
-> A probe order that works would be the following:
-> 
-> 1) bank A is probed, gpio 14 is available
-> 2) gpio-regulator is probed, acquires GPIO 14, regulator for Bank B is available
-> 3) bank B is probed, grabs its regulator and turn it on, probes.
-> 
-> The problem is that in the present case, 1) and 3) are the same
-> operation because both banks are the same device.
-> 
-> You could probably solve this by making bank A and bank B separate
-> devices, then even EPROBE_DEFER would allow you to probe everything in
-> the right order. But since the DT bindings are (supposedly) already
-> published this is likely not an option (?). And logically speaking,
-> these banks form one device anyway.
+Bail-out from probe in case of write errors and notify the user.
 
-Let’s put that in a pseudo DT definition.
+Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+---
+ drivers/hwmon/tmp401.c | 29 ++++++++++++++++++-----------
+ 1 file changed, 18 insertions(+), 11 deletions(-)
 
-BANK_A: bank_a {
-	compatible = “banka,gpio-controller”;
-};
-
-GPIO_REGULATOR: gpio-regulator {
-	compatible = “gpio-regulator”;
-	gpio = <&BANK_A 14>;
-};
-
-BANK_B: bank_b {
-	compatible = “bankb,gpio-controller”;
-	power-supply = <&GPIO_REGULATOR>;
-};
-
-The correct probe order is bank_a, gpio-regulator, bank_b correct?
-
-It is possible to modify DTC to follow phandle references and spit out
-a depends node that the platform bus probe can use.
-
-For instance, 
-
-	__depends__ {
-		gpio-regulator = <&BANK_A>;
-		bank_b = <&GPIO_REGULATOR>;
-	};
-
-Would that work for your case?
-
-Regards
-
-— Pantelis
-
+diff --git a/drivers/hwmon/tmp401.c b/drivers/hwmon/tmp401.c
+index a5f0973..ce7e579 100644
+--- a/drivers/hwmon/tmp401.c
++++ b/drivers/hwmon/tmp401.c
+@@ -618,10 +618,10 @@ static const struct attribute_group tmp432_group = {
+  * Begin non sysfs callback code (aka Real code)
+  */
+ 
+-static void tmp401_init_client(struct tmp401_data *data,
+-			       struct i2c_client *client)
++static int tmp401_init_client(struct tmp401_data *data,
++			      struct i2c_client *client)
+ {
+-	int config, config_orig;
++	int config, config_orig, status;
+ 
+ 	/* Set the conversion rate to 2 Hz */
+ 	i2c_smbus_write_byte_data(client, TMP401_CONVERSION_RATE_WRITE, 5);
+@@ -629,16 +629,21 @@ static void tmp401_init_client(struct tmp401_data *data,
+ 
+ 	/* Start conversions (disable shutdown if necessary) */
+ 	config = i2c_smbus_read_byte_data(client, TMP401_CONFIG_READ);
+-	if (config < 0) {
+-		dev_warn(&client->dev, "Initialization failed!\n");
+-		return;
+-	}
++	if (config < 0)
++		return config;
+ 
+ 	config_orig = config;
+ 	config &= ~TMP401_CONFIG_SHUTDOWN;
+ 
+-	if (config != config_orig)
+-		i2c_smbus_write_byte_data(client, TMP401_CONFIG_WRITE, config);
++	if (config != config_orig) {
++		status = i2c_smbus_write_byte_data(client,
++						   TMP401_CONFIG_WRITE,
++						   config);
++		if (status < 0)
++			return status;
++	}
++
++	return 0;
+ }
+ 
+ static int tmp401_detect(struct i2c_client *client,
+@@ -721,7 +726,7 @@ static int tmp401_probe(struct i2c_client *client,
+ 	struct device *dev = &client->dev;
+ 	struct device *hwmon_dev;
+ 	struct tmp401_data *data;
+-	int groups = 0;
++	int groups = 0, status;
+ 
+ 	data = devm_kzalloc(dev, sizeof(struct tmp401_data), GFP_KERNEL);
+ 	if (!data)
+@@ -732,7 +737,9 @@ static int tmp401_probe(struct i2c_client *client,
+ 	data->kind = id->driver_data;
+ 
+ 	/* Initialize the TMP401 chip */
+-	tmp401_init_client(data, client);
++	status = tmp401_init_client(data, client);
++	if (status < 0)
++		return status;
+ 
+ 	/* Register sysfs hooks */
+ 	data->groups[groups++] = &tmp401_group;
+-- 
+2.1.3
 
