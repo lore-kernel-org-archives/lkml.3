@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaLDAyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:54:33 -0500
-Received: from mail-bl2on0093.outbound.protection.outlook.com ([65.55.169.93]:20640
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751905AbaLDAyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:54:32 -0500
-X-Greylist: delayed 2026 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Dec 2014 19:54:31 EST
-Message-ID: <547FA8D2.2030703@caviumnetworks.com>
-Date: Wed, 3 Dec 2014 16:20:34 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752818AbaLDAzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:55:38 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61840 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751905AbaLDAzh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:55:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: linux-wireless@vger.kernel.org
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] NFC / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Thu, 04 Dec 2014 02:17:02 +0100
+Message-ID: <1783661.J0PllbRLKd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <peterz@infradead.org>,
-        <paul.gortmaker@windriver.com>, <macro@linux-mips.org>,
-        <chenhc@lemote.com>, <cl@linux.com>, <mingo@kernel.org>,
-        <richard@nod.at>, <zajec5@gmail.com>, <james.hogan@imgtec.com>,
-        <keescook@chromium.org>, <tj@kernel.org>, <alex@alex-smith.me.uk>,
-        <pbonzini@redhat.com>, <blogic@openwrt.org>, <paul.burton@imgtec.com>,
-        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <markos.chandras@imgtec.com>, <dengcheng.zhu@imgtec.com>,
-        <manuel.lauss@gmail.com>, <lars.persson@axis.com>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 2/3] MIPS: Add full ISA emulator.
-References: <1417650258-2811-1-git-send-email-ddaney.cavm@gmail.com> <1417650258-2811-3-git-send-email-ddaney.cavm@gmail.com> <547FA2E5.1040105@imgtec.com>
-In-Reply-To: <547FA2E5.1040105@imgtec.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.194]
-X-ClientProxiedBy: BLUPR07CA095.namprd07.prod.outlook.com (25.160.24.50) To
- BN3PR0701MB1105.namprd07.prod.outlook.com (25.160.114.143)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
-X-Forefront-PRVS: 041517DFAB
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(24454002)(51704005)(199003)(479174003)(377454003)(64706001)(76176999)(87976001)(87266999)(23746002)(20776003)(95666004)(65806001)(40100003)(66066001)(50466002)(105586002)(81156004)(65956001)(4396001)(47776003)(65816999)(64126003)(80316001)(68736005)(77156002)(62966003)(54356999)(69596002)(46102003)(50986999)(31966008)(92566001)(120916001)(42186005)(101416001)(99396003)(110136001)(97736003)(33656002)(102836001)(106356001)(107046002)(92726001)(122386002)(53416004)(36756003)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0701MB1105;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1364;
-X-OriginatorOrg: caviumnetworks.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 03:55 PM, Leonid Yegoshin wrote:
-> On 12/03/2014 03:44 PM, David Daney wrote:
->
-> (...)
->
-> Big work
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Not really, although by number of lines of code, it is about 3x the size 
-of your patch, it only touches the existing code in one place.  It only 
-took about 3 days to write, adding full MIPS64 and R6 support would 
-probably be less than another week of work.
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-microMIPS I haven't looked at as we don't have anything to test it on.
+Replace CONFIG_PM_RUNTIME with CONFIG_PM in drivers/nfc/trf7970a.c.
 
-> but it doesn't support customized instructions,
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-GCC will never put these in the delay slot of a FPU branch, so it is not 
-needed.
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
 
-> multiple ASEs,
+Please let me know if it is OK to take this one into linux-pm.
 
-Same as above.  But any instructions that are deemed necessary can 
-easily be added.
+---
+ drivers/nfc/trf7970a.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> MIPS R6
-
-It is a proof of concept.  R6 can easily be added if needed.
-
-Your XOL emulation doesn't handle R6 either, so this is no worse than 
-your patch in that respect.
-
-> etc.
-
-GCC will never put trapping instructions in the delay slot either.
-
-All we have to support are non-trapping and non-branch/jump instructions 
-from the ISA manuals that can be executed from userspace processes. 
-That makes it slightly simpler than complete ISA emulation.
-
->
-> Well, it is still not a replacement of XOL emulation.
-
-For use by the FPU emulator, it is probably good enough
-
-> Even close.
-
-I disagree, that is why I took the time to do it.
-
->
->
+Index: linux-pm/drivers/nfc/trf7970a.c
+===================================================================
+--- linux-pm.orig/drivers/nfc/trf7970a.c
++++ linux-pm/drivers/nfc/trf7970a.c
+@@ -2154,7 +2154,7 @@ static int trf7970a_resume(struct device
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int trf7970a_pm_runtime_suspend(struct device *dev)
+ {
+ 	struct spi_device *spi = container_of(dev, struct spi_device, dev);
 
