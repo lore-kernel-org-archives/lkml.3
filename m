@@ -1,41 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaLDU2P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 15:28:15 -0500
-Received: from resqmta-po-10v.sys.comcast.net ([96.114.154.169]:48739 "EHLO
-	resqmta-po-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300AbaLDU2M (ORCPT
+	id S933214AbaLDU1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 15:27:39 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50293 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737AbaLDUXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 15:28:12 -0500
-Date: Thu, 4 Dec 2014 14:28:10 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Leonard Crestez <lcrestez@ixiacom.com>
-cc: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Sorin Dumitru <sdumitru@ixiacom.com>
-Subject: Re: [RFC v2] percpu: Add a separate function to merge free areas
-In-Reply-To: <5480BFAA.2020106@ixiacom.com>
-Message-ID: <alpine.DEB.2.11.1412041426230.14577@gentwo.org>
-References: <547E3E57.3040908@ixiacom.com> <20141204175713.GE2995@htj.dyndns.org> <5480BFAA.2020106@ixiacom.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 4 Dec 2014 15:23:19 -0500
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [RFC][PATCH 08/13] iov_iter.c: convert copy_from_iter() to iterate_and_advance
+Date: Thu,  4 Dec 2014 20:23:12 +0000
+Message-Id: <1417724597-17099-8-git-send-email-viro@ZenIV.linux.org.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20141204202011.GO29748@ZenIV.linux.org.uk>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Dec 2014, Leonard Crestez wrote:
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-> Yes, we are actually experiencing issues with this. We create lots of virtual
-> net_devices and routes, which means lots of percpu counters/pointers. In particular
-> we are getting worse performance than in older kernels because the net_device refcnt
-> is now a percpu counter. We could turn that back into a single integer but this
-> would negate an upstream optimization.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ mm/iov_iter.c | 106 +++++++++-------------------------------------------------
+ 1 file changed, 15 insertions(+), 91 deletions(-)
 
-Well this is not a common use case and that is not what the per cpu
-allocator was designed for. There is bound to be signifcant fragmentation
-with the current design. The design was for rare allocations when
-structures are initialized.
-
-> Having a "properly scalable" percpu allocator would be quite nice indeed.
-
-I guess we would be looking at a redesign of the allocator then.
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index 17b7144..791429d 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -142,51 +142,6 @@ static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+ 	return wanted - bytes;
+ }
+ 
+-static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+-	char __user *buf;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __copy_from_user(to, buf, copy);
+-	copy -= left;
+-	skip += copy;
+-	to += copy;
+-	bytes -= copy;
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __copy_from_user(to, buf, copy);
+-		copy -= left;
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
+-
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
+ {
+@@ -444,48 +399,6 @@ static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ 	return wanted - bytes;
+ }
+ 
+-static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-
+-	copy = min(bytes, bvec->bv_len - skip);
+-
+-	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+-
+-	to += copy;
+-	skip += copy;
+-	bytes -= copy;
+-
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memcpy_from_page(to, bvec->bv_page, bvec->bv_offset, copy);
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted;
+-}
+-
+ size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
+ {
+ 	if (i->type & ITER_BVEC)
+@@ -497,10 +410,21 @@ EXPORT_SYMBOL(copy_to_iter);
+ 
+ size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
+ {
+-	if (i->type & ITER_BVEC)
+-		return copy_from_iter_bvec(addr, bytes, i);
+-	else
+-		return copy_from_iter_iovec(addr, bytes, i);
++	char *to = addr;
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	iterate_and_advance(i, bytes, v,
++		__copy_from_user((to += v.iov_len) - v.iov_len, v.iov_base,
++				 v.iov_len),
++		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++				 v.bv_offset, v.bv_len)
++	)
++
++	return bytes;
+ }
+ EXPORT_SYMBOL(copy_from_iter);
+ 
+-- 
+2.1.3
 
