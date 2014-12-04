@@ -1,93 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaLDHuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 02:50:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:65423 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaLDHub (ORCPT
+	id S1752994AbaLDHvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 02:51:37 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:56036 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaLDHvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 02:50:31 -0500
-Message-ID: <54801228.5030405@huawei.com>
-Date: Thu, 4 Dec 2014 15:50:00 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 4 Dec 2014 02:51:35 -0500
+Date: Thu, 4 Dec 2014 16:51:32 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: SH-Linux <linux-sh@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/02] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup
+ support
+Message-ID: <20141204075131.GP25806@verge.net.au>
+References: <20141203121753.5936.36253.sendpatchset@w520>
+ <20141203121803.5936.35881.sendpatchset@w520>
+ <20141204071854.GD25806@verge.net.au>
+ <CANqRtoT_L5QE9D_xUBe4m75kLrB+qWAWrMZHf-260TFwqBXGXQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Rik van Riel <riel@redhat.com>,
-        <dave@sr71.net>
-CC: the arch/x86 maintainers <x86@kernel.org>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH] x86, mm: fix zone ranges print in boot
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoT_L5QE9D_xUBe4m75kLrB+qWAWrMZHf-260TFwqBXGXQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the usual log without restrict memory.
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
-[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
-[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
-...
+On Thu, Dec 04, 2014 at 04:29:49PM +0900, Magnus Damm wrote:
+> Hi Simon,
+> 
+> On Thu, Dec 4, 2014 at 4:18 PM, Simon Horman <horms@verge.net.au> wrote:
+> > Hi Magnus,
+> >
+> > I see you have been busy with the marzen board.
+> 
+> Yes! =)
+> 
+> > On Wed, Dec 03, 2014 at 09:18:03PM +0900, Magnus Damm wrote:
+> >> From: Magnus Damm <damm+renesas@opensource.se>
+> >>
+> >> Add r8a7779 specific support for IRLM bit configuration
+> >> in the INTC-IRQPIN driver. Without this code we need
+> >> special workaround code in arch/arm/mach-shmobile.
+> >>
+> >> The IRLM bit for the INTC hardware exists on various
+> >> older SH-based SoCs and is used to select between two
+> >> modes for the external interrupt pins IRQ0 to IRQ3:
+> >>
+> >> IRLM = 0: (default from reset on r8a7779)
+> >> In this mode the pins IRQ0 to IRQ3 are used together
+> >> to give a value between 0 and 15 to the SoC. External
+> >> logic is required for masking. This mode is not
+> >> supported by the INTC-IRQPIN driver.
+> >>
+> >> IRLM = 1: (needs this patch or configuration elsewhere)
+> >> In this mode IRQ0 to IRQ3 operate as 4 individual
+> >> external interrupt pins. In this mode the SMSC ethernet
+> >> chip can be used via IRQ1 on r8a7779 Marzen. This mode
+> >> is the only supported mode by the INTC-IRQPIN driver.
+> >>
+> >> For this patch to work the r8a7779 DTS needs to pass
+> >> the ICR0 register as the last register bank.
+> >>
+> >> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+> >> ---
+> >>
+> >>  Written against renesas-devel-20141202-v3.18-rc7 which is
+> >>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
+> >>
+> >>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt |    5 +
+> >>  drivers/irqchip/irq-renesas-intc-irqpin.c                                      |   50 ++++++++--
+> >>  2 files changed, 46 insertions(+), 9 deletions(-)
+> >>
+> >> --- 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
+> >> +++ work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt       2014-12-03 20:25:13.000000000 +0900
+> >> @@ -9,6 +9,11 @@ Required properties:
+> >>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
+> >>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
+> >>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
+> >> +
+> >> +- reg: Base address and length of each register bank used by the external
+> >> +  IRQ pins driven by the interrupt controller hardware module. The base
+> >> +  addresses, length and number of required register banks varies with soctype.
+> >> +
+> >>  - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
+> >>    interrupts.txt in this directory
+> >>
+> >> --- 0001/drivers/irqchip/irq-renesas-intc-irqpin.c
+> >> +++ work/drivers/irqchip/irq-renesas-intc-irqpin.c    2014-12-03 20:32:59.000000000 +0900
+> >> @@ -30,6 +30,7 @@
+> >>  #include <linux/err.h>
+> >>  #include <linux/slab.h>
+> >>  #include <linux/module.h>
+> >> +#include <linux/of_device.h>
+> >>  #include <linux/platform_data/irq-renesas-intc-irqpin.h>
+> >>  #include <linux/pm_runtime.h>
+> >>
+> >> @@ -40,7 +41,9 @@
+> >>  #define INTC_IRQPIN_REG_SOURCE 2 /* INTREQnn */
+> >>  #define INTC_IRQPIN_REG_MASK 3 /* INTMSKnn */
+> >>  #define INTC_IRQPIN_REG_CLEAR 4 /* INTMSKCLRnn */
+> >> -#define INTC_IRQPIN_REG_NR 5
+> >> +#define INTC_IRQPIN_REG_NR_MANDATORY 5
+> >> +#define INTC_IRQPIN_REG_IRLM 5 /* ICR0 with IRLM bit (optional) */
+> >> +#define INTC_IRQPIN_REG_NR 6
+> >>
+> >>  /* INTC external IRQ PIN hardware register access:
+> >>   *
+> >> @@ -82,6 +85,10 @@ struct intc_irqpin_priv {
+> >>       u8 shared_irq_mask;
+> >>  };
+> >>
+> >> +struct intc_irqpin_irlm_config {
+> >> +     unsigned int irlm_bit;
+> >> +};
+> >> +
+> >>  static unsigned long intc_irqpin_read32(void __iomem *iomem)
+> >>  {
+> >>       return ioread32(iomem);
+> >> @@ -345,10 +352,23 @@ static struct irq_domain_ops intc_irqpin
+> >>       .xlate  = irq_domain_xlate_twocell,
+> >>  };
+> >>
+> >> +static const struct intc_irqpin_irlm_config intc_irqpin_irlm_r8a7779 = {
+> >> +     .irlm_bit = 23, /* ICR0.IRLM0 */
+> >> +};
+> >> +
+> >> +static const struct of_device_id intc_irqpin_dt_ids[] = {
+> >> +     { .compatible = "renesas,intc-irqpin", },
+> >> +     { .compatible = "renesas,intc-irqpin-r8a7779",
+> >> +       .data = &intc_irqpin_irlm_r8a7779 },
+> >> +     {},
+> >> +};
+> >> +MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
+> >> +
+> >>  static int intc_irqpin_probe(struct platform_device *pdev)
+> >>  {
+> >>       struct device *dev = &pdev->dev;
+> >>       struct renesas_intc_irqpin_config *pdata = dev->platform_data;
+> >> +     const struct of_device_id *of_id;
+> >>       struct intc_irqpin_priv *p;
+> >>       struct intc_irqpin_iomem *i;
+> >>       struct resource *io[INTC_IRQPIN_REG_NR];
+> >> @@ -391,10 +411,11 @@ static int intc_irqpin_probe(struct plat
+> >>       pm_runtime_enable(dev);
+> >>       pm_runtime_get_sync(dev);
+> >>
+> >> -     /* get hold of manadatory IOMEM */
+> >> +     /* get hold of register banks */
+> >> +     memset(io, 0, sizeof(io));
+> >>       for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
+> >>               io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
+> >> -             if (!io[k]) {
+> >> +             if (!io[k] && k < INTC_IRQPIN_REG_NR_MANDATORY) {
+> >>                       dev_err(dev, "not enough IOMEM resources\n");
+> >>                       ret = -EINVAL;
+> >>                       goto err0;
+> >> @@ -422,6 +443,10 @@ static int intc_irqpin_probe(struct plat
+> >>       for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
+> >>               i = &p->iomem[k];
+> >>
+> >> +             /* handle optional registers */
+> >> +             if (!io[k])
+> >> +                     continue;
+> >> +
+> >>               switch (resource_size(io[k])) {
+> >>               case 1:
+> >>                       i->width = 8;
+> >> @@ -448,6 +473,19 @@ static int intc_irqpin_probe(struct plat
+> >>               }
+> >>       }
+> >>
+> >> +     /* configure "individual IRQ mode" where needed */
+> >> +     of_id = of_match_device(intc_irqpin_dt_ids, dev);
+> >> +     if (of_id && of_id->data) {
+> >> +             const struct intc_irqpin_irlm_config *irlm_config = of_id->data;
+> >> +
+> >> +             if (io[INTC_IRQPIN_REG_IRLM])
+> >> +                     intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_IRLM,
+> >> +                                                   irlm_config->irlm_bit,
+> >> +                                                   1, 1);
+> >> +             else
+> >> +                     dev_warn(dev, "unable to select IRLM mode\n");
+> >> +     }
+> >> +
+> >>       /* mask all interrupts using priority */
+> >>       for (k = 0; k < p->number_of_irqs; k++)
+> >>               intc_irqpin_mask_unmask_prio(p, k, 1);
+> >> @@ -550,12 +588,6 @@ static int intc_irqpin_remove(struct pla
+> >>       return 0;
+> >>  }
+> >>
+> >> -static const struct of_device_id intc_irqpin_dt_ids[] = {
+> >> -     { .compatible = "renesas,intc-irqpin", },
+> >> -     {},
+> >> -};
+> >> -MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
+> >> -
+> >>  static struct platform_driver intc_irqpin_device_driver = {
+> >>       .probe          = intc_irqpin_probe,
+> >>       .remove         = intc_irqpin_remove,
+> >
+> > I am unclear about the relationship between this last hunk and the rest of
+> > the patch. It seems to be removing the only compat string that is
+> > recognised by the driver.
+> 
+> The MODULE_DEVICE_TABLE() bits are moved up before the probe()
+> function so it can be used together with of_match_device() to
+> determine if the r8a7779 specific setting should be applied or not. So
+> the last hunk is intentional and needed. The original compat string is
+> still there.
 
-This is the log when set "mem=2G" in cmdline.
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
-
-This patch fix the print, the following log shows right ranges.
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- arch/x86/mm/init.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..07244aa 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -674,10 +674,10 @@ void __init zone_sizes_init(void)
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
- 
- #ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-+	max_zone_pfns[ZONE_DMA]		= min(MAX_DMA_PFN, max_low_pfn);
- #endif
- #ifdef CONFIG_ZONE_DMA32
--	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-+	max_zone_pfns[ZONE_DMA32]	= min(MAX_DMA32_PFN, max_low_pfn);
- #endif
- 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
- #ifdef CONFIG_HIGHMEM
--- 
-2.0.0
-
-
+Thanks, I see it now.
