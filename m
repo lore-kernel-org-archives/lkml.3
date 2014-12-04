@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaLDGkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:40:20 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:60826 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaLDGkS (ORCPT
+	id S1752972AbaLDGmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:42:12 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49579 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbaLDGmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:40:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141203172526.GC7712@sirena.org.uk>
-References: <547F3C9F.8080102@arm.com>
-	<20141203172526.GC7712@sirena.org.uk>
-Date: Thu, 4 Dec 2014 12:10:17 +0530
-Message-ID: <CAA7nrtjrQ5SpDrZRPb58zqmZrWahY3XOMWnmdH70WLr3q46_bA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] ASoC: dwc: Don't allow negative use counts
-From: rajeev kumar <rajeevkumar.linux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Jackson <Andrew.Jackson@arm.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Dec 2014 01:42:10 -0500
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Azael Avalos <coproscefalo@gmail.com>
+Subject: [PATCH v2 0/3] toshiba_acpi: Hotkeys and event handling changes
+Date: Wed,  3 Dec 2014 23:42:02 -0700
+Message-Id: <1417675325-14921-1-git-send-email-coproscefalo@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 10:55 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Dec 03, 2014 at 04:38:55PM +0000, Andrew Jackson wrote:
->
->>       case SNDRV_PCM_TRIGGER_STOP:
->>       case SNDRV_PCM_TRIGGER_SUSPEND:
->>       case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
->> -             dev->active--;
->> +             if (dev->active > 0)
->> +                     dev->active--;
->
-> How is this triggering - this sounds like you're papering over some
-> other bug somewhere?
+These patches change the current code to accomodate the handling
+of more events, since so far, it only handles hotkey events (0x80),
+move the hotkey enabling code to a sub function to avoid duplication,
+and add event 0x92 which indicates a change in the keyboard backlight
+mode.
+
+Changes since V1:
+- Split patch 02 in two patches
+- Some misc changes in the description of the patches (a bit wider now)
+
+Azael Avalos (3):
+  toshiba_acpi: Move hotkey enabling code to own function
+  toshiba_acpi: Change notify funtion to handle more events
+  toshiba_acpi: Add keyboard backlight mode change event
+
+ drivers/platform/x86/toshiba_acpi.c | 139 ++++++++++++++++++++++--------------
+ 1 file changed, 86 insertions(+), 53 deletions(-)
+
+-- 
+2.1.2
+
