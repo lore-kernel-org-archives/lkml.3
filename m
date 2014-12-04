@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaLDQCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 11:02:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33710 "EHLO mx1.redhat.com"
+	id S1754627AbaLDQIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 11:08:38 -0500
+Received: from h1.radempa.de ([176.9.142.194]:38470 "EHLO mail.cosmopool.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145AbaLDQC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 11:02:28 -0500
-Date: Thu, 4 Dec 2014 17:02:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: "Liang, Kan" <kan.liang@intel.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20141204160213.GB18631@krava.brq.redhat.com>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
- <20141204142330.GB10406@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
- <20141204155142.GD18689@kernel.org>
+	id S1753137AbaLDQIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 11:08:37 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Richard Weinberger <richard@nod.at>
+cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+In-reply-to: <547F7092.8080001@nod.at>
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <E1Xw8sp-0001B6-Ul@stardust.g4.wien.funkfeuer.at> <547F7092.8080001@nod.at>
+Comments: In-reply-to Richard Weinberger <richard@nod.at>
+   message dated "Wed, 03 Dec 2014 21:20:34 +0100."
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141204155142.GD18689@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4459.1417709282.1@stardust.g4.wien.funkfeuer.at>
+Date: Thu, 04 Dec 2014 17:08:02 +0100
+Message-Id: <E1XwYwk-00019x-LZ@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
-> > Jiri Wrote:
-> > > looks ok to me..
->  
-> > Thanks for the review.
->  
-> > > I'll test it once I get hands on Haswel server again, I guess we wait for the
-> > > kernel change to go in first anyway, right?
->  
-> > I'm not sure, let's ask Peter.
->  
-> > Peter?
+Richard Weinberger writes:
+> Harald,
 > 
-> Would be good to go in one pull request, so that whoever pulls it has
-> the chance to test the kernel feature with the accompanying tooling bits.
+> Am 03.12.2014 um 13:18 schrieb Harald Geyer:
+> > Hi Richard,
+> > 
+> > thanks for all the work you put into this!
+> > 
+> > Richard Weinberger writes:
+> >> Please see my current patches for your driver.
+> >> As discussed in an earlier mail I'm testing with the DHT22 sensor only.
+> >> With the IRQ changes I see 84 edges.
+> > 
+> > This still surprises me. With the IRQ changes I would expect the
+> > preamble to be 2 edges only. I must be missing something. Can you
+> > explain this to me?
+> 
+> Did some more tests.
+> With my IRQ changes applied I get as stated 84 edges,
+> without I get 85. So we're only losing one edge.
 
-also there's user part dependency on kernel.. soem new define IIRC
+Ok, finally had time to look into this and it's a simple off-by-one
+issue (no bug) that confused me:
+Without your patch the full number of edges per data transmission
+is 86. But since the last edge is not significant, we only store
+85 edges. - There should be a comment about this in the source...
 
-jirka
+With your patch the preamble is shortened by two edges as expected,
+but since there is a workaround for sensors where the preamble wasn't
+properly recorded, nobody notices unless they are looking closely at
+the number of edges recorded. The next thing to do is check on DHT11
+if the workaround is still needed.
+
+Note that the old behaviour was nice for debugging wiring problems:
+With my standard setup (3.3V, pin drive strenght 4 mA) I got the
+following:
+supply not connected: 0 edges (sensor always pulls the data line low)
+data not connected: 2 edges (we only see the signal we generate ourselves)
+gnd not connected: random amount of edges
+
+With the new behaviour we will get 0 edges in both of the first two
+cases. So we are really losing a tiny bit of functionality... :-(
+
+HTH,
+Harald
