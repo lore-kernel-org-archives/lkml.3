@@ -1,100 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaLDJae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 04:30:34 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:38847 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700AbaLDJac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 04:30:32 -0500
-Message-ID: <1417685458.22963.1.camel@mm-sol.com>
-Subject: Re: [PATCH v2 7/7] pinctrl: qcom-spmi-gpio: Migrate to
- pinconf-generic
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Date: Thu, 04 Dec 2014 11:30:58 +0200
-In-Reply-To: <d3d1b263bf6242aa9a1a0876be455cce@BN1BFFO11FD021.protection.gbl>
-References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
-	 <1417611812.30615.28.camel@mm-sol.com>
-	 <d3d1b263bf6242aa9a1a0876be455cce@BN1BFFO11FD021.protection.gbl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753426AbaLDJbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 04:31:53 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51833 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056AbaLDJbv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 04:31:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANqRtoQM8jrggMT7QFTQ1_1fKJgankkrUnF-wO8mJx3NqjxMTQ@mail.gmail.com>
+References: <20141203121753.5936.36253.sendpatchset@w520>
+	<20141203121813.5936.17433.sendpatchset@w520>
+	<20141204072153.GE25806@verge.net.au>
+	<CANqRtoRq5j6q=XGd1eJUH5TzSAGmZjyxnnSs+p_jum50zZn0Wg@mail.gmail.com>
+	<CAMuHMdW=-yXKUKQPc2rU0P2PQgjqnYzSZxZCPXLVYJjai+L04w@mail.gmail.com>
+	<CANqRtoQM8jrggMT7QFTQ1_1fKJgankkrUnF-wO8mJx3NqjxMTQ@mail.gmail.com>
+Date: Thu, 4 Dec 2014 10:31:48 +0100
+X-Google-Sender-Auth: Tdvz4ZYTjMWiX5wFkKroj-K_XNI
+Message-ID: <CAMuHMdVtHN6amVXP_uqEfrOyQG9S4fjeJPAe6Kvr94u_Sb6fPQ@mail.gmail.com>
+Subject: Re: [PATCH 02/02] ARM: shmobile: marzen-reference: Remove IRLM workaround
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Magnus,
 
-On Wed, 2014-12-03 at 09:38 -0800, Sören Brinkmann wrote:
-> On Wed, 2014-12-03 at 03:03PM +0200, Ivan T. Ivanov wrote:
-> > On Thu, 2014-11-27 at 17:26 -0800, Soren Brinkmann wrote:
-> > > Instead of the driver caring about implementation details like device
-> > > tree, just provide information about driver specific pinconf parameters
-> > > to pinconf-generic which takes care of parsing the DT.
-> > > 
-> > > Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> > > ---
-> > > This is compile tested only. So, it's likely that it needs more tweaking
-> > > to make it actually work on HW. But it illustrates the potential
-> > > benefits of the pinconf-generic changes in this series.
-> > > ---
-> > >  drivers/pinctrl/qcom/pinctrl-spmi-gpio.c | 125 +++----------------------------
-> > >  1 file changed, 11 insertions(+), 114 deletions(-)
-> > > 
-> > > diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-
-> > > gpio.c
-> > > index b863b5080890..2db85e53ef73 100644
-> > > --- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> > > +++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> > > @@ -131,14 +131,14 @@ struct pmic_gpio_state {
-> > >         struct gpio_chip chip;
-> > >  };
-> > > 
-> > > -struct pmic_gpio_bindings {
-> > > -       const char*property;
-> > > -       unsigned      param;
-> > > +static const struct pinconf_generic_dt_params pmic_gpio_bindings[] = {
-> > > +       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP,0},
-> > > +       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH,0},
-> > >  };
-> > > 
-> > > -static struct pmic_gpio_bindings pmic_gpio_bindings[] = {
-> > > -       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP},
-> > > -       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH},
-> > > +static const struct pin_config_item pmic_conf_items[] = {
-> > > +       PCONFDUMP(PMIC_GPIO_CONF_PULL_UP,  "pull-up-strength", NULL, true),
-> > 
-> > s/pull-up-strength/qcom,pull-up-strength/
-> 
-> This is used for the debugfs output. I don't think you want the qcom
-> prefix here, do you?
+On Thu, Dec 4, 2014 at 10:24 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> On Thu, Dec 4, 2014 at 6:19 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Thu, Dec 4, 2014 at 8:33 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>>>>> --- 0002/arch/arm/boot/dts/r8a7779.dtsi
+>>>>> +++ work/arch/arm/boot/dts/r8a7779.dtsi       2014-12-03 20:27:49.000000000 +0900
+>>>>> @@ -139,7 +139,7 @@
+>>>>>               interrupt-controller;
+>>>>>       };
+>>>>>
+>>>>> -     irqpin0: irqpin@fe780010 {
+>>>>> +     irqpin0: irqpin@fe780000 {
+>>>>>               compatible = "renesas,intc-irqpin-r8a7779", "renesas,intc-irqpin";
+>>>>>               #interrupt-cells = <2>;
+>>>>>               status = "disabled";
+>>>>> @@ -148,7 +148,8 @@
+>>>>>                       <0xfe780010 4>,
+>>>>>                       <0xfe780024 4>,
+>>>>>                       <0xfe780044 4>,
+>>>>> -                     <0xfe780064 4>;
+>>>>> +                     <0xfe780064 4>,
+>>>>> +                     <0xfe780000 4>;
+>>>>
+>>>> Is there any order implied by the above list?
+>>>> Naïvely I would expect it to be sorted numerically.
+>>>
+>>> Yes, the driver assumes the register banks to be passed in a certain
+>>> order. In the case of r8a7779 we add one more register bank at the end
+>>> for IRLM setup. Register detail (base address, access size, order and
+>>> bitfield width) varies with SoC version. So the IRLM register will be
+>>> at different addresses depending on SoC, but the driver wants it at
+>>> the end of the list.
+>>
+>> As these are all individual registers, and there are that many, I think
+>> it's worth adding a reg-names property to identify the registers.
+>> Of course the driver still has to support the old anonymous order
+>> for backwards compatibility.
+>
+> If we should rework things, then I propose going the other way around.
+> =) Basically only passing a single base address with a certain SoC
+> specific compat string, and based on that letting the driver
+> internally figure out which register is at what offset and the access
+> size and bitfield size.
 
-Then at lest lets make it "pull up strength".
+That's gonna mean a complete new compatible value.
+Seems like we shouldn't have added "renesas,intc-irqpin-r8a7779",
+as the SoC-type was encoded in the reg properties...
 
-> 
-> > > +       PCONFDUMP(PMIC_GPIO_CONF_STRENGTH, "drive-strength", NULL, true),
-> > >  };
-> > > 
-> > 
-> > 
-> > 
-> > I am not happy that we have to define the same think two times.
-> 
-> It's not really the same thing. One is the actual DT binding the other
-> how the property is displayed in debugfs. Two different things. It's how
-> the core does it. That's not new.
+> Either way we have a limited number of SoCs and they are all old.
 
-This didn't make me more happy :-). Could both be merged?
+So your current patch looks like the best option for now
+(can you promise future R-Car SoCs won't have an intc-irqpin hardware
+ block ;-)?
 
-Regards,
-Ivan
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
