@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaLDAIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 19:08:31 -0500
-Received: from ozlabs.org ([103.22.144.67]:58171 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaLDAI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 19:08:29 -0500
-Message-ID: <1417651707.9123.1.camel@concordia>
-Subject: Re: [PATCH v5] selftest: size: Add size test for Linux kernel
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Tim Bird <tim.bird@sonymobile.com>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
-Date: Thu, 04 Dec 2014 11:08:27 +1100
-In-Reply-To: <547F3A57.7000106@sonymobile.com>
-References: <547E854E.5060101@sonymobile.com>
-	 <1417578191.16722.11.camel@concordia> <547F3A57.7000106@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752283AbaLDAKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 19:10:00 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45673 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaLDAJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 19:09:58 -0500
+Date: Wed, 3 Dec 2014 16:09:52 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 2/9] mm: replace ACCESS_ONCE with READ_ONCE or barriers
+Message-ID: <20141204000952.GY25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1417645821-54731-1-git-send-email-borntraeger@de.ibm.com>
+ <1417645821-54731-3-git-send-email-borntraeger@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417645821-54731-3-git-send-email-borntraeger@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120400-0033-0000-0000-000002E30316
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 08:29 -0800, Tim Bird wrote:
+On Wed, Dec 03, 2014 at 11:30:14PM +0100, Christian Borntraeger wrote:
+> ACCESS_ONCE does not work reliably on non-scalar types. For
+> example gcc 4.6 and 4.7 might remove the volatile tag for such
+> accesses during the SRA (scalar replacement of aggregates) step
+> (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 > 
-> On 12/02/2014 07:43 PM, Michael Ellerman wrote:
-> > On Tue, 2014-12-02 at 19:36 -0800, Tim Bird wrote:
-> >> This test shows the amount of memory used by the system.
-> >> Note that this is dependent on the user-space that is loaded
-> >> when this program runs.  Optimally, this program would be
-> >> run as the init program itself.
-> > 
-> > Sorry to only chime in at v5.
-> > 
-> >> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
-> >> new file mode 100644
-> >> index 0000000..47f8e9c
-> >> --- /dev/null
-> >> +++ b/tools/testing/selftests/size/Makefile
-> >> @@ -0,0 +1,15 @@
-> >> +#ifndef CC
-> >> +	CC = $(CROSS_COMPILE)gcc
-> >> +#endif
-> > 
-> > I think the following is preferable:
-> > 
-> >   CC := $(CROSS_COMPILE)$(CC)
-> > 
-> > 
-> > It allows optionally setting a custom CC, as well as optionally CROSS_COMPILE.
+> Let's change the code to access the page table elements with
+> READ_ONCE that does implicit scalar accesses.
 > 
-> I'm not sure I follow this.
+> mm_find_pmd is tricky, because m68k and sparc(32bit) define pmd_t
+> as array of longs. This code requires just that the pmd_present
+> and pmd_trans_huge check are done on the same value, so a barrier
+> is sufficent.
 > 
-> If CC is unset, you get only the CROSS_COMPILE prefix.
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-CC is never unset. The default value is 'cc'.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> If CC is set to e.g. 'gcc', then you get a nicely formatted toolchain string.
-
-Right.
-
-> But if CC already has the prefix applied, then this will result in
->   having it duplicated, which surely won't work correctly.
-
-That's just PEBKAC. Don't specify CROSS_COMPILE and also a fully specified CC.
-Try it with the kernel Makefile and see how well it works.
-
-> CROSS_COMPILE prefix usage looks a bit uncoordinated in the tools directory, but most
-> tests seem to be favoring $(CROSS_COMPILE)gcc.
-
-That doesn't make it right :)
-
+> ---
+>  mm/gup.c    | 2 +-
+>  mm/memory.c | 2 +-
+>  mm/rmap.c   | 3 ++-
+>  3 files changed, 4 insertions(+), 3 deletions(-)
 > 
->  $ cd tools ; mgrep CROSS
-...
-> ./testing/selftests/powerpc/Makefile:CC := $(CROSS_COMPILE)$(CC)
-
-You can run git blame on that one if you like ;)
-
-> I agree it's desirable not to hardcode gcc, but we seem to be doing it all over
-> the place already.
-
-If everyone jumped off a bridge ... :)
-
-cheers
-
-
+> diff --git a/mm/gup.c b/mm/gup.c
+> index cd62c8c..f2305de 100644
+> --- a/mm/gup.c
+> +++ b/mm/gup.c
+> @@ -917,7 +917,7 @@ static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
+> 
+>  	pudp = pud_offset(pgdp, addr);
+>  	do {
+> -		pud_t pud = ACCESS_ONCE(*pudp);
+> +		pud_t pud = READ_ONCE(*pudp);
+> 
+>  		next = pud_addr_end(addr, end);
+>  		if (pud_none(pud))
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 3e50383..9e0c84e 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3202,7 +3202,7 @@ static int handle_pte_fault(struct mm_struct *mm,
+>  	pte_t entry;
+>  	spinlock_t *ptl;
+> 
+> -	entry = ACCESS_ONCE(*pte);
+> +	entry = READ_ONCE(*pte);
+>  	if (!pte_present(entry)) {
+>  		if (pte_none(entry)) {
+>  			if (vma->vm_ops) {
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 19886fb..1e54274 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -581,7 +581,8 @@ pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address)
+>  	 * without holding anon_vma lock for write.  So when looking for a
+>  	 * genuine pmde (in which to find pte), test present and !THP together.
+>  	 */
+> -	pmde = ACCESS_ONCE(*pmd);
+> +	pmde = *pmd;
+> +	barrier();
+>  	if (!pmd_present(pmde) || pmd_trans_huge(pmde))
+>  		pmd = NULL;
+>  out:
+> -- 
+> 1.9.3
+> 
 
