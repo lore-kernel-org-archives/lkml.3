@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbaLDGcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 01:32:45 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:36762 "EHLO
-	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750858AbaLDGco (ORCPT
+	id S1752755AbaLDGkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 01:40:20 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:60826 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaLDGkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 01:32:44 -0500
-From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-To: <catalin.marinas@arm.com>, <will.deacon@arm.com>, <arnd@arndb.de>,
-        <orsonzhai@gmail.com>, <zhang.lyra@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm64/include/asm: Fixed a warning about 'struct pt_regs'
-Date: Thu, 4 Dec 2014 14:29:35 +0800
-Message-ID: <1417674575-10855-1-git-send-email-chunyan.zhang@spreadtrum.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <zcyirq.h>
-References: <zcyirq.h>
+	Thu, 4 Dec 2014 01:40:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.0.67.89]
-X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
- SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com sB46TtaP032938
+In-Reply-To: <20141203172526.GC7712@sirena.org.uk>
+References: <547F3C9F.8080102@arm.com>
+	<20141203172526.GC7712@sirena.org.uk>
+Date: Thu, 4 Dec 2014 12:10:17 +0530
+Message-ID: <CAA7nrtjrQ5SpDrZRPb58zqmZrWahY3XOMWnmdH70WLr3q46_bA@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ASoC: dwc: Don't allow negative use counts
+From: rajeev kumar <rajeevkumar.linux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Andrew Jackson <Andrew.Jackson@arm.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I include asm/irq.h on the top of my code, and set ARCH=arm64,
-I'll get a compile warning, details are below:
-warning: ‘struct pt_regs’
-declared inside parameter list [enabled by default]
-
-This patch is suggested by Arnd, see:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308270.html
-
-Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
----
- arch/arm64/include/asm/irq.h |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arm64/include/asm/irq.h b/arch/arm64/include/asm/irq.h
-index e1f7ecd..acedc7e 100644
---- a/arch/arm64/include/asm/irq.h
-+++ b/arch/arm64/include/asm/irq.h
-@@ -3,6 +3,8 @@
- 
- #include <asm-generic/irq.h>
- 
-+struct pt_regs;
-+
- extern void (*handle_arch_irq)(struct pt_regs *);
- extern void migrate_irqs(void);
- extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
--- 
-1.7.9.5
-
+On Wed, Dec 3, 2014 at 10:55 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Dec 03, 2014 at 04:38:55PM +0000, Andrew Jackson wrote:
+>
+>>       case SNDRV_PCM_TRIGGER_STOP:
+>>       case SNDRV_PCM_TRIGGER_SUSPEND:
+>>       case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+>> -             dev->active--;
+>> +             if (dev->active > 0)
+>> +                     dev->active--;
+>
+> How is this triggering - this sounds like you're papering over some
+> other bug somewhere?
