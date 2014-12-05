@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaLEOJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:09:11 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:49772 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaLEOIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:08:17 -0500
-X-IronPort-AV: E=Sophos;i="5.07,522,1413244800"; 
-   d="scan'208";a="200351489"
-From: David Vrabel <david.vrabel@citrix.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 1/4] dma: add dma_get_required_mask_from_max_pfn()
-Date: Fri, 5 Dec 2014 14:08:00 +0000
-Message-ID: <1417788483-662-2-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1417788483-662-1-git-send-email-david.vrabel@citrix.com>
-References: <1417788483-662-1-git-send-email-david.vrabel@citrix.com>
+	id S1751698AbaLEOJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:09:17 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:47350 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaLEOJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 09:09:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <20141205140011.GA5184@hudson.localdomain>
+References: <1417787034-7833-1-git-send-email-andnlnbn18@gmail.com>
+	<20141205140011.GA5184@hudson.localdomain>
+Date: Fri, 5 Dec 2014 19:39:12 +0530
+Message-ID: <CAFnntG3orLhA5tOHM+k3JMbCo7Atinq_1gaWPBR6CySqw7ytMA@mail.gmail.com>
+Subject: Re: [PATCH] watchdog: Fixed missing blank line warning
+From: Athira Lekshmi C V <andnlnbn18@gmail.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A generic dma_get_required_mask() is useful even for architectures (such
-as ia64) that define ARCH_HAS_GET_REQUIRED_MASK.
+Hello
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/base/platform.c     |   10 ++++++++--
- include/linux/dma-mapping.h |    1 +
- 2 files changed, 9 insertions(+), 2 deletions(-)
+Should I resubmit the above patch again including the version number,
+or can I start doing so from the next time onwards ?
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index b2afc29..f9f3930 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -1009,8 +1009,7 @@ int __init platform_bus_init(void)
- 	return error;
- }
- 
--#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
--u64 dma_get_required_mask(struct device *dev)
-+u64 dma_get_required_mask_from_max_pfn(struct device *dev)
- {
- 	u32 low_totalram = ((max_pfn - 1) << PAGE_SHIFT);
- 	u32 high_totalram = ((max_pfn - 1) >> (32 - PAGE_SHIFT));
-@@ -1028,6 +1027,13 @@ u64 dma_get_required_mask(struct device *dev)
- 	}
- 	return mask;
- }
-+EXPORT_SYMBOL_GPL(dma_get_required_mask_from_max_pfn);
-+
-+#ifndef ARCH_HAS_DMA_GET_REQUIRED_MASK
-+u64 dma_get_required_mask(struct device *dev)
-+{
-+	return dma_get_required_mask_from_max_pfn(dev);
-+}
- EXPORT_SYMBOL_GPL(dma_get_required_mask);
- #endif
- 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index d5d3881..6e2fdfc 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -127,6 +127,7 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
- 	return dma_set_mask_and_coherent(dev, mask);
- }
- 
-+extern u64 dma_get_required_mask_from_max_pfn(struct device *dev);
- extern u64 dma_get_required_mask(struct device *dev);
- 
- #ifndef set_arch_dma_coherent_ops
--- 
-1.7.10.4
+Thank You
+Athira Lekshmi
 
+On Fri, Dec 5, 2014 at 7:30 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> Athira,
+>
+> On Fri, Dec 05, 2014 at 07:13:54PM +0530, Athira Lekshmi wrote:
+>> Fixed the checkpatch warning:
+>> Missing a blank line after declarations
+>>
+>> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+>> ---
+>>  drivers/watchdog/mixcomwd.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/watchdog/mixcomwd.c b/drivers/watchdog/mixcomwd.c
+>> index be86ea3..03b7612e 100644
+>> --- a/drivers/watchdog/mixcomwd.c
+>> +++ b/drivers/watchdog/mixcomwd.c
+>> @@ -183,6 +183,7 @@ static ssize_t mixcomwd_write(struct file *file, const char __user *data,
+>>
+>>                       for (i = 0; i != len; i++) {
+>>                               char c;
+>> +
+>>                               if (get_user(c, data + i))
+>>                                       return -EFAULT;
+>>                               if (c == 'V')
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> It is helpful to add a version number when patches are re-submitted to
+> avoid them being confused for a new patch.  git-format-patch has the
+> --reroll-count option which makes this easy to do.
+>
+> --
+> - Jeremiah Mahler
