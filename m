@@ -1,109 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaLEQnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:43:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48667 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546AbaLEQl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:41:56 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: <linux-mm@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: [PATCH -v2 4/5] sysrq: convert printk to pr_* equivalent
-Date: Fri,  5 Dec 2014 17:41:46 +0100
-Message-Id: <1417797707-31699-5-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417797707-31699-1-git-send-email-mhocko@suse.cz>
-References: <20141110163055.GC18373@dhcp22.suse.cz>
- <1417797707-31699-1-git-send-email-mhocko@suse.cz>
+	id S1751414AbaLEQqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:46:44 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:30166 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaLEQqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 11:46:39 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-df-5481e16c7f05
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFC 1/3] devfreq: dt-bindings: Document Exynos3250 devfreq driver
+Date: Fri, 05 Dec 2014 17:46:26 +0100
+Message-id: <1417797988-29225-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1417797988-29225-1-git-send-email-k.kozlowski@samsung.com>
+References: <1417797988-29225-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFLMWRmVeSWpSXmKPExsVy+t/xa7o5DxtDDGafN7bYOGM9q8X1L89Z
+	LeYfOcdq8fqFoUX/49fMFmeb3rBbbHp8jdXi8q45bBafe48wWsw4v4/J4vZlXou1R+6yW9xu
+	XMFmsWrXH0YHPo+W5h42j52z7rJ7bFrVyeaxeUm9R9+WVYwenzfJBbBFcdmkpOZklqUW6dsl
+	cGUs3PaIpeCAWMXk198YGxhvCHUxcnJICJhI/Pz6khHCFpO4cG89G4gtJLCUUWLfPv4uRi4g
+	u49J4t22ySwgCTYBY4nNy5ewgSREBF4ySbRs62cEcZgF9jNKtGz6BlTFwSEs4C2xY5M5SAOL
+	gKrEi4VTmUFsXgF3ibcLlrBCbJOTOHlsMpjNKeAh0TlnOzNIqxBQTUtj+gRG3gWMDKsYRVNL
+	kwuKk9JzDfWKE3OLS/PS9ZLzczcxQsLzyw7GxcesDjEKcDAq8fBesG4MEWJNLCuuzD3EKMHB
+	rCTCmzwbKMSbklhZlVqUH19UmpNafIiRiYNTqoGxxHCR95S32U/2Los4vTNjUvAefyXRLI3N
+	wU06ZYV/ru/ZeyX9u9t0U7vT+R+5lRQP7k0yPBIue6x4+XuZ3NqFVuIWDLqnj90Wv6pR45Vh
+	+FLha9GP4q0rQ75OYb/2adJfEdP0K3GdUyZ8VpqhpL6bY9U3vRbzoo3MPUebNZavjuTaGMu3
+	eHO/EktxRqKhFnNRcSIAAxcmEy0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While touching this area let's convert printk to pr_*. This also makes
-the printing of continuation lines done properly.
+Add documentation for bindings used by Exynos3250 devfreq driver.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/tty/sysrq.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ .../bindings/arm/samsung/exynos3250-devfreq.txt    | 66 ++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index 42bad18c66c9..0071469ecbf1 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -90,7 +90,7 @@ static void sysrq_handle_loglevel(int key)
- 
- 	i = key - '0';
- 	console_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
--	printk("Loglevel set to %d\n", i);
-+	pr_info("Loglevel set to %d\n", i);
- 	console_loglevel = i;
- }
- static struct sysrq_key_op sysrq_loglevel_op = {
-@@ -220,7 +220,7 @@ static void showacpu(void *dummy)
- 		return;
- 
- 	spin_lock_irqsave(&show_lock, flags);
--	printk(KERN_INFO "CPU%d:\n", smp_processor_id());
-+	pr_info("CPU%d:\n", smp_processor_id());
- 	show_stack(NULL, NULL);
- 	spin_unlock_irqrestore(&show_lock, flags);
- }
-@@ -243,7 +243,7 @@ static void sysrq_handle_showallcpus(int key)
- 		struct pt_regs *regs = get_irq_regs();
- 
- 		if (regs) {
--			printk(KERN_INFO "CPU%d:\n", smp_processor_id());
-+			pr_info("CPU%d:\n", smp_processor_id());
- 			show_regs(regs);
- 		}
- 		schedule_work(&sysrq_showallcpus);
-@@ -522,7 +522,7 @@ void __handle_sysrq(int key, bool check_mask)
- 	 */
- 	orig_log_level = console_loglevel;
- 	console_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
--	printk(KERN_INFO "SysRq : ");
-+	pr_info("SysRq : ");
- 
-         op_p = __sysrq_get_key_op(key);
-         if (op_p) {
-@@ -531,14 +531,14 @@ void __handle_sysrq(int key, bool check_mask)
- 		 * should not) and is the invoked operation enabled?
- 		 */
- 		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
--			printk("%s\n", op_p->action_msg);
-+			pr_cont("%s\n", op_p->action_msg);
- 			console_loglevel = orig_log_level;
- 			op_p->handler(key);
- 		} else {
--			printk("This sysrq operation is disabled.\n");
-+			pr_cont("This sysrq operation is disabled.\n");
- 		}
- 	} else {
--		printk("HELP : ");
-+		pr_cont("HELP : ");
- 		/* Only print the help msg once per handler */
- 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
- 			if (sysrq_key_table[i]) {
-@@ -549,10 +549,10 @@ void __handle_sysrq(int key, bool check_mask)
- 					;
- 				if (j != i)
- 					continue;
--				printk("%s ", sysrq_key_table[i]->help_msg);
-+				pr_cont("%s ", sysrq_key_table[i]->help_msg);
- 			}
- 		}
--		printk("\n");
-+		pr_cont("\n");
- 		console_loglevel = orig_log_level;
- 	}
- 	rcu_read_unlock();
+diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
+new file mode 100644
+index 000000000000..047955e9e371
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
+@@ -0,0 +1,66 @@
++Samsung Exynos3250 devfreq driver
++=================================
++
++The driver support changing frequencies and voltage for:
++ - memory controller and bus,
++ - peripheral buses (left and right).
++
++Memory controller and bus
++=========================
++Required properties:
++ - compatible : should be "samsung,exynos3250-busfreq-mif"
++ - reg : two sets (offset and length of the register) for PPMU registers
++	used by this devfreq driver
++ - clock-names : one clock of name "dmc" to manage frequency
++ - clocks : phandle and specifier for clock listed in clock-names property
++ - vdd_mif-supply : phandle to MIF voltage regulator
++
++Peripheral buses
++================
++Required properties:
++ - compatible : should be "samsung,exynos3250-busfreq-int"
++ - reg : two sets (offset and length of the register) for PPMU registers
++	used by this devfreq driver
++ - clock-names : names for PPMU clocks and bus clocks to manage frequencies;
++	All following clock names (and corresponding phandles) must be
++	provided:
++	- "ppmu_left", "ppmu_right",
++	- "aclk_400", "aclk_266", "aclk_200", "aclk_160", "aclk_gdl", "aclk_gdr", "mfc";
++ - clocks : phandles and specifiers for clocks listed in clock-names property
++ - vdd_mif-supply : phandle to INT voltage regulator
++
++Example
++=======
++	busfreq_mif: busfreq@106A0000 {
++		compatible = "samsung,exynos3250-busfreq-mif";
++		reg = <0x106A0000 0x2000>, <0x106B0000 0x2000>;
++		clocks = <&cmu_dmc CLK_DIV_DMC>;
++		clock-names = "dmc";
++		vdd_mif-supply = <&buck1_reg>;
++		status = "okay";
++	};
++
++	busfreq_int: busfreq@116A0000 {
++		compatible = "samsung,exynos3250-busfreq-int";
++		reg = <0x116A0000 0x2000>, <0x112A0000 0x2000>;
++		clocks = <&cmu CLK_PPMULEFT>,
++			<&cmu CLK_PPMURIGHT>,
++			<&cmu CLK_DIV_ACLK_400_MCUISP>,
++			<&cmu CLK_DIV_ACLK_266>,
++			<&cmu CLK_DIV_ACLK_200>,
++			<&cmu CLK_DIV_ACLK_160>,
++			<&cmu CLK_DIV_GDL>,
++			<&cmu CLK_DIV_GDR>,
++			<&cmu CLK_DIV_MFC>;
++		clock-names = "ppmuleft",
++			"ppmuright",
++			"aclk_400",
++			"aclk_266",
++			"aclk_200",
++			"aclk_160",
++			"aclk_gdl",
++			"aclk_gdr",
++			"mfc";
++		vdd_int-supply = <&buck3_reg>;
++		status = "okay";
++	};
 -- 
-2.1.3
+1.9.1
 
