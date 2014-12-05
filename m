@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaLEM2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:28:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43436 "EHLO mx2.suse.de"
+	id S1753129AbaLENL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:11:58 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7381 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751544AbaLEM2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:28:08 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH] xen: introduce helper functions to do save read and write accesses
-Date: Fri,  5 Dec 2014 13:28:04 +0100
-Message-Id: <1417782484-31780-1-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
+	id S1750857AbaLENL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 08:11:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,522,1413270000"; 
+   d="scan'208";a="633206917"
+Date: Fri, 5 Dec 2014 15:10:25 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [PATCH v9 7/8] tpm: TPM 2.0 CRB Interface
+Message-ID: <20141205131025.GE6993@intel.com>
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1417672518-4530-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <201412042119.21493.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201412042119.21493.PeterHuewe@gmx.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce two helper functions to savely read and write unsigned long
-values from or to memory without crashing the system in case of access
-failures.
+I'll fix these (an run sparse).
 
-These helpers can be used instead of open coded uses of __get_user()
-and __put_user() avoiding the need to do casts to fix sparse warnings.
+/Jarkko
 
-Use the helpers in page.h and p2m.c. This will fix the sparse
-warnings when doing "make C=1".
-
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/include/asm/xen/page.h | 16 +++++++++++++++-
- arch/x86/xen/p2m.c              |  2 +-
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index f5d5de4..330352f 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -60,6 +60,20 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
- /*
-+ * Helper functions to write or read unsigned long values to/from memory.
-+ * To be used when accesses might fail.
-+ */
-+static inline int xen_safe_write_ulong(unsigned long *addr, unsigned long val)
-+{
-+	return __put_user(val, (unsigned long __user *)addr);
-+}
-+
-+static inline int xen_safe_read_ulong(unsigned long *addr, unsigned long *val)
-+{
-+	return __get_user(*val, (unsigned long __user *)addr);
-+}
-+
-+/*
-  * When to use pfn_to_mfn(), __pfn_to_mfn() or get_phys_to_machine():
-  * - pfn_to_mfn() returns either INVALID_P2M_ENTRY or the mfn. No indicator
-  *   bits (identity or foreign) are set.
-@@ -125,7 +139,7 @@ static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
- 	 * In such cases it doesn't matter what we return (we return garbage),
- 	 * but we must handle the fault without crashing!
- 	 */
--	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-+	ret = xen_safe_read_ulong(&machine_to_phys_mapping[mfn], &pfn);
- 	if (ret < 0)
- 		return ~0;
- 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 8b5db51..edbc7a6 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -625,7 +625,7 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 		return true;
- 	}
- 
--	if (likely(!__put_user(mfn, xen_p2m_addr + pfn)))
-+	if (likely(!xen_safe_write_ulong(xen_p2m_addr + pfn, mfn)))
- 		return true;
- 
- 	ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn), &level);
--- 
-2.1.2
-
+On Thu, Dec 04, 2014 at 09:19:21PM +0100, Peter Hüwe wrote:
+> Am Donnerstag, 4. Dezember 2014, 06:55:17 schrieb Jarkko Sakkinen:
+> > tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
+> > as defined in PC Client Platform TPM Profile (PTP) Specification.
+> > 
+> > Only polling and single locality is supported as these are the limitations
+> > of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
+> > CPUs.
+> > 
+> > The driver always applies CRB with ACPI start because PTT reports using
+> > only ACPI start as start method but as a result of my testing it requires
+> > also CRB start.
+> > 
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> 
+> :(
+> 
+>  make -C /data/data-old/linux-2.6/ M=$(pwd) modules C=1 CHECK=sparse
+> make: Entering directory '/data/data-old/linux-2.6'
+>   CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:99:5: warning: symbol 'crb_suspend' was not declared. Should it be static?
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:121:14:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:137:13:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:173:19:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:177:34:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63: warning: incorrect type in argument 2 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:187:63:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56: warning: incorrect type in argument 2 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:199:56:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27: warning: incorrect type in argument 2 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:207:27:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:277:22: warning: cast removes address space of expression
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33: warning: incorrect type in argument 2 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33:    expected void const volatile [noderef] <asn:2>*src
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:284:33:    got unsigned long long *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:287:56:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19: warning: incorrect type in assignment (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19:    expected unsigned char [usertype] *cmd
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:286:19:    got void [noderef] <asn:2>*
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33: warning: incorrect type in argument 2 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33:    expected void const volatile [noderef] <asn:2>*src
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:293:33:    got unsigned long long *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56: warning: incorrect type in argument 1 (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56:    expected void [noderef] <asn:2>*<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:296:56:    got unsigned int *<noident>
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19: warning: incorrect type in assignment (different address spaces)
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19:    expected unsigned char [usertype] *rsp
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:295:19:    got void [noderef] <asn:2>*
+> /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.c:325:5: warning: symbol 'crb_acpi_remove' was not declared. Should it be static?
+>   CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_crb.o
+> 
+> :(
+> Peter
