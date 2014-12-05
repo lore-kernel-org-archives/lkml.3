@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaLEHVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 02:21:20 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:11612
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751456AbaLEHVS (ORCPT
+	id S1751937AbaLEHYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 02:24:05 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36955 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaLEHYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 02:21:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,521,1413237600"; 
-   d="scan'208";a="91895443"
-Date: Fri, 5 Dec 2014 08:21:15 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
- pr_warn() in mppe_rekey()
-In-Reply-To: <1417731809.2721.17.camel@perches.com>
-Message-ID: <alpine.DEB.2.02.1412050820290.2059@localhost6.localdomain6>
-References: <1417731809.2721.17.camel@perches.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 5 Dec 2014 02:24:02 -0500
+Date: Thu, 4 Dec 2014 23:24:02 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Cc: gregkh@linuxfoundation.org, mark.rutland@arm.com, arnd@arndb.de,
+        gnomes@lxorguk.ukuu.org.uk, broonie@kernel.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, will.deacon@arm.com, catalin.marinas@arm.com,
+        jslaby@suse.cz, jason@lakedaemon.net, heiko@sntech.de,
+        florian.vaussard@epfl.ch, andrew@lunn.ch, rrichter@cavium.com,
+        hytszk@gmail.com, grant.likely@linaro.org, orsonzhai@gmail.com,
+        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com,
+        lanqing.liu@spreadtrum.com, zhang.lyra@gmail.com,
+        wei.qiao@spreadtrum.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        linux-serial@vger.kernel.org, sprdlinux@freelists.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+Message-ID: <20141205072402.GC29274@quad.lixom.net>
+References: <sc9836v4>
+ <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 4 Dec 2014, Joe Perches wrote:
-
-> On Thu, 2014-12-04 at 23:10 +0100, SF Markus Elfring wrote:
-> > The mppe_rekey() function contained a few update candidates.
-> > * Curly brackets were still used around a single function call "printk".
-> > * Unwanted space characters
-> > 
-> > Let us improve these implementation details according to the current Linux
-> > coding style convention.
+On Thu, Dec 04, 2014 at 07:34:15PM +0800, Chunyan Zhang wrote:
+> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
 > 
-> trivia:
+> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+> standards based on ARMv8 multiple core architecture.Now we have only one
+> SoC(SC9836) based on this Platform in developing.
 > 
-> > diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-> []
-> > @@ -172,9 +172,8 @@ static void mppe_rekey(struct ppp_mppe_state * state, int initial_key)
-> >  		setup_sg(sg_in, state->sha1_digest, state->keylen);
-> >  		setup_sg(sg_out, state->session_key, state->keylen);
-> >  		if (crypto_blkcipher_encrypt(&desc, sg_out, sg_in,
-> > -					     state->keylen) != 0) {
-> > -    		    printk(KERN_WARNING "mppe_rekey: cipher_encrypt failed\n");
-> > -		}
-> > +					     state->keylen) != 0)
-> > +			pr_warn("mppe_rekey: cipher_encrypt failed\n");
+> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+> of SC9836-UART.
 > 
-> It's generally nicer to replace embedded function names
-> with "%s: ", __func__
+> This patchset also has patches which address "sprd" prefix and DT compatible
+> strings for nodes which appear un-documented.
 > 
-> 			pr_warn("%s: cipher_encrypt failed\n", __func__);
+> This version code was tesed both on Fast Mode and sc9836-fpga board.
+> We use the latest boot-wrapper-aarch64 as the bootloader.
 
-Doing so may potentially allow some strings to be shared, thus saving a 
-little space.  Perhaps not in this case, though.
+Hi,
 
-julia
+We only got 3 of the 5 patches of this version (1, 2 and 4). Can you
+resend the dts patch to us (I'm guessing the serial one will go through Greg).
+
+
+Thanks,
+
+-Olof
