@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325AbaLEAyI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 19:54:08 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43358 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494AbaLEAyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 19:54:05 -0500
-Date: Thu, 4 Dec 2014 16:54:01 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: linux-next: Tree for Dec 4
-Message-ID: <20141205005401.GA1279@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Dmitry Monakhov <dmonakhov@openvz.org>,
-	Theodore Ts'o <tytso@mit.edu>
-References: <20141204195928.4a5b93f4@canb.auug.org.au>
- <20141204233411.GA1223@hudson.localdomain>
+	id S933446AbaLEAzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 19:55:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60541 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933009AbaLEAzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 19:55:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,519,1413270000"; 
+   d="scan'208";a="632975616"
+Date: Fri, 5 Dec 2014 08:34:47 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, rkrcmar@redhat.com
+Subject: Re: [PATCH 6/9] KVM: cpuid: mask more bits in leaf 0xd and subleaves
+Message-ID: <20141205003446.GA6967@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
+ <1417708634-24333-7-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141204233411.GA1223@hudson.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417708634-24333-7-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-all,
+Hi Paolo,
+On Thu, Dec 04, 2014 at 04:57:11PM +0100, Paolo Bonzini wrote:
+>- EAX=0Dh, ECX=1: output registers ECX/EDX are reserved.
+>
+>- EAX=0Dh, ECX>1: output register ECX bit 0 is clear for all the CPUID
+>leaves we support, because variable "supported" comes from XCR0 and not
+>XSS.  Bits above 0 are reserved, so ECX is overall zero.  Output register
+>EDX is reserved.
+>
+>Source: Intel Architecture Instruction Set Extensions Programming
+>Reference, ref. number 319433-022
+>
+>Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+>Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>---
+> arch/x86/kvm/cpuid.c | 10 ++++++++--
+> 1 file changed, 8 insertions(+), 2 deletions(-)
+>
 
-On Thu, Dec 04, 2014 at 03:34:11PM -0800, Jeremiah Mahler wrote:
-> all,
-> 
-> On Thu, Dec 04, 2014 at 07:59:28PM +1100, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20141203:
-> > 
-[...]
-> > 
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > 
-> [...]
-> 
-> linux-next 20141204 is broken on all my machines, 20141203 worked fine.
-> 
-> They fail very early in the boot process and are unable to mount root.
-> There are lots of "ext4_check_descriptors: Checksum for group ...
-> failed" messages.
-> 
-> Any suggestions for where to start looking?
-> 
-> -- 
-> - Jeremiah Mahler
+Do you miss this in your patch?
 
-I ran a bisect and found this patch to be faulty.
++       /* cpuid 0xD.1.eax */
++       const u32 kvm_supported_word10_x86_features =
++               F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
++
 
-  commit fdfe073987619ec375da8d8a2701ab271d1b1339
-  Author: Dmitry Monakhov <dmonakhov@openvz.org>
-  Date:   Tue Dec 2 16:09:16 2014 -0500
-  
-      ext4: fix potential use after free during resize
-      
-      We need some sort of synchronization while updating ->s_group_desc
-      because there are a lot of users which can access old ->s_group_desc
-      array after it was released.
-      
-      Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-      Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+In addition, there is bisect issue if this is added in this patch.
+(4/9 will take advantage of kvm_supported_word10_x86_features)
 
--- 
-- Jeremiah Mahler
+Regards,
+Wanpeng Li 
+
+>diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+>index 2f7bc2de9915..644bfe828ce1 100644
+>--- a/arch/x86/kvm/cpuid.c
+>+++ b/arch/x86/kvm/cpuid.c
+>@@ -482,8 +482,14 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+> 					entry[i].ebx =
+> 						xstate_required_size(supported,
+> 								     true);
+>-			} else if (entry[i].eax == 0 || !(supported & mask))
+>-				continue;
+>+			} else {
+>+				if (entry[i].eax == 0 || !(supported & mask))
+>+					continue;
+>+				if (WARN_ON_ONCE(entry[i].ecx & 1))
+>+					continue;
+>+			}
+>+			entry[i].ecx = 0;
+>+			entry[i].edx = 0;
+> 			entry[i].flags |=
+> 			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+> 			++*nent;
+>-- 
+>1.8.3.1
+>
