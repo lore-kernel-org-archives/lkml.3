@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaLEWls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:41:48 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:34747 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaLEWlr (ORCPT
+	id S1751172AbaLEWqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:46:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242AbaLEWqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:41:47 -0500
-Date: Fri, 5 Dec 2014 14:41:43 -0800
-From: Tristan Lelong <tristan@lelong.xyz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, askb23@gmail.com,
-        john.hammond@intel.com, gdonald@gmail.com, anhlq2110@gmail.com,
-        fabio.falzoi84@gmail.com, oort10@gmail.com, agimenez@sysvalve.es,
-        rupran@einserver.de, surya.seetharaman9@gmail.com,
-        Julia.Lawall@lip6.fr, joe@perches.com, a.terekhov@gmail.com,
-        liang.zhen@intel.com, vthakkar1994@gmail.com, amk@cray.com,
-        srikrishanmalik@gmail.com, rd@radekdostal.com, bergwolf@gmail.com,
-        dan.carpenter@oracle.com, paul.gortmaker@windriver.com,
-        tapaswenipathak@gmail.com, email@christophjaeger.info,
-        uja.ornl@gmail.com, brilliantov@inbox.ru, dmitry.eremin@intel.com,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lustre: fix sparse warning on LPROC_SEQ_FOPS
- macros
-Message-ID: <20141205224143.GB5698@localhost.localdomain>
-References: <1417766627-5232-1-git-send-email-tristan@lelong.xyz>
- <20141205212723.GA22536@kroah.com>
+	Fri, 5 Dec 2014 17:46:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Miaoqing Pan <miaoqing@qca.qualcomm.com>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.17 043/122] ath9k: Fix RTC_DERIVED_CLK usage
+Date: Fri,  5 Dec 2014 14:43:37 -0800
+Message-Id: <20141205223311.991748049@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
+References: <20141205223305.514276242@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141205212723.GA22536@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 01:27:23PM -0800, Greg KH wrote:
-> On Fri, Dec 05, 2014 at 12:03:47AM -0800, Tristan Lelong wrote:
-> >  static ssize_t
-> > -fld_proc_hash_seq_write(struct file *file, const char *buffer,
-> > -			size_t count, loff_t *off)
-> > +fld_proc_hash_seq_write(struct file *file,
-> > +				const char __user *buffer,
-> > +				size_t count, loff_t *off)
-> >  {
-> >  	struct lu_client_fld *fld;
-> >  	struct lu_fld_hash *hash = NULL;
-> > +	char name[80];
-> >  	int i;
-> >  
-> > +	if (count > 80)
-> > +		return -ENAMETOOLONG;
-> > +
-> > +	if (copy_from_user(name, buffer, count) != 0)
-> > +		return -EFAULT;
-> 
-> How was this code ever working before?
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-I have no idea, and was actually surprised that this was there.
+------------------
 
-> 
-> And I know Joe asked, but how do you know that 80 is ok?  And why on the
-> stack?
+From: Miaoqing Pan <miaoqing@qca.qualcomm.com>
 
-80 is the sizeof(struct lu_fld_hash.fh_name) and there is no define for that.
-A few other structure members are using this 80 value internally, and as I told
-Joe, I will analyze if they are all related and submit a patch to use a define instead.
+commit 4e6ce4dc7ce71d0886908d55129d5d6482a27ff9 upstream.
 
-> 
-> Shouldn't you just compare count to strlen(fld_hash[i].fh_name)? like you
-> do later on?
-> 
+Based on the reference clock, which could be 25MHz or 40MHz,
+AR_RTC_DERIVED_CLK is programmed differently for AR9340 and AR9550.
+But, when a chip reset is done, processing the initvals
+sets the register back to the default value.
 
-This is actually done in the for loop already. I first compare with the maximum size,
-then the loop use the strlen of each entries in the table, and finally does the strncmp.
+Fix this by moving the code in ath9k_hw_init_pll() to
+ar9003_hw_override_ini(). Also, do this override for AR9531.
 
-> 
-> Anyway, I don't like large stack variables like this, can you make it
-> dynamic instead?
-> 
+Signed-off-by: Miaoqing Pan <miaoqing@qca.qualcomm.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I can definitely do this with a kmalloc, I'll submit a v2 tonight.
+---
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c |   13 +++++++++++++
+ drivers/net/wireless/ath/ath9k/hw.c         |   13 -------------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-Thanks
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -647,6 +647,19 @@ static void ar9003_hw_override_ini(struc
+ 		ah->enabled_cals |= TX_CL_CAL;
+ 	else
+ 		ah->enabled_cals &= ~TX_CL_CAL;
++
++	if (AR_SREV_9340(ah) || AR_SREV_9531(ah) || AR_SREV_9550(ah)) {
++		if (ah->is_clk_25mhz) {
++			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
++			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
++			REG_WRITE(ah, AR_SLP32_INC, 0x0001e7ae);
++		} else {
++			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
++			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
++			REG_WRITE(ah, AR_SLP32_INC, 0x0001e800);
++		}
++		udelay(100);
++	}
+ }
+ 
+ static void ar9003_hw_prog_ini(struct ath_hw *ah,
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -859,19 +859,6 @@ static void ath9k_hw_init_pll(struct ath
+ 	udelay(RTC_PLL_SETTLE_DELAY);
+ 
+ 	REG_WRITE(ah, AR_RTC_SLEEP_CLK, AR_RTC_FORCE_DERIVED_CLK);
+-
+-	if (AR_SREV_9340(ah) || AR_SREV_9550(ah)) {
+-		if (ah->is_clk_25mhz) {
+-			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
+-			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
+-			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e7ae);
+-		} else {
+-			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
+-			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
+-			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e800);
+-		}
+-		udelay(100);
+-	}
+ }
+ 
+ static void ath9k_hw_init_interrupt_masks(struct ath_hw *ah,
+
+
