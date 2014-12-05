@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaLEHfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 02:35:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752360AbaLEHfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 02:35:37 -0500
-Message-ID: <5481602E.1030508@redhat.com>
-Date: Fri, 05 Dec 2014 15:35:10 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues
- in tun.
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-3-git-send-email-pagupta@redhat.com> <20141203095210.GC9487@redhat.com> <1417661734.16500.0@smtp.corp.redhat.com> <20141204102013.GC17122@redhat.com>
-In-Reply-To: <20141204102013.GC17122@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+	id S1752309AbaLEHhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 02:37:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46638 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439AbaLEHhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 02:37:40 -0500
+Date: Thu, 4 Dec 2014 23:37:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] misc: suppress build warning
+Message-Id: <20141204233754.286aa347.akpm@linux-foundation.org>
+In-Reply-To: <20141204163032.GA29076@kroah.com>
+References: <1417703910-2474-1-git-send-email-prabhakar.csengg@gmail.com>
+	<12630889.EI0exeDoNc@wuerfel>
+	<CA+V-a8vH9McTLVSWhQZun04AP7SZ7wGHeobBK1hA+EKn5fYgKw@mail.gmail.com>
+	<20141204163032.GA29076@kroah.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 4 Dec 2014 08:30:32 -0800 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-On 12/04/2014 06:20 PM, Michael S. Tsirkin wrote:
-> On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
->> > 
->> > 
->> > On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>> > >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
->>>> > >> Networking under kvm works best if we allocate a per-vCPU RX and TX
->>>> > >> queue in a virtual NIC. This requires a per-vCPU queue on the host
->>>> > >>side.
->>>> > >> It is now safe to increase the maximum number of queues.
->>>> > >> Preceding patche: 'net: allow large number of rx queues'
->>> > >
->>> > >s/patche/patch/
->>> > >
->>>> > >> made sure this won't cause failures due to high order memory
->>>> > >> allocations. Increase it to 256: this is the max number of vCPUs
->>>> > >> KVM supports.
->>>> > >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->>>> > >> Reviewed-by: David Gibson <dgibson@redhat.com>
->>> > >
->>> > >Hmm it's kind of nasty that each tun device is now using x16 memory.
->>> > >Maybe we should look at using a flex array instead, and removing the
->>> > >limitation altogether (e.g. make it INT_MAX)?
->> > 
->> > But this only happens when IFF_MULTIQUEUE were used.
-> I refer to this field:
->         struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
-> if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
-> apparently unconditionally.
->
->
+> On Thu, Dec 04, 2014 at 03:13:00PM +0000, Prabhakar Lad wrote:
+> > On Thu, Dec 4, 2014 at 2:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > On Thursday 04 December 2014 14:38:30 Lad, Prabhakar wrote:
+> > >> this patch fixes following build warning:
+> > >>
+> > >> drivers/misc/ioc4.c: In function ___ioc4_probe___:
+> > >> drivers/misc/ioc4.c:194:16: warning: ___start___ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> > >>   period = (end - start) /
+> > >>                 ^
+> > >> drivers/misc/ioc4.c:148:11: note: ___start___ was declared here
+> > >>   uint64_t start, end, period;
+> > >>
+> > >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> > >
+> > > Please explain why the compiler thinks there is a bug, why you
+> > > are sure that there isn't, and why you picked '0' as the
+> > > initialization value.
+> > >
+> > Its a false positive, to suppress the warning '0' was picked.
+> 
+> Are you _sure_ it's a false positive?  That odd do/while loop looks like
+> it might just not ever initialize the start variable, are you sure the
+> logic there is correct?
+> 
 
-How about just allocate one tfile if IFF_MULTIQUEUE were disabled?
+As long as IOC4_CALIBRATE_END is greater than IOC4_CALIBRATE_DISCARD (it is),
+`start' is written to.
 
+It would be nice to simplify the code, but I'm not sure how.
+
+And I really dislike this initialize-it-to-zero-to-stop-the-warning
+thing which we do all over the place.  The reader doesn't know *why*
+it's initialized to zero and the initialization can conceal bugs if we
+get a code path which should have written to it but forgot to.  And it
+adds unneeded code to vlinux.
+
+I much prefer unintialized_var() which fixes the documentation issue
+and doesn't add code.  But Linus and Ingo had a dummy-spit over it.
