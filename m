@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052AbaLECOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 21:14:22 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42451 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaLECOU (ORCPT
+	id S933476AbaLECP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 21:15:28 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:50098 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933123AbaLECP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 21:14:20 -0500
-Message-ID: <548114E8.9010104@oracle.com>
-Date: Fri, 05 Dec 2014 10:14:00 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 4 Dec 2014 21:15:26 -0500
+Message-ID: <5481153B.4070609@kernel.org>
+Date: Fri, 05 Dec 2014 02:15:23 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: dirk.j.brandewie@intel.com, linda.knippers@hp.com, viresh.kumar@linaro.org,
-        corbet@lwn.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ethan.kernel@gmail.com,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: Re: [PATCH 2/2 V7] intel_pstate: add kernel parameter to force loading
- on Sun X86 servers.
-References: <1417658851-8729-1-git-send-email-ethan.zhao@oracle.com> <22893638.NKVNYzPHrg@vostro.rjw.lan>
-In-Reply-To: <22893638.NKVNYzPHrg@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Teodora Baluta <teodora.baluta@intel.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
+References: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
+In-Reply-To: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
 
-On 2014/12/5 6:10, Rafael J. Wysocki wrote:
-> On Thursday, December 04, 2014 11:07:31 AM Ethan Zhao wrote:
->> To force loading on Oracle Sun X86 servers, provide one kernel command line
->> parameter
->>
->>    intel_pstate = ora_force
-> I would suggest to change the name of the option to "oracle_force" or "sun_force"
-> for clarity.
->
-> Anyway, I need an ACK from Kristen if this patch is to be applied.
-  "oracle_force" or "sun_force" doesn't sound bad to me, except it looks 
-like a suggestion from
-  "Oracle" or "Sun". does it imply user to use it by default on Oracle 
-boxes ?
->
->> For those who be aware of the risk of no power capping capabily working and
->> try to get better performance with this driver.
->>
->> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->> ---
->>   v2: change to hardware vendor specific naming parameter.
->>   v4: refine code and doc.
->>   v5&v6: fix a typo in doc.
->>   v7: change enum PCC to PPC.
->>
->>   Documentation/kernel-parameters.txt | 5 +++++
->>   drivers/cpufreq/intel_pstate.c      | 6 +++++-
->>   2 files changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 479f332..7d0983e 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>   		       disable
->>   		         Do not enable intel_pstate as the default
->>   		         scaling driver for the supported processors
->> +		       ora_force
->> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
->> +			 only for those who be aware of the risk of no power capping
->> +			 capability working and try to get better performance with this
->> +			 driver.
-> That is not sufficiently clear.  What does "risk of no power capping capability
-> working" mean, in particular?
-  That means we couldn't limit the power consumption of the host to what 
-we want, in some cases, it
-  possibly burn the fuse if the redundancy of power supply is not 
-enough, that would stop service.
+On 04/12/14 13:00, Teodora Baluta wrote:
+> This patchset adds support for fingerprint sensors through the IIO interface.
+> This way userspace applications collect information in a uniform way. All
+> processing would be done in the upper layers as suggested in [0].
+> 
+> In order to test out this proposal, a minimal implementation for UPEK's
+> TouchChip Fingerprint Sensor via USB is also available. Although there is an
+> existing implementation in userspace for USB fingerprint devices, including this
+> particular device, the driver represents a proof of concept of how fingerprint
+> sensors could be integrated in the IIO framework regardless of the used bus. For
+> lower power requirements, the SPI bus is preferred and a kernel driver
+> implementation makes more sense.
 
-  Did I make it clear ?
-
-
-  Thanks,
-  Ethan
->
->>   
->>   	intremap=	[X86-64, Intel-IOMMU]
->>   			on	enable Interrupt Remapping (default)
->> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
->> index 1bb62ca..2654e13 100644
->> --- a/drivers/cpufreq/intel_pstate.c
->> +++ b/drivers/cpufreq/intel_pstate.c
->> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->>   };
->>   
->>   static int __initdata no_load;
->> +static unsigned int  ora_force;
->>   
->>   static int intel_pstate_msrs_not_valid(void)
->>   {
->> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->>   			case PSS:
->>   				return intel_pstate_no_acpi_pss();
->>   			case PPC:
->> -				return intel_pstate_has_acpi_ppc();
->> +				return intel_pstate_has_acpi_ppc() &&
->> +					(!ora_force);
->>   			}
->>   	}
->>   
->> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
->>   
->>   	if (!strcmp(str, "disable"))
->>   		no_load = 1;
->> +	if (!strcmp(str, "ora_force"))
->> +		ora_force = 1;
->>   	return 0;
->>   }
->>   early_param("intel_pstate", intel_pstate_setup);
-> And can anyone please remind me what was wrong with a "force" option that would
-> work for everyone, not just Oracle/Sun?
->
+So why not v4l?  These are effectively image sensors.. 
+> 
+> A sysfs trigger is enabled and the device starts scanning. As soon as an image
+> is available it is written in the character device /dev/iio:deviceX.
+> 
+> Userspace applications will be able to calculate the expected image size using
+> the fingerprint attributes height, width and bit depth. Other attributes
+> introduced for the fingerprint channel in IIO represent information that aids in
+> the fingerprint image processing. Besides these, the proposed interface offers
+> userspace a way to read a feedback after a scan (like the swipe was too slow or
+> too fast) through a modified fingerprint_status channel.
+> 
+> [0] http://www.spinics.net/lists/linux-iio/msg11463.html
+> 
+> Teodora Baluta (3):
+>   iio: core: add support for fingerprint devices
+>   iio: core: change channel's storagebits/realbits to u32
+>   iio: fingerprint: add fingerprint sensor via USB
+> 
+>  Documentation/ABI/testing/sysfs-bus-iio |  51 +++
+>  drivers/iio/Kconfig                     |   1 +
+>  drivers/iio/Makefile                    |   1 +
+>  drivers/iio/fingerprint/Kconfig         |  15 +
+>  drivers/iio/fingerprint/Makefile        |   5 +
+>  drivers/iio/fingerprint/fp_tc.c         | 162 +++++++++
+>  drivers/iio/fingerprint/fp_tc.h         |  22 ++
+>  drivers/iio/fingerprint/fp_tc_usb.c     | 618 ++++++++++++++++++++++++++++++++
+>  drivers/iio/fingerprint/fp_tc_usb.h     | 144 ++++++++
+>  drivers/iio/industrialio-core.c         |   9 +
+>  include/linux/iio/iio.h                 |  11 +-
+>  include/linux/iio/types.h               |  10 +
+>  12 files changed, 1047 insertions(+), 2 deletions(-)
+>  create mode 100644 drivers/iio/fingerprint/Kconfig
+>  create mode 100644 drivers/iio/fingerprint/Makefile
+>  create mode 100644 drivers/iio/fingerprint/fp_tc.c
+>  create mode 100644 drivers/iio/fingerprint/fp_tc.h
+>  create mode 100644 drivers/iio/fingerprint/fp_tc_usb.c
+>  create mode 100644 drivers/iio/fingerprint/fp_tc_usb.h
+> 
 
