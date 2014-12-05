@@ -1,197 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656AbaLEEAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:00:10 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:55893 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933474AbaLEEAI (ORCPT
+	id S933483AbaLEEMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:12:00 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:58332 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933291AbaLEEL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:00:08 -0500
-From: Alex Gartrell <agartrell@fb.com>
-To: <jasonwang@redhat.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mst@redhat.com>,
-        <herbert@gondor.apena.org.au>, <kernel-team@fb.com>,
-        Alex Gartrell <agartrell@fb.com>
-Subject: [RFC PATCH net-next] tun: support retrieving multiple packets in a single read with IFF_MULTI_READ
-Date: Thu, 4 Dec 2014 20:00:00 -0800
-Message-ID: <1417752000-27171-1-git-send-email-agartrell@fb.com>
-X-Mailer: git-send-email 1.8.1
-X-FB-Internal: Safe
+	Thu, 4 Dec 2014 23:11:58 -0500
+X-Listener-Flag: 11101
+From: Flora Fu <flora.fu@mediatek.com>
+To: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        <arm@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Flora Fu <flora.fu@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>,
+        HenryC Chen <henryc.chen@mediatek.com>,
+        Menghui Lin <menghui.lin@mediatek.com>
+Subject: [PATCH v3 0/8] Add Support for MediaTek PMIC MT6397 MFD Core and Regulator
+Date: Fri, 5 Dec 2014 12:07:51 +0800
+Message-ID: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-05_03:2014-12-04,2014-12-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=7.07320868542638e-11 kscore.compositescore=0
- circleOfTrustscore=514.84 compositescore=0.98609165920913
- urlsuspect_oldscore=0.98609165920913 suspectscore=1
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.98609165920913 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412050035
-X-FB-Internal: deliver
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the IFF_MULTI_READ flag.  This has the following behavior.
+Hi,
 
-1) If a read is too short for a packet, a single stripped packet will be read
+The patch sets add support for MediaTek PMIC MT6397 MFD core and its regulator driver.
+This is hardware layout for access PMIC MT6397 from AP SoC MT8135.
+Between PMIC MT6397 and MT8135, the physical signal channel is SPI bus.
+A specific hardware called PMIC Wrapper or PWRAP to handle access protocols in both PMIC and AP side.
 
-2) If a read is long enough for multiple packets, as many *full* packets
-will be read as possible.  We will not return a stripped packet, so even if
-there are many, many packets, we may get a short read.
++-----------------+           +---------------+
+|                 |           |               |
+| Mediatek AP SoC |           |               |
+| (ex. MT8135)    |           |    MT6397     |
+|                 |           |               |
+|      +--------+ | (SPI bus) | +--------+    |
+|      |        | |-----------| |        |    |
+|      |  PMIC  | |-----------| |  PMIC  |    |
+|      | Wrapper| |-----------| | Wrapper|    |
+|      |        | |-----------| |        |    |
+|      +--------+ |           | +--------+    |
+|                 |           |               |
++-----------------+           +---------------+
 
-In casual performance testing with a simple test program that simply reads
-and counts packets, IFF_MULTI_READ conservatively yielded a 30% CPU win, as
-measured by top.  Load was being driven by a bunch of hpings running on a
-server on the same L2 network (single hop through a top-of-rack switch).
+Changes since v2
+================
+(1) Patch 1/8: Update kernel config of MT8135 PMIC Wrapper. It needs to select REGMAP.
+(2) Patch 2/8: Update patch of MT6397 MFD driver to fix defeat of coding styles.
+(3) Patch 3/8: Update MT6397 regulator driver
+	- use standard helpers for ops ".set_voltage_sel", ".get_voltage_sel" and ".is_enabled"
+	- remove regulator's DT matching codes in the driver.  
+	- fix defeat of coding styles.
+(4) Patch 4/8: Update document for MT8135 PMIC wrapper.
+(5) Patch 5/8: Update document for MT6397 MFD.
+(6) Patch 6/8: Update document for MT6397 regulators.
+(7) Patch 7/8: Update device tree for MT8135 PMIC wrapper in mt8135.dtsi.
+(8) Patch 8/8: Add device tree for MT6397 MFD and regulators in mt8135-evbp1.dts board file.
+Second version (v2):
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/307069.html
 
-Signed-off-by: Alex Gartrell <agartrell@fb.com>
----
- drivers/net/tun.c           | 66 ++++++++++++++++++++++++++++++++++++++-------
- include/uapi/linux/if_tun.h |  3 +++
- 2 files changed, 60 insertions(+), 9 deletions(-)
+Changes since v1
+================
+(1) Patch 1/8: Add MT8135 PMIC wrapper driver for SoC's proprietary hardware.
+(2) Patch 2/8: Update patch of MT6397 MFD driver to contain only MFD related codes and fix defeat of coding styles.
+(3) Patch 3/8: Update MT6397 regulator driver
+	- use helpers and standard ways for specifying data in regulator description.
+	- add more comments to explaining why the driver implement its own regulator_ops for ".is_enabled", ".set_voltage_sel" and ".get_voltage_sel".
+	- update driver implement for coding styles.
+(4) Patch 4/8: Add document for MT8135 PMIC wrapper.
+(5) Patch 5/8: Update document for MT6397 MFD.
+(6) Patch 6/8: Update document for MT6397 regulators.
+(7) Patch 7/8: Add device tree for MT6397 MFD in mt8135.dtsi.
+(8) Patch 8/8: Update device tree for MT6397 regulators in mt8135.dtsi.
+Initial version (v1):
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302984.html
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 6d44da1..f57d618 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1228,6 +1228,26 @@ static ssize_t tun_chr_write_iter(struct kiocb *iocb, struct iov_iter *from)
- 	return result;
- }
- 
-+static inline size_t tun_calc_max_put_len(const struct tun_struct *tun)
-+{
-+	size_t len = 0;
-+
-+	/* It's a pain to peek the skb, so let's assume the worst:
-+	 * 1) That skb->len = mtu
-+	 * 2) That there is a vlan_tx_tag present
-+	 */
-+
-+	len += tun->dev->mtu + VLAN_HLEN;
-+
-+	if (tun->flags & TUN_VNET_HDR)
-+		len += tun->vnet_hdr_sz;
-+
-+	if (!(tun->flags & TUN_NO_PI))
-+		len += sizeof(struct tun_pi);
-+
-+	return len;
-+}
-+
- /* Put packet to the user space buffer */
- static ssize_t tun_put_user(struct tun_struct *tun,
- 			    struct tun_file *tfile,
-@@ -1343,8 +1363,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 			   struct iov_iter *to,
- 			   int noblock)
- {
-+	const size_t max_put_len = tun_calc_max_put_len(tun);
- 	struct sk_buff *skb;
--	ssize_t ret;
-+	ssize_t ret = 0;
-+	ssize_t put_ret = 0;
- 	int peeked, err, off = 0;
- 
- 	tun_debug(KERN_INFO, tun, "tun_do_read\n");
-@@ -1355,14 +1377,31 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 	if (tun->dev->reg_state != NETREG_REGISTERED)
- 		return -EIO;
- 
--	/* Read frames from queue */
--	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
--				  &peeked, &off, &err);
--	if (!skb)
--		return 0;
-+	while (!ret || ((tun->flags & TUN_MULTI_READ) &&
-+			iov_iter_count(to) >= max_put_len)) {
-+		/* Read frames from queue */
-+		skb = __skb_recv_datagram(tfile->socket.sk,
-+					  noblock ? MSG_DONTWAIT : 0,
-+					  &peeked, &off, &err);
-+		if (skb) {
-+			put_ret = tun_put_user(tun, tfile, skb, to);
-+			kfree_skb(skb);
-+			if (put_ret < 0) {
-+				ret = put_ret;
-+				break;
-+			}
-+			ret += put_ret;
-+		} else {
-+			if (!ret)
-+				ret = err;
-+			break;
-+		}
- 
--	ret = tun_put_user(tun, tfile, skb, to);
--	kfree_skb(skb);
-+		/* Now that we've received a datagram, noblock for the
-+		 * rest
-+		 */
-+		noblock = 1;
-+	}
- 
- 	return ret;
- }
-@@ -1537,6 +1576,9 @@ static int tun_flags(struct tun_struct *tun)
- 	if (tun->flags & TUN_PERSIST)
- 		flags |= IFF_PERSIST;
- 
-+	if (tun->flags & TUN_MULTI_READ)
-+		flags |= IFF_MULTI_READ;
-+
- 	return flags;
- }
- 
-@@ -1720,6 +1762,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	else
- 		tun->flags &= ~TUN_TAP_MQ;
- 
-+	if (ifr->ifr_flags & IFF_MULTI_READ)
-+		tun->flags |= TUN_MULTI_READ;
-+	else
-+		tun->flags &= ~TUN_MULTI_READ;
-+
- 	/* Make sure persistent devices do not get stuck in
- 	 * xoff state.
- 	 */
-@@ -1883,7 +1930,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		 * This is needed because we never checked for invalid flags on
- 		 * TUNSETIFF. */
- 		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
--				IFF_VNET_HDR | IFF_MULTI_QUEUE,
-+				IFF_VNET_HDR | IFF_MULTI_QUEUE |
-+				IFF_MULTI_READ,
- 				(unsigned int __user*)argp);
- 	} else if (cmd == TUNSETQUEUE)
- 		return tun_set_queue(file, &ifr);
-diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-index e9502dd..aaf9ddc 100644
---- a/include/uapi/linux/if_tun.h
-+++ b/include/uapi/linux/if_tun.h
-@@ -36,6 +36,7 @@
- #define TUN_PERSIST 	0x0100	
- #define TUN_VNET_HDR 	0x0200
- #define TUN_TAP_MQ      0x0400
-+#define TUN_MULTI_READ	0x0800
- 
- /* Ioctl defines */
- #define TUNSETNOCSUM  _IOW('T', 200, int) 
-@@ -74,6 +75,8 @@
- #define IFF_PERSIST	0x0800
- #define IFF_NOFILTER	0x1000
- 
-+#define IFF_MULTI_READ	0x2000
-+
- /* Socket options */
- #define TUN_TX_TIMESTAMP 1
- 
--- 
-Alex Gartrell <agartrell@fb.com>
+This driver is based on 3.18-rc1.
+
+Flora Fu (8):
+  soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
+  mfd: MT6397: Add support for PMIC MT6397 MFD
+  regulator: MT6397: Add support for MT6397 regulator
+  dt-bindings:: Add document for MT8135 PMIC Wrapper
+  dt-bindings: Add document for MT6397 MFD
+  dt-bindings: Add document for MT6397 regulator
+  ARM: dts: mt8135: Add support for MT8135 PMIC wrapper
+  ARM: dts: mt8135: Add support for MT6397 MFD and regulator
+
+ Documentation/devicetree/bindings/mfd/mt6397.txt   |  75 ++
+ .../bindings/regulator/mt6397-regulator.txt        | 217 ++++++
+ .../soc/mediatek/mediatek,mt8135-pwrap.txt         |  51 ++
+ arch/arm/boot/dts/mt8135-evbp1.dts                 | 193 +++++
+ arch/arm/boot/dts/mt8135.dtsi                      |  14 +
+ drivers/mfd/Kconfig                                |  10 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/mt6397-core.c                          |  87 +++
+ drivers/regulator/Kconfig                          |   9 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/mt6397-regulator.c               | 332 ++++++++
+ drivers/soc/Kconfig                                |   1 +
+ drivers/soc/Makefile                               |   1 +
+ drivers/soc/mediatek/Kconfig                       |  12 +
+ drivers/soc/mediatek/Makefile                      |   1 +
+ drivers/soc/mediatek/mt8135-pmic-wrap.c            | 844 +++++++++++++++++++++
+ drivers/soc/mediatek/mt8135-pmic-wrap.h            | 138 ++++
+ include/linux/mfd/mt6397/core.h                    |  23 +
+ include/linux/mfd/mt6397/registers.h               | 362 +++++++++
+ include/linux/regulator/mt6397-regulator.h         |  49 ++
+ include/linux/soc/mediatek/mtk-pmic-wrap.h         |  25 +
+ 21 files changed, 2446 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
+ create mode 100644 Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
+ create mode 100644 drivers/mfd/mt6397-core.c
+ create mode 100644 drivers/regulator/mt6397-regulator.c
+ create mode 100644 drivers/soc/mediatek/Kconfig
+ create mode 100644 drivers/soc/mediatek/Makefile
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.c
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.h
+ create mode 100644 include/linux/mfd/mt6397/core.h
+ create mode 100644 include/linux/mfd/mt6397/registers.h
+ create mode 100644 include/linux/regulator/mt6397-regulator.h
+ create mode 100644 include/linux/soc/mediatek/mtk-pmic-wrap.h
+
+--
+1.8.1.1.dirty
 
