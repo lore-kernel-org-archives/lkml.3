@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaLEWrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:47:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540AbaLEWqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752536AbaLEWqT (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 17:46:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54005 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430AbaLEWqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:46:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Vladislav Yasevich <vyasevic@redhat.com>,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 102/122] ixgbe: Correctly disable VLAN filter in promiscuous mode
-Date: Fri,  5 Dec 2014 14:44:36 -0800
-Message-Id: <20141205223321.315361724@linuxfoundation.org>
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 035/122] ASoC: fsi: remove unsupported PAUSE flag
+Date: Fri,  5 Dec 2014 14:43:29 -0800
+Message-Id: <20141205223310.772911614@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -33,49 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-commit 4556dc591691fca743518edb24f15fbc83b5c8ef upstream.
+commit c1b9b9b1ad2df6144ca3fbe6989f7bd9ea5c5562 upstream.
 
-IXGBE adapter seems to require that VLAN filtering be enabled if
-VMDQ or SRIOV are enabled.  When those functions are disabled,
-VLAN filtering may be disabled in promiscuous mode.
+FSI doesn't support PAUSE.
+Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
 
-Prior to commit a9b8943ee129 ("ixgbe: remove vlan_filter_disable
-and enable functions")
-
-The logic was correct.  However, after the commit the logic
-got reversed and VLAN filtered in now turned on when VMDQ/SRIOV
-is disabled.
-
-This patch changes the condition to enable hw vlan filtered
-when VMDQ or SRIOV is enabled.
-
-Fixes: a9b8943ee129 ("ixgbe: remove vlan_filter_disable and enable functions")
-CC: Jacob Keller <jacob.e.keller@intel.com>
-Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
-Acked-by: Emil Tantilov <emil.s.tantilov@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/sh/fsi.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -4059,8 +4059,8 @@ void ixgbe_set_rx_mode(struct net_device
- 		 * if SR-IOV and VMDQ are disabled - otherwise ensure
- 		 * that hardware VLAN filters remain enabled.
- 		 */
--		if (!(adapter->flags & (IXGBE_FLAG_VMDQ_ENABLED |
--					IXGBE_FLAG_SRIOV_ENABLED)))
-+		if (adapter->flags & (IXGBE_FLAG_VMDQ_ENABLED |
-+				      IXGBE_FLAG_SRIOV_ENABLED))
- 			vlnctrl |= (IXGBE_VLNCTRL_VFE | IXGBE_VLNCTRL_CFIEN);
- 	} else {
- 		if (netdev->flags & IFF_ALLMULTI) {
+--- a/sound/soc/sh/fsi.c
++++ b/sound/soc/sh/fsi.c
+@@ -1706,8 +1706,7 @@ static const struct snd_soc_dai_ops fsi_
+ static struct snd_pcm_hardware fsi_pcm_hardware = {
+ 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
+ 			SNDRV_PCM_INFO_MMAP		|
+-			SNDRV_PCM_INFO_MMAP_VALID	|
+-			SNDRV_PCM_INFO_PAUSE,
++			SNDRV_PCM_INFO_MMAP_VALID,
+ 	.buffer_bytes_max	= 64 * 1024,
+ 	.period_bytes_min	= 32,
+ 	.period_bytes_max	= 8192,
 
 
