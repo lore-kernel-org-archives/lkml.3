@@ -1,273 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaLEMya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:54:30 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:50730 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaLEMxE (ORCPT
+	id S1752991AbaLEMYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:24:23 -0500
+Received: from lb3-smtp-cloud6.xs4all.net ([194.109.24.31]:43816 "EHLO
+	lb3-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752887AbaLEMYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:53:04 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <86034aa07a72b6b8233f7a869d9af804>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, ulrich.prinz@googlemail.com,
-        zyw@rock-chips.com, cf@rock-chips.com,
-        linux-rockchip@lists.infradead.org, Yunzhi Li <lyz@rock-chips.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCH v2 1/5] phy: add a driver for the Rockchip SoC internal USB2.0 PHY.
-Date: Fri,  5 Dec 2014 20:52:17 +0800
-Message-Id: <1417783941-2418-2-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
+	Fri, 5 Dec 2014 07:24:20 -0500
+Message-ID: <5481A3EC.8020803@xs4all.nl>
+Date: Fri, 05 Dec 2014 13:24:12 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>, devicetree@vger.kernel.org,
+        linux-api <linux-api@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v3] media: platform: add VPFE capture driver support for
+ AM437X
+References: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patche to add a generic PHY driver for ROCKCHIP usb PHYs,
-currently this driver can support RK3288. The RK3288 SoC have
-three independent USB PHY IPs which are all configured through a
-set of registers located in the GRF (general register files)
-module.
+Hi Prabhakar,
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
----
+Sorry, there are still a few items that need to be fixed.
+If you can make a v4 with these issues addressed, then I can still make a
+pull request, although it depends on Mauro whether it is still accepted for
+3.19.
 
- drivers/phy/Kconfig            |   7 ++
- drivers/phy/Makefile           |   1 +
- drivers/phy/phy-rockchip-usb.c | 179 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 187 insertions(+)
- create mode 100644 drivers/phy/phy-rockchip-usb.c
+On 12/04/2014 12:12 AM, Lad, Prabhakar wrote:
+> From: Benoit Parrot <bparrot@ti.com>
+> 
+> This patch adds Video Processing Front End (VPFE) driver for
+> AM437X family of devices
+> Driver supports the following:
+> - V4L2 API using MMAP buffer access based on videobuf2 api
+> - Asynchronous sensor/decoder sub device registration
+> - DT support
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index ccad880..e3a5857 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
- 	depends on OF
- 	select GENERIC_PHY
- 
-+config PHY_ROCKCHIP_RK3288_USB2
-+	tristate "Rockchip USB2 RK3288 PHY Driver"
-+	depends on ARCH_ROCKCHIP && OF
-+	select GENERIC_PHY
-+	help
-+	  Enable this to support the Rockchip USB 2.0 PHY.
-+
- config PHY_ST_SPEAR1310_MIPHY
- 	tristate "ST SPEAR1310-MIPHY driver"
- 	select GENERIC_PHY
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index aa74f96..12c17f6 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
- obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
- obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
-+obj-$(CONFIG_PHY_ROCKCHIP_RK3288_USB2) += phy-rockchip-usb.o
- obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
- obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
- obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
-diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
-new file mode 100644
-index 0000000..3132db9
---- /dev/null
-+++ b/drivers/phy/phy-rockchip-usb.c
-@@ -0,0 +1,179 @@
-+/*
-+ * Rockchip usb PHY driver
-+ *
-+ * Copyright (C) 2014 Yunzhi Li <lyz@rock-chips.com>
-+ * Copyright (C) 2014 ROCKCHIP, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/reset.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/syscon.h>
-+
-+#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
-+
-+#define SIDDQ_MSK		(1 << (13 + 16))
-+#define SIDDQ_ON		(1 << 13)
-+#define SIDDQ_OFF		(0 << 13)
-+
-+enum rk3288_phy_id {
-+	RK3288_OTG,
-+	RK3288_HOST0,
-+	RK3288_HOST1,
-+	RK3288_NUM_PHYS,
-+};
-+
-+struct rockchip_usb_phy {
-+	struct regmap *reg_base;
-+	unsigned int reg_offset;
-+	struct clk *clk;
-+	struct phy *phy;
-+};
-+
-+static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
-+					   bool siddq)
-+{
-+	return regmap_write(phy->reg_base, phy->reg_offset,
-+			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
-+}
-+
-+static int rockchip_usb_phy_power_off(struct phy *_phy)
-+{
-+	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-+	int ret = 0;
-+
-+	/* Power down usb phy analog blocks by set siddq 1*/
-+	ret = rockchip_usb_phy_power(phy, 1);
-+	if (ret)
-+		return ret;
-+
-+	clk_disable_unprepare(phy->clk);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int rockchip_usb_phy_power_on(struct phy *_phy)
-+{
-+	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-+	int ret = 0;
-+
-+	ret = clk_prepare_enable(phy->clk);
-+	if (ret)
-+		return ret;
-+
-+	/* Power up usb phy analog blocks by set siddq 0*/
-+	ret = rockchip_usb_phy_power(phy, 0);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static struct phy *rockchip_usb_phy_xlate(struct device *dev,
-+					struct of_phandle_args *args)
-+{
-+	struct rockchip_usb_phy *phy_array = dev_get_drvdata(dev);
-+
-+	if (WARN_ON(args->args[0] == 0 || args->args[0] >= RK3288_NUM_PHYS))
-+		return ERR_PTR(-ENODEV);
-+
-+	return (phy_array + args->args[0])->phy;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= rockchip_usb_phy_power_on,
-+	.power_off	= rockchip_usb_phy_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int rockchip_usb_phy_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct rockchip_usb_phy *rk_phy;
-+	struct rockchip_usb_phy *phy_array;
-+	struct phy_provider *phy_provider;
-+	struct regmap *grf;
-+	char clk_name[16];
-+	int i;
-+
-+	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
-+	if (IS_ERR(grf)) {
-+		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
-+		return PTR_ERR(grf);
-+	}
-+
-+	phy_array = devm_kzalloc(dev, RK3288_NUM_PHYS * sizeof(*rk_phy),
-+				 GFP_KERNEL);
-+	if (!phy_array)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < RK3288_NUM_PHYS; i++) {
-+		rk_phy = &phy_array[i];
-+
-+		rk_phy->reg_base = grf;
-+
-+		rk_phy->reg_offset = ROCKCHIP_RK3288_UOC(i);
-+
-+		snprintf(clk_name, sizeof(clk_name), "usbphy%d", i);
-+		rk_phy->clk = devm_clk_get(dev, clk_name);
-+		if (IS_ERR(rk_phy->clk)) {
-+			dev_warn(dev, "failed to get clock %s\n", clk_name);
-+			rk_phy->clk = NULL;
-+		}
-+
-+		rk_phy->phy = devm_phy_create(dev, NULL, &ops);
-+		if (IS_ERR(rk_phy->phy)) {
-+			dev_err(dev, "failed to create PHY %d\n", i);
-+			return PTR_ERR(rk_phy->phy);
-+		}
-+		phy_set_drvdata(rk_phy->phy, rk_phy);
-+	}
-+
-+	platform_set_drvdata(pdev, phy_array);
-+
-+	phy_provider = devm_of_phy_provider_register(dev,
-+						     rockchip_usb_phy_xlate);
-+	return PTR_ERR_OR_ZERO(phy_provider);
-+}
-+
-+static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
-+	{ .compatible = "rockchip,rk3288-usb-phy" },
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(of, rockchip_usb_phy_dt_ids);
-+
-+static struct platform_driver rockchip_usb_driver = {
-+	.probe		= rockchip_usb_phy_probe,
-+	.driver		= {
-+		.name	= "rockchip-usb-phy",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = rockchip_usb_phy_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(rockchip_usb_driver);
-+
-+MODULE_AUTHOR("Yunzhi Li <lyz@rock-chips.com>");
-+MODULE_DESCRIPTION("Rockchip USB 2.0 PHY driver");
-+MODULE_LICENSE("GPL v2");
--- 
-2.0.0
+Just to confirm: this driver only supports SDTV formats? No HDTV?
+I didn't see any VIDIOC_*_DV_TIMINGS support, so I assume it really
+isn't supported.
 
+> 
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> Signed-off-by: Darren Etheridge <detheridge@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
 
+<snip>
+
+> diff --git a/drivers/media/platform/am437x/am437x-vpfe.c b/drivers/media/platform/am437x/am437x-vpfe.c
+> new file mode 100644
+> index 0000000..25863e8
+> --- /dev/null
+> +++ b/drivers/media/platform/am437x/am437x-vpfe.c
+
+<snip>
+
+> +
+> +static int
+> +cmp_v4l2_format(const struct v4l2_format *lhs, const struct v4l2_format *rhs)
+> +{
+> +	return lhs->type == rhs->type &&
+> +		lhs->fmt.pix.width == rhs->fmt.pix.width &&
+> +		lhs->fmt.pix.height == rhs->fmt.pix.height &&
+> +		lhs->fmt.pix.pixelformat == rhs->fmt.pix.pixelformat &&
+> +		lhs->fmt.pix.field == rhs->fmt.pix.field &&
+> +		lhs->fmt.pix.colorspace == rhs->fmt.pix.colorspace;
+
+Add a check for pix.ycbcr_enc and pix.quantization.
+
+<snip>
+
+> +/*
+> + * vpfe_release : This function is based on the vb2_fop_release
+> + * helper function.
+> + * It has been augmented to handle module power management,
+> + * by disabling/enabling h/w module fcntl clock when necessary.
+> + */
+> +static int vpfe_release(struct file *file)
+> +{
+> +	struct vpfe_device *vpfe = video_drvdata(file);
+> +	int ret;
+> +
+> +	vpfe_dbg(2, vpfe, "vpfe_release\n");
+> +
+> +	ret = _vb2_fop_release(file, NULL);
+
+This isn't going to work. _vb2_fop_release calls v4l2_fh_release(), so
+the v4l2_fh_is_singular_file(file) will be wrong and you release the fh
+once too many.
+
+I would do this:
+
+	if (!v4l2_fh_is_singular_file(file))
+		return vb2_fop_release(file);
+	mutex_lock(&vpfe->lock);
+	ret = _vb2_fop_release(file, NULL);
+	vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
+	mutex_unlock(&vpfe->lock);
+	return ret;
+
+> +
+> +	if (v4l2_fh_is_singular_file(file)) {
+> +		mutex_lock(&vpfe->lock);
+> +		vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
+> +		v4l2_fh_release(file);
+> +		mutex_unlock(&vpfe->lock);
+> +	}
+> +
+> +	return ret;
+> +}
+
+<snip>
+
+> +static int vpfe_enum_size(struct file *file, void  *priv,
+> +			  struct v4l2_frmsizeenum *fsize)
+> +{
+> +	struct vpfe_device *vpfe = video_drvdata(file);
+> +	struct v4l2_subdev_frame_size_enum fse;
+> +	struct vpfe_subdev_info *sdinfo;
+> +	struct v4l2_mbus_framefmt mbus;
+> +	struct v4l2_pix_format pix;
+> +	struct vpfe_fmt *fmt;
+> +	int ret;
+> +
+> +	vpfe_dbg(2, vpfe, "vpfe_enum_size\n");
+> +
+> +	/* check for valid format */
+> +	fmt = find_format_by_pix(fsize->pixel_format);
+> +	if (!fmt) {
+> +		vpfe_dbg(3, vpfe, "Invalid pixel code: %x, default used instead\n",
+> +			fsize->pixel_format);
+> +		return -EINVAL;
+> +	}
+> +
+> +	memset(fsize->reserved, 0x0, sizeof(fsize->reserved));
+> +
+> +	sdinfo = vpfe->current_subdev;
+> +	if (!sdinfo->sd)
+> +		return -EINVAL;
+> +
+> +	memset(&pix, 0x0, sizeof(pix));
+> +	/* Construct pix from parameter and use default for the rest */
+> +	pix.pixelformat = fsize->pixel_format;
+> +	pix.width = 640;
+> +	pix.height = 480;
+> +	pix.colorspace = V4L2_COLORSPACE_SRGB;
+> +	pix.field = V4L2_FIELD_NONE;
+> +	pix_to_mbus(vpfe, &pix, &mbus);
+> +
+> +	memset(&fse, 0x0, sizeof(fse));
+> +	fse.index = fsize->index;
+> +	fse.pad = 0;
+> +	fse.code = mbus.code;
+> +	ret = v4l2_subdev_call(sdinfo->sd, pad, enum_frame_size, NULL, &fse);
+
+FYI: strictly speaking this is wrong since this op theoretically expects a
+v4l2_subdev_fh pointer instead of a NULL argument. However, you do not have
+an alternative right now. As you know, I've been working on fixing this, so
+if that gets accepted, then you need to update this code as well in a later
+patch.
+
+> +	if (ret)
+> +		return -EINVAL;
+> +
+> +	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d code: %x W:[%d,%d] H:[%d,%d]\n",
+> +		fse.index, fse.code, fse.min_width, fse.max_width,
+> +		fse.min_height, fse.max_height);
+> +
+> +	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
+> +	fsize->discrete.width = fse.max_width;
+> +	fsize->discrete.height = fse.max_height;
+> +
+> +	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d pixformat: %s size: %dx%d\n",
+> +		fsize->index, print_fourcc(fsize->pixel_format),
+> +		fsize->discrete.width, fsize->discrete.height);
+> +
+> +	return 0;
+> +}
+> +
+
+<snip>
+
+> +static int
+> +vpfe_g_selection(struct file *file, void *fh, struct v4l2_selection *s)
+> +{
+> +	struct vpfe_device *vpfe = video_drvdata(file);
+> +
+> +	switch (s->target) {
+> +	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
+> +	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
+
+These two COMPOSE cases should be dropped, since there is no compose support!
+
+> +	case V4L2_SEL_TGT_CROP_BOUNDS:
+> +	case V4L2_SEL_TGT_CROP_DEFAULT:
+> +		s->r.left = s->r.top = 0;
+> +		s->r.width = vpfe->crop.width;
+> +		s->r.height = vpfe->crop.height;
+> +		break;
+> +
+> +	case V4L2_SEL_TGT_CROP:
+> +		s->r = vpfe->crop;
+> +		break;
+> +
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+
+<snip>
+
+Regards,
+
+	Hans
