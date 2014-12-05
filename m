@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaLEF7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 00:59:18 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51317 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaLEF64 (ORCPT
+	id S1752035AbaLEF7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 00:59:54 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:53410 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaLEF7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 00:58:56 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/12] bury memcpy_toiovec()
-Date: Fri,  5 Dec 2014 05:58:53 +0000
-Message-Id: <1417759133-18370-12-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141205055623.GQ29748@ZenIV.linux.org.uk>
-References: <20141205055623.GQ29748@ZenIV.linux.org.uk>
+	Fri, 5 Dec 2014 00:59:17 -0500
+X-Originating-IP: 50.43.43.148
+Date: Thu, 4 Dec 2014 21:59:09 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tinification: Make SRCU optional by using CONFIG_SRCU
+Message-ID: <20141205055909.GA19116@thin>
+References: <1417737024-13967-1-git-send-email-bobby.prani@gmail.com>
+ <20141205001148.GC25340@linux.vnet.ibm.com>
+ <548112D8.70009@cn.fujitsu.com>
+ <CAJhHMCD7GVUcGsex86Tj-+oVh5a6qpmtTt88Nb8ZJj-SGYz9Nw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCD7GVUcGsex86Tj-+oVh5a6qpmtTt88Nb8ZJj-SGYz9Nw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+On Thu, Dec 04, 2014 at 10:30:20PM -0500, Pranith Kumar wrote:
+> On Thu, Dec 4, 2014 at 9:05 PM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> > On 12/05/2014 08:11 AM, Paul E. McKenney wrote:
+> >> On Thu, Dec 04, 2014 at 06:50:24PM -0500, Pranith Kumar wrote:
+> >>>
+> >>> +config SRCU
+> >>> +    bool "Sleepable form of RCU"
+> >
+> > Why it has a title? Somebody need to select it manually for third party kernel module?
+> 
+> Yes, it is a choice given to enable SRCU even when no in-kernel module uses it.
 
-no users left
+That makes sense for testing purposes, but I don't think it makes sense
+for the final patch.  I'd suggest making it a completely automatic
+symbol with no title.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- include/linux/uio.h |  1 -
- lib/iovec.c         | 25 -------------------------
- 2 files changed, 26 deletions(-)
+> >
+> >>> +    def_bool n
 
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index bd8569a..a41e252 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -131,7 +131,6 @@ size_t csum_and_copy_to_iter(void *addr, size_t bytes, __wsum *csum, struct iov_
- size_t csum_and_copy_from_iter(void *addr, size_t bytes, __wsum *csum, struct iov_iter *i);
- 
- int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
--int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len);
- int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
-diff --git a/lib/iovec.c b/lib/iovec.c
-index df3abd1..2d99cb4 100644
---- a/lib/iovec.c
-+++ b/lib/iovec.c
-@@ -29,31 +29,6 @@ EXPORT_SYMBOL(memcpy_fromiovec);
- 
- /*
-  *	Copy kernel to iovec. Returns -EFAULT on error.
-- *
-- *	Note: this modifies the original iovec.
-- */
--
--int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len)
--{
--	while (len > 0) {
--		if (iov->iov_len) {
--			int copy = min_t(unsigned int, iov->iov_len, len);
--			if (copy_to_user(iov->iov_base, kdata, copy))
--				return -EFAULT;
--			kdata += copy;
--			len -= copy;
--			iov->iov_len -= copy;
--			iov->iov_base += copy;
--		}
--		iov++;
--	}
--
--	return 0;
--}
--EXPORT_SYMBOL(memcpy_toiovec);
--
--/*
-- *	Copy kernel to iovec. Returns -EFAULT on error.
-  */
- 
- int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
--- 
-2.1.3
+You already say "bool" above, and "default n" is the default default, so
+you can omit this line entirely.
 
+- Josh Triplett
