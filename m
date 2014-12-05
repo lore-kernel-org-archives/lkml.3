@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaLEW6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:58:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
+	id S1753555AbaLEW6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:58:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474AbaLEW43 (ORCPT
+	with ESMTP id S1752838AbaLEW43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Binyamin Sagal <bensagal@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 49/73] Input: synaptics - adjust min/max on Thinkpad E540
-Date: Fri,  5 Dec 2014 14:44:55 -0800
-Message-Id: <20141205224435.406642293@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 40/73] USB: xhci: dont start a halted endpoint before its new dequeue is set
+Date: Fri,  5 Dec 2014 14:44:46 -0800
+Message-Id: <20141205224435.141981805@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,40 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Sagal <bensagal@gmail.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit bce4f9e764c36bc35dd5c9cf9e057c09f422397d upstream.
+commit c3492dbfa1050debf23a5b5cd2bc7514c5b37896 upstream.
 
-The LEN2006 Synaptics touchpad (as found in Thinkpad E540) returns wrong
-min max values.
+A halted endpoint ring must first be reset, then move the ring
+dequeue pointer past the problematic TRB. If we start the ring too
+early after reset, but before moving the dequeue pointer we
+will end up executing the same problematic TRB again.
 
-touchpad-edge-detector output:
->  Touchpad SynPS/2 Synaptics TouchPad on /dev/input/event6
->  Move one finger around the touchpad to detect the actual edges
->  Kernel says:    x [1472..5674], y [1408..4684]
->  Touchpad sends: x [1264..5675], y [1171..4688]
+As we always issue a set transfer dequeue command after a reset
+endpoint command we can skip starting endpoint rings at reset endpoint
+command completion.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88211
-Signed-off-by: Binyamin Sagal <bensagal@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Without this fix we end up trying to handle the same faulty TD for
+contol endpoints. causing timeout, and failing testusb ctrl_out write
+tests.
+
+Fixes: e9df17e (USB: xhci: Correct assumptions about number of rings per endpoint.)
+Tested-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-ring.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -140,6 +140,10 @@ static const struct min_max_quirk min_ma
- 		(const char * const []){"LEN2001", NULL},
- 		1024, 5022, 2508, 4832
- 	},
-+	{
-+		(const char * const []){"LEN2006", NULL},
-+		1264, 5675, 1171, 4688
-+	},
- 	{ }
- };
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1180,9 +1180,8 @@ static void xhci_handle_cmd_reset_ep(str
+ 				false);
+ 		xhci_ring_cmd_db(xhci);
+ 	} else {
+-		/* Clear our internal halted state and restart the ring(s) */
++		/* Clear our internal halted state */
+ 		xhci->devs[slot_id]->eps[ep_index].ep_state &= ~EP_HALTED;
+-		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 	}
+ }
  
 
 
