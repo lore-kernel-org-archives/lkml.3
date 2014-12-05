@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606AbaLEDXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 22:23:32 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:34520 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaLEDWz (ORCPT
+	id S933575AbaLED13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:27:29 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:56932 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933139AbaLED11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 22:22:55 -0500
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Azael Avalos <coproscefalo@gmail.com>
-Subject: [PATCH v3 2/3] toshiba_acpi: Change notify funtion to handle more events
-Date: Thu,  4 Dec 2014 20:22:46 -0700
-Message-Id: <1417749767-3898-3-git-send-email-coproscefalo@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1417749767-3898-1-git-send-email-coproscefalo@gmail.com>
-References: <1417749767-3898-1-git-send-email-coproscefalo@gmail.com>
+	Thu, 4 Dec 2014 22:27:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+References: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 4 Dec 2014 22:27:06 -0500
+X-Google-Sender-Auth: Pho58R-SpObfiiLOzf-UhlWIUV4
+Message-ID: <CALZtONBUDyN7OOMV9ziDXMhFN9+bOcsYvJ0an_7T0VV0Hz+8WQ@mail.gmail.com>
+Subject: Re: [PATCH linux-next] Documentation: Build mic/mpssd only for x86_64
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, Jiri Kosina <jkosina@suse.cz>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jennings <sjennings@variantweb.net>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        Siva Yerramreddy <yshivakrishna@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the function toshiba_acpi_notify only takes care of hotkeys,
-however, the TOSXXXX devices receive more events that can be useful.
+On Thu, Dec 4, 2014 at 4:27 PM, Ashutosh Dixit <ashutosh.dixit@intel.com> wrote:
+> mic/mpssd along with MIC drivers are currently only usable on
+> x86_64. So build mic/mpssd only for x86_64 to avoid build breaks on
+> big-endian systems.
 
-This patch changes the function to be able to handle more events,
-and in the process, move all hotkey related code residing in it to
-a new function called toshiba_acpi_process_hotkeys.
+Only building for x86_64 is fine, but in that case what's the point of
+leaving the htole16() et. al. functions in mpssd.c?  Shouldn't they be
+removed?
 
-Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
----
- drivers/platform/x86/toshiba_acpi.c | 85 ++++++++++++++++++++++---------------
- 1 file changed, 51 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 8bb07c7..99db763 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -1657,6 +1657,43 @@ static void toshiba_acpi_report_hotkey(struct toshiba_acpi_dev *dev,
- 		pr_info("Unknown key %x\n", scancode);
- }
- 
-+static void toshiba_acpi_process_hotkeys(struct toshiba_acpi_dev *dev)
-+{
-+	u32 hci_result, value;
-+	int retries = 3;
-+	int scancode;
-+
-+	if (dev->info_supported) {
-+		scancode = toshiba_acpi_query_hotkey(dev);
-+		if (scancode < 0)
-+			pr_err("Failed to query hotkey event\n");
-+		else if (scancode != 0)
-+			toshiba_acpi_report_hotkey(dev, scancode);
-+	} else if (dev->system_event_supported) {
-+		do {
-+			hci_result = hci_read1(dev, HCI_SYSTEM_EVENT, &value);
-+			switch (hci_result) {
-+			case TOS_SUCCESS:
-+				toshiba_acpi_report_hotkey(dev, (int)value);
-+				break;
-+			case TOS_NOT_SUPPORTED:
-+				/*
-+				 * This is a workaround for an unresolved
-+				 * issue on some machines where system events
-+				 * sporadically become disabled.
-+				 */
-+				hci_result =
-+					hci_write1(dev, HCI_SYSTEM_EVENT, 1);
-+				pr_notice("Re-enabled hotkeys\n");
-+				/* fall through */
-+			default:
-+				retries--;
-+				break;
-+			}
-+		} while (retries && hci_result != TOS_FIFO_EMPTY);
-+	}
-+}
-+
- static int toshiba_acpi_setup_keyboard(struct toshiba_acpi_dev *dev)
- {
- 	acpi_handle ec_handle;
-@@ -1971,41 +2008,21 @@ error:
- static void toshiba_acpi_notify(struct acpi_device *acpi_dev, u32 event)
- {
- 	struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
--	u32 hci_result, value;
--	int retries = 3;
--	int scancode;
- 
--	if (event != 0x80)
--		return;
--
--	if (dev->info_supported) {
--		scancode = toshiba_acpi_query_hotkey(dev);
--		if (scancode < 0)
--			pr_err("Failed to query hotkey event\n");
--		else if (scancode != 0)
--			toshiba_acpi_report_hotkey(dev, scancode);
--	} else if (dev->system_event_supported) {
--		do {
--			hci_result = hci_read1(dev, HCI_SYSTEM_EVENT, &value);
--			switch (hci_result) {
--			case TOS_SUCCESS:
--				toshiba_acpi_report_hotkey(dev, (int)value);
--				break;
--			case TOS_NOT_SUPPORTED:
--				/*
--				 * This is a workaround for an unresolved
--				 * issue on some machines where system events
--				 * sporadically become disabled.
--				 */
--				hci_result =
--					hci_write1(dev, HCI_SYSTEM_EVENT, 1);
--				pr_notice("Re-enabled hotkeys\n");
--				/* fall through */
--			default:
--				retries--;
--				break;
--			}
--		} while (retries && hci_result != TOS_FIFO_EMPTY);
-+	switch (event) {
-+	case 0x80: /* Hotkeys and some system events */
-+		toshiba_acpi_process_hotkeys(dev);
-+		break;
-+	case 0x81: /* Unknown */
-+	case 0x82: /* Unknown */
-+	case 0x83: /* Unknown */
-+	case 0x8c: /* Unknown */
-+	case 0x8e: /* Unknown */
-+	case 0x8f: /* Unknown */
-+	case 0x90: /* Unknown */
-+	default:
-+		pr_info("Unknown event received %x\n", event);
-+		break;
- 	}
- }
- 
--- 
-2.1.2
-
+>
+> Reported-by: Daniel Borkmann <dborkman@redhat.com>
+> Reported-by: Dan Streetman <ddstreet@gmail.com>
+> Suggested-by: Peter Foley <pefoley2@pefoley.com>
+> Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> ---
+>  Documentation/mic/mpssd/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/Documentation/mic/mpssd/Makefile b/Documentation/mic/mpssd/Makefile
+> index 0f31568..f47fe6b 100644
+> --- a/Documentation/mic/mpssd/Makefile
+> +++ b/Documentation/mic/mpssd/Makefile
+> @@ -1,5 +1,5 @@
+>  # List of programs to build
+> -hostprogs-y := mpssd
+> +hostprogs-$(CONFIG_X86_64) := mpssd
+>
+>  mpssd-objs := mpssd.o sysfs.o
+>
+> --
+> 2.0.0.rc3.2.g998f840
+>
