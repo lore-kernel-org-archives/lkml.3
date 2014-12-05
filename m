@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaLEW7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:59:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54545 "EHLO
+	id S1752907AbaLEW7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:59:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460AbaLEW42 (ORCPT
+	with ESMTP id S1753454AbaLEW42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 47/73] ARM: 8222/1: mvebu: enable strex backoff delay
-Date: Fri,  5 Dec 2014 14:44:53 -0800
-Message-Id: <20141205224435.351663209@linuxfoundation.org>
+Subject: [PATCH 3.14 46/73] ARM: 8216/1: xscale: correct auxiliary register in suspend/resume
+Date: Fri,  5 Dec 2014 14:44:52 -0800
+Message-Id: <20141205224435.320521678@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -32,55 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 995ab5189d1d7264e79e665dfa032a19b3ac646e upstream.
+commit ef59a20ba375aeb97b3150a118318884743452a8 upstream.
 
-Under extremely rare conditions, in an MPCore node consisting of at
-least 3 CPUs, two CPUs trying to perform a STREX to data on the same
-shared cache line can enter a livelock situation.
+According to the manuals I have, XScale auxiliary register should be
+reached with opc_2 = 1 instead of crn = 1. cpu_xscale_proc_init
+correctly uses c1, c0, 1 arguments, but cpu_xscale_do_suspend and
+cpu_xscale_do_resume use c1, c1, 0. Correct suspend/resume functions to
+also use c1, c0, 1.
 
-This patch enables the HW mechanism that overcomes the bug. This fixes
-the incorrect setup of the STREX backoff delay bit due to a wrong
-description in the specification.
+The issue was primarily noticed thanks to qemu reporing "unsupported
+instruction" on the pxa suspend path. Confirmed in PXA210/250 and PXA255
+XScale Core manuals and in PXA270 and PXA320 Developers Guides.
 
-Note that enabling the STREX backoff delay mechanism is done by
-leaving the bit *cleared*, while the bit was currently being set by
-the proc-v7.S code.
+Harware tested by me on tosa (pxa255). Robert confirmed on pxa270 board.
 
-[Thomas: adapt to latest mainline, slightly reword the commit log, add
-stable markers.]
-
-Fixes: de4901933f6d ("arm: mm: Add support for PJ4B cpu and init routines")
-
-Signed-off-by: Nadav Haklai <nadavh@marvell.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Tested-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-v7.S |    2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/mm/proc-xscale.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -211,7 +211,6 @@ __v7_pj4b_setup:
- /* Auxiliary Debug Modes Control 1 Register */
- #define PJ4B_STATIC_BP (1 << 2) /* Enable Static BP */
- #define PJ4B_INTER_PARITY (1 << 8) /* Disable Internal Parity Handling */
--#define PJ4B_BCK_OFF_STREX (1 << 5) /* Enable the back off of STREX instr */
- #define PJ4B_CLEAN_LINE (1 << 16) /* Disable data transfer for clean line */
- 
- /* Auxiliary Debug Modes Control 2 Register */
-@@ -234,7 +233,6 @@ __v7_pj4b_setup:
- 	/* Auxiliary Debug Modes Control 1 Register */
- 	mrc	p15, 1,	r0, c15, c1, 1
- 	orr     r0, r0, #PJ4B_CLEAN_LINE
--	orr     r0, r0, #PJ4B_BCK_OFF_STREX
- 	orr     r0, r0, #PJ4B_INTER_PARITY
- 	bic	r0, r0, #PJ4B_STATIC_BP
- 	mcr	p15, 1,	r0, c15, c1, 1
+--- a/arch/arm/mm/proc-xscale.S
++++ b/arch/arm/mm/proc-xscale.S
+@@ -535,7 +535,7 @@ ENTRY(cpu_xscale_do_suspend)
+ 	mrc	p15, 0, r5, c15, c1, 0	@ CP access reg
+ 	mrc	p15, 0, r6, c13, c0, 0	@ PID
+ 	mrc	p15, 0, r7, c3, c0, 0	@ domain ID
+-	mrc	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mrc	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mrc	p15, 0, r9, c1, c0, 0	@ control reg
+ 	bic	r4, r4, #2		@ clear frequency change bit
+ 	stmia	r0, {r4 - r9}		@ store cp regs
+@@ -552,7 +552,7 @@ ENTRY(cpu_xscale_do_resume)
+ 	mcr	p15, 0, r6, c13, c0, 0	@ PID
+ 	mcr	p15, 0, r7, c3, c0, 0	@ domain ID
+ 	mcr	p15, 0, r1, c2, c0, 0	@ translation table base addr
+-	mcr	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mcr	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mov	r0, r9			@ control register
+ 	b	cpu_resume_mmu
+ ENDPROC(cpu_xscale_do_resume)
 
 
