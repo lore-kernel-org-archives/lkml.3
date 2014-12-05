@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737AbaLERxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:53:06 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:60504 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaLERxD (ORCPT
+	id S1751989AbaLERzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:55:10 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50621 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaLERzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:53:03 -0500
+	Fri, 5 Dec 2014 12:55:07 -0500
+Message-ID: <5481F178.9000306@suse.cz>
+Date: Fri, 05 Dec 2014 18:55:04 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141205172701.GW11285@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
- <20140915113325.GD12361@n2100.arm.linux.org.uk> <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
- <20141205120506.GH1630@arm.com> <20141205170745.GA31222@e104818-lin.cambridge.arm.com>
- <20141205172701.GW11285@n2100.arm.linux.org.uk>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Fri, 5 Dec 2014 17:52:41 +0000
-Message-ID: <CAFEAcA912Cgbs-zr+=YfBBQzK625bmbrgQwYCs4DMqPEF58e8Q@mail.gmail.com>
-Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page aligned
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Maydell <Peter.Maydell@arm.com>,
-        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 2/3] kernel: add support for live patching
+References: <1417708411-23655-1-git-send-email-sjenning@redhat.com> <1417708411-23655-3-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1417708411-23655-3-git-send-email-sjenning@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 December 2014 at 17:27, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Dec 05, 2014 at 05:07:45PM +0000, Catalin Marinas wrote:
->> On Fri, Dec 05, 2014 at 12:05:06PM +0000, Will Deacon wrote:
->> > Care to submit this as a proper patch? We should at least fix Peter's issue
->> > before doing things like extending headers, which won't work for older
->> > kernels anyway.
->>
->> Quick fix is the revert of the whole patch, together with removing
->> PAGE_ALIGN(end) in poison_init_mem() on arm32. If Russell is ok with
->> this patch, we can take it via the arm64 tree, otherwise I'll send you a
->> partial revert only for the arm64 part.
->
-> Not really.  Let's look at the history.
->
-> For years, we've been poisoning memory, page aligning the end pointer.
-> This has never been an issue.
+On 12/04/2014, 04:53 PM, Seth Jennings wrote:
+...
+> --- /dev/null
+> +++ b/kernel/livepatch/core.c
+> @@ -0,0 +1,902 @@
+...
+> +static struct kobj_type klp_ktype_patch = {
+> +	.sysfs_ops = &kobj_sysfs_ops,
+> +	.default_attrs = klp_patch_attrs
+> +};
 
-Depends what you mean by "never been an issue". I had to change
-QEMU (commit 98ed805c, January 2013) for 32-bit ARM back when the
-kernel started trashing the tail end of the page after the initrd
-with the poisoning, to 4K-align the dtb so it didn't share a page
-with the initrd-tail. That nobody else complained suggests that most
-bootloaders don't in practice overlap the two, though (ie that
-QEMU is an outlier in how it chooses to arrange things in memory).
+Hi, I seem to have only a single comment here. If I am looking
+correctly, the last put on this kobject will cause kobject_cleanup to
+generate a warning:
+   "kobject: '%s' (%p): does not have a release() "
+   "function, it is broken and must be fixed.\n",
 
-I should probably have reported the breakage at the time, but
-I took the pragmatic (lazy?) approach of just changing our
-bootloader code.
+There should be some .release. IMO, this is a place where we will
+release the module with the patch. So the .release hook should contain
+something like a commented out module_put() with a pointer to
+klp_register_patch. (Or be empty at worst.)
 
-thanks
--- PMM
+thanks,
+-- 
+js
+suse labs
