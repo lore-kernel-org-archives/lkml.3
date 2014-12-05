@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaLEXFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:05:33 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:46898 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaLEXF2 (ORCPT
+	id S1753516AbaLEXFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:05:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38460 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbaLEXFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:05:28 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2601:6:6b00:f9::a66]
-In-Reply-To: <20141204124422.GA4195@krava.brq.redhat.com>
-References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
-	<1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
-	<20141204124422.GA4195@krava.brq.redhat.com>
-Date: Fri, 5 Dec 2014 18:05:26 -0500
-Message-ID: <CAPoQQ-1m9oRQ7wLfRHFNNZyw7fvCoMa_DX7msP2QsY_i2QyHug@mail.gmail.com>
-Subject: Re: [PATCH v5 1/4] tools/perf: support parsing parameterized events
-From: Cody P Schafer <dev@codyps.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, hbabu@us.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Dec 2014 18:05:33 -0500
+From: Chris J Arges <chris.j.arges@canonical.com>
+To: linux-pci@vger.kernel.org
+Cc: Chris J Arges <chris.j.arges@canonical.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI/ASPM: use standard parsing functions for sysfs setters
+Date: Fri,  5 Dec 2014 17:02:42 -0600
+Message-Id: <1417820598-8021-1-git-send-email-chris.j.arges@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 7:44 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Tue, Dec 02, 2014 at 06:09:35PM -0800, Sukadev Bhattiprolu wrote:
->> From: Cody P Schafer <cody@linux.vnet.ibm.com>
->>
->> Enable event specification like:
->>
->>       pmu/event_name,param1=0x1,param2=0x4/
->>
->> Assuming that
->>
->>       /sys/bus/event_source/devices/pmu/events/event_name
->>
->> Contains something like
->>
->>       param2=$foo,bar=1,param1=$baz
->
-> oops.. sorry to be PITA on this one.. I might have missed something
-> in the previous discussion but I guess I might have finally some
-> opinion on this ;-)
->
-> here's how I think your patchset works:
->
-> in /sys/bus/event_source/devices/pmu/events/event_name you can actually have:
->
->    param2=foo,bar=1,param1=baz
->
-> notice no '$', thats what you add later in 'perf list' output, right?
->
-> Moreover it actually does not matter whats in value 'param2=HERE',
-> because it's not used in the config code at all apart from the
-> 'perf list' display processing.
->
-> So when we discussed the '$' name way, I thought it'd be like:
->
-> in /sys/bus/event_source/devices/pmu/events/event_name you have:
->   param2=$foo,bar=1,param1=$baz
->
-> and on command line you'd use:
->   pmu/event_name,foo=0x1,bar=0x4/
->
-> to assign directly to the $var, which would justify the $var
-> syntax I think..
->
+The functions link_state_store, clk_ctl_store had just subtracted ASCII '0' from
+input which could lead to undesired results. Instead, use linux string functions
+to safely parse input.
 
-Agreed, what you've described above sounds like a good idea.
+Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+---
+ drivers/pci/pcie/aspm.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Compared to monopolizing all strings (which is what I did when
-initialy writing this), using a '$' prefix would allow less pain when
-some events suddenly need non-integer parameters.
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index e1e7026..48e1714 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -859,7 +859,10 @@ static ssize_t link_state_store(struct device *dev,
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct pcie_link_state *link, *root = pdev->link_state->root;
+-	u32 val = buf[0] - '0', state = 0;
++	u32 state = 0;
++	u32 val;
++
++	kstrtouint(buf, 10, &val);
+ 
+ 	if (aspm_disabled)
+ 		return -EPERM;
+@@ -900,15 +903,14 @@ static ssize_t clk_ctl_store(struct device *dev,
+ 		size_t n)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+-	int state;
++	bool state;
+ 
+-	if (n < 1)
++	if (strtobool(buf, &state))
+ 		return -EINVAL;
+-	state = buf[0]-'0';
+ 
+ 	down_read(&pci_bus_sem);
+ 	mutex_lock(&aspm_lock);
+-	pcie_set_clkpm_nocheck(pdev->link_state, !!state);
++	pcie_set_clkpm_nocheck(pdev->link_state, state);
+ 	mutex_unlock(&aspm_lock);
+ 	up_read(&pci_bus_sem);
+ 
+-- 
+1.9.1
 
-> anyway we could assign directly to the param term name as you do,
-> but I think we just need to mark the term as parametrized, like:
->
-> in /sys/bus/event_source/devices/pmu/events/event_name you have:
->   param2=?,bar=1,param1=?
->
-> and on command line you'd use:
->   pmu/event_name,param2=0x1,param1=0x4/
->
-> while the config code would check that the param substitution is
-> done only for terms with '?' in value, like 'param2=?' and not
-> for all PARSE_EVENTS__TERM_TYPE_STR type terms (as of now)
-
-I prefer the `foo=0x1` as mentioned previously: it makes the user
-interface much less painful as we can have event-specific names for
-register/hcall fields.
-
-I'm pretty sure the code used to do this, not sure when it was removed
-(haven't been following this patchset closely).
-
-That said: I haven't fiddled with this code in a while (it's Suka's at
-this point), and there might be arguments the other way on both of
-those.
