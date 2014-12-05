@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaLEXLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:11:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
+	id S1753476AbaLEXMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:12:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaLEXGj (ORCPT
+	with ESMTP id S1753960AbaLEXGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 34/45] Input: xpad - use proper endpoint type
-Date: Fri,  5 Dec 2014 14:45:17 -0800
-Message-Id: <20141205223322.178170076@linuxfoundation.org>
+        Nadav Haklai <nadavh@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 33/45] ARM: 8222/1: mvebu: enable strex backoff delay
+Date: Fri,  5 Dec 2014 14:45:16 -0800
+Message-Id: <20141205223321.995428853@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,50 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
+commit 995ab5189d1d7264e79e665dfa032a19b3ac646e upstream.
 
-The xpad wireless endpoint is not a bulk endpoint on my devices, but
-rather an interrupt one, so the USB core complains when it is submitted.
-I'm guessing that the author really did mean that this should be an
-interrupt urb, but as there are a zillion different xpad devices out
-there, let's cover out bases and handle both bulk and interrupt
-endpoints just as easily.
+Under extremely rare conditions, in an MPCore node consisting of at
+least 3 CPUs, two CPUs trying to perform a STREX to data on the same
+shared cache line can enter a livelock situation.
 
-Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This patch enables the HW mechanism that overcomes the bug. This fixes
+the incorrect setup of the STREX backoff delay bit due to a wrong
+description in the specification.
+
+Note that enabling the STREX backoff delay mechanism is done by
+leaving the bit *cleared*, while the bit was currently being set by
+the proc-v7.S code.
+
+[Thomas: adapt to latest mainline, slightly reword the commit log, add
+stable markers.]
+
+Fixes: de4901933f6d ("arm: mm: Add support for PJ4B cpu and init routines")
+
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/joystick/xpad.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ arch/arm/mm/proc-v7.S |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -1002,9 +1002,19 @@ static int xpad_probe(struct usb_interfa
- 		}
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -201,7 +201,6 @@ __v7_pj4b_setup:
+ /* Auxiliary Debug Modes Control 1 Register */
+ #define PJ4B_STATIC_BP (1 << 2) /* Enable Static BP */
+ #define PJ4B_INTER_PARITY (1 << 8) /* Disable Internal Parity Handling */
+-#define PJ4B_BCK_OFF_STREX (1 << 5) /* Enable the back off of STREX instr */
+ #define PJ4B_CLEAN_LINE (1 << 16) /* Disable data transfer for clean line */
  
- 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
--		usb_fill_bulk_urb(xpad->bulk_out, udev,
--				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
--				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
-+		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
-+			usb_fill_bulk_urb(xpad->bulk_out, udev,
-+					  usb_sndbulkpipe(udev,
-+							  ep_irq_in->bEndpointAddress),
-+					  xpad->bdata, XPAD_PKT_LEN,
-+					  xpad_bulk_out, xpad);
-+		} else {
-+			usb_fill_int_urb(xpad->bulk_out, udev,
-+					 usb_sndintpipe(udev,
-+							ep_irq_in->bEndpointAddress),
-+					 xpad->bdata, XPAD_PKT_LEN,
-+					 xpad_bulk_out, xpad, 0);
-+		}
- 
- 		/*
- 		 * Submit the int URB immediately rather than waiting for open
+ /* Auxiliary Debug Modes Control 2 Register */
+@@ -224,7 +223,6 @@ __v7_pj4b_setup:
+ 	/* Auxiliary Debug Modes Control 1 Register */
+ 	mrc	p15, 1,	r0, c15, c1, 1
+ 	orr     r0, r0, #PJ4B_CLEAN_LINE
+-	orr     r0, r0, #PJ4B_BCK_OFF_STREX
+ 	orr     r0, r0, #PJ4B_INTER_PARITY
+ 	bic	r0, r0, #PJ4B_STATIC_BP
+ 	mcr	p15, 1,	r0, c15, c1, 1
 
 
