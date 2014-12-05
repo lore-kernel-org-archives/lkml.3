@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429AbaLEXS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:18:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54641 "EHLO
+	id S1754410AbaLEXSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:18:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54651 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaLEXGc (ORCPT
+	with ESMTP id S1753891AbaLEXGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.17 110/122] drm/i915: Kick fbdev before vgacon
-Date: Fri,  5 Dec 2014 14:44:44 -0800
-Message-Id: <20141205223322.689302837@linuxfoundation.org>
+        Dmitry Kozlov <xeb@mail.ru>, Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 14/45] pptp: fix stack info leak in pptp_getname()
+Date: Fri,  5 Dec 2014 14:44:57 -0800
+Message-Id: <20141205223318.936965348@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
-References: <20141205223305.514276242@linuxfoundation.org>
+In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
+References: <20141205223316.738290875@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,61 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 0485c9dc24ec0939b42ca5104c0373297506b555 upstream.
+[ Upstream commit a5f6fc28d6e6cc379c6839f21820e62262419584 ]
 
-It's magic, but it seems to work.
+pptp_getname() only partially initializes the stack variable sa,
+particularly only fills the pptp part of the sa_addr union. The code
+thereby discloses 16 bytes of kernel stack memory via getsockname().
 
-This fixes a regression introduced in
+Fix this by memset(0)'ing the union before.
 
-commit 1bb9e632a0aeee1121e652ee4dc80e5e6f14bcd2
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Jul 8 10:02:43 2014 +0200
-
-    drm/i915: Only unbind vgacon, not other console drivers
-
-My best guess is that the vga fbdev driver falls over if we rip out
-parts of vgacon. Hooray.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82439
-Reported-and-tested-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Cc: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/i915_dma.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ppp/pptp.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1670,15 +1670,17 @@ int i915_driver_load(struct drm_device *
- 		goto out_regs;
+--- a/drivers/net/ppp/pptp.c
++++ b/drivers/net/ppp/pptp.c
+@@ -506,7 +506,9 @@ static int pptp_getname(struct socket *s
+ 	int len = sizeof(struct sockaddr_pppox);
+ 	struct sockaddr_pppox sp;
  
- 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
--		ret = i915_kick_out_vgacon(dev_priv);
-+		/* WARNING: Apparently we must kick fbdev drivers before vgacon,
-+		 * otherwise the vga fbdev driver falls over. */
-+		ret = i915_kick_out_firmware_fb(dev_priv);
- 		if (ret) {
--			DRM_ERROR("failed to remove conflicting VGA console\n");
-+			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
- 			goto out_gtt;
- 		}
+-	sp.sa_family	  = AF_PPPOX;
++	memset(&sp.sa_addr, 0, sizeof(sp.sa_addr));
++
++	sp.sa_family    = AF_PPPOX;
+ 	sp.sa_protocol  = PX_PROTO_PPTP;
+ 	sp.sa_addr.pptp = pppox_sk(sock->sk)->proto.pptp.src_addr;
  
--		ret = i915_kick_out_firmware_fb(dev_priv);
-+		ret = i915_kick_out_vgacon(dev_priv);
- 		if (ret) {
--			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
-+			DRM_ERROR("failed to remove conflicting VGA console\n");
- 			goto out_gtt;
- 		}
- 	}
 
 
