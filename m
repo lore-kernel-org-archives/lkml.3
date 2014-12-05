@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaLENVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:21:23 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:39152 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaLENVV (ORCPT
+	id S1751351AbaLELLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:11:38 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39035 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751138AbaLELLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:21:21 -0500
-Date: Fri, 5 Dec 2014 14:21:50 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: weiyj_lk@163.com
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] [PATCH -next] drm/i915: Fix missing unlock on error
- in i915_gem_init_hw()
-Message-ID: <20141205132150.GK20350@phenom.ffwll.local>
-Mail-Followup-To: weiyj_lk@163.com, Daniel Vetter <daniel.vetter@intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <1417740959-342-1-git-send-email-weiyj_lk@163.com>
+	Fri, 5 Dec 2014 06:11:36 -0500
+Date: Fri, 5 Dec 2014 11:11:14 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Arend van Spriel <arend@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205111114.GQ11285@n2100.arm.linux.org.uk>
+References: <5481794E.4050406@broadcom.com>
+ <4565667.WCBuNmaazQ@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417740959-342-1-git-send-email-weiyj_lk@163.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
+In-Reply-To: <4565667.WCBuNmaazQ@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 08:55:59AM +0800, weiyj_lk@163.com wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Add the missing unlock before return from function i915_gem_init_hw()
-> in the error handling case.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Dec 05, 2014 at 10:52:02AM +0100, Arnd Bergmann wrote:
+> I'm still puzzled why you'd need a single dma_sync_single_for_cpu()
+> after dma_alloc_coherent though, you should not need any. Is it possible
+> that the driver accidentally uses __raw_readl() instead of readl()
+> in some places and you are just lacking an appropriate barrier?
 
-Applied, thanks for the patch. Two minor comments:
-- Please mention the commit that introduced the issue next time around.
-  I've added that while applying.
+Digging into the driver, it looks like individual DMA buffers are
+allocated (via brcmf_pcie_init_dmabuffer_for_device) and registered
+into a "commonring" layer.
 
-- The usual patter is
+Whenever the buffer is written to, space is first allocated via a call
+to brcmf_commonring_reserve_for_write() or
+brcmf_commonring_reserve_for_write_multiple(), data written to the
+buffer, followed by a call to brcmf_commonring_write_complete().
 
-	if (ret)
-		goto out;
+brcmf_commonring_write_complete() calls two methods at that point:
+cr_write_wptr() and cr_ring_bell(), which will be
+brcmf_pcie_ring_mb_write_wptr() and brcmf_pcie_ring_mb_ring_bell().
 
+The first calls brcmf_pcie_write_tcm16(), which uses iowrite16(),
+which contains the appropriate barrier.  The bell ringing functions
+also use ioread*/iowrite*().
 
-	/* more code */
+So, on the write side, it looks fine from the barrier perspective.
 
-out:
-	mutex_unlock();
-	return ret;
+On the read side, brcmf_commonring_get_read_ptr() is used before
+a read access to the ring - which calls the cr_update_wptr() method,
+which in turn uses an ioread16() call.  After the CPU has read data
+from the ring, brcmf_commonring_read_complete() is used, which uses
+iowrite16().
 
-This would work really well in i915_gem_init_hw and besides the
-code-cleanup also prevents such a fumble in the future. If you feel like
-please submit that patch to convert init_hw to this shared unlock code
-pattern, too.
+So, I don't see a barrier problem on the read side.
 
-Thanks, Daniel
-> ---
->  drivers/gpu/drm/i915/i915_gem.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index d2ba315..3eeb2d0 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -4879,8 +4879,10 @@ i915_gem_init_hw(struct drm_device *dev)
->  	i915_gem_init_swizzling(dev);
->  
->  	ret = dev_priv->gt.init_rings(dev);
-> -	if (ret)
-> +	if (ret) {
-> +		mutex_unlock(&dev->struct_mutex);
->  		return ret;
-> +	}
->  
->  	for (i = 0; i < NUM_L3_SLICES(dev); i++)
->  		i915_gem_l3_remap(&dev_priv->ring[RCS], i);
-> 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+However, I did trip over this:
 
+static void *
+brcmf_pcie_init_dmabuffer_for_device(struct brcmf_pciedev_info *devinfo,
+                                     u32 size, u32 tcm_dma_phys_addr,
+                                     dma_addr_t *dma_handle)
+{
+        void *ring;
+        long long address;
+
+        ring = dma_alloc_coherent(&devinfo->pdev->dev, size, dma_handle,
+                                  GFP_KERNEL);
+        if (!ring)
+                return NULL;
+
+        address = (long long)(long)*dma_handle;
+
+Casting to (long) will truncate the DMA handle to 32-bits on a 32-bit
+architecture, even if it supports 64-bit DMA addresses.  There's a couple
+of other places where this same truncation occurs:
+
+        address = (long long)(long)devinfo->shared.scratch_dmahandle;
+
+and
+
+        address = (long long)(long)devinfo->shared.ringupd_dmahandle;
+
+In any case, wouldn't using a u64 type for "address" be better - isn't
+"long long" 128-bit on 64-bit architectures?
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
