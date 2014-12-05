@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351AbaLELLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 06:11:38 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39035 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751138AbaLELLg (ORCPT
+	id S1751439AbaLEKkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 05:40:11 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:59255 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaLEKkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 06:11:36 -0500
-Date: Fri, 5 Dec 2014 11:11:14 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Arend van Spriel <arend@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
-        David Miller <davem@davemloft.net>,
+	Fri, 5 Dec 2014 05:40:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Olof Johansson <olof@lixom.net>, Alexander Graf <agraf@suse.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141205111114.GQ11285@n2100.arm.linux.org.uk>
-References: <5481794E.4050406@broadcom.com>
- <4565667.WCBuNmaazQ@wuerfel>
+Subject: Re: [PATCH] arm64: Enable CONFIG_COMPAT also for 64k page size
+Date: Fri, 05 Dec 2014 11:39:40 +0100
+Message-ID: <3551792.oHatG1W6W1@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAOesGMi-sVTxdo8f7vNnYMgd+meBF+Gsf3Pk5VbHEPxv5Q6iDA@mail.gmail.com>
+References: <1417707993-82290-1-git-send-email-agraf@suse.de> <5480F12D.90007@suse.de> <CAOesGMi-sVTxdo8f7vNnYMgd+meBF+Gsf3Pk5VbHEPxv5Q6iDA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4565667.WCBuNmaazQ@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Bxw1mBxYNO+UXpNDEt8DNf8plZQb3Vidcy+vlCuta4SDI3WbtQQ
+ MH3ACAFje057Ec9CG0lYRGyxlwPXQB9+VN5FnEQUzYu/o9xzkuvaIEXOqqq3EdfxLyKZ7ly
+ u/tZ1B+upllIj652ekukWg/hp+sA4P7JU+VnWvDaXAS3oF491KXIeyEsTlXSQt2P4p9pGtX
+ I6dKbtZO55WUUJEGHw/IQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:52:02AM +0100, Arnd Bergmann wrote:
-> I'm still puzzled why you'd need a single dma_sync_single_for_cpu()
-> after dma_alloc_coherent though, you should not need any. Is it possible
-> that the driver accidentally uses __raw_readl() instead of readl()
-> in some places and you are just lacking an appropriate barrier?
+On Thursday 04 December 2014 15:48:50 Olof Johansson wrote:
+> On Thu, Dec 4, 2014 at 3:41 PM, Alexander Graf <agraf@suse.de> wrote:
+> > On 04.12.14 22:15, Olof Johansson wrote:
+> >> On Thu, Dec 4, 2014 at 7:46 AM, Alexander Graf <agraf@suse.de> wrote:
+> >>> With binutils 2.25 the default alignment for 32bit arm sections changed to
+> >>> have everything 64k aligned. Armv7 binaries built with this binutils version
+> >>> run successfully on an arm64 system.
+> >>>
+> >>> Since effectively there is now the chance to run armv7 code on arm64 even
+> >>> with 64k page size, it doesn't make sense to block people from enabling
+> >>> CONFIG_COMPAT on those configurations.
+> >>>
+> >>> Signed-off-by: Alexander Graf <agraf@suse.de>
+> >>> ---
+> >>>  arch/arm64/Kconfig | 1 -
+> >>>  1 file changed, 1 deletion(-)
+> >>>
+> >>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> >>> index 9532f8d..3cf4f238 100644
+> >>> --- a/arch/arm64/Kconfig
+> >>> +++ b/arch/arm64/Kconfig
+> >>> @@ -409,7 +409,6 @@ source "fs/Kconfig.binfmt"
+> >>>
+> >>>  config COMPAT
+> >>>         bool "Kernel support for 32-bit EL0"
+> >>> -       depends on !ARM64_64K_PAGES
+> >>>         select COMPAT_BINFMT_ELF
+> >>>         select HAVE_UID16
+> >>>         select OLD_SIGSUSPEND3
+> >>
+> >> This is hardly "compat". Sure, it's great to have a new binutils that
+> >> has larger alignment, but practically not a single existing binary
+> >> will work today if someone tries to do this.
+> >
+> > Yes, but IMHO that's an implementation detail. The same applies for
+> > 32bit PPC binaries if you use 4k aligned segments. If your applications
+> > are not aligned for your page size, you can't run them. The only
+> > platform that managed nevertheless FWIW was IA64 ;).
+> 
+> Yes, but there the binutils change happened early enough that by the
+> time the kernel change went in, all major distros had binaries that
+> were compatible.
 
-Digging into the driver, it looks like individual DMA buffers are
-allocated (via brcmf_pcie_init_dmabuffer_for_device) and registered
-into a "commonring" layer.
+What is the exact symptom you see when running an unaligned user
+space binary on 64k-pages? Do we at least print a helpful error
+message somewhere or does it just crash?
 
-Whenever the buffer is written to, space is first allocated via a call
-to brcmf_commonring_reserve_for_write() or
-brcmf_commonring_reserve_for_write_multiple(), data written to the
-buffer, followed by a call to brcmf_commonring_write_complete().
+Should we add support for 64k-pages in the arm32 kernel as well now?
 
-brcmf_commonring_write_complete() calls two methods at that point:
-cr_write_wptr() and cr_ring_bell(), which will be
-brcmf_pcie_ring_mb_write_wptr() and brcmf_pcie_ring_mb_ring_bell().
-
-The first calls brcmf_pcie_write_tcm16(), which uses iowrite16(),
-which contains the appropriate barrier.  The bell ringing functions
-also use ioread*/iowrite*().
-
-So, on the write side, it looks fine from the barrier perspective.
-
-On the read side, brcmf_commonring_get_read_ptr() is used before
-a read access to the ring - which calls the cr_update_wptr() method,
-which in turn uses an ioread16() call.  After the CPU has read data
-from the ring, brcmf_commonring_read_complete() is used, which uses
-iowrite16().
-
-So, I don't see a barrier problem on the read side.
-
-However, I did trip over this:
-
-static void *
-brcmf_pcie_init_dmabuffer_for_device(struct brcmf_pciedev_info *devinfo,
-                                     u32 size, u32 tcm_dma_phys_addr,
-                                     dma_addr_t *dma_handle)
-{
-        void *ring;
-        long long address;
-
-        ring = dma_alloc_coherent(&devinfo->pdev->dev, size, dma_handle,
-                                  GFP_KERNEL);
-        if (!ring)
-                return NULL;
-
-        address = (long long)(long)*dma_handle;
-
-Casting to (long) will truncate the DMA handle to 32-bits on a 32-bit
-architecture, even if it supports 64-bit DMA addresses.  There's a couple
-of other places where this same truncation occurs:
-
-        address = (long long)(long)devinfo->shared.scratch_dmahandle;
-
-and
-
-        address = (long long)(long)devinfo->shared.ringupd_dmahandle;
-
-In any case, wouldn't using a u64 type for "address" be better - isn't
-"long long" 128-bit on 64-bit architectures?
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	Arnd
