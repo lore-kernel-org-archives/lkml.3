@@ -1,237 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaLEMzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:55:11 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64517 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaLEMzH (ORCPT
+	id S1752590AbaLEMGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:06:30 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:50078 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaLEMGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:55:07 -0500
+	Fri, 5 Dec 2014 07:06:15 -0500
+Date: Fri, 5 Dec 2014 13:06:10 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: dln2: add suspend/resume functionality
+Message-ID: <20141205120610.GG11445@localhost>
+References: <1417089434-11274-1-git-send-email-octavian.purdila@intel.com>
+ <20141205101741.GD11445@localhost>
+ <CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5481A3EC.8020803@xs4all.nl>
-References: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com> <5481A3EC.8020803@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 5 Dec 2014 12:54:35 +0000
-Message-ID: <CA+V-a8ui4Ur3Z7CwWXHf-xg101U=OJcMhOUxbqp4dWkcdF6U8Q@mail.gmail.com>
-Subject: Re: [PATCH v3] media: platform: add VPFE capture driver support for AM437X
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: LMML <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-api <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On Fri, Dec 05, 2014 at 01:51:17PM +0200, Octavian Purdila wrote:
+> On Fri, Dec 5, 2014 at 12:17 PM, Johan Hovold <johan@kernel.org> wrote:
+> > On Thu, Nov 27, 2014 at 01:57:14PM +0200, Octavian Purdila wrote:
+> >
+> >> @@ -753,11 +759,42 @@ static const struct usb_device_id dln2_table[] = {
+> >>
+> >>  MODULE_DEVICE_TABLE(usb, dln2_table);
+> >
+> > Place the new callbacks above the device id table.
+> >
+> >> +static int dln2_suspend(struct usb_interface *iface, pm_message_t message)
+> >> +{
+> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
+> >> +
+> >> +     dln2_stop(dln2);
+> >
+> > You should also stop the reads urbs here.
+> 
+> Do you mean usb_kill_urb()? I thought that was not necessary unless
+> the device is reset. However, going throught
+> Documentation/usb/power-management.txt again looks like it must be
+> done in suspend.
 
-On Fri, Dec 5, 2014 at 12:24 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> Hi Prabhakar,
->
-> Sorry, there are still a few items that need to be fixed.
-> If you can make a v4 with these issues addressed, then I can still make a
-> pull request, although it depends on Mauro whether it is still accepted for
-> 3.19.
->
-OK will post a v4 tonight fixing all the below issues.
+Yes, you should kill them explicitly. Any outstanding urbs will be
+killed by usb core if you fail to do this.
 
-FYI: Looking at the response of Mauro on 'soc-camera: 1st set for 3.19'
-he wont accept it!
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int dln2_resume(struct usb_interface *iface)
+> >> +{
+> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
+> >> +
+> >> +     dln2->disconnect = false;
+> >
+> > And surely you need to resubmit the read urbs in resume, or you will
+> > never receive any more data.
+> >
+> > How did you test this patch?
+> >
+> 
+> The resume cb is not called in my setup (kvm), only reset_resume. 
 
-Thanks,
---Prabhakar Lad
+Please make sure to test your patches on proper hardware.
 
-> On 12/04/2014 12:12 AM, Lad, Prabhakar wrote:
->> From: Benoit Parrot <bparrot@ti.com>
->>
->> This patch adds Video Processing Front End (VPFE) driver for
->> AM437X family of devices
->> Driver supports the following:
->> - V4L2 API using MMAP buffer access based on videobuf2 api
->> - Asynchronous sensor/decoder sub device registration
->> - DT support
->
-> Just to confirm: this driver only supports SDTV formats? No HDTV?
-> I didn't see any VIDIOC_*_DV_TIMINGS support, so I assume it really
-> isn't supported.
->
->>
->> Signed-off-by: Benoit Parrot <bparrot@ti.com>
->> Signed-off-by: Darren Etheridge <detheridge@ti.com>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->
-> <snip>
->
->> diff --git a/drivers/media/platform/am437x/am437x-vpfe.c b/drivers/media/platform/am437x/am437x-vpfe.c
->> new file mode 100644
->> index 0000000..25863e8
->> --- /dev/null
->> +++ b/drivers/media/platform/am437x/am437x-vpfe.c
->
-> <snip>
->
->> +
->> +static int
->> +cmp_v4l2_format(const struct v4l2_format *lhs, const struct v4l2_format *rhs)
->> +{
->> +     return lhs->type == rhs->type &&
->> +             lhs->fmt.pix.width == rhs->fmt.pix.width &&
->> +             lhs->fmt.pix.height == rhs->fmt.pix.height &&
->> +             lhs->fmt.pix.pixelformat == rhs->fmt.pix.pixelformat &&
->> +             lhs->fmt.pix.field == rhs->fmt.pix.field &&
->> +             lhs->fmt.pix.colorspace == rhs->fmt.pix.colorspace;
->
-> Add a check for pix.ycbcr_enc and pix.quantization.
->
-OK
+> But I assume since the port is not reset when resume is called the
+> URBs are still queued.
 
-> <snip>
->
->> +/*
->> + * vpfe_release : This function is based on the vb2_fop_release
->> + * helper function.
->> + * It has been augmented to handle module power management,
->> + * by disabling/enabling h/w module fcntl clock when necessary.
->> + */
->> +static int vpfe_release(struct file *file)
->> +{
->> +     struct vpfe_device *vpfe = video_drvdata(file);
->> +     int ret;
->> +
->> +     vpfe_dbg(2, vpfe, "vpfe_release\n");
->> +
->> +     ret = _vb2_fop_release(file, NULL);
->
-> This isn't going to work. _vb2_fop_release calls v4l2_fh_release(), so
-> the v4l2_fh_is_singular_file(file) will be wrong and you release the fh
-> once too many.
->
-> I would do this:
->
->         if (!v4l2_fh_is_singular_file(file))
->                 return vb2_fop_release(file);
->         mutex_lock(&vpfe->lock);
->         ret = _vb2_fop_release(file, NULL);
->         vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
->         mutex_unlock(&vpfe->lock);
->         return ret;
->
->> +
->> +     if (v4l2_fh_is_singular_file(file)) {
->> +             mutex_lock(&vpfe->lock);
->> +             vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
->> +             v4l2_fh_release(file);
->> +             mutex_unlock(&vpfe->lock);
->> +     }
->> +
->> +     return ret;
->> +}
->
-> <snip>
->
->> +static int vpfe_enum_size(struct file *file, void  *priv,
->> +                       struct v4l2_frmsizeenum *fsize)
->> +{
->> +     struct vpfe_device *vpfe = video_drvdata(file);
->> +     struct v4l2_subdev_frame_size_enum fse;
->> +     struct vpfe_subdev_info *sdinfo;
->> +     struct v4l2_mbus_framefmt mbus;
->> +     struct v4l2_pix_format pix;
->> +     struct vpfe_fmt *fmt;
->> +     int ret;
->> +
->> +     vpfe_dbg(2, vpfe, "vpfe_enum_size\n");
->> +
->> +     /* check for valid format */
->> +     fmt = find_format_by_pix(fsize->pixel_format);
->> +     if (!fmt) {
->> +             vpfe_dbg(3, vpfe, "Invalid pixel code: %x, default used instead\n",
->> +                     fsize->pixel_format);
->> +             return -EINVAL;
->> +     }
->> +
->> +     memset(fsize->reserved, 0x0, sizeof(fsize->reserved));
->> +
->> +     sdinfo = vpfe->current_subdev;
->> +     if (!sdinfo->sd)
->> +             return -EINVAL;
->> +
->> +     memset(&pix, 0x0, sizeof(pix));
->> +     /* Construct pix from parameter and use default for the rest */
->> +     pix.pixelformat = fsize->pixel_format;
->> +     pix.width = 640;
->> +     pix.height = 480;
->> +     pix.colorspace = V4L2_COLORSPACE_SRGB;
->> +     pix.field = V4L2_FIELD_NONE;
->> +     pix_to_mbus(vpfe, &pix, &mbus);
->> +
->> +     memset(&fse, 0x0, sizeof(fse));
->> +     fse.index = fsize->index;
->> +     fse.pad = 0;
->> +     fse.code = mbus.code;
->> +     ret = v4l2_subdev_call(sdinfo->sd, pad, enum_frame_size, NULL, &fse);
->
-> FYI: strictly speaking this is wrong since this op theoretically expects a
-> v4l2_subdev_fh pointer instead of a NULL argument. However, you do not have
-> an alternative right now. As you know, I've been working on fixing this, so
-> if that gets accepted, then you need to update this code as well in a later
-> patch.
->
->> +     if (ret)
->> +             return -EINVAL;
->> +
->> +     vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d code: %x W:[%d,%d] H:[%d,%d]\n",
->> +             fse.index, fse.code, fse.min_width, fse.max_width,
->> +             fse.min_height, fse.max_height);
->> +
->> +     fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
->> +     fsize->discrete.width = fse.max_width;
->> +     fsize->discrete.height = fse.max_height;
->> +
->> +     vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d pixformat: %s size: %dx%d\n",
->> +             fsize->index, print_fourcc(fsize->pixel_format),
->> +             fsize->discrete.width, fsize->discrete.height);
->> +
->> +     return 0;
->> +}
->> +
->
-> <snip>
->
->> +static int
->> +vpfe_g_selection(struct file *file, void *fh, struct v4l2_selection *s)
->> +{
->> +     struct vpfe_device *vpfe = video_drvdata(file);
->> +
->> +     switch (s->target) {
->> +     case V4L2_SEL_TGT_COMPOSE_DEFAULT:
->> +     case V4L2_SEL_TGT_COMPOSE_BOUNDS:
->
-> These two COMPOSE cases should be dropped, since there is no compose support!
->
->> +     case V4L2_SEL_TGT_CROP_BOUNDS:
->> +     case V4L2_SEL_TGT_CROP_DEFAULT:
->> +             s->r.left = s->r.top = 0;
->> +             s->r.width = vpfe->crop.width;
->> +             s->r.height = vpfe->crop.height;
->> +             break;
->> +
->> +     case V4L2_SEL_TGT_CROP:
->> +             s->r = vpfe->crop;
->> +             break;
->> +
->> +     default:
->> +             return -EINVAL;
->> +     }
->> +
->> +     return 0;
->> +}
->
-> <snip>
->
-> Regards,
->
->         Hans
+No, they will have been killed by usb core even if you forget to do it,
+so this would prevent any further reads.
+
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int dln2_reset_resume(struct usb_interface *iface)
+> >> +{
+> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
+> >> +     int ret;
+> >> +
+> >> +     dln2_free_rx_urbs(dln2);
+> >> +     ret = dln2_setup_rx_urbs(dln2, iface->cur_altsetting);
+> >
+> > This doesn't make much sense. Why would you ever want to reallocate the
+> > urbs and their buffers here?
+> >
+> > If the device does not lose its state as you claim, then all you need to
+> > do is to resubmit the read urbs (as in resume).
+> >
+> The device itself does not lose state as it does not lose power and
+> does not react to USB port reset AFAICS (e.g. GPIO settings are
+> preserved). However the USB port is reset and I assumed I must
+> reallocate the URBs.
+
+You don't and should not.
+
+> I just found out that usb-serial uses usb_poisoin_urb and
+> usb_unpoison_urb for suspend/resume and this two looks like just what
+> I need.
+
+Why do you think so?
+
+> Should I use that instead?
+
+No.
+
+Johan
