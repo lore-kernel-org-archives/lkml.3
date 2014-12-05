@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaLEW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:56:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
+	id S1753745AbaLEXBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:01:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaLEW4W (ORCPT
+	with ESMTP id S1752851AbaLEW4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:22 -0500
+	Fri, 5 Dec 2014 17:56:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Henrik Asp <solenskiner@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 60/73] rt2x00: do not align payload on modern H/W
-Date: Fri,  5 Dec 2014 14:45:06 -0800
-Message-Id: <20141205224435.725058113@linuxfoundation.org>
+        Maurizio Lombardi <mlombard@redhat.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 65/73] bnx2fc: do not add shared skbs to the fcoe_rx_list
+Date: Fri,  5 Dec 2014 14:45:11 -0800
+Message-Id: <20141205224435.873693961@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -30,117 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Maurizio Lombardi <mlombard@redhat.com>
 
-commit cfd9167af14eb4ec21517a32911d460083ee3d59 upstream.
+commit 01a4cc4d0cd6a836c7b923760e8eb1cbb6a47258 upstream.
 
-RT2800 and newer hardware require padding between header and payload if
-header length is not multiple of 4.
+In some cases, the fcoe_rx_list may contains multiple instances
+of the same skb (the so called "shared skbs").
 
-For historical reasons we also align payload to to 4 bytes boundary, but
-such alignment is not needed on modern H/W.
+the bnx2fc_l2_rcv thread is a loop that extracts a skb from the list,
+modifies (and destroys) its content and then proceed to the next one.
+The problem is that if the skb is shared, the remaining instances will
+be corrupted.
 
-Patch fixes skb_under_panic problems reported from time to time:
+The solution is to use skb_share_check() before adding the skb to the
+fcoe_rx_list.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=84911
-https://bugzilla.kernel.org/show_bug.cgi?id=72471
-http://marc.info/?l=linux-wireless&m=139108549530402&w=2
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1087591
+[ 6286.808725] ------------[ cut here ]------------
+[ 6286.808729] WARNING: at include/scsi/fc_frame.h:173 bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]()
+[ 6286.808748] Modules linked in: bnx2x(-) mdio dm_service_time bnx2fc cnic uio fcoe libfcoe 8021q garp stp mrp libfc llc scsi_transport_fc scsi_tgt sg iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel e1000e ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper ptp cryptd hpilo serio_raw hpwdt lpc_ich pps_core ipmi_si pcspkr mfd_core ipmi_msghandler shpchp pcc_cpufreq mperf nfsd auth_rpcgss nfs_acl lockd sunrpc dm_multipath xfs libcrc32c ata_generic pata_acpi sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit ata_piix drm_kms_helper ttm drm libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod [last unloaded: mdio]
+[ 6286.808750] CPU: 3 PID: 1304 Comm: bnx2fc_l2_threa Not tainted 3.10.0-121.el7.x86_64 #1
+[ 6286.808750] Hardware name: HP ProLiant DL120 G7, BIOS J01 07/01/2013
+[ 6286.808752]  0000000000000000 000000000b36e715 ffff8800deba1e00 ffffffff815ec0ba
+[ 6286.808753]  ffff8800deba1e38 ffffffff8105dee1 ffffffffa05618c0 ffff8801e4c81888
+[ 6286.808754]  ffffe8ffff663868 ffff8801f402b180 ffff8801f56bc000 ffff8800deba1e48
+[ 6286.808754] Call Trace:
+[ 6286.808759]  [<ffffffff815ec0ba>] dump_stack+0x19/0x1b
+[ 6286.808762]  [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
+[ 6286.808763]  [<ffffffff8105e00a>] warn_slowpath_null+0x1a/0x20
+[ 6286.808765]  [<ffffffffa054f415>] bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]
+[ 6286.808767]  [<ffffffffa054eff0>] ? bnx2fc_disable+0x90/0x90 [bnx2fc]
+[ 6286.808769]  [<ffffffff81085aef>] kthread+0xcf/0xe0
+[ 6286.808770]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
+[ 6286.808772]  [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
+[ 6286.808773]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
+[ 6286.808774] ---[ end trace c6cdb939184ccb4e ]---
 
-Panic happened because we eat 4 bytes of skb headroom on each
-(re)transmission when sending frame without the payload and the header
-length not being multiple of 4 (i.e. QoS header has 26 bytes). On such
-case because paylad_aling=2 is bigger than header_align=0 we increase
-header_align by 4 bytes. To prevent that we could change the check to:
-
-	if (payload_length && payload_align > header_align)
-		header_align += 4;
-
-but not aligning payload at all is more effective and alignment is not
-really needed by H/W (that has been tested on OpenWrt project for few
-years now).
-
-Reported-and-tested-by: Antti S. Lankila <alankila@bel.fi>
-Debugged-by: Antti S. Lankila <alankila@bel.fi>
-Reported-by: Henrik Asp <solenskiner@gmail.com>
-Originally-From: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c |   50 +++++++-----------------------
- 1 file changed, 12 insertions(+), 38 deletions(-)
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -158,55 +158,29 @@ void rt2x00queue_align_frame(struct sk_b
- 	skb_trim(skb, frame_length);
- }
+--- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+@@ -411,6 +411,7 @@ static int bnx2fc_rcv(struct sk_buff *sk
+ 	struct fc_frame_header *fh;
+ 	struct fcoe_rcv_info *fr;
+ 	struct fcoe_percpu_s *bg;
++	struct sk_buff *tmp_skb;
+ 	unsigned short oxid;
  
--void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int header_length)
-+/*
-+ * H/W needs L2 padding between the header and the paylod if header size
-+ * is not 4 bytes aligned.
-+ */
-+void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int hdr_len)
- {
--	unsigned int payload_length = skb->len - header_length;
--	unsigned int header_align = ALIGN_SIZE(skb, 0);
--	unsigned int payload_align = ALIGN_SIZE(skb, header_length);
--	unsigned int l2pad = payload_length ? L2PAD_SIZE(header_length) : 0;
--
--	/*
--	 * Adjust the header alignment if the payload needs to be moved more
--	 * than the header.
--	 */
--	if (payload_align > header_align)
--		header_align += 4;
-+	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 	interface = container_of(ptype, struct bnx2fc_interface,
+@@ -423,6 +424,12 @@ static int bnx2fc_rcv(struct sk_buff *sk
+ 		goto err;
+ 	}
  
--	/* There is nothing to do if no alignment is needed */
--	if (!header_align)
-+	if (!l2pad)
- 		return;
- 
--	/* Reserve the amount of space needed in front of the frame */
--	skb_push(skb, header_align);
--
--	/*
--	 * Move the header.
--	 */
--	memmove(skb->data, skb->data + header_align, header_length);
--
--	/* Move the payload, if present and if required */
--	if (payload_length && payload_align)
--		memmove(skb->data + header_length + l2pad,
--			skb->data + header_length + l2pad + payload_align,
--			payload_length);
--
--	/* Trim the skb to the correct size */
--	skb_trim(skb, header_length + l2pad + payload_length);
-+	skb_push(skb, l2pad);
-+	memmove(skb->data, skb->data + l2pad, hdr_len);
- }
- 
--void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length)
-+void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int hdr_len)
- {
--	/*
--	 * L2 padding is only present if the skb contains more than just the
--	 * IEEE 802.11 header.
--	 */
--	unsigned int l2pad = (skb->len > header_length) ?
--				L2PAD_SIZE(header_length) : 0;
-+	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
- 
- 	if (!l2pad)
- 		return;
- 
--	memmove(skb->data + l2pad, skb->data, header_length);
-+	memmove(skb->data + l2pad, skb->data, hdr_len);
- 	skb_pull(skb, l2pad);
- }
- 
++	tmp_skb = skb_share_check(skb, GFP_ATOMIC);
++	if (!tmp_skb)
++		goto err;
++
++	skb = tmp_skb;
++
+ 	if (unlikely(eth_hdr(skb)->h_proto != htons(ETH_P_FCOE))) {
+ 		printk(KERN_ERR PFX "bnx2fc_rcv: Wrong FC type frame\n");
+ 		goto err;
 
 
