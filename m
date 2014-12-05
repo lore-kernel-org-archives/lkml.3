@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386AbaLEBfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:35:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26848 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824AbaLEBfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:35:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,519,1413270000"; 
-   d="scan'208";a="642697676"
-Date: Fri, 5 Dec 2014 09:15:01 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, rkrcmar@redhat.com
-Subject: Re: [PATCH 0/9] Final set of XSAVES patches
-Message-ID: <20141205011501.GA2683@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
+	id S1754937AbaLEBjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 20:39:16 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63820 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824AbaLEBjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 20:39:15 -0500
+Date: Thu, 4 Dec 2014 17:39:11 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: weiyj_lk@163.com
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] drm/i915: Fix missing unlock on error in
+ i915_gem_init_hw()
+Message-ID: <20141205013911.GA1510@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>, weiyj_lk@163.com,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <1417740959-342-1-git-send-email-weiyj_lk@163.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417740959-342-1-git-send-email-weiyj_lk@163.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-On Thu, Dec 04, 2014 at 04:57:05PM +0100, Paolo Bonzini wrote:
->These are all the patches needed to support XSAVES.
->
+Wei Yongjun,
 
-I think you miss to add your patch "kvm: x86: mask out XSAVES" to 
-this patchset, I test the whole patchset w/ that patch applied on 
-skylake-client machine, and it looks good, please feel free to add 
-my tested-by to this patchset.
+On Fri, Dec 05, 2014 at 08:55:59AM +0800, weiyj_lk@163.com wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Add the missing unlock before return from function i915_gem_init_hw()
+> in the error handling case.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/gpu/drm/i915/i915_gem.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index d2ba315..3eeb2d0 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -4879,8 +4879,10 @@ i915_gem_init_hw(struct drm_device *dev)
+>  	i915_gem_init_swizzling(dev);
+>  
+>  	ret = dev_priv->gt.init_rings(dev);
+> -	if (ret)
+> +	if (ret) {
+> +		mutex_unlock(&dev->struct_mutex);
+>  		return ret;
+> +	}
+>  
 
-Tested-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+There are other places in i915_gem_init_hw() where it returns without
+unlocking the mutex.  Why is it only necessary here and not any of the
+other places?
 
->Paolo Bonzini (5):
->  x86: export get_xsave_addr
->  KVM: x86: support XSAVES usage in the host
->  KVM: x86: use F() macro throughout cpuid.c
->  KVM: cpuid: set CPUID(EAX=0xd,ECX=1).EBX correctly
->  KVM: cpuid: mask more bits in leaf 0xd and subleaves
->
->Wanpeng Li (4):
->  kvm: x86: Add kvm_x86_ops hook that enables XSAVES for guest
->  kvm: x86: handle XSAVES vmcs and vmexit
->  kvm: vmx: add MSR logic for XSAVES
->  kvm: vmx: add nested virtualization support for xsaves
->
-> arch/x86/include/asm/kvm_host.h |  2 +
-> arch/x86/include/asm/vmx.h      |  3 ++
-> arch/x86/include/uapi/asm/vmx.h |  6 ++-
-> arch/x86/kernel/xsave.c         |  1 +
-> arch/x86/kvm/cpuid.c            | 47 ++++++++++++++-------
-> arch/x86/kvm/svm.c              |  6 +++
-> arch/x86/kvm/vmx.c              | 80 +++++++++++++++++++++++++++++++++++-
-> arch/x86/kvm/x86.c              | 90 +++++++++++++++++++++++++++++++++++++----
-> 8 files changed, 210 insertions(+), 25 deletions(-)
->
->-- 
->1.8.3.1
+>  	for (i = 0; i < NUM_L3_SLICES(dev); i++)
+>  		i915_gem_l3_remap(&dev_priv->ring[RCS], i);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+- Jeremiah Mahler
