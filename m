@@ -1,84 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaLEXAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:00:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaLEW4Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paire <eric.paire@st.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        gong.chen@linux.intel.com, John Sullivan <jsrhbz@kanargh.force9.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Theodore Tso <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 68/73] bitops: Fix shift overflow in GENMASK macros
-Date: Fri,  5 Dec 2014 14:45:14 -0800
-Message-Id: <20141205224435.971829083@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
-References: <20141205224433.921659956@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1753690AbaLEXA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:00:27 -0500
+Received: from mail-bl2on0133.outbound.protection.outlook.com ([65.55.169.133]:9920
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752843AbaLEXAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 18:00:22 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>
+Subject: RE: [PATCH V2 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Topic: [PATCH V2 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Index: AQHQECf6Zn+DCRcFBEOo2AXEIl07xJyAj50AgAEKSAA=
+Date: Fri, 5 Dec 2014 22:45:55 +0000
+Message-ID: <BY2PR0301MB07116577244ABBA69C5FA351A0790@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417745894-10860-1-git-send-email-kys@microsoft.com>
+ <1417762318.14674.0@smtp.corp.redhat.com>
+In-Reply-To: <1417762318.14674.0@smtp.corp.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0709;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0709;
+x-forefront-prvs: 04163EF38A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(199003)(377454003)(51704005)(24454002)(189002)(86612001)(92566001)(86362001)(31966008)(575784001)(110136001)(87936001)(2656002)(19580395003)(19580405001)(21056001)(99396003)(120916001)(97736003)(54206007)(101416001)(54356999)(4396001)(77156002)(62966003)(74316001)(54606007)(40100003)(76176999)(122556002)(50986999)(33656002)(46102003)(76576001)(105586002)(106356001)(68736005)(107046002)(99286002)(106116001)(20776003)(64706001)(102836002)(66066001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0773;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-3.14-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Maxime COQUELIN <maxime.coquelin@st.com>
-
-commit 00b4d9a14125f1e51874def2b9de6092e007412d upstream.
-
-On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
-instead of the expected ~0UL.
-
-This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
-
-This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
-1 << 64 for GENMASK_ULL.
-
-Reported-by: Eric Paire <eric.paire@st.com>
-Suggested-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: linux@rasmusvillemoes.dk
-Cc: gong.chen@linux.intel.com
-Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Fixes: 10ef6b0dffe4 ("bitops: Introduce a more generic BITMASK macro")
-Link: http://lkml.kernel.org/r/1415267659-10563-1-git-send-email-maxime.coquelin@st.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index be5fd38bd5a0..5d858e02997f 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -18,8 +18,11 @@
-  * position @h. For example
-  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
-  */
--#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
--#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
-+#define GENMASK(h, l) \
-+	(((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
-+
-+#define GENMASK_ULL(h, l) \
-+	(((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
- 
- extern unsigned int __sw_hweight8(unsigned int w);
- extern unsigned int __sw_hweight16(unsigned int w);
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB5N0ZRD015071
 
 
+
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Thursday, December 4, 2014 10:52 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+> Srinivasan
+> Subject: Re: [PATCH V2 1/1] Drivers: hv: vmbus: Implement a clockevent
+> device
+> 
+> 
+> 
+> On Fri, Dec 5, 2014 at 10:18 AM, K. Y. Srinivasan <kys@microsoft.com>
+> wrote:
+> > Implement a clockevent device based on the timer support available on
+> > Hyper-V.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > ---
+> >  arch/x86/include/uapi/asm/hyperv.h |   11 +++++
+> >  drivers/hv/hv.c                    |   78
+> > ++++++++++++++++++++++++++++++++++++
+> >  drivers/hv/hyperv_vmbus.h          |   21 ++++++++++
+> >  drivers/hv/vmbus_drv.c             |   40 +++++++++++++++++-
+> >  4 files changed, 148 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/include/uapi/asm/hyperv.h
+> > b/arch/x86/include/uapi/asm/hyperv.h
+> > index 462efe7..90c458e 100644
+> > --- a/arch/x86/include/uapi/asm/hyperv.h
+> > +++ b/arch/x86/include/uapi/asm/hyperv.h
+> > @@ -187,6 +187,17 @@
+> >  #define HV_X64_MSR_SINT14			0x4000009E
+> >  #define HV_X64_MSR_SINT15			0x4000009F
+> >
+> > +/*
+> > + * Synthetic Timer MSRs. Four timers per vcpu.
+> > + */
+> > +#define HV_X64_MSR_STIMER0_CONFIG		0x400000B0
+> > +#define HV_X64_MSR_STIMER0_COUNT		0x400000B1
+> > +#define HV_X64_MSR_STIMER1_CONFIG		0x400000B2
+> > +#define HV_X64_MSR_STIMER1_COUNT		0x400000B3
+> > +#define HV_X64_MSR_STIMER2_CONFIG		0x400000B4
+> > +#define HV_X64_MSR_STIMER2_COUNT		0x400000B5
+> > +#define HV_X64_MSR_STIMER3_CONFIG		0x400000B6
+> > +#define HV_X64_MSR_STIMER3_COUNT		0x400000B7
+> >
+> >  #define HV_X64_MSR_HYPERCALL_ENABLE		0x00000001
+> >  #define HV_X64_MSR_HYPERCALL_PAGE_ADDRESS_SHIFT	12
+> > diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c index 3e4235c..e2749c0
+> > 100644
+> > --- a/drivers/hv/hv.c
+> > +++ b/drivers/hv/hv.c
+> > @@ -28,7 +28,9 @@
+> >  #include <linux/hyperv.h>
+> >  #include <linux/version.h>
+> >  #include <linux/interrupt.h>
+> > +#include <linux/clockchips.h>
+> >  #include <asm/hyperv.h>
+> > +#include <asm/mshyperv.h>
+> >  #include "hyperv_vmbus.h"
+> >
+> >  /* The one and only */
+> > @@ -37,6 +39,10 @@ struct hv_context hv_context = {
+> >  	.hypercall_page		= NULL,
+> >  };
+> >
+> > +#define HV_TIMER_FREQUENCY (10 * 1000 * 1000) /* 100ns period */
+> > +#define HV_MAX_MAX_DELTA_TICKS 0xffffffff #define
+> HV_MIN_DELTA_TICKS
+> > +1
+> > +
+> >  /*
+> >   * query_hypervisor_info - Get version info of the windows hypervisor
+> >   */
+> > @@ -144,6 +150,8 @@ int hv_init(void)
+> >  	       sizeof(int) * NR_CPUS);
+> >  	memset(hv_context.event_dpc, 0,
+> >  	       sizeof(void *) * NR_CPUS);
+> > +	memset(hv_context.clk_evt, 0,
+> > +	       sizeof(void *) * NR_CPUS);
+> >
+> >  	max_leaf = query_hypervisor_info();
+> >
+> > @@ -258,10 +266,63 @@ u16 hv_signal_event(void *con_id)
+> >  	return status;
+> >  }
+> >
+> > +static int hv_ce_set_next_event(unsigned long delta,
+> > +				struct clock_event_device *evt)
+> > +{
+> > +	cycle_t current_tick;
+> > +
+> > +	WARN_ON(evt->mode != CLOCK_EVT_MODE_ONESHOT);
+> > +
+> > +	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
+> > +	current_tick += delta;
+> > +	wrmsrl(HV_X64_MSR_STIMER0_COUNT, current_tick);
+> > +	return 0;
+> > +}
+> > +
+> > +static void hv_ce_setmode(enum clock_event_mode mode,
+> > +			  struct clock_event_device *evt)
+> > +{
+> > +	union hv_timer_config timer_cfg;
+> > +
+> > +	switch (mode) {
+> > +	case CLOCK_EVT_MODE_PERIODIC:
+> > +		/* unsupported */
+> > +		break;
+> > +
+> > +	case CLOCK_EVT_MODE_ONESHOT:
+> > +		timer_cfg.enable = 1;
+> > +		timer_cfg.auto_enable = 1;
+> > +		timer_cfg.sintx = VMBUS_MESSAGE_SINT;
+> > +		wrmsrl(HV_X64_MSR_STIMER0_CONFIG,
+> timer_cfg.as_uint64);
+> > +		break;
+> > +
+> > +	case CLOCK_EVT_MODE_UNUSED:
+> > +	case CLOCK_EVT_MODE_SHUTDOWN:
+> > +		wrmsrl(HV_X64_MSR_STIMER0_COUNT, 0);
+> > +		wrmsrl(HV_X64_MSR_STIMER0_CONFIG, 0);
+> > +		break;
+> > +	case CLOCK_EVT_MODE_RESUME:
+> > +		break;
+> > +	}
+> > +}
+> > +
+> > +static void hv_init_clockevent_device(struct clock_event_device
+> > *dev, int cpu)
+> > +{
+> > +	dev->name = "Hyper-V clockevent";
+> > +	dev->features = CLOCK_EVT_FEAT_ONESHOT;
+> > +	dev->cpumask = cpumask_of(cpu);
+> > +	dev->rating = 1000,
+> > +	dev->owner = THIS_MODULE,
+> > +
+> > +	dev->set_mode = hv_ce_setmode;
+> > +	dev->set_next_event = hv_ce_set_next_event; }
+> > +
+> >
+> >  int hv_synic_alloc(void)
+> >  {
+> >  	size_t size = sizeof(struct tasklet_struct);
+> > +	size_t ced_size = sizeof(struct clock_event_device);
+> >  	int cpu;
+> >
+> >  	for_each_online_cpu(cpu) {
+> > @@ -272,6 +333,13 @@ int hv_synic_alloc(void)
+> >  		}
+> >  		tasklet_init(hv_context.event_dpc[cpu], vmbus_on_event,
+> cpu);
+> >
+> > +		hv_context.clk_evt[cpu] = kzalloc(ced_size, GFP_ATOMIC);
+> > +		if (hv_context.clk_evt[cpu] == NULL) {
+> > +			pr_err("Unable to allocate clock event device\n");
+> > +			goto err;
+> > +		}
+> > +		hv_init_clockevent_device(hv_context.clk_evt[cpu], cpu);
+> > +
+> >  		hv_context.synic_message_page[cpu] =
+> >  			(void *)get_zeroed_page(GFP_ATOMIC);
+> >
+> > @@ -305,6 +373,7 @@ err:
+> >  static void hv_synic_free_cpu(int cpu)  {
+> >  	kfree(hv_context.event_dpc[cpu]);
+> > +	kfree(hv_context.clk_evt[cpu]);
+> >  	if (hv_context.synic_event_page[cpu])
+> >  		free_page((unsigned
+> long)hv_context.synic_event_page[cpu]);
+> >  	if (hv_context.synic_message_page[cpu])
+> > @@ -388,6 +457,15 @@ void hv_synic_init(void *arg)
+> >  	hv_context.vp_index[cpu] = (u32)vp_index;
+> >
+> >  	INIT_LIST_HEAD(&hv_context.percpu_list[cpu]);
+> > +
+> > +	/*
+> > +	 * Register the per-cpu clockevent source.
+> > +	 */
+> > +	if (ms_hyperv.features & HV_X64_MSR_SYNTIMER_AVAILABLE)
+> > +		clockevents_config_and_register(hv_context.clk_evt[cpu],
+> > +						HV_TIMER_FREQUENCY,
+> > +						HV_MIN_DELTA_TICKS,
+> > +
+> 	HV_MAX_MAX_DELTA_TICKS);
+> >  	return;
+> >  }
+> >
+> > diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+> > index c386d8d..44b1c94 100644
+> > --- a/drivers/hv/hyperv_vmbus.h
+> > +++ b/drivers/hv/hyperv_vmbus.h
+> > @@ -178,6 +178,23 @@ struct hv_message_header {
+> >  	};
+> >  };
+> >
+> > +/*
+> > + * Timer configuration register.
+> > + */
+> > +union hv_timer_config {
+> > +	u64 as_uint64;
+> > +	struct {
+> > +		u64 enable:1;
+> > +		u64 periodic:1;
+> > +		u64 lazy:1;
+> > +		u64 auto_enable:1;
+> > +		u64 reserved_z0:12;
+> > +		u64 sintx:4;
+> > +		u64 reserved_z1:44;
+> > +	};
+> > +};
+> > +
+> > +
+> >  /* Define timer message payload structure. */  struct
+> > hv_timer_message_payload {
+> >  	u32 timer_index;
+> > @@ -519,6 +536,10 @@ struct hv_context {
+> >  	 * buffer to post messages to the host.
+> >  	 */
+> >  	void *post_msg_page[NR_CPUS];
+> > +	/*
+> > +	 * Support PV clockevent device.
+> > +	 */
+> > +	struct clock_event_device *clk_evt[NR_CPUS];
+> >  };
+> >
+> >  extern struct hv_context hv_context;
+> > diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c index
+> > 4d6b269..9e57c07 100644
+> > --- a/drivers/hv/vmbus_drv.c
+> > +++ b/drivers/hv/vmbus_drv.c
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/completion.h>
+> >  #include <linux/hyperv.h>
+> >  #include <linux/kernel_stat.h>
+> > +#include <linux/clockchips.h>
+> >  #include <asm/hyperv.h>
+> >  #include <asm/hypervisor.h>
+> >  #include <asm/mshyperv.h>
+> > @@ -578,6 +579,37 @@ static void vmbus_onmessage_work(struct
+> > work_struct *work)
+> >  	kfree(ctx);
+> >  }
+> >
+> > +void hv_process_timer_expiration(struct hv_message *msg, int cpu) {
+> > +	struct clock_event_device *dev = hv_context.clk_evt[cpu];
+> > +
+> > +	if (msg->header.message_type == HVMSG_NONE)
+> > +		return;
+> 
+> Nitpick: caller has checked this.
+
+Yes indeed; I will fix it and resend.
+> >
+> > +
+> > +	if (dev->event_handler)
+> > +		dev->event_handler(dev);
+> > +
+> > +	msg->header.message_type = HVMSG_NONE;
+> > +
+> > +	/*
+> > +	 * Make sure the write to MessageType (ie set to
+> > +	 * HVMSG_NONE) happens before we read the
+> > +	 * MessagePending and EOMing. Otherwise, the EOMing
+> > +	 * will not deliver any more messages since there is
+> > +	 * no empty slot
+> > +	 */
+> > +	mb();
+> > +
+> > +	if (msg->header.message_flags.msg_pending) {
+> > +		/*
+> > +		 * This will cause message queue rescan to
+> > +		 * possibly deliver another msg from the
+> > +		 * hypervisor
+> > +		 */
+> > +		wrmsrl(HV_X64_MSR_EOM, 0);
+> > +	}
+> > +}
+> > +
+> >  static void vmbus_on_msg_dpc(unsigned long data)  {
+> >  	int cpu = smp_processor_id();
+> > @@ -667,8 +699,12 @@ static void vmbus_isr(void)
+> >  	msg = (struct hv_message *)page_addr + VMBUS_MESSAGE_SINT;
+> >
+> >  	/* Check if there are actual msgs to be processed */
+> > -	if (msg->header.message_type != HVMSG_NONE)
+> > -		tasklet_schedule(&msg_dpc);
+> > +	if (msg->header.message_type != HVMSG_NONE) {
+> > +		if (msg->header.message_type == HVMSG_TIMER_EXPIRED)
+> > +			hv_process_timer_expiration(msg, cpu);
+> > +		else
+> > +			tasklet_schedule(&msg_dpc);
+> > +	}
+> >  }
+> >
+> >  /*
+> > --
+> > 1.7.4.1
+> 
+> Reviewed-by: Jason Wang <jasowang@redhat.com>
+
+Thanks Jason.
+
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
