@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaLET7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:59:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51219 "EHLO mx2.suse.de"
+	id S1752485AbaLET7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:59:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51227 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880AbaLET7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751703AbaLET7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 14:59:19 -0500
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Hugh Dickins <hughd@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH 4/4] mm: microoptimize zonelist operations
-Date: Fri,  5 Dec 2014 20:59:05 +0100
-Message-Id: <1417809545-4540-5-git-send-email-vbabka@suse.cz>
+Subject: [PATCH 1/4] mm: set page->pfmemalloc in prep_new_page()
+Date: Fri,  5 Dec 2014 20:59:02 +0100
+Message-Id: <1417809545-4540-2-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
 References: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
@@ -25,86 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function next_zones_zonelist() returns zoneref pointer, as well as zone
-pointer via extra parameter. Since the latter can be trivially obtained by
-dereferencing the former, the overhead of the extra parameter is unjustified.
+The function prep_new_page() sets almost everything in the struct page of the
+page being allocated, except page->pfmemalloc. This is not obvious and has at
+least once led to a bug where page->pfmemalloc was forgotten to be set
+correctly, see commit 8fb74b9fb2b1 ("mm: compaction: partially revert capture
+of suitable high-order page").
 
-This patch thus removes the zone parameter from next_zones_zonelist(). Both
-callers happen to be in the same header file, so it's simple to add the
-zoneref dereference inline. We save some bytes of code size.
+This patch moves the pfmemalloc setting to prep_new_page(), which means it
+needs to gain alloc_flags parameter. The call to prep_new_page is moved from
+buffered_rmqueue() to get_page_from_freelist(), which also leads to simpler
+code. An obsolete comment for buffered_rmqueue() is replaced.
+
+A small addition to better maintainability is reduction of code and stack
+usage for get_page_from_freelist() (which inlines the other above mentioned
+functions).
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
- include/linux/mmzone.h | 12 ++++++------
- mm/mmzone.c            |  4 +---
- 2 files changed, 7 insertions(+), 9 deletions(-)
+ mm/page_alloc.c | 37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2f0856d..9a1c634 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -970,7 +970,6 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
-  * @z - The cursor used as a starting point for the search
-  * @highest_zoneidx - The zone index of the highest zone to return
-  * @nodes - An optional nodemask to filter the zonelist with
-- * @zone - The first suitable zone found is returned via this parameter
-  *
-  * This function returns the next zone at or below a given zone index that is
-  * within the allowed nodemask using a cursor as the starting point for the
-@@ -980,8 +979,7 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 622929f..bfc00c3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -970,7 +970,8 @@ static inline int check_new_page(struct page *page)
+ 	return 0;
+ }
+ 
+-static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
++static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags,
++								int alloc_flags)
+ {
+ 	int i;
+ 
+@@ -994,6 +995,14 @@ static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
+ 
+ 	set_page_owner(page, order, gfp_flags);
+ 
++	/*
++	 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was necessary to
++	 * allocate the page. The expectation is that the caller is taking
++	 * steps that will free more memory. The caller should avoid the page
++	 * being used for !PFMEMALLOC purposes.
++	 */
++	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++
+ 	return 0;
+ }
+ 
+@@ -1642,9 +1651,7 @@ int split_free_page(struct page *page)
+ }
+ 
+ /*
+- * Really, prep_compound_page() should be called from __rmqueue_bulk().  But
+- * we cheat by calling it from here, in the order > 0 path.  Saves a branch
+- * or two.
++ * Allocate a page from the given zone. Use pcplists for order-0 allocations.
   */
- struct zoneref *next_zones_zonelist(struct zoneref *z,
- 					enum zone_type highest_zoneidx,
--					nodemask_t *nodes,
--					struct zone **zone);
-+					nodemask_t *nodes);
+ static inline
+ struct page *buffered_rmqueue(struct zone *preferred_zone,
+@@ -1655,7 +1662,6 @@ struct page *buffered_rmqueue(struct zone *preferred_zone,
+ 	struct page *page;
+ 	bool cold = ((gfp_flags & __GFP_COLD) != 0);
  
- /**
-  * first_zones_zonelist - Returns the first zone at or below highest_zoneidx within the allowed nodemask in a zonelist
-@@ -1000,8 +998,9 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
- 					nodemask_t *nodes,
- 					struct zone **zone)
- {
--	return next_zones_zonelist(zonelist->_zonerefs, highest_zoneidx, nodes,
--								zone);
-+	struct zoneref *z = next_zones_zonelist(zonelist->_zonerefs, highest_zoneidx, nodes);
-+	*zone = zonelist_zone(z);
-+	return z;
- }
+-again:
+ 	if (likely(order == 0)) {
+ 		struct per_cpu_pages *pcp;
+ 		struct list_head *list;
+@@ -1711,8 +1717,6 @@ again:
+ 	local_irq_restore(flags);
  
- /**
-@@ -1018,7 +1017,8 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
- #define for_each_zone_zonelist_nodemask(zone, z, zlist, highidx, nodemask) \
- 	for (z = first_zones_zonelist(zlist, highidx, nodemask, &zone);	\
- 		zone;							\
--		z = next_zones_zonelist(++z, highidx, nodemask, &zone))	\
-+		z = next_zones_zonelist(++z, highidx, nodemask),	\
-+			zone = zonelist_zone(z))			\
+ 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+-	if (prep_new_page(page, order, gfp_flags))
+-		goto again;
+ 	return page;
  
- /**
-  * for_each_zone_zonelist - helper macro to iterate over valid zones in a zonelist at or below a given zone index
-diff --git a/mm/mmzone.c b/mm/mmzone.c
-index bf34fb8..7d87ebb 100644
---- a/mm/mmzone.c
-+++ b/mm/mmzone.c
-@@ -54,8 +54,7 @@ static inline int zref_in_nodemask(struct zoneref *zref, nodemask_t *nodes)
- /* Returns the next zone at or below highest_zoneidx in a zonelist */
- struct zoneref *next_zones_zonelist(struct zoneref *z,
- 					enum zone_type highest_zoneidx,
--					nodemask_t *nodes,
--					struct zone **zone)
-+					nodemask_t *nodes)
- {
+ failed:
+@@ -2177,25 +2181,16 @@ zonelist_scan:
+ try_this_zone:
+ 		page = buffered_rmqueue(preferred_zone, zone, order,
+ 						gfp_mask, migratetype);
+-		if (page)
+-			break;
++		if (page) {
++			if (prep_new_page(page, order, gfp_mask, alloc_flags))
++				goto try_this_zone;
++			return page;
++		}
+ this_zone_full:
+ 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active)
+ 			zlc_mark_zone_full(zonelist, z);
+ 	}
+ 
+-	if (page) {
+-		/*
+-		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+-		 * necessary to allocate the page. The expectation is
+-		 * that the caller is taking steps that will free more
+-		 * memory. The caller should avoid the page being used
+-		 * for !PFMEMALLOC purposes.
+-		 */
+-		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
+-		return page;
+-	}
+-
  	/*
- 	 * Find the next suitable zone to use for the allocation.
-@@ -69,7 +68,6 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
- 				(z->zone && !zref_in_nodemask(z, nodes)))
- 			z++;
- 
--	*zone = zonelist_zone(z);
- 	return z;
- }
- 
+ 	 * The first pass makes sure allocations are spread fairly within the
+ 	 * local node.  However, the local node might have free pages left
 -- 
 2.1.2
 
