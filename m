@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaLEQll (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:41:41 -0500
-Received: from smtp2.tech.numericable.fr ([82.216.111.38]:55260 "EHLO
-	smtp2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaLEQlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:41:39 -0500
-Message-ID: <5481E034.3030204@laposte.net>
-Date: Fri, 05 Dec 2014 17:41:24 +0100
-From: Barto <mister.freeman@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Chuansheng Liu <chuansheng.liu@intel.com>
-CC: bhelgaas@google.com, rjw@rjwysocki.net, aaron.lu@intel.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] PCI: Add disabling pm async quirk for JMicron chips
-References: <1417763857-11993-1-git-send-email-chuansheng.liu@intel.com> <20141205144544.GH4080@htj.dyndns.org>
-In-Reply-To: <20141205144544.GH4080@htj.dyndns.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrvdekgddtudcutefuodetggdotefrucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepkfffhfgfggfvufhfjggtgfesthekrgdttdefjeenucfhrhhomhepuegrrhhtohcuoehmihhsthgvrhdrfhhrvggvmhgrnheslhgrphhoshhtvgdrnhgvtheqnecuffhomhgrihhnpehgihhthhhusgdrtghomh
+	id S1751602AbaLEQl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:41:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537AbaLEQlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 11:41:55 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: <linux-mm@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: [PATCH 0/4] OOM vs PM freezer fixes
+Date: Fri,  5 Dec 2014 17:41:42 +0100
+Message-Id: <1417797707-31699-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141110163055.GC18373@dhcp22.suse.cz>
+References: <20141110163055.GC18373@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+here is another take at OOM vs. PM freezer interaction fixes/cleanups.
+First three patches are fixes for an unlikely cases when OOM races with
+the PM freezer which should be closed completely finally. The last patch
+is a simple code enhancement which is not needed strictly speaking but
+it is nice to have IMO.
 
-> Why is this being done through pci quirks?  e6b7e41cdd8 implements the
-> same quirk in the respective drivers.  What's the difference here?
->
-> Thanks.
->
+Both OOM killer and PM freezer are quite subtle so I hope I haven't
+missing anything. Any feedback is highly appreciated. I am also
+interested about feedback for the used approach. To be honest I am not
+really happy about spreading TIF_MEMDIE checks into freezer (patch 1)
+but I didn't find any other way for detecting OOM killed tasks.
 
-the difference is that the commit e6b7e41cdd8 "ata: Disabling the async
-PM for JMicron chip 363/361" doesn't work with my JMicron 363/368,
+Changes are based on top of Linus tree (3.18-rc3).
 
-because in this commit "the if statement conditions" are not suitable to
-my JMicron 363/368 card ( mismatch PCI_ID ), I tried this patch and it
-doesn't work, check the if statement you will understand why :
+Michal Hocko (4):
+      OOM, PM: Do not miss OOM killed frozen tasks
+      OOM, PM: make OOM detection in the freezer path raceless
+      OOM, PM: handle pm freezer as an OOM victim correctly
+      OOM: thaw the OOM victim if it is frozen
 
-https://github.com/rjarzmik/linux/commit/e6b7e41cdd8cae0591e04d9519b65470110e2d44
+Diffstat says:
+ drivers/tty/sysrq.c    |  6 ++--
+ include/linux/oom.h    | 39 ++++++++++++++++------
+ kernel/freezer.c       | 15 +++++++--
+ kernel/power/process.c | 60 +++++++++-------------------------
+ mm/memcontrol.c        |  4 ++-
+ mm/oom_kill.c          | 89 ++++++++++++++++++++++++++++++++++++++------------
+ mm/page_alloc.c        | 32 +++++++++---------
+ 7 files changed, 147 insertions(+), 98 deletions(-)
 
-my JMicron 363/368 is both an IDE/SATA controler pcie card,
-
-Chuansheng has found the solution by adding a line in
-drivers/pci/quirks.c file in order to be sure that ALL variants of
-JMicron 3xx/3xx chips will be targeted :
-
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_JMICRON, PCI_ANY_ID,
-+		pci_async_suspend_fixup);
-
-
-
-
-
-
-
-Le 05/12/2014 15:45, Tejun Heo a écrit :
-> On Fri, Dec 05, 2014 at 03:17:37PM +0800, Chuansheng Liu wrote:
->>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB360, quirk_jmicron_ata);
->>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB361, quirk_jmicron_ata);
->>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB362, quirk_jmicron_ata);
->> @@ -1519,6 +1534,8 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB3
->>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB366, quirk_jmicron_ata);
->>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB368, quirk_jmicron_ata);
->>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB369, quirk_jmicron_ata);
->> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_JMICRON, PCI_ANY_ID,
->> +		pci_async_suspend_fixup);
-> 
-> Why is this being done through pci quirks?  e6b7e41cdd8 implements the
-> same quirk in the respective drivers.  What's the difference here?
-> 
-> Thanks.
-> 
