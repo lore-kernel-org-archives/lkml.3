@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaLEXis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:38:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
+	id S932128AbaLEXiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:38:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385AbaLEWqJ (ORCPT
+	with ESMTP id S1752387AbaLEWqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>,
+        Dmitry Torokhov <dtor@chromium.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.17 069/122] ACPI / EC: Add support to disallow QR_EC to be issued before completing previous QR_EC
-Date: Fri,  5 Dec 2014 14:44:03 -0800
-Message-Id: <20141205223316.116836929@linuxfoundation.org>
+Subject: [PATCH 3.17 070/122] ACPI / PM: Ignore wakeup setting if the ACPI companion cant wake up
+Date: Fri,  5 Dec 2014 14:44:04 -0800
+Message-Id: <20141205223316.272019476@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,53 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4 upstream.
+commit 78579b7c7eb45f0e7ec5e9437087ed21749f9a9c upstream.
 
-There is platform refusing to respond QR_EC when SCI_EVT isn't set
-which is Acer Aspire V5-573G.
+As reported by Dmitry, on some Chromebooks there are devices with
+corresponding ACPI objects and with unusual system wakeup
+configuration.  Namely, they technically are wakeup-capable, but the
+wakeup is handled via a platform-specific out-of-band mechanism and
+the ACPI PM layer has no information on the wakeup capability.  As
+a result, device_may_wakeup(dev) called from acpi_dev_suspend_late()
+returns 'true' for those devices, but the wakeup.flags.valid flag is
+unset for the corresponding ACPI device objects, so acpi_device_wakeup()
+reproducibly fails for them causing acpi_dev_suspend_late() to return
+an error code.  The entire system suspend is then aborted and the
+machines in question cannot suspend at all.
 
-By disallowing QR_EC to be issued before the previous one has been
-completed we are able to reduce the possibilities to trigger issues on
-such platforms.
+Address the problem by ignoring the device_may_wakeup(dev) return
+value in acpi_dev_suspend_late() if the ACPI companion of the device
+being handled has wakeup.flags.valid unset (in which case it is clear
+that the wakeup is supposed to be handled by other means).
 
-Note that this fix can only reduce the occurrence rate of this issue, but
-this issue may still occur when such a platform doesn't clear SCI_EVT
-before or immediately after completing the previous QR_EC transaction.
-This patch cannot fix the CLEAR_ON_RESUME quirk which also relies on
-the assumption that the platforms are able to respond even when SCI_EVT
-isn't set.
+This fixes a regression introduced by commit a76e9bd89ae7 (i2c:
+attach/detach I2C client device to the ACPI power domain) as the
+affected systems could suspend and resume successfully before that
+commit.
 
-But this patch is still useful as it can help to reduce the number of
-scheduled QR_EC work items.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
-Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Fixes: a76e9bd89ae7 (i2c: attach/detach I2C client device to the ACPI power domain)
+Reported-by: Dmitry Torokhov <dtor@chromium.org>
+Reviewed-by: Dmitry Torokhov <dtor@chromium.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/acpi/ec.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/device_pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -299,11 +299,11 @@ static int acpi_ec_transaction_unlocked(
- 	/* following two actions should be kept atomic */
- 	ec->curr = t;
- 	start_transaction(ec);
-+	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
-+		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
- 	spin_unlock_irqrestore(&ec->lock, tmp);
- 	ret = ec_poll(ec);
- 	spin_lock_irqsave(&ec->lock, tmp);
--	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
--		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
- 	ec->curr = NULL;
- 	spin_unlock_irqrestore(&ec->lock, tmp);
- 	return ret;
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -877,7 +877,7 @@ int acpi_dev_suspend_late(struct device
+ 		return 0;
+ 
+ 	target_state = acpi_target_system_state();
+-	wakeup = device_may_wakeup(dev);
++	wakeup = device_may_wakeup(dev) && acpi_device_can_wakeup(adev);
+ 	error = acpi_device_wakeup(adev, target_state, wakeup);
+ 	if (wakeup && error)
+ 		return error;
 
 
