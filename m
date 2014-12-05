@@ -1,174 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaLEMxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:53:07 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:50752 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaLEMxD (ORCPT
+	id S1753386AbaLENt3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:49:29 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45275 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaLENt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:53:03 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <0e08369f35f5b4f7a36a7cc1ddd45c69>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, ulrich.prinz@googlemail.com,
-        zyw@rock-chips.com, cf@rock-chips.com,
-        linux-rockchip@lists.infradead.org, Yunzhi Li <lyz@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support for dwc2 usb controler platform driver.
-Date: Fri,  5 Dec 2014 20:52:19 +0800
-Message-Id: <1417783941-2418-4-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
+	Fri, 5 Dec 2014 08:49:28 -0500
+Date: Fri, 5 Dec 2014 13:49:33 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Don Zickus <dzickus@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141205134933.GM1630@arm.com>
+References: <20141120152509.GA5412@redhat.com>
+ <20141125122217.GA15280@arm.com>
+ <20141201114854.GB18466@arm.com>
+ <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
+ <20141201171036.GH18466@arm.com>
+ <CA+55aFwooh31=GMVUoriev+t92=roye_ck+czqr48M1sQ3UOMg@mail.gmail.com>
+ <20141201182519.GA16749@node.dhcp.inet.fi>
+ <CA+55aFz+ODi34J2n0kzXm+v++B7KW1e9NSFU=f-jgonPA1bNxg@mail.gmail.com>
+ <20141204105103.GD14519@arm.com>
+ <20141204145631.GA22794@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204145631.GA22794@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get PHY parameters from devicetree and power off usb PHY during
-system suspend.
+On Thu, Dec 04, 2014 at 02:56:31PM +0000, Dave Jones wrote:
+> On Thu, Dec 04, 2014 at 10:51:03AM +0000, Will Deacon wrote:
+> 
+>  > and, as before, it has a weird child process that I can't backtrace:
+>  > 
+>  > trinity-c1      R  running task        0   861    811 0x00000000
+>  > Call trace:
+> 
+> When I get these, ftrace is a godsend.
+> 
+> cd /sys/kernel/debug/tracing/
+> echo 861 >> set_ftrace_pid
+> echo function_graph >> current_tracer
+> echo 1 >> tracing_on
+> wait a little while
+> cat trace > trace.txt
+> 
+> repeat last two steps if necessary
+> 
+> (assuming it's stuck in kernel space, which /proc/861/stack should
+>  be able to confirm. Usually when I see this problem, that just shows
+>  0xffffffffffffffff)
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
----
+That would be great if I had a working shell :)
 
- drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
- drivers/usb/dwc2/platform.c | 34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+), 21 deletions(-)
+I tried enabling the thing before starting trinity, in the hope of dumping
+the buffer using sysrq, but now I seem to have hit an unrelated panic in
+the ftrace code.
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 200168e..2601c61 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- {
- 	struct device *dev = hsotg->dev;
- 	struct s3c_hsotg_plat *plat = dev->platform_data;
--	struct phy *phy;
--	struct usb_phy *uphy;
- 	struct s3c_hsotg_ep *eps;
- 	int epnum;
- 	int ret;
-@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- 	hsotg->phyif = GUSBCFG_PHYIF16;
- 
- 	/*
--	 * Attempt to find a generic PHY, then look for an old style
--	 * USB PHY, finally fall back to pdata
-+	 * If platform probe couldn't find a generic PHY or an old style
-+	 * USB PHY, fall back to pdata
- 	 */
--	phy = devm_phy_get(dev, "usb2-phy");
--	if (IS_ERR(phy)) {
--		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--		if (IS_ERR(uphy)) {
--			/* Fallback for pdata */
--			plat = dev_get_platdata(dev);
--			if (!plat) {
--				dev_err(dev,
--				"no platform data or transceiver defined\n");
--				return -EPROBE_DEFER;
--			}
--			hsotg->plat = plat;
--		} else
--			hsotg->uphy = uphy;
--	} else {
--		hsotg->phy = phy;
-+	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-+		plat = dev_get_platdata(dev);
-+		if (!plat) {
-+			dev_err(dev,
-+			"no platform data or transceiver defined\n");
-+			return -EPROBE_DEFER;
-+		}
-+		hsotg->plat = plat;
-+	} else if (hsotg->phy) {
- 		/*
- 		 * If using the generic PHY framework, check if the PHY bus
- 		 * width is 8-bit and set the phyif appropriately.
- 		 */
--		if (phy_get_bus_width(phy) == 8)
-+		if (phy_get_bus_width(hsotg->phy) == 8)
- 			hsotg->phyif = GUSBCFG_PHYIF8;
- 	}
- 
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 6a795aa..739d14f 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	struct dwc2_core_params defparams;
- 	struct dwc2_hsotg *hsotg;
- 	struct resource *res;
-+	struct phy *phy;
-+	struct usb_phy *uphy;
- 	int retval;
- 	int irq;
- 
-@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 
- 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
- 
-+	/*
-+	 * Attempt to find a generic PHY, then look for an old style
-+	 * USB PHY
-+	 */
-+	phy = devm_phy_get(&dev->dev, "usb2-phy");
-+	if (IS_ERR(phy)) {
-+		hsotg->phy = NULL;
-+		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(uphy))
-+			hsotg->uphy = NULL;
-+		else
-+			hsotg->uphy = uphy;
-+	} else {
-+		hsotg->phy = phy;
-+		phy_power_on(hsotg->phy);
-+		phy_init(hsotg->phy);
-+	}
-+
- 	spin_lock_init(&hsotg->lock);
- 	mutex_init(&hsotg->init_mutex);
- 	retval = dwc2_gadget_init(hsotg, irq);
-@@ -233,6 +253,14 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
- 
- 	if (dwc2_is_device_mode(dwc2))
- 		ret = s3c_hsotg_suspend(dwc2);
-+	else {
-+		if (dwc2->lx_state == DWC2_L0)
-+			return 0;
-+		if (dwc2->phy) {
-+			phy_exit(dwc2->phy);
-+			phy_power_off(dwc2->phy);
-+		}
-+	}
- 	return ret;
- }
- 
-@@ -243,6 +271,12 @@ static int __maybe_unused dwc2_resume(struct device *dev)
- 
- 	if (dwc2_is_device_mode(dwc2))
- 		ret = s3c_hsotg_resume(dwc2);
-+	else {
-+		if (dwc2->phy) {
-+			phy_power_on(dwc2->phy);
-+			phy_init(dwc2->phy);
-+		}
-+	}
- 	return ret;
- }
- 
--- 
-2.0.0
-
-
+Will
