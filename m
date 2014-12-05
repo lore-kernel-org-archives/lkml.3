@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaLEKnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:43:45 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:43631 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaLEKnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:43:42 -0500
-Date: Fri, 5 Dec 2014 11:43:31 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-Message-ID: <20141205104330.GH6390@secunet.com>
-References: <547F2462.6040405@smart-weblications.de>
- <20141204075627.GE6390@secunet.com>
- <54808D8B.3080804@smart-weblications.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <54808D8B.3080804@smart-weblications.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.182.7.102]
-X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
+	id S1752887AbaLEMtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:49:08 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:18789 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424AbaLEMtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 07:49:06 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-5d-5481a9bf80a9
+Message-id: <5481A954.1010104@samsung.com>
+Date: Fri, 05 Dec 2014 14:47:16 +0200
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: David Howells <dhowells@redhat.com>
+Cc: rusty@rustcorp.com.au, mmarek@suse.cz, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com
+Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7
+ signature to a module [ver #2]
+References: <548172DE.9090007@samsung.com>
+ <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
+ <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
+ <23280.1417775034@warthog.procyon.org.uk>
+In-reply-to: <23280.1417775034@warthog.procyon.org.uk>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xy7r7VzaGGFy4x2rxruk3i8XsXQ9Z
+	LC7vmsNm8aHnEZtFy74LTBY3p11gsfi0YhKzA7vHtBPLWDweHNrM4vF+31U2jxUbTjB7nFlw
+	hN3j8ya5ALYoLpuU1JzMstQifbsEroxHz7YzFfxgrGjeM5W1gXEfYxcjJ4eEgInEhccr2SBs
+	MYkL99YD2VwcQgJLGSU+P+1iB0kICTQySayazARhz2KU+DbVHMTmFdCSOPxjMdAgDg4WAVWJ
+	1X/VQMJsAnoSG5p/gLWKCkRIfFj1lQ2iXFDix+R7LCC2iIC6xKNlG5lBbGaBJYwS02dGgowR
+	FkiXeDFHAWLTGUaJCR1uIDangJlEw83TbCAlzEDj71/UguiUl9i85i0zRLmqRPfatVCfKEqc
+	nnyOeQKj8Cwki2chdM9C0r2AkXkVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRki8fNnBuPiY
+	1SFGAQ5GJR7eC9aNIUKsiWXFlbmHGCU4mJVEeJNnA4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
+	RtT9POOour7xbIsyywErP3/x5Ak3rmcqvPjHdTzb5prmH0nWbYVJ0YfOdk93la+veG1Qvezi
+	6mmyj9xuev4N9QoTWlMw+e8HtymP3+b8F4rac8HgMb9XWzez6GrGElnBrad3TGBRrvtj9qhm
+	TaOr569zbg3vLZ78ffxu6oIP4ksYTk7vr55ZpcRSnJFoqMVcVJwIACwvB4Z1AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 05:36:27PM +0100, Smart Weblications GmbH - Florian Wiessner wrote:
-> Hi,
-> 
-> Am 04.12.2014 08:56, schrieb Steffen Klassert:
-> > 
-> > I really wonder why the xfrm_sk_policy_lookup codepath is taken here.
-> > It looks like this is the processing of an inbound ipv4 packet that
-> > is going to be rerouted to the output path by ipvs, so this packet
-> > should not have socket context at all.
-> > 
-> > xfrm_sk_policy_lookup is called just if the packet has socket context
-> > and the socket has an IPsec output policy configured. Do you use IPsec
-> > socket policies?
-> > 
-> 
-> Yes it is insane i do not know why this happens and i wonder as well - i do not
-> have IPsec configured. I tried yesterday with only
-> 
-> CONFIG_XFRM=y
-> CONFIG_XFRM_ALGO=m
-> 
-> and all other XFRM modules disabled, same problem.
-> 
-> I now compiled kernel without xfrm to check if the problem is somewhere else.
-> 
-> I have seen that on this box (debian squeeze) the racoon tool inserts xfrm
-> polcies like so:
-> 
-> ip xfrm policy show
-> src ::/0 dst ::/0
->         dir 4 priority 0 ptype main
-> src ::/0 dst ::/0
->         dir 3 priority 0 ptype main
-> src ::/0 dst ::/0
->         dir 4 priority 0 ptype main
-> src ::/0 dst ::/0
->         dir 3 priority 0 ptype main
-> src ::/0 dst ::/0
-> ...
+On 05/12/14 12:23, David Howells wrote:
+> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+>
+>> sign-file.c produce lots of annoying noise.
+> How did you get it to produce that?
+>
+> David
+>
 
-Well, these are socket policies. The ike deamon uses them
-for SA negotiation.
+With just "make all" on Ubuntu.
 
-> 
-> I tried without racoon running and with ipsec userspace tools disabled, but the
-> problem still exists without ipsec userspace tools.
 
-Does this mean that it still happens if you have no IPsec policies
-in the system?
-
-> 
-> Interesting is maybe, that the longer the node is running and interfaces are
-> added to a bridge, the more policies sum up. Here is an overview of other nodes,
-> but without ipvs running:
-
-Would be interesting to see them.
+- Dmitry
 
