@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594AbaLEDLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 22:11:52 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:40033 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaLEDLu (ORCPT
+	id S933611AbaLEDMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:12:00 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:53101 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaLEDL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 22:11:50 -0500
-Date: Wed, 3 Dec 2014 05:18:18 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: mjg59@srcf.ucam.org, linux-api@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libsmbios-devel@lists.us.dell.com, Srinivas_G_Gowda@dell.com,
-        Michael_E_Brown@dell.com, pali.rohar@gmail.com
-Subject: Re: [PATCH] Documentation: Add entry for dell-laptop sysfs interface
-Message-ID: <20141203131817.GE75099@vmdeb7>
-References: <1417628493-29323-1-git-send-email-gabriele.mzt@gmail.com>
+	Thu, 4 Dec 2014 22:11:57 -0500
+From: Ashley Lai <ashley@ashleylai.com>
+X-Google-Original-From: Ashley Lai <alai@ant>
+Date: Thu, 4 Dec 2014 21:11:55 -0600 (CST)
+To: Joe Perches <joe@perches.com>
+cc: Ashley Lai <ashleydlai@gmail.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tpm_ibmvtpm: Update email address in maintainers
+ list and ibmvtpm driver
+In-Reply-To: <1417744666.2721.33.camel@perches.com>
+Message-ID: <alpine.DEB.2.10.1412042111250.13729@ant>
+References: <1417742242-13016-1-git-send-email-ashleydlai@gmail.com> <1417744666.2721.33.camel@perches.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417628493-29323-1-git-send-email-gabriele.mzt@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 06:41:33PM +0100, Gabriele Mazzotta wrote:
-> Add the documentation for the new sysfs interface of dell-laptop
-> that allows to configure the keyboard illumination on Dell systems.
-> 
-> Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Thanks Joe.  I just resubmitted.
 
-If nobody else would prefer to take this in their tree, I'll submit it through
-platform-drivers-x86 when I send the corresponding driver patch.
+--Ashley
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+On Thu, 4 Dec 2014, Joe Perches wrote:
+
+> On Thu, 2014-12-04 at 19:17 -0600, Ashley Lai wrote:
+>> Added myself as a maintainer for the IBM vtpm driver and removed myself
+>> from the tpm maintainer list. Also, updated the tpm_ibmvtpm driver with
+>> my current email address.
+> []
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+>> @@ -9297,13 +9297,19 @@ F:	drivers/media/usb/tm6000/
+>>
+>>  TPM DEVICE DRIVER
+>>  M:	Peter Huewe <peterhuewe@gmx.de>
+>> -M:	Ashley Lai <ashley@ashleylai.com>
+>>  M:	Marcel Selhorst <tpmdd@selhorst.net>
+>>  W:	http://tpmdd.sourceforge.net
+>>  L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
+>>  S:	Maintained
+>>  F:	drivers/char/tpm/
+>>
+>> +IBM VTPM DEVICE DRIVER
+>> +M:	Ashley Lai <ashleydlai@gmail.com>
+>> +W:	http://tpmdd.sourceforge.net
+>> +L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
+>> +S:	Maintained
+>> +F:	drivers/char/tpm/tpm_ibmvtpm*
+>> +
+>
+> Please keep this file sections in alphabetical order
+>
+>
