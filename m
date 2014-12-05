@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaLEPkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 10:40:23 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:40714 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaLEPkV (ORCPT
+	id S1751373AbaLEPlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 10:41:07 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:53310 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLEPlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 10:40:21 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Jeff Layton <jlayton@primarydata.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>, <stable@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] fs: nfsd: Fix signedness bug in compare_blob
-Date: Fri,  5 Dec 2014 16:40:07 +0100
-Message-Id: <1417794008-16944-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1417706452-30204-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1417706452-30204-1-git-send-email-linux@rasmusvillemoes.dk>
+	Fri, 5 Dec 2014 10:41:05 -0500
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 5 Dec 2014 10:41:05 -0500 (EST)
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Gleb Natapov <gleb@kernel.org>, Joerg Roedel <joro@8bytes.org>
+Subject: [patch] perf_event_open.2 exclude_host/exclude_guest clarification
+Message-ID: <alpine.DEB.2.11.1412051027470.10310@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
-bug) are in rich supply.
+Hello
 
-In this variant, the problem is that struct xdr_netobj::len has type
-unsigned int, so the expression o1->len - o2->len _also_ has type
-unsigned int; it has completely well-defined semantics, and the result
-is some non-negative integer, which is always representable in a long
-long. But this means that if the conditional triggers, we are
-guaranteed to return a positive value from compare_blob.
+The PAPI developers recently ran into some issues with the various virtual 
+machine related settings in the perf_event_open() system call.
 
-In this case it could be fixed by
+What follows is what my proposed updated manpage sections look like; I'm 
+hoping to get some sort of feedback about the correctness of these statements.
 
--       res = o1->len - o2->len;
-+       res = (long long)o1->len - (long long)o2->len;
 
-but I'd rather eliminate the usually broken 'return a - b;' idiom.
+	exclude_hv
+		If this bit is set, the count excludes events that happen in 
+		the hypervisor.  This is mainly for PMUs that have 
+		built-in hardware support for this feature (such as POWER;
+		this setting is silently ignored on x86). 
 
-Reviewed-by: Jeff Layton <jlayton@primarydata.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
+...
 
-Notes:
-    How this could ever have worked is beyond me - compare_blob seems to
-    be used to maintain an rbtree, and I wouldn't expect rbtrees to behave
-    well if the comparison function doesn't satisfy the basic invariant
-    sign(cmp(a, b)) == -sign(cmp(b, a)).
-    
-    v2: Same patch. Slightly less generic subject. Added Jeff's
-    Reviewed-by and Cc stable.
+	exclude_host (since Linux 3.2)
+		When  conducting  measurements that include processes 
+		running VM instances (i.e. have executed a KVM_RUN 
+		ioctl(2) ) only  measure events happening inside a guest 
+		instance.  This is only meaningful outside the guests; 
+		this setting does not change counts gathered inside of a 
+		guest.  Currently this functionality is x86 only.
 
- fs/nfsd/nfs4state.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+	exclude_guest (since Linux 3.2)
+		When conducting measurements that include processes 
+		running VM instances  (i.e.  have executed a KVM_RUN 
+		ioctl(2) ) do not measure events happening inside guest
+		instances.  This is only meaningful outside the guests;  
+		this setting does not change counts gathered inside of a 
+		guest.  Currently this functionality is x86 only.
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index e9c3afe4b5d3..d504cd6927f8 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1711,15 +1711,14 @@ static int copy_cred(struct svc_cred *target, struct svc_cred *source)
- 	return 0;
- }
- 
--static long long
-+static int
- compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
- {
--	long long res;
--
--	res = o1->len - o2->len;
--	if (res)
--		return res;
--	return (long long)memcmp(o1->data, o2->data, o1->len);
-+	if (o1->len < o2->len)
-+		return -1;
-+	if (o1->len > o2->len)
-+		return 1;
-+	return memcmp(o1->data, o2->data, o1->len);
- }
- 
- static int same_name(const char *n1, const char *n2)
-@@ -1907,7 +1906,7 @@ add_clp_to_name_tree(struct nfs4_client *new_clp, struct rb_root *root)
- static struct nfs4_client *
- find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
- {
--	long long cmp;
-+	int cmp;
- 	struct rb_node *node = root->rb_node;
- 	struct nfs4_client *clp;
- 
--- 
-2.0.4
 
+
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+
+diff --git a/man2/perf_event_open.2 b/man2/perf_event_open.2
+index 638124c..a413c13 100644
+--- a/man2/perf_event_open.2
++++ b/man2/perf_event_open.2
+@@ -833,10 +833,9 @@ If this bit is set, the count excludes events that happen in kernel-space.
+ .IR "exclude_hv"
+ If this bit is set, the count excludes events that happen in the
+ hypervisor.
+-This is mainly for PMUs that have built-in support for handling this
+-(such as POWER).
+-Extra support is needed for handling hypervisor measurements on most
+-machines.
++This is mainly for PMUs that have built-in hardware support
++for this feature (such as POWER; this setting is silently
++ignored on x86).
+ .TP
+ .IR "exclude_idle"
+ If set, don't count when the CPU is idle.
+@@ -978,10 +977,24 @@ struct sample_id {
+ .fi
+ .TP
+ .IR "exclude_host" " (since Linux 3.2)"
+-Do not measure time spent in VM host.
++When conducting measurements that include processes running
++VM instances (i.e. have executed a
++.I KVM_RUN
++.BR ioctl (2)
++) only measure events happening inside a guest instance.
++This is only meaningful outside the guests; this setting does
++not change counts gathered inside of a guest.
++Currently this functionality is x86 only.
+ .TP
+ .IR "exclude_guest" " (since Linux 3.2)"
+-Do not measure time spent in VM guest.
++When conducting measurements that include processes running
++VM instances (i.e. have executed a
++.I KVM_RUN
++.BR ioctl (2)
++) do not measure events happening inside guest instances.
++This is only meaningful outside the guests; this setting does
++not change counts gathered inside of a guest.
++Currently this functionality is x86 only.
+ .TP
+ .IR "exclude_callchain_kernel" " (since Linux 3.7)"
+ Do not include kernel callchains.
