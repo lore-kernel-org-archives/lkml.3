@@ -1,130 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaLERg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:36:29 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38606 "EHLO arroyo.ext.ti.com"
+	id S1751789AbaLERgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:36:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52508 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaLERg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:36:28 -0500
-Date: Fri, 5 Dec 2014 11:36:04 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan node
-Message-ID: <20141205173604.GB28038@saruman>
-Reply-To: <balbi@ti.com>
-References: <1417800739-13146-1-git-send-email-nm@ti.com>
+	id S1751709AbaLERgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 12:36:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,523,1413270000"; 
+   d="scan'208";a="643104031"
+Date: Fri, 5 Dec 2014 23:05:53 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <james.hartley@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
+        Damien Horsley <Damien.Horsley@imgtec.com>,
+        Arnd Bergmann <arnd@arndb.de>, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] dmaengine: Add driver for IMG MDC
+Message-ID: <20141205173553.GS3411@intel.com>
+References: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
+ <1416002384-3525-3-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417800739-13146-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416002384-3525-3-git-send-email-abrestic@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+g7M9IMkV8truYOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 14, 2014 at 01:59:43PM -0800, Andrew Bresticker wrote:
+> +static inline unsigned int to_mdc_width(enum dma_slave_buswidth bw)
+> +{
+> +	switch (bw) {
+> +	case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> +		return 0;
+> +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> +		return 1;
+> +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> +		return 2;
+> +	case DMA_SLAVE_BUSWIDTH_8_BYTES:
+> +		return 3;
+ffs()?
 
-On Fri, Dec 05, 2014 at 11:32:18AM -0600, Nishanth Menon wrote:
-> From: "Menon, Nishanth" <nm@ti.com>
+> +	default:
+> +		return 2;
+for slave cases default makes little sense, better to return error?
 
-do you want to sanitize your name ?
-
-> TPS gpio now controls a 5v 500mA TL5209 regulator which may be supply
-> a fan (such as AFB02505HHB) over J1 connector for various purposes.
-> Provide device tree node to enable the same.
->=20
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> Depends on the following:
-> https://patchwork.kernel.org/patch/5439201/
-> https://patchwork.kernel.org/patch/5439191/
->=20
-> enable and disable can be controlled by
-> echo '1' > /sys/class/hwmon/hwmon0/fan1_target
-> and
-> echo '0' > /sys/class/hwmon/hwmon0/fan1_target
->=20
-> requires CONFIG_GPIO_PALMAS and CONFIG_SENSORS_GPIO_FAN to be operational
-> Applies on=20
-> https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=
-=3Domap-for-v3.19/dt-v2
->=20
->  arch/arm/boot/dts/am57xx-beagle-x15.dts |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/am57xx-beagle-x15.dts b/arch/arm/boot/dts/=
-am57xx-beagle-x15.dts
-> index 49edbda..7fe82ef 100644
-> --- a/arch/arm/boot/dts/am57xx-beagle-x15.dts
-> +++ b/arch/arm/boot/dts/am57xx-beagle-x15.dts
-> @@ -80,6 +80,15 @@
->  			default-state =3D "off";
->  		};
->  	};
+> +	}
+> +}
 > +
-> +	gpio_fan {
-> +		/* Based on 5v 500mA AFB02505HHB */
-> +		compatible =3D "gpio-fan";
-> +		pinctrl-names =3D "default";
-
-not needed.
-
-> +		gpios =3D  <&tps659038_gpio 1 GPIO_ACTIVE_HIGH>;
-> +		gpio-fan,speed-map =3D <0    0
-> +				      13000 1>;
-> +	};
->  };
-> =20
->  &dra7_pmx_core {
-> @@ -314,6 +323,12 @@
->  			wakeup-source;
->  			ti,palmas-long-press-seconds =3D <12>;
->  		};
+> +static void mdc_list_desc_config(struct mdc_chan *mchan,
+> +				 struct mdc_hw_list_desc *ldesc,
+> +				 enum dma_transfer_direction dir,
+> +				 dma_addr_t src, dma_addr_t dst, size_t len)
+> +{
+> +	struct mdc_dma *mdma = mchan->mdma;
+> +	unsigned int max_burst, burst_size;
 > +
-> +		tps659038_gpio: tps659038_gpio {
-> +			compatible =3D "ti,palmas-gpio";
-> +			gpio-controller;
-> +			#gpio-cells =3D <2>;
-> +		};
->  	};
-> =20
->  	tmp102: tmp102@48 {
-> --=20
-> 1.7.9.5
->=20
+> +	ldesc->gen_conf = MDC_GENERAL_CONFIG_IEN | MDC_GENERAL_CONFIG_LIST_IEN |
+> +		MDC_GENERAL_CONFIG_LEVEL_INT | MDC_GENERAL_CONFIG_PHYSICAL_W |
+> +		MDC_GENERAL_CONFIG_PHYSICAL_R;
+> +	ldesc->readport_conf =
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_STHREAD_SHIFT) |
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_RTHREAD_SHIFT) |
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_WTHREAD_SHIFT);
+> +	ldesc->read_addr = src;
+> +	ldesc->write_addr = dst;
+> +	ldesc->xfer_size = len - 1;
+> +	ldesc->node_addr = 0;
+> +	ldesc->cmds_done = 0;
+> +	ldesc->ctrl_status = MDC_CONTROL_AND_STATUS_LIST_EN |
+> +		MDC_CONTROL_AND_STATUS_EN;
+> +	ldesc->next_desc = NULL;
+> +
+> +	if ((dst % mdma->bus_width == 0) && (src % mdma->bus_width == 0))
+> +		max_burst = mdma->bus_width * mdma->max_burst_mult;
+> +	else
+> +		max_burst = mdma->bus_width * (mdma->max_burst_mult - 1);
+sounds like you should use something like ALIGN ?
 
---=20
-balbi
+> +
+> +	if (dir == DMA_MEM_TO_DEV) {
+> +		ldesc->gen_conf |= MDC_GENERAL_CONFIG_INC_R |
+> +			((fls(mdma->bus_width) - 1) <<
+bus_width calculation is repeated quite few times, would help readability if
+we hanlde this in macro. Also this be using src/dstn_addr_widths based on
+direction passed
 
---+g7M9IMkV8truYOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +			 MDC_GENERAL_CONFIG_WIDTH_R_SHIFT) |
+> +			(to_mdc_width(mchan->config.dst_addr_width) <<
+> +			 MDC_GENERAL_CONFIG_WIDTH_W_SHIFT);
+and a macro for this calculation, which take args for different cases would
+help a lot!
+> +		ldesc->readport_conf |= MDC_READ_PORT_CONFIG_DREQ_ENABLE;
+> +		burst_size = min(max_burst, mchan->config.dst_maxburst *
+> +				 mchan->config.dst_addr_width);
+> +	} else if (dir == DMA_DEV_TO_MEM) {
+> +		ldesc->gen_conf |= MDC_GENERAL_CONFIG_INC_W |
+> +			(to_mdc_width(mchan->config.src_addr_width) <<
+> +			 MDC_GENERAL_CONFIG_WIDTH_R_SHIFT) |
+> +			((fls(mdma->bus_width) - 1) <<
+> +			 MDC_GENERAL_CONFIG_WIDTH_W_SHIFT);
+> +		ldesc->readport_conf |= MDC_READ_PORT_CONFIG_DREQ_ENABLE;
+> +		burst_size = min(max_burst, mchan->config.src_maxburst *
+> +				 mchan->config.src_addr_width);
+> +	} else {
+DEV_TO_DEV too?
+> +		ldesc->gen_conf |= MDC_GENERAL_CONFIG_INC_R |
+> +			MDC_GENERAL_CONFIG_INC_W |
+> +			((fls(mdma->bus_width) - 1) <<
+> +			 MDC_GENERAL_CONFIG_WIDTH_R_SHIFT) |
+> +			((fls(mdma->bus_width) - 1) <<
+> +			 MDC_GENERAL_CONFIG_WIDTH_W_SHIFT);
+> +		burst_size = max_burst;
+btw this piece is very hard to read, please do improve upon
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +static struct dma_async_tx_descriptor *mdc_prep_dma_memcpy(
+> +	struct dma_chan *chan, dma_addr_t dest, dma_addr_t src, size_t len,
+> +	unsigned long flags)
+> +{
+> +	struct mdc_chan *mchan = to_mdc_chan(chan);
+> +	struct mdc_dma *mdma = mchan->mdma;
+> +	struct mdc_tx_desc *mdesc;
+> +	struct mdc_hw_list_desc *curr, *prev = NULL;
+> +	dma_addr_t curr_phys, prev_phys;
+> +
+> +	if (!len)
+> +		return NULL;
+> +
+> +	mdesc = kzalloc(sizeof(*mdesc), GFP_NOWAIT);
+> +	if (!mdesc)
+> +		return NULL;
+> +	mdesc->chan = mchan;
+> +	mdesc->list_xfer_size = len;
+> +
+> +	while (len > 0) {
+> +		size_t xfer_size;
+> +
+> +		curr = dma_pool_alloc(mdma->desc_pool, GFP_NOWAIT, &curr_phys);
+> +		if (!curr)
+> +			goto free_desc;
+> +
+> +		if (prev) {
+> +			prev->node_addr = curr_phys;
+> +			prev->next_desc = curr;
+> +		} else {
+> +			mdesc->list_phys = curr_phys;
+> +			mdesc->list = curr;
+> +		}
+> +
+> +		xfer_size = min_t(size_t, mdma->max_xfer_size, len);
+> +
+> +		mdc_list_desc_config(mchan, curr, DMA_MEM_TO_MEM, src, dest,
+> +				     xfer_size);
+and this depends on dma_slave_config being set, which shouldn't be the case
+for memcpy
 
-iQIcBAEBAgAGBQJUge0EAAoJEIaOsuA1yqREQRIP/1h1hw4P48ie/xYkJEryzvVb
-991d8xBVEKeYVZhEr8IC9Sq9fCG8f8FpR6m/9hXsPJHRiNdww7u2bV1Qkhtesa1U
-i9SViUVhadSkBBHwZEDIvktcPgMmMtV48XuAcrjIgMzBElx/tDiHntbEh8rzFk37
-IL1Vx1Ebsur0ylX2gXZ4oeX8S/YUDJfXTTyUuUMnRnH5EJJcQ/iZNqhadYjyZUXo
-z85m0L39eo6POpneJjPNXjlwl7dIEjrpNjH0rYtMbyHJpyEq8HDMc+F9pJMgu0E4
-dBFzRt7dPCjZ0YVZNVBaflwUlD9NdQajaebPqVSp48RsNUrEHnkODTgIbclYlN++
-xcMXe3VyyFn3132AIeX808r72sX6MSQ3gBs0r1nE8WHWZ/Xc6CRShna8SFiAUYhY
-JtcbXO9+FR4zU896spdJ6Wa8d5bIuwX6LiOnfalyD3cTudfcmVGGOOWTp4dE2qSE
-OzzlVjtScurvALJuoHp7WQfT5yIWBswbSNFzA8C3hrtRUCn6OAbcWiGO8Jgif3dv
-PadL0FYZyyTdtx4tUOawI/srgG1egijLFvaySdrzOj8o26UJ2W8O71dg1H4dFkfs
-OtlTIjfVSL7/EVbVosdffjiqKCjzJC5wnWSkmD/cB4PEj/l1GhDeP61g6FbH4MrU
-AYjmxBs2zZ4gRkhwK+6P
-=cVua
------END PGP SIGNATURE-----
+> +static enum dma_status mdc_tx_status(struct dma_chan *chan,
+> +	dma_cookie_t cookie, struct dma_tx_state *txstate)
+> +{
+> +	struct mdc_chan *mchan = to_mdc_chan(chan);
+> +	struct mdc_tx_desc *mdesc;
+> +	struct virt_dma_desc *vd;
+> +	unsigned long flags;
+> +	size_t bytes = 0;
+> +	int ret;
+> +
+> +	ret = dma_cookie_status(chan, cookie, txstate);
+> +	if (ret == DMA_COMPLETE)
+> +		return ret;
+> +
+you should check txstate before proceeding. It can be null too
 
---+g7M9IMkV8truYOl--
+> +
+> +static int mdc_slave_config(struct dma_chan *chan,
+> +			    struct dma_slave_config *config)
+> +{
+> +	struct mdc_chan *mchan = to_mdc_chan(chan);
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&mchan->vc.lock, flags);
+> +	if (config->direction == DMA_MEM_TO_DEV) {
+> +		config->dst_addr_width = min(config->dst_addr_width,
+> +					     mchan->mdma->bus_width);
+> +	} else {
+> +		config->src_addr_width = min(config->src_addr_width,
+> +					     mchan->mdma->bus_width);
+direction field is deprecated pls don't use that. Use the prep_xx direction
+argument instead
+
+
+> +static int mdc_dma_remove(struct platform_device *pdev)
+> +{
+> +	struct mdc_dma *mdma = platform_get_drvdata(pdev);
+> +
+> +	of_dma_controller_free(pdev->dev.of_node);
+> +	dma_async_device_unregister(&mdma->dma_dev);
+> +	clk_disable_unprepare(mdma->clk);
+you need to call devm_irq_free() explicitly and also ensure you kill your
+tasklet and syncronize irq()
+
+Plus a rebase on Maxime's series which will be merged in required
+
+-- 
+~Vinod
