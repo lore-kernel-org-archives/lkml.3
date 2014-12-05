@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaLEXxB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:53:01 -0500
+	id S1755428AbaLEXx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:53:58 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaLEWpw (ORCPT
+	with ESMTP id S1751843AbaLEWpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:45:52 -0500
+	Fri, 5 Dec 2014 17:45:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Panu Matilainen <pmatilai@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 021/122] ipv4: Fix incorrect error code when adding an unreachable route
-Date: Fri,  5 Dec 2014 14:43:15 -0800
-Message-Id: <20141205223308.610164464@linuxfoundation.org>
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Kees Cook <keescook@chromium.org>, Junjie Mao <eternal.n08@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.17 017/122] x86, kaslr: Handle Gold linker for finding bss/brk
+Date: Fri,  5 Dec 2014 14:43:11 -0800
+Message-Id: <20141205223308.136864930@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,50 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Panu Matilainen <pmatilai@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-[ Upstream commit 49dd18ba4615eaa72f15c9087dea1c2ab4744cf5 ]
+commit 70b61e362187b5fccac206506d402f3424e3e749 upstream.
 
-Trying to add an unreachable route incorrectly returns -ESRCH if
-if custom FIB rules are present:
+When building with the Gold linker, the .bss and .brk areas of vmlinux
+are shown as consecutive instead of having the same file offset. Allow
+for either state, as long as things add up correctly.
 
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: Network is unreachable
-[root@localhost ~]# ip rule add to 55.66.77.88 table 200
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: No such process
-[root@localhost ~]#
-
-Commit 83886b6b636173b206f475929e58fac75c6f2446 ("[NET]: Change "not found"
-return value for rule lookup") changed fib_rules_lookup()
-to use -ESRCH as a "not found" code internally, but for user space it
-should be translated into -ENETUNREACH. Handle the translation centrally in
-ipv4-specific fib_lookup(), leaving the DECnet case alone.
-
-On a related note, commit b7a71b51ee37d919e4098cd961d59a883fd272d8
-("ipv4: removed redundant conditional") removed a similar translation from
-ip_route_input_slow() prematurely AIUI.
-
-Fixes: b7a71b51ee37 ("ipv4: removed redundant conditional")
-Signed-off-by: Panu Matilainen <pmatilai@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Junjie Mao <eternal.n08@gmail.com>
+Link: http://lkml.kernel.org/r/20141118001604.GA25045@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/fib_rules.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/net/ipv4/fib_rules.c
-+++ b/net/ipv4/fib_rules.c
-@@ -62,6 +62,10 @@ int __fib_lookup(struct net *net, struct
- 	else
- 		res->tclassid = 0;
- #endif
+---
+ arch/x86/tools/calc_run_size.pl |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/arch/x86/tools/calc_run_size.pl
++++ b/arch/x86/tools/calc_run_size.pl
+@@ -19,7 +19,16 @@ while (<>) {
+ 		if ($file_offset == 0) {
+ 			$file_offset = $offset;
+ 		} elsif ($file_offset != $offset) {
+-			die ".bss and .brk lack common file offset\n";
++			# BFD linker shows the same file offset in ELF.
++			# Gold linker shows them as consecutive.
++			next if ($file_offset + $mem_size == $offset + $size);
 +
-+	if (err == -ESRCH)
-+		err = -ENETUNREACH;
++			printf STDERR "file_offset: 0x%lx\n", $file_offset;
++			printf STDERR "mem_size: 0x%lx\n", $mem_size;
++			printf STDERR "offset: 0x%lx\n", $offset;
++			printf STDERR "size: 0x%lx\n", $size;
 +
- 	return err;
++			die ".bss and .brk are non-contiguous\n";
+ 		}
+ 	}
  }
- EXPORT_SYMBOL_GPL(__fib_lookup);
 
 
