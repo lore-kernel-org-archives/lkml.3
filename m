@@ -1,99 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913AbaLEKlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:41:14 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:51640 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751122AbaLEKlK (ORCPT
+	id S1752929AbaLEJdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 04:33:12 -0500
+Received: from bastet.se.axis.com ([195.60.68.11]:40931 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413AbaLEJdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:41:10 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
- timers when requested
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Sonny Rao <sonnyrao@chromium.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <dianders@chromium.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Eddie Huang =?UTF-8?Q?=28=E9=BB=83=E6=99=BA=E5=82=91=29?= 
-	<eddie.huang@mediatek.com>
-In-Reply-To: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
-References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+	Fri, 5 Dec 2014 04:33:09 -0500
+Message-ID: <1417771976.8400.8.camel@lnxlarper.se.axis.com>
+Subject: Re: [PATCH] Revert "MIPS: Remove race window in page fault handling"
+From: Lars Persson <lars.persson@axis.com>
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "paul.burton@imgtec.com" <paul.burton@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "blogic@openwrt.org" <blogic@openwrt.org>,
+        "markos.chandras@imgtec.com" <markos.chandras@imgtec.com>
+Date: Fri, 5 Dec 2014 10:32:56 +0100
+In-Reply-To: <5481158D.1000409@imgtec.com>
+References: <20141203032542.15388.17340.stgit@linux-yegoshin>
+	 <1417599104.10996.16.camel@lnxlarper.se.axis.com>
+	 <20141203134226.GC16063@linux-mips.org>
+	 <1417615394.10198.3.camel@lnxlarper.se.axis.com>
+	 <5481158D.1000409@imgtec.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 5 Dec 2014 18:41:04 +0800
-Message-ID: <1417776064.14380.17.camel@mtksdaap41>
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-23 at 23:02 -0800, Sonny Rao wrote: 
-> This is a bug fix for using physical arch timers when
-> the arch_timer_use_virtual boolean is false.  It restores the
-> arch_counter_get_cntpct() function after removal in
+Hi
+
+Our setup includes both a non-DMA block device and a compressing
+file-system (UBIFS). A flush_dcache_page() is issued by UBIFS so your
+patch fixes another problem that we do not hit.
+
+The stack trace is not available now. Do we need it for any further
+analysis ? I think the mechanism of the race window is understood and it
+depends on the __flush_dcache_page() deciding that the flush should be
+postponed.
+
+- Lars
+
+On Fri, 2014-12-05 at 03:16 +0100, Leonid Yegoshin wrote:
+> (repeat mesg, first one went to wrong place)
 > 
-> 0d651e4e "clocksource: arch_timer: use virtual counters"
+> Lars,
 > 
-> We need this on certain ARMv7 systems which are architected like this:
-> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> index f190971..b1fa4e6 100644
-> --- a/arch/arm64/include/asm/arch_timer.h
-> +++ b/arch/arm64/include/asm/arch_timer.h
-> @@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
->  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
->  }
->  
-> +static inline u64 arch_counter_get_cntpct(void)
-> +{
-> +	/*
-> +	 * AArch64 kernel and user space mandate the use of CNTVCT.
-> +	 */
-> +	BUG();
-> +	return 0;
-> +}
-> +
->  static inline u64 arch_counter_get_cntvct(void)
->  {
->  	u64 cval;
+> Do you have a stack trace or so then you found the second VPE between 
+> set_pte_at and update_mmu_cache?
+> It would be interesting how it happens - generally, to get a consistent 
+> SIGILL in applications due to misbehaviour of memory subsystem, the bug 
+> in FS is not enough.
+> 
+> Hold on - do you use non-DMA file system?
+> If so, I advice you to try this simple patch:
+> 
+>      Author: Leonid Yegoshin <yegoshin@mips.com>
+>      Date:   Tue Apr 2 14:20:37 2013 -0700
+> 
+>      MIPS: (opt) Fix of reading I-pages from non-DMA FS devices for ID 
+> cache separation
+> 
+>      This optional fix provides a D-cache flush for instruction code 
+> pages on
+>      page faults. In case of non-DMA block device a driver doesn't know 
+> that it
+>      reads I-page and doesn't flush D-cache generally on systems without
+>      cache aliasing. And that takes toll during page fault of 
+> instruction pages.
+> 
+>      It is not a perfect fix, it should be considered as a temporary fix.
+>      The permanent fix would track page origin in page cache and flushes 
+> D-cache
+>      during reception of page from driver only but not at each page fault.
+>      It is not done yet.
+> 
+>      Change-Id: I43f5943d6ce0509729179615f6b81e77803a34ac
+>      Author: Leonid Yegoshin <yegoshin@mips.com>
+>      Signed-off-by: Leonid Yegoshin <yegoshin@mips.com>(imported from 
+> commit 6ebd22eb7a3d9873582ebe990a77094f971652ee)(imported from commit 
+> 0caf3b4a1eebb64572e81e4df6fdb3abf12c70
+> 
+> arch/mips/include/asm/cacheflush.h:
+> 
+>     @@ -61,6 +61,9 @@ static inline void flush_anon_page(struct 
+> vm_area_struct *vma,
+>      static inline void flush_icache_page(struct vm_area_struct *vma,
+>             struct page *page)
+>      {
+>     +       if (cpu_has_dc_aliases ||
+>     +           ((vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc))
+>     +               __flush_dcache_page(page);
+>      }
+> 
+>      extern void (*flush_icache_range)(unsigned long start, unsigned 
+> long end);
+> 
+> 
+> It fixed crash problems with non-DMA FS in a couple of our customers. 
+> Without it the non-DMA root FS crashes are catastrophic in aliasing 
+> systems but it is still a problem for I-cache too but much rare.
+> 
+> Unfortunately, it is also a performance hit, however is less than run a 
+> page cache flush at each PTE setup. On 12/03/2014 06:03 AM, Lars Persson 
+> wrote:
+> > It is the flush_dcache_page() that was called from the file-system
+> > reading the page contents into memory.
+> >
+> > - Lars
+> >
+> >
+> 
 
-I tested this on an arm64 platform and system fail to boot when apply
-this patch.
-
-The boot loader start kernel at EL2, so is_hyp_mode_available() will be
-true and we will use physical timer. Without this patch,
-arch_timer_read_counter set to arch_counter_get_cntvct even when we use
-physical timer which is incorrect but at least system will boot.
-
-I think we still need this function on arm64. We should add BUG() to
-arch_timer_init instead, maybe something like this:
-
-
-@@ -708,9 +708,12 @@ static void __init arch_timer_init(struct device_node *np)
- 	 * If we cannot rely on firmware initializing the timer registers then
- 	 * we should use the physical timers instead.
- 	 */
--	if (IS_ENABLED(CONFIG_ARM) &&
--	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
-+	if (of_property_read_bool(np, "arm,cpu-registers-not-fw-configured")) {
-+		if (IS_ENABLED(CONFIG_ARM64))
-+			BUG();
-+		else
- 			arch_timer_use_virtual = false;
-+	}
-
-Joe.C
 
 
