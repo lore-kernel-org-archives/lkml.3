@@ -1,57 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281AbaLEGRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:17:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37555 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaLEGRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:17:00 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH] xen: fix sparse warning in page.h
-Date: Fri,  5 Dec 2014 07:16:57 +0100
-Message-Id: <1417760217-16977-1-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
+	id S1751330AbaLEGUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:20:35 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:20040 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaLEGUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 01:20:31 -0500
+X-AuditID: cbfee68f-f791c6d000004834-34-54814eacf13a
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Brian Foster'" <bfoster@redhat.com>
+Cc: "'Theodore Ts'o'" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, "'Ashish Sangwan'" <a.sangwan@samsung.com>,
+        linux-fsdevel@vger.kernel.org,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>
+References: <002b01d007ae$319ed0a0$94dc71e0$@samsung.com>
+ <20141202204801.GA44400@bfoster.bfoster>
+ <001c01d00fb4$38029e50$a807daf0$@samsung.com>
+ <20141204134613.GA15457@bfoster.bfoster>
+In-reply-to: <20141204134613.GA15457@bfoster.bfoster>
+Subject: RE: [PATCH v6 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for
+ fallocate
+Date: Fri, 05 Dec 2014 15:20:28 +0900
+Message-id: <001d01d01053$907ebf60$b17c3e20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQMJmmHV0k6Y+0SG7R8Q3mnYRKbCcQLTeZrDAiTPEZwCSwi5XZnTVWlQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkWHeNX2OIwYIfNhZLJ15itnj3ucpi
+	5rw7bBZ79p5ksbi8aw6bRWvPT3aLRX23GB3YPZrOHGX2WH1hK6PH+31X2Tz6tqxi9Pi8SS6A
+	NYrLJiU1J7MstUjfLoEr4/vrv4wFS4wqTnd2sTcw/lPtYuTkkBAwkbi7YgsbhC0mceHeeiCb
+	i0NIYCmjxOtpGxlhit70L2eGSCxilPi+4BYLhPOXUeLiro+sXYwcHGwC2hJ/toiCNIgIqEvc
+	mTcBrIZZ4BSjROuNa1Dd+xklTs5aDjaWU8BUYsmDN2C7hQVCJLp7l4HFWQRUJdbefcMMYvMK
+	WEo0z9vKCmELSvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmiFMVJHacfc0IcYWbxLSbM5khakQk
+	9r14xwhyhITAS3aJexcmM0MsE5D4NvkQC8gHEgKyEpsOQM2RlDi44gbLBEaJWUhWz0KyehaS
+	1bOQrFjAyLKKUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzCCT/971r+D8e4B60OMAhyMSjy8
+	KyQaQ4RYE8uKK3MPMZoCXTSRWUo0OR+YJvJK4g2NzYwsTE1MjY3MLc2UxHkXSv0MFhJITyxJ
+	zU5NLUgtii8qzUktPsTIxMEp1cAYtsereF5IFvt571kva79LS308uzXxKLfr17oJ6jt+vYiY
+	HHHkzNXqoJtXz5yzucj8IFu568PW2nmvN2pxTmj/WM0v1VVRsHXuk2QRUeEOxll5vqK5PBau
+	QtnX9xuZxllqRdt8mNsWqOmUdmLn5DNTJF/tuZz09JrP/LKLDfd3TS1UlEvZH3dRiaU4I9FQ
+	i7moOBEAN2+q59sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAd01fo0hBs+/G1ssnXiJ2eLd5yqL
+	mfPusFns2XuSxeLyrjlsFq09P9ktFvXdYnRg92g6c5TZY/WFrYwe7/ddZfPo27KK0ePzJrkA
+	1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBnfX/9lLFhiVHG6s4u9gfGf
+	ahcjJ4eEgInEm/7lzBC2mMSFe+vZuhi5OIQEFjFKfF9wiwXC+csocXHXR9YuRg4ONgFtiT9b
+	REEaRATUJe7MmwBWwyxwilGi9cY1ZoiG/YwSJ2ctZwSp4hQwlVjy4A0biC0sECLR3bsMLM4i
+	oCqx9u4bsNW8ApYSzfO2skLYghI/Jt9jAbGZBbQk1u88zgRhy0tsXvMW6lQFiR1nXzNCXOEm
+	Me3mTGaIGhGJfS/eMU5gFJqFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6
+	yfm5mxjB6eGZ9A7GVQ0WhxgFOBiVeHhXSDSGCLEmlhVX5h5ilOBgVhLhLVQECvGmJFZWpRbl
+	xxeV5qQWH2I0Bfp0IrOUaHI+MHXllcQbGpuYGVkamRtaGBmbK4nz3riZGyIkkJ5YkpqdmlqQ
+	WgTTx8TBKdXAuDIi8srh7NMx9tEG/2tY5+0r/CI/b91mJvkWQ9ew8AP1T0yTGLysveNYAqw9
+	7wpZSyyK655sGH9sQ97Uh181Un98OdDYeM72b7HlAjWms9xft31fmzZJ//ziqn/FPrs9tKO3
+	7G7/+J7td0Dm1o2zsyb2VOyL7+9rW7Do7pHj7gKTAuZEscwoU2Ipzkg01GIuKk4EACPio/El	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The inline function mfn_to_pfn_no_overrides() uses __get_user() to
-access the machine_to_phys_mapping array to avoid crashes when
-using out of bounds indices e.g. for I/O addresses.
+> >
+> > >
+> > > That said, I wonder whether we even care about a merge in the right
+> > > shift case since we haven't punched a hole in the file and thus have not
+> > > changed the "neighbors" of any of the extents we're shuffling around. I
+> > > would think any extents that are already contiguous as such are already
+> > > a single extent.
+> > yes, in case of insert range it is highly unlikely that a merge is required.
+> > But we have kept this code as part of a generic API for shifting extents.
+> >
+> 
+> I'm not opposed to that in principle, but the right shift is a separate
+> invocation (at least in this incarnation) so it's of no consequence to
+> the left shift if we were to drop it here. As far as I can tell, it's
+> also broken in that if we ever were to hit it, it looks like it would
+> perform a left-shift-merge in the middle of a broader right-shift
+> sequence and probably corrupt the file and cause the insert range to
+> fail.
+> 
+> To fix it, I suspect we'd have to write a new helper to do the
+> right-shift-merge appropriately and then probably want a way to test it.
+> The only thing that comes to mind to accomplish that is to perhaps hook
+> up the bmap split mechanism to an XFS ioctl() such that it could be
+> invoked by xfs_io or some such tool. Unless I'm missing something,
+> that's a bunch of extra work to handle a condition that probably should
+> never occur.
+> 
+> As it is, I'd suggest we drop it, add a small comment as to why there's
+> no merge in that case, and perhaps consider an assert or warn_on_once
+> type sanity check should we come across something unexpected in this
+> codepath (like separate, but contiguous extents).
+Okay, I agree, will drop it and add warn_on_once.
 
-Avoid sparse warnings by attributing the accessed address with __user.
+> 
+> > > > +	}
+> > > > +
+> > > > +	/*
+> > > > +	 * Convert to a btree if necessary.
+> > > > +	 */
+> > > > +	if (xfs_bmap_needs_btree(ip, whichfork)) {
+> > > > +		int tmp_logflags; /* partial log flag return val */
+> > > > +
+> > > > +		ASSERT(cur == NULL);
+> > > > +		error = xfs_bmap_extents_to_btree(tp, ip, firstfsb, free_list,
+> > > > +				&cur, 0, &tmp_logflags, whichfork);
+> > > > +		logflags |= tmp_logflags;
+> > > > +	}
+> > >
+> > > Hmm, looks Ok, but it would be nice if we had a test case for this
+> > > convert to btree scenario. I suspect something that falloc's just the
+> > > right number extents for a known fs format and does an insert range
+> > > right in the middle of one would suffice (and probably only require a
+> > > few seconds to run).
+> > Okay, I will prepare a testcase for convert to btree scenario of insert
+> > range.
+> > for collapse range we have generic/017 which tests multiple collapse
+> > calls on same file. I can write same test for insert range which will
+> > insert a single block hole at every alternate block in the file.
+> > Each insert range call will split the extent into 2 extents. This test
+> > need not be fs specfic so can be used for ext4 also.
+> >
+> 
+> That sounds like a nice idea. If you start with 1 or some sufficiently
+> small number of extents, that should catch the inode format conversion
+> induced by insert range at some point.
+> 
+> It might also be interesting to consider following the insert range
+> sequence with collapse range of all/some of the previously inserted
+> ranges. That should give us some test coverage of the collapse extent
+> merge code, if we're lacking that right now.
+Good idea, I will do it.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/include/asm/xen/page.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> > >
+> > > > +
+> > > > +del_cursor:
+> > > > +	if (cur) {
+> > > > +		cur->bc_private.b.allocated = 0;
+> > > > +		xfs_btree_del_cursor(cur,
+> > > > +				error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
+> > > > +	}
+> > > > +	xfs_trans_log_inode(tp, ip, logflags);
+> > > > +	return error;
+> > > > +}
+> > > > +
+> > > > +int
+> > > > +xfs_bmap_split_extent(
+> > > > +		struct xfs_inode        *ip,
+> > > > +		xfs_fileoff_t           split_fsb)
+> > >
+> > > You can line up the above params with the local vars below.
+> > Okay.
+> >
+> > >
+> > > > +{
+> > > > +	struct xfs_mount        *mp = ip->i_mount;
+> > > > +	struct xfs_trans        *tp;
+> > > > +	struct xfs_bmap_free    free_list;
+> > > > +	xfs_fsblock_t           firstfsb;
+> > > > +	int                     committed;
+> > > > +	int                     error;
+> > > > +
+> > > > +	tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
+> > > > +	error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
+> > > > +			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
+> > > > +	if (error) {
+> > > > +		xfs_trans_cancel(tp, 0);
+> > > > +		return error;
+> > > > +	}
+> > > > +
+> > > > +	xfs_ilock(ip, XFS_ILOCK_EXCL);
+> > > > +	error = xfs_trans_reserve_quota(tp, mp, ip->i_udquot,
+> > > > +			ip->i_gdquot, ip->i_pdquot,
+> > > > +			XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
+> > > > +			XFS_QMOPT_RES_REGBLKS);
+> > > > +	if (error)
+> > > > +		goto out;
+> > > > +
+> > > > +	xfs_trans_ijoin(tp, ip, 0);
+> > >
+> > > Might as well transfer the lock to the tp here? That avoids the need for
+> > > the unlocks below. We just need to make sure we order things correctly
+> > > such that the inode is unlocked on error conditions.
+> > Could you elaborate more ? Acutally, I can not find what is problem..
+> >
+> 
+> Oh it's not a problem per se, just an aesthetic suggestion to reduce the
+> lines of code. The third parameter to xfs_trans_ijoin() accepts the lock
+> flags on the inode. This transfers ownership of the ilock to the
+> transaction. The result of this is that the transaction will unlock the
+> inode appropriately (on tp commit or cancel). Check out things like
+> xfs_create() for examples of this usage.
+> 
+> Here, we pass 0 to xfs_trans_ijoin() and unlock the inode explicitly,
+> which is a pattern more typical to tp code that requires the lock held
+> for more than just the tp or submits multiple transactions. E.g.,
+> xfs_itruncate_extents() is an example of this.
+> 
+> To do the former here, we'd just have to be careful that we don't lock
+> the inode and have error conditions that cancel the transaction before
+> the ilock has been transferred (or conversely, do not explicitly unlock
+> the inode after the lock has been transferred).
+Okay, I understood. I will change it.
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index f5d5de4..6deff84 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -113,6 +113,7 @@ static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
- {
- 	unsigned long pfn;
- 	int ret;
-+	unsigned long __user *addr;
- 
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return mfn;
-@@ -125,7 +126,8 @@ static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
- 	 * In such cases it doesn't matter what we return (we return garbage),
- 	 * but we must handle the fault without crashing!
- 	 */
--	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-+	addr = (unsigned long __user *)(&machine_to_phys_mapping[mfn]);
-+	ret = __get_user(pfn, addr);
- 	if (ret < 0)
- 		return ~0;
- 
--- 
-2.1.2
+Thanks for review and suggestion!
+> 
+> Brian
+> 
+> >
+> > >
+> >
+> > _______________________________________________
+> > xfs mailing list
+> > xfs@oss.sgi.com
+> > http://oss.sgi.com/mailman/listinfo/xfs
 
