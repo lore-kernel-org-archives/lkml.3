@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555AbaLEW6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:58:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1753469AbaLEW42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:56:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaLEW43 (ORCPT
+	with ESMTP id S1753402AbaLEW4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:29 -0500
+	Fri, 5 Dec 2014 17:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 40/73] USB: xhci: dont start a halted endpoint before its new dequeue is set
-Date: Fri,  5 Dec 2014 14:44:46 -0800
-Message-Id: <20141205224435.141981805@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: [PATCH 3.14 69/73] locks: eliminate BUG() call when theres an unexpected lock on file close
+Date: Fri,  5 Dec 2014 14:45:15 -0800
+Message-Id: <20141205224436.004931827@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,44 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit c3492dbfa1050debf23a5b5cd2bc7514c5b37896 upstream.
+commit 8c3cac5e6a85f03602ffe09c44f14418699e31ec upstream.
 
-A halted endpoint ring must first be reset, then move the ring
-dequeue pointer past the problematic TRB. If we start the ring too
-early after reset, but before moving the dequeue pointer we
-will end up executing the same problematic TRB again.
+A leftover lock on the list is surely a sign of a problem of some sort,
+but it's not necessarily a reason to panic the box. Instead, just log a
+warning with some info about the lock, and then delete it like we would
+any other lock.
 
-As we always issue a set transfer dequeue command after a reset
-endpoint command we can skip starting endpoint rings at reset endpoint
-command completion.
+In the event that the filesystem declares a ->lock f_op, we may end up
+leaking something, but that's generally preferable to an immediate
+panic.
 
-Without this fix we end up trying to handle the same faulty TD for
-contol endpoints. causing timeout, and failing testusb ctrl_out write
-tests.
-
-Fixes: e9df17e (USB: xhci: Correct assumptions about number of rings per endpoint.)
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Acked-by: J. Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Cc: Markus Blank-Burian <burian@muenster.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/locks.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1180,9 +1180,8 @@ static void xhci_handle_cmd_reset_ep(str
- 				false);
- 		xhci_ring_cmd_db(xhci);
- 	} else {
--		/* Clear our internal halted state and restart the ring(s) */
-+		/* Clear our internal halted state */
- 		xhci->devs[slot_id]->eps[ep_index].ep_state &= ~EP_HALTED;
--		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
- }
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2235,16 +2235,28 @@ void locks_remove_flock(struct file *fil
  
+ 	while ((fl = *before) != NULL) {
+ 		if (fl->fl_file == filp) {
+-			if (IS_FLOCK(fl)) {
+-				locks_delete_lock(before);
+-				continue;
+-			}
+ 			if (IS_LEASE(fl)) {
+ 				lease_modify(before, F_UNLCK);
+ 				continue;
+ 			}
+-			/* What? */
+-			BUG();
++
++			/*
++			 * There's a leftover lock on the list of a type that
++			 * we didn't expect to see. Most likely a classic
++			 * POSIX lock that ended up not getting released
++			 * properly, or that raced onto the list somehow. Log
++			 * some info about it and then just remove it from
++			 * the list.
++			 */
++			WARN(!IS_FLOCK(fl),
++				"leftover lock: dev=%u:%u ino=%lu type=%hhd flags=0x%x start=%lld end=%lld\n",
++				MAJOR(inode->i_sb->s_dev),
++				MINOR(inode->i_sb->s_dev), inode->i_ino,
++				fl->fl_type, fl->fl_flags,
++				fl->fl_start, fl->fl_end);
++
++			locks_delete_lock(before);
++			continue;
+  		}
+ 		before = &fl->fl_next;
+ 	}
 
 
