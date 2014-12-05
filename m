@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583AbaLEB47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:56:59 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:33316 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933512AbaLEB4h (ORCPT
+	id S933568AbaLEB46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 20:56:58 -0500
+Received: from mail-oi0-f73.google.com ([209.85.218.73]:47386 "EHLO
+	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933518AbaLEB4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:56:37 -0500
+	Thu, 4 Dec 2014 20:56:38 -0500
 From: Aditya Kali <adityakali@google.com>
 To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
         luto@amacapital.net, ebiederm@xmission.com, cgroups@vger.kernel.org,
@@ -15,9 +15,9 @@ To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
 Cc: containers@lists.linux-foundation.org, jnagal@google.com,
         vgoyal@redhat.com, richard.weinberger@gmail.com,
         Aditya Kali <adityakali@google.com>
-Subject: [PATCHv3 5/8] cgroup: introduce cgroup namespaces
-Date: Thu,  4 Dec 2014 17:55:47 -0800
-Message-Id: <1417744550-6461-6-git-send-email-adityakali@google.com>
+Subject: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+Date: Thu,  4 Dec 2014 17:55:50 -0800
+Message-Id: <1417744550-6461-9-git-send-email-adityakali@google.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1417744550-6461-1-git-send-email-adityakali@google.com>
 References: <adityakali-cgroupns>
@@ -26,462 +26,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the ability to create new cgroup namespace. The newly created
-cgroup namespace remembers the cgroup of the process at the point
-of creation of the cgroup namespace (referred as cgroupns-root).
-The main purpose of cgroup namespace is to virtualize the contents
-of /proc/self/cgroup file. Processes inside a cgroup namespace
-are only able to see paths relative to their namespace root
-(unless they are moved outside of their cgroupns-root, at which point
- they will see a relative path from their cgroupns-root).
-For a correctly setup container this enables container-tools
-(like libcontainer, lxc, lmctfy, etc.) to create completely virtualized
-containers without leaking system level cgroup hierarchy to the task.
-This patch only implements the 'unshare' part of the cgroupns.
-
 Signed-off-by: Aditya Kali <adityakali@google.com>
 ---
- fs/proc/namespaces.c             |   1 +
- include/linux/cgroup.h           |  29 ++++++++-
- include/linux/cgroup_namespace.h |  36 +++++++++++
- include/linux/nsproxy.h          |   2 +
- include/linux/proc_ns.h          |   4 ++
- kernel/Makefile                  |   2 +-
- kernel/cgroup.c                  |  13 ++++
- kernel/cgroup_namespace.c        | 127 +++++++++++++++++++++++++++++++++++++++
- kernel/fork.c                    |   2 +-
- kernel/nsproxy.c                 |  19 +++++-
- 10 files changed, 230 insertions(+), 5 deletions(-)
+ Documentation/cgroups/namespace.txt | 147 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 147 insertions(+)
+ create mode 100644 Documentation/cgroups/namespace.txt
 
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 8902609..55bc5da 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -32,6 +32,7 @@ static const struct proc_ns_operations *ns_entries[] = {
- 	&userns_operations,
- #endif
- 	&mntns_operations,
-+	&cgroupns_operations,
- };
- 
- static const struct file_operations ns_file_operations = {
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 6e7533b..94a5a0c 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -22,6 +22,8 @@
- #include <linux/seq_file.h>
- #include <linux/kernfs.h>
- #include <linux/wait.h>
-+#include <linux/nsproxy.h>
-+#include <linux/types.h>
- 
- #ifdef CONFIG_CGROUPS
- 
-@@ -460,6 +462,13 @@ struct cftype {
- #endif
- };
- 
-+struct cgroup_namespace {
-+	atomic_t		count;
-+	unsigned int		proc_inum;
-+	struct user_namespace	*user_ns;
-+	struct cgroup		*root_cgrp;
-+};
-+
- extern struct cgroup_root cgrp_dfl_root;
- extern struct css_set init_css_set;
- 
-@@ -584,10 +593,28 @@ static inline int cgroup_name(struct cgroup *cgrp, char *buf, size_t buflen)
- 	return kernfs_name(cgrp->kn, buf, buflen);
- }
- 
-+static inline char * __must_check cgroup_path_ns(struct cgroup_namespace *ns,
-+						 struct cgroup *cgrp, char *buf,
-+						 size_t buflen)
-+{
-+	if (ns) {
-+		BUG_ON(!cgroup_on_dfl(cgrp));
-+		return kernfs_path_from_node(ns->root_cgrp->kn, cgrp->kn, buf,
-+					     buflen);
-+	} else {
-+		return kernfs_path(cgrp->kn, buf, buflen);
-+	}
-+}
-+
- static inline char * __must_check cgroup_path(struct cgroup *cgrp, char *buf,
- 					      size_t buflen)
- {
--	return kernfs_path(cgrp->kn, buf, buflen);
-+	if (cgroup_on_dfl(cgrp)) {
-+		return cgroup_path_ns(current->nsproxy->cgroup_ns, cgrp, buf,
-+				      buflen);
-+	} else {
-+		return cgroup_path_ns(NULL, cgrp, buf, buflen);
-+	}
- }
- 
- static inline void pr_cont_cgroup_name(struct cgroup *cgrp)
-diff --git a/include/linux/cgroup_namespace.h b/include/linux/cgroup_namespace.h
+diff --git a/Documentation/cgroups/namespace.txt b/Documentation/cgroups/namespace.txt
 new file mode 100644
-index 0000000..0b97b8d
+index 0000000..6480379
 --- /dev/null
-+++ b/include/linux/cgroup_namespace.h
-@@ -0,0 +1,36 @@
-+#ifndef _LINUX_CGROUP_NAMESPACE_H
-+#define _LINUX_CGROUP_NAMESPACE_H
++++ b/Documentation/cgroups/namespace.txt
+@@ -0,0 +1,147 @@
++			CGroup Namespaces
 +
-+#include <linux/nsproxy.h>
-+#include <linux/cgroup.h>
-+#include <linux/types.h>
-+#include <linux/user_namespace.h>
++CGroup Namespace provides a mechanism to virtualize the view of the
++/proc/<pid>/cgroup file. The CLONE_NEWCGROUP clone-flag can be used with
++clone() and unshare() syscalls to create a new cgroup namespace.
++The process running inside the cgroup namespace will have its /proc/<pid>/cgroup
++output restricted to cgroupns-root. cgroupns-root is the cgroup of the process
++at the time of creation of the cgroup namespace.
 +
-+extern struct cgroup_namespace init_cgroup_ns;
++Prior to CGroup Namespace, the /proc/<pid>/cgroup file used to show complete
++path of the cgroup of a process. In a container setup (where a set of cgroups
++and namespaces are intended to isolate processes), the /proc/<pid>/cgroup file
++may leak potential system level information to the isolated processes.
 +
-+static inline struct cgroup *current_cgroupns_root(void)
-+{
-+	return current->nsproxy->cgroup_ns->root_cgrp;
-+}
++For Example:
++  $ cat /proc/self/cgroup
++  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
 +
-+extern void free_cgroup_ns(struct cgroup_namespace *ns);
++The path '/batchjobs/container_id1' can generally be considered as system-data
++and its desirable to not expose it to the isolated process.
 +
-+static inline struct cgroup_namespace *get_cgroup_ns(
-+		struct cgroup_namespace *ns)
-+{
-+	if (ns)
-+		atomic_inc(&ns->count);
-+	return ns;
-+}
++CGroup Namespaces can be used to restrict visibility of this path.
++For Example:
++  # Before creating cgroup namespace
++  $ ls -l /proc/self/ns/cgroup
++  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
++  $ cat /proc/self/cgroup
++  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
 +
-+static inline void put_cgroup_ns(struct cgroup_namespace *ns)
-+{
-+	if (ns && atomic_dec_and_test(&ns->count))
-+		free_cgroup_ns(ns);
-+}
++  # unshare(CLONE_NEWCGROUP) and exec /bin/bash
++  $ ~/unshare -c
++  [ns]$ ls -l /proc/self/ns/cgroup
++  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup -> cgroup:[4026532183]
++  # From within new cgroupns, process sees that its in the root cgroup
++  [ns]$ cat /proc/self/cgroup
++  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
 +
-+extern struct cgroup_namespace *copy_cgroup_ns(unsigned long flags,
-+					       struct user_namespace *user_ns,
-+					       struct cgroup_namespace *old_ns);
++  # From global cgroupns:
++  $ cat /proc/<pid>/cgroup
++  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
 +
-+#endif  /* _LINUX_CGROUP_NAMESPACE_H */
-diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-index 35fa08f..ac0d65b 100644
---- a/include/linux/nsproxy.h
-+++ b/include/linux/nsproxy.h
-@@ -8,6 +8,7 @@ struct mnt_namespace;
- struct uts_namespace;
- struct ipc_namespace;
- struct pid_namespace;
-+struct cgroup_namespace;
- struct fs_struct;
- 
- /*
-@@ -33,6 +34,7 @@ struct nsproxy {
- 	struct mnt_namespace *mnt_ns;
- 	struct pid_namespace *pid_ns_for_children;
- 	struct net 	     *net_ns;
-+	struct cgroup_namespace *cgroup_ns;
- };
- extern struct nsproxy init_nsproxy;
- 
-diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-index 34a1e10..e56dd73 100644
---- a/include/linux/proc_ns.h
-+++ b/include/linux/proc_ns.h
-@@ -6,6 +6,8 @@
- 
- struct pid_namespace;
- struct nsproxy;
-+struct task_struct;
-+struct inode;
- 
- struct proc_ns_operations {
- 	const char *name;
-@@ -27,6 +29,7 @@ extern const struct proc_ns_operations ipcns_operations;
- extern const struct proc_ns_operations pidns_operations;
- extern const struct proc_ns_operations userns_operations;
- extern const struct proc_ns_operations mntns_operations;
-+extern const struct proc_ns_operations cgroupns_operations;
- 
- /*
-  * We always define these enumerators
-@@ -37,6 +40,7 @@ enum {
- 	PROC_UTS_INIT_INO	= 0xEFFFFFFEU,
- 	PROC_USER_INIT_INO	= 0xEFFFFFFDU,
- 	PROC_PID_INIT_INO	= 0xEFFFFFFCU,
-+	PROC_CGROUP_INIT_INO	= 0xEFFFFFFBU,
- };
- 
- #ifdef CONFIG_PROC_FS
-diff --git a/kernel/Makefile b/kernel/Makefile
-index dc5c775..d9731e2 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -50,7 +50,7 @@ obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
- obj-$(CONFIG_KEXEC) += kexec.o
- obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
- obj-$(CONFIG_COMPAT) += compat.o
--obj-$(CONFIG_CGROUPS) += cgroup.o
-+obj-$(CONFIG_CGROUPS) += cgroup.o cgroup_namespace.o
- obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
- obj-$(CONFIG_CPUSETS) += cpuset.o
- obj-$(CONFIG_UTS_NS) += utsname.o
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e12d36e..b1ae6d9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -57,6 +57,8 @@
- #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
- #include <linux/kthread.h>
- #include <linux/delay.h>
-+#include <linux/proc_ns.h>
-+#include <linux/cgroup_namespace.h>
- 
- #include <linux/atomic.h>
- 
-@@ -195,6 +197,15 @@ static void kill_css(struct cgroup_subsys_state *css);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 			      bool is_add);
- 
-+struct cgroup_namespace init_cgroup_ns = {
-+	.count = {
-+		.counter = 1,
-+	},
-+	.proc_inum = PROC_CGROUP_INIT_INO,
-+	.user_ns = &init_user_ns,
-+	.root_cgrp = &cgrp_dfl_root.cgrp,
-+};
++  # Unshare cgroupns along with userns and mountns
++  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
++  # sets up uid/gid map and execs /bin/bash
++  $ ~/unshare -c -u -m
++  # Originally, we were in /batchjobs/container_id1 cgroup. Mount our own cgroup
++  # hierarchy.
++  [ns]$ mount -t cgroup cgroup /tmp/cgroup
++  [ns]$ ls -l /tmp/cgroup
++  total 0
++  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
++  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
++  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
++  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
 +
- /* IDR wrappers which synchronize using cgroup_idr_lock */
- static int cgroup_idr_alloc(struct idr *idr, void *ptr, int start, int end,
- 			    gfp_t gfp_mask)
-@@ -4989,6 +5000,8 @@ int __init cgroup_init(void)
- 	unsigned long key;
- 	int ssid, err;
- 
-+	get_user_ns(init_cgroup_ns.user_ns);
++The cgroupns-root (/batchjobs/container_id1 in above example) becomes the
++filesystem root for the namespace specific cgroupfs mount.
 +
- 	BUG_ON(cgroup_init_cftypes(NULL, cgroup_dfl_base_files));
- 	BUG_ON(cgroup_init_cftypes(NULL, cgroup_legacy_base_files));
- 
-diff --git a/kernel/cgroup_namespace.c b/kernel/cgroup_namespace.c
-new file mode 100644
-index 0000000..0e0ef3a
---- /dev/null
-+++ b/kernel/cgroup_namespace.c
-@@ -0,0 +1,127 @@
-+/*
-+ *  Copyright (C) 2014 Google Inc.
-+ *
-+ *  Author: Aditya Kali (adityakali@google.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under the terms of the GNU General Public License as published by the Free
-+ *  Software Foundation, version 2 of the License.
-+ */
++The virtualization of /proc/self/cgroup file combined with restricting
++the view of cgroup hierarchy by namespace-private cgroupfs mount
++should provide a completely isolated cgroup view inside the container.
 +
-+#include <linux/cgroup.h>
-+#include <linux/cgroup_namespace.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/nsproxy.h>
-+#include <linux/proc_ns.h>
++Note that CGroup Namespaces virtualizes the path on unified hierarchy only. If
++other hierarchies are mounted, /proc/<pid>/cgroup will continue to show the full
++cgroup path for those.
 +
-+static struct cgroup_namespace *alloc_cgroup_ns(void)
-+{
-+	struct cgroup_namespace *new_ns;
++In its current form, the cgroup namespaces patcheset provides following
++behavior:
 +
-+	new_ns = kzalloc(sizeof(struct cgroup_namespace), GFP_KERNEL);
-+	if (new_ns)
-+		atomic_set(&new_ns->count, 1);
-+	return new_ns;
-+}
++(1) The 'cgroupns-root' for a cgroup namespace is the cgroup in which
++    the process calling unshare is running.
++    For ex. if a process in /batchjobs/container_id1 cgroup calls unshare,
++    cgroup /batchjobs/container_id1 becomes the cgroupns-root.
++    For the init_cgroup_ns, this is the real root ('/') cgroup
++    (identified in code as cgrp_dfl_root.cgrp).
 +
-+void free_cgroup_ns(struct cgroup_namespace *ns)
-+{
-+	cgroup_put(ns->root_cgrp);
-+	put_user_ns(ns->user_ns);
-+	proc_free_inum(ns->proc_inum);
-+	kfree(ns);
-+}
-+EXPORT_SYMBOL(free_cgroup_ns);
++(2) The cgroupns-root cgroup does not change even if the namespace
++    creator process later moves to a different cgroup.
++    $ ~/unshare -c # unshare cgroupns in some cgroup
++    [ns]$ cat /proc/self/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
++    [ns]$ mkdir sub_cgrp_1
++    [ns]$ echo 0 > sub_cgrp_1/cgroup.procs
++    [ns]$ cat /proc/self/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
 +
-+struct cgroup_namespace *copy_cgroup_ns(unsigned long flags,
-+					struct user_namespace *user_ns,
-+					struct cgroup_namespace *old_ns)
-+{
-+	struct cgroup_namespace *new_ns = NULL;
-+	struct cgroup *cgrp = NULL;
-+	int err;
++(3) Each process gets its CGROUPNS specific view of /proc/<pid>/cgroup
++(a) Processes running inside the cgroup namespace will be able to see
++    cgroup paths (in /proc/self/cgroup) only inside their root cgroup
++    [ns]$ sleep 100000 &  # From within unshared cgroupns
++    [1] 7353
++    [ns]$ echo 7353 > sub_cgrp_1/cgroup.procs
++    [ns]$ cat /proc/7353/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
 +
-+	BUG_ON(!old_ns);
++(b) From global cgroupns, the real cgroup path will be visible:
++    $ cat /proc/7353/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1/sub_cgrp_1
 +
-+	if (!(flags & CLONE_NEWCGROUP))
-+		return get_cgroup_ns(old_ns);
++(c) From a sibling cgroupns (cgroupns root-ed at a different cgroup), cgroup
++    path relative to its own cgroupns-root will be shown:
++    # ns2's cgroupns-root is at '/batchjobs/container_id2'
++    [ns2]$ cat /proc/7353/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/../container_id2/sub_cgrp_1
 +
-+	/* Allow only sysadmin to create cgroup namespace. */
-+	err = -EPERM;
-+	if (!ns_capable(user_ns, CAP_SYS_ADMIN))
-+		goto err_out;
++    Note that the relative path always starts with '/' to indicate that its
++    relative to the cgroupns-root of the caller.
 +
-+	/* CGROUPNS only virtualizes the cgroup path on the unified hierarchy.
-+	 */
-+	cgrp = get_task_cgroup(current);
++(4) Processes inside a cgroupns can move in-and-out of the cgroupns-root
++    (if they have proper access to external cgroups).
++    # From inside cgroupns (with cgroupns-root at /batchjobs/container_id1), and
++    # assuming that the global hierarchy is still accessible inside cgroupns:
++    $ cat /proc/7353/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/sub_cgrp_1
++    $ echo 7353 > batchjobs/container_id2/cgroup.procs
++    $ cat /proc/7353/cgroup
++    0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/../container_id2
 +
-+	err = -ENOMEM;
-+	new_ns = alloc_cgroup_ns();
-+	if (!new_ns)
-+		goto err_out;
++    Note that this kind of setup is not encouraged. A task inside cgroupns
++    should only be exposed to its own cgroupns hierarchy. Otherwise it makes
++    the virtualization of /proc/<pid>/cgroup less useful.
 +
-+	err = proc_alloc_inum(&new_ns->proc_inum);
-+	if (err)
-+		goto err_out;
++(5) Setns to another cgroup namespace is allowed when:
++    (a) the process has CAP_SYS_ADMIN in its current userns
++    (b) the process has CAP_SYS_ADMIN in the target cgroupns' userns
++    No implicit cgroup changes happen with attaching to another cgroupns. It
++    is expected that the somone moves the attaching process under the target
++    cgroupns-root.
 +
-+	new_ns->user_ns = get_user_ns(user_ns);
-+	new_ns->root_cgrp = cgrp;
++(6) When some thread from a multi-threaded process unshares its
++    cgroup-namespace, the new cgroupns gets applied to the entire
++    process (all the threads). This should be OK since
++    unified-hierarchy only allows process-level containerization. So
++    all the threads in the process will have the same cgroup.
 +
-+	return new_ns;
++(7) The cgroup namespace is alive as long as there is atleast 1
++    process inside it. When the last process exits, the cgroup
++    namespace is destroyed. The cgroupns-root and the actual cgroups
++    remain though.
 +
-+err_out:
-+	if (cgrp)
-+		cgroup_put(cgrp);
-+	kfree(new_ns);
-+	return ERR_PTR(err);
-+}
++(8) Namespace specific cgroup hierarchy can be mounted by a process running
++    inside cgroupns:
++    $ mount -t cgroup -o __DEVEL__sane_behavior cgroup $MOUNT_POINT
 +
-+static int cgroupns_install(struct nsproxy *nsproxy, void *ns)
-+{
-+	pr_info("setns not supported for cgroup namespace");
-+	return -EINVAL;
-+}
++    This will mount the unified cgroup hierarchy with cgroupns-root as the
++    filesystem root. The process needs CAP_SYS_ADMIN in its userns and mntns.
 +
-+static void *cgroupns_get(struct task_struct *task)
-+{
-+	struct cgroup_namespace *ns = NULL;
-+	struct nsproxy *nsproxy;
-+
-+	task_lock(task);
-+	nsproxy = task->nsproxy;
-+	if (nsproxy) {
-+		ns = nsproxy->cgroup_ns;
-+		get_cgroup_ns(ns);
-+	}
-+	task_unlock(task);
-+
-+	return ns;
-+}
-+
-+static void cgroupns_put(void *ns)
-+{
-+	put_cgroup_ns(ns);
-+}
-+
-+static unsigned int cgroupns_inum(void *ns)
-+{
-+	struct cgroup_namespace *cgroup_ns = ns;
-+
-+	return cgroup_ns->proc_inum;
-+}
-+
-+const struct proc_ns_operations cgroupns_operations = {
-+	.name		= "cgroup",
-+	.type		= CLONE_NEWCGROUP,
-+	.get		= cgroupns_get,
-+	.put		= cgroupns_put,
-+	.install	= cgroupns_install,
-+	.inum		= cgroupns_inum,
-+};
-+
-+static __init int cgroup_namespaces_init(void)
-+{
-+	return 0;
-+}
-+subsys_initcall(cgroup_namespaces_init);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 9b7d746..d22d793 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1797,7 +1797,7 @@ static int check_unshare_flags(unsigned long unshare_flags)
- 	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
- 				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
- 				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
--				CLONE_NEWUSER|CLONE_NEWPID))
-+				CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWCGROUP))
- 		return -EINVAL;
- 	/*
- 	 * Not implemented, but pretend it works if there is nothing to
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index ef42d0a..a8b1970 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -25,6 +25,7 @@
- #include <linux/proc_ns.h>
- #include <linux/file.h>
- #include <linux/syscalls.h>
-+#include <linux/cgroup_namespace.h>
- 
- static struct kmem_cache *nsproxy_cachep;
- 
-@@ -39,6 +40,7 @@ struct nsproxy init_nsproxy = {
- #ifdef CONFIG_NET
- 	.net_ns			= &init_net,
- #endif
-+	.cgroup_ns		= &init_cgroup_ns,
- };
- 
- static inline struct nsproxy *create_nsproxy(void)
-@@ -92,6 +94,13 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 		goto out_pid;
- 	}
- 
-+	new_nsp->cgroup_ns = copy_cgroup_ns(flags, user_ns,
-+					    tsk->nsproxy->cgroup_ns);
-+	if (IS_ERR(new_nsp->cgroup_ns)) {
-+		err = PTR_ERR(new_nsp->cgroup_ns);
-+		goto out_cgroup;
-+	}
-+
- 	new_nsp->net_ns = copy_net_ns(flags, user_ns, tsk->nsproxy->net_ns);
- 	if (IS_ERR(new_nsp->net_ns)) {
- 		err = PTR_ERR(new_nsp->net_ns);
-@@ -101,6 +110,9 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	return new_nsp;
- 
- out_net:
-+	if (new_nsp->cgroup_ns)
-+		put_cgroup_ns(new_nsp->cgroup_ns);
-+out_cgroup:
- 	if (new_nsp->pid_ns_for_children)
- 		put_pid_ns(new_nsp->pid_ns_for_children);
- out_pid:
-@@ -128,7 +140,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 	struct nsproxy *new_ns;
- 
- 	if (likely(!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			      CLONE_NEWPID | CLONE_NEWNET)))) {
-+			      CLONE_NEWPID | CLONE_NEWNET |
-+			      CLONE_NEWCGROUP)))) {
- 		get_nsproxy(old_ns);
- 		return 0;
- 	}
-@@ -165,6 +178,8 @@ void free_nsproxy(struct nsproxy *ns)
- 		put_ipc_ns(ns->ipc_ns);
- 	if (ns->pid_ns_for_children)
- 		put_pid_ns(ns->pid_ns_for_children);
-+	if (ns->cgroup_ns)
-+		put_cgroup_ns(ns->cgroup_ns);
- 	put_net(ns->net_ns);
- 	kmem_cache_free(nsproxy_cachep, ns);
- }
-@@ -180,7 +195,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 	int err = 0;
- 
- 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			       CLONE_NEWNET | CLONE_NEWPID)))
-+			       CLONE_NEWNET | CLONE_NEWPID | CLONE_NEWCGROUP)))
- 		return 0;
- 
- 	user_ns = new_cred ? new_cred->user_ns : current_user_ns();
 -- 
 2.2.0.rc0.207.ga3a616c
 
