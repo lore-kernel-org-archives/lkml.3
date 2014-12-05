@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaLEViF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:38:05 -0500
-Received: from ns.horizon.com ([71.41.210.147]:20587 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751855AbaLEViD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:38:03 -0500
-Date: 5 Dec 2014 16:38:01 -0500
-Message-ID: <20141205213801.3844.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: borntraeger@de.ibm.com
-Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
-Cc: linux@horizon.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org
-In-Reply-To: <CA+55aFzzEhbkoXnVGXAbq-HxejmWSyjMBN_aQM61J_zZLPXwAw@mail.gmail.com>
+	id S1752066AbaLEVkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:40:06 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59374 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaLEVkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:40:04 -0500
+Date: Fri, 5 Dec 2014 15:40:02 -0600
+From: Andy Gross <agross@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dts: qcom: Correct IPQ tlmm interrupt
+Message-ID: <20141205214002.GB14438@qualcomm.com>
+References: <1417812813-12804-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417812813-12804-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Of prefer it to match the put_user model, which is (val, ptr). But as long
-> as there is your safety (and the whole point of the macro is that it
-> figures out the type from the pointer), I guess it doesn't matter too much
-> in practice.
+On Fri, Dec 05, 2014 at 12:53:33PM -0800, Stephen Boyd wrote:
+> The interrupt is 16, not 32 (which it would be if we include PPIs
+> in the count of interrupts).
 > 
-> I think my original suggestion also wrote it in lower case, since it
-> actually works like a function (well, template, whatever). Again kind of
-> like the user copy "functions".
-> 
-> But I don't care *that* strongly.
+> Cc: Andy Gross <agross@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-That's an excellent point.  But it means that Christian, you're free to
-do whatever seems good to you.
+This fixed my issue!
 
-I'm not rabid about it, either; I just figure that now is a good time
-to think carefully about it.
+Reviewed-by: Andy Gross <agross@codeaurora.org>
+Tested-by: Andy Gross <agross@codeaurora.org>
 
-Personally, after running through some different names that work
-with (src,dst) order I'd try the pairs:
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
-	READ_ONCE(var) / WRITE_ONCE(value,var)
-or
-	LOAD_ONCE(var) / STORE_ONCE(value,var)
-
-Of the two, I think I prefer the latter, because that's what the
-operations are called at the hardware level, so it's most evocative of
-the actual semantics.  "Assignment" is a higher-level concept.
-
-But as I said, whatever you think best.  I'd just like to advocate for
-some actual thinking, because it's going to be all over the kernel and
-a pain to change.
