@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaLENrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:47:45 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:53203 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaLENro (ORCPT
+	id S1752597AbaLEMJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:09:05 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:49030 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751010AbaLEMJD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:47:44 -0500
+	Fri, 5 Dec 2014 07:09:03 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Hildenbrand'" <dahi@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
+        "mst@redhat.com" <mst@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "hughd@google.com" <hughd@google.com>, "hocko@suse.cz" <hocko@suse.cz>
+Subject: RE: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in
+ might_fault() when pagefaults are disabled
+Thread-Topic: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in
+ might_fault() when pagefaults are disabled
+Thread-Index: AQHQEIDqoJw2K5EQlU6eKTmrW8JdE5yA4TSAgAAD3GA=
+Date: Fri, 5 Dec 2014 12:08:19 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA035A5@AcuExch.aculab.com>
+References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141205114529.GD4213@osiris> <20141205124629.2c77290f@thinkpad-w530>
+In-Reply-To: <20141205124629.2c77290f@thinkpad-w530>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1417783941-2418-5-git-send-email-lyz@rock-chips.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
-	<1417783941-2418-5-git-send-email-lyz@rock-chips.com>
-Date: Fri, 5 Dec 2014 14:47:43 +0100
-Message-ID: <CABgxDoKXdvWX1vWK78VntuJ5Eo29hyYQCBmOZGYEDZAWg0xjGA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] ARM: dts: add rk3288 usb PHY
-From: Romain Perier <romain.perier@gmail.com>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Doug Anderson <dianders@chromium.org>,
-        Tao Huang <huangtao@rock-chips.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        linux-rockchip@lists.infradead.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        zyw@rock-chips.com, devicetree <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        olof@lixom.net, Eddie Cai <cf@rock-chips.com>,
-        ulrich.prinz@googlemail.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: David Hildenbrand [...
+> > This should be likely() instead of unlikely(), no?
+> > I'd rather write this
+> >
+> > 	if (pagefault_disabled())
+> >  		return;
+> > 	__might_sleep(file, line, 0);
+> >
+> > and leave the likely stuff completely away.
+> 
+> Makes perfect sense!
 
-2014-12-05 13:52 GMT+01:00 Yunzhi Li <lyz@rock-chips.com>:
-> Add dt nodes for rk3288 usb PHY.
+>From my experience of getting (an older version of) gcc to emit
+'correctly' statically predicted branches I found that code that
+looks like (I don't think return/goto make any difference):
 
-Could you give more context about the changes in the long description ?
-Usually, you need a short and a long description for a commit.
+	If (unlikely(condition)) {
+		code;
+	}
+	more_code;
 
-For example:
+is compile with a forwards conditional branch (ie ignoring the unlikely()).
+Similarly 'if () continue' is likely to generate a 'predicted taken'
+backwards conditional branch.
 
-short: "ARM: dts: rockchip: add rk3288 usb PHY"
-long: "This patch adds a device_node phy usb for RK3288 SoC. It also
-defines the phy to be used by usbhost and usbotg"
+To get the desired effect you need a non-empty 'else' part, an assembler
+comment will suffice, eg: asm volatile("# comment").
+
+	David
 
 
 
-Romain
