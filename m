@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaLERUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:20:20 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49469 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaLERUP (ORCPT
+	id S1751523AbaLERXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:23:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48333 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLERXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:20:15 -0500
-Date: Fri, 5 Dec 2014 17:19:52 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141205171952.GM11764@sirena.org.uk>
-References: <1417534844-25080-1-git-send-email-lee.jones@linaro.org>
- <1417534844-25080-3-git-send-email-lee.jones@linaro.org>
+	Fri, 5 Dec 2014 12:23:07 -0500
+Date: Fri, 5 Dec 2014 12:22:50 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>, bhelgaas@google.com,
+        linux-pci@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
+ or bus with 'do_flr' SysFS attribute
+Message-ID: <20141205172250.GA2895@laptop.dumpdata.com>
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
+ <5480528F.8010106@citrix.com>
+ <1107877503.20141204141054@eikelenboom.it>
+ <548064EA.8090905@citrix.com>
+ <308719815.20141204150909@eikelenboom.it>
+ <5480702F.2060004@citrix.com>
+ <1578910783.20141204155025@eikelenboom.it>
+ <1417707546.15750.100.camel@bling.home>
+ <54818929.5000008@citrix.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XbHSybK3LHOYQtWI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417534844-25080-3-git-send-email-lee.jones@linaro.org>
-X-Cookie: I don't get no respect.
+In-Reply-To: <54818929.5000008@citrix.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/4] spi: st: Provide Device Tree binding documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 05, 2014 at 10:30:01AM +0000, David Vrabel wrote:
+> On 04/12/14 15:39, Alex Williamson wrote:
+> > 
+> > I don't know what workaround you're talking about.  As devices are
+> > released from the user, vfio-pci attempts to reset them.  If
+> > pci_reset_function() returns success we mark the device clean, otherwise
+> > it gets marked dirty.  Each time a device is released, if there are
+> > dirty devices we test whether we can try a bus/slot reset to clean them.
+> > In the case of assigning a GPU this typically means that the GPU or
+> > audio function come through first, there's no reset mechanism so it gets
+> > marked dirty, the next device comes through and we manage to try a bus
+> > reset.  vfio-pci does not have any device specific resets, all
+> > functionality is added to the PCI-core, thank-you-very-much.  I even
+> > posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
+> > bad so that pci_reset_function() won't claim that worked.  All VGA
+> > access quirks are done in QEMU, the kernel doesn't have any business in
+> > remapping config space over MMIO regions or trapping other config space
+> > backdoors.
+> 
+> Thanks for the info Alex, I hadn't got around to actually looking and
+> the vfio-pci code and was just going to what Sander said.
+> 
+> We probably do need to have a more in depth look at now PCI devices and
+> handled by both the toolstack and pciback but in the short term I would
+> like a simple solution that does not extend the ABI.
 
---XbHSybK3LHOYQtWI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Could you enumerate the 'simple solution' then please? I am having
+a frustrating time figuring out what it is that you are proposing.
 
-On Tue, Dec 02, 2014 at 03:40:42PM +0000, Lee Jones wrote:
-> This patch adds DT documentation for the SPI portion of ST's SSC device.
 
-Applied, thanks.
-
---XbHSybK3LHOYQtWI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUgek3AAoJECTWi3JdVIfQHX8H/3gkcjG7KUNJzZt+hZ8EkE/M
-TTprg2xKu9YAhxbQjag0jUwCRUB7FAKEkYRXjAgFkWfV7UAptgA0FWYNsJxShw4R
-RyxngE0pb1IKyHKTxkI758gyHWzEuD8Sm7MDbi9PhTMf+LWP5RksVhFb2sKM6UkP
-5IH8L+UNIiRbG3pARwUFnCdICJteJb/R/9fKLc7c0WRlcJCVauBunsfTp2HXlZ87
-bL8fsYtKH6DHy05Ex+eWna6ekB1lDy6cfFKvW9vy7aQCjtMSBnfB5dZy+tJwGCTQ
-dlpbeEOfZ0c4RmS08P4uBKIBnZ8TsNf0q9EaoL9Tx4d+TiMWDTqQ0osua1EB0oU=
-=V3y3
------END PGP SIGNATURE-----
-
---XbHSybK3LHOYQtWI--
+> 
+> David
