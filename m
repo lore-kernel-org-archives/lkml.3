@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaLEXbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:31:48 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:32932
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083AbaLEXbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:31:46 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        linux-mm@kvack.org, isimatu.yasuaki@jp.fujitsu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the memory hot-add code
-Date: Fri,  5 Dec 2014 16:41:38 -0800
-Message-Id: <1417826498-21172-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1417826498-21172-1-git-send-email-kys@microsoft.com>
-References: <1417826471-21131-1-git-send-email-kys@microsoft.com>
- <1417826498-21172-1-git-send-email-kys@microsoft.com>
+	id S1754844AbaLEXcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:32:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54232 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaLEW4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:56:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Veaceslav Falico <vfalico@gmail.com>,
+        Jay Vosburgh <j.vosburgh@gmail.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Andy Gospodarek <gospo@cumulusnetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 15/73] bonding: fix curr_active_slave/carrier with loadbalance arp monitoring
+Date: Fri,  5 Dec 2014 14:44:21 -0800
+Message-Id: <20141205224434.386645767@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
+References: <20141205224433.921659956@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Whitcroft <apw@canonical.com> initially saw this deadlock. We
-have seen this as well. Here is the original description of the
-problem (and a potential solution) from Andy:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-https://lkml.org/lkml/2014/3/14/451
+------------------
 
-Here is an excerpt from that mail:
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-"We are seeing machines lockup with what appears to be an ABBA
-deadlock in the memory hotplug system.  These are from the 3.13.6 based Ubuntu kernels.
-The hv_balloon driver is adding memory using add_memory() which takes
-the hotplug lock, and then emits a udev event, and then attempts to
-lock the sysfs device.  In response to the udev event udev opens the
-sysfs device and locks it, then attempts to grab the hotplug lock to online the memory.
-This seems to be inverted nesting in the two cases, leading to the hangs below:
+[ Upstream commit b8e4500f42fe4464a33a887579147050bed8fcef ]
 
-[  240.608612] INFO: task kworker/0:2:861 blocked for more than 120 seconds.
-[  240.608705] INFO: task systemd-udevd:1906 blocked for more than 120 seconds.
+Since commit 6fde8f037e60 ("bonding: fix locking in
+bond_loadbalance_arp_mon()") we can have a stale bond carrier state and
+stale curr_active_slave when using arp monitoring in loadbalance modes. The
+reason is that in bond_loadbalance_arp_mon() we can't have
+do_failover == true but slave_state_changed == false, whenever do_failover
+is true then slave_state_changed is also true. Then the following piece
+from bond_loadbalance_arp_mon():
+                if (slave_state_changed) {
+                        bond_slave_state_change(bond);
+                        if (BOND_MODE(bond) == BOND_MODE_XOR)
+                                bond_update_slave_arr(bond, NULL);
+                } else if (do_failover) {
+                        block_netpoll_tx();
+                        bond_select_active_slave(bond);
+                        unblock_netpoll_tx();
+                }
 
-I note that the device hotplug locking allows complete retries (via
-ERESTARTSYS) and if we could detect this at the online stage it could
-be used to get us out.  But before I go down this road I wanted to
-make sure I am reading this right.  Or indeed if the hv_balloon driver
-is just doing this wrong."
+will execute only the first branch, always and regardless of do_failover.
+Since these two events aren't related in such way, we need to decouple and
+consider them separately.
 
-This patch is based on the suggestion from
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+For example this issue could lead to the following result:
+Bonding Mode: load balancing (round-robin)
+*MII Status: down*
+MII Polling Interval (ms): 0
+Up Delay (ms): 0
+Down Delay (ms): 0
+ARP Polling Interval (ms): 100
+ARP IP target/s (n.n.n.n form): 192.168.9.2
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Slave Interface: ens12
+*MII Status: up*
+Speed: 10000 Mbps
+Duplex: full
+Link Failure Count: 2
+Permanent HW addr: 00:0f:53:01:42:2c
+Slave queue ID: 0
+
+Slave Interface: eth1
+*MII Status: up*
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 70
+Permanent HW addr: 52:54:00:2f:0f:8e
+Slave queue ID: 0
+
+Since some interfaces are up, then the status of the bond should also be
+up, but it will never change unless something invokes bond_set_carrier()
+(i.e. enslave, bond_select_active_slave etc). Now, if I force the
+calling of bond_select_active_slave via for example changing
+primary_reselect (it can change in any mode), then the MII status goes to
+"up" because it calls bond_select_active_slave() which should've been done
+from bond_loadbalance_arp_mon() itself.
+
+CC: Veaceslav Falico <vfalico@gmail.com>
+CC: Jay Vosburgh <j.vosburgh@gmail.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Ding Tianhong <dingtianhong@huawei.com>
+
+Fixes: 6fde8f037e60 ("bonding: fix locking in bond_loadbalance_arp_mon()")
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@gmail.com>
+Acked-by: Andy Gospodarek <gospo@cumulusnetworks.com>
+Acked-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/hv/hv_balloon.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/net/bonding/bond_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index afdb0d5..f525a62 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -22,6 +22,7 @@
- #include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
-+#include <linux/device.h>
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-@@ -649,8 +650,11 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -2450,9 +2450,9 @@ static void bond_loadbalance_arp_mon(str
+ 		if (!rtnl_trylock())
+ 			goto re_arm;
  
- 		release_region_mutex(false);
- 		nid = memory_add_physaddr_to_nid(PFN_PHYS(start_pfn));
-+
-+		lock_device_hotplug();
- 		ret = add_memory(nid, PFN_PHYS((start_pfn)),
- 				(HA_CHUNK << PAGE_SHIFT));
-+		unlock_device_hotplug();
- 
- 		if (ret) {
- 			pr_info("hot_add memory failed error is %d\n", ret);
--- 
-1.7.4.1
+-		if (slave_state_changed) {
++		if (slave_state_changed)
+ 			bond_slave_state_change(bond);
+-		} else if (do_failover) {
++		if (do_failover) {
+ 			/* the bond_select_active_slave must hold RTNL
+ 			 * and curr_slave_lock for write.
+ 			 */
+
 
