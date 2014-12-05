@@ -1,94 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLEVHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:07:40 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:44463 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLEVHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:07:38 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH 0/3] dell-wmi: Don't send unneeded keypresses
-Date: Fri, 5 Dec 2014 22:07:35 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Darren Hart <dvhart@infradead.org>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>, mjg59@srcf.ucam.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com> <201412052131.34455@pali> <20141205204122.GA11772@amd>
-In-Reply-To: <20141205204122.GA11772@amd>
+	id S1751782AbaLEVIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:08:24 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141AbaLEVIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:08:23 -0500
+Message-ID: <54821EC3.3030107@nod.at>
+Date: Fri, 05 Dec 2014 22:08:19 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart15933937.J3mFbyvu6I";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] UBI: Fastmap: Fix races in ubi_wl_get_peb()
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-5-git-send-email-richard@nod.at> <5481AE79.1090900@codeaurora.org> <5481B120.5020409@nod.at> <5481E336.8090303@codeaurora.org>
+In-Reply-To: <5481E336.8090303@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412052207.35676@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart15933937.J3mFbyvu6I
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Tanya,
 
-On Friday 05 December 2014 21:41:22 Pavel Machek wrote:
-> On Fri 2014-12-05 21:31:34, Pali Roh=C3=A1r wrote:
-> > On Wednesday 03 December 2014 14:34:32 Darren Hart wrote:
-> > > On Thu, Dec 04, 2014 at 12:16:20AM +0100, Gabriele
-> > > Mazzotta
-> >=20
-> > wrote:
-> > > > Currently dell-wmi reports keypresses for WMI events
-> > > > that are notifications of changes performed by the
-> > > > BIOS. This patch series make sure that no keypresses
-> > > > are sent for those events so that nothing is done from
-> > > > userspace.
-> > > >=20
-> > > > Gabriele Mazzotta (3):
-> > > >   dell-wmi: Use appropriate keycode for radio state
-> > > >   changes dell-wmi: Don't report keypresses for radio
-> > > >   state changes
-> > >=20
-> > > Merged into one patch, queued.
-> > >=20
-> > > >   dell-wmi: Don't report keypresses on keybord
-> > > >   illumination change
-> > >=20
-> > > Queued.
-> > >=20
-> > > Thanks Gabriele.
-> >=20
-> > Darren, what do you think about sending patch into stable
-> > kernel?
->=20
-> I'd suggest against that. -stable is for "serious" bugs, and
-> we don't want to change this kind of behaviour in -stable
-> kernel.
->=20
-> 								Pavel
+Am 05.12.2014 um 17:54 schrieb Tanya Brokhman:
+> Hi Richard
+> 
+> On 12/5/2014 3:20 PM, Richard Weinberger wrote:
+>> Tanya,
+>>
+>> Am 05.12.2014 um 14:09 schrieb Tanya Brokhman:
+>>> On 11/24/2014 3:20 PM, Richard Weinberger wrote:
+>>>> ubi_wl_get_peb() has two problems, it reads the pool
+>>>> size and usage counters without any protection.
+>>>> While reading one value would be perfectly fine it reads multiple
+>>>> values and compares them. This is racy and can lead to incorrect
+>>>> pool handling.
+>>>> Furthermore ubi_update_fastmap() is called without wl_lock held,
+>>>> before incrementing the used counter it needs to be checked again.
+>>>
+>>> I didn't see where you fixed the ubi_update_fastmap issue you just mentioned.
+>>
+>> This is exactly what you're questioning below.
+>> We have to recheck as the pool counter could have changed.
+>>
+> 
+> Oh, I understood the commit msg a bit differently, but now I see that it was my mistake. thanks!
+> 
+>>>> It could happen that another thread consumed all PEBs from the
+>>>> pool and the counter goes beyond ->size.
+>>>>
+>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>>> ---
+>>>>    drivers/mtd/ubi/ubi.h |  3 ++-
+>>>>    drivers/mtd/ubi/wl.c  | 34 +++++++++++++++++++++++-----------
+>>>>    2 files changed, 25 insertions(+), 12 deletions(-)
+>>>>
+>>>> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+>>>> index 04c4c05..d672412 100644
+>>>> --- a/drivers/mtd/ubi/ubi.h
+>>>> +++ b/drivers/mtd/ubi/ubi.h
+>>>> @@ -439,7 +439,8 @@ struct ubi_debug_info {
+>>>>     * @pq_head: protection queue head
+>>>>     * @wl_lock: protects the @used, @free, @pq, @pq_head, @lookuptbl, @move_from,
+>>>>     *         @move_to, @move_to_put @erase_pending, @wl_scheduled, @works,
+>>>> - *         @erroneous, @erroneous_peb_count, and @fm_work_scheduled fields
+>>>> + *         @erroneous, @erroneous_peb_count, @fm_work_scheduled, @fm_pool,
+>>>> + *         and @fm_wl_pool fields
+>>>>     * @move_mutex: serializes eraseblock moves
+>>>>     * @work_sem: used to wait for all the scheduled works to finish and prevent
+>>>>     * new works from being submitted
+>>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>>>> index cb2e571..7730b97 100644
+>>>> --- a/drivers/mtd/ubi/wl.c
+>>>> +++ b/drivers/mtd/ubi/wl.c
+>>>> @@ -629,24 +629,36 @@ void ubi_refill_pools(struct ubi_device *ubi)
+>>>>     */
+>>>>    int ubi_wl_get_peb(struct ubi_device *ubi)
+>>>>    {
+>>>> -    int ret;
+>>>> +    int ret, retried = 0;
+>>>>        struct ubi_fm_pool *pool = &ubi->fm_pool;
+>>>>        struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
+>>>>
+>>>> -    if (!pool->size || !wl_pool->size || pool->used == pool->size ||
+>>>> -        wl_pool->used == wl_pool->size)
+>>>> +again:
+>>>> +    spin_lock(&ubi->wl_lock);
+>>>> +    /* We check here also for the WL pool because at this point we can
+>>>> +     * refill the WL pool synchronous. */
+>>>> +    if (pool->used == pool->size || wl_pool->used == wl_pool->size) {
+>>>> +        spin_unlock(&ubi->wl_lock);
+>>>>            ubi_update_fastmap(ubi);
+>>>> -
+>>>> -    /* we got not a single free PEB */
+>>>> -    if (!pool->size)
+>>>> -        ret = -ENOSPC;
+>>>> -    else {
+>>>>            spin_lock(&ubi->wl_lock);
+>>>> -        ret = pool->pebs[pool->used++];
+>>>> -        prot_queue_add(ubi, ubi->lookuptbl[ret]);
+>>>> +    }
+>>>> +
+>>>> +    if (pool->used == pool->size) {
+>>>
+>>> Im confused about this "if" condition. You just tested pool->used == pool->size in the previous "if". If in the previous if pool->used != pool->size and wl_pool->used !=
+>>> wl_pool->size, you didn't enter, the lock is still held so pool->used != pool->size still. If in the previos "if" wl_pool->used == wl_pool->size was true nd tou released the lock,
+>>> ubi_update_fastmap(ubi) was called, which refills the pools. So again, if pools were refilled pool->used would be 0 here and pool->size > 0.
+>>>
+>>> So in both cases I don't see how at this point pool->used == pool->size could ever be true?
+>>
+>> If we enter the "if (pool->used == pool->size || wl_pool->used == wl_pool->size) {" branch we unlock wl_lock and call ubi_update_fastmap().
+>> Another thread can enter ubi_wl_get_peb() and alter the pool counter. So we have to recheck the counter after taking wl_lock again.
+> 
+> hmmm... ok. Perhaps a comment could be added in the code to explain this case in a few words?
+> 
 
-Ok, I agree that it is subjective how serious it is...
-Just to remind that patch fixing problem described in
+Makes sense, I'll add a comment.
 
-http://www.spinics.net/lists/platform-driver-x86/msg05922.html
-http://www.spinics.net/lists/platform-driver-x86/msg05924.html
+>>>>            spin_unlock(&ubi->wl_lock);
+>>>> +        if (retried) {
+>>>> +            ubi_err(ubi, "Unable to get a free PEB from user WL pool");
+>>>> +            ret = -ENOSPC;
+>>>> +            goto out;
+>>>> +        }
+>>>> +        retried = 1;
+>>>
+>>> Why did you decide to retry in this function? and why only 1 retry attempt? I'm not against it, trying to understand the logic.
+>>
+>> Because failing immediately with -ENOSPC is not nice.
+> 
+> Why not? this is what was done before....
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+The behavior from before was not good.
+If we return here a -ENOSPC it is not because we ran out of free PEBs, it is because the pool contains
+no free PEBs and needs refilling.
+As between refilling the pool and requesting a fresh PEB from it another thread could "steal" all PEBs
+we retry.
 
---nextPart15933937.J3mFbyvu6I
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> I think what I really bothers me in this case is that you don't sleep, you branch immediately to retry again, so the chances that there will be context switch and free pebs appear
+> aren't that high.
+> I'm used to functions using some sort of "retry" logic to sleep before retrying. Of course sleeping isn't a good idea here. That's why the "retry" bugs me a bit.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+You mean a cond_resched()?
+This retry-logic is common pattern in UBI. For exmaple see ubi_wl_put_peb().
 
-iEYEABECAAYFAlSCHpcACgkQi/DJPQPkQ1KVUgCglrWCmHBBLq13mOX/X49VreO7
-s3wAoJgl2NZjiUsfFiFnaODU6LcIwhJu
-=HVIl
------END PGP SIGNATURE-----
-
---nextPart15933937.J3mFbyvu6I--
+Thanks,
+//richard
