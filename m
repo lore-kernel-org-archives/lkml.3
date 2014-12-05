@@ -1,568 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaLET7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:59:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51217 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbaLET7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:59:19 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+	id S1751875AbaLEUIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 15:08:13 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:39531 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaLEUIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 15:08:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <5480F756.90106@upv.es>
+References: <5480F756.90106@upv.es>
+Date: Fri, 5 Dec 2014 12:08:10 -0800
+X-Google-Sender-Auth: jUftQ689W0u_zfi5cRXo3eFPVUU
+Message-ID: <CAGXu5jJkLZLg6c6kOBwXbS5WFFiniJv_ap9uNsQDQYRokLj3jw@mail.gmail.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+From: Kees Cook <keescook@chromium.org>
+To: Hector Marco <hecmargi@upv.es>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: [RFC PATCH 2/4] mm, page_alloc: reduce number of alloc_pages* functions' parameters
-Date: Fri,  5 Dec 2014 20:59:03 +0100
-Message-Id: <1417809545-4540-3-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
-References: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce struct alloc_context to accumulate the numerous parameters passed
-between the alloc_pages* family of functions and get_page_from_freelist().
-This excludes gfp_flags and alloc_info, which mutate too much along the way.
+Hi,
 
-The result is shorter function signatures, as well as code size and stack
-usage reductions.
+Thanks for working on this!
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/page_alloc.c | 228 +++++++++++++++++++++++++-------------------------------
- 1 file changed, 100 insertions(+), 128 deletions(-)
+On Thu, Dec 4, 2014 at 4:07 PM, Hector Marco <hecmargi@upv.es> wrote:
+> [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+>
+>   The issue appears on PIE linked executables when all memory areas of
+>   a process are randomized (randomize_va_space=2). In this case, the
+>   attack "offset2lib" de-randomizes all library areas on 64 bit Linux
+>   systems in less than one second.
+>
+>   Further details of the PoC attack at:
+>   http://cybersecurity.upv.es/attacks/offset2lib/offset2lib.html
+>
+>   PIE linked applications are loaded side by side with the dynamic
+>   libraries, which is exploited by the offset2lib attack. Moving away
+>   the executable from the mmap_base area (libraries area) prevents the
+>   attack.
+>
+>   This patch loads the PIE linked executable in a different area than
+>   the libraries when randomize_va_space=3.
+>
+>   Patch implementation details:
+>
+>    - The ELF_ET_DYN_BASE address is used as the base to load randomly
+>      the PIE executable.
+>
+>    - The executable image has the same entropy than
+>      randomize_va_space=2.
+>
+>
+>   If the randomize_va_space is set to 2 then this patch does not change
+>   any behavior when loading new processes.
+>
+>   The patch has been tested on x86_64/32 and ARM/ARM64.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bfc00c3..1ee3ee1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -232,6 +232,17 @@ EXPORT_SYMBOL(nr_node_ids);
- EXPORT_SYMBOL(nr_online_nodes);
- #endif
- 
-+struct alloc_context {
-+	struct zonelist *zonelist;
-+	nodemask_t *nodemask;
-+	struct zone *preferred_zone;
-+
-+	unsigned int order;
-+	int classzone_idx;
-+	int migratetype;
-+	enum zone_type high_zoneidx;
-+};
-+
- int page_group_by_mobility_disabled __read_mostly;
- 
- void set_pageblock_migratetype(struct page *page, int migratetype)
-@@ -2037,10 +2048,11 @@ static void reset_alloc_batches(struct zone *preferred_zone)
-  * a page.
-  */
- static struct page *
--get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
--		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
--		struct zone *preferred_zone, int classzone_idx, int migratetype)
-+get_page_from_freelist(gfp_t gfp_mask, int alloc_flags, const struct
-+		alloc_context *ac)
- {
-+	const unsigned int order = ac->order;
-+	struct zonelist *zonelist = ac->zonelist;
- 	struct zoneref *z;
- 	struct page *page = NULL;
- 	struct zone *zone;
-@@ -2060,7 +2072,7 @@ zonelist_scan:
- 	 * See also __cpuset_node_allowed() comment in kernel/cpuset.c.
- 	 */
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
--						high_zoneidx, nodemask) {
-+						ac->high_zoneidx, ac->nodemask) {
- 		unsigned long mark;
- 
- 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
-@@ -2077,7 +2089,7 @@ zonelist_scan:
- 		 * time the page has in memory before being reclaimed.
- 		 */
- 		if (alloc_flags & ALLOC_FAIR) {
--			if (!zone_local(preferred_zone, zone))
-+			if (!zone_local(ac->preferred_zone, zone))
- 				break;
- 			if (test_bit(ZONE_FAIR_DEPLETED, &zone->flags)) {
- 				nr_fair_skipped++;
-@@ -2115,7 +2127,7 @@ zonelist_scan:
- 
- 		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
- 		if (!zone_watermark_ok(zone, order, mark,
--				       classzone_idx, alloc_flags)) {
-+				       ac->classzone_idx, alloc_flags)) {
- 			int ret;
- 
- 			/* Checked here to keep the fast path fast */
-@@ -2136,7 +2148,7 @@ zonelist_scan:
- 			}
- 
- 			if (zone_reclaim_mode == 0 ||
--			    !zone_allows_reclaim(preferred_zone, zone))
-+			    !zone_allows_reclaim(ac->preferred_zone, zone))
- 				goto this_zone_full;
- 
- 			/*
-@@ -2158,7 +2170,7 @@ zonelist_scan:
- 			default:
- 				/* did we reclaim enough */
- 				if (zone_watermark_ok(zone, order, mark,
--						classzone_idx, alloc_flags))
-+						ac->classzone_idx, alloc_flags))
- 					goto try_this_zone;
- 
- 				/*
-@@ -2179,8 +2191,8 @@ zonelist_scan:
- 		}
- 
- try_this_zone:
--		page = buffered_rmqueue(preferred_zone, zone, order,
--						gfp_mask, migratetype);
-+		page = buffered_rmqueue(ac->preferred_zone, zone, order,
-+						gfp_mask, ac->migratetype);
- 		if (page) {
- 			if (prep_new_page(page, order, gfp_mask, alloc_flags))
- 				goto try_this_zone;
-@@ -2203,7 +2215,7 @@ this_zone_full:
- 		alloc_flags &= ~ALLOC_FAIR;
- 		if (nr_fair_skipped) {
- 			zonelist_rescan = true;
--			reset_alloc_batches(preferred_zone);
-+			reset_alloc_batches(ac->preferred_zone);
- 		}
- 		if (nr_online_nodes > 1)
- 			zonelist_rescan = true;
-@@ -2324,15 +2336,13 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
- }
- 
- static inline struct page *
--__alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, struct zone *preferred_zone,
--	int classzone_idx, int migratetype)
-+__alloc_pages_may_oom(gfp_t gfp_mask, int alloc_flags, const struct
-+		alloc_context *ac)
- {
- 	struct page *page;
- 
- 	/* Acquire the per-zone oom lock for each zone */
--	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
-+	if (!oom_zonelist_trylock(ac->zonelist, gfp_mask)) {
- 		schedule_timeout_uninterruptible(1);
- 		return NULL;
- 	}
-@@ -2342,19 +2352,17 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
- 	 */
--	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
--		order, zonelist, high_zoneidx,
--		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
--		preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask | __GFP_HARDWALL,
-+					ALLOC_WMARK_HIGH|ALLOC_CPUSET, ac);
- 	if (page)
- 		goto out;
- 
- 	if (!(gfp_mask & __GFP_NOFAIL)) {
- 		/* The OOM killer will not help higher order allocs */
--		if (order > PAGE_ALLOC_COSTLY_ORDER)
-+		if (ac->order > PAGE_ALLOC_COSTLY_ORDER)
- 			goto out;
- 		/* The OOM killer does not needlessly kill tasks for lowmem */
--		if (high_zoneidx < ZONE_NORMAL)
-+		if (ac->high_zoneidx < ZONE_NORMAL)
- 			goto out;
- 		/*
- 		 * GFP_THISNODE contains __GFP_NORETRY and we never hit this.
-@@ -2367,22 +2375,21 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 			goto out;
- 	}
- 	/* Exhausted what can be done so it's blamo time */
--	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
-+	out_of_memory(ac->zonelist, gfp_mask, ac->order, ac->nodemask, false);
- 
- out:
--	oom_zonelist_unlock(zonelist, gfp_mask);
-+	oom_zonelist_unlock(ac->zonelist, gfp_mask);
- 	return page;
- }
- 
- #ifdef CONFIG_COMPACTION
- /* Try memory compaction for high-order allocations before reclaim */
- static struct page *
--__alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int classzone_idx, int migratetype, enum migrate_mode mode,
-+__alloc_pages_direct_compact(gfp_t gfp_mask, int alloc_flags,
-+	const struct alloc_context *ac, enum migrate_mode mode,
- 	int *contended_compaction, bool *deferred_compaction)
- {
-+	const unsigned int order = ac->order;
- 	unsigned long compact_result;
- 	struct page *page;
- 
-@@ -2390,10 +2397,10 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 		return NULL;
- 
- 	current->flags |= PF_MEMALLOC;
--	compact_result = try_to_compact_pages(zonelist, order, gfp_mask,
--						nodemask, mode,
-+	compact_result = try_to_compact_pages(ac->zonelist, order, gfp_mask,
-+						ac->nodemask, mode,
- 						contended_compaction,
--						alloc_flags, classzone_idx);
-+						alloc_flags, ac->classzone_idx);
- 	current->flags &= ~PF_MEMALLOC;
- 
- 	switch (compact_result) {
-@@ -2412,10 +2419,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	 */
- 	count_vm_event(COMPACTSTALL);
- 
--	page = get_page_from_freelist(gfp_mask, nodemask,
--			order, zonelist, high_zoneidx,
--			alloc_flags & ~ALLOC_NO_WATERMARKS,
--			preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask,
-+					alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
- 
- 	if (page) {
- 		struct zone *zone = page_zone(page);
-@@ -2438,10 +2443,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- }
- #else
- static inline struct page *
--__alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int classzone_idx, int migratetype, enum migrate_mode mode,
-+__alloc_pages_direct_compact(gfp_t gfp_mask, int alloc_flags,
-+	const struct alloc_context *ac, enum migrate_mode mode,
- 	int *contended_compaction, bool *deferred_compaction)
- {
- 	return NULL;
-@@ -2450,8 +2453,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 
- /* Perform direct synchronous page reclaim */
- static int
--__perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
--		  nodemask_t *nodemask)
-+__perform_reclaim(gfp_t gfp_mask, const struct alloc_context *ac)
- {
- 	struct reclaim_state reclaim_state;
- 	int progress;
-@@ -2465,7 +2467,8 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
- 	reclaim_state.reclaimed_slab = 0;
- 	current->reclaim_state = &reclaim_state;
- 
--	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
-+	progress = try_to_free_pages(ac->zonelist, ac->order, gfp_mask,
-+								ac->nodemask);
- 
- 	current->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
-@@ -2478,29 +2481,23 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
- 
- /* The really slow allocator path where we enter direct reclaim */
- static inline struct page *
--__alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int classzone_idx, int migratetype, unsigned long *did_some_progress)
-+__alloc_pages_direct_reclaim(gfp_t gfp_mask, int alloc_flags,
-+		const struct alloc_context *ac, unsigned long *did_some_progress)
- {
- 	struct page *page = NULL;
- 	bool drained = false;
- 
--	*did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
--					       nodemask);
-+	*did_some_progress = __perform_reclaim(gfp_mask, ac);
- 	if (unlikely(!(*did_some_progress)))
- 		return NULL;
- 
- 	/* After successful reclaim, reconsider all zones for allocation */
- 	if (IS_ENABLED(CONFIG_NUMA))
--		zlc_clear_zones_full(zonelist);
-+		zlc_clear_zones_full(ac->zonelist);
- 
- retry:
--	page = get_page_from_freelist(gfp_mask, nodemask, order,
--					zonelist, high_zoneidx,
--					alloc_flags & ~ALLOC_NO_WATERMARKS,
--					preferred_zone, classzone_idx,
--					migratetype);
-+	page = get_page_from_freelist(gfp_mask,
-+					alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
- 
- 	/*
- 	 * If an allocation failed after direct reclaim, it could be because
-@@ -2520,37 +2517,29 @@ retry:
-  * sufficient urgency to ignore watermarks and take other desperate measures
-  */
- static inline struct page *
--__alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, struct zone *preferred_zone,
--	int classzone_idx, int migratetype)
-+__alloc_pages_high_priority(gfp_t gfp_mask, const struct alloc_context *ac)
- {
- 	struct page *page;
- 
- 	do {
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
--			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
--			preferred_zone, classzone_idx, migratetype);
-+		page = get_page_from_freelist(gfp_mask, ALLOC_NO_WATERMARKS, ac);
- 
- 		if (!page && gfp_mask & __GFP_NOFAIL)
--			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-+			wait_iff_congested(ac->preferred_zone, BLK_RW_ASYNC,
-+									HZ/50);
- 	} while (!page && (gfp_mask & __GFP_NOFAIL));
- 
- 	return page;
- }
- 
--static void wake_all_kswapds(unsigned int order,
--			     struct zonelist *zonelist,
--			     enum zone_type high_zoneidx,
--			     struct zone *preferred_zone,
--			     nodemask_t *nodemask)
-+static void wake_all_kswapds(const struct alloc_context *ac)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 
--	for_each_zone_zonelist_nodemask(zone, z, zonelist,
--						high_zoneidx, nodemask)
--		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
-+	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist,
-+						ac->high_zoneidx, ac->nodemask)
-+		wakeup_kswapd(zone, ac->order, zone_idx(ac->preferred_zone));
- }
- 
- static inline int
-@@ -2608,11 +2597,9 @@ bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
- }
- 
- static inline struct page *
--__alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
--	struct zonelist *zonelist, enum zone_type high_zoneidx,
--	nodemask_t *nodemask, struct zone *preferred_zone,
--	int classzone_idx, int migratetype)
-+__alloc_pages_slowpath(gfp_t gfp_mask, struct alloc_context *ac)
- {
-+	const unsigned int order = ac->order;
- 	const gfp_t wait = gfp_mask & __GFP_WAIT;
- 	struct page *page = NULL;
- 	int alloc_flags;
-@@ -2647,8 +2634,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 
- restart:
- 	if (!(gfp_mask & __GFP_NO_KSWAPD))
--		wake_all_kswapds(order, zonelist, high_zoneidx,
--				preferred_zone, nodemask);
-+		wake_all_kswapds(ac);
- 
- 	/*
- 	 * OK, we're below the kswapd watermark and have kicked background
-@@ -2661,18 +2647,17 @@ restart:
- 	 * Find the true preferred zone if the allocation is unconstrained by
- 	 * cpusets.
- 	 */
--	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
-+	if (!(alloc_flags & ALLOC_CPUSET) && !ac->nodemask) {
- 		struct zoneref *preferred_zoneref;
--		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
--				NULL, &preferred_zone);
--		classzone_idx = zonelist_zone_idx(preferred_zoneref);
-+		preferred_zoneref = first_zones_zonelist(ac->zonelist,
-+				ac->high_zoneidx, NULL, &ac->preferred_zone);
-+		ac->classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 	}
- 
- rebalance:
- 	/* This is the last chance, in general, before the goto nopage. */
--	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
--			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
--			preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask,
-+				alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2683,11 +2668,10 @@ rebalance:
- 		 * the allocation is high priority and these type of
- 		 * allocations are system rather than user orientated
- 		 */
--		zonelist = node_zonelist(numa_node_id(), gfp_mask);
-+		ac->zonelist = node_zonelist(numa_node_id(), gfp_mask);
-+
-+		page = __alloc_pages_high_priority(gfp_mask, ac);
- 
--		page = __alloc_pages_high_priority(gfp_mask, order,
--				zonelist, high_zoneidx, nodemask,
--				preferred_zone, classzone_idx, migratetype);
- 		if (page) {
- 			goto got_pg;
- 		}
-@@ -2716,11 +2700,9 @@ rebalance:
- 	 * Try direct compaction. The first pass is asynchronous. Subsequent
- 	 * attempts after direct reclaim are synchronous
- 	 */
--	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
--					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone,
--					classzone_idx, migratetype,
--					migration_mode, &contended_compaction,
-+	page = __alloc_pages_direct_compact(gfp_mask, alloc_flags, ac,
-+					migration_mode,
-+					&contended_compaction,
- 					&deferred_compaction);
- 	if (page)
- 		goto got_pg;
-@@ -2766,12 +2748,8 @@ rebalance:
- 		migration_mode = MIGRATE_SYNC_LIGHT;
- 
- 	/* Try direct reclaim and then allocating */
--	page = __alloc_pages_direct_reclaim(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask,
--					alloc_flags, preferred_zone,
--					classzone_idx, migratetype,
--					&did_some_progress);
-+	page = __alloc_pages_direct_reclaim(gfp_mask, alloc_flags, ac,
-+							&did_some_progress);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2787,10 +2765,7 @@ rebalance:
- 			if ((current->flags & PF_DUMPCORE) &&
- 			    !(gfp_mask & __GFP_NOFAIL))
- 				goto nopage;
--			page = __alloc_pages_may_oom(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask, preferred_zone,
--					classzone_idx, migratetype);
-+			page = __alloc_pages_may_oom(gfp_mask, alloc_flags, ac);
- 			if (page)
- 				goto got_pg;
- 
-@@ -2808,7 +2783,7 @@ rebalance:
- 				 * allocations to prevent needlessly killing
- 				 * innocent tasks.
- 				 */
--				if (high_zoneidx < ZONE_NORMAL)
-+				if (ac->high_zoneidx < ZONE_NORMAL)
- 					goto nopage;
- 			}
- 
-@@ -2821,7 +2796,7 @@ rebalance:
- 	if (should_alloc_retry(gfp_mask, order, did_some_progress,
- 						pages_reclaimed)) {
- 		/* Wait for some write requests to complete then retry */
--		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-+		wait_iff_congested(ac->preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
- 	} else {
- 		/*
-@@ -2829,11 +2804,9 @@ rebalance:
- 		 * direct reclaim and reclaim/compaction depends on compaction
- 		 * being called after reclaim so call directly if necessary
- 		 */
--		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
--					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone,
--					classzone_idx, migratetype,
--					migration_mode, &contended_compaction,
-+		page = __alloc_pages_direct_compact(gfp_mask, alloc_flags, ac,
-+					migration_mode,
-+					&contended_compaction,
- 					&deferred_compaction);
- 		if (page)
- 			goto got_pg;
-@@ -2856,14 +2829,16 @@ struct page *
- __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 			struct zonelist *zonelist, nodemask_t *nodemask)
- {
--	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
--	struct zone *preferred_zone;
- 	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
--	int migratetype = gfpflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
--	int classzone_idx;
-+	struct alloc_context ac = {
-+		.order = order,
-+		.high_zoneidx = gfp_zone(gfp_mask),
-+		.nodemask = nodemask,
-+		.migratetype = gfpflags_to_migratetype(gfp_mask),
-+	};
- 
- 	gfp_mask &= gfp_allowed_mask;
- 
-@@ -2882,38 +2857,35 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	if (unlikely(!zonelist->_zonerefs->zone))
- 		return NULL;
- 
--	if (IS_ENABLED(CONFIG_CMA) && migratetype == MIGRATE_MOVABLE)
-+	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- 
- retry_cpuset:
- 	cpuset_mems_cookie = read_mems_allowed_begin();
- 
-+	/* We set it here, as __alloc_pages_slowpath might have changed it */
-+	ac.zonelist = zonelist;
- 	/* The preferred zone is used for statistics later */
--	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
--				nodemask ? : &cpuset_current_mems_allowed,
--				&preferred_zone);
--	if (!preferred_zone)
-+	preferred_zoneref = first_zones_zonelist(ac.zonelist, ac.high_zoneidx,
-+				ac.nodemask ? : &cpuset_current_mems_allowed,
-+				&ac.preferred_zone);
-+	if (!ac.preferred_zone)
- 		goto out;
--	classzone_idx = zonelist_zone_idx(preferred_zoneref);
-+	ac.classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 
- 	/* First allocation attempt */
--	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
--			zonelist, high_zoneidx, alloc_flags,
--			preferred_zone, classzone_idx, migratetype);
-+	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, alloc_flags, &ac);
- 	if (unlikely(!page)) {
- 		/*
- 		 * Runtime PM, block IO and its error handling path
- 		 * can deadlock because I/O on the device might not
- 		 * complete.
- 		 */
--		gfp_t mask = memalloc_noio_flags(gfp_mask);
--
--		page = __alloc_pages_slowpath(mask, order,
--				zonelist, high_zoneidx, nodemask,
--				preferred_zone, classzone_idx, migratetype);
-+		gfp_mask = memalloc_noio_flags(gfp_mask);
-+		page = __alloc_pages_slowpath(gfp_mask, &ac);
- 	}
- 
--	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
-+	trace_mm_page_alloc(page, order, gfp_mask, ac.migratetype);
- 
- out:
- 	/*
+Please move your Signed-off-by lines to here, otherwise tools like
+"git am" may miss them.
+
+>
+>
+> diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+> index 5e85ed3..6602f5e 100644
+> --- a/arch/arm/mm/mmap.c
+> +++ b/arch/arm/mm/mmap.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/personality.h>
+>  #include <linux/random.h>
+>  #include <asm/cachetype.h>
+> +#include <asm/elf.h>
+>
+>  #define COLOUR_ALIGN(addr,pgoff)               \
+>         ((((addr)+SHMLBA-1)&~(SHMLBA-1)) +      \
+> @@ -19,6 +20,14 @@
+>  #define MIN_GAP (128*1024*1024UL)
+>  #define MAX_GAP ((TASK_SIZE)/6*5)
+>
+> +#if ELF_EXEC_PAGESIZE > PAGE_SIZE
+> +#define ELF_MIN_ALIGN   ELF_EXEC_PAGESIZE
+> +#else
+> +#define ELF_MIN_ALIGN   PAGE_SIZE
+> +#endif
+> +
+> +#define ELF_PAGESTART(_v) ((_v) & ~(unsigned long)(ELF_MIN_ALIGN-1))
+> +
+
+Instead of repeating these defines in each location, I would recommend
+moving them from fs/binfmt_elf.c into include/linux/elf.h and
+including that in the mmap.c files instead.
+
+>  static int mmap_is_legacy(void)
+>  {
+>         if (current->personality & ADDR_COMPAT_LAYOUT)
+> @@ -184,6 +193,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>         } else {
+>                 mm->mmap_base = mmap_base(random_factor);
+>                 mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+> +               if (randomize_va_space > 2)
+> +                       mm->exec_base = ELF_PAGESTART(ELF_ET_DYN_BASE -
+> +                               ((get_random_int() % (1 << 8)) << PAGE_SHIFT));
+>         }
+>  }
+>
+
+I would extract the random_factor logic here into an arm-specific
+mmap_rnd() function so this looks more like the other architectures.
+Then you can reuse mmap_rnd() instead of open-coding the
+get_random_int() call again here.
+
+> diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+> index 1d73662..32be3fd 100644
+> --- a/arch/arm64/mm/mmap.c
+> +++ b/arch/arm64/mm/mmap.c
+> @@ -28,6 +28,16 @@
+>  #include <linux/random.h>
+>
+>  #include <asm/cputype.h>
+> +#include <asm/elf.h>
+> +
+> +
+> +#if ELF_EXEC_PAGESIZE > PAGE_SIZE
+> +#define ELF_MIN_ALIGN   ELF_EXEC_PAGESIZE
+> +#else
+> +#define ELF_MIN_ALIGN   PAGE_SIZE
+> +#endif
+> +
+> +#define ELF_PAGESTART(_v) ((_v) & ~(unsigned long)(ELF_MIN_ALIGN-1))
+>
+>  /*
+>   * Leave enough space between the mmap area and the stack to honour
+> ulimit in
+> @@ -93,6 +103,8 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>         } else {
+>                 mm->mmap_base = mmap_base();
+>                 mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+> +               if (randomize_va_space > 2)
+> +                       mm->exec_base = ELF_PAGESTART(ELF_ET_DYN_BASE - mmap_rnd());
+>         }
+>  }
+>  EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
+> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> index 919b912..8cb9855 100644
+> --- a/arch/x86/mm/mmap.c
+> +++ b/arch/x86/mm/mmap.c
+> @@ -31,6 +31,14 @@
+>  #include <linux/sched.h>
+>  #include <asm/elf.h>
+>
+> +#if ELF_EXEC_PAGESIZE > PAGE_SIZE
+> +#define ELF_MIN_ALIGN   ELF_EXEC_PAGESIZE
+> +#else
+> +#define ELF_MIN_ALIGN   PAGE_SIZE
+> +#endif
+> +
+> +#define ELF_PAGESTART(_v) ((_v) & ~(unsigned long)(ELF_MIN_ALIGN-1))
+> +
+>  struct va_alignment __read_mostly va_align = {
+>         .flags = -1,
+>  };
+> @@ -120,5 +128,7 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>                 mm->get_unmapped_area = arch_get_unmapped_area;
+>         } else {
+>                 mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+> +               if (randomize_va_space > 2)
+> +                       mm->exec_base = ELF_PAGESTART(ELF_ET_DYN_BASE - mmap_rnd());
+>         }
+>  }
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index d8fc060..6f319c1 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -804,8 +804,11 @@ static int load_elf_binary(struct linux_binprm *bprm)
+>                          * load_bias value in order to establish proper
+>                          * non-randomized mappings.
+>                          */
+> -                       if (current->flags & PF_RANDOMIZE)
+> +                       if (current->flags & PF_RANDOMIZE) {
+>                                 load_bias = 0;
+> +                               if (randomize_va_space > 2)
+> +                                       load_bias = current->mm->exec_base;
+
+Your exec_base will already only be non-zero when randomize_va_space >
+2, so this if statement is not needed. Instead of "load_bias = 0" this
+can just be "load_bias = current->mm->exec_base".
+
+> +                       }
+>                         else
+>                                 load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+>  #else
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 6e0b286..dd052ec 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -353,6 +353,7 @@ struct mm_struct {
+>  #endif
+>         unsigned long mmap_base;                /* base of mmap area */
+>         unsigned long mmap_legacy_base;         /* base of mmap area in
+> bottom-up allocations */
+> +       unsigned long exec_base;                /* base of exec area */
+>         unsigned long task_size;                /* size of task vm space */
+>         unsigned long highest_vm_end;           /* highest vma end address */
+>         pgd_t * pgd;
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 9b7d746..1fd4553 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -551,6 +551,7 @@ static void mm_init_owner(struct mm_struct *mm,
+> struct task_struct *p)
+>  static struct mm_struct *mm_init(struct mm_struct *mm, struct
+> task_struct *p)
+>  {
+>         mm->mmap = NULL;
+> +       mm->exec_base = 0;
+>         mm->mm_rb = RB_ROOT;
+>         mm->vmacache_seqnum = 0;
+>         atomic_set(&mm->mm_users, 1);
+>
+>
+>   Signed-off-by: Hector Marco-Gisbert <hecmargi@upv.es>
+>   Signed-off-by: Ismael Ripoll <iripoll@upv.es>
+
+Please update Documentation/sysctl/kernel.txt to describe the new "3"
+value of randomize_va_space. And given that this shouldn't break any
+existing userspace configuration, I think randomize_va_space should
+also have its default flipped from 2 to 3.
+
+Thanks again!
+
+-Kees
+
 -- 
-2.1.2
-
+Kees Cook
+Chrome OS Security
