@@ -1,225 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaLEMYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:24:23 -0500
-Received: from lb3-smtp-cloud6.xs4all.net ([194.109.24.31]:43816 "EHLO
-	lb3-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752887AbaLEMYU (ORCPT
+	id S1751444AbaLEMAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:00:55 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44023 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaLEMAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:24:20 -0500
-Message-ID: <5481A3EC.8020803@xs4all.nl>
-Date: Fri, 05 Dec 2014 13:24:12 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Fri, 5 Dec 2014 07:00:54 -0500
+Date: Fri, 5 Dec 2014 17:30:47 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Joshua I. James" <joshua@cybercrimetech.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: kernel: fixed style warnings in acct.c
+Message-ID: <20141205120047.GB8884@sudip-PC>
+References: <1417754854-6576-1-git-send-email-Joshua@cybercrimetech.com>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>, devicetree@vger.kernel.org,
-        linux-api <linux-api@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH v3] media: platform: add VPFE capture driver support for
- AM437X
-References: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1417648378-18271-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417754854-6576-1-git-send-email-Joshua@cybercrimetech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-Sorry, there are still a few items that need to be fixed.
-If you can make a v4 with these issues addressed, then I can still make a
-pull request, although it depends on Mauro whether it is still accepted for
-3.19.
-
-On 12/04/2014 12:12 AM, Lad, Prabhakar wrote:
-> From: Benoit Parrot <bparrot@ti.com>
+On Fri, Dec 05, 2014 at 01:47:34PM +0900, Joshua I. James wrote:
+> From: "Joshua I. James" <joshua@cybercrimetech.com>
 > 
-> This patch adds Video Processing Front End (VPFE) driver for
-> AM437X family of devices
-> Driver supports the following:
-> - V4L2 API using MMAP buffer access based on videobuf2 api
-> - Asynchronous sensor/decoder sub device registration
-> - DT support
-
-Just to confirm: this driver only supports SDTV formats? No HDTV?
-I didn't see any VIDIOC_*_DV_TIMINGS support, so I assume it really
-isn't supported.
-
+> Fixed style errors identified by checkpatch.
 > 
-> Signed-off-by: Benoit Parrot <bparrot@ti.com>
-> Signed-off-by: Darren Etheridge <detheridge@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Output of checkpatch:
+> WARNING: Missing a blank line after declarations
+> WARNING: line over 80 characters
+> ERROR: spaces required around that '==' (ctx:VxV)
+> +#if ACCT_VERSION==2
+> 
+> Signed-off-by: Joshua I. James <joshua@cybercrimetech.com>
+
+1) kernel is not part of staging. Give your subject properly.
+2) Do not use Initials in your From and Signed-off.
+
+thanks
+sudip
+
 > ---
-
-<snip>
-
-> diff --git a/drivers/media/platform/am437x/am437x-vpfe.c b/drivers/media/platform/am437x/am437x-vpfe.c
-> new file mode 100644
-> index 0000000..25863e8
-> --- /dev/null
-> +++ b/drivers/media/platform/am437x/am437x-vpfe.c
-
-<snip>
-
+>  kernel/acct.c | 22 ++++++++++++++++------
+>  1 file changed, 16 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/acct.c b/kernel/acct.c
+> index 33738ef..322159c 100644
+> --- a/kernel/acct.c
+> +++ b/kernel/acct.c
+> @@ -105,6 +105,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
+>  
+>  	if (acct->active) {
+>  		u64 suspend = sbuf.f_blocks * SUSPEND;
 > +
-> +static int
-> +cmp_v4l2_format(const struct v4l2_format *lhs, const struct v4l2_format *rhs)
-> +{
-> +	return lhs->type == rhs->type &&
-> +		lhs->fmt.pix.width == rhs->fmt.pix.width &&
-> +		lhs->fmt.pix.height == rhs->fmt.pix.height &&
-> +		lhs->fmt.pix.pixelformat == rhs->fmt.pix.pixelformat &&
-> +		lhs->fmt.pix.field == rhs->fmt.pix.field &&
-> +		lhs->fmt.pix.colorspace == rhs->fmt.pix.colorspace;
-
-Add a check for pix.ycbcr_enc and pix.quantization.
-
-<snip>
-
-> +/*
-> + * vpfe_release : This function is based on the vb2_fop_release
-> + * helper function.
-> + * It has been augmented to handle module power management,
-> + * by disabling/enabling h/w module fcntl clock when necessary.
-> + */
-> +static int vpfe_release(struct file *file)
-> +{
-> +	struct vpfe_device *vpfe = video_drvdata(file);
-> +	int ret;
+>  		do_div(suspend, 100);
+>  		if (sbuf.f_bavail <= suspend) {
+>  			acct->active = 0;
+> @@ -112,6 +113,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
+>  		}
+>  	} else {
+>  		u64 resume = sbuf.f_blocks * RESUME;
 > +
-> +	vpfe_dbg(2, vpfe, "vpfe_release\n");
+>  		do_div(resume, 100);
+>  		if (sbuf.f_bavail >= resume) {
+>  			acct->active = 1;
+> @@ -152,8 +154,10 @@ again:
+>  
+>  static void close_work(struct work_struct *work)
+>  {
+> -	struct bsd_acct_struct *acct = container_of(work, struct bsd_acct_struct, work);
+> +	struct bsd_acct_struct *acct =
+> +		container_of(work, struct bsd_acct_struct, work);
+>  	struct file *file = acct->file;
 > +
-> +	ret = _vb2_fop_release(file, NULL);
-
-This isn't going to work. _vb2_fop_release calls v4l2_fh_release(), so
-the v4l2_fh_is_singular_file(file) will be wrong and you release the fh
-once too many.
-
-I would do this:
-
-	if (!v4l2_fh_is_singular_file(file))
-		return vb2_fop_release(file);
-	mutex_lock(&vpfe->lock);
-	ret = _vb2_fop_release(file, NULL);
-	vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
-	mutex_unlock(&vpfe->lock);
-	return ret;
-
+>  	if (file->f_op->flush)
+>  		file->f_op->flush(file, NULL);
+>  	__fput_sync(file);
+> @@ -165,6 +169,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
+>  {
+>  	if (acct) {
+>  		struct pid_namespace *ns = acct->ns;
 > +
-> +	if (v4l2_fh_is_singular_file(file)) {
-> +		mutex_lock(&vpfe->lock);
-> +		vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
-> +		v4l2_fh_release(file);
-> +		mutex_unlock(&vpfe->lock);
-> +	}
+>  		do_acct_process(acct);
+>  		INIT_WORK(&acct->work, close_work);
+>  		init_completion(&acct->done);
+> @@ -182,6 +187,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
+>  static void acct_pin_kill(struct fs_pin *pin)
+>  {
+>  	struct bsd_acct_struct *acct;
 > +
-> +	return ret;
-> +}
-
-<snip>
-
-> +static int vpfe_enum_size(struct file *file, void  *priv,
-> +			  struct v4l2_frmsizeenum *fsize)
-> +{
-> +	struct vpfe_device *vpfe = video_drvdata(file);
-> +	struct v4l2_subdev_frame_size_enum fse;
-> +	struct vpfe_subdev_info *sdinfo;
-> +	struct v4l2_mbus_framefmt mbus;
-> +	struct v4l2_pix_format pix;
-> +	struct vpfe_fmt *fmt;
-> +	int ret;
+>  	acct = container_of(pin, struct bsd_acct_struct, pin);
+>  	mutex_lock(&acct->lock);
+>  	if (!acct->ns) {
+> @@ -448,15 +454,17 @@ static void fill_ac(acct_t *ac)
+>  #endif
+>  	do_div(elapsed, AHZ);
+>  	ac->ac_btime = get_seconds() - elapsed;
+> -#if ACCT_VERSION==2
+> +#if ACCT_VERSION == 2
+>  	ac->ac_ahz = AHZ;
+>  #endif
+>  
+>  	spin_lock_irq(&current->sighand->siglock);
+>  	tty = current->signal->tty;	/* Safe as we hold the siglock */
+>  	ac->ac_tty = tty ? old_encode_dev(tty_devnum(tty)) : 0;
+> -	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_utime)));
+> -	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_stime)));
+> +	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(
+> +		cputime_to_jiffies(pacct->ac_utime)));
+> +	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(
+> +		cputime_to_jiffies(pacct->ac_stime)));
+>  	ac->ac_flag = pacct->ac_flag;
+>  	ac->ac_mem = encode_comp_t(pacct->ac_mem);
+>  	ac->ac_minflt = encode_comp_t(pacct->ac_minflt);
+> @@ -504,8 +512,8 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+>  
+>  		ac.ac_pid = task_tgid_nr_ns(current, ns);
+>  		rcu_read_lock();
+> -		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent),
+> -					     ns);
+> +		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(
+> +			current->real_parent), ns);
+>  		rcu_read_unlock();
+>  	}
+>  #endif
+> @@ -516,6 +524,7 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+>  	if (file_start_write_trylock(file)) {
+>  		/* it's been opened O_APPEND, so position is irrelevant */
+>  		loff_t pos = 0;
 > +
-> +	vpfe_dbg(2, vpfe, "vpfe_enum_size\n");
+>  		__kernel_write(file, (char *)&ac, sizeof(acct_t), &pos);
+>  		file_end_write(file);
+>  	}
+> @@ -573,6 +582,7 @@ static void slow_acct_process(struct pid_namespace *ns)
+>  {
+>  	for ( ; ns; ns = ns->parent) {
+>  		struct bsd_acct_struct *acct = acct_get(ns);
 > +
-> +	/* check for valid format */
-> +	fmt = find_format_by_pix(fsize->pixel_format);
-> +	if (!fmt) {
-> +		vpfe_dbg(3, vpfe, "Invalid pixel code: %x, default used instead\n",
-> +			fsize->pixel_format);
-> +		return -EINVAL;
-> +	}
-> +
-> +	memset(fsize->reserved, 0x0, sizeof(fsize->reserved));
-> +
-> +	sdinfo = vpfe->current_subdev;
-> +	if (!sdinfo->sd)
-> +		return -EINVAL;
-> +
-> +	memset(&pix, 0x0, sizeof(pix));
-> +	/* Construct pix from parameter and use default for the rest */
-> +	pix.pixelformat = fsize->pixel_format;
-> +	pix.width = 640;
-> +	pix.height = 480;
-> +	pix.colorspace = V4L2_COLORSPACE_SRGB;
-> +	pix.field = V4L2_FIELD_NONE;
-> +	pix_to_mbus(vpfe, &pix, &mbus);
-> +
-> +	memset(&fse, 0x0, sizeof(fse));
-> +	fse.index = fsize->index;
-> +	fse.pad = 0;
-> +	fse.code = mbus.code;
-> +	ret = v4l2_subdev_call(sdinfo->sd, pad, enum_frame_size, NULL, &fse);
-
-FYI: strictly speaking this is wrong since this op theoretically expects a
-v4l2_subdev_fh pointer instead of a NULL argument. However, you do not have
-an alternative right now. As you know, I've been working on fixing this, so
-if that gets accepted, then you need to update this code as well in a later
-patch.
-
-> +	if (ret)
-> +		return -EINVAL;
-> +
-> +	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d code: %x W:[%d,%d] H:[%d,%d]\n",
-> +		fse.index, fse.code, fse.min_width, fse.max_width,
-> +		fse.min_height, fse.max_height);
-> +
-> +	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
-> +	fsize->discrete.width = fse.max_width;
-> +	fsize->discrete.height = fse.max_height;
-> +
-> +	vpfe_dbg(1, vpfe, "vpfe_enum_size: index: %d pixformat: %s size: %dx%d\n",
-> +		fsize->index, print_fourcc(fsize->pixel_format),
-> +		fsize->discrete.width, fsize->discrete.height);
-> +
-> +	return 0;
-> +}
-> +
-
-<snip>
-
-> +static int
-> +vpfe_g_selection(struct file *file, void *fh, struct v4l2_selection *s)
-> +{
-> +	struct vpfe_device *vpfe = video_drvdata(file);
-> +
-> +	switch (s->target) {
-> +	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
-> +	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
-
-These two COMPOSE cases should be dropped, since there is no compose support!
-
-> +	case V4L2_SEL_TGT_CROP_BOUNDS:
-> +	case V4L2_SEL_TGT_CROP_DEFAULT:
-> +		s->r.left = s->r.top = 0;
-> +		s->r.width = vpfe->crop.width;
-> +		s->r.height = vpfe->crop.height;
-> +		break;
-> +
-> +	case V4L2_SEL_TGT_CROP:
-> +		s->r = vpfe->crop;
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-
-<snip>
-
-Regards,
-
-	Hans
+>  		if (acct) {
+>  			do_acct_process(acct);
+>  			mutex_unlock(&acct->lock);
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
