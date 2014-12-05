@@ -1,163 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557AbaLEC2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 21:28:55 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:54424 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933456AbaLEC2y (ORCPT
+	id S933559AbaLECbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 21:31:13 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58181 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932378AbaLECbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 21:28:54 -0500
-Date: Wed, 3 Dec 2014 04:35:22 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libsmbios-devel@lists.us.dell.com,
-        Srinivas_G_Gowda@dell.com, Michael_E_Brown@dell.com,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH v2] platform: x86: dell-laptop: Add support for keyboard
- backlight
-Message-ID: <20141203123521.GB42394@vmdeb7>
-References: <1415967813-7223-1-git-send-email-pali.rohar@gmail.com>
- <1416754245-15550-1-git-send-email-pali.rohar@gmail.com>
- <20141203084319.GA52608@vmdeb7>
- <201412041116.47542@pali>
+	Thu, 4 Dec 2014 21:31:12 -0500
+From: Calvin Owens <calvinowens@fb.com>
+To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <x86@kernel.org>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        Calvin Owens <calvinowens@fb.com>
+Subject: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt storms.
+Date: Thu, 4 Dec 2014 18:29:35 -0800
+Message-ID: <1417746575-23299-1-git-send-email-calvinowens@fb.com>
+X-Mailer: git-send-email 2.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412041116.47542@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-05_01:2014-12-04,2014-12-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=8 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=26.7046773694174
+ compositescore=0.928862112264561 urlsuspect_oldscore=0.928862112264561
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.928862112264561 spamscore=8
+ recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412050022
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 11:16:47AM +0100, Pali Rohár wrote:
-> > > seconds not supported). +  cbRES4, byte1  Maximum
-> > > acceptable minutes value (0 if minutes not supported). + 
-> > > cbRES4, byte2  Maximum acceptable hours value (0 if hours
-> > > not supported). +  cbRES4, byte3  Maxiomum acceptable days
-> > > value (0 if days not supported)
-> > 
-> > Maximum             ^
-> > 
-> > This interface appears to define all possible values for the
-> > timeout between cbRES3[1] and cbRES4[*]. Why is the
-> > kbd_timeouts[] array a quirk with fixed values? It seems it
-> > could indeed be dynamically determined.
-> > 
-> 
-> BIOS bug (or BIOS feature?). No idea. For invalid value on XPS 
-> BIOS just reset keyboard backlight to someting default...
+The Intel CMCI interrupt handler calls mce_timer_kick() to force more
+frequent polling for MCE events when a CMCI storm occurs and CMCI
+interrupts are subsequently disabled.
 
+If a CMCI interrupt storm happens to be detected while the timer
+interrupt is executing timer functions, mce_timer_kick() can race with
+mce_timer_fn(), which results in a double-add and the following BUG:
 
-OK good. Let's just get the quirk a comment so it's clear why it's necessary.
+	#0 [ffff88047fda3ad0] machine_kexec at ffffffff8102bdf5
+	#1 [ffff88047fda3b20] crash_kexec at ffffffff8109e788
+	#2 [ffff88047fda3bf0] oops_end at ffffffff815f20e8
+	#3 [ffff88047fda3c20] die at ffffffff81005c08
+	#4 [ffff88047fda3c50] do_trap at ffffffff815f192b
+	#5 [ffff88047fda3cb0] do_invalid_op at ffffffff81002f42
+	#6 [ffff88047fda3d60] invalid_op at ffffffff815fa668
+	[exception RIP: add_timer_on+234]
+	RIP: ffffffff8104d05a RSP: ffff88047fda3e18 RFLAGS: 00010286
+	RAX: 0000000000000000 RBX: ffff88047fdacbc0 RCX: 000000001fbee3ff
+	RDX: ffff88047fda0000 RSI: 000000000000001d RDI: ffff88047fdacbc0
+	RBP: ffff88047fda3e58 R8: 0000000000000000 R9: ffffffff81aa0940
+	R10: 0720072007200720 R11: 0720072007200765 R12: ffff880474a6c000
+	R13: 0000000000000101 R14: 000000000000001d R15: ffff88047fdacbc0
+	ORIG_RAX: ffffffffffffffff CS: 0010 SS: 0018
+	#7 [ffff88047fda3e60] mce_timer_fn at ffffffff8101f524
+	#8 [ffff88047fda3e80] call_timer_fn at ffffffff8104b4fa
+	#9 [ffff88047fda3ec0] run_timer_softirq at ffffffff8104ce70
 
-...
-> 
-> > > +
-> > > +struct kbd_info {
-> > > +	u16 modes;
-> > > +	u8 type;
-> > > +	u8 triggers;
-> > > +	u8 levels;
-> > > +	u8 seconds;
-> > > +	u8 minutes;
-> > > +	u8 hours;
-> > > +	u8 days;
-> > > +};
-> > > +
-> > > +
-> > > +static u8 kbd_mode_levels[16];
-> > > +static int kbd_mode_levels_count;
-> > 
-> > I'm confused by these. How are they different from
-> > kbd_info.levels?
-> > 
-> 
-> There are two interfaces how to set keyboard backlight. Both are 
-> documented above. One via kbd mode and one via kbd level. Some 
-> laptops (e.g my E6440) support only kbd mode and some (e.g XPS) 
-> support only kbd level. So we need to implement both interfaces 
-> in kernel if we want to support as more machines as possible.
+The timer_add() in mce_timer_kick() is actually unnecessary: since the
+timer is re-added by its handler function, the only case in which the
+timer doesn't exist is when the CMCI interrupt calls mce_timer_kick() in
+the interval between the timer firing and mce_timer_fn() actually being
+executed. Thus, the timer work will be performed by mce_timer_fn() just
+after the interrupt exits.
 
-At the very least, let's get a comment block describing these and the two
-interfaces. It wasn't clear to me from the big block of register description
-that there were two separate interfaces.
+This patch removes the add_timer() from mce_timer_kick(), and disables
+local interrupts during mce_timer_fn() so that mce_timer_fn() will
+always pick up the timer interval value that mce_timer_kick() drops
+in the PERCPU variable.
 
-...
-> > > +	for (i = 0; i < 16; ++i)
-> > 
-> > Doesn't this only apply to bits 5-8? Why not just loop through
-> > those?
-> > 
-> 
-> Some bits are reserved for future use (now undocumented). So once 
-> we know what they means we can adjust global enum/macro and 
-> changing this for loop will not be needed. 
-> 
-> > for (i = KBD_MODE_BIT_TRIGGER_25; i <=
-> > KBD_MODE_BIT_TRIGGER_100)
-> > 
-> > The level_mode_bit check becomes unecessary.
-> > 
-> 
-> I tried to write general code which check all possible modes if 
-> they are of type which configure level. And because some of them 
-> are undocumented I used this approach, so in future global 
-> enum/macro could be extended.
+This means that the CMCI interrupt that hits the storm threshold will
+call mce_timer_kick() either:
 
-Fair enough. I won't bike shed this.
+	1) In the interval between the mce_timer firing and mce_timer_fn()
+	   disabling local IRQs. In this case, mce_timer_fn() will
+	   immediately execute after the CMCI handler exits, and will
+	   use the interval loaded in the PERCPU variable from
+	   mce_timer_kick() to calculate its next timer interval.
 
-> 
-> > > +		if (kbd_is_level_mode_bit(i) && (BIT(i) &
-> > > kbd_info.modes))
-> > > +			kbd_mode_levels[1+kbd_mode_levels_count++] = i;
-> > 
-> > One space around operators like + please.
-> > 
-> > What is kbd_mode_levels[0] reserved for? The current level?
-> > Isn't that what kbd_state.level is for?
-> > 
-> 
-> Reserved for off mode -- keyboard backlight turned off.
-> 
-> kbd level is for laptops which support kbd level. kbd mode is for 
-> laptops which support setting level via kbd mode.
-> 
-> > > +
-> > > +	if (kbd_mode_levels_count > 0) {
-> > > +		for (i = 0; i < 16; ++i) {
-> > 
-> > If 0-4 don't apply here, why loop through them? Should we just
-> > set levels[0] to 0 if it isn't one of 5-8?
-> > 
-> 
-> We know that BIOSes are buggy, so I can imagine that off mode 
-> (which is enum = 0) does not have to be supported... So for 
-> kbd_mode_levels[0] we set first supported mode (if off is not 
-> supported we will choose something other, so kernel code will not 
-> call unsupported mode).
+	2) Happen after mce_timer_fn() has done its work, in which case
+	   the existing timer will be updated with the new interval if
+	   it is before the existing one.
 
-This sort of defensive programming is good, but it does need a comment.
+Signed-off-by: Calvin Owens <calvinowens@fb.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-/*
- * Find the first supported mode and assign to kbd_mode_levels[0].
- * This should be 0 (off), but we cannot depend on the BIOS to
- * support 0.
- */
-
-> 
-> > If bits 9-16 are reserved, it seems it would be best to avoid
-> > checking for them as they might return a false positive, and
-> > we'd be setting kbd_mode_levels to an undefined value.
-
-And I think you've addressed this comment above.
-
-So in general, whenever you're working around bugs in firmware or hardware or
-doing anything that might not be obvious to someone reviewing your code without
-all the context you've built up, it's important to add a comment explaining why.
-
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 61a9668ce..7074a90 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1286,7 +1286,7 @@ static int cmc_error_seen(void)
+ static void mce_timer_fn(unsigned long data)
+ {
+ 	struct timer_list *t = this_cpu_ptr(&mce_timer);
+-	unsigned long iv;
++	unsigned long iv, flags;
+ 	int notify;
+ 
+ 	WARN_ON(smp_processor_id() != data);
+@@ -1301,6 +1301,9 @@ static void mce_timer_fn(unsigned long data)
+ 	 * Alert userspace if needed.  If we logged an MCE, reduce the
+ 	 * polling interval, otherwise increase the polling interval.
+ 	 */
++
++	local_irq_save(flags);
++
+ 	iv = __this_cpu_read(mce_next_interval);
+ 	notify = mce_notify_irq();
+ 	notify |= cmc_error_seen();
+@@ -1316,6 +1319,8 @@ static void mce_timer_fn(unsigned long data)
+ 		t->expires = jiffies + iv;
+ 		add_timer_on(t, smp_processor_id());
+ 	}
++
++	local_irq_restore(flags);
+ }
+ 
+ /*
+@@ -1330,9 +1335,6 @@ void mce_timer_kick(unsigned long interval)
+ 	if (timer_pending(t)) {
+ 		if (time_before(when, t->expires))
+ 			mod_timer_pinned(t, when);
+-	} else {
+-		t->expires = round_jiffies(when);
+-		add_timer_on(t, smp_processor_id());
+ 	}
+ 	if (interval < iv)
+ 		__this_cpu_write(mce_next_interval, interval);
 -- 
-Darren Hart
-Intel Open Source Technology Center
+2.1.1
+
