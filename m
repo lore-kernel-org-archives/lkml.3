@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaLEW4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:56:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1752837AbaLEW4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:56:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbaLEW4P (ORCPT
+	with ESMTP id S1752699AbaLEW4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:15 -0500
+	Fri, 5 Dec 2014 17:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.14 39/73] usb-quirks: Add reset-resume quirk for MS Wireless Laser Mouse 6000
-Date: Fri,  5 Dec 2014 14:44:45 -0800
-Message-Id: <20141205224435.113628039@linuxfoundation.org>
+        Jurgen Kramer <gtmkramer@xs4all.nl>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 43/73] ALSA: usb-audio: Add ctrl message delay quirk for Marantz/Denon devices
+Date: Fri,  5 Dec 2014 14:44:49 -0800
+Message-Id: <20141205224435.228004067@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -28,32 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jurgen Kramer <gtmkramer@xs4all.nl>
 
-commit 263e80b43559a6103e178a9176938ce171b23872 upstream.
+commit 6e84a8d7ac3ba246ef44e313e92bc16a1da1b04a upstream.
 
-This wireless mouse receiver needs a reset-resume quirk to properly come
-out of reset.
+This patch adds a USB control message delay quirk for a few specific Marantz/Denon
+devices. Without the delay the DACs will not work properly and produces the
+following type of messages:
 
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1165206
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Nov 15 10:09:21 orwell kernel: [   91.342880] usb 3-13: clock source 41 is not valid, cannot use
+Nov 15 10:09:21 orwell kernel: [   91.343775] usb 3-13: clock source 41 is not valid, cannot use
+
+There are likely other Marantz/Denon devices using the same USB module which exhibit the
+same problems. But as this cannot be verified I limited the patch to the devices
+I could test.
+
+The following two devices are covered by this path:
+- Marantz SA-14S1
+- Marantz HD-DAC1
+
+Signed-off-by: Jurgen Kramer <gtmkramer@xs4all.nl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/usb/quirks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -44,6 +44,9 @@ static const struct usb_device_id usb_qu
- 	/* Creative SB Audigy 2 NX */
- 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Microsoft Wireless Laser Mouse 6000 Receiver */
-+	{ USB_DEVICE(0x045e, 0x00e1), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -1142,6 +1142,20 @@ void snd_usb_ctl_msg_quirk(struct usb_de
+ 	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x23ba) &&
+ 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+ 		mdelay(20);
 +
- 	/* Microsoft LifeCam-VX700 v2.0 */
- 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Marantz/Denon devices with USB DAC functionality need a delay
++	 * after each class compliant request
++	 */
++	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x154e) &&
++	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS) {
++
++		switch (le16_to_cpu(dev->descriptor.idProduct)) {
++		case 0x3005: /* Marantz HD-DAC1 */
++		case 0x3006: /* Marantz SA-14S1 */
++			mdelay(20);
++			break;
++		}
++	}
+ }
  
+ /*
 
 
