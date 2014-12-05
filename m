@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaLEKYP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:24:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44856 "EHLO mx1.redhat.com"
+	id S1752833AbaLELU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:20:29 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:42975 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaLEKYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:24:13 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <548172DE.9090007@samsung.com>
-References: <548172DE.9090007@samsung.com> <20141126141709.3944.66589.stgit@warthog.procyon.org.uk> <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, mmarek@suse.cz,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7 signature to a module [ver #2]
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <23279.1417775034.1@warthog.procyon.org.uk>
-Date: Fri, 05 Dec 2014 10:23:54 +0000
-Message-ID: <23280.1417775034@warthog.procyon.org.uk>
+	id S1751356AbaLELUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 06:20:25 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc32: fix warning from include/linux/mm.h
+Message-Id: <20141205112020.640FA1A5D4F@localhost.localdomain>
+Date: Fri,  5 Dec 2014 12:20:20 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+include/linux/mm.h: In function 'is_vmalloc_addr':
+include/linux/mm.h:367:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  return addr >= VMALLOC_START && addr < VMALLOC_END;
+              ^
 
-> sign-file.c produce lots of annoying noise.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-How did you get it to produce that?
+---
+ arch/powerpc/include/asm/pgtable-ppc32.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-David
+diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+index 234e07c..543bb8e 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc32.h
++++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+@@ -92,7 +92,7 @@ extern int icache_44x_need_flush;
+  * system.  This really does become a problem for machines with good amounts
+  * of RAM.  -- Cort
+  */
+-#define VMALLOC_OFFSET (0x1000000) /* 16M */
++#define VMALLOC_OFFSET (0x1000000U) /* 16M */
+ #ifdef PPC_PIN_SIZE
+ #define VMALLOC_START (((_ALIGN((long)high_memory, PPC_PIN_SIZE) + VMALLOC_OFFSET) & ~(VMALLOC_OFFSET-1)))
+ #else
+-- 
+2.1.0
+
