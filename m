@@ -1,103 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaLEOrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:47:12 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:44577 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaLEOrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:47:10 -0500
-X-IronPort-AV: E=Sophos;i="5.07,522,1413270000"; 
-   d="scan'208";a="52369475"
-Message-ID: <5481C567.9040108@broadcom.com>
-Date: Fri, 5 Dec 2014 15:47:03 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Hante Meuleman <meuleman@broadcom.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: using DMA-API on ARM
-References: <5481794E.4050406@broadcom.com> <20141205094507.GP11285@n2100.arm.linux.org.uk> <20141205122423.GK1630@arm.com> <F51492713EF10846800D8C0ED37A7DCE019016E1@SJEXCHMB15.corp.ad.broadcom.com> <20141205132332.GS11285@n2100.arm.linux.org.uk> <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com>
-In-Reply-To: <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751402AbaLEOsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:48:24 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:60107 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaLEOsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 09:48:23 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Qiang Huang <h.huangqiang@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm: page_alloc: embed OOM killing naturally into allocation slowpath
+Date: Fri,  5 Dec 2014 09:48:13 -0500
+Message-Id: <1417790893-32010-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/14 15:20, Hante Meuleman wrote:
-> Ok, I'll add the necessary debug to get all the information out,
-> but it will take some time to get it done, so I won't have anything
-> before Monday.
->
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: vrijdag 5 december 2014 14:24
-> To: Hante Meuleman
-> Cc: Will Deacon; Arend Van Spriel; Marek Szyprowski; linux-arm-kernel@lists.infradead.org; David Miller; linux-kernel@vger.kernel.org; brcm80211-dev-list; linux-wireless
-> Subject: Re: using DMA-API on ARM
->
-> Please wrap your message - replying to a message which looks like this in
-> my editor is far from easy, and gives me much more work to /manually/
-> reformat it before I can reply to it:
+The OOM killing invocation does a lot of duplicative checks against
+the task's allocation context.  Rework it to take advantage of the
+existing checks in the allocator slowpath.
 
-That's what happens with corporate IT forcing to use Outlook. We can 
-workaround that using Thunderbird on Citrix. I will enlighten Hante 
-about that option :-)
+The OOM killer is invoked when the allocator is unable to reclaim any
+pages but the allocation has to keep looping.  Instead of having a
+check for __GFP_NORETRY hidden in oom_gfp_allowed(), just move the OOM
+invocation to the true branch of should_alloc_retry().  The __GFP_FS
+check from oom_gfp_allowed() can then be moved into the OOM avoidance
+branch in __alloc_pages_may_oom(), along with the PF_DUMPCORE test.
 
-Regards,
-Arend
+__alloc_pages_may_oom() can then signal to the caller whether the OOM
+killer was invoked, instead of requiring it to duplicate the order and
+high_zoneidx checks to guess this when deciding whether to continue.
 
-> On Fri, Dec 05, 2014 at 12:56:45PM +0000, Hante Meuleman wrote:
->> The problem is with data coming from device, so DMA from device to host. The $
->>
->> However: this indicates that dma_alloc_coherent on an ARM target may result i$
->>
->> Regards,
->> Hante
->
-> Thanks.
->
-> On Fri, Dec 05, 2014 at 12:56:45PM +0000, Hante Meuleman wrote:
->> However: this indicates that dma_alloc_coherent on an ARM target may
->> result in a memory buffer which can be cached which conflicts with
->> the API of this function.
->
-> If the memory has an alias which is cacheable, it is possible for cache
-> lines to get allocated via that alias, even if the alias has no explicit
-> accesses to it.
->
-> This is something which I've been going on for quite literally /years/ -
-> mismatched cache attributes can cause unpredictable behaviour.  I've had
-> a lot of push back from people who are of the opinion that "if it works
-> for me, then there isn't a problem" and I eventually gave up fighting
-> the battle, especially as the ARM architecture people weakened my
-> reasoning behind it by publishing a relaxation of the "no differing
-> attributes" issue.  This was particularly true of those who wanted to
-> use ioremap() on system memory - and cases such as
-> dma_init_coherent_memory().
->
-> So, I never fixed this problem in the original DMA allocator code; I
-> basically gave up with it.  It's a latent bug which did need to be fixed,
-> and is still present today in the non-CMA case.
->
-> The symptoms which you are reporting sound very much like this kind of
-> problem - the virtual address for the memory returned by
-> dma_alloc_coherent() will not be cacheable memory - it will have been
-> remapped using map_vm_area().  However, there could very well be a fully
-> cacheable lowmem mapping of that memory, which if a read (speculative or
-> otherwise) will bring a cache line in, and because the caches are VIPT
-> or PIPT, that cache line can be hit via the non-cacheable mapping too.
->
-> What I /really/ need is more evidence of this to tell those disbelievers
-> where to stick their flawed arguments. :)
->
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/oom.h |  5 ----
+ mm/page_alloc.c     | 78 +++++++++++++++++++++++------------------------------
+ 2 files changed, 33 insertions(+), 50 deletions(-)
+
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index e8d6e1058723..4971874f54db 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -85,11 +85,6 @@ static inline void oom_killer_enable(void)
+ 	oom_killer_disabled = false;
+ }
+ 
+-static inline bool oom_gfp_allowed(gfp_t gfp_mask)
+-{
+-	return (gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY);
+-}
+-
+ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+ 
+ /* sysctls */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 616a2c956b4b..88b64c09a8c0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2232,12 +2232,21 @@ static inline struct page *
+ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int classzone_idx, int migratetype)
++	int classzone_idx, int migratetype, unsigned long *did_some_progress)
+ {
+ 	struct page *page;
+ 
+-	/* Acquire the per-zone oom lock for each zone */
++	*did_some_progress = 0;
++
++	if (oom_killer_disabled)
++		return NULL;
++
++	/*
++	 * Acquire the per-zone oom lock for each zone.  If that
++	 * fails, somebody else is making progress for us.
++	 */
+ 	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
++		*did_some_progress = 1;
+ 		schedule_timeout_uninterruptible(1);
+ 		return NULL;
+ 	}
+@@ -2263,12 +2272,18 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 		goto out;
+ 
+ 	if (!(gfp_mask & __GFP_NOFAIL)) {
++		/* Coredumps can quickly deplete all memory reserves */
++		if (current->flags & PF_DUMPCORE)
++			goto out;
+ 		/* The OOM killer will not help higher order allocs */
+ 		if (order > PAGE_ALLOC_COSTLY_ORDER)
+ 			goto out;
+ 		/* The OOM killer does not needlessly kill tasks for lowmem */
+ 		if (high_zoneidx < ZONE_NORMAL)
+ 			goto out;
++		/* The OOM killer does not compensate for light reclaim */
++		if (!(gfp_mask & __GFP_FS))
++			goto out;
+ 		/*
+ 		 * GFP_THISNODE contains __GFP_NORETRY and we never hit this.
+ 		 * Sanity check for bare calls of __GFP_THISNODE, not real OOM.
+@@ -2281,7 +2296,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	}
+ 	/* Exhausted what can be done so it's blamo time */
+ 	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
+-
++	*did_some_progress = 1;
+ out:
+ 	oom_zonelist_unlock(zonelist, gfp_mask);
+ 	return page;
+@@ -2571,7 +2586,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
+ 
+-restart:
+ 	if (!(gfp_mask & __GFP_NO_KSWAPD))
+ 		wake_all_kswapds(order, zonelist, high_zoneidx,
+ 				preferred_zone, nodemask);
+@@ -2701,51 +2715,25 @@ rebalance:
+ 	if (page)
+ 		goto got_pg;
+ 
+-	/*
+-	 * If we failed to make any progress reclaiming, then we are
+-	 * running out of options and have to consider going OOM
+-	 */
+-	if (!did_some_progress) {
+-		if (oom_gfp_allowed(gfp_mask)) {
+-			if (oom_killer_disabled)
+-				goto nopage;
+-			/* Coredumps can quickly deplete all memory reserves */
+-			if ((current->flags & PF_DUMPCORE) &&
+-			    !(gfp_mask & __GFP_NOFAIL))
+-				goto nopage;
+-			page = __alloc_pages_may_oom(gfp_mask, order,
+-					zonelist, high_zoneidx,
+-					nodemask, preferred_zone,
+-					classzone_idx, migratetype);
+-			if (page)
+-				goto got_pg;
+-
+-			if (!(gfp_mask & __GFP_NOFAIL)) {
+-				/*
+-				 * The oom killer is not called for high-order
+-				 * allocations that may fail, so if no progress
+-				 * is being made, there are no other options and
+-				 * retrying is unlikely to help.
+-				 */
+-				if (order > PAGE_ALLOC_COSTLY_ORDER)
+-					goto nopage;
+-				/*
+-				 * The oom killer is not called for lowmem
+-				 * allocations to prevent needlessly killing
+-				 * innocent tasks.
+-				 */
+-				if (high_zoneidx < ZONE_NORMAL)
+-					goto nopage;
+-			}
+-
+-			goto restart;
+-		}
+-	}
+-
+ 	/* Check if we should retry the allocation */
+ 	pages_reclaimed += did_some_progress;
+ 	if (should_alloc_retry(gfp_mask, order, did_some_progress,
+ 						pages_reclaimed)) {
++		/*
++		 * If we fail to make progress by freeing individual
++		 * pages, but the allocation wants us to keep going,
++		 * start OOM killing tasks.
++		 */
++		if (!did_some_progress) {
++			page = __alloc_pages_may_oom(gfp_mask, order, zonelist,
++						high_zoneidx, nodemask,
++						preferred_zone, classzone_idx,
++						migratetype,&did_some_progress);
++			if (page)
++				goto got_pg;
++			if (!did_some_progress)
++				goto nopage;
++		}
+ 		/* Wait for some write requests to complete then retry */
+ 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+-- 
+2.1.3
 
