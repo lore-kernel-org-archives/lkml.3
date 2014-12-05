@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaLEXSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:18:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54651 "EHLO
+	id S1753948AbaLEXTC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:19:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891AbaLEXGc (ORCPT
+	with ESMTP id S1753389AbaLEW4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:32 -0500
+	Fri, 5 Dec 2014 17:56:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kozlov <xeb@mail.ru>, Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/45] pptp: fix stack info leak in pptp_getname()
-Date: Fri,  5 Dec 2014 14:44:57 -0800
-Message-Id: <20141205223318.936965348@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 53/73] iser-target: Handle DEVICE_REMOVAL event on network portal listener correctly
+Date: Fri,  5 Dec 2014 14:44:59 -0800
+Message-Id: <20141205224435.525286957@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
-References: <20141205223316.738290875@linuxfoundation.org>
+In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
+References: <20141205224433.921659956@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,40 +25,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
 
-[ Upstream commit a5f6fc28d6e6cc379c6839f21820e62262419584 ]
+commit 3b726ae2de02a406cc91903f80132daee37b6f1b upstream.
 
-pptp_getname() only partially initializes the stack variable sa,
-particularly only fills the pptp part of the sa_addr union. The code
-thereby discloses 16 bytes of kernel stack memory via getsockname().
+In this case the cm_id->context is the isert_np, and the cm_id->qp
+is NULL, so use that to distinct the cases.
 
-Fix this by memset(0)'ing the union before.
+Since we don't expect any other events on this cm_id we can
+just return -1 for explicit termination of the cm_id by the
+cma layer.
 
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ppp/pptp.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ppp/pptp.c
-+++ b/drivers/net/ppp/pptp.c
-@@ -506,7 +506,9 @@ static int pptp_getname(struct socket *s
- 	int len = sizeof(struct sockaddr_pppox);
- 	struct sockaddr_pppox sp;
+---
+ drivers/infiniband/ulp/isert/ib_isert.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
+
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -725,14 +725,25 @@ wake_up:
+ 	complete(&isert_conn->conn_wait);
+ }
  
--	sp.sa_family	  = AF_PPPOX;
-+	memset(&sp.sa_addr, 0, sizeof(sp.sa_addr));
+-static void
++static int
+ isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
+ {
+-	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++	struct isert_conn *isert_conn;
 +
-+	sp.sa_family    = AF_PPPOX;
- 	sp.sa_protocol  = PX_PROTO_PPTP;
- 	sp.sa_addr.pptp = pppox_sk(sock->sk)->proto.pptp.src_addr;
++	if (!cma_id->qp) {
++		struct isert_np *isert_np = cma_id->context;
++
++		isert_np->np_cm_id = NULL;
++		return -1;
++	}
++
++	isert_conn = (struct isert_conn *)cma_id->context;
  
+ 	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
++
++	return 0;
+ }
+ 
+ static int
+@@ -747,6 +758,9 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	switch (event->event) {
+ 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+ 		ret = isert_connect_request(cma_id, event);
++		if (ret)
++			pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
++				event->event, ret);
+ 		break;
+ 	case RDMA_CM_EVENT_ESTABLISHED:
+ 		isert_connected_handler(cma_id);
+@@ -756,7 +770,7 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+ 		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id, disconnect);
+ 		break;
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
+ 	default:
+@@ -764,12 +778,6 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 		break;
+ 	}
+ 
+-	if (ret != 0) {
+-		pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
+-		       event->event, ret);
+-		dump_stack();
+-	}
+-
+ 	return ret;
+ }
+ 
+@@ -2775,7 +2783,8 @@ isert_free_np(struct iscsi_np *np)
+ {
+ 	struct isert_np *isert_np = (struct isert_np *)np->np_context;
+ 
+-	rdma_destroy_id(isert_np->np_cm_id);
++	if (isert_np->np_cm_id)
++		rdma_destroy_id(isert_np->np_cm_id);
+ 
+ 	np->np_context = NULL;
+ 	kfree(isert_np);
 
 
