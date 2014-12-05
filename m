@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaLEXNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:13:37 -0500
-Received: from aniota.com ([63.225.163.150]:1646 "EHLO aniota.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752871AbaLEXNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:13:32 -0500
-X-Greylist: delayed 2253 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Dec 2014 18:13:31 EST
-Date: Fri, 5 Dec 2014 14:35:54 -0800 (PST)
-From: terry white <twhite@aniota.com>
-To: joe@perches.com
-cc: linux-ppp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
- pr_warn() in mppe_rekey()
-In-Reply-To: <1417766255.2721.43.camel@perches.com>
-Message-ID: <Pine.LNX.4.64.1412051403160.20522@yossarian>
-References: <5307CAA2.8060406@users.sourceforge.net>  <530B5FB6.6010207@users.sourceforge.net>
-  <alpine.DEB.2.10.1402241710370.2074@hadrien>  <530C5E18.1020800@users.sourceforge.net>
-  <alpine.DEB.2.10.1402251014170.2080@hadrien>  <530CD2C4.4050903@users.sourceforge.net>
-  <alpine.DEB.2.10.1402251840450.7035@hadrien>  <530CF8FF.8080600@users.sourceforge.net>
-  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> 
- <530DD06F.4090703@users.sourceforge.net>  <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-  <5317A59D.4@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> 
- <547C82A6.2030808@users.sourceforge.net>  <547CA157.1080401@cogentembedded.com>
-  <5480DA32.8000201@users.sourceforge.net>  <5480DBDE.7040604@users.sourceforge.net>
-  <1417731809.2721.17.camel@perches.com>  <5480DFB5.4090708@users.sourceforge.net>
-  <1417733101.2721.20.camel@perches.com>  <54815C5F.8090702@users.sourceforge.net>
- <1417766255.2721.43.camel@perches.com>
+	id S1753950AbaLEXGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:06:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897AbaLEXGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 18:06:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.10 19/45] of/base: Fix PowerPC address parsing hack
+Date: Fri,  5 Dec 2014 14:45:02 -0800
+Message-Id: <20141205223319.734985932@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
+References: <20141205223316.738290875@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... ciao:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-: on "12-4-2014" "Joe Perches" writ:
-: > Does it make sense to express such implementation details in the Linux 
-: > coding style documentation more explicitly (besides the fact that this 
-: > update suggestion was also triggered by a warning from the script 
-: > "checkpatch.pl".
-: 
-: Probably not.
-: 
-: Overly formalized coding style rules are perhaps
-: more of a barrier to entry than most want.
- 
-   funny you should mention that.  as nothing more than a casual observer, 
-i'm noticing a "TIRED" sensation reading this thread.  i have "0" 
-confidence a "SERIOUS" participant's enthusiasm would remain untested.
- 
-   however, the "checkpatch.pl" warning suggests an assumed 'custom'. i 
-can't tell if this a 'serious' issue, or "pickin' fly shit out of pepper".
- 
-   but from my reading of it, the "CODE" , and the "logic" driving it, is 
-not the problem.
+------------------
 
-    season's best ...
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
--- 
-... it's not what you see ,
-    but in stead , notice ...
+commit 746c9e9f92dde2789908e51a354ba90a1962a2eb upstream.
+
+We have a historical hack that treats missing ranges properties as the
+equivalent of an empty one. This is needed for ancient PowerMac "bad"
+device-trees, and shouldn't be enabled for any other PowerPC platform,
+otherwise we get some nasty layout of devices in sysfs or even
+duplication when a set of otherwise identically named devices is
+created multiple times under a different parent node with no ranges
+property.
+
+This fix is needed for the PowerNV i2c busses to be exposed properly
+and will fix a number of other embedded cases.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/of/address.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
+
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -334,6 +334,21 @@ static struct of_bus *of_match_bus(struc
+ 	return NULL;
+ }
+ 
++static int of_empty_ranges_quirk(void)
++{
++	if (IS_ENABLED(CONFIG_PPC)) {
++		/* To save cycles, we cache the result */
++		static int quirk_state = -1;
++
++		if (quirk_state < 0)
++			quirk_state =
++				of_machine_is_compatible("Power Macintosh") ||
++				of_machine_is_compatible("MacRISC");
++		return quirk_state;
++	}
++	return false;
++}
++
+ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+ 			    struct of_bus *pbus, __be32 *addr,
+ 			    int na, int ns, int pna, const char *rprop)
+@@ -359,12 +374,10 @@ static int of_translate_one(struct devic
+ 	 * This code is only enabled on powerpc. --gcl
+ 	 */
+ 	ranges = of_get_property(parent, rprop, &rlen);
+-#if !defined(CONFIG_PPC)
+-	if (ranges == NULL) {
++	if (ranges == NULL && !of_empty_ranges_quirk()) {
+ 		pr_err("OF: no ranges; cannot translate\n");
+ 		return 1;
+ 	}
+-#endif /* !defined(CONFIG_PPC) */
+ 	if (ranges == NULL || rlen == 0) {
+ 		offset = of_read_number(addr, na);
+ 		memset(addr, 0, pna * 4);
+
+
