@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaLERAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:00:08 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36587 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaLERAH (ORCPT
+	id S1751457AbaLERCA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:02:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49807 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750779AbaLERB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:00:07 -0500
-Date: Fri, 5 Dec 2014 18:00:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] x86 fixes for 3.18
-Message-ID: <alpine.DEB.2.11.1412051757530.16275@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 5 Dec 2014 12:01:59 -0500
+Date: Fri, 5 Dec 2014 17:01:56 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Zidan Wang <b50113@freescale.com>
+Cc: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        lars@metafoo.de, Li.Xiubo@freescale.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver
+	manage its own MCLK
+Message-ID: <20141205170156.GB14516@opensource.wolfsonmicro.com>
+References: <1417696879-15402-1-git-send-email-b50113@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417696879-15402-1-git-send-email-b50113@freescale.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Dec 04, 2014 at 08:41:19PM +0800, Zidan Wang wrote:
+> When we want to use wm8960 codec, we should enable its MCLK in machine
+> driver. It's reasonable for wm8960 codec driver to manage its own MCLK to
+> save power.
+> 
+> If platform data is not supplied, we will get MCLK from device tree and check
+> the return code to handle probe deferral.
+> 
+> Enable runtime power management, and auto enable/disable MCLK in pm_runtime
+> resume and suspend. When wm8960 codec is being used, it will triger resume()
+> to enable MCLK. When codec is not being used, it will triger suspend() to
+> disable MCLK.
+> 
+> Signed-off-by: Zidan Wang <b50113@freescale.com>
+> ---
+>  include/sound/wm8960.h    |  1 +
+>  sound/soc/codecs/wm8960.c | 56 ++++++++++++++++++++++++++++++++++++++++++++---
+>  2 files changed, 54 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/sound/wm8960.h b/include/sound/wm8960.h
+> index e8ce8ee..d7e84ed 100644
+> --- a/include/sound/wm8960.h
+> +++ b/include/sound/wm8960.h
+> @@ -16,6 +16,7 @@
+>  #define WM8960_DRES_MAX  3
+>  
+>  struct wm8960_data {
+> +	struct clk *mclk;
 
-please pull the latest x86-urgent-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
-
-Two final fixlets for 3.18:
- - Prevent microcode reload wreckage on 32bit
- - Unbreak cross compilation
+Is this really pdata? Would the pdata entry to locate the clock
+not be a string holding the clock name that you call clk_get on,
+rather than a clk pointer itself? Probably this should go in
+wm8960_priv instead.
 
 Thanks,
-
-	tglx
-
------------------->
-Borislav Petkov (1):
-      x86, microcode: Limit the microcode reloading to 64-bit for now
-
-Chris Clayton (1):
-      x86: Use $(OBJDUMP) instead of plain objdump
-
-
- arch/x86/boot/compressed/Makefile    | 2 +-
- arch/x86/kernel/cpu/microcode/core.c | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index be1e07d4b596..45abc363dd3e 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -76,7 +76,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
- 
--RUN_SIZE = $(shell objdump -h vmlinux | \
-+RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
- 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 2ce9051174e6..08fe6e8a726e 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -465,6 +465,7 @@ static void mc_bp_resume(void)
- 
- 	if (uci->valid && uci->mc)
- 		microcode_ops->apply_microcode(cpu);
-+#ifdef CONFIG_X86_64
- 	else if (!uci->mc)
- 		/*
- 		 * We might resume and not have applied late microcode but still
-@@ -473,6 +474,7 @@ static void mc_bp_resume(void)
- 		 * applying patches early on the APs.
- 		 */
- 		load_ucode_ap();
-+#endif
- }
- 
- static struct syscore_ops mc_syscore_ops = {
+Charles
