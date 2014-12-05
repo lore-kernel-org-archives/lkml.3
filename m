@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaLEVmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:42:09 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:59064 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874AbaLEVmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:42:06 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: dianders@chromium.org, amstan@chromium.org, sonnyrao@chromium.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, olof@lixom.net, hj@rock-chips.com,
-        kever.yang@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        wei.luo@rock-chips.com
-Subject: Re: [PATCH] ARM: dts: rockchip: set dw_mmc max-freq 150Mhz
-Date: Fri, 05 Dec 2014 22:45:53 +0100
-Message-ID: <2413230.2M6GRRu59M@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
-References: <1417661375-2872-1-git-send-email-addy.ke@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752011AbaLEVo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:44:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53052 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLEVo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:44:56 -0500
+Date: Fri, 5 Dec 2014 13:44:55 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Sanchayan Maity <maitysanchayan@gmail.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCHv2] drivers/rtc/rtc-snvs: Add clock support
+Message-Id: <20141205134455.7901c40277cbc2093ccabfd2@linux-foundation.org>
+In-Reply-To: <5536a0707e516d0f4a0c6eaf9d4d9291@agner.ch>
+References: <cover.1417585458.git.maitysanchayan@gmail.com>
+	<bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
+	<20141204161207.0753031dc675793e9534c1de@linux-foundation.org>
+	<5536a0707e516d0f4a0c6eaf9d4d9291@agner.ch>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 4. Dezember 2014, 10:49:35 schrieb Addy Ke:
-> All of mmc controllers include SDMMC, SDIO0, SDIO1, and EMMC on RK3288
-> are limited to 150Mhz. It was mainly caused by two reasons:
-> - RK3288's IO pad(except DDR IO pad) is generic, which can only support
->   the max of 150Mhz.
-> - Mmc controller was designed at 150Mhz, and the pressure test by IC team
->   was based on this freequency point.
+On Fri, 05 Dec 2014 15:54:15 +0100 Stefan Agner <stefan@agner.ch> wrote:
+
+> It can be fixed, with something like this:
 > 
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> @@ -346,7 +347,10 @@ static int snvs_rtc_resume(struct device *dev)
+>  }
+>  #endif
+>  
+> -static SIMPLE_DEV_PM_OPS(snvs_rtc_pm_ops, snvs_rtc_suspend,
+> snvs_rtc_resume);
+> +static const struct dev_pm_ops snvs_rtc_pm_ops = {
+> +       .suspend_noirq = snvs_rtc_suspend,
+> +       .resume_noirq = snvs_rtc_resume,
+> +};
+>  
+>  static const struct of_device_id snvs_dt_ids[] = {
+>         { .compatible = "fsl,sec-v4.0-mon-rtc-lp", },
+> 
+> 
+> 
+> Andrew, this patch is already merged, so it would need another fix for
+> this, right?
 
-applied to my wip dts branch for 3.20 (on github)
-
-
-Thanks
-Heiko
+A replacement patch is OK.  An incremental patch is OK too.  I almost
+always turn the replacement into an incremental so that I and others
+can see what changed.
