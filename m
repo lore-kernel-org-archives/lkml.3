@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357AbaLEOlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:41:50 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45312 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaLEOls (ORCPT
+	id S1751319AbaLEOp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:45:57 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:60859 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaLEOpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:41:48 -0500
-Date: Fri, 5 Dec 2014 14:41:35 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
-        Peter Maydell <Peter.Maydell@arm.com>
-Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
- aligned
-Message-ID: <20141205144134.GC7695@localhost>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
- <20140915113325.GD12361@n2100.arm.linux.org.uk>
- <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
- <35FD53F367049845BC99AC72306C23D103E688B313EA@CNBJMBX05.corpusers.net>
+	Fri, 5 Dec 2014 09:45:55 -0500
+Date: Fri, 5 Dec 2014 09:45:44 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: bhelgaas@google.com, rjw@rjwysocki.net, mister.freeman@laposte.net,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] PCI: Add disabling pm async quirk for JMicron chips
+Message-ID: <20141205144544.GH4080@htj.dyndns.org>
+References: <1417763857-11993-1-git-send-email-chuansheng.liu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313EA@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417763857-11993-1-git-send-email-chuansheng.liu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 02:35:29AM +0000, Wang, Yalin wrote:
-> > -----Original Message-----
-> > From: Catalin Marinas [mailto:catalin.marinas@arm.com]
-> > Sent: Thursday, December 04, 2014 8:03 PM
-> > To: Russell King - ARM Linux
-> > Cc: Wang, Yalin; 'linux-mm@kvack.org'; Will Deacon; 'linux-
-> > kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-
-> > arm-msm@vger.kernel.org'; Peter Maydell
-> > Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
-> > aligned
-> > 
-> > On Mon, Sep 15, 2014 at 12:33:25PM +0100, Russell King - ARM Linux wrote:
-> > > On Mon, Sep 15, 2014 at 07:07:20PM +0800, Wang, Yalin wrote:
-> > > > @@ -636,6 +646,11 @@ static int keep_initrd;  void
-> > > > free_initrd_mem(unsigned long start, unsigned long end)  {
-> > > >  	if (!keep_initrd) {
-> > > > +		if (start == initrd_start)
-> > > > +			start = round_down(start, PAGE_SIZE);
-> > > > +		if (end == initrd_end)
-> > > > +			end = round_up(end, PAGE_SIZE);
-> > > > +
-> > > >  		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
-> > > >  		free_reserved_area((void *)start, (void *)end, -1, "initrd");
-> > > >  	}
-> > >
-> > > is the only bit of code you likely need to achieve your goal.
-> > >
-> > > Thinking about this, I think that you are quite right to align these.
-> > > The memory around the initrd is defined to be system memory, and we
-> > > already free the pages around it, so it *is* wrong not to free the
-> > > partial initrd pages.
-> > 
-> > Actually, I think we have a problem, at least on arm64 (raised by Peter
-> > Maydell). There is no guarantee that the page around start/end of initrd is
-> > free, it may contain the dtb for example. This is even more obvious when we
-> > have a 64KB page kernel (the boot loader doesn't know the page size that
-> > the kernel is going to use).
-> > 
-> > The bug was there before as we had poison_init_mem() already (not it
-> > disappeared since free_reserved_area does the poisoning).
-> > 
-> > So as a quick fix I think we need the rounding the other way (and in the
-> > general case we probably lose a page at the end of initrd):
-> > 
-> > diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c index
-> > 494297c698ca..39fd080683e7 100644
-> > --- a/arch/arm64/mm/init.c
-> > +++ b/arch/arm64/mm/init.c
-> > @@ -335,9 +335,9 @@ void free_initrd_mem(unsigned long start, unsigned long
-> > end)  {
-> >  	if (!keep_initrd) {
-> >  		if (start == initrd_start)
-> > -			start = round_down(start, PAGE_SIZE);
-> > +			start = round_up(start, PAGE_SIZE);
-> >  		if (end == initrd_end)
-> > -			end = round_up(end, PAGE_SIZE);
-> > +			end = round_down(end, PAGE_SIZE);
-> > 
-> >  		free_reserved_area((void *)start, (void *)end, 0, "initrd");
-> >  	}
-> > 
-> > A better fix would be to check what else is around the start/end of initrd.
-> I think a better way is add some head info in Image header,
-> So that bootloader  can know the kernel CONFIG_PAGE_SIZE ,
-> For example we can add PAGE_SIZE in zImage header .
-> How about this way?
+On Fri, Dec 05, 2014 at 03:17:37PM +0800, Chuansheng Liu wrote:
+>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB360, quirk_jmicron_ata);
+>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB361, quirk_jmicron_ata);
+>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB362, quirk_jmicron_ata);
+> @@ -1519,6 +1534,8 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB3
+>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB366, quirk_jmicron_ata);
+>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB368, quirk_jmicron_ata);
+>  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB369, quirk_jmicron_ata);
+> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_JMICRON, PCI_ANY_ID,
+> +		pci_async_suspend_fixup);
 
-The problem is that we don't know how many boot loaders are affected. We
-could simply mandate in booting.txt that the dtb and initrd are not
-closer than 64KB but we have the same issue, existing boot loaders.
+Why is this being done through pci quirks?  e6b7e41cdd8 implements the
+same quirk in the respective drivers.  What's the difference here?
+
+Thanks.
 
 -- 
-Catalin
+tejun
