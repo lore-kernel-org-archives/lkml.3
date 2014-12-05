@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaLELqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 06:46:38 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:33871 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaLELqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 06:46:36 -0500
-Date: Fri, 5 Dec 2014 12:46:29 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
-        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
-        hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in
- might_fault() when pagefaults are disabled
-Message-ID: <20141205124629.2c77290f@thinkpad-w530>
-In-Reply-To: <20141205114529.GD4213@osiris>
-References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141205114529.GD4213@osiris>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1752237AbaLELGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:06:12 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:55714 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909AbaLELGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 06:06:11 -0500
+Date: Fri, 5 Dec 2014 13:05:32 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
+        "'akpm@linux-foundation.org'" <akpm@linux-foundation.org>,
+        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [RFC V2] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
+Message-ID: <20141205110532.GA8782@node.dhcp.inet.fi>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E688B313F1@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120511-0021-0000-0000-0000020822B3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313F1@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Dec 05, 2014 at 12:18:07PM +0100, David Hildenbrand wrote:
-> > -void might_fault(void)
-> > +void __might_fault(const char *file, int line)
-> >  {
-> >  	/*
-> >  	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
-> > @@ -3710,21 +3710,16 @@ void might_fault(void)
-> >  	 */
-> >  	if (segment_eq(get_fs(), KERNEL_DS))
-> >  		return;
-> > -
-> > -	/*
-> > -	 * it would be nicer only to annotate paths which are not under
-> > -	 * pagefault_disable, however that requires a larger audit and
-> > -	 * providing helpers like get_user_atomic.
-> > -	 */
-> > -	if (in_atomic())
-> > +	if (unlikely(!pagefault_disabled())) {
-> > +		__might_sleep(file, line, 0);
-> >  		return;
-> > -
-> > -	__might_sleep(__FILE__, __LINE__, 0);
-> > -
-> > +	}
+On Fri, Dec 05, 2014 at 06:21:17PM +0800, Wang, Yalin wrote:
+> This patch add KPF_ZERO_PAGE flag for zero_page,
+> so that userspace process can notice zero_page from
+> /proc/kpageflags, and then do memory analysis more accurately.
 > 
-> This should be likely() instead of unlikely(), no?
-> I'd rather write this
+> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> ---
+>  fs/proc/page.c                         | 14 +++++++++++---
+>  include/linux/huge_mm.h                | 12 ++++++++++++
+>  include/uapi/linux/kernel-page-flags.h |  1 +
+>  mm/huge_memory.c                       |  7 +------
+>  4 files changed, 25 insertions(+), 9 deletions(-)
 > 
-> 	if (pagefault_disabled())
->  		return;
-> 	__might_sleep(file, line, 0);
-> 
-> and leave the likely stuff completely away.
+> diff --git a/fs/proc/page.c b/fs/proc/page.c
+> index 1e3187d..dbe5630 100644
+> --- a/fs/proc/page.c
+> +++ b/fs/proc/page.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/ksm.h>
+>  #include <linux/mm.h>
+>  #include <linux/mmzone.h>
+> +#include <linux/huge_mm.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/hugetlb.h>
+> @@ -121,9 +122,16 @@ u64 stable_page_flags(struct page *page)
+>  	 * just checks PG_head/PG_tail, so we need to check PageLRU/PageAnon
+>  	 * to make sure a given page is a thp, not a non-huge compound page.
+>  	 */
+> -	else if (PageTransCompound(page) && (PageLRU(compound_head(page)) ||
+> -					     PageAnon(compound_head(page))))
+> -		u |= 1 << KPF_THP;
+> +	else if (PageTransCompound(page)) {
+> +		struct page *head = compound_head(page);
+> +
+> +		if (PageLRU(head) || PageAnon(head))
+> +			u |= 1 << KPF_THP;
+> +		else if (is_huge_zero_page(head))
+> +			u |= 1 << KPF_ZERO_PAGE;
 
-Makes perfect sense!
+IIUC, KPF_THP bit should be set for huge zero page too.
 
-Thanks!
-
-David
-
+-- 
+ Kirill A. Shutemov
