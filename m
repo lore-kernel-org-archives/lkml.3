@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaLENmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:42:07 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10546 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaLENmC (ORCPT
+	id S1753199AbaLENdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:33:38 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11605 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaLENdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:42:02 -0500
+	Fri, 5 Dec 2014 08:33:36 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 05 Dec 2014 05:39:23 -0800
+	by hqnvupgp07.nvidia.com on Fri, 05 Dec 2014 05:30:58 -0800
 From: Arto Merilainen <amerilainen@nvidia.com>
 To: <myungjoo.ham@samsung.com>, <kyungmin.park@samsung.com>,
         <tomeu.vizoso@collabora.com>, <gnurou@gmail.com>
-CC: <javier.martinez@collabora.co.uk>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <grant.likely@linaro.org>, <srasal@nvidia.com>,
-        <amerilainen@nvidia.com>
-Subject: [RFC RESEND 1/3] PM / devfreq: Add watermark events
-Date: Fri, 5 Dec 2014 15:41:30 +0200
-Message-ID: <1417786892-477-2-git-send-email-amerilainen@nvidia.com>
+CC: <javier.martinez@collabora.co.uk>, <linuxpm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>, <grant.likely@linaro.org>,
+        <srasal@nvidia.com>, <amerilainen@nvidia.com>
+Subject: [RFC 1/3] PM / devfreq: Add watermark events
+Date: Fri, 5 Dec 2014 15:32:52 +0200
+Message-ID: <1417786374-375-2-git-send-email-amerilainen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1417786892-477-1-git-send-email-amerilainen@nvidia.com>
-References: <1417786892-477-1-git-send-email-amerilainen@nvidia.com>
+In-Reply-To: <1417786374-375-1-git-send-email-amerilainen@nvidia.com>
+References: <1417786374-375-1-git-send-email-amerilainen@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
