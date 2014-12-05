@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955AbaLEWwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:52:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54131 "EHLO
+	id S1752592AbaLEWvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:51:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53988 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaLEWvm (ORCPT
+	with ESMTP id S1752465AbaLEWqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:51:42 -0500
+	Fri, 5 Dec 2014 17:46:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 107/122] drm/radeon: fix endian swapping in vbios fetch for tdp table
-Date: Fri,  5 Dec 2014 14:44:41 -0800
-Message-Id: <20141205223322.185462387@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.17 090/122] vhost-scsi: Take configfs group dependency during VHOST_SCSI_SET_ENDPOINT
+Date: Fri,  5 Dec 2014 14:44:24 -0800
+Message-Id: <20141205223319.341913010@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,29 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 28731d5818ae25b92d1fb82fe0ac196e97102c1b upstream.
+commit ab8edab132829b26dd13db6caca3c242cce35dc1 upstream.
 
-Value needs to be swapped on BE.
+This patch addresses a bug where individual vhost-scsi configfs endpoint
+groups can be removed from below while active exports to QEMU userspace
+still exist, resulting in an OOPs.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+It adds a configfs_depend_item() in vhost_scsi_set_endpoint() to obtain
+an explicit dependency on se_tpg->tpg_group in order to prevent individual
+vhost-scsi WWPN endpoints from being released via normal configfs methods
+while an QEMU ioctl reference still exists.
+
+Also, add matching configfs_undepend_item() in vhost_scsi_clear_endpoint()
+to release the dependency, once QEMU's reference to the individual group
+at /sys/kernel/config/target/vhost/$WWPN/$TPGT is released.
+
+(Fix up vhost_scsi_clear_endpoint() error path - DanC)
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600_dpm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/vhost/scsi.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
---- a/drivers/gpu/drm/radeon/r600_dpm.c
-+++ b/drivers/gpu/drm/radeon/r600_dpm.c
-@@ -1255,7 +1255,7 @@ int r600_parse_extended_power_table(stru
- 					(mode_info->atom_context->bios + data_offset +
- 					 le16_to_cpu(ext_hdr->usPowerTuneTableOffset));
- 				rdev->pm.dpm.dyn_state.cac_tdp_table->maximum_power_delivery_limit =
--					ppt->usMaximumPowerDeliveryLimit;
-+					le16_to_cpu(ppt->usMaximumPowerDeliveryLimit);
- 				pt = &ppt->power_tune_table;
- 			} else {
- 				ATOM_PPLIB_POWERTUNE_Table *ppt = (ATOM_PPLIB_POWERTUNE_Table *)
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1312,6 +1312,7 @@ static int
+ vhost_scsi_set_endpoint(struct vhost_scsi *vs,
+ 			struct vhost_scsi_target *t)
+ {
++	struct se_portal_group *se_tpg;
+ 	struct tcm_vhost_tport *tv_tport;
+ 	struct tcm_vhost_tpg *tpg;
+ 	struct tcm_vhost_tpg **vs_tpg;
+@@ -1359,6 +1360,21 @@ vhost_scsi_set_endpoint(struct vhost_scs
+ 				ret = -EEXIST;
+ 				goto out;
+ 			}
++			/*
++			 * In order to ensure individual vhost-scsi configfs
++			 * groups cannot be removed while in use by vhost ioctl,
++			 * go ahead and take an explicit se_tpg->tpg_group.cg_item
++			 * dependency now.
++			 */
++			se_tpg = &tpg->se_tpg;
++			ret = configfs_depend_item(se_tpg->se_tpg_tfo->tf_subsys,
++						   &se_tpg->tpg_group.cg_item);
++			if (ret) {
++				pr_warn("configfs_depend_item() failed: %d\n", ret);
++				kfree(vs_tpg);
++				mutex_unlock(&tpg->tv_tpg_mutex);
++				goto out;
++			}
+ 			tpg->tv_tpg_vhost_count++;
+ 			tpg->vhost_scsi = vs;
+ 			vs_tpg[tpg->tport_tpgt] = tpg;
+@@ -1401,6 +1417,7 @@ static int
+ vhost_scsi_clear_endpoint(struct vhost_scsi *vs,
+ 			  struct vhost_scsi_target *t)
+ {
++	struct se_portal_group *se_tpg;
+ 	struct tcm_vhost_tport *tv_tport;
+ 	struct tcm_vhost_tpg *tpg;
+ 	struct vhost_virtqueue *vq;
+@@ -1449,6 +1466,13 @@ vhost_scsi_clear_endpoint(struct vhost_s
+ 		vs->vs_tpg[target] = NULL;
+ 		match = true;
+ 		mutex_unlock(&tpg->tv_tpg_mutex);
++		/*
++		 * Release se_tpg->tpg_group.cg_item configfs dependency now
++		 * to allow vhost-scsi WWPN se_tpg->tpg_group shutdown to occur.
++		 */
++		se_tpg = &tpg->se_tpg;
++		configfs_undepend_item(se_tpg->se_tpg_tfo->tf_subsys,
++				       &se_tpg->tpg_group.cg_item);
+ 	}
+ 	if (match) {
+ 		for (i = 0; i < VHOST_SCSI_MAX_VQ; i++) {
 
 
