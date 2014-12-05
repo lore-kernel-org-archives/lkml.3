@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167AbaLEXoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:44:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
+	id S1752269AbaLEWqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:46:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303AbaLEWqD (ORCPT
+	with ESMTP id S1751051AbaLEWpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:03 -0500
+	Fri, 5 Dec 2014 17:45:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.17 054/122] USB: keyspan: fix overrun-error reporting
-Date: Fri,  5 Dec 2014 14:43:48 -0800
-Message-Id: <20141205223313.645053184@linuxfoundation.org>
+        James Cowgill <James.Cowgill@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>, Huacai Chen <chenhc@lemote.com>,
+        linux-mips@linux-mips.org, Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.17 005/122] MIPS: Loongson3: Fix __node_distances undefined error
+Date: Fri,  5 Dec 2014 14:42:59 -0800
+Message-Id: <20141205223306.348443973@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,60 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: James Cowgill <James.Cowgill@imgtec.com>
 
-commit 855515a6d3731242d85850a206f2ec084c917338 upstream.
+commit 21255dad9dffa4407cab866f5561cb9568f7f7d8 upstream.
 
-Fix reporting of overrun errors, which are not associated with a
-character. Instead insert a null character and report only once.
+export the __node_distances symbol in the loongson3 numa code to fix the
+build error:
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+  Building modules, stage 2.
+  MODPOST 221 modules
+ERROR: "__node_distances" [drivers/block/nvme.ko] undefined!
+scripts/Makefile.modpost:90: recipe for target '__modpost' failed
+
+when building the kernel with:
+ CONFIG_CPU_LOONGSON3=y
+ CONFIG_NUMA=y
+ CONFIG_BLK_DEV_NVME=m
+
+Signed-off-by: James Cowgill <James.Cowgill@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Reviewed-by: Huacai Chen <chenhc@lemote.com>
+Cc: linux-mips@linux-mips.org
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Patchwork: https://patchwork.linux-mips.org/patch/8444/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/keyspan.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ arch/mips/loongson/loongson-3/numa.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -311,12 +311,13 @@ static void	usa26_indat_callback(struct
- 		if ((data[0] & 0x80) == 0) {
- 			/* no errors on individual bytes, only
- 			   possible overrun err */
--			if (data[0] & RXERROR_OVERRUN)
--				err = TTY_OVERRUN;
--			else
--				err = 0;
-+			if (data[0] & RXERROR_OVERRUN) {
-+				tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+			}
- 			for (i = 1; i < urb->actual_length ; ++i)
--				tty_insert_flip_char(&port->port, data[i], err);
-+				tty_insert_flip_char(&port->port, data[i],
-+								TTY_NORMAL);
- 		} else {
- 			/* some bytes had errors, every byte has status */
- 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
-@@ -773,13 +774,13 @@ static void usa90_indat_callback(struct
- 			if ((data[0] & 0x80) == 0) {
- 				/* no errors on individual bytes, only
- 				   possible overrun err*/
--				if (data[0] & RXERROR_OVERRUN)
--					err = TTY_OVERRUN;
--				else
--					err = 0;
-+				if (data[0] & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+				}
- 				for (i = 1; i < urb->actual_length ; ++i)
- 					tty_insert_flip_char(&port->port,
--							data[i], err);
-+							data[i], TTY_NORMAL);
- 			}  else {
- 			/* some bytes had errors, every byte has status */
- 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+--- a/arch/mips/loongson/loongson-3/numa.c
++++ b/arch/mips/loongson/loongson-3/numa.c
+@@ -33,6 +33,7 @@
+ 
+ static struct node_data prealloc__node_data[MAX_NUMNODES];
+ unsigned char __node_distances[MAX_NUMNODES][MAX_NUMNODES];
++EXPORT_SYMBOL(__node_distances);
+ struct node_data *__node_data[MAX_NUMNODES];
+ EXPORT_SYMBOL(__node_data);
+ 
 
 
