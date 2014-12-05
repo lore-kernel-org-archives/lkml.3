@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457AbaLERCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:02:00 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49807 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750779AbaLERB7 (ORCPT
+	id S1751370AbaLERHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:07:17 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:61000 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183AbaLERHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:01:59 -0500
-Date: Fri, 5 Dec 2014 17:01:56 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Zidan Wang <b50113@freescale.com>
-Cc: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        lars@metafoo.de, Li.Xiubo@freescale.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver
-	manage its own MCLK
-Message-ID: <20141205170156.GB14516@opensource.wolfsonmicro.com>
-References: <1417696879-15402-1-git-send-email-b50113@freescale.com>
+	Fri, 5 Dec 2014 12:07:12 -0500
+Message-ID: <5481E63C.5020208@atmel.com>
+Date: Fri, 5 Dec 2014 18:07:08 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417696879-15402-1-git-send-email-b50113@freescale.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, Josh Wu <josh.wu@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] mtd: nand: atmel: Rework DT representation of NFC/NAND
+References: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 08:41:19PM +0800, Zidan Wang wrote:
-> When we want to use wm8960 codec, we should enable its MCLK in machine
-> driver. It's reasonable for wm8960 codec driver to manage its own MCLK to
-> save power.
+Le 04/12/2014 23:30, Boris Brezillon a écrit :
+> Hello,
 > 
-> If platform data is not supplied, we will get MCLK from device tree and check
-> the return code to handle probe deferral.
+> While working on the EBI driver [1] I noticed that the relationship between
+> the NFC (NAND Flash Controller) and the NAND chip it is attached to would
+> make things harder to represent when moving the NAND node under the EBI bus
+> (another useless 'ranges' definition).
 > 
-> Enable runtime power management, and auto enable/disable MCLK in pm_runtime
-> resume and suspend. When wm8960 codec is being used, it will triger resume()
-> to enable MCLK. When codec is not being used, it will triger suspend() to
-> disable MCLK.
+> Actually this representation might be even more problematic if one wants
+> decide to connect two NAND chips on his sama5 based board, because the NFC
+> node is a child of the NAND chip node, and thus can only be attached to a
+> single NAND chip.
 > 
-> Signed-off-by: Zidan Wang <b50113@freescale.com>
-> ---
->  include/sound/wm8960.h    |  1 +
->  sound/soc/codecs/wm8960.c | 56 ++++++++++++++++++++++++++++++++++++++++++++---
->  2 files changed, 54 insertions(+), 3 deletions(-)
+> To address this problem the current series moves the NFC node outside of
+> the NAND chip device which then reference the NFC using the "atmel,nfc"
+> property.
 > 
-> diff --git a/include/sound/wm8960.h b/include/sound/wm8960.h
-> index e8ce8ee..d7e84ed 100644
-> --- a/include/sound/wm8960.h
-> +++ b/include/sound/wm8960.h
-> @@ -16,6 +16,7 @@
->  #define WM8960_DRES_MAX  3
->  
->  struct wm8960_data {
-> +	struct clk *mclk;
+> The series does not implement multi-chip support, but at least the new
+> representation should make it possible.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+> [1]https://lkml.org/lkml/2014/12/3/806
 
-Is this really pdata? Would the pdata entry to locate the clock
-not be a string holding the clock name that you call clk_get on,
-rather than a clk pointer itself? Probably this should go in
-wm8960_priv instead.
+Boris,
 
-Thanks,
-Charles
+It sounds promising and for sure we have to think about a way to deal
+with SMC (EBI interface) and the NAND controller with its attributes
+(PMECC) or flavors (plain SMC or NFC).
+
+Let's consider this as a RFC and discuss how to deal with the DT
+modifications and the representation hierarchy all together.
+
+Thanks, bye.
+
+> Boris Brezillon (4):
+>   mtd: nand: atmel: Rework driver to separate nfc and nand nodes
+>   mtd: nand: atmel: Update DT documentation after splitting NFC and NAND
+>   ARM: at91/dt: sama5: move NFC nodes outside of NAND nodes
+>   ARM: at91/dt: sama5: move NAND nodes into board dts/dtsi
+> 
+>  .../devicetree/bindings/mtd/atmel-nand.txt         | 46 +++++++------
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts        | 18 ++++-
+>  arch/arm/boot/dts/at91-sama5d4ek.dts               | 16 ++++-
+>  arch/arm/boot/dts/sama5d3.dtsi                     | 36 ++--------
+>  arch/arm/boot/dts/sama5d3xcm.dtsi                  | 18 ++++-
+>  arch/arm/boot/dts/sama5d4.dtsi                     | 36 ++--------
+>  drivers/mtd/nand/atmel_nand.c                      | 76 +++++++++++++++++-----
+>  7 files changed, 149 insertions(+), 97 deletions(-)
+> 
+
+
+-- 
+Nicolas Ferre
