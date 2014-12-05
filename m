@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaLEXh4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:37:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54243 "EHLO
+	id S1752412AbaLEWqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:46:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaLEW4A (ORCPT
+	with ESMTP id S1752266AbaLEWqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:00 -0500
+	Fri, 5 Dec 2014 17:46:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.17 116/122] powerpc/powernv: Honor the generic "no_64bit_msi" flag
-Date: Fri,  5 Dec 2014 14:44:50 -0800
-Message-Id: <20141205223323.618279550@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>, Or Gerlitz <ogerlitz@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 028/122] net/mlx4_en: Advertize encapsulation offloads features only when VXLAN tunnel is set
+Date: Fri,  5 Dec 2014 14:43:22 -0800
+Message-Id: <20141205223309.678375104@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,57 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-commit 360743814c4082515581aa23ab1d8e699e1fbe88 upstream.
+[ Upstream commit f4a1edd56120249198073aa4a373b77e3700ac8f ]
 
-Instead of the arch specific quirk which we are deprecating
-and that drivers don't understand.
+Currenly we only support Large-Send and TX checksum offloads for
+encapsulated traffic of type VXLAN. We must make sure to advertize
+these offloads up to the stack only when VXLAN tunnel is set.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Failing to do so, would mislead the the networking stack to assume
+that the driver can offload the internal TX checksum for GRE packets
+and other buggy schemes.
+
+Reported-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c |    3 +--
- arch/powerpc/platforms/powernv/pci.c      |    4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |   22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -1311,7 +1311,6 @@ static int pnv_pci_ioda_msi_setup(struct
- 				  unsigned int is_64, struct msi_msg *msg)
- {
- 	struct pnv_ioda_pe *pe = pnv_ioda_get_pe(dev);
--	struct pci_dn *pdn = pci_get_pdn(dev);
- 	struct irq_data *idata;
- 	struct irq_chip *ichip;
- 	unsigned int xive_num = hwirq - phb->msi_base;
-@@ -1327,7 +1326,7 @@ static int pnv_pci_ioda_msi_setup(struct
- 		return -ENXIO;
- 
- 	/* Force 32-bit MSI on some broken devices */
--	if (pdn && pdn->force_32bit_msi)
-+	if (dev->no_64bit_msi)
- 		is_64 = 0;
- 
- 	/* Assign XIVE to PE */
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -1,3 +1,4 @@
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -2281,8 +2281,16 @@ static void mlx4_en_add_vxlan_offloads(s
+ 	ret = mlx4_SET_PORT_VXLAN(priv->mdev->dev, priv->port,
+ 				  VXLAN_STEER_BY_OUTER_MAC, 1);
+ out:
+-	if (ret)
++	if (ret) {
+ 		en_err(priv, "failed setting L2 tunnel configuration ret %d\n", ret);
++		return;
++	}
 +
- /*
-  * Support PCI/PCIe on PowerNV platforms
-  *
-@@ -50,9 +51,8 @@ static int pnv_msi_check_device(struct p
- {
- 	struct pci_controller *hose = pci_bus_to_host(pdev->bus);
- 	struct pnv_phb *phb = hose->private_data;
--	struct pci_dn *pdn = pci_get_pdn(pdev);
++	/* set offloads */
++	priv->dev->hw_enc_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
++				      NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL;
++	priv->dev->hw_features |= NETIF_F_GSO_UDP_TUNNEL;
++	priv->dev->features    |= NETIF_F_GSO_UDP_TUNNEL;
+ }
  
--	if (pdn && pdn->force_32bit_msi && !phb->msi32_support)
-+	if (pdev->no_64bit_msi && !phb->msi32_support)
- 		return -ENODEV;
+ static void mlx4_en_del_vxlan_offloads(struct work_struct *work)
+@@ -2290,6 +2298,11 @@ static void mlx4_en_del_vxlan_offloads(s
+ 	int ret;
+ 	struct mlx4_en_priv *priv = container_of(work, struct mlx4_en_priv,
+ 						 vxlan_del_task);
++	/* unset offloads */
++	priv->dev->hw_enc_features &= ~(NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
++				      NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL);
++	priv->dev->hw_features &= ~NETIF_F_GSO_UDP_TUNNEL;
++	priv->dev->features    &= ~NETIF_F_GSO_UDP_TUNNEL;
  
- 	return (phb && phb->msi_bmp.bitmap) ? 0 : -ENODEV;
+ 	ret = mlx4_SET_PORT_VXLAN(priv->mdev->dev, priv->port,
+ 				  VXLAN_STEER_BY_OUTER_MAC, 0);
+@@ -2571,13 +2584,6 @@ int mlx4_en_init_netdev(struct mlx4_en_d
+ 	if (mdev->dev->caps.steering_mode != MLX4_STEERING_MODE_A0)
+ 		dev->priv_flags |= IFF_UNICAST_FLT;
+ 
+-	if (mdev->dev->caps.tunnel_offload_mode == MLX4_TUNNEL_OFFLOAD_MODE_VXLAN) {
+-		dev->hw_enc_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
+-					NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL;
+-		dev->hw_features |= NETIF_F_GSO_UDP_TUNNEL;
+-		dev->features    |= NETIF_F_GSO_UDP_TUNNEL;
+-	}
+-
+ 	mdev->pndev[port] = dev;
+ 
+ 	netif_carrier_off(dev);
 
 
