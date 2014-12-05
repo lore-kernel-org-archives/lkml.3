@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091AbaLEKaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:30:13 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:46876 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaLEKaL (ORCPT
+	id S1753262AbaLENia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:38:30 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:44836 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaLENi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:30:11 -0500
-X-IronPort-AV: E=Sophos;i="5.07,521,1413244800"; 
-   d="scan'208";a="200646006"
-Message-ID: <54818929.5000008@citrix.com>
-Date: Fri, 5 Dec 2014 10:30:01 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Fri, 5 Dec 2014 08:38:28 -0500
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>
-CC: <bhelgaas@google.com>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-pci@vger.kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>	 <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it>	 <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it>	 <5480702F.2060004@citrix.com> <1578910783.20141204155025@eikelenboom.it> <1417707546.15750.100.camel@bling.home>
-In-Reply-To: <1417707546.15750.100.camel@bling.home>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+In-Reply-To: <1417783941-2418-2-git-send-email-lyz@rock-chips.com>
+References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
+	<1417783941-2418-2-git-send-email-lyz@rock-chips.com>
+Date: Fri, 5 Dec 2014 14:38:27 +0100
+Message-ID: <CABgxDoLe2RxCjD53uvTgYZ=tNOKHLeGoZE5Aa5XvaUYvNX=HYw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY.
+From: Romain Perier <romain.perier@gmail.com>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Tao Huang <huangtao@rock-chips.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>, zyw@rock-chips.com,
+        Rob Herring <robh+dt@kernel.org>, olof@lixom.net,
+        Eddie Cai <cf@rock-chips.com>, ulrich.prinz@googlemail.com,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/14 15:39, Alex Williamson wrote:
-> 
-> I don't know what workaround you're talking about.  As devices are
-> released from the user, vfio-pci attempts to reset them.  If
-> pci_reset_function() returns success we mark the device clean, otherwise
-> it gets marked dirty.  Each time a device is released, if there are
-> dirty devices we test whether we can try a bus/slot reset to clean them.
-> In the case of assigning a GPU this typically means that the GPU or
-> audio function come through first, there's no reset mechanism so it gets
-> marked dirty, the next device comes through and we manage to try a bus
-> reset.  vfio-pci does not have any device specific resets, all
-> functionality is added to the PCI-core, thank-you-very-much.  I even
-> posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
-> bad so that pci_reset_function() won't claim that worked.  All VGA
-> access quirks are done in QEMU, the kernel doesn't have any business in
-> remapping config space over MMIO regions or trapping other config space
-> backdoors.
+Hi,
 
-Thanks for the info Alex, I hadn't got around to actually looking and
-the vfio-pci code and was just going to what Sander said.
+Some quick comments
 
-We probably do need to have a more in depth look at now PCI devices and
-handled by both the toolstack and pciback but in the short term I would
-like a simple solution that does not extend the ABI.
+2014-12-05 13:52 GMT+01:00 Yunzhi Li <lyz@rock-chips.com>:
+> This patche to add a generic PHY driver for ROCKCHIP usb PHYs,
+> currently this driver can support RK3288. The RK3288 SoC have
+> three independent USB PHY IPs which are all configured through a
+> set of registers located in the GRF (general register files)
+> module.
+>
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+> ---
+>
+>  drivers/phy/Kconfig            |   7 ++
+>  drivers/phy/Makefile           |   1 +
+>  drivers/phy/phy-rockchip-usb.c | 179 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 187 insertions(+)
+>  create mode 100644 drivers/phy/phy-rockchip-usb.c
+>
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index ccad880..e3a5857 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
+>         depends on OF
+>         select GENERIC_PHY
+>
+> +config PHY_ROCKCHIP_RK3288_USB2
+> +       tristate "Rockchip USB2 RK3288 PHY Driver"
+> +       depends on ARCH_ROCKCHIP && OF
+> +       select GENERIC_PHY
+> +       help
+> +         Enable this to support the Rockchip USB 2.0 PHY.
+> +
 
-David
+
+The C module is named phy-rockchip-usb.c, why did you call the config
+entry PHY_ROCKCHIP_RK3288_USB2 ? why RK3288 ? this driver might be
+ported to old SoCs later.
+I think that PHY_ROCKCHIP_USB would be enough.
+
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/syscon.h>
+> +
+> +#define ROCKCHIP_RK3288_UOC(n) (0x320 + n * 0x14)
+> +
+> +#define SIDDQ_MSK              (1 << (13 + 16))
+> +#define SIDDQ_ON               (1 << 13)
+
+You could probably use BIT(13) and BIT(13+16) here.
+
+Thanks,
+Romain
