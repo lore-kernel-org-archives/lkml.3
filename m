@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933572AbaLECx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 21:53:57 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:35813 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378AbaLECx4 (ORCPT
+	id S933550AbaLEDCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:02:04 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:62320 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378AbaLEDCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 21:53:56 -0500
-Date: Wed, 3 Dec 2014 05:00:23 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Message-ID: <20141203130023.GC75099@vmdeb7>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
- <201412020942.47091@pali>
- <CAJ=jqua+xpXyhkjiLrxZ9Cy9D-kwXXP=hB1az+kC+RUn1PN0Bw@mail.gmail.com>
- <201412041055.32689@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412041055.32689@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 4 Dec 2014 22:02:02 -0500
+From: Ashley Lai <ashleydlai@gmail.com>
+To: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: Ashley Lai <ashleydlai@gmail.com>
+Subject: [PATCH 1/1] tpm_ibmvtpm: Update email address in maintainers list and ibmvtpm driver
+Date: Thu,  4 Dec 2014 21:01:51 -0600
+Message-Id: <1417748511-13629-1-git-send-email-ashleydlai@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 10:55:32AM +0100, Pali Rohár wrote:
-> 
-> Darren, I think that if we do not solve problem with duplicate 
-> key events (in dell-wireless.c) we should postpone these patches 
-> to later kernel version. It is better to not have such regression 
-> as it confuse software like NetworkManager which is widely used.
+Added myself as a maintainer for the IBM vtpm driver and removed myself
+from the tpm maintainer list. Also, updated the tpm_ibmvtpm driver with
+my current email address.
 
-OK, that's what I needed. Thanks. Ignore my previous request, you answered it
-here. I will drop dell-wireless.c and look for a combined solution from you and
-Alex for the next release.
+Signed-off-by: Ashley Lai <ashleydlai@gmail.com>
+---
+ MAINTAINERS                    | 8 +++++++-
+ drivers/char/tpm/tpm_ibmvtpm.c | 2 +-
+ drivers/char/tpm/tpm_ibmvtpm.h | 2 +-
+ drivers/char/tpm/tpm_of.c      | 2 +-
+ 4 files changed, 10 insertions(+), 4 deletions(-)
 
-Thanks,
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ccb0fef..82136b4 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9297,13 +9297,19 @@ F:	drivers/media/usb/tm6000/
+ 
+ TPM DEVICE DRIVER
+ M:	Peter Huewe <peterhuewe@gmx.de>
+-M:	Ashley Lai <ashley@ashleylai.com>
+ M:	Marcel Selhorst <tpmdd@selhorst.net>
+ W:	http://tpmdd.sourceforge.net
+ L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
+ S:	Maintained
+ F:	drivers/char/tpm/
+ 
++TPM IBM_VTPM DEVICE DRIVER
++M:	Ashley Lai <ashleydlai@gmail.com>
++W:	http://tpmdd.sourceforge.net
++L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
++S:	Maintained
++F:	drivers/char/tpm/tpm_ibmvtpm*
++
+ TRACING
+ M:	Steven Rostedt <rostedt@goodmis.org>
+ M:	Ingo Molnar <mingo@redhat.com>
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+index 4109222..96f5d44 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.c
++++ b/drivers/char/tpm/tpm_ibmvtpm.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2012 IBM Corporation
+  *
+- * Author: Ashley Lai <adlai@us.ibm.com>
++ * Author: Ashley Lai <ashleydlai@gmail.com>
+  *
+  * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+  *
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
+index bd82a79..f595f14 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.h
++++ b/drivers/char/tpm/tpm_ibmvtpm.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2012 IBM Corporation
+  *
+- * Author: Ashley Lai <adlai@us.ibm.com>
++ * Author: Ashley Lai <ashleydlai@gmail.com>
+  *
+  * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+  *
+diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
+index 98ba2bd..c002d1b 100644
+--- a/drivers/char/tpm/tpm_of.c
++++ b/drivers/char/tpm/tpm_of.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright 2012 IBM Corporation
+  *
+- * Author: Ashley Lai <adlai@us.ibm.com>
++ * Author: Ashley Lai <ashleydlai@gmail.com>
+  *
+  * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+  *
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.9.1
+
