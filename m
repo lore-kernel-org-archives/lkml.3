@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaLEXaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:30:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54243 "EHLO
+	id S1754793AbaLEXaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:30:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbaLEW4H (ORCPT
+	with ESMTP id S1752622AbaLEW4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:07 -0500
+	Fri, 5 Dec 2014 17:56:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Bohac <jbohac@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 17/73] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
-Date: Fri,  5 Dec 2014 14:44:23 -0800
-Message-Id: <20141205224434.444272546@linuxfoundation.org>
+        Aaron Ma <mapengyu@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.14 18/73] PCI: Support 64-bit bridge windows if we have 64-bit dma_addr_t
+Date: Fri,  5 Dec 2014 14:44:24 -0800
+Message-Id: <20141205224434.478291448@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,66 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Yinghai Lu <yinghai@kernel.org>
 
-[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
+commit 7fc986d8a9727e5d40da3c2c1c343da6142e82a9 upstream.
 
-This fixes an old regression introduced by commit
-b0d0d915 (ipx: remove the BKL).
+Aaron reported that a 32-bit x86 kernel with Physical Address Extension
+(PAE) support complains about bridge prefetchable memory windows above 4GB:
 
-When a recvmsg syscall blocks waiting for new data, no data can be sent on the
-same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
+  pci_bus 0000:00: root bus resource [mem 0x380000000000-0x383fffffffff]
+  ...
+  pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
+  pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
+  pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
+  pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
+  pci 0000:00:02.2: PCI bridge to [bus 03-04]
+  pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
+  pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
+  pci 0000:00:02.2: can't handle 64-bit address space for bridge
 
-This breaks mars-nwe (NetWare emulator):
-- the ncpserv process reads the request using recvmsg
-- ncpserv forks and spawns nwconn
-- ncpserv calls a (blocking) recvmsg and waits for new requests
-- nwconn deadlocks in sendmsg on the same socket
+In this kernel, unsigned long is 32 bits and dma_addr_t is 64 bits.
+Previously we used "unsigned long" to hold the bridge window address.  But
+this is a bus address, so we should use dma_addr_t instead.
 
-Commit b0d0d915 has simply replaced BKL locking with
-lock_sock/release_sock. Unlike now, BKL got unlocked while
-sleeping, so a blocking recvmsg did not block a concurrent
-sendmsg.
+Use dma_addr_t to hold the bridge window base and limit.
 
-Only keep the socket locked while actually working with the socket data and
-release it prior to calling skb_recv_datagram().
+The question of whether the CPU can actually *address* the window is
+separate and depends on what the physical address space of the CPU is and
+whether the host bridge does any address translation.
 
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[bhelgaas: fix "shift count > width of type", changelog, stable tag]
+Fixes: d56dbf5bab8c ("PCI: Allocate 64-bit BARs above 4G when possible")
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
+Reported-by: Aaron Ma <mapengyu@gmail.com>
+Tested-by: Aaron Ma <mapengyu@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipx/af_ipx.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -1763,6 +1763,7 @@ static int ipx_recvmsg(struct kiocb *ioc
- 	struct ipxhdr *ipx = NULL;
- 	struct sk_buff *skb;
- 	int copied, rc;
-+	bool locked = true;
+---
+ drivers/pci/probe.c |   29 ++++++++++++++++-------------
+ 1 file changed, 16 insertions(+), 13 deletions(-)
+
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -395,15 +395,16 @@ static void pci_read_bridge_mmio_pref(st
+ {
+ 	struct pci_dev *dev = child->self;
+ 	u16 mem_base_lo, mem_limit_lo;
+-	unsigned long base, limit;
++	u64 base64, limit64;
++	dma_addr_t base, limit;
+ 	struct pci_bus_region region;
+ 	struct resource *res;
  
- 	lock_sock(sk);
- 	/* put the autobinding in */
-@@ -1789,6 +1790,8 @@ static int ipx_recvmsg(struct kiocb *ioc
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
+ 	res = child->resource[2];
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
+-	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
+-	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
++	base64 = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
++	limit64 = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
  
-+	release_sock(sk);
-+	locked = false;
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &rc);
- 	if (!skb)
-@@ -1822,7 +1825,8 @@ static int ipx_recvmsg(struct kiocb *ioc
- out_free:
- 	skb_free_datagram(sk, skb);
- out:
--	release_sock(sk);
-+	if (locked)
-+		release_sock(sk);
- 	return rc;
- }
- 
+ 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
+ 		u32 mem_base_hi, mem_limit_hi;
+@@ -417,18 +418,20 @@ static void pci_read_bridge_mmio_pref(st
+ 		 * this, just assume they are not being used.
+ 		 */
+ 		if (mem_base_hi <= mem_limit_hi) {
+-#if BITS_PER_LONG == 64
+-			base |= ((unsigned long) mem_base_hi) << 32;
+-			limit |= ((unsigned long) mem_limit_hi) << 32;
+-#else
+-			if (mem_base_hi || mem_limit_hi) {
+-				dev_err(&dev->dev, "can't handle 64-bit "
+-					"address space for bridge\n");
+-				return;
+-			}
+-#endif
++			base64 |= (u64) mem_base_hi << 32;
++			limit64 |= (u64) mem_limit_hi << 32;
+ 		}
+ 	}
++
++	base = (dma_addr_t) base64;
++	limit = (dma_addr_t) limit64;
++
++	if (base != base64) {
++		dev_err(&dev->dev, "can't handle bridge window above 4GB (bus address %#010llx)\n",
++			(unsigned long long) base64);
++		return;
++	}
++
+ 	if (base <= limit) {
+ 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
+ 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
 
 
