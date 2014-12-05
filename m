@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaLEJQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 04:16:08 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:61910 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaLEJQD (ORCPT
+	id S1753009AbaLEJpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 04:45:31 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38900 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752622AbaLEJp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 04:16:03 -0500
-Date: Fri, 5 Dec 2014 10:16:30 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout
- correctly
-Message-ID: <20141205091630.GI20350@phenom.ffwll.local>
-Mail-Followup-To: John Stultz <john.stultz@linaro.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <20141202163506.GG18921@nuc-i3427.alporthouse.com>
- <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
- <20141203143029.GF32117@phenom.ffwll.local>
- <CALAqxLUYL91khoW=oLAp_FtPBrDnSazfYqVpkXYTBJsTjDsv+g@mail.gmail.com>
- <20141204104228.GJ32117@phenom.ffwll.local>
- <CALAqxLX0hvv5DeLRji7g+jVX+F2ipU_f04YtehjFnSV4i==q4w@mail.gmail.com>
- <CAKMK7uHQzqqtg=HBDfyMdZbOGNuzaMz10XeDdCnxkta+R8Sv9Q@mail.gmail.com>
- <CALAqxLUGh=2LF4kvK231P7AbChUmXGsHVvsD2PQcM_SHPpGvyw@mail.gmail.com>
- <CAKMK7uGwTCK0UNW93zVCmBoJLnX7VQ-UkQHhccZN-oDod0r8kw@mail.gmail.com>
- <CALAqxLXbb-K0VrEKXFMe2gtvSt0+Aur=oSD9EuBBY0xLjOMUCw@mail.gmail.com>
+	Fri, 5 Dec 2014 04:45:27 -0500
+Date: Fri, 5 Dec 2014 09:45:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arend van Spriel <arend@broadcom.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205094507.GP11285@n2100.arm.linux.org.uk>
+References: <5481794E.4050406@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALAqxLXbb-K0VrEKXFMe2gtvSt0+Aur=oSD9EuBBY0xLjOMUCw@mail.gmail.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
+In-Reply-To: <5481794E.4050406@broadcom.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:35:44PM -0800, John Stultz wrote:
-> On Thu, Dec 4, 2014 at 10:51 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> > On Thu, Dec 4, 2014 at 7:16 PM, John Stultz <john.stultz@linaro.org> wrote:
-> >> On Thu, Dec 4, 2014 at 9:50 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> >>> On Thu, Dec 4, 2014 at 6:42 PM, John Stultz <john.stultz@linaro.org> wrote:
-> >>>> Sigh. So you're going to make me write a separate patch that moves it over?
-> >>>
-> >>> We've written it already, Imre posted the link to the old discussion:
-> >>>
-> >>> https://lkml.org/lkml/2013/5/10/187
-> >>>
-> >>> But if the first attempt doesn't sufficiently stick I tend to chase
-> >>> the patches any more. But if you want to resurrect this I could ping
-> >>> Imre and ask him to pick it up again or you could rebase his patches.
-> >>
-> >> Well, last I saw the initial patch was buggy, no? I don't think I saw
-> >> it being resubmitted.
-> >
-> > I didn't see your reply in that thread nor in the v2 follow up at
-> > http://marc.info/?l=linux-kernel&m=136854294730957&w=2 Maybe I missed
-> > it, but response seems to have been lukewarm overall.
+On Fri, Dec 05, 2014 at 10:22:22AM +0100, Arend van Spriel wrote:
+> For our brcm80211 development we are working on getting brcmfmac driver
+> up and running on a Broadcom ARM-based platform. The wireless device is
+> a PCIe device, which is hooked up to the system behind a PCIe host
+> bridge, and we transfer information between host and device using a
+> descriptor ring buffer allocated using dma_alloc_coherent(). We mostly
+> tested on x86 and seen no issue. However, on this ARM platform
+> (single-core A9) we detect occasionally that the descriptor content is
+> invalid. When this occurs we do a dma_sync_single_for_cpu() and this is
+> retried a number of times if the problem persists. Actually, found out
+> that someone made a mistake by using virt_to_dma(va) to get the
+> dma_handle parameter. So probably we only provided a delay in the retry
+> loop. After fixing that a single call to dma_sync_single_for_cpu() is
+> sufficient. The DMA-API-HOWTO clearly states that:
 > 
-> Ok, I wasn't cc'ed on the v2, thanks for the pointer.  There's some
-> general lukewarmness to all things jiffies, since getting rid of them
-> has been a long term goal forever. But overall that patch set seemed
-> ok (though I'm not a fan of macro generation of functions). But minor
-> details..
+> """
+> the hardware should guarantee that the device and the CPU can access the
+> data in parallel and will see updates made by each other without any
+> explicit software flushing.
+> """
+> 
+> So it seems incorrect that we would need to do a dma_sync for this
+> memory. That we do need it seems like this memory can end up in
+> cache(?), or whatever happens, in some rare condition. Is there anyway
+> to investigate this situation either through DMA-API or some low-level
+> ARM specific functions.
 
-btw have you seen the other fallout from the ktime->nsec conversion in
-i915?
+It's been a long while since I looked at the code, and the code for
+dma_alloc_coherent() has completely changed since then with the
+addition of CMA.  I'm afraid that anything I would say about it would
+not be accurate without research into the possible paths through that
+code - it's no longer just a simple allocator.
 
-http://www.spinics.net/lists/intel-gfx/msg56445.html
+What you say is correct however: the memory should not have any cache
+lines associated with it, if it does, there's a bug somewhere.
 
-Is this just the inaccuracy of nsec_to_jiffies (and why it explicitly
-states that this is for the scheduler only) or is there some bigger fish
-in there?
+Also, the memory will be weakly ordered, which means that writes to such
+memory can be reordered.  If ordering matters, barriers should be used.
+rmb() and wmb() can be used for this.
 
-Insight very much appreciated.
+(Added Marek for comment on dma_alloc_coherent(), Will for comment on
+barrier stuff.)
 
-Thanks, Daniel
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
