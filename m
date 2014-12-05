@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaLEW4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:56:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1755050AbaLEXgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:36:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54268 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaLEWz7 (ORCPT
+	with ESMTP id S1753080AbaLEW4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:55:59 -0500
+	Fri, 5 Dec 2014 17:56:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.17 113/122] gpu/radeon: Set flag to indicate broken 64-bit MSI
-Date: Fri,  5 Dec 2014 14:44:47 -0800
-Message-Id: <20141205223323.145636270@linuxfoundation.org>
+        Chanho Min <chanho.min@lge.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.17 080/122] ARM: 8226/1: cacheflush: get rid of restarting block
+Date: Fri,  5 Dec 2014 14:44:14 -0800
+Message-Id: <20141205223317.838212210@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,50 +31,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Vladimir Murzin <vladimir.murzin@arm.com>
 
-commit 91ed6fd2c383bb8f02d66e98b4a4d2f7207249dc upstream.
+commit 3f4aa45ceea5789a4aade536acc27f2e0d3da5e1 upstream.
 
-Some radeon ASICs don't support all 64 address bits of MSIs despite
-advertising support for 64-bit MSIs in their configuration space.
+We cannot restart cacheflush safely if a process provides user-defined
+signal handler and signal is pending. In this case -EINTR is returned
+and it is expected that process re-invokes syscall. However, there are
+a few problems with that:
+ * looks like nobody bothers checking return value from cacheflush
+ * but if it did, we don't provide the restart address for that, so the
+   process has to use the same range again
+ * ...and again, what might lead to looping forever
 
-This breaks on systems such as IBM POWER7/8, where 64-bit MSIs can
-be assigned with some of the high address bits set.
+So, remove cacheflush restarting code and terminate cache flushing
+as early as fatal signal is pending.
 
-This makes use of the newly introduced "no_64bit_msi" flag in structure
-pci_dev to allow the MSI allocation code to fallback to 32-bit MSIs
-on those adapters.
-
-Adding Alex's review tag. Patch to the driver is identical to the
-reviewed one, I dropped the arch/powerpc hunk rewrote the subject
-and cset comment.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Chanho Min <chanho.min@lge.com>
+Signed-off-by: Vladimir Murzin <vladimir.murzin@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/include/asm/thread_info.h |   11 -----------
+ arch/arm/kernel/traps.c            |   31 ++-----------------------------
+ 2 files changed, 2 insertions(+), 40 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -202,6 +202,16 @@ static bool radeon_msi_ok(struct radeon_
- 	if (rdev->flags & RADEON_IS_AGP)
- 		return false;
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -44,16 +44,6 @@ struct cpu_context_save {
+ 	__u32	extra[2];		/* Xscale 'acc' register, etc */
+ };
  
-+	/*
-+	 * Older chips have a HW limitation, they can only generate 40 bits
-+	 * of address for "64-bit" MSIs which breaks on some platforms, notably
-+	 * IBM POWER servers, so we limit them
-+	 */
-+	if (rdev->family < CHIP_BONAIRE) {
-+		dev_info(rdev->dev, "radeon: MSI limited to 32-bit\n");
-+		rdev->pdev->no_64bit_msi = 1;
-+	}
-+
- 	/* force MSI on */
- 	if (radeon_msi == 1)
- 		return true;
+-struct arm_restart_block {
+-	union {
+-		/* For user cache flushing */
+-		struct {
+-			unsigned long start;
+-			unsigned long end;
+-		} cache;
+-	};
+-};
+-
+ /*
+  * low level task data that entry.S needs immediate access to.
+  * __switch_to() assumes cpu_context follows immediately after cpu_domain.
+@@ -79,7 +69,6 @@ struct thread_info {
+ 	unsigned long		thumbee_state;	/* ThumbEE Handler Base register */
+ #endif
+ 	struct restart_block	restart_block;
+-	struct arm_restart_block	arm_restart_block;
+ };
+ 
+ #define INIT_THREAD_INFO(tsk)						\
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -513,8 +513,6 @@ static int bad_syscall(int n, struct pt_
+ 	return regs->ARM_r0;
+ }
+ 
+-static long do_cache_op_restart(struct restart_block *);
+-
+ static inline int
+ __do_cache_op(unsigned long start, unsigned long end)
+ {
+@@ -523,24 +521,8 @@ __do_cache_op(unsigned long start, unsig
+ 	do {
+ 		unsigned long chunk = min(PAGE_SIZE, end - start);
+ 
+-		if (signal_pending(current)) {
+-			struct thread_info *ti = current_thread_info();
+-
+-			ti->restart_block = (struct restart_block) {
+-				.fn	= do_cache_op_restart,
+-			};
+-
+-			ti->arm_restart_block = (struct arm_restart_block) {
+-				{
+-					.cache = {
+-						.start	= start,
+-						.end	= end,
+-					},
+-				},
+-			};
+-
+-			return -ERESTART_RESTARTBLOCK;
+-		}
++		if (fatal_signal_pending(current))
++			return 0;
+ 
+ 		ret = flush_cache_user_range(start, start + chunk);
+ 		if (ret)
+@@ -553,15 +535,6 @@ __do_cache_op(unsigned long start, unsig
+ 	return 0;
+ }
+ 
+-static long do_cache_op_restart(struct restart_block *unused)
+-{
+-	struct arm_restart_block *restart_block;
+-
+-	restart_block = &current_thread_info()->arm_restart_block;
+-	return __do_cache_op(restart_block->cache.start,
+-			     restart_block->cache.end);
+-}
+-
+ static inline int
+ do_cache_op(unsigned long start, unsigned long end, int flags)
+ {
 
 
