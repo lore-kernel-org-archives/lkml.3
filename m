@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaLEXhj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:37:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S932109AbaLEXh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:37:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaLEW4B (ORCPT
+	with ESMTP id S1752468AbaLEWz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:01 -0500
+	Fri, 5 Dec 2014 17:55:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matti Gottlieb <matti.gottlieb@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 117/122] iwlwifi: mvm: ROC - bug fixes around time events and locking
-Date: Fri,  5 Dec 2014 14:44:51 -0800
-Message-Id: <20141205223323.808426507@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.17 112/122] drm/radeon: report disconnected for LVDS/eDP with PX if ddc fails
+Date: Fri,  5 Dec 2014 14:44:46 -0800
+Message-Id: <20141205223322.976859851@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,105 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matti Gottlieb <matti.gottlieb@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a6cc5163149532734b84c86cbffa4994e527074b upstream.
+commit 1348579433566355e570008929daa09a0db64fd8 upstream.
 
-Don't add the time event to the list. We added it several
-times the same time event, which leads to an infinite loop
-when walking the list.
+If ddc fails, presumably the i2c mux (and hopefully the signal
+mux) are switched to the other GPU so don't fetch the edid from
+the vbios so that the connector reports disconnected.
 
-Since we (currently) don't support more than one ROC for STA
-vif at a time, enforce this and don't add the time event
-to any list.
+bug:
+https://bugzilla.opensuse.org/show_bug.cgi?id=904417
 
-We were also missing the locking of the mutex which led to
-a lockdep splat - fix that.
-
-Signed-off-by: Matti Gottlieb <matti.gottlieb@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c   |   25 ++++++++++++++++---------
- drivers/net/wireless/iwlwifi/mvm/time-event.c |    2 +-
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -515,7 +515,8 @@ static void iwl_mvm_mac_tx(struct ieee80
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -322,6 +322,12 @@ static void radeon_connector_get_edid(st
  	}
  
- 	if (IEEE80211_SKB_CB(skb)->hw_queue == IWL_MVM_OFFCHANNEL_QUEUE &&
--	    !test_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status))
-+	    !test_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status) &&
-+	    !test_bit(IWL_MVM_STATUS_ROC_AUX_RUNNING, &mvm->status))
- 		goto drop;
- 
- 	/* treat non-bufferable MMPDUs as broadcast if sta is sleeping */
-@@ -2403,14 +2404,19 @@ static int iwl_mvm_send_aux_roc_cmd(stru
- 	/* Set the node address */
- 	memcpy(aux_roc_req.node_addr, vif->addr, ETH_ALEN);
- 
-+	lockdep_assert_held(&mvm->mutex);
+ 	if (!radeon_connector->edid) {
++		/* don't fetch the edid from the vbios if ddc fails and runpm is
++		 * enabled so we report disconnected.
++		 */
++		if ((rdev->flags & RADEON_IS_PX) && (radeon_runtime_pm != 0))
++			return;
 +
-+	spin_lock_bh(&mvm->time_event_lock);
-+
-+	if (WARN_ON(te_data->id == HOT_SPOT_CMD)) {
-+		spin_unlock_bh(&mvm->time_event_lock);
-+		return -EIO;
-+	}
-+
- 	te_data->vif = vif;
- 	te_data->duration = duration;
- 	te_data->id = HOT_SPOT_CMD;
- 
--	lockdep_assert_held(&mvm->mutex);
+ 		if (rdev->is_atom_bios) {
+ 			/* some laptops provide a hardcoded edid in rom for LCDs */
+ 			if (((connector->connector_type == DRM_MODE_CONNECTOR_LVDS) ||
+@@ -826,6 +832,8 @@ static int radeon_lvds_mode_valid(struct
+ static enum drm_connector_status
+ radeon_lvds_detect(struct drm_connector *connector, bool force)
+ {
++	struct drm_device *dev = connector->dev;
++	struct radeon_device *rdev = dev->dev_private;
+ 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	struct drm_encoder *encoder = radeon_best_single_encoder(connector);
+ 	enum drm_connector_status ret = connector_status_disconnected;
+@@ -842,7 +850,11 @@ radeon_lvds_detect(struct drm_connector
+ 		/* check if panel is valid */
+ 		if (native_mode->hdisplay >= 320 && native_mode->vdisplay >= 240)
+ 			ret = connector_status_connected;
 -
--	spin_lock_bh(&mvm->time_event_lock);
--	list_add_tail(&te_data->list, &mvm->time_event_list);
- 	spin_unlock_bh(&mvm->time_event_lock);
- 
- 	/*
-@@ -2466,22 +2472,23 @@ static int iwl_mvm_roc(struct ieee80211_
- 	IWL_DEBUG_MAC80211(mvm, "enter (%d, %d, %d)\n", channel->hw_value,
- 			   duration, type);
- 
-+	mutex_lock(&mvm->mutex);
-+
- 	switch (vif->type) {
- 	case NL80211_IFTYPE_STATION:
- 		/* Use aux roc framework (HS20) */
- 		ret = iwl_mvm_send_aux_roc_cmd(mvm, channel,
- 					       vif, duration);
--		return ret;
-+		goto out_unlock;
- 	case NL80211_IFTYPE_P2P_DEVICE:
- 		/* handle below */
- 		break;
- 	default:
- 		IWL_ERR(mvm, "vif isn't P2P_DEVICE: %d\n", vif->type);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out_unlock;
++		/* don't fetch the edid from the vbios if ddc fails and runpm is
++		 * enabled so we report disconnected.
++		 */
++		if ((rdev->flags & RADEON_IS_PX) && (radeon_runtime_pm != 0))
++			ret = connector_status_disconnected;
  	}
  
--	mutex_lock(&mvm->mutex);
--
- 	for (i = 0; i < NUM_PHY_CTX; i++) {
- 		phy_ctxt = &mvm->phy_ctxts[i];
- 		if (phy_ctxt->ref == 0 || mvmvif->phy_ctxt == phy_ctxt)
---- a/drivers/net/wireless/iwlwifi/mvm/time-event.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/time-event.c
-@@ -303,8 +303,8 @@ static int iwl_mvm_aux_roc_te_handle_not
- 		te_data->running = false;
- 		te_data->vif = NULL;
- 		te_data->uid = 0;
-+		te_data->id = TE_MAX;
- 	} else if (le32_to_cpu(notif->action) == TE_V2_NOTIF_HOST_EVENT_START) {
--		set_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status);
- 		set_bit(IWL_MVM_STATUS_ROC_AUX_RUNNING, &mvm->status);
- 		te_data->running = true;
- 		ieee80211_ready_on_channel(mvm->hw); /* Start TE */
+ 	/* check for edid as well */
+@@ -1589,6 +1601,11 @@ radeon_dp_detect(struct drm_connector *c
+ 			/* check if panel is valid */
+ 			if (native_mode->hdisplay >= 320 && native_mode->vdisplay >= 240)
+ 				ret = connector_status_connected;
++			/* don't fetch the edid from the vbios if ddc fails and runpm is
++			 * enabled so we report disconnected.
++			 */
++			if ((rdev->flags & RADEON_IS_PX) && (radeon_runtime_pm != 0))
++				ret = connector_status_disconnected;
+ 		}
+ 		/* eDP is always DP */
+ 		radeon_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
 
 
