@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaLEHn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 02:43:56 -0500
-Received: from nm12.bullet.mail.gq1.yahoo.com ([98.136.218.45]:43301 "EHLO
-	nm12.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751263AbaLEHnz (ORCPT
+	id S1752072AbaLEH5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 02:57:43 -0500
+Received: from smtprelay0087.hostedemail.com ([216.40.44.87]:42705 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750891AbaLEH5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 02:43:55 -0500
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Dec 2014 02:43:55 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.com;
-	b=clrcTK0nuzYC5eyi/Tgb6ENLKekMYtZ2Y1+B4ZpNsGKY3o7RFDmM0ky1coslChY6q7i6M2HUAGxuKomEcs+mxa04xGcHOm6IQ0EpjNerTFlxbFoFCU57iZhn2j2NAHnpNCNkPRoMxDWC4TDrzY2V7dxosJUyagAuP6qxkcLZYLqP5XLYQfcCX6LIM9gCWgsWhDbgv/OaKMK1uzSFhmvlv8PiXCNVtyOX4CzaT1ZKs32Ij//0p9Yxs1E02CuQSC8Sm/C/ZhmbdXLNDIATxCqZIxkA0+xGb+8SVeGjbopXgiJZeZE2QMvWPmS0bmt8ULtjtHfTclupML6BAg/AK0gWEQ==;
-X-Yahoo-Newman-Id: 389538.50333.bm@smtp234.mail.gq1.yahoo.com
-Message-ID: <389538.50333.bm@smtp234.mail.gq1.yahoo.com>
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ovUFEKQVM1nuSABpNvWT5OAwn9YEbiOSBgZpBCgiTBCr_jY
- dci4kBHSmlylA.3Ep9_Hlt0.c8l88XJkCdPLCeduoaA4TwPktcmlWsNWFOvd
- fQe17rc.sbA_cq52ic4KWCqNPwk3qCcuDwGpPpVAIsCrbUfBWhW4MDlgGVEd
- SrxTbABpJlfz.Prnq7q1_5qDuJN7i9ISLTnaWahiLj_5ldGhVJvuBcAGRpNM
- _FAZX1.Kdbc4qe6LhbZJN.Bwc25yI5sppAIq85j0ZbQ__uobciOHgkNJa3il
- YFFTVgt5.jrQxOQUXFT13WrCu5giLiw4k6oDTXcbaU5tG8ZZdG92az.TzZ1o
- NW1abtL4x5yoGqYdiBSO2zpE6ho6LqTrnd0Fb9XZQ25oyk91.PHMQvdQ2vMA
- kLBhK2dtS4QHUTtr39f4wPKqNN9XsUAmU.nFN8n4IJe9OpMWU7RWemOScQdc
- jAcwDUdHXT2ZnldvXjfNxfZpJeWIkHtkRAsNEI5Uj7XDzLaTrAEuMBcmSl3b
- _0lleHnkChRGGJ7uraqO7tIJ2GRgdXWAJPG0B.mDCcuT_8fAXRTPxp28p3Yi
- iEWYpKdV6pW2HB3RNXtmu9uUreWkgNDSPZSioFqWwQMSXeSOAuVlk0_tV73p
- wH1AV7X08qAQWx4qyA7FgdB6PBAoCSsKWMHQNq6TDFAMwmeiDx6f1emnKKbj
- p2phgxVQt0YBarWoG3kkIxgWjCunyv5tgdo4-
-X-Yahoo-SMTP: .9IOeNSswBABvO2XUx.AdvPAuo5z7d32vidUNmt5OCvrsA--
-Reply-To: <abrahamkarid18@inbox.lv>
-From: "Abraham Karid" <egyptjanegyptjnaegyptjan@hotmail.com>
-Subject: From Abraham Karid
-Date: Thu, 4 Dec 2014 23:37:20 -0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	Fri, 5 Dec 2014 02:57:40 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2734:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6119:6261:7901:7903:9036:10004:10400:10848:11232:11658:11914:12219:12517:12519:12740:13069:13161:13229:13255:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fall15_258ad6eac4b02
+X-Filterd-Recvd-Size: 3321
+Message-ID: <1417766255.2721.43.camel@perches.com>
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
+ pr_warn() in mppe_rekey()
+From: Joe Perches <joe@perches.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Date: Thu, 04 Dec 2014 23:57:35 -0800
+In-Reply-To: <54815C5F.8090702@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	 <530B5FB6.6010207@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
+	 <530C5E18.1020800@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
+	 <530CD2C4.4050903@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
+	 <530CF8FF.8080600@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	 <530DD06F.4090703@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	 <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>
+	 <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>
+	 <547C82A6.2030808@users.sourceforge.net>
+	 <547CA157.1080401@cogentembedded.com>
+	 <5480DA32.8000201@users.sourceforge.net>
+	 <5480DBDE.7040604@users.sourceforge.net>
+	 <1417731809.2721.17.camel@perches.com>
+	 <5480DFB5.4090708@users.sourceforge.net>
+	 <1417733101.2721.20.camel@perches.com>
+	 <54815C5F.8090702@users.sourceforge.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 141204-1, 12/04/2014), Outbound message
-X-Antivirus-Status: Clean
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My name is Abraham Karid from Egypt, i am a journalist , you can know more about me on facebook with this id abkarid@outlook.com , I have a good business for you and your family
-Get back to me so that i will give you more details about it.
-Thanks
-Abraham Karid
+On Fri, 2014-12-05 at 08:18 +0100, SF Markus Elfring wrote:
+> >>> It's generally nicer to replace embedded function names
+> >>> with "%s: ", __func__
+> >>>
+> >>> 			pr_warn("%s: cipher_encrypt failed\n", __func__);
+> >>
+> >> Do you want that I send a third patch series for the fine-tuning of these parameters?
+> > 
+> > If you want.
+> 
+> Would "a committer" fix such a small source code adjustment also without a resend of
+> a patch series?
+
+Depends on the committer.  Some might, most wouldn't.
+
+drivers/net/ppp doesn't have a specific maintainer.
+
+The networking maintainer generally asks for resends
+of patches that don't suit his taste, but lots of
+non-perfect patches still get applied there.
+
+It's a process, and it's not immediate.  Wait to see
+if these get applied as-is.  If the embedded function
+name use, which is trivial, bothers you, send another
+patch later on that changes it.
+
+> Does it make sense to express such implementation details in the Linux coding
+> style documentation more explicitly (besides the fact that this update suggestion
+> was also triggered by a warning from the script "checkpatch.pl").
+
+Probably not.
+
+Overly formalized coding style rules are perhaps
+more of a barrier to entry than most want.
+
+
