@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaLESLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:11:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21285 "EHLO mga01.intel.com"
+	id S1751350AbaLESLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:11:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39635 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaLESLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:11:02 -0500
+	id S1750980AbaLESLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 13:11:42 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,523,1413270000"; 
-   d="scan'208";a="643123348"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="425636819"
 From: Ashutosh Dixit <ashutosh.dixit@intel.com>
 To: Jonathan Corbet <corbet@lwn.net>
 Cc: Jiri Kosina <jkosina@suse.cz>, Peter Foley <pefoley2@pefoley.com>,
@@ -28,10 +28,10 @@ Cc: Jiri Kosina <jkosina@suse.cz>, Peter Foley <pefoley2@pefoley.com>,
 Subject: Re: [PATCH linux-next] Documentation: Build mic/mpssd only for x86_64
 References: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
 	<20141205111818.551a870f@lwn.net>
-Date: Fri, 05 Dec 2014 10:26:46 -0800
+Date: Fri, 05 Dec 2014 10:29:35 -0800
 In-Reply-To: <20141205111818.551a870f@lwn.net> (Jonathan Corbet's message of
 	"Fri, 5 Dec 2014 09:18:18 -0700")
-Message-ID: <m3egse7y1l.fsf@adixit-yct.ra.intel.com>
+Message-ID: <m3a9327xww.fsf@adixit-yct.ra.intel.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
