@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaLEXGd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:06:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
+	id S1754429AbaLEXS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:18:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaLEW4U (ORCPT
+	with ESMTP id S1753888AbaLEXGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:20 -0500
+	Fri, 5 Dec 2014 18:06:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Alex Tabachnik <alext@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 54/73] Target/iser: Fix a wrong dereference in case discovery session is over iser
-Date: Fri,  5 Dec 2014 14:45:00 -0800
-Message-Id: <20141205224435.553762207@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.17 110/122] drm/i915: Kick fbdev before vgacon
+Date: Fri,  5 Dec 2014 14:44:44 -0800
+Message-Id: <20141205223322.689302837@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
-References: <20141205224433.921659956@linuxfoundation.org>
+In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
+References: <20141205223305.514276242@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,41 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit e0546fc1ba66c90cb38a5764357366267d3e58e4 upstream.
+commit 0485c9dc24ec0939b42ca5104c0373297506b555 upstream.
 
-In case the discovery session is carried over iser, we can't
-access the assumed network portal since the default portal is
-used. In this case we don't really need to allocate the fastreg
-pool, just prepare to the text pdu that will follow.
+It's magic, but it seems to work.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Reported-by: Alex Tabachnik <alext@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This fixes a regression introduced in
+
+commit 1bb9e632a0aeee1121e652ee4dc80e5e6f14bcd2
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Jul 8 10:02:43 2014 +0200
+
+    drm/i915: Only unbind vgacon, not other console drivers
+
+My best guess is that the vga fbdev driver falls over if we rip out
+parts of vgacon. Hooray.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82439
+Reported-and-tested-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
-
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -985,7 +985,8 @@ isert_put_login_tx(struct iscsi_conn *co
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1670,15 +1670,17 @@ int i915_driver_load(struct drm_device *
+ 		goto out_regs;
+ 
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+-		ret = i915_kick_out_vgacon(dev_priv);
++		/* WARNING: Apparently we must kick fbdev drivers before vgacon,
++		 * otherwise the vga fbdev driver falls over. */
++		ret = i915_kick_out_firmware_fb(dev_priv);
+ 		if (ret) {
+-			DRM_ERROR("failed to remove conflicting VGA console\n");
++			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
+ 			goto out_gtt;
+ 		}
+ 
+-		ret = i915_kick_out_firmware_fb(dev_priv);
++		ret = i915_kick_out_vgacon(dev_priv);
+ 		if (ret) {
+-			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
++			DRM_ERROR("failed to remove conflicting VGA console\n");
+ 			goto out_gtt;
+ 		}
  	}
- 	if (!login->login_failed) {
- 		if (login->login_complete) {
--			if (isert_conn->conn_device->use_fastreg) {
-+			if (!conn->sess->sess_ops->SessionType &&
-+			    isert_conn->conn_device->use_fastreg) {
- 				ret = isert_conn_create_fastreg_pool(isert_conn);
- 				if (ret) {
- 					pr_err("Conn: %p failed to create"
 
 
