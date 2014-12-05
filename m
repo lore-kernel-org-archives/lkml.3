@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269AbaLEWqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
+	id S1755268AbaLEXpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:45:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaLEWpz (ORCPT
+	with ESMTP id S1751051AbaLEWqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:45:55 -0500
+	Fri, 5 Dec 2014 17:46:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Cowgill <James.Cowgill@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>, Huacai Chen <chenhc@lemote.com>,
-        linux-mips@linux-mips.org, Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 005/122] MIPS: Loongson3: Fix __node_distances undefined error
-Date: Fri,  5 Dec 2014 14:42:59 -0800
-Message-Id: <20141205223306.348443973@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.17 046/122] powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
+Date: Fri,  5 Dec 2014 14:43:40 -0800
+Message-Id: <20141205223312.463521490@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -31,45 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Cowgill <James.Cowgill@imgtec.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 21255dad9dffa4407cab866f5561cb9568f7f7d8 upstream.
+commit 152d44a853e42952f6c8a504fb1f8eefd21fd5fd upstream.
 
-export the __node_distances symbol in the loongson3 numa code to fix the
-build error:
+I used some 64 bit instructions when adding the 32 bit getcpu VDSO
+function. Fix it.
 
-  Building modules, stage 2.
-  MODPOST 221 modules
-ERROR: "__node_distances" [drivers/block/nvme.ko] undefined!
-scripts/Makefile.modpost:90: recipe for target '__modpost' failed
-
-when building the kernel with:
- CONFIG_CPU_LOONGSON3=y
- CONFIG_NUMA=y
- CONFIG_BLK_DEV_NVME=m
-
-Signed-off-by: James Cowgill <James.Cowgill@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Reviewed-by: Huacai Chen <chenhc@lemote.com>
-Cc: linux-mips@linux-mips.org
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Patchwork: https://patchwork.linux-mips.org/patch/8444/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Fixes: 18ad51dd342a ("powerpc: Add VDSO version of getcpu")
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/loongson/loongson-3/numa.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/vdso32/getcpu.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/mips/loongson/loongson-3/numa.c
-+++ b/arch/mips/loongson/loongson-3/numa.c
-@@ -33,6 +33,7 @@
- 
- static struct node_data prealloc__node_data[MAX_NUMNODES];
- unsigned char __node_distances[MAX_NUMNODES][MAX_NUMNODES];
-+EXPORT_SYMBOL(__node_distances);
- struct node_data *__node_data[MAX_NUMNODES];
- EXPORT_SYMBOL(__node_data);
- 
+--- a/arch/powerpc/kernel/vdso32/getcpu.S
++++ b/arch/powerpc/kernel/vdso32/getcpu.S
+@@ -30,8 +30,8 @@
+ V_FUNCTION_BEGIN(__kernel_getcpu)
+   .cfi_startproc
+ 	mfspr	r5,SPRN_SPRG_VDSO_READ
+-	cmpdi	cr0,r3,0
+-	cmpdi	cr1,r4,0
++	cmpwi	cr0,r3,0
++	cmpwi	cr1,r4,0
+ 	clrlwi  r6,r5,16
+ 	rlwinm  r7,r5,16,31-15,31-0
+ 	beq	cr0,1f
 
 
