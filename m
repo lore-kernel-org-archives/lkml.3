@@ -1,200 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaLETEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:04:09 -0500
-Received: from smtprelay.synopsys.com ([198.182.60.111]:59503 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaLETEH convert rfc822-to-8bit (ORCPT
+	id S1751898AbaLETEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:04:51 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:37698 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751281AbaLETEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:04:07 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Yunzhi Li <lyz@rock-chips.com>, "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "ulrich.prinz@googlemail.com" <ulrich.prinz@googlemail.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support for
- dwc2 usb controler platform driver.
-Thread-Topic: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support
- for dwc2 usb controler platform driver.
-Thread-Index: AQHQEIqcG5EhzbPG0kaiAXphivO/SpyBV0kA
-Date: Fri, 5 Dec 2014 19:04:01 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844FFB50@US01WEMBX2.internal.synopsys.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
- <1417783941-2418-4-git-send-email-lyz@rock-chips.com>
-In-Reply-To: <1417783941-2418-4-git-send-email-lyz@rock-chips.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Dec 2014 14:04:50 -0500
+Date: Fri, 5 Dec 2014 14:04:07 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <1417806247.4845.1@mail.thefacebook.com>
+In-Reply-To: <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+References: <547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+	<20141201230339.GA20487@ret.masoncoding.com>
+	<1417529606.3924.26.camel@maggy.simpson.net>
+	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+	<1417540493.21136.3@mail.thefacebook.com>
+	<20141203184111.GA32005@redhat.com>
+	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+	<20141205171501.GA1320@redhat.com>
+	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-05_08:2014-12-05,2014-12-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=120.659590407225
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=3 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412050161
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Yunzhi Li [mailto:lyz@rock-chips.com]
-> Sent: Friday, December 05, 2014 4:52 AM
-> 
-> Get PHY parameters from devicetree and power off usb PHY during
-> system suspend.
-> 
-> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
-> ---
-> 
->  drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
->  drivers/usb/dwc2/platform.c | 34 ++++++++++++++++++++++++++++++++++
->  2 files changed, 46 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> index 200168e..2601c61 100644
-> --- a/drivers/usb/dwc2/gadget.c
-> +++ b/drivers/usb/dwc2/gadget.c
-> @@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
->  {
->  	struct device *dev = hsotg->dev;
->  	struct s3c_hsotg_plat *plat = dev->platform_data;
-> -	struct phy *phy;
-> -	struct usb_phy *uphy;
->  	struct s3c_hsotg_ep *eps;
->  	int epnum;
->  	int ret;
-> @@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
->  	hsotg->phyif = GUSBCFG_PHYIF16;
-> 
->  	/*
-> -	 * Attempt to find a generic PHY, then look for an old style
-> -	 * USB PHY, finally fall back to pdata
-> +	 * If platform probe couldn't find a generic PHY or an old style
-> +	 * USB PHY, fall back to pdata
->  	 */
-> -	phy = devm_phy_get(dev, "usb2-phy");
-> -	if (IS_ERR(phy)) {
-> -		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -		if (IS_ERR(uphy)) {
-> -			/* Fallback for pdata */
-> -			plat = dev_get_platdata(dev);
-> -			if (!plat) {
-> -				dev_err(dev,
-> -				"no platform data or transceiver defined\n");
-> -				return -EPROBE_DEFER;
-> -			}
-> -			hsotg->plat = plat;
-> -		} else
-> -			hsotg->uphy = uphy;
-> -	} else {
-> -		hsotg->phy = phy;
-> +	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-> +		plat = dev_get_platdata(dev);
-> +		if (!plat) {
-> +			dev_err(dev,
-> +			"no platform data or transceiver defined\n");
-> +			return -EPROBE_DEFER;
-> +		}
-> +		hsotg->plat = plat;
-> +	} else if (hsotg->phy) {
 
-You have changed the behavior here. Previously, the driver would work
-even if there were no phys or pdata defined. Now it will return
--EPROBE_DEFER instead. Are you sure that won't break any existing
-platforms?
 
->  		/*
->  		 * If using the generic PHY framework, check if the PHY bus
->  		 * width is 8-bit and set the phyif appropriately.
->  		 */
-> -		if (phy_get_bus_width(phy) == 8)
-> +		if (phy_get_bus_width(hsotg->phy) == 8)
->  			hsotg->phyif = GUSBCFG_PHYIF8;
->  	}
+On Fri, Dec 5, 2014 at 1:38 PM, Linus Torvalds 
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Dec 5, 2014 at 9:15 AM, Dave Jones <davej@redhat.com> wrote:
+>> 
+>>  A bisect later, and I landed on a kernel that ran for a day, before
+>>  spewing NMI messages, recovering, and then..
+>> 
+>>  
+>> https://urldefense.proofpoint.com/v1/url?u=http://codemonkey.org.uk/junk/log.txt&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=6%2FL0lzzDhu0Y1hL9xm%2BQyA%3D%3D%0A&m=APfD8%2BRkGVsO9UHnH6Oo05Zuoh90VyaaF71AycsnLbQ%3D%0A&s=de71b34f3a7da1c7b8f12dcd760c271657f9f7e2a93b4d2e296b2c687cee5157
 > 
-> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-> index 6a795aa..739d14f 100644
-> --- a/drivers/usb/dwc2/platform.c
-> +++ b/drivers/usb/dwc2/platform.c
-> @@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
->  	struct dwc2_core_params defparams;
->  	struct dwc2_hsotg *hsotg;
->  	struct resource *res;
-> +	struct phy *phy;
-> +	struct usb_phy *uphy;
->  	int retval;
->  	int irq;
+> I have to admit I'm seeing absolutely nothing sensible in there.
 > 
-> @@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
-> 
->  	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
-> 
-> +	/*
-> +	 * Attempt to find a generic PHY, then look for an old style
-> +	 * USB PHY
-> +	 */
-> +	phy = devm_phy_get(&dev->dev, "usb2-phy");
-> +	if (IS_ERR(phy)) {
-> +		hsotg->phy = NULL;
-> +		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
-> +		if (IS_ERR(uphy))
-> +			hsotg->uphy = NULL;
-> +		else
-> +			hsotg->uphy = uphy;
-> +	} else {
-> +		hsotg->phy = phy;
-> +		phy_power_on(hsotg->phy);
-> +		phy_init(hsotg->phy);
-> +	}
-> +
->  	spin_lock_init(&hsotg->lock);
->  	mutex_init(&hsotg->init_mutex);
->  	retval = dwc2_gadget_init(hsotg, irq);
-> @@ -233,6 +253,14 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
-> 
->  	if (dwc2_is_device_mode(dwc2))
->  		ret = s3c_hsotg_suspend(dwc2);
-> +	else {
+> Call it bad, and see if bisection ends up slowly -oh so slowly -
+> pointing to some direction. Because I don't think it's the hardware,
+> considering that apparently 3.16 is solid. And the spews themselves
+> are so incomprehensible that I'm not seeing any pattern what-so-ever.
 
-Kernel style says that both branches of the if() should have braces
-here.
+I went back through all of the traces Dave has posted in this thread.  
+This one looks like vm debugging is on:
 
-> +		if (dwc2->lx_state == DWC2_L0)
-> +			return 0;
-> +		if (dwc2->phy) {
-> +			phy_exit(dwc2->phy);
-> +			phy_power_off(dwc2->phy);
-> +		}
+ http://marc.info/?l=linux-kernel&m=141632237304726&w=2
 
-Minor nit: no need to test dwc2->phy for NULL here, the phy functions
-handle a NULL pointer just fine.
+Another had a function call from CONFIG_DEBUG_PAGEALLOC:
 
-> +	}
->  	return ret;
->  }
-> 
-> @@ -243,6 +271,12 @@ static int __maybe_unused dwc2_resume(struct device *dev)
-> 
->  	if (dwc2_is_device_mode(dwc2))
->  		ret = s3c_hsotg_resume(dwc2);
-> +	else {
+http://marc.info/?l=linux-kernel&m=141701248210949&w=2
 
-Braces.
+So one idea is that our allocation/freeing of pages is dramatically 
+more expensive and we're hitting a strange edge condition.  Maybe we're 
+even faulting on a readonly page from a horrible place?
 
-> +		if (dwc2->phy) {
-> +			phy_power_on(dwc2->phy);
-> +			phy_init(dwc2->phy);
-> +		}
-> +	}
->  	return ret;
->  }
-> 
+[83246.925234] end_request: I/O error, dev sda, sector 0
 
--- 
-Paul
+Ext3/4 shouldn't be doing IO to sector zero.  Something is stomping on 
+ram?
+
+-chris
 
