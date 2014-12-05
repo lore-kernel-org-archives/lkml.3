@@ -1,59 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaLEMtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:49:08 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:18789 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaLEMtG (ORCPT
+	id S1752077AbaLEMhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:37:19 -0500
+Received: from atl4mhob08.myregisteredsite.com ([209.17.115.46]:35778 "EHLO
+	atl4mhob08.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750872AbaLEMhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:49:06 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-5d-5481a9bf80a9
-Message-id: <5481A954.1010104@samsung.com>
-Date: Fri, 05 Dec 2014 14:47:16 +0200
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: rusty@rustcorp.com.au, mmarek@suse.cz, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7
- signature to a module [ver #2]
-References: <548172DE.9090007@samsung.com>
- <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
- <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
- <23280.1417775034@warthog.procyon.org.uk>
-In-reply-to: <23280.1417775034@warthog.procyon.org.uk>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xy7r7VzaGGFy4x2rxruk3i8XsXQ9Z
-	LC7vmsNm8aHnEZtFy74LTBY3p11gsfi0YhKzA7vHtBPLWDweHNrM4vF+31U2jxUbTjB7nFlw
-	hN3j8ya5ALYoLpuU1JzMstQifbsEroxHz7YzFfxgrGjeM5W1gXEfYxcjJ4eEgInEhccr2SBs
-	MYkL99YD2VwcQgJLGSU+P+1iB0kICTQySayazARhz2KU+DbVHMTmFdCSOPxjMdAgDg4WAVWJ
-	1X/VQMJsAnoSG5p/gLWKCkRIfFj1lQ2iXFDix+R7LCC2iIC6xKNlG5lBbGaBJYwS02dGgowR
-	FkiXeDFHAWLTGUaJCR1uIDangJlEw83TbCAlzEDj71/UguiUl9i85i0zRLmqRPfatVCfKEqc
-	nnyOeQKj8Cwki2chdM9C0r2AkXkVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRki8fNnBuPiY
-	1SFGAQ5GJR7eC9aNIUKsiWXFlbmHGCU4mJVEeJNnA4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
-	RtT9POOour7xbIsyywErP3/x5Ak3rmcqvPjHdTzb5prmH0nWbYVJ0YfOdk93la+veG1Qvezi
-	6mmyj9xuev4N9QoTWlMw+e8HtymP3+b8F4rac8HgMb9XWzez6GrGElnBrad3TGBRrvtj9qhm
-	TaOr569zbg3vLZ78ffxu6oIP4ksYTk7vr55ZpcRSnJFoqMVcVJwIACwvB4Z1AgAA
+	Fri, 5 Dec 2014 07:37:18 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: lars@metafoo.de
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH v2] sound/soc/adi/axi-spdif.c: Support programmable master clock
+Date: Fri,  5 Dec 2014 13:37:09 +0100
+Message-Id: <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <54806D4E.8040504@topic.nl>
+References: <54806D4E.8040504@topic.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/14 12:23, David Howells wrote:
-> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->
->> sign-file.c produce lots of annoying noise.
-> How did you get it to produce that?
->
-> David
->
+If the master clock supports programmable rates, program it to generate
+the desired frequency. Only apply constraints when the clock is fixed.
+This allows proper clock generation for both 44100 and 48000 Hz based
+sampling rates if the platform supports it.
 
-With just "make all" on Ubuntu.
+The clock frequency must be set before enabling it. Enabling the clock
+was done in "startup", but that occurs before "hw_params" where the rate
+is known. Enabling a programmable clock without first setting a valid
+frequency may harm the system. Move the clock start to the hw_params
+routine, and keep track of whether the clock has been started, because
+shutdown may be called without having called hw_params first.
+Starting the clock and enabling the SPDIF output AFTER programming the
+dividers is a more logical order anyway.
 
+To detect if the source clock is fixed, the driver calls clk_round_rate
+for two frequencies. If the results are equal, or if the call returns
+an error, the driver assumes the clock is fixed.
 
-- Dmitry
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+
+v2: Fix fixed clock detection as discussed.
+
+ sound/soc/adi/axi-spdif.c |   60 ++++++++++++++++++++++++++++-----------------
+ 1 file changed, 38 insertions(+), 22 deletions(-)
+
+diff --git a/sound/soc/adi/axi-spdif.c b/sound/soc/adi/axi-spdif.c
+index 198e3a4..8fd43a7 100644
+--- a/sound/soc/adi/axi-spdif.c
++++ b/sound/soc/adi/axi-spdif.c
+@@ -4,7 +4,6 @@
+  *
+  * Licensed under the GPL-2.
+  */
+-
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -44,6 +43,8 @@ struct axi_spdif {
+ 
+ 	struct snd_ratnum ratnum;
+ 	struct snd_pcm_hw_constraint_ratnums rate_constraints;
++
++	bool clk_ref_running;
+ };
+ 
+ static int axi_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
+@@ -79,6 +80,7 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
+ 	unsigned int rate = params_rate(params);
+ 	unsigned int clkdiv, stat;
++	int ret;
+ 
+ 	switch (params_rate(params)) {
+ 	case 32000:
+@@ -95,6 +97,9 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 		break;
+ 	}
+ 
++	/* Try to set the master clock */
++	clk_set_rate(spdif->clk_ref, rate * 128);
++
+ 	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
+ 			rate * 64 * 2) - 1;
+ 	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
+@@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+ 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+ 		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
+ 
++	ret = clk_prepare_enable(spdif->clk_ref);
++	if (ret)
++		return ret;
++	spdif->clk_ref_running = true;
++
++	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
++		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
++
+ 	return 0;
+ }
+ 
+@@ -121,18 +134,13 @@ static int axi_spdif_startup(struct snd_pcm_substream *substream,
+ 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
+ 	int ret;
+ 
+-	ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
+-			   SNDRV_PCM_HW_PARAM_RATE,
+-			   &spdif->rate_constraints);
+-	if (ret)
+-		return ret;
+-
+-	ret = clk_prepare_enable(spdif->clk_ref);
+-	if (ret)
+-		return ret;
+-
+-	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+-		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
++	if (spdif->rate_constraints.nrats) {
++		ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
++				SNDRV_PCM_HW_PARAM_RATE,
++				&spdif->rate_constraints);
++		if (ret)
++			return ret;
++	}
+ 
+ 	return 0;
+ }
+@@ -145,7 +153,10 @@ static void axi_spdif_shutdown(struct snd_pcm_substream *substream,
+ 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+ 		AXI_SPDIF_CTRL_TXEN, 0);
+ 
+-	clk_disable_unprepare(spdif->clk_ref);
++	if (spdif->clk_ref_running) {
++		clk_disable_unprepare(spdif->clk_ref);
++		spdif->clk_ref_running = false;
++	}
+ }
+ 
+ static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
+@@ -183,6 +194,7 @@ static int axi_spdif_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	void __iomem *base;
+ 	int ret;
++	long rate;
+ 
+ 	spdif = devm_kzalloc(&pdev->dev, sizeof(*spdif), GFP_KERNEL);
+ 	if (!spdif)
+@@ -216,14 +228,18 @@ static int axi_spdif_probe(struct platform_device *pdev)
+ 	spdif->dma_data.addr_width = 4;
+ 	spdif->dma_data.maxburst = 1;
+ 
+-	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
+-	spdif->ratnum.den_step = 1;
+-	spdif->ratnum.den_min = 1;
+-	spdif->ratnum.den_max = 64;
+-
+-	spdif->rate_constraints.rats = &spdif->ratnum;
+-	spdif->rate_constraints.nrats = 1;
+-
++	/* Determine if the clock rate is fixed. If it cannot change frequency,
++	 * it returns an error or it will simply return its fixed value. */
++	rate = clk_round_rate(spdif->clk_ref, 128 * 44100);
++	if (rate < 0 || rate != clk_round_rate(spdif->clk_ref, 128 * 48000)) {
++		spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
++		spdif->ratnum.den_step = 1;
++		spdif->ratnum.den_min = 1;
++		spdif->ratnum.den_max = 64;
++
++		spdif->rate_constraints.rats = &spdif->ratnum;
++		spdif->rate_constraints.nrats = 1;
++	}
+ 	ret = devm_snd_soc_register_component(&pdev->dev, &axi_spdif_component,
+ 					 &axi_spdif_dai, 1);
+ 	if (ret)
+-- 
+1.7.9.5
 
