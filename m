@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaLEMeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:34:31 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53068 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaLEMea (ORCPT
+	id S1751492AbaLELOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:14:12 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:55031 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaLELOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:34:30 -0500
-Message-ID: <5481A650.8020408@collabora.co.uk>
-Date: Fri, 05 Dec 2014 13:34:24 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 5 Dec 2014 06:14:10 -0500
+Date: Fri, 5 Dec 2014 06:13:56 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Richard Weinberger <richard@nod.at>, David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct
+ task_struct
+Message-ID: <20141205061356.1f3f9015@as>
+In-Reply-To: <CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
+References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
+	<alpine.DEB.2.11.1410291908290.5308@nanos>
+	<CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com>
+	<20141110.211319.1983610686941713044.davem@davemloft.net>
+	<5461EA6B.9020305@nod.at>
+	<CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v4 1/3] clk: samsung: Fix clock disable failure because
- domain being gated
-References: <1417777254-26579-1-git-send-email-k.kozlowski@samsung.com> <1417777254-26579-2-git-send-email-k.kozlowski@samsung.com> <5481955A.9000703@samsung.com>
-In-Reply-To: <5481955A.9000703@samsung.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sylwester,
-
-On 12/05/2014 12:22 PM, Sylwester Nawrocki wrote:
->> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> Can you confirm sound works with this patch on exynos5420 ? Or does
-> your Tested-by refer only to successful booting ?
-> 
-
-I tested latest linux-next + "clk: samsung: Fix double add of syscore
-ops after driver rebind" [0] + this series and I confirm that sound is
-also working on my Exynos5420 Peach Pit Chromebook.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/11/26/290
+Should the completely pointless supervisor_stack[] be removed as well?
+I had a patch to do that but I never sent it.
