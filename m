@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaLEWqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53774 "EHLO
+	id S1754250AbaLEXis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:38:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaLEWqB (ORCPT
+	with ESMTP id S1752385AbaLEWqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:01 -0500
+	Fri, 5 Dec 2014 17:46:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 028/122] net/mlx4_en: Advertize encapsulation offloads features only when VXLAN tunnel is set
-Date: Fri,  5 Dec 2014 14:43:22 -0800
-Message-Id: <20141205223309.678375104@linuxfoundation.org>
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.17 069/122] ACPI / EC: Add support to disallow QR_EC to be issued before completing previous QR_EC
+Date: Fri,  5 Dec 2014 14:44:03 -0800
+Message-Id: <20141205223316.116836929@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,71 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-[ Upstream commit f4a1edd56120249198073aa4a373b77e3700ac8f ]
+commit 558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4 upstream.
 
-Currenly we only support Large-Send and TX checksum offloads for
-encapsulated traffic of type VXLAN. We must make sure to advertize
-these offloads up to the stack only when VXLAN tunnel is set.
+There is platform refusing to respond QR_EC when SCI_EVT isn't set
+which is Acer Aspire V5-573G.
 
-Failing to do so, would mislead the the networking stack to assume
-that the driver can offload the internal TX checksum for GRE packets
-and other buggy schemes.
+By disallowing QR_EC to be issued before the previous one has been
+completed we are able to reduce the possibilities to trigger issues on
+such platforms.
 
-Reported-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Note that this fix can only reduce the occurrence rate of this issue, but
+this issue may still occur when such a platform doesn't clear SCI_EVT
+before or immediately after completing the previous QR_EC transaction.
+This patch cannot fix the CLEAR_ON_RESUME quirk which also relies on
+the assumption that the platforms are able to respond even when SCI_EVT
+isn't set.
+
+But this patch is still useful as it can help to reduce the number of
+scheduled QR_EC work items.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
+Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -2281,8 +2281,16 @@ static void mlx4_en_add_vxlan_offloads(s
- 	ret = mlx4_SET_PORT_VXLAN(priv->mdev->dev, priv->port,
- 				  VXLAN_STEER_BY_OUTER_MAC, 1);
- out:
--	if (ret)
-+	if (ret) {
- 		en_err(priv, "failed setting L2 tunnel configuration ret %d\n", ret);
-+		return;
-+	}
-+
-+	/* set offloads */
-+	priv->dev->hw_enc_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
-+				      NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL;
-+	priv->dev->hw_features |= NETIF_F_GSO_UDP_TUNNEL;
-+	priv->dev->features    |= NETIF_F_GSO_UDP_TUNNEL;
- }
- 
- static void mlx4_en_del_vxlan_offloads(struct work_struct *work)
-@@ -2290,6 +2298,11 @@ static void mlx4_en_del_vxlan_offloads(s
- 	int ret;
- 	struct mlx4_en_priv *priv = container_of(work, struct mlx4_en_priv,
- 						 vxlan_del_task);
-+	/* unset offloads */
-+	priv->dev->hw_enc_features &= ~(NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
-+				      NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL);
-+	priv->dev->hw_features &= ~NETIF_F_GSO_UDP_TUNNEL;
-+	priv->dev->features    &= ~NETIF_F_GSO_UDP_TUNNEL;
- 
- 	ret = mlx4_SET_PORT_VXLAN(priv->mdev->dev, priv->port,
- 				  VXLAN_STEER_BY_OUTER_MAC, 0);
-@@ -2571,13 +2584,6 @@ int mlx4_en_init_netdev(struct mlx4_en_d
- 	if (mdev->dev->caps.steering_mode != MLX4_STEERING_MODE_A0)
- 		dev->priv_flags |= IFF_UNICAST_FLT;
- 
--	if (mdev->dev->caps.tunnel_offload_mode == MLX4_TUNNEL_OFFLOAD_MODE_VXLAN) {
--		dev->hw_enc_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM |
--					NETIF_F_TSO | NETIF_F_GSO_UDP_TUNNEL;
--		dev->hw_features |= NETIF_F_GSO_UDP_TUNNEL;
--		dev->features    |= NETIF_F_GSO_UDP_TUNNEL;
--	}
--
- 	mdev->pndev[port] = dev;
- 
- 	netif_carrier_off(dev);
+
+---
+ drivers/acpi/ec.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -299,11 +299,11 @@ static int acpi_ec_transaction_unlocked(
+ 	/* following two actions should be kept atomic */
+ 	ec->curr = t;
+ 	start_transaction(ec);
++	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
++		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	ret = ec_poll(ec);
+ 	spin_lock_irqsave(&ec->lock, tmp);
+-	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
+-		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+ 	ec->curr = NULL;
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	return ret;
 
 
