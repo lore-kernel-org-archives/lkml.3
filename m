@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaLEKNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:13:36 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:57749 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaLEKNe (ORCPT
+	id S1753174AbaLEM7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:59:01 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46387 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaLEM7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:13:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Flora Fu <flora.fu@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        arm@kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, HenryC Chen <henryc.chen@mediatek.com>,
-        Menghui Lin <menghui.lin@mediatek.com>,
-        Olof Johansson <olof@lixom.net>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Subject: Re: [PATCH v3 1/8] soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
-Date: Fri, 05 Dec 2014 11:13:03 +0100
-Message-ID: <2751641.o51TuZRl88@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1417752479-4749-2-git-send-email-flora.fu@mediatek.com>
-References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com> <1417752479-4749-2-git-send-email-flora.fu@mediatek.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:sjiPvxRWeoxIft2k+xeY42q2S7wmL7atMcp/jFlQjbGyL3Xgywv
- W2g3149hszAveC967/cKAm8m3RnhfP6fAz0IzIIa08VViqvoeywiwqaSz3j4ENfdh9BiWlJ
- jMbEj9XkyQHfiQIP6EypwIPYyid3mLTYQM54alGs9qyenDXgi5ipc0OuOn9RXY3/pS6T7oE
- uo7r/PDHcXVT87Z6un5qQ==
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 5 Dec 2014 07:59:00 -0500
+From: Athira Lekshmi <andnlnbn18@gmail.com>
+To: wim@iguana.be
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Athira Lekshmi <andnlnbn18@gmail.com>
+Subject: [PATCH] Drivers:watchdog: Fixed missing blank line warning
+Date: Fri,  5 Dec 2014 18:29:00 +0530
+Message-Id: <1417784340-6013-1-git-send-email-andnlnbn18@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 December 2014 12:07:52 Flora Fu wrote:
-> Add PMIC wrapper of MT8135 to access MT6397 MFD.
-> 
-> Signed-off-by: Flora Fu <flora.fu@mediatek.com>
-> 
+Fixed the checkpatch warning:
+Missing a blank line after declarations
 
-Please explain what a PMIC wrapper is and why you need one for MT8135.
-I don't understand the purpose of this code at all. Is this just another
-way of accessing the MT6397 when not using i2c or spi like other
-PMIC drivers do?
+Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+---
+ drivers/watchdog/mixcomwd.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-	Arnd
+diff --git a/drivers/watchdog/mixcomwd.c b/drivers/watchdog/mixcomwd.c
+index be86ea3..03b7612e 100644
+--- a/drivers/watchdog/mixcomwd.c
++++ b/drivers/watchdog/mixcomwd.c
+@@ -183,6 +183,7 @@ static ssize_t mixcomwd_write(struct file *file, const char __user *data,
+ 
+ 			for (i = 0; i != len; i++) {
+ 				char c;
++
+ 				if (get_user(c, data + i))
+ 					return -EFAULT;
+ 				if (c == 'V')
+-- 
+1.7.9.5
+
