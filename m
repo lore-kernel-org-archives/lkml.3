@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaLEVAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:00:38 -0500
-Received: from mout.web.de ([212.227.17.12]:50338 "EHLO mout.web.de"
+	id S1751909AbaLEVC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:02:59 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301AbaLEVAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:00:35 -0500
-Message-ID: <54821CEB.2020002@users.sourceforge.net>
-Date: Fri, 05 Dec 2014 22:00:27 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751183AbaLEVC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:02:58 -0500
+Message-ID: <54821D80.50703@nod.at>
+Date: Fri, 05 Dec 2014 22:02:56 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 5/6] net-PPP: Delete an unnecessary assignment in mppe_alloc()
-References: <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net> <547CA157.1080401@cogentembedded.com> <5480DA32.8000201@users.sourceforge.net> <5480DDC1.6040101@users.sourceforge.net> <20141205122214.GB4912@mwanda> <5481A8AE.9050506@users.sourceforge.net> <20141205135723.GE4912@mwanda>
-In-Reply-To: <20141205135723.GE4912@mwanda>
-Content-Type: text/plain; charset=utf-8
+To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] UBI: Split __wl_get_peb()
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-6-git-send-email-richard@nod.at> <5481EE65.1090705@codeaurora.org>
+In-Reply-To: <5481EE65.1090705@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:gXhpyL6AT9abYR2mVsXttxasCBSigjiHU0YwsGLQSmIad4oruWi
- xuZqMg2uU6vNTkHdwQ9THcnmaI6GguxJToHZaoS9xfxM1ZrkYnaSnbPaDwg/3904Sr/4QEn
- SbDJAgYA/GX6aonm0wuchp0zed9IzziIpLLXyGDneU3EG+b+lv9pJQO3aQaZCxQmnwx+67G
- vb8uYL3x15aCnWJHFYoIg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> That is true.
+Tanya,
+
+Am 05.12.2014 um 18:41 schrieb Tanya Brokhman:
+> On 11/24/2014 3:20 PM, Richard Weinberger wrote:
+>> Make it two functions, wl_get_wle() and wl_get_peb().
+>> wl_get_peb() works exactly like __wl_get_peb() but wl_get_wle()
+>> does not call produce_free_peb().
+>> While refilling the fastmap user pool we cannot release ubi->wl_lock
+>> as produce_free_peb() does.
+>> Hence the fastmap logic uses now wl_get_wle().
 > 
-> In that case, I misunderstood what you wrote.
+> hmmm... confused... I don't see fastmap code changed
 
-I find it a bit interesting how this misunderstanding could happen here somehow.
+It will be used in ubi_refill_pools() later.
+Patch 6/6 does this.
+I'll fix the commit message.
 
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>   drivers/mtd/ubi/wl.c | 61 ++++++++++++++++++++++++++++++++--------------------
+>>   1 file changed, 38 insertions(+), 23 deletions(-)
+>>
+>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>> index 7730b97..f028b68 100644
+>> --- a/drivers/mtd/ubi/wl.c
+>> +++ b/drivers/mtd/ubi/wl.c
+>> @@ -499,13 +499,46 @@ out:
+>>   #endif
+>>
+>>   /**
+>> - * __wl_get_peb - get a physical eraseblock.
+>> + * wl_get_wle - get a mean wl entry to be used by wl_get_peb() or
+>> + * refill_wl_user_pool().
+>> + * @ubi: UBI device description object
+>> + *
+>> + * This function returns a a wear leveling entry in case of success and
+> 
+> If you upload a new version, you have a double "a" here: "returns a a wear leveling"
 
-> Looking at it now, this patch is actually ok.
+Thx!
 
-Does that mean that you would like to add any tag like "Acked-by" or "Reviewed-by"
-to any of the proposed six update steps?
+>> + * NULL in case of failure.
+>> + */
+>> +static struct ubi_wl_entry *wl_get_wle(struct ubi_device *ubi)
+>> +{
+>> +    struct ubi_wl_entry *e;
+>> +
+>> +    e = find_mean_wl_entry(ubi, &ubi->free);
+>> +    if (!e) {
+>> +        ubi_err(ubi, "no free eraseblocks");
+>> +        return NULL;
+>> +    }
+>> +
+>> +    self_check_in_wl_tree(ubi, e, &ubi->free);
+>> +
+>> +    /*
+>> +     * Move the physical eraseblock to the protection queue where it will
+>> +     * be protected from being moved for some time.
+>> +     */
+> 
+> I don't think this comment is valid anymore....
 
-Regards,
-Markus
+Correct, will update!
+
+Thanks,
+//richard
