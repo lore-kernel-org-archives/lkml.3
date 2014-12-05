@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaLEW4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:56:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1753521AbaLEW4y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:56:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440AbaLEW40 (ORCPT
+	with ESMTP id S1753490AbaLEW4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:26 -0500
+	Fri, 5 Dec 2014 17:56:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 70/73] powerpc/powernv: Honor the generic "no_64bit_msi" flag
-Date: Fri,  5 Dec 2014 14:45:16 -0800
-Message-Id: <20141205224436.032649520@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 12/45] ieee802154: fix error handling in ieee802154fake_probe()
+Date: Fri,  5 Dec 2014 14:44:55 -0800
+Message-Id: <20141205223318.671628721@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
-References: <20141205224433.921659956@linuxfoundation.org>
+In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
+References: <20141205223316.738290875@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,61 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit 360743814c4082515581aa23ab1d8e699e1fbe88 upstream.
+[ Upstream commit 8c2dd54485ccee7fc4086611e188478584758c8d ]
 
-Instead of the arch specific quirk which we are deprecating
-and that drivers don't understand.
+In case of any failure ieee802154fake_probe() just calls unregister_netdev().
+But it does not look safe to unregister netdevice before it was registered.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The patch implements straightforward resource deallocation in case of
+failure in ieee802154fake_probe().
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c |    3 +--
- arch/powerpc/platforms/powernv/pci.c      |    4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ieee802154/fakehard.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -902,7 +902,6 @@ static int pnv_pci_ioda_msi_setup(struct
- 				  unsigned int is_64, struct msi_msg *msg)
- {
- 	struct pnv_ioda_pe *pe = pnv_ioda_get_pe(dev);
--	struct pci_dn *pdn = pci_get_pdn(dev);
- 	struct irq_data *idata;
- 	struct irq_chip *ichip;
- 	unsigned int xive_num = hwirq - phb->msi_base;
-@@ -918,7 +917,7 @@ static int pnv_pci_ioda_msi_setup(struct
- 		return -ENXIO;
+--- a/drivers/net/ieee802154/fakehard.c
++++ b/drivers/net/ieee802154/fakehard.c
+@@ -376,17 +376,20 @@ static int ieee802154fake_probe(struct p
  
- 	/* Force 32-bit MSI on some broken devices */
--	if (pdn && pdn->force_32bit_msi)
-+	if (dev->no_64bit_msi)
- 		is_64 = 0;
+ 	err = wpan_phy_register(phy);
+ 	if (err)
+-		goto out;
++		goto err_phy_reg;
  
- 	/* Assign XIVE to PE */
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -1,3 +1,4 @@
-+
- /*
-  * Support PCI/PCIe on PowerNV platforms
-  *
-@@ -50,9 +51,8 @@ static int pnv_msi_check_device(struct p
- {
- 	struct pci_controller *hose = pci_bus_to_host(pdev->bus);
- 	struct pnv_phb *phb = hose->private_data;
--	struct pci_dn *pdn = pci_get_pdn(pdev);
+ 	err = register_netdev(dev);
+-	if (err < 0)
+-		goto out;
++	if (err)
++		goto err_netdev_reg;
  
--	if (pdn && pdn->force_32bit_msi && !phb->msi32_support)
-+	if (pdev->no_64bit_msi && !phb->msi32_support)
- 		return -ENODEV;
+ 	dev_info(&pdev->dev, "Added ieee802154 HardMAC hardware\n");
+ 	return 0;
  
- 	return (phb && phb->msi_bmp.bitmap) ? 0 : -ENODEV;
+-out:
+-	unregister_netdev(dev);
++err_netdev_reg:
++	wpan_phy_unregister(phy);
++err_phy_reg:
++	free_netdev(dev);
++	wpan_phy_free(phy);
+ 	return err;
+ }
+ 
 
 
