@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaLEXDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:03:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
+	id S1752803AbaLEXDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:03:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414AbaLEW4X (ORCPT
+	with ESMTP id S1753411AbaLEW4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>
-Subject: [PATCH 3.14 64/73] net/ping: handle protocol mismatching scenario
-Date: Fri,  5 Dec 2014 14:45:10 -0800
-Message-Id: <20141205224435.849117278@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 62/73] nfsd: Fix slot wake up race in the nfsv4.1 callback code
+Date: Fri,  5 Dec 2014 14:45:08 -0800
+Message-Id: <20141205224435.788423673@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -33,41 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jane Zhou <a17711@motorola.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
+commit c6c15e1ed303ffc47e696ea1c9a9df1761c1f603 upstream.
 
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
+The currect code for nfsd41_cb_get_slot() and nfsd4_cb_done() has no
+locking in order to guarantee atomicity, and so allows for races of
+the form.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Task 1                                  Task 2
+======                                  ======
+if (test_and_set_bit(0) != 0) {
+                                        clear_bit(0)
+                                        rpc_wake_up_next(queue)
+        rpc_sleep_on(queue)
+        return false;
+}
+
+This patch breaks the race condition by adding a retest of the bit
+after the call to rpc_sleep_on().
+
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/ping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/nfs4callback.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -217,6 +217,8 @@ static struct sock *ping_lookup(struct n
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
- 
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -784,8 +784,12 @@ static bool nfsd41_cb_get_slot(struct nf
+ {
+ 	if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
+ 		rpc_sleep_on(&clp->cl_cb_waitq, task, NULL);
+-		dprintk("%s slot is busy\n", __func__);
+-		return false;
++		/* Race breaker */
++		if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
++			dprintk("%s slot is busy\n", __func__);
++			return false;
++		}
++		rpc_wake_up_queued_task(&clp->cl_cb_waitq, task);
+ 	}
+ 	return true;
+ }
 
 
