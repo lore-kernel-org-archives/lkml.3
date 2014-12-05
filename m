@@ -1,187 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaLEPF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 10:05:59 -0500
-Received: from mail-bl2on0132.outbound.protection.outlook.com ([65.55.169.132]:23456
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750893AbaLEPF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 10:05:57 -0500
-X-Greylist: delayed 851 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Dec 2014 10:05:57 EST
-Message-ID: <5481C67A.2090200@freescale.com>
-Date: Fri, 5 Dec 2014 16:51:38 +0200
-From: Claudiu Manoil <claudiu.manoil@freescale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751673AbaLEPHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 10:07:06 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39445 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750920AbaLEPHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 10:07:03 -0500
+Date: Fri, 5 Dec 2014 15:06:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Hante Meuleman <meuleman@broadcom.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend Van Spriel <arend@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205150648.GT11285@n2100.arm.linux.org.uk>
+References: <5481794E.4050406@broadcom.com>
+ <20141205094507.GP11285@n2100.arm.linux.org.uk>
+ <20141205122423.GK1630@arm.com>
+ <F51492713EF10846800D8C0ED37A7DCE019016E1@SJEXCHMB15.corp.ad.broadcom.com>
+ <20141205132332.GS11285@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Arseny Solokha <asolokha@kb.kras.ru>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] gianfar: handle map error in gfar_start_xmit()
-References: <1417775874-17775-1-git-send-email-asolokha@kb.kras.ru>
- <1417775874-17775-3-git-send-email-asolokha@kb.kras.ru>
-In-Reply-To: <1417775874-17775-3-git-send-email-asolokha@kb.kras.ru>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(377454003)(479174003)(51704005)(24454002)(80316001)(19580405001)(19580395003)(6806004)(64706001)(33656002)(84676001)(69596002)(31966008)(68736005)(23746002)(77096005)(65816999)(87266999)(54356999)(87936001)(86362001)(76176999)(575784001)(92566001)(50986999)(120886001)(47776003)(65956001)(20776003)(99396003)(120916001)(65806001)(77156002)(62966003)(4477795004)(110136001)(105606002)(104016003)(107046002)(106466001)(81156004)(83506001)(97736003)(4396001)(50466002)(21056001)(46102003)(36756003)(15975445007);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:CY1PR0301MB0633;
-X-Forefront-PRVS: 04163EF38A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=claudiu.manoil@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141205132332.GS11285@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/5/2014 12:37 PM, Arseny Solokha wrote:
-> From: Arseny Solokha <asolokha@kb.kras.ru>
->
-> When DMA-API debugging is enabled in the kernel, it spews the following
-> upon upping the link:
->
-> WARNING: at lib/dma-debug.c:1135
-> Modules linked in:
-> CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W  O   3.18.0-rc7 #1
-> task: c0720340 ti: effe2000 task.ti: c0750000
-> NIP: c01d7c1c LR: c01d7c1c CTR: c02250fc
-> REGS: effe3d40 TRAP: 0700   Tainted: G        W  O    (3.18.0-rc7)
-> MSR: 00021000 <CE,ME>  CR: 22044242  XER: 20000000
->
-> GPR00: c01d7c1c effe3df0 c0720340 00000095 c201e404 c201e9f0 00021000 01a9d000
-> GPR08: 00000007 00000000 01a9d000 00000313 22044242 00583f60 05f41012 00000000
-> GPR16: 00000000 000000ff 00000000 00000000 00000000 c5dc3b40 c5677720 00000001
-> GPR24: c0730000 00029000 c0d0d828 c072c394 effe3e48 c075baec c0d0f020 ee31e600
-> NIP [c01d7c1c] check_unmap+0x5b4/0xae4
-> LR [c01d7c1c] check_unmap+0x5b4/0xae4
-> Call Trace:
-> [effe3df0] [c01d7c1c] check_unmap+0x5b4/0xae4 (unreliable)
-> [effe3e40] [c01d81c4] debug_dma_unmap_page+0x78/0x8c
-> [effe3ec0] [c0286ba0] gfar_clean_tx_ring+0x120/0x3c0
-> [effe3f30] [c0286f90] gfar_poll_tx_sq+0x48/0x94
-> o[effe3f50] [c030c388] net_rx_action+0x130/0x1ac
-> [effe3f80] [c00319e0] __do_softirq+0x134/0x240
-> [effe3fe0] [c0031dd0] irq_exit+0xa4/0xc8
-> [effe3ff0] [c000e01c] call_do_irq+0x24/0x3c
-> [c0751e70] [c0004a04] do_IRQ+0x8c/0x108
-> [c0751e90] [c0010068] ret_from_except+0x0/0x18
-> --- interrupt: 501 at arch_cpu_idle+0x24/0x5c
->      LR = arch_cpu_idle+0x24/0x5c
-> [c0751f50] [c007d2e4] rcu_idle_enter+0xc8/0xcc (unreliable)
-> [c0751f60] [c006587c] cpu_startup_entry+0x1d4/0x29c
-> [c0751fb0] [c054399c] start_kernel+0x338/0x34c
-> [c0751ff0] [c000046c] set_ivor+0x154/0x190
-> Instruction dump:
-> 394adb30 80fc0018 811c001c 3c60c04f 5529103a 7cca482e 38639e60 813c0020
-> 815c0024 90c10008 4cc63182 48240b01 <0fe00000> 3c60c04f 3863971c 4cc63182
-> ---[ end trace 3eb7bf62ba1b80f9 ]---
-> Mapped at:
->   [<c0287420>] gfar_start_xmit+0x424/0x910
->   [<c030e964>] dev_hard_start_xmit+0x20c/0x3d8
->   [<c032cc3c>] sch_direct_xmit+0x124/0x22c
->   [<c030ede8>] __dev_queue_xmit+0x2b8/0x674
->
-> Or the following upon starting transmission of some large chunks
-> of data:
->
-> fsl-gianfar ffe25000.ethernet: DMA-API: device driver failed to check map error[device address=0x0000000005fa8000]
-> ------------[ cut here ]------------
-> WARNING: at lib/dma-debug.c:1135
-> Modules linked in:
-> CPU: 0 PID: 0 Comm: swapper/0 Tainted: G           O   3.18.0-rc7 #35
-> task: c071d340 ti: effe2000 task.ti: c074e000
-> NIP: c01d7c1c LR: c01d7c1c CTR: c022339c
-> REGS: effe3d40 TRAP: 0700   Tainted: G           O    (3.18.0-rc7)
-> MSR: 00021000 <CE,ME>  CR: 22044242  XER: 20000000
->
-> GPR00: c01d7c1c effe3df0 c071d340 00000094 00000001 c0071750 00000000 00000001
-> GPR08: 00000000 00000000 effe2000 00000000 20044242 00581f60 05fa8000 000001c4
-> GPR16: 00000000 000000ff 00000000 000000e4 00000039 c5b1a9c0 c5679c60 00000002
-> GPR24: c0730000 00029000 c0d0c528 c0729394 effe3e48 c0759aec c0d0d020 ee315900
-> NIP [c01d7c1c] check_unmap+0x5b4/0xae4
-> LR [c01d7c1c] check_unmap+0x5b4/0xae4
-> Call Trace:
-> [effe3df0] [c01d7c1c] check_unmap+0x5b4/0xae4 (unreliable)
-> [effe3e40] [c01d81c4] debug_dma_unmap_page+0x78/0x8c
-> [effe3ec0] [c0284c78] gfar_clean_tx_ring+0x1b4/0x3c0
-> [effe3f30] [c0284fd4] gfar_poll_tx_sq+0x48/0x94
-> [effe3f50] [c030a5c4] net_rx_action+0x130/0x1ac
-> [effe3f80] [c00319e0] __do_softirq+0x134/0x240
-> [effe3fe0] [c0031dd0] irq_exit+0xa4/0xc8
-> [effe3ff0] [c000e01c] call_do_irq+0x24/0x3c
-> [c074fe70] [c0004a04] do_IRQ+0x8c/0x108
-> [c074fe90] [c0010068] ret_from_except+0x0/0x18
-> --- interrupt: 501 at arch_cpu_idle+0x24/0x5c
->      LR = arch_cpu_idle+0x24/0x5c
-> [c074ff50] [c007d2e4] rcu_idle_enter+0xc8/0xcc (unreliable)
-> [c074ff60] [c006587c] cpu_startup_entry+0x1d4/0x29c
-> [c074ffb0] [c054199c] start_kernel+0x338/0x34c
-> [c074fff0] [c000046c] set_ivor+0x154/0x190
-> Instruction dump:
-> 394abb30 80fc0018 811c001c 3c60c04e 5529103a 7cca482e 386379f0 813c0020
-> 815c0024 90c10008 4cc63182 4823ed39 <0fe00000> 3c60c04e 386372ac 4cc63182
-> ---[ end trace 008c59ca7ca1f712 ]---
-> Mapped at:
->   [<c0285264>] gfar_start_xmit+0x224/0x95c
->   [<c030cba0>] dev_hard_start_xmit+0x20c/0x3d8
->   [<c032ae78>] sch_direct_xmit+0x124/0x22c
->   [<c032b008>] __qdisc_run+0x88/0x1c0
->   [<c0307920>] net_tx_action+0xf0/0x19c
->
-> Ignore these mapping failures in hope we'll have more luck next time.
->
-> Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
-> ---
->   drivers/net/ethernet/freescale/gianfar.c | 17 +++++++++++++++--
->   1 file changed, 15 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-> index f34ca55..9ea887e 100644
-> --- a/drivers/net/ethernet/freescale/gianfar.c
-> +++ b/drivers/net/ethernet/freescale/gianfar.c
-> @@ -2296,6 +2296,12 @@ static int gfar_start_xmit(struct sk_buff *skb, struct net_device *dev)
->   						   0,
->   						   frag_len,
->   						   DMA_TO_DEVICE);
-> +			if (unlikely(dma_mapping_error(priv->dev, bufaddr))) {
-> +				/* As DMA mapping failed, pretend the TX path
-> +				 * is busy to retry later
-> +				 */
-> +				return NETDEV_TX_BUSY;
+I've been doing more digging into the current DMA code, and I'm dismayed
+to see that there's new bugs in it...
 
-This is not right.
-Proper bailout code missing: un-mapping of skb fragments and 
-de-allocation of resources.
-This is not a TX_BUSY error condition, it's a system failure.
-(will resubmit this one:
-http://permalink.gmane.org/gmane.linux.network/336274)
+commit 513510ddba9650fc7da456eefeb0ead7632324f6
+Author: Laura Abbott <lauraa@codeaurora.org>
+Date:   Thu Oct 9 15:26:40 2014 -0700
 
-> +			}
->
->   			/* set the TxBD length and buffer pointer */
->   			txbdp->bufPtr = bufaddr;
-> @@ -2345,8 +2351,15 @@ static int gfar_start_xmit(struct sk_buff *skb, struct net_device *dev)
->   		fcb->ptp = 1;
->   	}
->
-> -	txbdp_start->bufPtr = dma_map_single(priv->dev, skb->data,
-> -					     skb_headlen(skb), DMA_TO_DEVICE);
-> +	bufaddr = dma_map_single(priv->dev, skb->data, skb_headlen(skb),
-> +				 DMA_TO_DEVICE);
-> +	if (unlikely(dma_mapping_error(priv->dev, bufaddr))) {
-> +		/* As DMA mapping failed, pretend the TX path is busy to retry
-> +		 * later
-> +		 */
-> +		return NETDEV_TX_BUSY;
+    common: dma-mapping: introduce common remapping functions
 
-same here
+This uses map_vm_area() to achieve the remapping of pages allocated inside
+dma_alloc_coherent().  dma_alloc_coherent() is documented in a rather
+round-about way in Documentation/DMA-API.txt:
 
-> +	}
-> +	txbdp_start->bufPtr = bufaddr;
->
->   	/* If time stamping is requested one additional TxBD must be set up. The
->   	 * first TxBD points to the FCB and must have a data length of
->
+| Part Ia - Using large DMA-coherent buffers
+| ------------------------------------------
+| 
+| void *
+| dma_alloc_coherent(struct device *dev, size_t size,
+|                              dma_addr_t *dma_handle, gfp_t flag)
+| 
+| void
+| dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
+|                            dma_addr_t dma_handle)
+| 
+| Free a region of consistent memory you previously allocated.  dev,
+| size and dma_handle must all be the same as those passed into
+| dma_alloc_coherent().  cpu_addr must be the virtual address returned by
+| the dma_alloc_coherent().
+| 
+| Note that unlike their sibling allocation calls, these routines
+| may only be called with IRQs enabled.
 
+Note that very last paragraph.  What this says is that it is explicitly
+permitted to call dma_alloc_coherent() with IRQs disabled.
+
+Now, the question is: is it safe to call map_vm_area() with IRQs disabled?
+Well, map_vm_area() calls pud_alloc(), pmd_alloc(), and pte_alloc_kernel().
+These functions all call into the kernel memory allocator *without*
+GFP_ATOMIC - in other words, these allocations are permitted to sleep.
+Except, IRQs are off, so it's a bug to call these functions from
+dma_alloc_coherent().
+
+Now, if we look at the previous code, it used ioremap_page_range().  This
+has the same problem: it needs to allocate page tables, and it can only
+do it via functions which may sleep.
+
+If we go back even further, we find that the use of ioremap_page_range()
+in dma_alloc_coherent() was introduced by:
+
+commit e9da6e9905e639b0f842a244bc770b48ad0523e9
+Author: Marek Szyprowski <m.szyprowski@samsung.com>
+Date:   Mon Jul 30 09:11:33 2012 +0200
+
+    ARM: dma-mapping: remove custom consistent dma region
+
+which is the commit which removed my pre-allocated page tables for the
+DMA re-mapping region - code which I explicitly had to specifically
+avoid this issue.
+
+Obviously, this isn't a big problem, because people haven't reported
+that they've hit any of the might_sleep() checks in the memory
+allocators, which I think is our only saving grace - but it's still
+wrong to the specified calling conditions of the DMA API.
+
+If the problem which you (Broadcom) are suffering from is down to the
+issue I suspect (that being having mappings with different cache
+attributes) then I'm not sure that there's anything we can realistically
+do about that.  There's a number of issues which make it hard to see a
+way forward.
+
+One example is that if we allocate memory, we need to be able to change
+(or remove) the cacheable mappings associated with that memory.  We'd
+need to touch the L1 page table, either to change the attributes of the
+section mapping, or to convert the section mapping to a L2 page table
+pointer.  We need to change the attributes in a break-flush-make sequence
+to avoid TLB conflicts.
+
+However, those mappings may be shared between other CPUs in a SMP system.
+So, we would need to flush the TLBs on other CPUs before we could proceed
+to create replacement mappings.  That means something like stop_machine()
+or sending (and waiting for completion) of an IPI to the other CPUs.  That
+is totally impractical due to dma_alloc_coherent() being allowed to be
+called with IRQs off.
+
+I'll continue to think about it, but I don't see many possibilities to
+satisfy dma_alloc_coherent()'s documented requirements other than by
+pre-allocating a chunk of memory at boot time to be served out as
+DMA-able memory for these horrid cases.
+
+I don't see much point in keeping the map_vm_area() approach on ARM
+even if we did fallback - if we're re-establishing mappings for
+the surrounding pages in lowmem, we might as well insert appropriately
+attributed mappings for the DMA memory as well.
+
+On the face of it, it would be better to allocate one section at a
+time, but my unfortunate experience is that 3.x kernels are a /lot/
+more trigger happy with the OOM killer, and the chances of being able
+to allocate 1MB of memory at a go after the system has been running
+for a while is near-on impossible.  So I don't think that's a reality.
+
+Even if we did break up section mappings in this way, it would also
+mean that over time, we'd end up with much of lowmem mapped using 4K
+page table entries, which would place significant pressure on the MMU
+TLBs.
+
+So, we might just be far better off pre-allocating enough "DMA
+coherent" memory at boot time and be done with it.  Those who want
+it dynamic can use CMA instead.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
