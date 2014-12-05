@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaLEGBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:01:54 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51306 "EHLO
+	id S1752498AbaLEGCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:02:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51302 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaLEF6z (ORCPT
+	with ESMTP id S1751009AbaLEF6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 00:58:55 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] vmci: propagate msghdr all way down to __qp_memcpy_from_queue()
-Date: Fri,  5 Dec 2014 05:58:47 +0000
-Message-Id: <1417759133-18370-6-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH 04/12] switch tcp_sock->ucopy from iovec (ucopy.iov) to msghdr (ucopy.msg)
+Date: Fri,  5 Dec 2014 05:58:45 +0000
+Message-Id: <1417759133-18370-4-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141205055623.GQ29748@ZenIV.linux.org.uk>
 References: <20141205055623.GQ29748@ZenIV.linux.org.uk>
@@ -22,130 +22,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-... and switch it to memcpy_to_msg()
-
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- drivers/misc/vmw_vmci/vmci_queue_pair.c | 17 +++++++++--------
- include/linux/vmw_vmci_api.h            |  5 +++--
- net/vmw_vsock/vmci_transport.c          |  4 ++--
- 3 files changed, 14 insertions(+), 12 deletions(-)
+ include/linux/tcp.h  | 2 +-
+ net/ipv4/tcp.c       | 2 +-
+ net/ipv4/tcp_input.c | 7 +++----
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-index 1b7b303..7aaaf51 100644
---- a/drivers/misc/vmw_vmci/vmci_queue_pair.c
-+++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-@@ -27,6 +27,7 @@
- #include <linux/uio.h>
- #include <linux/wait.h>
- #include <linux/vmalloc.h>
-+#include <linux/skbuff.h>
+diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+index f566b85..5d9cc9c 100644
+--- a/include/linux/tcp.h
++++ b/include/linux/tcp.h
+@@ -162,7 +162,7 @@ struct tcp_sock {
+ 	struct {
+ 		struct sk_buff_head	prequeue;
+ 		struct task_struct	*task;
+-		struct iovec		*iov;
++		struct msghdr		*msg;
+ 		int			memory;
+ 		int			len;
+ 	} ucopy;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index dc13a36..4a96f37 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1729,7 +1729,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			if (!user_recv && !(flags & (MSG_TRUNC | MSG_PEEK))) {
+ 				user_recv = current;
+ 				tp->ucopy.task = user_recv;
+-				tp->ucopy.iov = msg->msg_iov;
++				tp->ucopy.msg = msg;
+ 			}
  
- #include "vmci_handle_array.h"
- #include "vmci_queue_pair.h"
-@@ -429,11 +430,11 @@ static int __qp_memcpy_from_queue(void *dest,
- 			to_copy = size - bytes_copied;
+ 			tp->ucopy.len = len;
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 69de1a1..075ab4d 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4421,7 +4421,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
+ 			__set_current_state(TASK_RUNNING);
  
- 		if (is_iovec) {
--			struct iovec *iov = (struct iovec *)dest;
-+			struct msghdr *msg = dest;
- 			int err;
+ 			local_bh_enable();
+-			if (!skb_copy_datagram_iovec(skb, 0, tp->ucopy.iov, chunk)) {
++			if (!skb_copy_datagram_msg(skb, 0, tp->ucopy.msg, chunk)) {
+ 				tp->ucopy.len -= chunk;
+ 				tp->copied_seq += chunk;
+ 				eaten = (chunk == skb->len);
+@@ -4941,10 +4941,9 @@ static int tcp_copy_to_iovec(struct sock *sk, struct sk_buff *skb, int hlen)
  
- 			/* The iovec will track bytes_copied internally. */
--			err = memcpy_toiovec(iov, (u8 *)va + page_offset,
-+			err = memcpy_to_msg(msg, (u8 *)va + page_offset,
- 					     to_copy);
- 			if (err != 0) {
- 				if (kernel_if->host)
-@@ -3264,13 +3265,13 @@ EXPORT_SYMBOL_GPL(vmci_qpair_enquev);
-  * of bytes dequeued or < 0 on error.
-  */
- ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
--			  void *iov,
-+			  struct msghdr *msg,
- 			  size_t iov_size,
- 			  int buf_type)
- {
- 	ssize_t result;
- 
--	if (!qpair || !iov)
-+	if (!qpair)
- 		return VMCI_ERROR_INVALID_ARGS;
- 
- 	qp_lock(qpair);
-@@ -3279,7 +3280,7 @@ ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
- 		result = qp_dequeue_locked(qpair->produce_q,
- 					   qpair->consume_q,
- 					   qpair->consume_q_size,
--					   iov, iov_size,
-+					   msg, iov_size,
- 					   qp_memcpy_from_queue_iov,
- 					   true);
- 
-@@ -3308,13 +3309,13 @@ EXPORT_SYMBOL_GPL(vmci_qpair_dequev);
-  * of bytes peeked or < 0 on error.
-  */
- ssize_t vmci_qpair_peekv(struct vmci_qp *qpair,
--			 void *iov,
-+			 struct msghdr *msg,
- 			 size_t iov_size,
- 			 int buf_type)
- {
- 	ssize_t result;
- 
--	if (!qpair || !iov)
-+	if (!qpair)
- 		return VMCI_ERROR_INVALID_ARGS;
- 
- 	qp_lock(qpair);
-@@ -3323,7 +3324,7 @@ ssize_t vmci_qpair_peekv(struct vmci_qp *qpair,
- 		result = qp_dequeue_locked(qpair->produce_q,
- 					   qpair->consume_q,
- 					   qpair->consume_q_size,
--					   iov, iov_size,
-+					   msg, iov_size,
- 					   qp_memcpy_from_queue_iov,
- 					   false);
- 
-diff --git a/include/linux/vmw_vmci_api.h b/include/linux/vmw_vmci_api.h
-index 023430e..5691f75 100644
---- a/include/linux/vmw_vmci_api.h
-+++ b/include/linux/vmw_vmci_api.h
-@@ -24,6 +24,7 @@
- #define VMCI_KERNEL_API_VERSION_2 2
- #define VMCI_KERNEL_API_VERSION   VMCI_KERNEL_API_VERSION_2
- 
-+struct msghdr;
- typedef void (vmci_device_shutdown_fn) (void *device_registration,
- 					void *user_data);
- 
-@@ -75,8 +76,8 @@ ssize_t vmci_qpair_peek(struct vmci_qp *qpair, void *buf, size_t buf_size,
- ssize_t vmci_qpair_enquev(struct vmci_qp *qpair,
- 			  void *iov, size_t iov_size, int mode);
- ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
--			  void *iov, size_t iov_size, int mode);
--ssize_t vmci_qpair_peekv(struct vmci_qp *qpair, void *iov, size_t iov_size,
-+			  struct msghdr *msg, size_t iov_size, int mode);
-+ssize_t vmci_qpair_peekv(struct vmci_qp *qpair, struct msghdr *msg, size_t iov_size,
- 			 int mode);
- 
- #endif /* !__VMW_VMCI_API_H__ */
-diff --git a/net/vmw_vsock/vmci_transport.c b/net/vmw_vsock/vmci_transport.c
-index c1c0389..20a0ba3 100644
---- a/net/vmw_vsock/vmci_transport.c
-+++ b/net/vmw_vsock/vmci_transport.c
-@@ -1840,9 +1840,9 @@ static ssize_t vmci_transport_stream_dequeue(
- 	int flags)
- {
- 	if (flags & MSG_PEEK)
--		return vmci_qpair_peekv(vmci_trans(vsk)->qpair, msg->msg_iov, len, 0);
-+		return vmci_qpair_peekv(vmci_trans(vsk)->qpair, msg, len, 0);
+ 	local_bh_enable();
+ 	if (skb_csum_unnecessary(skb))
+-		err = skb_copy_datagram_iovec(skb, hlen, tp->ucopy.iov, chunk);
++		err = skb_copy_datagram_msg(skb, hlen, tp->ucopy.msg, chunk);
  	else
--		return vmci_qpair_dequev(vmci_trans(vsk)->qpair, msg->msg_iov, len, 0);
-+		return vmci_qpair_dequev(vmci_trans(vsk)->qpair, msg, len, 0);
- }
+-		err = skb_copy_and_csum_datagram_iovec(skb, hlen,
+-						       tp->ucopy.iov);
++		err = skb_copy_and_csum_datagram_msg(skb, hlen, tp->ucopy.msg);
  
- static ssize_t vmci_transport_stream_enqueue(
+ 	if (!err) {
+ 		tp->ucopy.len -= chunk;
 -- 
 2.1.3
 
