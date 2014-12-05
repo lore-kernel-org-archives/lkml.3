@@ -1,127 +1,445 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036AbaLEIaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:30:07 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:55374 "EHLO gloria.sntech.de"
+	id S1752723AbaLEIcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:32:42 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60155 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370AbaLEIaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:30:04 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Mark Yao <mark.yao@rock-chips.com>,
-        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        simon xue <xxm@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Dominik Behr <dbehr@chromium.org>,
-        =?utf-8?B?6Zer5a2d5Yab?= <yxj@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        Rom Lemarchand <romlem@google.com>, xw@rock-chips.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Douglas Anderson <dianders@chromium.org>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v15 0/3] Add drm driver for Rockchip Socs
-Date: Fri, 05 Dec 2014 09:33:56 +0100
-Message-ID: <1435911.OORE5v4bbE@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <CAPM=9tzcB0XaenK1RjJoOBpJjrq84atJP59=kh6WMA2-OcFpEA@mail.gmail.com>
-References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com> <CAGS+omAqkQaK99OX_uAf2Z6-fep2Euwn112Oj5gFpRca8ZAgew@mail.gmail.com> <CAPM=9tzcB0XaenK1RjJoOBpJjrq84atJP59=kh6WMA2-OcFpEA@mail.gmail.com>
+	id S1751647AbaLEIcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:32:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="425409956"
+Date: Fri, 5 Dec 2014 10:32:36 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ken Xue <Ken.Xue@amd.com>
+Cc: rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] acpi:soc: merge common codes for creating platform
+ device
+Message-ID: <20141205083236.GH1306@lahna.fi.intel.com>
+References: <1417610017-2140-1-git-send-email-Ken.Xue@amd.com>
+ <20141204130424.GM28857@lahna.fi.intel.com>
+ <1417761286.29484.21.camel@kxue-X58A-UD3R>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417761286.29484.21.camel@kxue-X58A-UD3R>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Fri, Dec 05, 2014 at 02:34:46PM +0800, Ken Xue wrote:
+> On Thu, 2014-12-04 at 15:04 +0200, Mika Westerberg wrote:
+> > On Wed, Dec 03, 2014 at 08:33:37PM +0800, Ken Xue wrote:
+> > > This patch is supposed to deliver some common codes for AMD APD and
+> > > INTEL LPSS. It can help to convert some specific acpi devices to be
+> > > platform devices.
+> > > 
+> > > Signed-off-by: Ken Xue <Ken.Xue@amd.com>
+> > > ---
+> > >  drivers/acpi/Makefile   |   2 +-
+> > >  drivers/acpi/acpi_soc.c | 211 ++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  drivers/acpi/acpi_soc.h |  90 +++++++++++++++++++++
+> > >  3 files changed, 302 insertions(+), 1 deletion(-)
+> > >  create mode 100644 drivers/acpi/acpi_soc.c
+> > >  create mode 100644 drivers/acpi/acpi_soc.h
+> > > 
+> > > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> > > index c3b2fcb..ae3397d 100644
+> > > --- a/drivers/acpi/Makefile
+> > > +++ b/drivers/acpi/Makefile
+> > > @@ -40,7 +40,7 @@ acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
+> > >  acpi-y				+= ec.o
+> > >  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+> > >  acpi-y				+= pci_root.o pci_link.o pci_irq.o
+> > > -acpi-y				+= acpi_lpss.o
+> > > +acpi-y				+= acpi_soc.o acpi_lpss.o
+> > 
+> > I think you need to convert acpi_lpss.c to use this new acpi_soc.c.
+> > 
+> [ken] I would like to merge lpss. But you know that I am lack of INTEL
+> platforms to verify codes before submit. And i am a little worried about
+> i may not cover so much rich features of lpss well. so, can we merge
+> lpss after current patch? or what's your plan?
 
-Am Freitag, 5. Dezember 2014, 17:26:04 schrieb Dave Airlie:
-> On 5 December 2014 at 05:29, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> > I thought the recommended solution for this was to fix OMAP3 to not
-> > select  ARM_DMA_USE_IOMMU and OMAP_IOMMU, not to drop the 'depends on'
-> > in drm/rockchip?
+I have plenty of Intel machines with LPSS, so I'm more than happy to
+test this series on those :-)
+
+> > >  acpi-y				+= acpi_platform.o
+> > >  acpi-y				+= acpi_pnp.o
+> > >  acpi-y				+= int340x_thermal.o
+> > > diff --git a/drivers/acpi/acpi_soc.c b/drivers/acpi/acpi_soc.c
+> > > new file mode 100644
+> > > index 0000000..25089a0
+> > > --- /dev/null
+> > > +++ b/drivers/acpi/acpi_soc.c
+> > > @@ -0,0 +1,211 @@
+> > > +/*
+> > > + * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
+> > > + *
+> > > + * Copyright (C) 2015, Intel Corporation & AMD Corporation
+> > > + * Authors: Ken Xue <Ken.Xue@amd.com>
+> > > + *		Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > + *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License version 2 as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +
+> > > +#include <linux/acpi.h>
+> > > +#include <linux/err.h>
+> > > +#include <linux/io.h>
+> > > +#include <linux/platform_device.h>
+> > > +#include <linux/pm_runtime.h>
+> > > +#include <linux/delay.h>
+> > > +#include <linux/pm_domain.h>
+> > > +
+> > > +#include "internal.h"
+> > > +#include "acpi_soc.h"
+> > > +
+> > > +ACPI_MODULE_NAME("acpi_soc");
+> > > +
+> > > +/* A list for all acpi soc device */
+> > > +static LIST_HEAD(a_soc_list);
+> > > +
+> > > +static int is_memory(struct acpi_resource *res, void *not_used)
+> > > +{
+> > > +	struct resource r;
+> > > +
+> > > +	return !acpi_dev_resource_memory(res, &r);
+> > > +}
+> > > +
+> > > +static int acpi_soc_create_device(struct acpi_device *adev,
+> > > +				   const struct acpi_device_id *id)
+> > > +{
+> > > +	struct acpi_soc_dev_desc *dev_desc;
+> > > +	struct acpi_soc_dev_private_data *pdata;
+> > > +	struct resource_list_entry *rentry;
+> > > +	struct list_head resource_list;
+> > > +	struct platform_device *pdev;
+> > > +	int ret;
+> > > +
+> > > +	dev_desc = (struct acpi_soc_dev_desc *)id->driver_data;
+> > > +	if (!dev_desc) {
+> > > +		pdev = acpi_create_platform_device(adev);
+> > > +		return IS_ERR_OR_NULL(pdev) ? PTR_ERR(pdev) : 1;
+> > > +	}
+> > > +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+> > > +	if (!pdata)
+> > > +		return -ENOMEM;
+> > > +
+> > > +	INIT_LIST_HEAD(&resource_list);
+> > > +	ret = acpi_dev_get_resources(adev, &resource_list, is_memory, NULL);
+> > > +	if (ret < 0)
+> > > +		goto err_out;
+> > > +
+> > > +	list_for_each_entry(rentry, &resource_list, node)
+> > > +		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
+> > > +			if (dev_desc->mem_size_override)
+> > > +				pdata->mmio_size = dev_desc->mem_size_override;
+> > > +			else
+> > > +				pdata->mmio_size = resource_size(&rentry->res);
+> > > +			pdata->mmio_base = ioremap(rentry->res.start,
+> > > +						   pdata->mmio_size);
+> > > +			break;
+> > > +		}
+> > > +
+> > > +	acpi_dev_free_resource_list(&resource_list);
+> > > +
+> > > +	pdata->adev = adev;
+> > > +	pdata->dev_desc = dev_desc;
+> > > +
+> > > +	if (dev_desc->setup)
+> > > +		dev_desc->setup(pdata);
+> > > +
+> > > +	/*
+> > > +	 * This works around a known issue in ACPI tables where acpi soc devices
+> > > +	 * have _PS0 and _PS3 without _PSC (and no power resources), so
+> > > +	 * acpi_bus_init_power() will assume that the BIOS has put them into D0.
+> > > +	 */
+> > > +	ret = acpi_device_fix_up_power(adev);
+> > > +	if (ret) {
+> > > +		/* Skip the device, but continue the namespace scan. */
+> > > +		ret = 0;
+> > > +		goto err_out;
+> > > +	}
+> > > +
+> > > +	adev->driver_data = pdata;
+> > > +	pdev = acpi_create_platform_device(adev);
+> > > +	if (!IS_ERR_OR_NULL(pdev))
+> > > +		return 1;
+> > > +
+> > > +	ret = PTR_ERR(pdev);
+> > > +	adev->driver_data = NULL;
+> > > +
+> > > + err_out:
+> > > +	kfree(pdata);
+> > > +	return ret;
+> > > +}
+> > > +
+> > > +static int acpi_soc_platform_notify(struct notifier_block *nb,
+> > > +				     unsigned long action, void *data)
+> > > +{
+> > > +	struct platform_device *pdev = to_platform_device(data);
+> > > +	struct acpi_soc_dev_private_data *pdata;
+> > > +	struct acpi_device *adev;
+> > > +	struct acpi_soc *a_soc_entry;
+> > > +	const struct acpi_device_id *id = NULL;
+> > > +
+> > > +	list_for_each_entry(a_soc_entry, &a_soc_list, list) {
+> > > +		id = acpi_match_device(a_soc_entry->ids, &pdev->dev);
+> > > +		if (!id)
+> > > +			break;
+> > > +	}
+> > > +
+> > > +	if (!id || !id->driver_data)
+> > > +		return 0;
+> > > +
+> > > +	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
+> > > +		return 0;
+> > > +
+> > > +	pdata = acpi_driver_data(adev);
+> > > +	if (!pdata || !pdata->mmio_base)
+> > > +		return 0;
+> > > +
+> > > +	switch (action) {
+> > > +	case BUS_NOTIFY_BOUND_DRIVER:
+> > > +		if ((pdata->dev_desc->flags & ACPI_SOC_PM)) {
+> > > +			if (a_soc_entry->pm_domain)
+> > > +				pdev->dev.pm_domain = a_soc_entry->pm_domain;
+> > > +			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
+> > > +					dev_pm_domain_attach(&pdev->dev, true);
+> > > +			else
+> > > +					dev_pm_domain_attach(&pdev->dev, false);
+> > > +		}
+> > > +		break;
+> > > +	case BUS_NOTIFY_UNBOUND_DRIVER:
+> > > +		if ((pdata->dev_desc->flags & ACPI_SOC_PM)) {
+> > > +			if (a_soc_entry->pm_domain)
+> > > +				pdev->dev.pm_domain = a_soc_entry->pm_domain;
+> > > +			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
+> > > +					dev_pm_domain_detach(&pdev->dev, true);
+> > > +			else
+> > > +					dev_pm_domain_detach(&pdev->dev, false);
+> > > +		}
+> > > +		break;
+> > > +	case BUS_NOTIFY_ADD_DEVICE:
+> > > +		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
+> > > +			&& a_soc_entry->pm_domain)
+> > > +			return sysfs_create_group(&pdev->dev.kobj,
+> > > +						  a_soc_entry->attr_group);
+> > > +	case BUS_NOTIFY_DEL_DEVICE:
+> > > +		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
+> > > +			&& a_soc_entry->pm_domain)
+> > > +			sysfs_remove_group(&pdev->dev.kobj,
+> > > +			a_soc_entry->attr_group);
+> > > +		break;
+> > > +	}
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static struct notifier_block acpi_soc_nb = {
+> > > +	.notifier_call = acpi_soc_platform_notify,
+> > > +};
+> > > +
+> > > +static void acpi_soc_bind(struct device *dev)
+> > > +{
+> > > +	struct acpi_soc_dev_private_data *pdata;
+> > > +
+> > > +	pdata = acpi_driver_data(ACPI_COMPANION(dev));
+> > > +
+> > > +	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->bind)
+> > > +		return;
+> > > +
+> > > +	pdata->dev_desc->bind(pdata);
+> > > +}
+> > > +
+> > > +static void acpi_soc_unbind(struct device *dev)
+> > > +{
+> > > +	struct acpi_soc_dev_private_data *pdata;
+> > > +
+> > > +	pdata = acpi_driver_data(ACPI_COMPANION(dev));
+> > > +
+> > > +	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->unbind)
+> > > +		return;
+> > > +
+> > > +	pdata->dev_desc->unbind(pdata);
+> > > +}
+> > > +
+> > > +void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler)
+> > 
+> > Would it work better if we pass acpi_scan_handler as a parameter to this
+> > function?
+> > 
+> > Then if it is NULL, it means that it will not register scan handler at
+> > all.
+> > 
+> > And then provide the default handler in acpi_soc.h so that you can do
+> > 
+> > 	register_acpi_soc(&soc, default_acpi_scan_handler);
+> > 
+> > or
+> > 
+> > 	register_acpi_soc(&soc, NULL);
+> > 
+> > depending the case. But also support passing custom scan handler.
+> > 
+> [Ken] I add some hooks for acpi_scan_handler in acpi_soc_dev_desc like
+> "setup" "bind" "unbind" in case of different implementation of platform.
+> your approach is other good way to same target. Right?
+
+Yes.
+
+> > > +{
+> > > +	struct acpi_scan_handler *acpi_soc_handler;
+> > > +
+> > > +	INIT_LIST_HEAD(&a_soc->list);
+> > > +	list_add(&a_soc->list, &a_soc_list);
+> > > +
+> > > +	acpi_soc_handler = kzalloc(sizeof(*acpi_soc_handler), GFP_KERNEL);
+> > > +	acpi_soc_handler->ids = a_soc->ids;
+> > > +	if (!disable_scan_handler) {
+> > > +		acpi_soc_handler->attach = acpi_soc_create_device;
+> > > +		acpi_soc_handler->bind = acpi_soc_bind;
+> > > +		acpi_soc_handler->unbind = acpi_soc_unbind;
+> > > +	}
+> > > +	acpi_scan_add_handler(acpi_soc_handler);
+> > > +	bus_register_notifier(&platform_bus_type, &acpi_soc_nb);
+> > > +}
+> > > diff --git a/drivers/acpi/acpi_soc.h b/drivers/acpi/acpi_soc.h
+> > > new file mode 100644
+> > > index 0000000..cc270a5
+> > > --- /dev/null
+> > > +++ b/drivers/acpi/acpi_soc.h
+> > > @@ -0,0 +1,90 @@
+> > > +/*
+> > > + * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
+> > > + *
+> > > + * Copyright (C) 2015, Intel Corporation & AMD Corporation
+> > > + * Authors: Ken Xue <Ken.Xue@amd.com>
+> > > + *		Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > + *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License version 2 as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +#ifndef _ACPI_SOC_H
+> > > +#define _ACPI_SOC_H
+> > > +
+> > > +#include <linux/acpi.h>
+> > > +#include <linux/clk.h>
+> > > +#include <linux/pm.h>
+> > > +
+> > > +/* Flags */
+> > > +#define ACPI_SOC_SYSFS	BIT(0)
+> > > +#define ACPI_SOC_PM		BIT(1)
+> > > +#define ACPI_SOC_PM_ON	BIT(2)
+> > 
+> > Would be nice to document what those mean.
+> > 
+> [Ken] sure. i will add more description.
 > 
-> Lets fix that up once we get this merged, if I had a tree based on the
-> iommu I'd have
-> it -next now.
+> > > +
+> > > +struct acpi_soc_dev_private_data;
+> > > +
+> > > +/**
+> > > + * struct acpi_soc - acpi soc
+> > > + * @list: list head
+> > > + * @ids: all acpi device ids for acpi soc
+> > > + * @pm_domain: power domain for all acpi device;can be NULL
+> > > + * @attr_group: attribute group for sysfs support of acpi soc;can be NULL
+> > > + */
+> > > +struct acpi_soc {
+> > > +	struct list_head list;
+> > > +	struct acpi_device_id	*ids;
+> > > +	struct dev_pm_domain	*pm_domain;
+> > > +	struct attribute_group	*attr_group;
+> > 
+> > These are tab aligned but list is using spaces. Please be consistent.
+> > 
+> [Ken] got it. 
 > 
-> can I get a pull for that?
+> > > +};
+> > > +
+> > > +/**
+> > > + * struct acpi_soc_dev_desc - a descriptor for acpi device
+> > > + * @flags: some device feature flags
+> > 
+> [Ken] ok.
+> 
+> > Please a bit better documentation than "some device feature flags".
+> > 
+> > > + * @clk: clock device
+> > > + * @fixed_clk_rate: fixed rate input clock source for acpi device;
+> > > + *				0 means no fixed rate input clock source
+> > > + * @mem_size_override: a workaround for override device memsize;
+> > > + *				0 means no needs for this WA
+> > > + * @setup: a hook routine to set device resource during create platform device
+> > > + * @bind: a hook of acpi_scan_handler.bind
+> > > + * @unbind: a hook of acpi_scan_handler.unbind
+> > > + *
+> > > + *device description defined as acpi_device_id.driver_data
+> > 
+> > Missing space.
+> > 
+> [Ken] got it. 
+> 
+> > > + */
+> > > +struct acpi_soc_dev_desc {
+> > > +	unsigned int flags;
+> > > +	struct clk *clk;
+> > > +	unsigned int fixed_clk_rate;
+> > > +	size_t mem_size_override;
+> > > +	int (*setup)(struct acpi_soc_dev_private_data *pdata);
+> > > +	void (*bind)(struct acpi_soc_dev_private_data *pdata);
+> > > +	void (*unbind)(struct acpi_soc_dev_private_data *pdata);
+> > > +};
+> > > +
+> > > +/**
+> > > + * struct acpi_soc_dev_private_data - acpi device private data
+> > > + * @mmio_base: virtual memory base addr of the device
+> > > + * @mmio_size: device memory size
+> > > + * @dev_desc: device description
+> > > + * @adev: apci device
+> > 
+> > apci -> acpi
+> > 
+> [Ken] got it. 
+> 
+> > > + */
+> > > +struct acpi_soc_dev_private_data {
+> > > +	void __iomem *mmio_base;
+> > > +	resource_size_t mmio_size;
+> > > +
+> > > +	struct acpi_soc_dev_desc *dev_desc;
+> > > +	struct acpi_device *adev;
+> > > +};
+> > > +
+> > > +/**
+> > > + * register_acpi_soc - register a new acpi soc
+> > > + * @a_soc: acpi soc
+> > > + * @disable_scan_handler: true means remove default scan handle
+> > > + *			false means use default scan handle
+> > > + *
+> > > + * register a new acpi soc into asoc_list and install default scan handle.
+> > > + */
+> > 
+> > IMHO function kernel-docs belong close to the function implementation,
+> > e.g in this case to acpi_soc.c.
+> > 
+> [Ken] so, you suggest a kernel-doc for acpi_soc? i believe acpi_soc is
+> only a small extension for platform bus support of acpi.
 
-Mark sent a pull on tuesday as reply to the cover-letter.
-Message-ID: <547D88D7.5080005@rock-chips.com>
-
-Replicated here, if you don't want to search.
-
-
-Heiko
-
----------------- 8< -------------------------------------
-
-Hi Dave
-
-The following changes since commit 656d7077d8ffd1c2492d4a0a354367ab2e545059:
-
-   dt-bindings: iommu: Add documentation for rockchip iommu (2014-11-03 
-17:29:09 +0100)
-
-are available in the git repository at:
-
-   https://github.com/markyzq/kernel-drm-rockchip.git drm_iommu_v15
-
-for you to fetch changes up to 5ac4837b12f533de5d9f8f66b45494c58e805536:
-
-   dt-bindings: video: Add documentation for rockchip vop (2014-12-02 
-17:29:33 +0800)
-
-----------------------------------------------------------------
-Mark Yao (3):
-       drm: rockchip: Add basic drm driver
-       dt-bindings: video: Add for rockchip display subsytem
-       dt-bindings: video: Add documentation for rockchip vop
-
-  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
-  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
-  drivers/gpu/drm/Kconfig                            |    2 +
-  drivers/gpu/drm/Makefile                           |    1 +
-  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
-  drivers/gpu/drm/rockchip/Makefile                  |    8 +
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  551 ++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   68 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   21 +
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1455 ++++++++++++++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  201 +++
-  16 files changed, 3188 insertions(+)
-  create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
-  create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
-  create mode 100644 drivers/gpu/drm/rockchip/Makefile
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
-
-
+I mean move the kernel doc where the function is defined (acpi_soc.c).
+> 
+> > > +void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler);
+> > > +
+> > > +#endif
+> > > -- 
+> > > 1.9.1
+> 
