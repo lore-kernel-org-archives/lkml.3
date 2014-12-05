@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaLEXnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:43:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53900 "EHLO
+	id S932150AbaLEXnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:43:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53905 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaLEWqE (ORCPT
+	with ESMTP id S1752327AbaLEWqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Ma <mapengyu@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.17 029/122] PCI: Support 64-bit bridge windows if we have 64-bit dma_addr_t
-Date: Fri,  5 Dec 2014 14:43:23 -0800
-Message-Id: <20141205223309.837780892@linuxfoundation.org>
+        Preston Fick <pffick@gmail.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 056/122] USB: serial: cp210x: add IDs for CEL MeshConnect USB Stick
+Date: Fri,  5 Dec 2014 14:43:50 -0800
+Message-Id: <20141205223314.008356510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,98 +28,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Preston Fick <pffick@gmail.com>
 
-commit 7fc986d8a9727e5d40da3c2c1c343da6142e82a9 upstream.
+commit ffcfe30ebd8dd703d0fc4324ffe56ea21f5479f4 upstream.
 
-Aaron reported that a 32-bit x86 kernel with Physical Address Extension
-(PAE) support complains about bridge prefetchable memory windows above 4GB:
-
-  pci_bus 0000:00: root bus resource [mem 0x380000000000-0x383fffffffff]
-  ...
-  pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
-  pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
-  pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
-  pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
-  pci 0000:00:02.2: PCI bridge to [bus 03-04]
-  pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
-  pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
-  pci 0000:00:02.2: can't handle 64-bit address space for bridge
-
-In this kernel, unsigned long is 32 bits and dma_addr_t is 64 bits.
-Previously we used "unsigned long" to hold the bridge window address.  But
-this is a bus address, so we should use dma_addr_t instead.
-
-Use dma_addr_t to hold the bridge window base and limit.
-
-The question of whether the CPU can actually *address* the window is
-separate and depends on what the physical address space of the CPU is and
-whether the host bridge does any address translation.
-
-[bhelgaas: fix "shift count > width of type", changelog, stable tag]
-Fixes: d56dbf5bab8c ("PCI: Allocate 64-bit BARs above 4G when possible")
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
-Reported-by: Aaron Ma <mapengyu@gmail.com>
-Tested-by: Aaron Ma <mapengyu@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Preston Fick <pffick@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -406,15 +406,16 @@ static void pci_read_bridge_mmio_pref(st
- {
- 	struct pci_dev *dev = child->self;
- 	u16 mem_base_lo, mem_limit_lo;
--	unsigned long base, limit;
-+	u64 base64, limit64;
-+	dma_addr_t base, limit;
- 	struct pci_bus_region region;
- 	struct resource *res;
- 
- 	res = child->resource[2];
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
--	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
--	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
-+	base64 = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
-+	limit64 = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
- 
- 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
- 		u32 mem_base_hi, mem_limit_hi;
-@@ -428,17 +429,20 @@ static void pci_read_bridge_mmio_pref(st
- 		 * this, just assume they are not being used.
- 		 */
- 		if (mem_base_hi <= mem_limit_hi) {
--#if BITS_PER_LONG == 64
--			base |= ((unsigned long) mem_base_hi) << 32;
--			limit |= ((unsigned long) mem_limit_hi) << 32;
--#else
--			if (mem_base_hi || mem_limit_hi) {
--				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
--				return;
--			}
--#endif
-+			base64 |= (u64) mem_base_hi << 32;
-+			limit64 |= (u64) mem_limit_hi << 32;
- 		}
- 	}
-+
-+	base = (dma_addr_t) base64;
-+	limit = (dma_addr_t) limit64;
-+
-+	if (base != base64) {
-+		dev_err(&dev->dev, "can't handle bridge window above 4GB (bus address %#010llx)\n",
-+			(unsigned long long) base64);
-+		return;
-+	}
-+
- 	if (base <= limit) {
- 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
- 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,6 +120,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
 
 
