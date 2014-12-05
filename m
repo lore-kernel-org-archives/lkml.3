@@ -1,155 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaLENdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:33:38 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11605 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaLENdg (ORCPT
+	id S1751731AbaLEMFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:05:09 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45175 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLEMFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:33:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 05 Dec 2014 05:30:58 -0800
-From: Arto Merilainen <amerilainen@nvidia.com>
-To: <myungjoo.ham@samsung.com>, <kyungmin.park@samsung.com>,
-        <tomeu.vizoso@collabora.com>, <gnurou@gmail.com>
-CC: <javier.martinez@collabora.co.uk>, <linuxpm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>, <grant.likely@linaro.org>,
-        <srasal@nvidia.com>, <amerilainen@nvidia.com>
-Subject: [RFC 1/3] PM / devfreq: Add watermark events
-Date: Fri, 5 Dec 2014 15:32:52 +0200
-Message-ID: <1417786374-375-2-git-send-email-amerilainen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1417786374-375-1-git-send-email-amerilainen@nvidia.com>
-References: <1417786374-375-1-git-send-email-amerilainen@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 5 Dec 2014 07:05:07 -0500
+Date: Fri, 5 Dec 2014 12:05:06 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
+        Peter Maydell <Peter.Maydell@arm.com>
+Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Message-ID: <20141205120506.GH1630@arm.com>
+References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
+ <20140915113325.GD12361@n2100.arm.linux.org.uk>
+ <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shridhar Rasal <srasal@nvidia.com>
+On Thu, Dec 04, 2014 at 12:03:05PM +0000, Catalin Marinas wrote:
+> On Mon, Sep 15, 2014 at 12:33:25PM +0100, Russell King - ARM Linux wrote:
+> > On Mon, Sep 15, 2014 at 07:07:20PM +0800, Wang, Yalin wrote:
+> > > @@ -636,6 +646,11 @@ static int keep_initrd;
+> > >  void free_initrd_mem(unsigned long start, unsigned long end)
+> > >  {
+> > >  	if (!keep_initrd) {
+> > > +		if (start == initrd_start)
+> > > +			start = round_down(start, PAGE_SIZE);
+> > > +		if (end == initrd_end)
+> > > +			end = round_up(end, PAGE_SIZE);
+> > > +
+> > >  		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+> > >  		free_reserved_area((void *)start, (void *)end, -1, "initrd");
+> > >  	}
+> > 
+> > is the only bit of code you likely need to achieve your goal.
+> > 
+> > Thinking about this, I think that you are quite right to align these.
+> > The memory around the initrd is defined to be system memory, and we
+> > already free the pages around it, so it *is* wrong not to free the
+> > partial initrd pages.
+> 
+> Actually, I think we have a problem, at least on arm64 (raised by Peter
+> Maydell). There is no guarantee that the page around start/end of initrd
+> is free, it may contain the dtb for example. This is even more obvious
+> when we have a 64KB page kernel (the boot loader doesn't know the page
+> size that the kernel is going to use).
+> 
+> The bug was there before as we had poison_init_mem() already (not it
+> disappeared since free_reserved_area does the poisoning).
+> 
+> So as a quick fix I think we need the rounding the other way (and in the
+> general case we probably lose a page at the end of initrd):
+> 
+> diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+> index 494297c698ca..39fd080683e7 100644
+> --- a/arch/arm64/mm/init.c
+> +++ b/arch/arm64/mm/init.c
+> @@ -335,9 +335,9 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+>  {
+>  	if (!keep_initrd) {
+>  		if (start == initrd_start)
+> -			start = round_down(start, PAGE_SIZE);
+> +			start = round_up(start, PAGE_SIZE);
+>  		if (end == initrd_end)
+> -			end = round_up(end, PAGE_SIZE);
+> +			end = round_down(end, PAGE_SIZE);
+>  
+>  		free_reserved_area((void *)start, (void *)end, 0, "initrd");
+>  	}
+> 
+> A better fix would be to check what else is around the start/end of
+> initrd.
 
-This patch adds support for watermark events. These events inform
-the governor that the device load has gone below (low watermark) or
-above (high watermark) certain load value.
+Care to submit this as a proper patch? We should at least fix Peter's issue
+before doing things like extending headers, which won't work for older
+kernels anyway.
 
-Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
-Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
----
- drivers/devfreq/devfreq.c  | 19 +++++++++++++++++++
- drivers/devfreq/governor.h |  1 +
- include/linux/devfreq.h    | 26 ++++++++++++++++++++++++++
- 3 files changed, 46 insertions(+)
-
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 30b538d8cc90..8333d024132a 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -1050,6 +1050,25 @@ static struct attribute *devfreq_attrs[] = {
- };
- ATTRIBUTE_GROUPS(devfreq);
- 
-+/**
-+ * devfreq_watermark_event() - Handles watermark events
-+ * @devfreq: the devfreq instance to be updated
-+ * @type: type of watermark event
-+ */
-+int devfreq_watermark_event(struct devfreq *devfreq, int type)
-+{
-+	if (!devfreq)
-+		return -EINVAL;
-+
-+	if (!devfreq->governor)
-+		return -EINVAL;
-+
-+	return devfreq->governor->event_handler(devfreq,
-+				DEVFREQ_GOV_WMARK, &type);
-+}
-+EXPORT_SYMBOL(devfreq_watermark_event);
-+
-+
- static int __init devfreq_init(void)
- {
- 	devfreq_class = class_create(THIS_MODULE, "devfreq");
-diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
-index fad7d6321978..fb9875388f3f 100644
---- a/drivers/devfreq/governor.h
-+++ b/drivers/devfreq/governor.h
-@@ -24,6 +24,7 @@
- #define DEVFREQ_GOV_INTERVAL			0x3
- #define DEVFREQ_GOV_SUSPEND			0x4
- #define DEVFREQ_GOV_RESUME			0x5
-+#define DEVFREQ_GOV_WMARK			0x6
- 
- /* Caution: devfreq->lock must be locked before calling update_devfreq */
- extern int update_devfreq(struct devfreq *devfreq);
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index f1863dcd83ea..b5bf6c4fe286 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -21,6 +21,12 @@
- 
- struct devfreq;
- 
-+enum watermark_type {
-+	NO_WATERMARK_EVENT = 0,
-+	HIGH_WATERMARK_EVENT = 1,
-+	LOW_WATERMARK_EVENT = 2
-+};
-+
- /**
-  * struct devfreq_dev_status - Data given from devfreq user device to
-  *			     governors. Represents the performance
-@@ -68,6 +74,16 @@ struct devfreq_dev_status {
-  *			status to devfreq, which is used by governors.
-  * @get_cur_freq:	The device should provide the current frequency
-  *			at which it is operating.
-+ * @set_high_wmark:	This is an optional callback to set high
-+ *			watermark for watermark event. The value is
-+ *			be scaled between 0 and 1000 where 1000 equals to
-+ *			100% load. Setting this value to 1000 disables
-+ *			the event
-+ * @set_low_wmark:	This is an optional callback to set low
-+ *			watermark for watermark event. The value is
-+ *			be scaled between 0 and 1000 where 1000 equals to
-+ *			100% load. Setting this value to 0 disables the
-+ *			event.
-  * @exit:		An optional callback that is called when devfreq
-  *			is removing the devfreq object due to error or
-  *			from devfreq_remove_device() call. If the user
-@@ -84,6 +100,8 @@ struct devfreq_dev_profile {
- 	int (*get_dev_status)(struct device *dev,
- 			      struct devfreq_dev_status *stat);
- 	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
-+	int (*set_high_wmark)(struct device *dev, unsigned int val);
-+	int (*set_low_wmark)(struct device *dev, unsigned int val);
- 	void (*exit)(struct device *dev);
- 
- 	unsigned int *freq_table;
-@@ -191,6 +209,8 @@ extern void devm_devfreq_remove_device(struct device *dev,
- /* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
- extern int devfreq_suspend_device(struct devfreq *devfreq);
- extern int devfreq_resume_device(struct devfreq *devfreq);
-+extern int devfreq_watermark_event(struct devfreq *devfreq,
-+				  int type);
- 
- /* Helper functions for devfreq user device driver with OPP. */
- extern struct dev_pm_opp *devfreq_recommended_opp(struct device *dev,
-@@ -289,6 +309,12 @@ static inline void devm_devfreq_unregister_opp_notifier(struct device *dev,
- 							struct devfreq *devfreq)
- {
- }
-+
-+static inline int devfreq_watermark_event(struct devfreq *devfreq,
-+					int type)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_PM_DEVFREQ */
- 
- #endif /* __LINUX_DEVFREQ_H__ */
--- 
-1.8.1.5
-
+Will
