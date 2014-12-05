@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaLEXJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:09:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54770 "EHLO
+	id S1754107AbaLEXJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:09:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489AbaLEXGm (ORCPT
+	with ESMTP id S1754008AbaLEXGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/45] sparc64: Fix constraints on swab helpers.
-Date: Fri,  5 Dec 2014 14:44:52 -0800
-Message-Id: <20141205223318.196237614@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 08/45] uprobes, x86: Fix _TIF_UPROBE vs _TIF_NOTIFY_RESUME
+Date: Fri,  5 Dec 2014 14:44:51 -0800
+Message-Id: <20141205223318.011852398@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,56 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-[ Upstream commit 5a2b59d3993e8ca4f7788a48a23e5cb303f26954 ]
+From: Andy Lutomirski <luto@amacapital.net>
 
-We are reading the memory location, so we have to have a memory
-constraint in there purely for the sake of showing the data flow
-to the compiler.
+commit 82975bc6a6df743b9a01810fb32cb65d0ec5d60b upstream.
 
-Reported-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set but
+not on non-paranoid returns.  I suspect that this is a mistake and that
+the code only works because int3 is paranoid.
+
+Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a workaround
+for the x86 bug.  With that bug fixed, we can remove _TIF_NOTIFY_RESUME
+from the uprobes code.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/uapi/asm/swab.h |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/sparc/include/uapi/asm/swab.h
-+++ b/arch/sparc/include/uapi/asm/swab.h
-@@ -9,9 +9,9 @@ static inline __u16 __arch_swab16p(const
- {
- 	__u16 ret;
+---
+ arch/x86/include/asm/thread_info.h |    2 +-
+ kernel/events/uprobes.c            |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -147,7 +147,7 @@ struct thread_info {
+ /* Only used for 64 bit */
+ #define _TIF_DO_NOTIFY_MASK						\
+ 	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
+-	 _TIF_USER_RETURN_NOTIFY)
++	 _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
  
--	__asm__ __volatile__ ("lduha [%1] %2, %0"
-+	__asm__ __volatile__ ("lduha [%2] %3, %0"
- 			      : "=r" (ret)
--			      : "r" (addr), "i" (ASI_PL));
-+			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
- 	return ret;
- }
- #define __arch_swab16p __arch_swab16p
-@@ -20,9 +20,9 @@ static inline __u32 __arch_swab32p(const
- {
- 	__u32 ret;
+ /* flags to check in __switch_to() */
+ #define _TIF_WORK_CTXSW							\
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1511,7 +1511,6 @@ bool uprobe_deny_signal(void)
+ 		if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
+ 			utask->state = UTASK_SSTEP_TRAPPED;
+ 			set_tsk_thread_flag(t, TIF_UPROBE);
+-			set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
+ 		}
+ 	}
  
--	__asm__ __volatile__ ("lduwa [%1] %2, %0"
-+	__asm__ __volatile__ ("lduwa [%2] %3, %0"
- 			      : "=r" (ret)
--			      : "r" (addr), "i" (ASI_PL));
-+			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
- 	return ret;
- }
- #define __arch_swab32p __arch_swab32p
-@@ -31,9 +31,9 @@ static inline __u64 __arch_swab64p(const
- {
- 	__u64 ret;
- 
--	__asm__ __volatile__ ("ldxa [%1] %2, %0"
-+	__asm__ __volatile__ ("ldxa [%2] %3, %0"
- 			      : "=r" (ret)
--			      : "r" (addr), "i" (ASI_PL));
-+			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
- 	return ret;
- }
- #define __arch_swab64p __arch_swab64p
 
 
