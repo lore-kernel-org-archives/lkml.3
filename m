@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022AbaLEXfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:35:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54272 "EHLO
+	id S1755003AbaLEXe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:34:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaLEW4D (ORCPT
+	with ESMTP id S1753167AbaLEW4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Binyamin Sagal <bensagal@gmail.com>,
+        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.17 081/122] Input: synaptics - adjust min/max on Thinkpad E540
-Date: Fri,  5 Dec 2014 14:44:15 -0800
-Message-Id: <20141205223317.961601014@linuxfoundation.org>
+Subject: [PATCH 3.17 082/122] Input: xpad - use proper endpoint type
+Date: Fri,  5 Dec 2014 14:44:16 -0800
+Message-Id: <20141205223318.118641423@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,40 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Sagal <bensagal@gmail.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit bce4f9e764c36bc35dd5c9cf9e057c09f422397d upstream.
+commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
 
-The LEN2006 Synaptics touchpad (as found in Thinkpad E540) returns wrong
-min max values.
+The xpad wireless endpoint is not a bulk endpoint on my devices, but
+rather an interrupt one, so the USB core complains when it is submitted.
+I'm guessing that the author really did mean that this should be an
+interrupt urb, but as there are a zillion different xpad devices out
+there, let's cover out bases and handle both bulk and interrupt
+endpoints just as easily.
 
-touchpad-edge-detector output:
->  Touchpad SynPS/2 Synaptics TouchPad on /dev/input/event6
->  Move one finger around the touchpad to detect the actual edges
->  Kernel says:    x [1472..5674], y [1408..4684]
->  Touchpad sends: x [1264..5675], y [1171..4688]
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88211
-Signed-off-by: Binyamin Sagal <bensagal@gmail.com>
+Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/input/joystick/xpad.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -143,6 +143,10 @@ static const struct min_max_quirk min_ma
- 		(const char * const []){"LEN2001", NULL},
- 		1024, 5022, 2508, 4832
- 	},
-+	{
-+		(const char * const []){"LEN2006", NULL},
-+		1264, 5675, 1171, 4688
-+	},
- 	{ }
- };
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -1143,9 +1143,19 @@ static int xpad_probe(struct usb_interfa
+ 		}
  
+ 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
+-		usb_fill_bulk_urb(xpad->bulk_out, udev,
+-				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+-				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
++			usb_fill_bulk_urb(xpad->bulk_out, udev,
++					  usb_sndbulkpipe(udev,
++							  ep_irq_in->bEndpointAddress),
++					  xpad->bdata, XPAD_PKT_LEN,
++					  xpad_bulk_out, xpad);
++		} else {
++			usb_fill_int_urb(xpad->bulk_out, udev,
++					 usb_sndintpipe(udev,
++							ep_irq_in->bEndpointAddress),
++					 xpad->bdata, XPAD_PKT_LEN,
++					 xpad_bulk_out, xpad, 0);
++		}
+ 
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
 
 
