@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaLEIP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:15:26 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33666 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaLEIPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:15:24 -0500
-From: "jeffrey.lin" <yajohn@gmail.com>
-X-Google-Original-From: "jeffrey.lin" <jeffrey.lin@rad-ic.com>
-To: dmitry.torokhov@gmail.com, shc_work@mail.ru, bleung@chromium.org,
-        lee.jones@linaro.org, charliemooney@chromium.org
-Cc: KP.li@rad-ic.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, "jeffrey.lin" <jeffrey.lin@rad-ic.com>
-Subject: [PATCH] driver: input :touchscreen : add Raydium I2C touch driver
-Date: Fri,  5 Dec 2014 16:15:01 +0800
-Message-Id: <1417767301-20141-1-git-send-email-jeffrey.lin@rad-ic.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752441AbaLEIPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:15:44 -0500
+Received: from mail-bn1bon0082.outbound.protection.outlook.com ([157.56.111.82]:42976
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752097AbaLEIPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:15:42 -0500
+Date: Fri, 5 Dec 2014 09:15:29 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: rajeev kumar <rajeevkumar.linux@gmail.com>,
+        Harini Katakam <harinik@xilinx.com>
+CC: <wsa@the-dreams.de>, <mark.rutland@arm.com>, <michal.simek@xilinx.com>,
+        <soren.brinkmann@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <vishnum@xilinx.com>, <harinikatakamlinux@gmail.com>
+Subject: Re: [PATCH v2 1/3] i2c: cadence: Handle > 252 byte transfers
+References: <1417610126-7957-1-git-send-email-harinik@xilinx.com>
+	<1417610126-7957-2-git-send-email-harinik@xilinx.com>
+ <CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
+In-Reply-To: <CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21150.005
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <66a490c827bc47d98a0118a58d7060e7@BN1BFFO11FD054.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(479174003)(377454003)(199003)(189002)(51704005)(24454002)(164054003)(50986999)(86362001)(19580395003)(92566001)(87936001)(108616004)(62966003)(20776003)(120916001)(83506001)(31966008)(106466001)(50466002)(6806004)(64706001)(54356999)(46102003)(217423001)(107046002)(21056001)(74316001)(76176999)(104016003)(4396001)(99396003)(33646002)(47776003)(77156002)(23676002)(65806001)(65956001)(19580405001)(77096005)(92726002)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB017;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(1)(2);SRVR:BN1BFFO11HUB017;
+X-Forefront-PRVS: 04163EF38A
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "jeffrey.lin" <jeffrey.lin@rad-ic.com>
+On 12/05/2014 06:41 AM, rajeev kumar wrote:
+> On Wed, Dec 3, 2014 at 6:05 PM, Harini Katakam <harinik@xilinx.com> wrote:
+>> The I2C controller sends a NACK to the slave when transfer size register
+>> reaches zero, irrespective of the hold bit. So, in order to handle transfers
+>> greater than 252 bytes, the transfer size register has to be maintained at a
+>> value >= 1. This patch implements the same.
+> 
+> Why 252 Bytes ?  Is it word allign or what ?
+> 
+>> The interrupt status is cleared at the beginning of the isr instead of
+>> the end, to avoid missing any interrupts - this is in sync with the new
+>> transfer handling.
+>>
+> 
+> No need to write this, actually this is the correct way of handling interrupt.
+> 
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>> ---
+>>
+>> v2:
+>> No changes
+>>
+>> ---
+>>  drivers/i2c/busses/i2c-cadence.c |  156 ++++++++++++++++++++------------------
+>>  1 file changed, 81 insertions(+), 75 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
+>> index 63f3f03..e54899e 100644
+>> --- a/drivers/i2c/busses/i2c-cadence.c
+>> +++ b/drivers/i2c/busses/i2c-cadence.c
+>> @@ -126,6 +126,7 @@
+>>   * @suspended:         Flag holding the device's PM status
+>>   * @send_count:                Number of bytes still expected to send
+>>   * @recv_count:                Number of bytes still expected to receive
+>> + * @curr_recv_count:   Number of bytes to be received in current transfer
+> 
+> Please do the alignment properly
 
-This patch is porting Raydium I2C touch driver. Developer can enable raydium touch driver by modifying define
-"CONFIG_TOUCHSCREEN_RM_TS".
+Alignments are correct when you apply this patch.
+Please let us know if you see any problem.
 
-Signed-off-by: jeffrey.lin@rad-ic.com
----
- drivers/input/touchscreen/Kconfig  | 12 ++++++++++++
- drivers/input/touchscreen/Makefile |  1 +
- 2 files changed, 13 insertions(+)
-
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 3ce9181..d0324d2 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -955,4 +955,16 @@ config TOUCHSCREEN_ZFORCE
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called zforce_ts.
- 
-+config TOUCHSCREEN_RM_TS
-+	tristate "Raydium I2C Touchscreen"
-+	depends on I2C
-+	help
-+	  Say Y here if you have Raydium series I2C touchscreen,
-+	  such as RM31100 , connected to your system.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rm31100_ts.
-+
- endif
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 687d5a7..3220f66 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -78,3 +78,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
- obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
- obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
- obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
-+obj-$(CONFIG_TOUCHSCREEN_RM_TS)		+= rm31100_ts.o
--- 
-2.1.2
+Thanks,
+Michal
 
