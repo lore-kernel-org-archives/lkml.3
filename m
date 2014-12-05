@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaLEOjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:39:25 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:24905 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaLEOjX (ORCPT
+	id S1751200AbaLEOku (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:40:50 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:57267 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaLEOkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:39:23 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-4f-5481c3987965
-Message-id: <5481C32D.5080605@samsung.com>
-Date: Fri, 05 Dec 2014 16:37:33 +0200
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: rusty@rustcorp.com.au, mmarek@suse.cz, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7
- signature to a module [ver #2]
-References: <5481A954.1010104@samsung.com> <548172DE.9090007@samsung.com>
- <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
- <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
- <23280.1417775034@warthog.procyon.org.uk>
- <26261.1417788246@warthog.procyon.org.uk>
-In-reply-to: <26261.1417788246@warthog.procyon.org.uk>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xy7ozDjeGGCx6aGHxruk3i8XsXQ9Z
-	LC7vmsNm8aHnEZtFy74LTBY3p11gsfi0YhKzA7vHtBPLWDweHNrM4vF+31U2jxUbTjB7nFlw
-	hN3j8ya5ALYoLpuU1JzMstQifbsEroyu8xeYC/bwVMz/cpW5gXETdxcjJ4eEgInEqfXPWCBs
-	MYkL99azdTFycQgJLGWUOLF9NiuE08gkMXvaWihnFqPE+WkLGEFaeAW0JG7seAxmswioStw5
-	9YQJxGYT0JPY0PyDHcQWFYiQ+LDqKxtEvaDEj8n3wNaJCKhLPFq2kRnEZhZYwigxfWZkFyMH
-	h7BAusSLOQoQu6YzSZzveAE2k1PATOLbg09MIDXMQPPvX9SCaJWX2LzmLdgYIaATuteuZYP4
-	RlHi9ORzzBMYhWch2TwLoXsWku4FjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MULi5usO
-	xqXHrA4xCnAwKvHw/ohrDBFiTSwrrsw9xCjBwawkwps8GyjEm5JYWZValB9fVJqTWnyIkYmD
-	U6qBkUVzc0XEr6bULfUeltfnVAnuYQn/Jr72X5JYNW+54rWt8XN/qc6vXdEWkdbiZK/PqNJj
-	m2M59/nDs1Nanja5ucZl7s5VztBLPCpxlaWO5XPni59bnr66F72hc7NJUMrVR+8Y+tIt2ff/
-	efQs5OGN3LrbNbw//n+7YXpa+A9j4EbRaZNfMLy7o8RSnJFoqMVcVJwIAFS4XMV5AgAA
+	Fri, 5 Dec 2014 09:40:49 -0500
+Date: Fri, 5 Dec 2014 06:40:45 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Athira Lekshmi C V <andnlnbn18@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Fixed missing blank line warning
+Message-ID: <20141205144045.GA5531@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Athira Lekshmi C V <andnlnbn18@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <1417787034-7833-1-git-send-email-andnlnbn18@gmail.com>
+ <20141205140011.GA5184@hudson.localdomain>
+ <CAFnntG3orLhA5tOHM+k3JMbCo7Atinq_1gaWPBR6CySqw7ytMA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFnntG3orLhA5tOHM+k3JMbCo7Atinq_1gaWPBR6CySqw7ytMA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/14 16:04, David Howells wrote:
-> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->
->> With just "make all" on Ubuntu.
-> What gcc?  I don't see any warnings.
->
-> David
->
+On Fri, Dec 05, 2014 at 07:39:12PM +0530, Athira Lekshmi C V wrote:
+> Hello
+> 
+> Should I resubmit the above patch again including the version number,
+> or can I start doing so from the next time onwards ?
+> 
+Not a big deal this time but definitely do it in the future.
 
-$ gcc -v
-Using built-in specs.
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/4.8/lto-wrapper
-Target: x86_64-linux-gnu
-Configured with: ../src/configure -v --with-pkgversion='Ubuntu
-4.8.2-19ubuntu1' --with-bugurl=file:///usr/share/doc/gcc-4.8/README.Bugs
---enable-languages=c,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr
---program-suffix=-4.8 --enable-shared --enable-linker-build-id
---libexecdir=/usr/lib --without-included-gettext --enable-threads=posix
---with-gxx-include-dir=/usr/include/c++/4.8 --libdir=/usr/lib
---enable-nls --with-sysroot=/ --enable-clocale=gnu
---enable-libstdcxx-debug --enable-libstdcxx-time=yes
---enable-gnu-unique-object --disable-libmudflap --enable-plugin
---with-system-zlib --disable-browser-plugin --enable-java-awt=gtk
---enable-gtk-cairo
---with-java-home=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre
---enable-java-home
---with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64
---with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-4.8-amd64
---with-arch-directory=amd64
---with-ecj-jar=/usr/share/java/eclipse-ecj.jar --enable-objc-gc
---enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64
---with-multilib-list=m32,m64,mx32 --with-tune=generic
---enable-checking=release --build=x86_64-linux-gnu
---host=x86_64-linux-gnu --target=x86_64-linux-gnu
-Thread model: posix
-gcc version 4.8.2 (Ubuntu 4.8.2-19ubuntu1)
+Another tip: try to avoid posting, it can make the conversation
+confusing [1].
 
+  [1]: https://lkml.org/lkml/2005/1/11/111
 
+> Thank You
+> Athira Lekshmi
+> 
+> On Fri, Dec 5, 2014 at 7:30 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> > Athira,
+> >
+> > On Fri, Dec 05, 2014 at 07:13:54PM +0530, Athira Lekshmi wrote:
+> >> Fixed the checkpatch warning:
+> >> Missing a blank line after declarations
+> >>
+> >> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+> >> ---
+> >>  drivers/watchdog/mixcomwd.c |    1 +
+> >>  1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/drivers/watchdog/mixcomwd.c b/drivers/watchdog/mixcomwd.c
+> >> index be86ea3..03b7612e 100644
+> >> --- a/drivers/watchdog/mixcomwd.c
+> >> +++ b/drivers/watchdog/mixcomwd.c
+> >> @@ -183,6 +183,7 @@ static ssize_t mixcomwd_write(struct file *file, const char __user *data,
+> >>
+> >>                       for (i = 0; i != len; i++) {
+> >>                               char c;
+> >> +
+> >>                               if (get_user(c, data + i))
+> >>                                       return -EFAULT;
+> >>                               if (c == 'V')
+> >> --
+> >> 1.7.9.5
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> > It is helpful to add a version number when patches are re-submitted to
+> > avoid them being confused for a new patch.  git-format-patch has the
+> > --reroll-count option which makes this easy to do.
+> >
+> > --
+> > - Jeremiah Mahler
+
+-- 
+- Jeremiah Mahler
