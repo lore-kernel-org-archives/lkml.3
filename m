@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663AbaLEEMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:12:14 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:58402 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933536AbaLEEME (ORCPT
+	id S933643AbaLEEMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:12:13 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:45442 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933525AbaLEEME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Dec 2014 23:12:04 -0500
 X-Listener-Flag: 11101
@@ -28,9 +28,9 @@ CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Dongdong Cheng <dongdong.cheng@mediatek.com>,
         HenryC Chen <henryc.chen@mediatek.com>,
         Menghui Lin <menghui.lin@mediatek.com>
-Subject: [PATCH v3 2/8] mfd: MT6397: Add support for PMIC MT6397 MFD
-Date: Fri, 5 Dec 2014 12:07:53 +0800
-Message-ID: <1417752479-4749-3-git-send-email-flora.fu@mediatek.com>
+Subject: [PATCH v3 1/8] soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
+Date: Fri, 5 Dec 2014 12:07:52 +0800
+Message-ID: <1417752479-4749-2-git-send-email-flora.fu@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
 In-Reply-To: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
 References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
@@ -41,56 +41,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add core files for MT6397 MFD driver.
+Add PMIC wrapper of MT8135 to access MT6397 MFD.
 
 Signed-off-by: Flora Fu <flora.fu@mediatek.com>
 ---
- drivers/mfd/Kconfig                  |  10 +
- drivers/mfd/Makefile                 |   1 +
- drivers/mfd/mt6397-core.c            |  87 +++++++++
- include/linux/mfd/mt6397/core.h      |  23 +++
- include/linux/mfd/mt6397/registers.h | 362 +++++++++++++++++++++++++++++++++++
- 5 files changed, 483 insertions(+)
- create mode 100644 drivers/mfd/mt6397-core.c
- create mode 100644 include/linux/mfd/mt6397/core.h
- create mode 100644 include/linux/mfd/mt6397/registers.h
+ drivers/soc/Kconfig                        |   1 +
+ drivers/soc/Makefile                       |   1 +
+ drivers/soc/mediatek/Kconfig               |  12 +
+ drivers/soc/mediatek/Makefile              |   1 +
+ drivers/soc/mediatek/mt8135-pmic-wrap.c    | 844 +++++++++++++++++++++++++++++
+ drivers/soc/mediatek/mt8135-pmic-wrap.h    | 138 +++++
+ include/linux/soc/mediatek/mtk-pmic-wrap.h |  25 +
+ 7 files changed, 1022 insertions(+)
+ create mode 100644 drivers/soc/mediatek/Kconfig
+ create mode 100644 drivers/soc/mediatek/Makefile
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.c
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.h
+ create mode 100644 include/linux/soc/mediatek/mtk-pmic-wrap.h
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 1456ea7..f0b3efc 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1318,6 +1318,16 @@ config MFD_STW481X
- 	  in various ST Microelectronics and ST-Ericsson embedded
- 	  Nomadik series.
+diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+index 76d6bd4..d8bde82 100644
+--- a/drivers/soc/Kconfig
++++ b/drivers/soc/Kconfig
+@@ -1,5 +1,6 @@
+ menu "SOC (System On Chip) specific Drivers"
  
-+config MFD_MT6397
-+	tristate "MediaTek MT6397 PMIC Support"
-+	select MFD_CORE
-+	select IRQ_DOMAIN
-+	help
-+	  Say yes here to add support for MediaTek MT6397 PMIC. This is
-+	  a Power Management IC. This driver provides common support for
-+	  accessing the device; additional drivers must be enabled in order
-+	  to use the functionality of the device.
-+
- menu "Multimedia Capabilities Port drivers"
- 	depends on ARCH_SA1100
++source "drivers/soc/mediatek/Kconfig"
+ source "drivers/soc/qcom/Kconfig"
+ source "drivers/soc/ti/Kconfig"
+ source "drivers/soc/versatile/Kconfig"
+diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+index 063113d..70042b2 100644
+--- a/drivers/soc/Makefile
++++ b/drivers/soc/Makefile
+@@ -2,6 +2,7 @@
+ # Makefile for the Linux Kernel SOC specific device drivers.
+ #
  
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 8bd54b1..7168193 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -177,3 +177,4 @@ obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-+obj-$(CONFIG_MFD_MT6397)	+= mt6397-core.o
-diff --git a/drivers/mfd/mt6397-core.c b/drivers/mfd/mt6397-core.c
++obj-$(CONFIG_ARCH_MEDIATEK)	+= mediatek/
+ obj-$(CONFIG_ARCH_QCOM)		+= qcom/
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+ obj-$(CONFIG_SOC_TI)		+= ti/
+diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
 new file mode 100644
-index 0000000..85631e0
+index 0000000..746e030
 --- /dev/null
-+++ b/drivers/mfd/mt6397-core.c
-@@ -0,0 +1,87 @@
++++ b/drivers/soc/mediatek/Kconfig
+@@ -0,0 +1,12 @@
++#
++# MediaTek SoC drivers
++#
++config MT8135_PMIC_WRAP
++	tristate "MediaTek MT8135 PMIC Wrapper Support"
++	depends on ARCH_MEDIATEK
++	select REGMAP
++	help
++	  Say yes here to add support for MediaTek MT8135 PMIC Wrapper.
++	  PMIC wrapper is a proprietary hardware in MT8135 to make
++	  communication protocols to access PMIC device.
++	  This driver implement access protocols for MT8135.
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+new file mode 100644
+index 0000000..49b9588
+--- /dev/null
++++ b/drivers/soc/mediatek/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_MT8135_PMIC_WRAP)		+= mt8135-pmic-wrap.o
+diff --git a/drivers/soc/mediatek/mt8135-pmic-wrap.c b/drivers/soc/mediatek/mt8135-pmic-wrap.c
+new file mode 100644
+index 0000000..75aa28e
+--- /dev/null
++++ b/drivers/soc/mediatek/mt8135-pmic-wrap.c
+@@ -0,0 +1,844 @@
 +/*
 + * Copyright (c) 2014 MediaTek Inc.
 + * Author: Flora Fu <flora.fu@mediatek.com>
@@ -105,85 +127,842 @@ index 0000000..85631e0
 + * GNU General Public License for more details.
 + */
 +
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/of_device.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/mt6397/core.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/reset.h>
++#include <linux/mfd/mt6397/registers.h>
 +#include <linux/soc/mediatek/mtk-pmic-wrap.h>
++#include "mt8135-pmic-wrap.h"
 +
-+static const struct mfd_cell mt6397_devs[] = {
-+	{ .name = "mt6397-rtc" },
-+	{
-+		.name = "mt6397-regulator",
-+		.of_compatible = "mediatek,mt6397-regulator",
-+	},
-+	{
-+		.name = "mt6397-codec",
-+		.of_compatible = "mediatek,mt6397-codec",
-+	},
-+};
++/* macro for wrapper status */
++#define PWRAP_GET_WACS0_WDATA(x)	(((x) >> 0) & 0x0000ffff)
++#define PWRAP_GET_WACS0_ADR(x)		(((x) >> 16) & 0x00007fff)
++#define PWRAP_GET_WACS0_WRITE(x)	(((x) >> 31) & 0x00000001)
++#define PWRAP_GET_WACS0_RDATA(x)	(((x) >> 0) & 0x0000ffff)
++#define PWRAP_GET_WACS0_FSM(x)		(((x) >> 16) & 0x00000007)
++#define PWRAP_STATE_SYNC_IDLE0		(1 << 20)
++#define PWRAP_STATE_INIT_DONE0		(1 << 21)
 +
-+static int mt6397_probe(struct platform_device *pdev)
++/* macro for WACS FSM */
++#define PWRAP_WACS_FSM_IDLE		0x00
++#define PWRAP_WACS_FSM_REQ		0x02
++#define PWRAP_WACS_FSM_WFDLE		0x04
++#define PWRAP_WACS_FSM_WFVLDCLR		0x06
++#define PWRAP_WACS_INIT_DONE		0x01
++#define PWRAP_WACS_WACS_SYNC_IDLE	0x01
++
++/* macro for device wrapper default value */
++#define PWRAP_DEW_READ_TEST_VAL		0x5aa5
++#define PWRAP_DEW_WRITE_TEST_VAL	0xa55a
++
++/* macro for manual command */
++#define PWRAP_OP_WR			0x1
++#define PWRAP_OP_RD			0x0
++#define PWRAP_OP_CSH			0x0
++#define PWRAP_OP_CSL			0x1
++#define PWRAP_OP_OUTS			0x8
++#define PWRAP_OP_OUTD			0x9
++#define PWRAP_OP_OUTQ			0xA
++
++static bool is_fsm_idle(u32 x)
 +{
-+	u32 ret;
-+	struct mt6397_chip *mt6397;
-+	struct pmic_wrapper *wrp;
-+
-+	/* mt6397 MFD is child device of soc pmic wrapper. */
-+	if (!pdev->dev.parent)
-+		return -ENODEV;
-+
-+	wrp = dev_get_drvdata(pdev->dev.parent);
-+	mt6397 = devm_kzalloc(&pdev->dev, sizeof(*mt6397), GFP_KERNEL);
-+	if (!mt6397)
-+		return -ENOMEM;
-+
-+	mt6397->dev = &pdev->dev;
-+	mt6397->regmap = wrp->regmap;
-+	platform_set_drvdata(pdev, mt6397);
-+
-+	ret = mfd_add_devices(&pdev->dev, -1, &mt6397_devs[0],
-+			ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
-+	if (ret)
-+		dev_err(&pdev->dev, "failed to add child devices: %d\n", ret);
-+
-+	return ret;
++	return PWRAP_GET_WACS0_FSM(x) == PWRAP_WACS_FSM_IDLE;
 +}
 +
-+static int mt6397_remove(struct platform_device *pdev)
++static bool is_fsm_vldclr(u32 x)
 +{
-+	mfd_remove_devices(&pdev->dev);
++	return PWRAP_GET_WACS0_FSM(x) == PWRAP_WACS_FSM_WFVLDCLR;
++}
++
++static bool is_sync_idle(u32 x)
++{
++	return x & PWRAP_STATE_SYNC_IDLE0;
++}
++
++static bool is_fsm_idle_and_sync_idle(u32 x)
++{
++	return (PWRAP_GET_WACS0_FSM(x) == PWRAP_WACS_FSM_IDLE) &&
++	 (x & PWRAP_STATE_SYNC_IDLE0);
++}
++
++static bool is_cipher_ready(u32 x)
++{
++	return x == 1;
++}
++
++static int wait_for_state_ready(
++	struct pmic_wrapper *wrp, bool (*fp)(u32),
++	void *wacs_register, void *wacs_vldclr_register, u32 *read_reg)
++{
++	u32 reg_rdata;
++	unsigned long timeout;
++	int timeout_retry = 0;
++	struct device *dev = &wrp->pdev->dev;
++
++	timeout = jiffies + usecs_to_jiffies(255);
++	do {
++		reg_rdata = readl(wacs_register);
++		if (time_after(jiffies, timeout)) {
++			if (timeout_retry) {
++				dev_err(dev, "timeout when waiting for idle\n");
++				return -ETIMEDOUT;
++			}
++			timeout_retry = 1;
++		}
++	} while (!fp(reg_rdata));
++
++	if (read_reg)
++		*read_reg = reg_rdata;
 +
 +	return 0;
 +}
 +
-+static const struct of_device_id mt6397_of_match[] = {
-+	{ .compatible = "mediatek,mt6397" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, mt6397_of_match);
++static int pwrap_write(struct pmic_wrapper *wrp, u32 adr, u32 wdata)
++{
++	u32 wacs_cmd;
++	int ret;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
 +
-+static struct platform_driver mt6397_driver = {
-+	.probe = mt6397_probe,
-+	.remove = mt6397_remove,
++	ret = wait_for_state_ready(wrp, is_fsm_idle,
++		pwrap_base + PWRAP_WACS2_RDATA,
++		pwrap_base + PWRAP_WACS2_VLDCLR, 0);
++	if (ret) {
++		dev_err(dev, "%s command fail, ret=%d\n", __func__, ret);
++		return ret;
++	}
++
++	wacs_cmd = (1 << 31) | ((adr >> 1) << 16) | wdata;
++	writel(wacs_cmd, pwrap_base + PWRAP_WACS2_CMD);
++
++	return 0;
++}
++
++static int pwrap_read(struct pmic_wrapper *wrp, u32 adr, u32 *rdata)
++{
++	u32 reg_rdata;
++	u32 wacs_cmd;
++	int ret;
++	u32 rval;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	if (!rdata)
++		return -EINVAL;
++
++	ret = wait_for_state_ready(wrp, is_fsm_idle,
++		pwrap_base + PWRAP_WACS2_RDATA,
++		pwrap_base + PWRAP_WACS2_VLDCLR, 0);
++	if (ret) {
++		dev_err(dev, "%s command fail, ret=%d\n", __func__, ret);
++		return ret;
++	}
++
++	wacs_cmd = (adr >> 1) << 16;
++	writel(wacs_cmd, pwrap_base + PWRAP_WACS2_CMD);
++
++	ret = wait_for_state_ready(wrp, is_fsm_vldclr,
++		pwrap_base + PWRAP_WACS2_RDATA, NULL, &reg_rdata);
++	if (ret) {
++		dev_err(dev, "%s read fail, ret=%d\n", __func__, ret);
++		return ret;
++	}
++	rval = PWRAP_GET_WACS0_RDATA(reg_rdata);
++	writel(1, pwrap_base + PWRAP_WACS2_VLDCLR);
++	*rdata = rval;
++
++	return 0;
++}
++
++static int pwrap_regmap_read(void *context, u32 adr, u32 *rdata)
++{
++	u32 reg_rdata;
++
++	struct pmic_wrapper *wrp = context;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++
++	reg_rdata = readl(pwrap_base + PWRAP_WACS2_RDATA);
++	if (PWRAP_GET_WACS0_FSM(reg_rdata) == PWRAP_WACS_FSM_WFVLDCLR)
++		writel(1, pwrap_base + PWRAP_WACS2_VLDCLR);
++
++	return pwrap_read(wrp, adr, rdata);
++}
++
++static int pwrap_regmap_write(void *context, u32 adr, u32 wdata)
++{
++	u32 reg_rdata;
++
++	struct pmic_wrapper *wrp = context;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++
++	reg_rdata = readl(pwrap_base + PWRAP_WACS2_RDATA);
++	if (PWRAP_GET_WACS0_FSM(reg_rdata) == PWRAP_WACS_FSM_WFVLDCLR)
++		writel(1, pwrap_base + PWRAP_WACS2_VLDCLR);
++
++	return pwrap_write(wrp, adr, wdata);
++}
++
++static int pwrap_reset(struct pmic_wrapper *wrp)
++{
++	int ret;
++	struct reset_control *rstc_infracfg, *rstc_pericfg;
++	struct device *dev = &wrp->pdev->dev;
++
++	rstc_infracfg = devm_reset_control_get(dev, "infra-pwrap-rst");
++	if (IS_ERR(rstc_infracfg)) {
++		ret = PTR_ERR(rstc_infracfg);
++		dev_err(dev, "get pwrap-rst failed=%d\n", ret);
++		return ret;
++	}
++	rstc_pericfg = devm_reset_control_get(dev, "peri-pwrap-bridge-rst");
++	if (IS_ERR(rstc_pericfg)) {
++		ret = PTR_ERR(rstc_pericfg);
++		dev_err(dev, "get peri-pwrap-bridge-rst failed=%d\n", ret);
++		return ret;
++	}
++
++	reset_control_assert(rstc_infracfg);
++	reset_control_assert(rstc_pericfg);
++	reset_control_deassert(rstc_infracfg);
++	reset_control_deassert(rstc_pericfg);
++
++	return 0;
++}
++
++static int pwrap_set_clock(struct pmic_wrapper *wrp)
++{
++	int ret;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++	struct clk *pmicspi;
++	struct clk *pmicspi_parent;
++
++	pmicspi = devm_clk_get(dev, "pmicspi-sel");
++	if (IS_ERR(pmicspi)) {
++		ret = PTR_ERR(pmicspi);
++		dev_err(dev, "pmicspi-sel fail ret=%d\n", ret);
++		return ret;
++	}
++	pmicspi_parent = devm_clk_get(dev, "pmicspi-parent");
++	if (IS_ERR(pmicspi_parent)) {
++		ret = PTR_ERR(pmicspi_parent);
++		dev_err(dev, "pmicspi-parent fail ret=%d\n", ret);
++		return ret;
++	}
++
++	/* Note: HW design, enable clock mux and then switch to new source. */
++	ret = clk_set_parent(pmicspi, pmicspi_parent);
++	if (ret) {
++		dev_err(dev, "prepare pmicspi clock fail, ret=%d\n", ret);
++		return ret;
++	}
++
++	ret = clk_prepare_enable(pmicspi);
++	if (ret) {
++		dev_err(dev, "prepare pmicspi clock fail, ret=%d\n", ret);
++		return ret;
++	}
++
++	/* Enable internal dynamic clock */
++	writel(1, pwrap_base + PWRAP_DCM_EN);
++	writel(0, pwrap_base + PWRAP_DCM_DBC_PRD);
++
++	return 0;
++}
++
++static int pwrap_reset_spislv(struct pmic_wrapper *wrp)
++{
++	int ret, i;
++	u32 cmd;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	writel(0, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	writel(0, pwrap_base + PWRAP_WRAP_EN);
++	writel(1, pwrap_base + PWRAP_MUX_SEL);
++	writel(1, pwrap_base + PWRAP_MAN_EN);
++	writel(0, pwrap_base + PWRAP_DIO_EN);
++
++	cmd = (PWRAP_OP_WR << 13) | (PWRAP_OP_CSL << 8);
++	writel(cmd, pwrap_base + PWRAP_MAN_CMD);
++
++	cmd = (PWRAP_OP_WR << 13) | (PWRAP_OP_OUTS << 8);
++	writel(cmd, pwrap_base + PWRAP_MAN_CMD);
++
++	cmd = (PWRAP_OP_WR << 13) | (PWRAP_OP_CSH << 8);
++	writel(cmd, pwrap_base + PWRAP_MAN_CMD);
++
++	for (i = 0; i < 4; i++) {
++		cmd = (PWRAP_OP_WR << 13) | (PWRAP_OP_OUTS << 8);
++		writel(cmd, pwrap_base + PWRAP_MAN_CMD);
++	}
++	ret = wait_for_state_ready(wrp, is_sync_idle,
++	pwrap_base + PWRAP_WACS2_RDATA, NULL, 0);
++	if (ret)
++		dev_err(dev, "%s fail, ret=%d\n", __func__, ret);
++
++	writel(0, pwrap_base + PWRAP_MAN_EN);
++	writel(0, pwrap_base + PWRAP_MUX_SEL);
++
++	return 0;
++}
++
++static int pwrap_init_sidly(struct pmic_wrapper *wrp)
++{
++	u32 arb_en_backup;
++	u32 rdata;
++	u32 ind;
++	u32 result;
++	u32 sidly;
++	bool failed = false;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	/* Enable WACS2 to do read test on bus */
++	writel(1, pwrap_base + PWRAP_WRAP_EN);
++	writel(0x8, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	writel(1, pwrap_base + PWRAP_WACS2_EN);
++	arb_en_backup = readl(pwrap_base + PWRAP_HIPRIO_ARB_EN);
++
++	/* Scan all SIDLY by Read Test */
++	result = 0;
++	for (ind = 0; ind < 4; ind++) {
++		writel(ind, wrp->pwrap_base + PWRAP_SIDLY);
++		pwrap_read(wrp, PWRAP_DEW_READ_TEST, &rdata);
++		if (rdata == PWRAP_DEW_READ_TEST_VAL) {
++			dev_info(dev, "[Read Test] pass, SIDLY=%x\n", ind);
++			result |= (0x1 << ind);
++		}
++	}
++
++	/* Config SIDLY according to results */
++	switch (result) {
++	/* only 1 pass, choose it */
++	case 0x1:
++		sidly = 0;
++		break;
++	case 0x2:
++		sidly = 1;
++		break;
++	case 0x4:
++		sidly = 2;
++		break;
++	case 0x8:
++		sidly = 3;
++		break;
++		/* two pass, choose the one on SIDLY boundary */
++	case 0x3:
++		sidly = 0;
++		break;
++	case 0x6: /* no boundary, choose smaller one */
++		sidly = 1;
++		break;
++	case 0xc:
++		sidly = 3;
++		break;
++		/* three pass, choose the middle one */
++	case 0x7:
++		sidly = 1;
++		break;
++	case 0xe:
++		sidly = 2;
++		break;
++		/* four pass, choose the smaller middle one */
++	case 0xf:
++		sidly = 1;
++		break;
++		/* pass range not continuous, should not happen */
++	default:
++		sidly = 0;
++		failed = true;
++		break;
++	}
++	writel(sidly, pwrap_base + PWRAP_SIDLY);
++	writel(arb_en_backup, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	if (!failed)
++		return 0;
++
++	dev_err(dev, "%s fail, result=%x\n", __func__, result);
++
++	return -EIO;
++}
++
++static int pwrap_init_reg_clock(struct pmic_wrapper *wrp, u32 regck_sel)
++{
++	u32 wdata;
++	u32 rdata;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	pwrap_read(wrp, MT6397_TOP_CKCON2, &rdata);
++	wdata = rdata & (~(0x3 << 10));
++	if (regck_sel == 1)
++		wdata |= (0x1 << 10);
++
++	if (pwrap_write(wrp, MT6397_TOP_CKCON2, wdata))  {
++		dev_err(dev, "Enable PMIC TOP_CKCON2 fail\n");
++		return -EFAULT;
++	}
++	switch (regck_sel) {
++	case 1:
++		writel(0xc, pwrap_base + PWRAP_CSHEXT);
++		writel(0x4, pwrap_base + PWRAP_CSHEXT_WRITE);
++		writel(0xc, pwrap_base + PWRAP_CSHEXT_READ);
++		writel(0x0, pwrap_base + PWRAP_CSLEXT_START);
++		writel(0x0, pwrap_base + PWRAP_CSLEXT_END);
++		break;
++	case 2:
++		writel(0x4, pwrap_base + PWRAP_CSHEXT);
++		writel(0x0, pwrap_base + PWRAP_CSHEXT_WRITE);
++		writel(0x4, pwrap_base + PWRAP_CSHEXT_READ);
++		writel(0x0, pwrap_base + PWRAP_CSLEXT_START);
++		writel(0x0, pwrap_base + PWRAP_CSLEXT_END);
++		break;
++	default:
++		writel(0xf, pwrap_base + PWRAP_CSHEXT);
++		writel(0xf, pwrap_base + PWRAP_CSHEXT_WRITE);
++		writel(0xf, pwrap_base + PWRAP_CSHEXT_READ);
++		writel(0xf, pwrap_base + PWRAP_CSLEXT_START);
++		writel(0xf, pwrap_base + PWRAP_CSLEXT_END);
++		break;
++	}
++
++	/* Enable PMIC side reg clock */
++	if (pwrap_write(wrp, MT6397_WRP_CKPDN, 0) ||
++		pwrap_write(wrp, MT6397_WRP_RST_CON, 0)) {
++		dev_err(dev, "Enable PMIC fail\n");
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++static int pwrap_init_dio(struct pmic_wrapper *wrp, u32 dio_en)
++{
++	u32 arb_en_backup;
++	u32 rdata;
++	int ret;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	arb_en_backup = readl(pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	writel(0x8, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	pwrap_write(wrp, PWRAP_DEW_DIO_EN, dio_en);
++
++	/* Check IDLE & INIT_DONE in advance */
++	ret = wait_for_state_ready(wrp, is_fsm_idle_and_sync_idle,
++		pwrap_base + PWRAP_WACS2_RDATA, NULL, 0);
++	if (ret) {
++		dev_err(dev, "%s fail, ret=%d\n", __func__, ret);
++		return ret;
++	}
++	writel(dio_en, pwrap_base + PWRAP_DIO_EN);
++
++	/* Read Test */
++	pwrap_read(wrp, PWRAP_DEW_READ_TEST, &rdata);
++	if (rdata != PWRAP_DEW_READ_TEST_VAL) {
++		dev_err(dev, "DIO Test Fail en=%x, rdata=%x\n", dio_en, rdata);
++		return -EFAULT;
++	}
++
++	writel(arb_en_backup, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	return 0;
++}
++
++static int pwrap_init_cipher(struct pmic_wrapper *wrp)
++{
++	int ret;
++	u32 arb_en_backup;
++	u32 rdata;
++	unsigned long timeout;
++	int timeout_retry = 0;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	arb_en_backup = readl(pwrap_base + PWRAP_HIPRIO_ARB_EN);
++
++	writel(0x8, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	writel(1, pwrap_base + PWRAP_CIPHER_SWRST);
++	writel(0, pwrap_base + PWRAP_CIPHER_SWRST);
++	writel(1, pwrap_base + PWRAP_CIPHER_KEY_SEL);
++	writel(2, pwrap_base + PWRAP_CIPHER_IV_SEL);
++	writel(1, pwrap_base + PWRAP_CIPHER_LOAD);
++	writel(1, pwrap_base + PWRAP_CIPHER_START);
++
++	/* Config cipher mode @PMIC */
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_SWRST, 0x1);
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_SWRST, 0x0);
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_KEY_SEL, 0x1);
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_IV_SEL, 0x2);
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_LOAD, 0x1);
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_START, 0x1);
++
++	/* wait for cipher data ready@AP */
++	ret = wait_for_state_ready(wrp, is_cipher_ready,
++		pwrap_base + PWRAP_CIPHER_RDY, NULL, 0);
++	if (ret) {
++		dev_err(dev, "cipher data ready@AP fail, ret=%d\n", ret);
++		return ret;
++	}
++
++	/* wait for cipher data ready@PMIC */
++	timeout = jiffies + usecs_to_jiffies(255);
++	do {
++		pwrap_read(wrp, PWRAP_DEW_CIPHER_RDY, &rdata);
++		if (time_after(jiffies, timeout)) {
++			if (timeout_retry) {
++				dev_err(dev, "timeout when waiting for idle\n");
++				return -ETIMEDOUT;
++			}
++			timeout_retry = 1;
++		}
++	} while (rdata != 0x1);
++
++	/* wait for cipher mode idle */
++	pwrap_write(wrp, PWRAP_DEW_CIPHER_MODE, 0x1);
++	ret = wait_for_state_ready(wrp, is_fsm_idle_and_sync_idle,
++		pwrap_base + PWRAP_WACS2_RDATA, NULL, 0);
++	if (ret) {
++		dev_err(dev, "cipher mode idle fail, ret=%d\n", ret);
++		return ret;
++	}
++
++	writel(1, pwrap_base + PWRAP_CIPHER_MODE);
++	writel(arb_en_backup, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	/* Write Test */
++	if (pwrap_write(wrp, PWRAP_DEW_WRITE_TEST, PWRAP_DEW_WRITE_TEST_VAL) ||
++	    pwrap_read(wrp, PWRAP_DEW_WRITE_TEST, &rdata) ||
++			(rdata != PWRAP_DEW_WRITE_TEST_VAL)) {
++		dev_err(dev, "rdata=0x%04X\n", rdata);
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++static int pwrap_init_crc(struct pmic_wrapper *wrp)
++{
++	void __iomem *pwrap_base = wrp->pwrap_base;
++
++	if (pwrap_write(wrp, PWRAP_DEW_CRC_EN, 0x1))
++		return -EFAULT;
++
++	writel(0x1, pwrap_base + PWRAP_CRC_EN);
++	writel(0x0, pwrap_base + PWRAP_SIG_MODE);
++	writel(PWRAP_DEW_CRC_VAL, pwrap_base + PWRAP_SIG_ADR);
++
++	return 0;
++}
++
++static int pwrap_enable_wacs(struct pmic_wrapper *wrp)
++{
++	void __iomem *pwrap_base = wrp->pwrap_base;
++
++	writel(0x1ff, pwrap_base + PWRAP_HIPRIO_ARB_EN);
++	writel(0x7, pwrap_base + PWRAP_RRARB_EN);
++	writel(0x1, pwrap_base + PWRAP_WACS0_EN);
++	writel(0x1, pwrap_base + PWRAP_WACS1_EN);
++	writel(0x1, pwrap_base + PWRAP_WACS2_EN);
++	writel(0x5, pwrap_base + PWRAP_STAUPD_PRD);
++	writel(0xff, pwrap_base + PWRAP_STAUPD_GRPEN);
++	writel(0xf, pwrap_base + PWRAP_WDT_UNIT);
++	writel(0xffffffff, pwrap_base + PWRAP_WDT_SRC_EN);
++	writel(0x1, pwrap_base + PWRAP_TIMER_EN);
++	writel(~((1 << 31) | (1 << 1)), pwrap_base + PWRAP_INT_EN);
++
++	return 0;
++}
++
++static int pwrap_enable_event_bridge(struct pmic_wrapper *wrp)
++{
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	void __iomem *pwrap_bridge_base = wrp->pwrap_bridge_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	/* enable pwrap events and pwrap bridge in AP side */
++	writel(0x1, pwrap_base + PWRAP_EVENT_IN_EN);
++	writel(0xffff, pwrap_base + PWRAP_EVENT_DST_EN);
++	writel(0x7f, pwrap_bridge_base + PWRAP_BRIDGE_IORD_ARB_EN);
++	writel(0x1, pwrap_bridge_base + PWRAP_BRIDGE_WACS3_EN);
++	writel(0x1, pwrap_bridge_base + PWRAP_BRIDGE_WACS4_EN);
++	writel(0x1, pwrap_bridge_base + PWRAP_BRIDGE_WDT_UNIT);
++	writel(0xffff, pwrap_bridge_base + PWRAP_BRIDGE_WDT_SRC_EN);
++	writel(0x1, pwrap_bridge_base + PWRAP_BRIDGE_TIMER_EN);
++	writel(0x7ff, pwrap_bridge_base + PWRAP_BRIDGE_INT_EN);
++
++	/* enable PMIC event out and sources */
++	if (pwrap_write(wrp, PWRAP_DEW_EVENT_OUT_EN, 0x1) ||
++	    pwrap_write(wrp, PWRAP_DEW_EVENT_SRC_EN, 0xffff)) {
++		dev_err(dev, "enable dewrap fail\n");
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++static int pwrap_switch_event_pin(struct pmic_wrapper *wrp)
++{
++	u32 rdata;
++	struct device *dev = &wrp->pdev->dev;
++
++	/* switch event pin from usbdl mode to normal mode @ MT6397 */
++	if (pwrap_read(wrp, MT6397_TOP_CKCON3, &rdata) ||
++	    pwrap_write(wrp, MT6397_TOP_CKCON3, (rdata & 0x0007))) {
++		dev_err(dev, "switch event pin fail\n");
++		return -EFAULT;
++	}
++
++	return 0;
++};
++
++static int pwrap_init_done(struct pmic_wrapper *wrp)
++{
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	void __iomem *pwrap_bridge_base = wrp->pwrap_bridge_base;
++
++	writel(1, pwrap_base + PWRAP_INIT_DONE2);
++	writel(1, pwrap_base + PWRAP_INIT_DONE0);
++	writel(1, pwrap_base + PWRAP_INIT_DONE1);
++	writel(1, pwrap_bridge_base + PWRAP_BRIDGE_INIT_DONE3);
++	writel(1, pwrap_bridge_base + PWRAP_BRIDGE_INIT_DONE4);
++
++	return 0;
++}
++
++static int pwrap_init(struct pmic_wrapper *wrp)
++{
++	int ret;
++
++	/* Reset pwrap and pwrap bridge in infracfg and perifcfg. */
++	ret = pwrap_reset(wrp);
++	if (ret)
++		return ret;
++
++	/* Set SPI_CK frequency = 26MHz */
++	ret = pwrap_set_clock(wrp);
++	if (ret)
++		return ret;
++
++	/* Reset SPI slave */
++	ret = pwrap_reset_spislv(wrp);
++	if (ret)
++		return ret;
++
++	/* Setup serial input delay */
++	ret = pwrap_init_sidly(wrp);
++	if (ret)
++		return ret;
++
++	/* SPI Waveform Configuration 0:safe mode, 1:18MHz, 2:26MHz */
++	ret = pwrap_init_reg_clock(wrp, 2);
++	if (ret)
++		return ret;
++
++	/* Enable dual IO mode */
++	ret = pwrap_init_dio(wrp, 1);
++	if (ret)
++		return ret;
++
++	/* Enable encryption */
++	ret = pwrap_init_cipher(wrp);
++	if (ret)
++		return ret;
++
++	/* Signature checking - using CRC */
++	ret = pwrap_init_crc(wrp);
++	if (ret)
++		return ret;
++
++	/* Enable all wrapper access */
++	ret = pwrap_enable_wacs(wrp);
++	if (ret)
++		return ret;
++
++	 /* Switch event pin from usbdl mode to normal mode */
++	ret = pwrap_switch_event_pin(wrp);
++	if (ret)
++		return ret;
++
++	/* Enable evnts and pwrap bridge */
++	ret = pwrap_enable_event_bridge(wrp);
++	if (ret)
++		return ret;
++
++	/* Setup the init done registers */
++	ret = pwrap_init_done(wrp);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int pwrap_iomap_init(struct platform_device *pdev)
++{
++	struct resource *res;
++	struct pmic_wrapper *wrp = platform_get_drvdata(pdev);
++	struct device *dev = &pdev->dev;
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pwrap-base");
++	if (!res) {
++		dev_err(dev, "could not get pwrap-base resource\n");
++		return -ENODEV;
++	}
++	wrp->pwrap_base = devm_ioremap(dev, res->start, resource_size(res));
++	if (!wrp->pwrap_base) {
++		dev_err(dev, "could not get pwrap_base\n");
++		return -ENOMEM;
++	}
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++		"pwrap-bridge-base");
++	if (!res) {
++		dev_err(dev, "could not get pwrap-bridge-base resource\n");
++		return -ENODEV;
++	}
++	wrp->pwrap_bridge_base = devm_ioremap(dev, res->start,
++		resource_size(res));
++	if (!wrp->pwrap_bridge_base) {
++		dev_err(dev, "could not get pwrap_bridge_base\n");
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static int pwrap_check_and_init(struct pmic_wrapper *wrp)
++{
++	int ret;
++	u32 rdata;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	rdata = readl(pwrap_base + PWRAP_INIT_DONE2);
++	if (rdata)
++		goto done;
++
++	ret = pwrap_init(wrp);
++	if (ret) {
++		dev_err(dev, "PMIC wrapper init error, ret=%d\n", ret);
++		return ret;
++	}
++
++done:
++	rdata = readl(pwrap_base + PWRAP_WACS2_RDATA);
++	if (!(rdata & PWRAP_STATE_INIT_DONE0)) {
++		dev_err(dev, "initialization isn't finished\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static irqreturn_t pwrap_interrupt(int irqno, void *dev_id)
++{
++	u32 rdata;
++	struct pmic_wrapper *wrp = dev_id;
++	void __iomem *pwrap_base = wrp->pwrap_base;
++	struct device *dev = &wrp->pdev->dev;
++
++	rdata = readl(pwrap_base + PWRAP_INT_FLG);
++	dev_err(dev, "unexpected interrupt int=0x%x\n", rdata);
++
++	writel(0x8, pwrap_base + PWRAP_HARB_HPRIO);
++	writel(0xffffffff, pwrap_base + PWRAP_INT_CLR);
++
++	return IRQ_HANDLED;
++}
++
++const struct regmap_config pwrap_regmap_config = {
++	.reg_bits = 16,
++	.val_bits = 16,
++	.reg_read = pwrap_regmap_read,
++	.reg_write = pwrap_regmap_write,
++};
++
++static int pwrap_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct pmic_wrapper *wrp;
++	int irq;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = pdev->dev.of_node;
++
++	wrp = devm_kzalloc(dev, sizeof(struct pmic_wrapper), GFP_KERNEL);
++	if (!wrp)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, wrp);
++
++	ret = pwrap_iomap_init(pdev);
++	if (ret) {
++		dev_err(dev, "pwrap_iomap_init, ret=%d\n", ret);
++		return ret;
++	}
++
++	wrp->pdev = pdev;
++	ret = pwrap_check_and_init(wrp);
++	if (ret) {
++		dev_err(dev, "PMIC wrapper HW init failed=%d\n", ret);
++		return ret;
++	}
++
++	/* Register pwrap irq to catch interrupt when pwrap behaves abnormal. */
++	irq = platform_get_irq(pdev, 0);
++	ret = devm_request_threaded_irq(dev, irq,
++			pwrap_interrupt, NULL,
++			IRQF_TRIGGER_HIGH, "mt8135-pwrap", wrp);
++	if (ret) {
++		dev_err(dev, "Register IRQ failed, ret=%d\n", ret);
++		return ret;
++	}
++
++	wrp->regmap = devm_regmap_init(dev, NULL, wrp, &pwrap_regmap_config);
++	if (IS_ERR(wrp->regmap)) {
++		ret = PTR_ERR(wrp->regmap);
++		dev_err(dev, "Failed to allocate register map, ret=%d\n",
++			ret);
++		return ret;
++	}
++
++	ret = of_platform_populate(np, NULL, NULL, dev);
++	if (ret) {
++		dev_err(dev, "%s fail to create devices\n", np->full_name);
++		return ret;
++	}
++
++	return 0;
++}
++
++static struct of_device_id of_pwrap_match_tbl[] = {
++	{.compatible = "mediatek,mt8135-pwrap",},
++	{}
++};
++MODULE_DEVICE_TABLE(of, of_pwrap_match_tbl);
++
++static struct platform_driver pwrap_drv = {
 +	.driver = {
-+		.name = "mt6397",
-+		.of_match_table = of_match_ptr(mt6397_of_match),
++		.name = "mt8135-pwrap",
++		.of_match_table = of_match_ptr(of_pwrap_match_tbl),
 +	},
++	.probe = pwrap_probe,
 +};
 +
-+module_platform_driver(mt6397_driver);
++module_platform_driver(pwrap_drv);
 +
 +MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
-+MODULE_DESCRIPTION("Driver for MediaTek MT6397 PMIC");
++MODULE_DESCRIPTION("MediaTek MT8135 PMIC Wrapper Driver");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:mt6397");
-diff --git a/include/linux/mfd/mt6397/core.h b/include/linux/mfd/mt6397/core.h
+diff --git a/drivers/soc/mediatek/mt8135-pmic-wrap.h b/drivers/soc/mediatek/mt8135-pmic-wrap.h
 new file mode 100644
-index 0000000..567164e
+index 0000000..6e79a0a
 --- /dev/null
-+++ b/include/linux/mfd/mt6397/core.h
-@@ -0,0 +1,23 @@
++++ b/drivers/soc/mediatek/mt8135-pmic-wrap.h
+@@ -0,0 +1,138 @@
 +/*
 + * Copyright (c) 2014 MediaTek Inc.
 + * Author: Flora Fu <flora.fu@mediatek.com>
@@ -198,383 +977,161 @@ index 0000000..567164e
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef __MFD_MT6397_CORE_H__
-+#define __MFD_MT6397_CORE_H__
++#ifndef __PMIC_WRAP_REGS_H__
++#define __PMIC_WRAP_REGS_H__
 +
-+struct mt6397_chip {
-+	struct device *dev;
++/* macro for wrapper registers */
++#define PWRAP_MUX_SEL			0x0
++#define PWRAP_WRAP_EN			0x4
++#define PWRAP_DIO_EN			0x8
++#define PWRAP_SIDLY			0xC
++#define PWRAP_CSHEXT			0x10
++#define PWRAP_CSHEXT_WRITE		0x14
++#define PWRAP_CSHEXT_READ		0x18
++#define PWRAP_CSLEXT_START		0x1C
++#define PWRAP_CSLEXT_END		0x20
++#define PWRAP_STAUPD_PRD		0x24
++#define PWRAP_STAUPD_GRPEN		0x28
++#define PWRAP_STAUPD_MAN_TRIG		0x2C
++#define PWRAP_STAUPD_STA		0x30
++#define PWRAP_EVENT_IN_EN		0x34
++#define PWRAP_EVENT_DST_EN		0x38
++#define PWRAP_WRAP_STA			0x3C
++#define PWRAP_RRARB_INIT		0x40
++#define PWRAP_RRARB_EN			0x44
++#define PWRAP_RRARB_STA0		0x48
++#define PWRAP_RRARB_STA1		0x4C
++#define PWRAP_HARB_INIT			0x50
++#define PWRAP_HARB_HPRIO		0x54
++#define PWRAP_HIPRIO_ARB_EN		0x58
++#define PWRAP_HARB_STA0			0x5C
++#define PWRAP_HARB_STA1			0x60
++#define PWRAP_MAN_EN			0x64
++#define PWRAP_MAN_CMD			0x68
++#define PWRAP_MAN_RDATA			0x6C
++#define PWRAP_MAN_VLDCLR		0x70
++#define PWRAP_WACS0_EN			0x74
++#define PWRAP_INIT_DONE0		0x78
++#define PWRAP_WACS0_CMD			0x7C
++#define PWRAP_WACS0_RDATA		0x80
++#define PWRAP_WACS0_VLDCLR		0x84
++#define PWRAP_WACS1_EN			0x88
++#define PWRAP_INIT_DONE1		0x8C
++#define PWRAP_WACS1_CMD			0x90
++#define PWRAP_WACS1_RDATA		0x94
++#define PWRAP_WACS1_VLDCLR		0x98
++#define PWRAP_WACS2_EN			0x9C
++#define PWRAP_INIT_DONE2		0xA0
++#define PWRAP_WACS2_CMD			0xA4
++#define PWRAP_WACS2_RDATA		0xA8
++#define PWRAP_WACS2_VLDCLR		0xAC
++#define PWRAP_INT_EN			0xB0
++#define PWRAP_INT_FLG_RAW		0xB4
++#define PWRAP_INT_FLG			0xB8
++#define PWRAP_INT_CLR			0xBC
++#define PWRAP_SIG_ADR			0xC0
++#define PWRAP_SIG_MODE			0xC4
++#define PWRAP_SIG_VALUE			0xC8
++#define PWRAP_SIG_ERRVAL		0xCC
++#define PWRAP_CRC_EN			0xD0
++#define PWRAP_EVENT_STA			0xD4
++#define PWRAP_EVENT_STACLR		0xD8
++#define PWRAP_TIMER_EN			0xDC
++#define PWRAP_TIMER_STA			0xE0
++#define PWRAP_WDT_UNIT			0xE4
++#define PWRAP_WDT_SRC_EN		0xE8
++#define PWRAP_WDT_FLG			0xEC
++#define PWRAP_DEBUG_INT_SEL		0xF0
++#define PWRAP_CIPHER_KEY_SEL		0x134
++#define PWRAP_CIPHER_IV_SEL		0x138
++#define PWRAP_CIPHER_LOAD		0x13C
++#define PWRAP_CIPHER_START		0x140
++#define PWRAP_CIPHER_RDY		0x144
++#define PWRAP_CIPHER_MODE		0x148
++#define PWRAP_CIPHER_SWRST		0x14C
++#define PWRAP_DCM_EN			0x15C
++#define PWRAP_DCM_DBC_PRD		0x160
++
++/* macro for wrapper bridge registers */
++#define PWRAP_BRIDGE_IARB_INIT		0x0
++#define PWRAP_BRIDGE_IORD_ARB_EN	0x4
++#define PWRAP_BRIDGE_IARB_STA0		0x8
++#define PWRAP_BRIDGE_IARB_STA1		0xC
++#define PWRAP_BRIDGE_WACS3_EN		0x10
++#define PWRAP_BRIDGE_INIT_DONE3		0x14
++#define PWRAP_BRIDGE_WACS3_CMD		0x18
++#define PWRAP_BRIDGE_WACS3_RDATA	0x1C
++#define PWRAP_BRIDGE_WACS3_VLDCLR	0x20
++#define PWRAP_BRIDGE_WACS4_EN		0x24
++#define PWRAP_BRIDGE_INIT_DONE4		0x28
++#define PWRAP_BRIDGE_WACS4_CMD		0x2C
++#define PWRAP_BRIDGE_WACS4_RDATA	0x30
++#define PWRAP_BRIDGE_WACS4_VLDCLR	0x34
++#define PWRAP_BRIDGE_INT_EN		0x38
++#define PWRAP_BRIDGE_INT_FLG_RAW	0x3C
++#define PWRAP_BRIDGE_INT_FLG		0x40
++#define PWRAP_BRIDGE_INT_CLR		0x44
++#define PWRAP_BRIDGE_TIMER_EN		0x48
++#define PWRAP_BRIDGE_TIMER_STA		0x4C
++#define PWRAP_BRIDGE_WDT_UNIT		0x50
++#define PWRAP_BRIDGE_WDT_SRC_EN		0x54
++#define PWRAP_BRIDGE_WDT_FLG		0x58
++#define PWRAP_BRIDGE_DEBUG_INT_SE	0x5C
++
++/* macro for slave device wrapper registers */
++#define PWRAP_DEW_BASE			0xBC00
++#define PWRAP_DEW_EVENT_OUT_EN		(PWRAP_DEW_BASE + 0x0)
++#define PWRAP_DEW_DIO_EN		(PWRAP_DEW_BASE + 0x2)
++#define PWRAP_DEW_EVENT_SRC_EN		(PWRAP_DEW_BASE + 0x4)
++#define PWRAP_DEW_EVENT_SRC		(PWRAP_DEW_BASE + 0x6)
++#define PWRAP_DEW_EVENT_FLAG		(PWRAP_DEW_BASE + 0x8)
++#define PWRAP_DEW_READ_TEST		(PWRAP_DEW_BASE + 0xA)
++#define PWRAP_DEW_WRITE_TEST		(PWRAP_DEW_BASE + 0xC)
++#define PWRAP_DEW_CRC_EN		(PWRAP_DEW_BASE + 0xE)
++#define PWRAP_DEW_CRC_VAL		(PWRAP_DEW_BASE + 0x10)
++#define PWRAP_DEW_MON_GRP_SEL		(PWRAP_DEW_BASE + 0x12)
++#define PWRAP_DEW_MON_FLAG_SEL		(PWRAP_DEW_BASE + 0x14)
++#define PWRAP_DEW_EVENT_TEST		(PWRAP_DEW_BASE + 0x16)
++#define PWRAP_DEW_CIPHER_KEY_SEL	(PWRAP_DEW_BASE + 0x18)
++#define PWRAP_DEW_CIPHER_IV_SEL		(PWRAP_DEW_BASE + 0x1A)
++#define PWRAP_DEW_CIPHER_LOAD		(PWRAP_DEW_BASE + 0x1C)
++#define PWRAP_DEW_CIPHER_START		(PWRAP_DEW_BASE + 0x1E)
++#define PWRAP_DEW_CIPHER_RDY		(PWRAP_DEW_BASE + 0x20)
++#define PWRAP_DEW_CIPHER_MODE		(PWRAP_DEW_BASE + 0x22)
++#define PWRAP_DEW_CIPHER_SWRST		(PWRAP_DEW_BASE + 0x24)
++
++#endif	/* __PMIC_WRAP_REGS_H__ */
+diff --git a/include/linux/soc/mediatek/mtk-pmic-wrap.h b/include/linux/soc/mediatek/mtk-pmic-wrap.h
+new file mode 100644
+index 0000000..28212a1
+--- /dev/null
++++ b/include/linux/soc/mediatek/mtk-pmic-wrap.h
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (c) 2014 MediaTek Inc.
++ * Author: Flora Fu <flora.fu@mediatek.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MTK_PMIC_WRAP_H__
++#define __MTK_PMIC_WRAP_H__
++
++struct pmic_wrapper {
++	struct platform_device *pdev;
 +	struct regmap *regmap;
++	void __iomem *pwrap_base;
++	void __iomem *pwrap_bridge_base;
 +};
 +
-+#endif /* __MFD_MT6397_CORE_H__ */
-diff --git a/include/linux/mfd/mt6397/registers.h b/include/linux/mfd/mt6397/registers.h
-new file mode 100644
-index 0000000..b39a5a5
---- /dev/null
-+++ b/include/linux/mfd/mt6397/registers.h
-@@ -0,0 +1,362 @@
-+/*
-+ * Copyright (c) 2014 MediaTek Inc.
-+ * Author: Flora Fu <flora.fu@mediatek.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MFD_MT6397_REGISTERS_H__
-+#define __MFD_MT6397_REGISTERS_H__
-+
-+/* PMIC Registers */
-+#define MT6397_CID			0x0100
-+#define MT6397_TOP_CKPDN		0x0102
-+#define MT6397_TOP_CKPDN_SET		0x0104
-+#define MT6397_TOP_CKPDN_CLR		0x0106
-+#define MT6397_TOP_CKPDN2		0x0108
-+#define MT6397_TOP_CKPDN2_SET		0x010A
-+#define MT6397_TOP_CKPDN2_CLR		0x010C
-+#define MT6397_TOP_GPIO_CKPDN		0x010E
-+#define MT6397_TOP_RST_CON		0x0114
-+#define MT6397_WRP_CKPDN		0x011A
-+#define MT6397_WRP_RST_CON		0x0120
-+#define MT6397_TOP_RST_MISC		0x0126
-+#define MT6397_TOP_CKCON1		0x0128
-+#define MT6397_TOP_CKCON2		0x012A
-+#define MT6397_TOP_CKTST1		0x012C
-+#define MT6397_TOP_CKTST2		0x012E
-+#define MT6397_OC_DEG_EN		0x0130
-+#define MT6397_OC_CTL0			0x0132
-+#define MT6397_OC_CTL1			0x0134
-+#define MT6397_OC_CTL2			0x0136
-+#define MT6397_INT_RSV			0x0138
-+#define MT6397_TEST_CON0		0x013A
-+#define MT6397_TEST_CON1		0x013C
-+#define MT6397_STATUS0			0x013E
-+#define MT6397_STATUS1			0x0140
-+#define MT6397_PGSTATUS			0x0142
-+#define MT6397_CHRSTATUS		0x0144
-+#define MT6397_OCSTATUS0		0x0146
-+#define MT6397_OCSTATUS1		0x0148
-+#define MT6397_OCSTATUS2		0x014A
-+#define MT6397_HDMI_PAD_IE		0x014C
-+#define MT6397_TEST_OUT_L		0x014E
-+#define MT6397_TEST_OUT_H		0x0150
-+#define MT6397_TDSEL_CON		0x0152
-+#define MT6397_RDSEL_CON		0x0154
-+#define MT6397_GPIO_SMT_CON0		0x0156
-+#define MT6397_GPIO_SMT_CON1		0x0158
-+#define MT6397_GPIO_SMT_CON2		0x015A
-+#define MT6397_GPIO_SMT_CON3		0x015C
-+#define MT6397_DRV_CON0			0x015E
-+#define MT6397_DRV_CON1			0x0160
-+#define MT6397_DRV_CON2			0x0162
-+#define MT6397_DRV_CON3			0x0164
-+#define MT6397_DRV_CON4			0x0166
-+#define MT6397_DRV_CON5			0x0168
-+#define MT6397_DRV_CON6			0x016A
-+#define MT6397_DRV_CON7			0x016C
-+#define MT6397_DRV_CON8			0x016E
-+#define MT6397_DRV_CON9			0x0170
-+#define MT6397_DRV_CON10		0x0172
-+#define MT6397_DRV_CON11		0x0174
-+#define MT6397_DRV_CON12		0x0176
-+#define MT6397_INT_CON0			0x0178
-+#define MT6397_INT_CON1			0x017E
-+#define MT6397_INT_STATUS0		0x0184
-+#define MT6397_INT_STATUS1		0x0186
-+#define MT6397_FQMTR_CON0		0x0188
-+#define MT6397_FQMTR_CON1		0x018A
-+#define MT6397_FQMTR_CON2		0x018C
-+#define MT6397_EFUSE_DOUT_0_15		0x01C4
-+#define MT6397_EFUSE_DOUT_16_31		0x01C6
-+#define MT6397_EFUSE_DOUT_32_47		0x01C8
-+#define MT6397_EFUSE_DOUT_48_63		0x01CA
-+#define MT6397_SPI_CON			0x01CC
-+#define MT6397_TOP_CKPDN3		0x01CE
-+#define MT6397_TOP_CKCON3		0x01D4
-+#define MT6397_EFUSE_DOUT_64_79		0x01D6
-+#define MT6397_EFUSE_DOUT_80_95		0x01D8
-+#define MT6397_EFUSE_DOUT_96_111	0x01DA
-+#define MT6397_EFUSE_DOUT_112_127	0x01DC
-+#define MT6397_EFUSE_DOUT_128_143	0x01DE
-+#define MT6397_EFUSE_DOUT_144_159	0x01E0
-+#define MT6397_EFUSE_DOUT_160_175	0x01E2
-+#define MT6397_EFUSE_DOUT_176_191	0x01E4
-+#define MT6397_EFUSE_DOUT_192_207	0x01E6
-+#define MT6397_EFUSE_DOUT_208_223	0x01E8
-+#define MT6397_EFUSE_DOUT_224_239	0x01EA
-+#define MT6397_EFUSE_DOUT_240_255	0x01EC
-+#define MT6397_EFUSE_DOUT_256_271	0x01EE
-+#define MT6397_EFUSE_DOUT_272_287	0x01F0
-+#define MT6397_EFUSE_DOUT_288_300	0x01F2
-+#define MT6397_EFUSE_DOUT_304_319	0x01F4
-+#define MT6397_BUCK_CON0		0x0200
-+#define MT6397_BUCK_CON1		0x0202
-+#define MT6397_BUCK_CON2		0x0204
-+#define MT6397_BUCK_CON3		0x0206
-+#define MT6397_BUCK_CON4		0x0208
-+#define MT6397_BUCK_CON5		0x020A
-+#define MT6397_BUCK_CON6		0x020C
-+#define MT6397_BUCK_CON7		0x020E
-+#define MT6397_BUCK_CON8		0x0210
-+#define MT6397_BUCK_CON9		0x0212
-+#define MT6397_VCA15_CON0		0x0214
-+#define MT6397_VCA15_CON1		0x0216
-+#define MT6397_VCA15_CON2		0x0218
-+#define MT6397_VCA15_CON3		0x021A
-+#define MT6397_VCA15_CON4		0x021C
-+#define MT6397_VCA15_CON5		0x021E
-+#define MT6397_VCA15_CON6		0x0220
-+#define MT6397_VCA15_CON7		0x0222
-+#define MT6397_VCA15_CON8		0x0224
-+#define MT6397_VCA15_CON9		0x0226
-+#define MT6397_VCA15_CON10		0x0228
-+#define MT6397_VCA15_CON11		0x022A
-+#define MT6397_VCA15_CON12		0x022C
-+#define MT6397_VCA15_CON13		0x022E
-+#define MT6397_VCA15_CON14		0x0230
-+#define MT6397_VCA15_CON15		0x0232
-+#define MT6397_VCA15_CON16		0x0234
-+#define MT6397_VCA15_CON17		0x0236
-+#define MT6397_VCA15_CON18		0x0238
-+#define MT6397_VSRMCA15_CON0		0x023A
-+#define MT6397_VSRMCA15_CON1		0x023C
-+#define MT6397_VSRMCA15_CON2		0x023E
-+#define MT6397_VSRMCA15_CON3		0x0240
-+#define MT6397_VSRMCA15_CON4		0x0242
-+#define MT6397_VSRMCA15_CON5		0x0244
-+#define MT6397_VSRMCA15_CON6		0x0246
-+#define MT6397_VSRMCA15_CON7		0x0248
-+#define MT6397_VSRMCA15_CON8		0x024A
-+#define MT6397_VSRMCA15_CON9		0x024C
-+#define MT6397_VSRMCA15_CON10		0x024E
-+#define MT6397_VSRMCA15_CON11		0x0250
-+#define MT6397_VSRMCA15_CON12		0x0252
-+#define MT6397_VSRMCA15_CON13		0x0254
-+#define MT6397_VSRMCA15_CON14		0x0256
-+#define MT6397_VSRMCA15_CON15		0x0258
-+#define MT6397_VSRMCA15_CON16		0x025A
-+#define MT6397_VSRMCA15_CON17		0x025C
-+#define MT6397_VSRMCA15_CON18		0x025E
-+#define MT6397_VSRMCA15_CON19		0x0260
-+#define MT6397_VSRMCA15_CON20		0x0262
-+#define MT6397_VSRMCA15_CON21		0x0264
-+#define MT6397_VCORE_CON0		0x0266
-+#define MT6397_VCORE_CON1		0x0268
-+#define MT6397_VCORE_CON2		0x026A
-+#define MT6397_VCORE_CON3		0x026C
-+#define MT6397_VCORE_CON4		0x026E
-+#define MT6397_VCORE_CON5		0x0270
-+#define MT6397_VCORE_CON6		0x0272
-+#define MT6397_VCORE_CON7		0x0274
-+#define MT6397_VCORE_CON8		0x0276
-+#define MT6397_VCORE_CON9		0x0278
-+#define MT6397_VCORE_CON10		0x027A
-+#define MT6397_VCORE_CON11		0x027C
-+#define MT6397_VCORE_CON12		0x027E
-+#define MT6397_VCORE_CON13		0x0280
-+#define MT6397_VCORE_CON14		0x0282
-+#define MT6397_VCORE_CON15		0x0284
-+#define MT6397_VCORE_CON16		0x0286
-+#define MT6397_VCORE_CON17		0x0288
-+#define MT6397_VCORE_CON18		0x028A
-+#define MT6397_VGPU_CON0		0x028C
-+#define MT6397_VGPU_CON1		0x028E
-+#define MT6397_VGPU_CON2		0x0290
-+#define MT6397_VGPU_CON3		0x0292
-+#define MT6397_VGPU_CON4		0x0294
-+#define MT6397_VGPU_CON5		0x0296
-+#define MT6397_VGPU_CON6		0x0298
-+#define MT6397_VGPU_CON7		0x029A
-+#define MT6397_VGPU_CON8		0x029C
-+#define MT6397_VGPU_CON9		0x029E
-+#define MT6397_VGPU_CON10		0x02A0
-+#define MT6397_VGPU_CON11		0x02A2
-+#define MT6397_VGPU_CON12		0x02A4
-+#define MT6397_VGPU_CON13		0x02A6
-+#define MT6397_VGPU_CON14		0x02A8
-+#define MT6397_VGPU_CON15		0x02AA
-+#define MT6397_VGPU_CON16		0x02AC
-+#define MT6397_VGPU_CON17		0x02AE
-+#define MT6397_VGPU_CON18		0x02B0
-+#define MT6397_VIO18_CON0		0x0300
-+#define MT6397_VIO18_CON1		0x0302
-+#define MT6397_VIO18_CON2		0x0304
-+#define MT6397_VIO18_CON3		0x0306
-+#define MT6397_VIO18_CON4		0x0308
-+#define MT6397_VIO18_CON5		0x030A
-+#define MT6397_VIO18_CON6		0x030C
-+#define MT6397_VIO18_CON7		0x030E
-+#define MT6397_VIO18_CON8		0x0310
-+#define MT6397_VIO18_CON9		0x0312
-+#define MT6397_VIO18_CON10		0x0314
-+#define MT6397_VIO18_CON11		0x0316
-+#define MT6397_VIO18_CON12		0x0318
-+#define MT6397_VIO18_CON13		0x031A
-+#define MT6397_VIO18_CON14		0x031C
-+#define MT6397_VIO18_CON15		0x031E
-+#define MT6397_VIO18_CON16		0x0320
-+#define MT6397_VIO18_CON17		0x0322
-+#define MT6397_VIO18_CON18		0x0324
-+#define MT6397_VPCA7_CON0		0x0326
-+#define MT6397_VPCA7_CON1		0x0328
-+#define MT6397_VPCA7_CON2		0x032A
-+#define MT6397_VPCA7_CON3		0x032C
-+#define MT6397_VPCA7_CON4		0x032E
-+#define MT6397_VPCA7_CON5		0x0330
-+#define MT6397_VPCA7_CON6		0x0332
-+#define MT6397_VPCA7_CON7		0x0334
-+#define MT6397_VPCA7_CON8		0x0336
-+#define MT6397_VPCA7_CON9		0x0338
-+#define MT6397_VPCA7_CON10		0x033A
-+#define MT6397_VPCA7_CON11		0x033C
-+#define MT6397_VPCA7_CON12		0x033E
-+#define MT6397_VPCA7_CON13		0x0340
-+#define MT6397_VPCA7_CON14		0x0342
-+#define MT6397_VPCA7_CON15		0x0344
-+#define MT6397_VPCA7_CON16		0x0346
-+#define MT6397_VPCA7_CON17		0x0348
-+#define MT6397_VPCA7_CON18		0x034A
-+#define MT6397_VSRMCA7_CON0		0x034C
-+#define MT6397_VSRMCA7_CON1		0x034E
-+#define MT6397_VSRMCA7_CON2		0x0350
-+#define MT6397_VSRMCA7_CON3		0x0352
-+#define MT6397_VSRMCA7_CON4		0x0354
-+#define MT6397_VSRMCA7_CON5		0x0356
-+#define MT6397_VSRMCA7_CON6		0x0358
-+#define MT6397_VSRMCA7_CON7		0x035A
-+#define MT6397_VSRMCA7_CON8		0x035C
-+#define MT6397_VSRMCA7_CON9		0x035E
-+#define MT6397_VSRMCA7_CON10		0x0360
-+#define MT6397_VSRMCA7_CON11		0x0362
-+#define MT6397_VSRMCA7_CON12		0x0364
-+#define MT6397_VSRMCA7_CON13		0x0366
-+#define MT6397_VSRMCA7_CON14		0x0368
-+#define MT6397_VSRMCA7_CON15		0x036A
-+#define MT6397_VSRMCA7_CON16		0x036C
-+#define MT6397_VSRMCA7_CON17		0x036E
-+#define MT6397_VSRMCA7_CON18		0x0370
-+#define MT6397_VSRMCA7_CON19		0x0372
-+#define MT6397_VSRMCA7_CON20		0x0374
-+#define MT6397_VSRMCA7_CON21		0x0376
-+#define MT6397_VDRM_CON0		0x0378
-+#define MT6397_VDRM_CON1		0x037A
-+#define MT6397_VDRM_CON2		0x037C
-+#define MT6397_VDRM_CON3		0x037E
-+#define MT6397_VDRM_CON4		0x0380
-+#define MT6397_VDRM_CON5		0x0382
-+#define MT6397_VDRM_CON6		0x0384
-+#define MT6397_VDRM_CON7		0x0386
-+#define MT6397_VDRM_CON8		0x0388
-+#define MT6397_VDRM_CON9		0x038A
-+#define MT6397_VDRM_CON10		0x038C
-+#define MT6397_VDRM_CON11		0x038E
-+#define MT6397_VDRM_CON12		0x0390
-+#define MT6397_VDRM_CON13		0x0392
-+#define MT6397_VDRM_CON14		0x0394
-+#define MT6397_VDRM_CON15		0x0396
-+#define MT6397_VDRM_CON16		0x0398
-+#define MT6397_VDRM_CON17		0x039A
-+#define MT6397_VDRM_CON18		0x039C
-+#define MT6397_BUCK_K_CON0		0x039E
-+#define MT6397_BUCK_K_CON1		0x03A0
-+#define MT6397_ANALDO_CON0		0x0400
-+#define MT6397_ANALDO_CON1		0x0402
-+#define MT6397_ANALDO_CON2		0x0404
-+#define MT6397_ANALDO_CON3		0x0406
-+#define MT6397_ANALDO_CON4		0x0408
-+#define MT6397_ANALDO_CON5		0x040A
-+#define MT6397_ANALDO_CON6		0x040C
-+#define MT6397_ANALDO_CON7		0x040E
-+#define MT6397_DIGLDO_CON0		0x0410
-+#define MT6397_DIGLDO_CON1		0x0412
-+#define MT6397_DIGLDO_CON2		0x0414
-+#define MT6397_DIGLDO_CON3		0x0416
-+#define MT6397_DIGLDO_CON4		0x0418
-+#define MT6397_DIGLDO_CON5		0x041A
-+#define MT6397_DIGLDO_CON6		0x041C
-+#define MT6397_DIGLDO_CON7		0x041E
-+#define MT6397_DIGLDO_CON8		0x0420
-+#define MT6397_DIGLDO_CON9		0x0422
-+#define MT6397_DIGLDO_CON10		0x0424
-+#define MT6397_DIGLDO_CON11		0x0426
-+#define MT6397_DIGLDO_CON12		0x0428
-+#define MT6397_DIGLDO_CON13		0x042A
-+#define MT6397_DIGLDO_CON14		0x042C
-+#define MT6397_DIGLDO_CON15		0x042E
-+#define MT6397_DIGLDO_CON16		0x0430
-+#define MT6397_DIGLDO_CON17		0x0432
-+#define MT6397_DIGLDO_CON18		0x0434
-+#define MT6397_DIGLDO_CON19		0x0436
-+#define MT6397_DIGLDO_CON20		0x0438
-+#define MT6397_DIGLDO_CON21		0x043A
-+#define MT6397_DIGLDO_CON22		0x043C
-+#define MT6397_DIGLDO_CON23		0x043E
-+#define MT6397_DIGLDO_CON24		0x0440
-+#define MT6397_DIGLDO_CON25		0x0442
-+#define MT6397_DIGLDO_CON26		0x0444
-+#define MT6397_DIGLDO_CON27		0x0446
-+#define MT6397_DIGLDO_CON28		0x0448
-+#define MT6397_DIGLDO_CON29		0x044A
-+#define MT6397_DIGLDO_CON30		0x044C
-+#define MT6397_DIGLDO_CON31		0x044E
-+#define MT6397_DIGLDO_CON32		0x0450
-+#define MT6397_DIGLDO_CON33		0x045A
-+#define MT6397_SPK_CON0			0x0600
-+#define MT6397_SPK_CON1			0x0602
-+#define MT6397_SPK_CON2			0x0604
-+#define MT6397_SPK_CON3			0x0606
-+#define MT6397_SPK_CON4			0x0608
-+#define MT6397_SPK_CON5			0x060A
-+#define MT6397_SPK_CON6			0x060C
-+#define MT6397_SPK_CON7			0x060E
-+#define MT6397_SPK_CON8			0x0610
-+#define MT6397_SPK_CON9			0x0612
-+#define MT6397_SPK_CON10		0x0614
-+#define MT6397_SPK_CON11		0x0616
-+#define MT6397_AUDDAC_CON0		0x0700
-+#define MT6397_AUDBUF_CFG0		0x0702
-+#define MT6397_AUDBUF_CFG1		0x0704
-+#define MT6397_AUDBUF_CFG2		0x0706
-+#define MT6397_AUDBUF_CFG3		0x0708
-+#define MT6397_AUDBUF_CFG4		0x070A
-+#define MT6397_IBIASDIST_CFG0		0x070C
-+#define MT6397_AUDACCDEPOP_CFG0		0x070E
-+#define MT6397_AUD_IV_CFG0		0x0710
-+#define MT6397_AUDCLKGEN_CFG0		0x0712
-+#define MT6397_AUDLDO_CFG0		0x0714
-+#define MT6397_AUDLDO_CFG1		0x0716
-+#define MT6397_AUDNVREGGLB_CFG0		0x0718
-+#define MT6397_AUD_NCP0			0x071A
-+#define MT6397_AUDPREAMP_CON0		0x071C
-+#define MT6397_AUDADC_CON0		0x071E
-+#define MT6397_AUDADC_CON1		0x0720
-+#define MT6397_AUDADC_CON2		0x0722
-+#define MT6397_AUDADC_CON3		0x0724
-+#define MT6397_AUDADC_CON4		0x0726
-+#define MT6397_AUDADC_CON5		0x0728
-+#define MT6397_AUDADC_CON6		0x072A
-+#define MT6397_AUDDIGMI_CON0		0x072C
-+#define MT6397_AUDLSBUF_CON0		0x072E
-+#define MT6397_AUDLSBUF_CON1		0x0730
-+#define MT6397_AUDENCSPARE_CON0		0x0732
-+#define MT6397_AUDENCCLKSQ_CON0		0x0734
-+#define MT6397_AUDPREAMPGAIN_CON0	0x0736
-+#define MT6397_ZCD_CON0			0x0738
-+#define MT6397_ZCD_CON1			0x073A
-+#define MT6397_ZCD_CON2			0x073C
-+#define MT6397_ZCD_CON3			0x073E
-+#define MT6397_ZCD_CON4			0x0740
-+#define MT6397_ZCD_CON5			0x0742
-+#define MT6397_NCP_CLKDIV_CON0		0x0744
-+#define MT6397_NCP_CLKDIV_CON1		0x0746
-+
-+#endif /* __MFD_MT6397_REGISTERS_H__ */
++#endif	/* __MTK_PMIC_WRAP_H__ */
 -- 
 1.8.1.1.dirty
 
