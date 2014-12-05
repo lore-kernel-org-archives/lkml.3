@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaLEX3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:29:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54232 "EHLO
+	id S1754816AbaLEXaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:30:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaLEW4I (ORCPT
+	with ESMTP id S1753237AbaLEW4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:08 -0500
+	Fri, 5 Dec 2014 17:56:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Huacai Chen <chenhc@lemote.com>,
-        Markos Chandras <Markos.Chandras@imgtec.com>
-Subject: [PATCH 3.14 02/73] MIPS: Loongson: Make platform serial setup always built-in.
-Date: Fri,  5 Dec 2014 14:44:08 -0800
-Message-Id: <20141205224434.002896398@linuxfoundation.org>
+        Jiri Bohac <jbohac@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 17/73] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
+Date: Fri,  5 Dec 2014 14:44:23 -0800
+Message-Id: <20141205224434.444272546@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -31,41 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
+[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
 
-If SERIAL_8250 is compiled as a module, the platform specific setup
-for Loongson will be a module too, and it will not work very well.
-At least on Loongson 3 it will trigger a build failure,
-since loongson_sysconf is not exported to modules.
+This fixes an old regression introduced by commit
+b0d0d915 (ipx: remove the BKL).
 
-Fix by making the platform specific serial code always built-in.
+When a recvmsg syscall blocks waiting for new data, no data can be sent on the
+same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Reported-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Cc: Huacai Chen <chenhc@lemote.com>
-Cc: Markos Chandras <Markos.Chandras@imgtec.com>
-Patchwork: https://patchwork.linux-mips.org/patch/8533/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+This breaks mars-nwe (NetWare emulator):
+- the ncpserv process reads the request using recvmsg
+- ncpserv forks and spawns nwconn
+- ncpserv calls a (blocking) recvmsg and waits for new requests
+- nwconn deadlocks in sendmsg on the same socket
+
+Commit b0d0d915 has simply replaced BKL locking with
+lock_sock/release_sock. Unlike now, BKL got unlocked while
+sleeping, so a blocking recvmsg did not block a concurrent
+sendmsg.
+
+Only keep the socket locked while actually working with the socket data and
+release it prior to calling skb_recv_datagram().
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/mips/loongson/common/Makefile |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipx/af_ipx.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/mips/loongson/common/Makefile
-+++ b/arch/mips/loongson/common/Makefile
-@@ -11,7 +11,8 @@ obj-$(CONFIG_PCI) += pci.o
- # Serial port support
- #
- obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
--obj-$(CONFIG_SERIAL_8250) += serial.o
-+loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
-+obj-y += $(loongson-serial-m) $(loongson-serial-y)
- obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
- obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
+--- a/net/ipx/af_ipx.c
++++ b/net/ipx/af_ipx.c
+@@ -1763,6 +1763,7 @@ static int ipx_recvmsg(struct kiocb *ioc
+ 	struct ipxhdr *ipx = NULL;
+ 	struct sk_buff *skb;
+ 	int copied, rc;
++	bool locked = true;
+ 
+ 	lock_sock(sk);
+ 	/* put the autobinding in */
+@@ -1789,6 +1790,8 @@ static int ipx_recvmsg(struct kiocb *ioc
+ 	if (sock_flag(sk, SOCK_ZAPPED))
+ 		goto out;
+ 
++	release_sock(sk);
++	locked = false;
+ 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 				flags & MSG_DONTWAIT, &rc);
+ 	if (!skb)
+@@ -1822,7 +1825,8 @@ static int ipx_recvmsg(struct kiocb *ioc
+ out_free:
+ 	skb_free_datagram(sk, skb);
+ out:
+-	release_sock(sk);
++	if (locked)
++		release_sock(sk);
+ 	return rc;
+ }
  
 
 
