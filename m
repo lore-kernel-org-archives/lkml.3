@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaLEWrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:47:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54012 "EHLO
+	id S1752665AbaLEWrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:47:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530AbaLEWqT (ORCPT
+	with ESMTP id S1752540AbaLEWqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>,
-        Dmitry Nezhevenko <dion@inhex.net>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.17 101/122] Revert "xhci: clear root port wake on bits if controller isnt wake-up capable"
-Date: Fri,  5 Dec 2014 14:44:35 -0800
-Message-Id: <20141205223321.148102332@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
+        Emil Tantilov <emil.s.tantilov@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 102/122] ixgbe: Correctly disable VLAN filter in promiscuous mode
+Date: Fri,  5 Dec 2014 14:44:36 -0800
+Message-Id: <20141205223321.315361724@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,47 +33,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-commit 9b41ebd3cf0f68d8cad779d3eeba336f78262e43 upstream.
+commit 4556dc591691fca743518edb24f15fbc83b5c8ef upstream.
 
-commit ff8cbf250b44 ("xhci: clear root port wake on bits if controller isn't")
-can cause device detection error if runtime PM is enabled, and S3 wake
-is disabled. Revert it.
-https://bugzilla.kernel.org/show_bug.cgi?id=85701
+IXGBE adapter seems to require that VLAN filtering be enabled if
+VMDQ or SRIOV are enabled.  When those functions are disabled,
+VLAN filtering may be disabled in promiscuous mode.
 
-This commit got into stable and should be reverted from there as well.
+Prior to commit a9b8943ee129 ("ixgbe: remove vlan_filter_disable
+and enable functions")
 
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Reported-by: Dmitry Nezhevenko <dion@inhex.net>
-[Mathias Nyman: reword commit message]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+The logic was correct.  However, after the commit the logic
+got reversed and VLAN filtered in now turned on when VMDQ/SRIOV
+is disabled.
+
+This patch changes the condition to enable hw vlan filtered
+when VMDQ or SRIOV is enabled.
+
+Fixes: a9b8943ee129 ("ixgbe: remove vlan_filter_disable and enable functions")
+CC: Jacob Keller <jacob.e.keller@intel.com>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
+Acked-by: Emil Tantilov <emil.s.tantilov@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -22,7 +22,6 @@
- 
- 
- #include <linux/slab.h>
--#include <linux/device.h>
- #include <asm/unaligned.h>
- 
- #include "xhci.h"
-@@ -1142,9 +1141,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd
- 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
- 		 * is enabled, so also enable remote wake here.
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -4059,8 +4059,8 @@ void ixgbe_set_rx_mode(struct net_device
+ 		 * if SR-IOV and VMDQ are disabled - otherwise ensure
+ 		 * that hardware VLAN filters remain enabled.
  		 */
--		if (hcd->self.root_hub->do_remote_wakeup
--				&& device_may_wakeup(hcd->self.controller)) {
--
-+		if (hcd->self.root_hub->do_remote_wakeup) {
- 			if (t1 & PORT_CONNECT) {
- 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
- 				t2 &= ~PORT_WKCONN_E;
+-		if (!(adapter->flags & (IXGBE_FLAG_VMDQ_ENABLED |
+-					IXGBE_FLAG_SRIOV_ENABLED)))
++		if (adapter->flags & (IXGBE_FLAG_VMDQ_ENABLED |
++				      IXGBE_FLAG_SRIOV_ENABLED))
+ 			vlnctrl |= (IXGBE_VLNCTRL_VFE | IXGBE_VLNCTRL_CFIEN);
+ 	} else {
+ 		if (netdev->flags & IFF_ALLMULTI) {
 
 
