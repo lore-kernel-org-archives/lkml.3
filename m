@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaLEWq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53977 "EHLO
+	id S1752634AbaLEWrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:47:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaLEWqU (ORCPT
+	with ESMTP id S1752430AbaLEWqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 103/122] ixgbe: fix use after free adapter->state test in ixgbe_remove/ixgbe_probe
-Date: Fri,  5 Dec 2014 14:44:37 -0800
-Message-Id: <20141205223321.484995868@linuxfoundation.org>
+        Kevin Hilman <khilman@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Gaurav Minocha <gaurav.minocha.os@gmail.com>
+Subject: [PATCH 3.17 076/122] of/selftest: Fix off-by-one error in removal path
+Date: Fri,  5 Dec 2014 14:44:10 -0800
+Message-Id: <20141205223317.227994267@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -31,113 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Grant Likely <grant.likely@linaro.org>
 
-commit b5b2ffc0574e1f271d79b6b992ee382dc9d5eaa8 upstream.
+commit c1a2086e2d8c4eb4e8630ba752e911ec180dec67 upstream.
 
-While working on a different issue, I noticed an annoying use
-after free bug on my machine when unloading the ixgbe driver:
+The removal path for selftest data has an off by one error that causes
+the code to dereference beyond the end of the nodes[] array on the first
+pass through. The old code only worked by chance on a lot of platforms,
+but the bug was recently exposed on aarch64.
 
-[ 8642.318797] ixgbe 0000:02:00.1: removed PHC on p2p2
-[ 8642.742716] ixgbe 0000:02:00.1: complete
-[ 8642.743784] BUG: unable to handle kernel paging request at ffff8807d3740a90
-[ 8642.744828] IP: [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
-[ 8642.745886] PGD 20c6067 PUD 81c1f6067 PMD 81c15a067 PTE 80000007d3740060
-[ 8642.746956] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-[ 8642.748039] Modules linked in: [...]
-[ 8642.752929] CPU: 1 PID: 1225 Comm: rmmod Not tainted 3.18.0-rc2+ #49
-[ 8642.754203] Hardware name: Supermicro X10SLM-F/X10SLM-F, BIOS 1.1b 11/01/2013
-[ 8642.755505] task: ffff8807e34d3fe0 ti: ffff8807b7204000 task.ti: ffff8807b7204000
-[ 8642.756831] RIP: 0010:[<ffffffffa01c77dc>]  [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
-[...]
-[ 8642.774335] Stack:
-[ 8642.775805]  ffff8807ee824098 ffff8807ee824098 ffffffffa01f3000 ffff8807ee824000
-[ 8642.777326]  ffff8807b7207e18 ffffffff8137720f ffff8807ee824098 ffff8807ee824098
-[ 8642.778848]  ffffffffa01f3068 ffff8807ee8240f8 ffff8807b7207e38 ffffffff8144180f
-[ 8642.780365] Call Trace:
-[ 8642.781869]  [<ffffffff8137720f>] pci_device_remove+0x3f/0xc0
-[ 8642.783395]  [<ffffffff8144180f>] __device_release_driver+0x7f/0xf0
-[ 8642.784876]  [<ffffffff814421f8>] driver_detach+0xb8/0xc0
-[ 8642.786352]  [<ffffffff814414a9>] bus_remove_driver+0x59/0xe0
-[ 8642.787783]  [<ffffffff814429d0>] driver_unregister+0x30/0x70
-[ 8642.789202]  [<ffffffff81375c65>] pci_unregister_driver+0x25/0xa0
-[ 8642.790657]  [<ffffffffa01eb38e>] ixgbe_exit_module+0x1c/0xc8e [ixgbe]
-[ 8642.792064]  [<ffffffff810f93a2>] SyS_delete_module+0x132/0x1c0
-[ 8642.793450]  [<ffffffff81012c61>] ? do_notify_resume+0x61/0xa0
-[ 8642.794837]  [<ffffffff816d2029>] system_call_fastpath+0x12/0x17
+The fix is simple. Decrement the node count before dereferencing, not
+after.
 
-The issue is that test_and_set_bit() done on adapter->state is being
-performed *after* the netdevice has been freed via free_netdev().
-
-When netdev is being allocated on initialization time, it allocates
-a private area, here struct ixgbe_adapter, that resides after the
-net_device structure. In ixgbe_probe(), the device init routine,
-we set up the adapter after alloc_etherdev_mq() on the private area
-and add a reference for the pci_dev as well via pci_set_drvdata().
-
-Both in the error path of ixgbe_probe(), but also on module unload
-when ixgbe_remove() is being called, commit 41c62843eb6a ("ixgbe:
-Fix rcu warnings induced by LER") accesses adapter after free_netdev().
-The patch stores the result in a bool and thus fixes above oops on my
-side.
-
-Fixes: 41c62843eb6a ("ixgbe: Fix rcu warnings induced by LER")
-Cc: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Kevin Hilman <khilman@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/of/selftest.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -8084,6 +8084,7 @@ static int ixgbe_probe(struct pci_dev *p
- 	int i, err, pci_using_dac, expected_gts;
- 	unsigned int indices = MAX_TX_QUEUES;
- 	u8 part_str[IXGBE_PBANUM_LENGTH];
-+	bool disable_dev = false;
- #ifdef IXGBE_FCOE
- 	u16 device_caps;
- #endif
-@@ -8477,13 +8478,14 @@ err_sw_init:
- 	iounmap(adapter->io_addr);
- 	kfree(adapter->mac_table);
- err_ioremap:
-+	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
- 	free_netdev(netdev);
- err_alloc_etherdev:
- 	pci_release_selected_regions(pdev,
- 				     pci_select_bars(pdev, IORESOURCE_MEM));
- err_pci_reg:
- err_dma:
--	if (!adapter || !test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
-+	if (!adapter || disable_dev)
- 		pci_disable_device(pdev);
- 	return err;
- }
-@@ -8501,6 +8503,7 @@ static void ixgbe_remove(struct pci_dev
- {
- 	struct ixgbe_adapter *adapter = pci_get_drvdata(pdev);
- 	struct net_device *netdev = adapter->netdev;
-+	bool disable_dev;
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -799,7 +799,7 @@ static void selftest_data_remove(void)
+ 		return;
+ 	}
  
- 	ixgbe_dbg_adapter_exit(adapter);
- 
-@@ -8550,11 +8553,12 @@ static void ixgbe_remove(struct pci_dev
- 	e_dev_info("complete\n");
- 
- 	kfree(adapter->mac_table);
-+	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
- 	free_netdev(netdev);
- 
- 	pci_disable_pcie_error_reporting(pdev);
- 
--	if (!test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
-+	if (disable_dev)
- 		pci_disable_device(pdev);
+-	while (last_node_index >= 0) {
++	while (last_node_index-- > 0) {
+ 		if (nodes[last_node_index]) {
+ 			np = of_find_node_by_path(nodes[last_node_index]->full_name);
+ 			if (strcmp(np->full_name, "/aliases") != 0) {
+@@ -812,7 +812,6 @@ static void selftest_data_remove(void)
+ 				}
+ 			}
+ 		}
+-		last_node_index--;
+ 	}
  }
  
 
