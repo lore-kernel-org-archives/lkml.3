@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaLEVv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:51:57 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54921 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559AbaLEVvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:51:55 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v4 2/5] crypto: AF_ALG: add AEAD support
-Date: Fri, 05 Dec 2014 22:51:51 +0100
-Message-ID: <45756810.oFuGYtKPb9@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141205154606.GA30180@gondor.apana.org.au>
-References: <2105559.EmODblLYuY@tachyon.chronox.de> <4875720.jRoMDtjHB4@tachyon.chronox.de> <20141205154606.GA30180@gondor.apana.org.au>
+	id S1752127AbaLEVwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:52:32 -0500
+Received: from na6sys009bog007.obsmtp.com ([74.125.150.54]:45569 "HELO
+	na6sys009bog007.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751734AbaLEVw3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:52:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+ <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
+ <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
+ <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
+ <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com>
+ <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com>
+ <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com> <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Fri, 5 Dec 2014 13:52:06 -0800
+Message-ID: <CAEP_g=_7rWqg_RRdzF2=sis_Wojs9CFw99uuJdm_1QMC7Aa1WA@mail.gmail.com>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+To: Tom Herbert <therbert@google.com>
+Cc: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>,
+        Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 5. Dezember 2014, 23:46:06 schrieb Herbert Xu:
+On Tue, Dec 2, 2014 at 10:26 AM, Jesse Gross <jesse@nicira.com> wrote:
+> On Mon, Dec 1, 2014 at 4:09 PM, Tom Herbert <therbert@google.com> wrote:
+>> On Mon, Dec 1, 2014 at 3:53 PM, Jesse Gross <jesse@nicira.com> wrote:
+>>> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
+>>>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
+>>>>>>> I don't know if we need to have the check at all for IPIP though -
+>>>>>>> after all the driver doesn't expose support for it all (actually it
+>>>>>>> doesn't expose GRE either). This raises kind of an interesting
+>>>>>>> question about the checks though - it's pretty easy to add support to
+>>>>>>> the driver for a new GSO type (and I imagine that people will be
+>>>>>>> adding GRE soon) and forget to update the check.
+>>>>>>
+>>>>>> If the check is more conservative, then testing would show that it's
+>>>>>> not working and lead people to figure out why (and update the check).
+>>>>>
+>>>>> More concretely, one suggestion would be something like following at
+>>>>> the start of each gso_check():
+>>>>>
+>>>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
+>>>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
+>>>>> +
+>>>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
+>>>>> +               return false;
+>>>>
+>>>> This should already be handled by net_gso_ok.
+>>>
+>>> My original point wasn't so much that this isn't handled at the moment
+>>> but that it's easy to add a supported GSO type but then forget to
+>>> update this check - i.e. if a driver already supports UDP_TUNNEL and
+>>> adds support for GRE with the same constraints. It seems not entirely
+>>> ideal that this function is acting as a blacklist rather than a
+>>> whitelist.
+>>
+>> Agreed, it would be nice to have all the checking logic in one place.
+>> If all the drivers end up implementing ndo_gso_check then we could
+>> potentially get rid of the GSO types as features. This probably
+>> wouldn't be a bad thing since we already know that the features
+>> mechanism doesn't scale (for instance there's no way to indicate that
+>> certain combinations of GSO types are supported by a device).
+>
+> This crossed my mind and I agree that it's pretty clear that the
+> features mechanism isn't scaling very well. Presumably, the logical
+> extension of this is that each driver would have a function that looks
+> at a packet and returns a set of offload operations that it can
+> support rather than exposing a set of protocols. However, it seems
+> like it would probably result in a bunch of duplicate code in each
+> driver.
 
-Hi Herbert,
-
-> On Wed, Dec 03, 2014 at 08:57:24PM +0100, Stephan Mueller wrote:
-> > +	if (ctx->merge) {
-> > +		sg = sgl->sg + sgl->cur - 1;
-> > +		len = min_t(unsigned long, len,
-> > +			    PAGE_SIZE - sg->offset - sg->length);
-> > +
-> > +		err = memcpy_fromiovec(page_address(sg_page(sg)) +
-> > +				       sg->offset + sg->length,
-> > +				       msg->msg_iov, len);
-> > +		if (err)
-> > +			goto unlock;
-> > +
-> > +		sg->length += len;
-> > +		ctx->merge = (sg->offset + sg->length) & (PAGE_SIZE - 1);
-> > +
-> > +		ctx->used += len;
-> > +		copied += len;
-> > +		size -= len;
-> > +	}
-> 
-> Any reason why you got rid of the outer loop here? This will cause
-> short writes I think.
-
-You are absolutely right. I removed it as I do not have the multiple sgl 
-entries. But now as you mentioned it, I still need it if size > 
-aead_sndbuf(sk).
-
-This will be fixed in the next installment.
-> 
-> > +static struct proto_ops algif_aead_ops = {
-> > +	.family		=	PF_ALG,
-> > +
-> > +	.connect	=	sock_no_connect,
-> > +	.socketpair	=	sock_no_socketpair,
-> > +	.getname	=	sock_no_getname,
-> > +	.ioctl		=	sock_no_ioctl,
-> > +	.listen		=	sock_no_listen,
-> > +	.shutdown	=	sock_no_shutdown,
-> > +	.getsockopt	=	sock_no_getsockopt,
-> > +	.mmap		=	sock_no_mmap,
-> > +	.bind		=	sock_no_bind,
-> > +	.accept		=	sock_no_accept,
-> > +
-> > +	.release	=	af_alg_release,
-> > +	.sendmsg	=	aead_sendmsg,
-> > +	.sendpage	=	aead_sendpage,
-> > +	.recvmsg	=	aead_recvmsg,
-> > +	.poll		=	aead_poll,
-> > +	.setsockopt	=	aead_setsockopt,
-> 
-> No it should go into the parent setsockopt.  Perhaps add a setsockopt
-> to af_alg_type in order to keep this out of the generic code.
-
-I was thinking about that for quite a while. My thought for the current 
-approach was that the actual cipher operation happens in the child FD (i.e. 
-after accept). AAD is delivered to that FD. Therefore, I thought that the size 
-of the AAD can be specific to that operational FD.
-
-If we move it to the parent setsockopt, all child FDs have the same AAD size. 
-If you think that this is the right course of action, I can surely implement 
-that.
-
-Would you please be so kind and help me understand when some operations are 
-intended for the parent FD and when for the child FD?
-
-Thanks
--- 
-Ciao
-Stephan
+I think a possible middleground here is to convert ndo_gso_check() to
+ndo_features_check(). This would behave similarly to
+netif_skb_features() and give drivers an opportunity to knock out
+features for a given packet. This would allow us to avoid duplicate
+code in the immediate case of tunnels where we need to handle both GSO
+and checksums and potentially enable wider usage in the future if it
+makes sense.
