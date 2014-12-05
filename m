@@ -1,109 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933472AbaLEAMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 19:12:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42816 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454AbaLEAMJ (ORCPT
+	id S933479AbaLEANN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 19:13:13 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:57049 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313AbaLEANM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 19:12:09 -0500
-Date: Thu, 4 Dec 2014 16:12:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sanchayan Maity <maitysanchayan@gmail.com>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com, stefan@agner.ch,
-        shawn.guo@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCHv2] drivers/rtc/rtc-snvs: Add clock support
-Message-Id: <20141204161207.0753031dc675793e9534c1de@linux-foundation.org>
-In-Reply-To: <bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
-References: <cover.1417585458.git.maitysanchayan@gmail.com>
-	<bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 4 Dec 2014 19:13:12 -0500
+X-IronPort-AV: E=Sophos;i="5.07,519,1413270000"; 
+   d="scan'208";a="52325932"
+Message-ID: <5480F88D.4090707@broadcom.com>
+Date: Thu, 4 Dec 2014 16:13:01 -0800
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: Ray Jui <rjui@broadcom.com>, Corneliu Doban <cdoban@broadcom.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: add reboot notifier to mtdcore and register nand_shutdown
+ with notifier
+References: <Scott Branden <sbranden@broadcom.com> <1417732658-4563-1-git-send-email-sbranden@broadcom.com>
+In-Reply-To: <1417732658-4563-1-git-send-email-sbranden@broadcom.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Dec 2014 11:28:55 +0530 Sanchayan Maity <maitysanchayan@gmail.com> wrote:
+Apologies:  patch fails checkpatch due to spaces instead of tabs during 
+cut and paste.
 
-> This patch adds clock enable and disable support for
-> the SNVS peripheral, which is required for using the
-> RTC within the SNVS block.
-> 
-> The clock is not strictly enforced, as this would
-> break the i.MX devices. The clocking for the i.MX
-> devices seems to be enabled elsewhere and enabling
-> RTC SNVS for Vybrid results in a crash. This patch
-> adds the clock support but also makes it optional
-> so Vybrid platform can use the clock if defined
-> while making sure not to break i.MX .
-> 
-> ...
+But, please comment on this patch before I create a new version.
 
-I assume this hasn't been tested with CONFIG_HAVE_CLK=n.  It all
-*looks* OK, but the clk API does its tests for clk==NULL in some very
-deep places.
-
-> --- a/drivers/rtc/rtc-snvs.c
-> +++ b/drivers/rtc/rtc-snvs.c
-.
-> ...
+On 14-12-04 02:37 PM, Scott Branden wrote:
+> add (optional) reboot notifier field to struct mtd_info, and use it to
+> register a system reboot notifier on behalf of the lower layers.
 >
-> @@ -288,10 +302,16 @@ static int snvs_rtc_probe(struct platform_device *pdev)
->  	if (IS_ERR(data->rtc)) {
->  		ret = PTR_ERR(data->rtc);
->  		dev_err(&pdev->dev, "failed to register rtc: %d\n", ret);
-> -		return ret;
-> +		goto error_rtc_device_register;
->  	}
->  
->  	return 0;
+> Add nand_shutdown to wait for current nand operations to finish and prevent
+> further operations by changing the nand flash state to FL_SHUTDOWN.
+> Register the nand_shutdown with the reboot notifier in nand_base.c
+>
+> This is addressing a problem observed during reboot tests using UBIFS
+> root file system: NAND erase operations that are in progress during
+> system reboot/shutdown are causing partial erased blocks. Although UBI should
+> be able to detect and recover from this error, this change will avoid
+> the creation of partial erased blocks on reboot in the middle of a NAND erase
+> operation.
+>
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> Signed-off-by: Corneliu Doban <cdoban@broadcom.com>
+> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>   drivers/mtd/mtdcore.c        | 20 ++++++++++++++++++++
+>   drivers/mtd/nand/nand_base.c | 11 +++++++++++
+>   include/linux/mtd/mtd.h      |  1 +
+>   3 files changed, 32 insertions(+)
+>
+> diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+> index 4c61187..b80d44f 100644
+> --- a/drivers/mtd/mtdcore.c
+> +++ b/drivers/mtd/mtdcore.c
+> @@ -37,6 +37,7 @@
+>   #include <linux/backing-dev.h>
+>   #include <linux/gfp.h>
+>   #include <linux/slab.h>
+> +#include <linux/reboot.h>
+>
+>   #include <linux/mtd/mtd.h>
+>   #include <linux/mtd/partitions.h>
+> @@ -365,6 +366,17 @@ static struct device_type mtd_devtype = {
+>   	.release	= mtd_release,
+>   };
+>
+> +static int mtd_reboot_notifier(struct notifier_block *n, unsigned long state,
+> +			       void *cmd)
+> +{
+> +       struct mtd_info *mtd;
 > +
-> +error_rtc_device_register:
-> +	if (data->clk)
-> +		clk_disable_unprepare(data->clk);
-
->From my reading, there's no need to test data->clk here -
-clk_disable_unprepare() handles that.
-
-It doesn't hurt to test it - a reasonable approach would be to look
-around at what other users of the clk API are doing, and do that.
-
-
-> +	return ret;
->  }
->  
->  #ifdef CONFIG_PM_SLEEP
-> @@ -302,16 +322,26 @@ static int snvs_rtc_suspend(struct device *dev)
->  	if (device_may_wakeup(dev))
->  		enable_irq_wake(data->irq);
->  
-> +	if (data->clk)
-> +		clk_disable_unprepare(data->clk);
-
-Ditto.
-
->  	return 0;
->  }
->  
->  static int snvs_rtc_resume(struct device *dev)
->  {
->  	struct snvs_rtc_data *data = dev_get_drvdata(dev);
-> +	int ret;
->  
->  	if (device_may_wakeup(dev))
->  		disable_irq_wake(data->irq);
->  
-> +	if (data->clk) {
-> +		ret = clk_prepare_enable(data->clk);
-> +		if (ret)
-> +			return ret;
+> +       mtd = container_of(n, struct mtd_info, reboot_notifier);
+> +       mtd->_reboot(mtd);
+> +
+> +       return NOTIFY_DONE;
+> +}
+> +
+>   /**
+>    *	add_mtd_device - register an MTD device
+>    *	@mtd: pointer to new MTD device info structure
+> @@ -565,6 +577,11 @@ int mtd_device_parse_register(struct mtd_info *mtd, const char * const *types,
+>   			err = -ENODEV;
+>   	}
+>
+> +	if (mtd->_reboot) {
+> +		mtd->reboot_notifier.notifier_call = mtd_reboot_notifier;
+> +		register_reboot_notifier(&mtd->reboot_notifier);
 > +	}
-
-It could be omitted here also.
-
->  	return 0;
->  }
->  #endif
+> +
+>   	return err;
+>   }
+>   EXPORT_SYMBOL_GPL(mtd_device_parse_register);
+> @@ -579,6 +596,9 @@ int mtd_device_unregister(struct mtd_info *master)
+>   {
+>   	int err;
+>
+> +	if (master->_reboot)
+> +		unregister_reboot_notifier(&master->reboot_notifier);
+> +
+>   	err = del_mtd_partitions(master);
+>   	if (err)
+>   		return err;
+> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+> index 5b5c627..e18165b 100644
+> --- a/drivers/mtd/nand/nand_base.c
+> +++ b/drivers/mtd/nand/nand_base.c
+> @@ -2944,6 +2944,16 @@ static void nand_resume(struct mtd_info *mtd)
+>   			__func__);
+>   }
+>
+> +/**
+> + * nand_shutdown - [MTD Interface] Finish the current NAND operation and
+> + *                 prevent further operations
+> + * @mtd: MTD device structure
+> + */
+> +static void nand_shutdown(struct mtd_info *mtd)
+> +{
+> +	nand_get_device(mtd, FL_SHUTDOWN);
+> +}
+> +
+>   /* Set default functions */
+>   static void nand_set_defaults(struct nand_chip *chip, int busw)
+>   {
+> @@ -4146,6 +4156,7 @@ int nand_scan_tail(struct mtd_info *mtd)
+>   	mtd->_unlock = NULL;
+>   	mtd->_suspend = nand_suspend;
+>   	mtd->_resume = nand_resume;
+> +	mtd->_reboot = nand_shutdown;
+>   	mtd->_block_isreserved = nand_block_isreserved;
+>   	mtd->_block_isbad = nand_block_isbad;
+>   	mtd->_block_markbad = nand_block_markbad;
+> diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
+> index 031ff3a..c06f537 100644
+> --- a/include/linux/mtd/mtd.h
+> +++ b/include/linux/mtd/mtd.h
+> @@ -227,6 +227,7 @@ struct mtd_info {
+>   	int (*_block_markbad) (struct mtd_info *mtd, loff_t ofs);
+>   	int (*_suspend) (struct mtd_info *mtd);
+>   	void (*_resume) (struct mtd_info *mtd);
+> +	void (*_reboot) (struct mtd_info *mtd);
+>   	/*
+>   	 * If the driver is something smart, like UBI, it may need to maintain
+>   	 * its own reference counting. The below functions are only for driver.
+>
 
