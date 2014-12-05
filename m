@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaLEWqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54024 "EHLO
+	id S1752584AbaLEWqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:46:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaLEWqN (ORCPT
+	with ESMTP id S1752258AbaLEWqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Craig Watson <craig.watson@vanguard-rugged.com>,
-        Roland Dreier <roland@purestorage.com>,
+        Mark Lehrer <lehrer@gmail.com>, Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 084/122] target: Dont call TFO->write_pending if data_length == 0
-Date: Fri,  5 Dec 2014 14:44:18 -0800
-Message-Id: <20141205223318.415032893@linuxfoundation.org>
+Subject: [PATCH 3.17 083/122] srp-target: Retry when QP creation fails with ENOMEM
+Date: Fri,  5 Dec 2014 14:44:17 -0800
+Message-Id: <20141205223318.288990007@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,35 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 885e7b0e181c14e4d0ddd26c688bad2b84c1ada9 upstream.
+commit ab477c1ff5e0a744c072404bf7db51bfe1f05b6e upstream.
 
-If an initiator sends a zero-length command (e.g. TEST UNIT READY) but
-sets the transfer direction in the transport layer to indicate a
-data-out phase, we still shouldn't try to transfer data.  At best it's
-a NOP, and depending on the transport, we might crash on an
-uninitialized sg list.
+It is not guaranteed to that srp_sq_size is supported
+by the HCA. So if we failed to create the QP with ENOMEM,
+try with a smaller srp_sq_size. Keep it up until we hit
+MIN_SRPT_SQ_SIZE, then fail the connection.
 
-Reported-by: Craig Watson <craig.watson@vanguard-rugged.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reported-by: Mark Lehrer <lehrer@gmail.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2295,7 +2295,7 @@ transport_generic_new_cmd(struct se_cmd
- 	 * and let it call back once the write buffers are ready.
- 	 */
- 	target_add_to_state_list(cmd);
--	if (cmd->data_direction != DMA_TO_DEVICE) {
-+	if (cmd->data_direction != DMA_TO_DEVICE || cmd->data_length == 0) {
- 		target_execute_cmd(cmd);
- 		return 0;
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2092,6 +2092,7 @@ static int srpt_create_ch_ib(struct srpt
+ 	if (!qp_init)
+ 		goto out;
+ 
++retry:
+ 	ch->cq = ib_create_cq(sdev->device, srpt_completion, NULL, ch,
+ 			      ch->rq_size + srp_sq_size, 0);
+ 	if (IS_ERR(ch->cq)) {
+@@ -2115,6 +2116,13 @@ static int srpt_create_ch_ib(struct srpt
+ 	ch->qp = ib_create_qp(sdev->pd, qp_init);
+ 	if (IS_ERR(ch->qp)) {
+ 		ret = PTR_ERR(ch->qp);
++		if (ret == -ENOMEM) {
++			srp_sq_size /= 2;
++			if (srp_sq_size >= MIN_SRPT_SQ_SIZE) {
++				ib_destroy_cq(ch->cq);
++				goto retry;
++			}
++		}
+ 		printk(KERN_ERR "failed to create_qp ret= %d\n", ret);
+ 		goto err_destroy_cq;
  	}
 
 
