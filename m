@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaLEWze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:55:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53980 "EHLO
+	id S1753329AbaLEW4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:56:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaLEWqK (ORCPT
+	with ESMTP id S1753298AbaLEW4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:10 -0500
+	Fri, 5 Dec 2014 17:56:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.17 072/122] brcmfmac: fix error handling of irq_of_parse_and_map
-Date: Fri,  5 Dec 2014 14:44:06 -0800
-Message-Id: <20141205223316.608195676@linuxfoundation.org>
+        JS Park <aitdark.park@samsung.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 26/73] ASoC: wm_adsp: Avoid attempt to free buffers that might still be in use
+Date: Fri,  5 Dec 2014 14:44:32 -0800
+Message-Id: <20141205224434.723080813@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
-References: <20141205223305.514276242@linuxfoundation.org>
+In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
+References: <20141205224433.921659956@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,38 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Torokhov <dtor@chromium.org>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 4c69f05eaa428e37890daf88b86a567ce615570b upstream.
+commit 9da7a5a9fdeeb76b2243f6b473363a7e6147ab6f upstream.
 
-Return value of irq_of_parse_and_map() is unsigned int, with 0
-indicating failure, so testing for negative result never works.
+We should not free any buffers associated with writing out coefficients
+to the DSP until all the async writes have completed. This patch updates
+the out of memory path when allocating a new buffer to include a call to
+regmap_async_complete.
 
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-Acked-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: JS Park <aitdark.park@samsung.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmfmac/of.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm_adsp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/of.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/of.c
-@@ -40,8 +40,8 @@ void brcmf_of_probe(struct brcmf_sdio_de
- 		return;
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1341,6 +1341,7 @@ static int wm_adsp_load_coeff(struct wm_
+ 			  file, blocks, pos - firmware->size);
  
- 	irq = irq_of_parse_and_map(np, 0);
--	if (irq < 0) {
--		brcmf_err("interrupt could not be mapped: err=%d\n", irq);
-+	if (!irq) {
-+		brcmf_err("interrupt could not be mapped\n");
- 		devm_kfree(dev, sdiodev->pdata);
- 		return;
- 	}
+ out_fw:
++	regmap_async_complete(regmap);
+ 	release_firmware(firmware);
+ 	wm_adsp_buf_free(&buf_list);
+ out:
 
 
