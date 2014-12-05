@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaLEVcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:32:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53023 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaLEVcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:32:03 -0500
-Date: Fri, 5 Dec 2014 13:32:02 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: jun.zhang@intel.com
-Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Changcheng Liu <changcheng.liu@intel.com>,
-        Hillf Danton <hillf.zj@alibaba-inc.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [PATCH] sched/fair: tiny clearup of -1
-Message-ID: <20141205213202.GC3012@kroah.com>
-References: <1417759365-28787-1-git-send-email-jun.zhang@intel.com>
+	id S1751839AbaLEVgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:36:38 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:59040 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaLEVgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:36:37 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Mike Turquette <mturquette@linaro.org>, kever.yang@rock-chips.com,
+        jay.xu@rock-chips.com, caesar.wang@rock-chips.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: rockchip: Add CLK_SET_RATE_PARENT to sclk_uart clocks
+Date: Fri, 05 Dec 2014 22:40:29 +0100
+Message-ID: <5769551.kTdgyxWvD4@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1417728785-18054-1-git-send-email-dianders@chromium.org>
+References: <1417728785-18054-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417759365-28787-1-git-send-email-jun.zhang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 02:02:45PM +0800, jun.zhang@intel.com wrote:
-> From: zhang jun <jun.zhang@intel.com>
+Am Donnerstag, 4. Dezember 2014, 13:33:05 schrieb Doug Anderson:
+> We'd like to be able to set the clock rate of the sclk_uart clocks and
+> actually be able to achieve clock rates greater than 24MHz.  To do
+> this we need to be able to pass rate changes upward.
 > 
-> find_idlest_cpu don't return -1, so clearup it.
-> 
-> Signed-off-by: zhang jun <jun.zhang@intel.com>
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> Signed-off-by: Changcheng Liu <changcheng.liu@intel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Why me?  I don't care about this file...
+applied this to my wip clk branch for 3.20 (on github)
+
+
+Thanks
+Heiko
