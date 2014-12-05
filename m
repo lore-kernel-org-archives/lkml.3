@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaLEIPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:15:44 -0500
-Received: from mail-bn1bon0082.outbound.protection.outlook.com ([157.56.111.82]:42976
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752097AbaLEIPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:15:42 -0500
-Date: Fri, 5 Dec 2014 09:15:29 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752586AbaLEITD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:19:03 -0500
+Received: from mail1.SerNet.de ([193.175.80.2]:55312 "EHLO mail.SerNet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752237AbaLEIS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:18:59 -0500
+Date: Fri, 5 Dec 2014 09:17:54 +0100
+From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Milosz Tanski <milosz@adfin.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
+ only)
+Reply-To: Volker.Lendecke@SerNet.DE
+References: <cover.1415636409.git.milosz@adfin.com>
+ <20141125150101.9596a09e.akpm@linux-foundation.org>
+ <CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
+ <20141202144200.a4ca81a46a43563a8874fd8e@linux-foundation.org>
+ <CANP1eJGVyBOt1rQ8jA4tMrNGX5X61-UWbVy6kKj_ByeTqAEOBQ@mail.gmail.com>
+ <20141204151102.2d7e11dca39f130c2dff2294@linux-foundation.org>
 MIME-Version: 1.0
-To: rajeev kumar <rajeevkumar.linux@gmail.com>,
-        Harini Katakam <harinik@xilinx.com>
-CC: <wsa@the-dreams.de>, <mark.rutland@arm.com>, <michal.simek@xilinx.com>,
-        <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <vishnum@xilinx.com>, <harinikatakamlinux@gmail.com>
-Subject: Re: [PATCH v2 1/3] i2c: cadence: Handle > 252 byte transfers
-References: <1417610126-7957-1-git-send-email-harinik@xilinx.com>
-	<1417610126-7957-2-git-send-email-harinik@xilinx.com>
- <CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
-In-Reply-To: <CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21150.005
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <66a490c827bc47d98a0118a58d7060e7@BN1BFFO11FD054.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(479174003)(377454003)(199003)(189002)(51704005)(24454002)(164054003)(50986999)(86362001)(19580395003)(92566001)(87936001)(108616004)(62966003)(20776003)(120916001)(83506001)(31966008)(106466001)(50466002)(6806004)(64706001)(54356999)(46102003)(217423001)(107046002)(21056001)(74316001)(76176999)(104016003)(4396001)(99396003)(33646002)(47776003)(77156002)(23676002)(65806001)(65956001)(19580405001)(77096005)(92726002)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB017;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(1)(2);SRVR:BN1BFFO11HUB017;
-X-Forefront-PRVS: 04163EF38A
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB017;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141204151102.2d7e11dca39f130c2dff2294@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <E1Xwo5O-00GRl4-Cc@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 06:41 AM, rajeev kumar wrote:
-> On Wed, Dec 3, 2014 at 6:05 PM, Harini Katakam <harinik@xilinx.com> wrote:
->> The I2C controller sends a NACK to the slave when transfer size register
->> reaches zero, irrespective of the hold bit. So, in order to handle transfers
->> greater than 252 bytes, the transfer size register has to be maintained at a
->> value >= 1. This patch implements the same.
+On Thu, Dec 04, 2014 at 03:11:02PM -0800, Andrew Morton wrote:
+> I can see all that, but it's handwaving.  Yes, preadv2() will perform
+> better in some circumstances than fincore+pread.  But how much better? 
+> Enough to justify this approach, or not?
 > 
-> Why 252 Bytes ?  Is it word allign or what ?
+> Alas, the only way to really settle that is to implement fincore() and
+> to subject it to a decent amount of realistic quantitative testing.
 > 
->> The interrupt status is cleared at the beginning of the isr instead of
->> the end, to avoid missing any interrupts - this is in sync with the new
->> transfer handling.
->>
+> Ho hum.
 > 
-> No need to write this, actually this is the correct way of handling interrupt.
-> 
->> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->> ---
->>
->> v2:
->> No changes
->>
->> ---
->>  drivers/i2c/busses/i2c-cadence.c |  156 ++++++++++++++++++++------------------
->>  1 file changed, 81 insertions(+), 75 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
->> index 63f3f03..e54899e 100644
->> --- a/drivers/i2c/busses/i2c-cadence.c
->> +++ b/drivers/i2c/busses/i2c-cadence.c
->> @@ -126,6 +126,7 @@
->>   * @suspended:         Flag holding the device's PM status
->>   * @send_count:                Number of bytes still expected to send
->>   * @recv_count:                Number of bytes still expected to receive
->> + * @curr_recv_count:   Number of bytes to be received in current transfer
-> 
-> Please do the alignment properly
+> Could you please hunt down some libuv developers, see if we can solicit
+> some quality input from them?  As I said, we really don't want to merge
+> this then find that people don't use it for some reason, or that it
+> needs changes.
 
-Alignments are correct when you apply this patch.
-Please let us know if you see any problem.
+All I can say from a Samba perspective is that none of the ARM based
+Storage boxes I have seen so far do AIO because of the base footprint
+for every read. For sequential reads kernel-level readahead could kick
+in properly and we should be able to give them the best of both worlds:
+No context switches in the default case but also good parallel behaviour
+for other workloads.  The most important benchmark for those guys is to
+read a DVD image, whether it makes sense or not.
 
-Thanks,
-Michal
+Volker
 
+-- 
+SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
+phone: +49-551-370000-0, fax: +49-551-370000-9
+AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
+http://www.sernet.de, mailto:kontakt@sernet.de
