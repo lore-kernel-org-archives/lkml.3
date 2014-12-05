@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaLEW7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:59:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54457 "EHLO
+	id S1753617AbaLEW7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:59:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaLEW42 (ORCPT
+	with ESMTP id S1753451AbaLEW41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:28 -0500
+	Fri, 5 Dec 2014 17:56:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 46/73] ARM: 8216/1: xscale: correct auxiliary register in suspend/resume
-Date: Fri,  5 Dec 2014 14:44:52 -0800
-Message-Id: <20141205224435.320521678@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.14 45/73] of/irq: Drop obsolete interrupts vs interrupts-extended text
+Date: Fri,  5 Dec 2014 14:44:51 -0800
+Message-Id: <20141205224435.291991564@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -30,51 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit ef59a20ba375aeb97b3150a118318884743452a8 upstream.
+commit 66865de4314caca30598244b86817e774c188afa upstream.
 
-According to the manuals I have, XScale auxiliary register should be
-reached with opc_2 = 1 instead of crn = 1. cpu_xscale_proc_init
-correctly uses c1, c0, 1 arguments, but cpu_xscale_do_suspend and
-cpu_xscale_do_resume use c1, c1, 0. Correct suspend/resume functions to
-also use c1, c0, 1.
+a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
+first") updated the description to say that:
 
-The issue was primarily noticed thanks to qemu reporing "unsupported
-instruction" on the pxa suspend path. Confirmed in PXA210/250 and PXA255
-XScale Core manuals and in PXA270 and PXA320 Developers Guides.
+  - Both 'interrupts' and 'interrupts-extended' may be present
+  - Software should prefer 'interrupts-extended'
+  - Software that doesn't comprehend 'interrupts-extended' may use
+    'interrupts'
 
-Harware tested by me on tosa (pxa255). Robert confirmed on pxa270 board.
+But there is still a paragraph at the end that prohibits having both and
+says 'interrupts' should be preferred.
 
-Tested-by: Robert Jarzmik <robert.jarzmik@free.fr>
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Remove the contradictory text.
+
+Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-xscale.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/interrupt-controller/interrupts.txt |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/arch/arm/mm/proc-xscale.S
-+++ b/arch/arm/mm/proc-xscale.S
-@@ -535,7 +535,7 @@ ENTRY(cpu_xscale_do_suspend)
- 	mrc	p15, 0, r5, c15, c1, 0	@ CP access reg
- 	mrc	p15, 0, r6, c13, c0, 0	@ PID
- 	mrc	p15, 0, r7, c3, c0, 0	@ domain ID
--	mrc	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
-+	mrc	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
- 	mrc	p15, 0, r9, c1, c0, 0	@ control reg
- 	bic	r4, r4, #2		@ clear frequency change bit
- 	stmia	r0, {r4 - r9}		@ store cp regs
-@@ -552,7 +552,7 @@ ENTRY(cpu_xscale_do_resume)
- 	mcr	p15, 0, r6, c13, c0, 0	@ PID
- 	mcr	p15, 0, r7, c3, c0, 0	@ domain ID
- 	mcr	p15, 0, r1, c2, c0, 0	@ translation table base addr
--	mcr	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
-+	mcr	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
- 	mov	r0, r9			@ control register
- 	b	cpu_resume_mmu
- ENDPROC(cpu_xscale_do_resume)
+--- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
++++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+@@ -30,10 +30,6 @@ should only be used when a device has mu
+   Example:
+ 	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
+ 
+-A device node may contain either "interrupts" or "interrupts-extended", but not
+-both. If both properties are present, then the operating system should log an
+-error and use only the data in "interrupts".
+-
+ 2) Interrupt controller nodes
+ -----------------------------
+ 
 
 
