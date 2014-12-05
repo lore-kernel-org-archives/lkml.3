@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaLEXVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:21:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1754023AbaLEXVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:21:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbaLEW4R (ORCPT
+	with ESMTP id S1752388AbaLEW4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Kees Cook <keescook@chromium.org>, Junjie Mao <eternal.n08@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 08/73] x86, kaslr: Handle Gold linker for finding bss/brk
-Date: Fri,  5 Dec 2014 14:44:14 -0800
-Message-Id: <20141205224434.182427817@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 09/73] uprobes, x86: Fix _TIF_UPROBE vs _TIF_NOTIFY_RESUME
+Date: Fri,  5 Dec 2014 14:44:15 -0800
+Message-Id: <20141205224434.211794088@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -30,45 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 70b61e362187b5fccac206506d402f3424e3e749 upstream.
+commit 82975bc6a6df743b9a01810fb32cb65d0ec5d60b upstream.
 
-When building with the Gold linker, the .bss and .brk areas of vmlinux
-are shown as consecutive instead of having the same file offset. Allow
-for either state, as long as things add up correctly.
+x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set but
+not on non-paranoid returns.  I suspect that this is a mistake and that
+the code only works because int3 is paranoid.
 
-Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Link: http://lkml.kernel.org/r/20141118001604.GA25045@www.outflux.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a workaround
+for the x86 bug.  With that bug fixed, we can remove _TIF_NOTIFY_RESUME
+from the uprobes code.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/tools/calc_run_size.pl |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/thread_info.h |    2 +-
+ kernel/events/uprobes.c            |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/tools/calc_run_size.pl
-+++ b/arch/x86/tools/calc_run_size.pl
-@@ -19,7 +19,16 @@ while (<>) {
- 		if ($file_offset == 0) {
- 			$file_offset = $offset;
- 		} elsif ($file_offset != $offset) {
--			die ".bss and .brk lack common file offset\n";
-+			# BFD linker shows the same file offset in ELF.
-+			# Gold linker shows them as consecutive.
-+			next if ($file_offset + $mem_size == $offset + $size);
-+
-+			printf STDERR "file_offset: 0x%lx\n", $file_offset;
-+			printf STDERR "mem_size: 0x%lx\n", $mem_size;
-+			printf STDERR "offset: 0x%lx\n", $offset;
-+			printf STDERR "size: 0x%lx\n", $size;
-+
-+			die ".bss and .brk are non-contiguous\n";
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -144,7 +144,7 @@ struct thread_info {
+ /* Only used for 64 bit */
+ #define _TIF_DO_NOTIFY_MASK						\
+ 	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
+-	 _TIF_USER_RETURN_NOTIFY)
++	 _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
+ 
+ /* flags to check in __switch_to() */
+ #define _TIF_WORK_CTXSW							\
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1621,7 +1621,6 @@ bool uprobe_deny_signal(void)
+ 		if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
+ 			utask->state = UTASK_SSTEP_TRAPPED;
+ 			set_tsk_thread_flag(t, TIF_UPROBE);
+-			set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
  		}
  	}
- }
+ 
 
 
