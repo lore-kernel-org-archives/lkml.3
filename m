@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaLETyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:54:04 -0500
-Received: from mail-by2on0080.outbound.protection.outlook.com ([207.46.100.80]:63136
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751949AbaLETyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:54:01 -0500
-X-Greylist: delayed 924 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Dec 2014 14:54:00 EST
-From: Graham Moore <grmoore@opensource.altera.com>
-To: <linux-mtd@lists.infradead.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        Alan Tull <atull@opensource.altera.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Yves Vandervennet <yvanderv@opensource.altera.com>,
-        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        Graham Moore <grmoore@opensource.altera.com>
-Subject: [PATCH 1/2] mtd: spi-nor: Bindings for Cadence Quad SPI Flash Controller driver.
-Date: Fri, 5 Dec 2014 13:35:32 -0600
-Message-ID: <1417808133-20719-2-git-send-email-grmoore@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417808133-20719-1-git-send-email-grmoore@opensource.altera.com>
-References: <1417808133-20719-1-git-send-email-grmoore@opensource.altera.com>
+	id S1752237AbaLETyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:54:24 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:46917 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaLETyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 14:54:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY2PR12CA0038.namprd12.prod.outlook.com (25.160.121.48) To
- BLUPR03MB437.namprd03.prod.outlook.com (10.141.78.147)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB437;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002)(6)(7);SRVR:BLUPR03MB437;
-X-Forefront-PRVS: 04163EF38A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(105586002)(106356001)(110136001)(81156004)(107046002)(229853001)(77156002)(21056001)(4396001)(50466002)(48376002)(50226001)(2351001)(40100003)(97736003)(122386002)(46102003)(69596002)(68736005)(77096005)(31966008)(101416001)(19580395003)(19580405001)(551934003)(33646002)(64706001)(20776003)(47776003)(99396003)(66066001)(62966003)(120916001)(76176999)(42186005)(86362001)(87976001)(53416004)(89996001)(50986999)(92566001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB437;H:lava-test-server.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB437;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB165;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <m3iohq7yem.fsf@adixit-yct.ra.intel.com>
+References: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+ <CALZtONBUDyN7OOMV9ziDXMhFN9+bOcsYvJ0an_7T0VV0Hz+8WQ@mail.gmail.com> <m3iohq7yem.fsf@adixit-yct.ra.intel.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 5 Dec 2014 14:53:40 -0500
+X-Google-Sender-Auth: B7JkX0MI1nAco_XZP-yYCBQDlhw
+Message-ID: <CALZtONA2uk7ZN=f5S-DnmcOwhqtzLXmppk48YqfgjwA+vQuhtw@mail.gmail.com>
+Subject: Re: [PATCH linux-next] Documentation: Build mic/mpssd only for x86_64
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, Jiri Kosina <jkosina@suse.cz>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jennings <sjennings@variantweb.net>,
+        "Yokoyama, Caz" <caz.yokoyama@intel.com>,
+        "Dutt, Sudeep" <sudeep.dutt@intel.com>,
+        "Chandramouli, Dasaratharaman" 
+	<dasaratharaman.chandramouli@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Rao, Nikhil" <nikhil.rao@intel.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Graham Moore <grmoore@opensource.altera.com>
----
- .../devicetree/bindings/mtd/cadence_quadspi.txt    |   50 ++++++++++++++++++++
- 1 file changed, 50 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/cadence_quadspi.txt
+On Fri, Dec 5, 2014 at 1:18 PM, Ashutosh Dixit <ashutosh.dixit@intel.com> wrote:
+> On Thu, Dec 04 2014 at 07:27:06 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+>> On Thu, Dec 4, 2014 at 4:27 PM, Ashutosh Dixit <ashutosh.dixit@intel.com> wrote:
+>>> mic/mpssd along with MIC drivers are currently only usable on
+>>> x86_64. So build mic/mpssd only for x86_64 to avoid build breaks on
+>>> big-endian systems.
+>>
+>> Only building for x86_64 is fine, but in that case what's the point of
+>> leaving the htole16() et. al. functions in mpssd.c?  Shouldn't they be
+>> removed?
+>
+> I am hoping that once glibc is fixed we can remove this limitation on
+> building only for x86_64, so I'd rather htole16() et. al. stayed.
 
-diff --git a/Documentation/devicetree/bindings/mtd/cadence_quadspi.txt b/Documentation/devicetree/bindings/mtd/cadence_quadspi.txt
-new file mode 100644
-index 0000000..3a8ea1c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/cadence_quadspi.txt
-@@ -0,0 +1,50 @@
-+* Cadence Quad SPI controller
-+
-+Required properties:
-+- compatible : Should be "cdns,qspi-nor".
-+- reg : Contains two entries, each of which is a tuple consisting of a
-+	physical address and length.  The first entry is the address and
-+	length of the controller register set.  The second entry is the
-+	address and length of the QSPI Controller data area.
-+- interrupts : Unit interrupt specifier for the controller interrupt.
-+- clocks : phandle to the Quad SPI clock.
-+- ext-decoder : Value of 0 means no external chipselect decoder is
-+	connected, 1 means there is an external chipselect decoder connected.
-+- fifo-depth : Size of the data FIFO in words.
-+- bus-num : Number of the SPI bus to which the controller is connected.
-+
-+Optional subnodes:
-+Subnodes of the Cadence Quad SPI controller are spi slave nodes with additional
-+custom properties:
-+- cdns,page-size : Size, in bytes, of the device's write page
-+- cdns,block-size : Size of the device's erase block
-+- cdns,read-delay : Selay for read capture logic, in clock cycles
-+- cdns,tshsl-ns : Delay in master reference clocks for the length that the master mode chip select outputs are de-asserted between transactions.
-+- cdns,tsd2d-ns : Delay in master reference clocks between one chip select being de-activated and the activation of another.
-+- cdns,tchsh-ns : Delay in master reference clocks between last bit of current transaction and deasserting the device chip select (qspi_n_ss_out).
-+- cdns,tslch-ns : Delay in master reference clocks between setting qspi_n_ss_out low and first bit transfer.
-+
-+Example:
-+
-+	qspi: spi@ff705000 {
-+		compatible = "cdns,qspi-nor";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		reg = <0xff705000 0x1000>,
-+			<0xffa00000 0x1000>;
-+		interrupts = <0 151 4>;
-+		clocks = <&qspi_clk>;
-+		ext-decoder = <0>;
-+		fifo-depth = <128>;
-+
-+		flash0: n25q00@0 {
-+			...
-+			cdns,page-size = <256>;
-+			cdns,block-size = <16>;
-+			cdns,read-delay = <4>;
-+			cdns,tshsl-ns = <50>;
-+			cdns,tsd2d-ns = <50>;
-+			cdns,tchsh-ns = <4>;
-+			cdns,tslch-ns = <4>;
-+		}
-+	}
--- 
-1.7.9.5
+FYI, the bug I opened with glibc:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17679
 
+was rejected because Andreas states "C does not allow function calls
+in file scope."  The suggestion was made to try to fix gcc, but
+honestly I don't have the time (or energy) to push for a gcc change
+just for this. :-)
+
+I do think it's too bad that glibc hto* functions don't work in file
+scope (i.e. with static/global var initialization) for constant values
+(using them with variables is different, which is why
+__bswap_constant_* works in file scope but __bswap_* doesn't), since
+it's simply a 2-step process that's entirely doable by the
+preprocessor and/or compiler; just check if target endianness matches
+desired endianness, and if not the compiler does a simple byte swap of
+the constant value.
+
+Anyway, I doubt glibc and/or gcc will be updated anytime soon to allow this.
+
+>  As I
+> said earlier, I'm fine with your patch too, but restricting the build
+> for x86_64 seems to be the smallest patch which provides an acceptable
+> solution.
+
+Fine with me too.  It'll get big-endian building again.
