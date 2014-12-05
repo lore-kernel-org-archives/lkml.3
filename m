@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaLEO77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:59:59 -0500
-Received: from smarthost01a.mail.zen.net.uk ([212.23.1.1]:58016 "EHLO
-	smarthost01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750749AbaLEO76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:59:58 -0500
-Message-ID: <1417791592.2232.5.camel@linaro.org>
-Subject: Re: [PATCH v12 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 05 Dec 2014 14:59:52 +0000
-In-Reply-To: <1417774227.2232.1.camel@linaro.org>
-References: <1417671172-52915-1-git-send-email-wangnan0@huawei.com>
-	 <1417671360-53399-1-git-send-email-wangnan0@huawei.com>
-	 <1417710073.2239.10.camel@linaro.org> <5481289E.4060504@huawei.com>
-	 <1417774227.2232.1.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01a-IP: [82.69.122.217]
+	id S1751437AbaLEPBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 10:01:16 -0500
+Received: from mout.gmx.net ([212.227.15.15]:52565 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751183AbaLEPBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 10:01:14 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-0fea8cea-4011-4d04-af4a-e7583a7184b4-1417791661803@3capp-gmx-bs52>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: =?UTF-8?Q?=22Peter_H=C3=BCwe=22?= <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, christophe.ricard@gmail.com,
+        josh.triplett@intel.com, linux-api@vger.kernel.org,
+        "Ashley Lai" <ashley@ashleylai.com>, linux-kernel@vger.kernel.org,
+        "Will Arthur" <will.c.arthur@intel.com>,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Aw: Re: [tpmdd-devel] [PATCH v9 8/8] tpm: TPM 2.0 FIFO Interface
+Content-Type: text/plain; charset=UTF-8
+Date: Fri, 5 Dec 2014 16:01:01 +0100
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <201412042328.29578.PeterHuewe@gmx.de>
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <201412042318.33889.PeterHuewe@gmx.de>,
+ <201412042328.29578.PeterHuewe@gmx.de>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:OQndjQNEKBcZNXyUGPytoLWEMDDBV4c5wF4wE1wLvHQ
+ OwW505z4h9h084N6QiOgZ41vEC8qGcIG7A2Wkkj6sDhFu6YePL
+ gTmFgwzjegH3AiJBp2CaBTvl/yuhxNQhkKLrutEbO32UaOFJJV
+ sih5+Nkd7kr0GVeLP8y07tnTEzLNpcz6SuI4/AVPxw5XNkmm0m
+ vda58eL2zU1eJ3jAZRG5l2+USDHAYoNpkPaJ6GxeifpBp61LBh
+ xthCqhc0ntH5+4X5M+IgktJx40pF4VHDAPMQARRvE2W92iczra u6KrjU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-05 at 10:10 +0000, Jon Medhurst (Tixy) wrote:
-[...]
-> I'm worried because this whole optimised kprobes has some rather
-> complicated interactions, e.g. can the background thread that changes
-> breakpoints to jumps (or back again?) could occur at the same time
-> another CPU is processing a kprobe that's been hit, or is in the process
-> of removing a probe.
+> 
+> > Am Donnerstag, 4. Dezember 2014, 06:55:18 schrieb Jarkko Sakkinen:
+> > > From: Will Arthur <will.c.arthur@intel.com>
+> > >
+> > > Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
+> > > instead of calling tpm_get_timeouts(), assign duration and timeout
+> > > values defined in the TPM 2.0 PTP specification.
+> > >
+> > > Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> > > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> 
+> > >
+> > > + sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
+> > > + if ((sts3 & TPM_STS3_TPM2_FAM) == TPM_STS3_TPM2_FAM)
+> > > + chip->flags = TPM_CHIP_FLAG_TPM2;
+> > > +
+> > >
+> 
+> >
+> > When loading tpm_tis force=1 with my tpm1.2 chip on a machine without bios
+> > integration, it fets detected as a TPM2.0 chip :/
+> >
+> > sudo rmmod tpm_tis
+> > # modprobe tpm_tis force=1
+> > modprobe: ERROR: could not insert 'tpm_tis': No such device
+> > # dmesg
+> > [ 263.903828] tpm_tis tpm_tis: 2.0 TPM (device-id 0xB, rev-id 16)
+> > [ 263.948049] tpm_tis tpm_tis: A TPM error (10) occurred continue selftest
+> > [ 263.948120] tpm_tis tpm_tis: TPM self test failed
+> >
+> >
+> > sts3 is reported as 0xff from my TPM1.2
+> >
+> 
+> 
+> Hmm,
+> my TPM2.0 chip also reports sts3 as 0xff (when loading with force=1 on a
+> machine without bios integration)
+> 
+> [ 307.095344] sts3 ff
+> [ 307.095366] tpm_tis tpm_tis: 2.0 TPM (device-id 0x1A, rev-id 16)
+> [ 307.140047] tpm_tis tpm_tis: A TPM error (256) occurred continue selftest
+> [ 307.140056] tpm_tis tpm_tis: TPM self test failed
 
-I think that is a plausible theory. We can have this situation...
 
-1. CPU A executes a probe's 'breakpoint' instruction and the undefined
-instruction exception handler is triggered.
-
-2. CPU B is executing the kprobes optimisation thread and replaces the
-'breakpoint' with a branch instruction.
-
-3. CPU A reads the invalid instruction from memory and because this is
-now the branch instruction it doesn't match
-KPROBE_ARM_BREAKPOINT_INSTRUCTION which kprobes registered to handle.
-This means the undefined instruction exception is treated as just that,
-execution of an undefined instruction.
-
-The above scenario is the exact reason why arch_disarm_kprobe is
-implemented to always use stop_machine to modify the code and we need to
-ensure the same happens with arch_optimize_kprobes.
-
--- 
-Tixy
+You are reading "sts3" - before requesting the locality and thus it returns 0xff for a TPM20 chip as well.
+--> You have to have an active locality first.
 
 
+For a TPM2.0 0xFF is not a valid value (if active locality is set), since reading commandCancel and resetEstablishment bit always return 0 on reads (according to spec).
+
+--> 0xFF should be treated as a TPM1.2 (older tpms with TIS 1.2)
+--> 0x04 should be treated as TPM 2.0
+--> 0x08 should be treated as TPM1.2 (newer tpms with TIS1.3 enhanced)
+
+
+
+Thanks,
+Peter
