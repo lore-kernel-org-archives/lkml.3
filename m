@@ -1,129 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaLETEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:04:53 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:60411 "EHLO
+	id S1751972AbaLETFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:05:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33410 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaLETEv (ORCPT
+	with ESMTP id S1751941AbaLETFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:04:51 -0500
+	Fri, 5 Dec 2014 14:05:06 -0500
 From: "Javi Merino" <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: punit.agrawal@arm.com, broonie@kernel.org,
-        Javi Merino <javi.merino@arm.com>
-Subject: [RFC PATCH v6 0/9] The power allocator thermal governor
-Date: Fri,  5 Dec 2014 19:04:11 +0000
-Message-Id: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+        Dave Martin <Dave.Martin@arm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [RFC PATCH v6 1/9] tracing: Add array printing helpers
+Date: Fri,  5 Dec 2014 19:04:12 +0000
+Message-Id: <1417806260-9264-2-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.9.1
-X-OriginalArrivalTime: 05 Dec 2014 19:04:48.0924 (UTC) FILETIME=[575C45C0:01D010BE]
-X-MC-Unique: 114120519044901701
+In-Reply-To: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+X-OriginalArrivalTime: 05 Dec 2014 19:05:02.0126 (UTC) FILETIME=[5F3ABCE0:01D010BE]
+X-MC-Unique: 114120519050500201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB5J4xwZ013824
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB5J5GRE013829
 
-Hi linux-pm,
+From: Dave Martin <Dave.Martin@arm.com>
 
-The power allocator governor allocates device power to control
-temperature.  This requires transforming performance requests into
-requested power, which we do with an extended cooling device API
-introduced in patch 5 (thermal: extend the cooling device API to
-include power information).  Patch 6 (thermal: cpu_cooling: implement
-the power cooling device API) extends the cpu cooling device using a
-simple power model.  The division of power between the cooling devices
-ensures that power is allocated where it is needed the most, based on
-the current workload.
+If a trace event contains an array, there is currently no standard
+way to format this for text output.  Drivers are currently hacking
+around this by a) local hacks that use the trace_seq functionailty
+directly, or b) just not printing that information.  For fixed size
+arrays, formatting of the elements can be open-coded, but this gets
+cumbersome for arrays of non-trivial size.
 
-Patches 1-3 adds array printing helpers to ftrace, which we then use
-in patch 8.
+These approaches result in non-standard content of the event format
+description delivered to userspace, so userland tools needs to be
+taught to understand and parse each array printing method
+individually.
 
-Changes since v5:
-  - Addressed Stephen's review of the trace patches.
-  - Removed power actors and extended the cooling device interface
-    instead.
-  - Let platforms override the power allocator governor parameters in
-    their thermal zone parameters
+This patch implements common __print_<type>_array() helpers that
+tracepoint implementations can use instead of reinventing them.  A
+simple C-style syntax is used to delimit the array and its elements
+{like,this}.
 
-Changes since v4:
-  - Add more tracing
-  - Document some of the limitations of the power allocator governor
-  - Export the power_actor API and move power_actor.h to include/linux
+So that the helpers can be used with large static arrays as well as
+dynamic arrays, they take a pointer and element count: they can be
+used with __get_dynamic_array() for use with dynamic arrays.
 
-Changes since v3:
-  - Use tz->passive to poll faster when the first trip point is hit.
-  - Don't make a special directory for power_actors
-  - Add a DT property for sustainable-power
-  - Simplify the static power interface and pass the current thermal
-    zone in every power_actor_ops to remove the controversial
-    enum power_actor_types
-  - Use locks with the actor_list list
-  - Use cpufreq_get() to get the frequency of the cpu instead of
-    using the notifiers.
-  - Remove the prompt for THERMAL_POWER_ACTOR_CPU when configuring
-    the kernel
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Dave Martin <Dave.Martin@arm.com>
+---
+ include/linux/ftrace_event.h |  9 ++++++++
+ include/trace/ftrace.h       | 17 +++++++++++++++
+ kernel/trace/trace_output.c  | 51 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 77 insertions(+)
 
-Changes since v2:
-  - Changed the PI controller into a PID controller
-  - Added static power to the cpu power model
-  - tz parameter max_dissipatable_power renamed to sustainable_power
-  - Register the cpufreq cooling device as part of the
-    power_cpu_actor registration.
-
-Changes since v1:
-  - Fixed finding cpufreq cooling devices in cpufreq_frequency_change()
-  - Replaced the cooling device interface with a separate power actor
-    API
-  - Addressed most of Eduardo's comments
-  - Incorporated ftrace support for bitmask to trace cpumasks
-
-Todo:
-  - Expose thermal zone parameters in sysfs
-  - Expose new governor parameters in device tree
-  - Expose cooling device weights in device tree
-
-Cheers,
-Javi & Punit
-
-Dave Martin (1):
-  tracing: Add array printing helpers
-
-Javi Merino (7):
-  tools lib traceevent: Generalize numeric argument
-  tools lib traceevent: Add support for __print_u{8,16,32,64}_array()
-  thermal: let governors have private data for each thermal zone
-  thermal: extend the cooling device API to include power information
-  thermal: cpu_cooling: implement the power cooling device API
-  thermal: introduce the Power Allocator governor
-  thermal: add trace events to the power allocator governor
-
-Punit Agrawal (1):
-  of: thermal: Introduce sustainable power for a thermal zone
-
- .../devicetree/bindings/thermal/thermal.txt        |   4 +
- Documentation/thermal/cpu-cooling-api.txt          | 144 +++++-
- Documentation/thermal/power_allocator.txt          | 223 +++++++++
- drivers/thermal/Kconfig                            |  15 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/cpu_cooling.c                      | 455 +++++++++++++++++-
- drivers/thermal/of-thermal.c                       |   4 +
- drivers/thermal/power_allocator.c                  | 528 +++++++++++++++++++++
- drivers/thermal/thermal_core.c                     | 128 ++++-
- drivers/thermal/thermal_core.h                     |   8 +
- include/linux/cpu_cooling.h                        |  49 +-
- include/linux/ftrace_event.h                       |   9 +
- include/linux/thermal.h                            |  61 ++-
- include/trace/events/thermal_power_allocator.h     | 138 ++++++
- include/trace/ftrace.h                             |  17 +
- kernel/trace/trace_output.c                        |  51 ++
- tools/lib/traceevent/event-parse.c                 |  88 +++-
- tools/lib/traceevent/event-parse.h                 |   8 +-
- 18 files changed, 1886 insertions(+), 45 deletions(-)
- create mode 100644 Documentation/thermal/power_allocator.txt
- create mode 100644 drivers/thermal/power_allocator.c
- create mode 100644 include/trace/events/thermal_power_allocator.h
-
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 28672e87e910..415afc53fa51 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -44,6 +44,15 @@ const char *ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+ const char *ftrace_print_hex_seq(struct trace_seq *p,
+ 				 const unsigned char *buf, int len);
+ 
++const char *ftrace_print_u8_array_seq(struct trace_seq *p,
++				      const u8 *buf, int count);
++const char *ftrace_print_u16_array_seq(struct trace_seq *p,
++				       const u16 *buf, int count);
++const char *ftrace_print_u32_array_seq(struct trace_seq *p,
++				       const u32 *buf, int count);
++const char *ftrace_print_u64_array_seq(struct trace_seq *p,
++				       const u64 *buf, int count);
++
+ struct trace_iterator;
+ struct trace_event;
+ 
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 26b4f2e13275..15bc5d417aea 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -263,6 +263,19 @@
+ #undef __print_hex
+ #define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
+ 
++#undef __print_u8_array
++#define __print_u8_array(array, count)			\
++	ftrace_print_u8_array_seq(p, array, count)
++#undef __print_u16_array
++#define __print_u16_array(array, count)			\
++	ftrace_print_u16_array_seq(p, array, count)
++#undef __print_u32_array
++#define __print_u32_array(array, count)			\
++	ftrace_print_u32_array_seq(p, array, count)
++#undef __print_u64_array
++#define __print_u64_array(array, count)			\
++	ftrace_print_u64_array_seq(p, array, count)
++
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ static notrace enum print_line_t					\
+@@ -676,6 +689,10 @@ static inline void ftrace_test_probe_##call(void)			\
+ #undef __get_dynamic_array_len
+ #undef __get_str
+ #undef __get_bitmask
++#undef __print_u8_array
++#undef __print_u16_array
++#undef __print_u32_array
++#undef __print_u64_array
+ 
+ #undef TP_printk
+ #define TP_printk(fmt, args...) "\"" fmt "\", "  __stringify(args)
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index c6977d5a9b12..4a6ee61f30b3 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -186,6 +186,57 @@ ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+ }
+ EXPORT_SYMBOL(ftrace_print_hex_seq);
+ 
++static const char *
++ftrace_print_array_seq(struct trace_seq *p, const void *buf, int buf_len,
++		       bool (*iterator)(struct trace_seq *p, const char *prefix,
++					const void **buf, int *buf_len))
++{
++	const char *ret = trace_seq_buffer_ptr(p);
++	const char *prefix = "";
++
++	trace_seq_putc(p, '{');
++
++	while (iterator(p, prefix, &buf, &buf_len))
++		prefix = ",";
++
++	trace_seq_putc(p, '}');
++	trace_seq_putc(p, 0);
++
++	return ret;
++}
++
++#define DEFINE_PRINT_ARRAY(type, printk_type, format)			\
++static bool								\
++ftrace_print_array_iterator_##type(struct trace_seq *p, const char *prefix, \
++				   const void **buf, int *buf_len)	\
++{									\
++	const type *__src = *buf;					\
++									\
++	if (*buf_len < sizeof(*__src))					\
++		return false;						\
++									\
++	trace_seq_printf(p, "%s" format, prefix, (printk_type)*__src++); \
++									\
++	*buf = __src;							\
++	*buf_len -= sizeof(*__src);					\
++									\
++	return true;							\
++}									\
++									\
++const char *ftrace_print_##type##_array_seq(				\
++	struct trace_seq *p, const type *buf, int count)		\
++{									\
++	return ftrace_print_array_seq(p, buf, (count) * sizeof(type),	\
++				      ftrace_print_array_iterator_##type); \
++}									\
++									\
++EXPORT_SYMBOL(ftrace_print_##type##_array_seq)
++
++DEFINE_PRINT_ARRAY(u8, unsigned int, "0x%x");
++DEFINE_PRINT_ARRAY(u16, unsigned int, "0x%x");
++DEFINE_PRINT_ARRAY(u32, unsigned int, "0x%x");
++DEFINE_PRINT_ARRAY(u64, unsigned long long, "0x%llx");
++
+ int ftrace_raw_output_prep(struct trace_iterator *iter,
+ 			   struct trace_event *trace_event)
+ {
 -- 
 1.9.1
 
