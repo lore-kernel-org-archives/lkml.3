@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaLEXE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:04:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493AbaLEW4U (ORCPT
+	id S1753064AbaLEXFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:05:33 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:46898 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531AbaLEXF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Setka <setka@vsis.cz>,
-        Thor Thayer <tthayer@opensource.altera.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 56/73] spi: dw: Fix dynamic speed change.
-Date: Fri,  5 Dec 2014 14:45:02 -0800
-Message-Id: <20141205224435.611267063@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
-References: <20141205224433.921659956@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 5 Dec 2014 18:05:28 -0500
 MIME-Version: 1.0
+X-Originating-IP: [2601:6:6b00:f9::a66]
+In-Reply-To: <20141204124422.GA4195@krava.brq.redhat.com>
+References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
+	<1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
+	<20141204124422.GA4195@krava.brq.redhat.com>
+Date: Fri, 5 Dec 2014 18:05:26 -0500
+Message-ID: <CAPoQQ-1m9oRQ7wLfRHFNNZyw7fvCoMa_DX7msP2QsY_i2QyHug@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] tools/perf: support parsing parameterized events
+From: Cody P Schafer <dev@codyps.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, hbabu@us.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 4, 2014 at 7:44 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Tue, Dec 02, 2014 at 06:09:35PM -0800, Sukadev Bhattiprolu wrote:
+>> From: Cody P Schafer <cody@linux.vnet.ibm.com>
+>>
+>> Enable event specification like:
+>>
+>>       pmu/event_name,param1=0x1,param2=0x4/
+>>
+>> Assuming that
+>>
+>>       /sys/bus/event_source/devices/pmu/events/event_name
+>>
+>> Contains something like
+>>
+>>       param2=$foo,bar=1,param1=$baz
+>
+> oops.. sorry to be PITA on this one.. I might have missed something
+> in the previous discussion but I guess I might have finally some
+> opinion on this ;-)
+>
+> here's how I think your patchset works:
+>
+> in /sys/bus/event_source/devices/pmu/events/event_name you can actually have:
+>
+>    param2=foo,bar=1,param1=baz
+>
+> notice no '$', thats what you add later in 'perf list' output, right?
+>
+> Moreover it actually does not matter whats in value 'param2=HERE',
+> because it's not used in the config code at all apart from the
+> 'perf list' display processing.
+>
+> So when we discussed the '$' name way, I thought it'd be like:
+>
+> in /sys/bus/event_source/devices/pmu/events/event_name you have:
+>   param2=$foo,bar=1,param1=$baz
+>
+> and on command line you'd use:
+>   pmu/event_name,foo=0x1,bar=0x4/
+>
+> to assign directly to the $var, which would justify the $var
+> syntax I think..
+>
 
-------------------
+Agreed, what you've described above sounds like a good idea.
 
-From: Thor Thayer <tthayer@opensource.altera.com>
+Compared to monopolizing all strings (which is what I did when
+initialy writing this), using a '$' prefix would allow less pain when
+some events suddenly need non-integer parameters.
 
-commit 0a8727e69778683495058852f783eeda141a754e upstream.
+> anyway we could assign directly to the param term name as you do,
+> but I think we just need to mark the term as parametrized, like:
+>
+> in /sys/bus/event_source/devices/pmu/events/event_name you have:
+>   param2=?,bar=1,param1=?
+>
+> and on command line you'd use:
+>   pmu/event_name,param2=0x1,param1=0x4/
+>
+> while the config code would check that the param substitution is
+> done only for terms with '?' in value, like 'param2=?' and not
+> for all PARSE_EVENTS__TERM_TYPE_STR type terms (as of now)
 
-An IOCTL call that calls spi_setup() and then dw_spi_setup() will
-overwrite the persisted last transfer speed. On each transfer, the
-SPI speed is compared to the last transfer speed to determine if the
-clock divider registers need to be updated (did the speed change?).
-This bug was observed with the spidev driver using spi-config to
-update the max transfer speed.
+I prefer the `foo=0x1` as mentioned previously: it makes the user
+interface much less painful as we can have event-specific names for
+register/hcall fields.
 
-This fix: Don't overwrite the persisted last transaction clock speed
-when updating the SPI parameters in dw_spi_setup(). On the next
-transaction, the new speed won't match the persisted last speed
-and the hardware registers will be updated.
-On initialization, the persisted last transaction clock
-speed will be 0 but will be updated after the first SPI
-transaction.
+I'm pretty sure the code used to do this, not sure when it was removed
+(haven't been following this patchset closely).
 
-Move zeroed clock divider check into clock change test because
-chip->clk_div is zero on startup and would cause a divide-by-zero
-error. The calculation was wrong as well (can't support odd #).
-
-Reported-by: Vlastimil Setka <setka@vsis.cz>
-Signed-off-by: Vlastimil Setka <setka@vsis.cz>
-Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/spi/spi-dw.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
---- a/drivers/spi/spi-dw.c
-+++ b/drivers/spi/spi-dw.c
-@@ -394,9 +394,6 @@ static void pump_transfers(unsigned long
- 	chip = dws->cur_chip;
- 	spi = message->spi;
- 
--	if (unlikely(!chip->clk_div))
--		chip->clk_div = dws->max_freq / chip->speed_hz;
--
- 	if (message->state == ERROR_STATE) {
- 		message->status = -EIO;
- 		goto early_exit;
-@@ -437,7 +434,7 @@ static void pump_transfers(unsigned long
- 	if (transfer->speed_hz) {
- 		speed = chip->speed_hz;
- 
--		if (transfer->speed_hz != speed) {
-+		if ((transfer->speed_hz != speed) || (!chip->clk_div)) {
- 			speed = transfer->speed_hz;
- 			if (speed > dws->max_freq) {
- 				printk(KERN_ERR "MRST SPI0: unsupported"
-@@ -659,7 +656,6 @@ static int dw_spi_setup(struct spi_devic
- 		dev_err(&spi->dev, "No max speed HZ parameter\n");
- 		return -EINVAL;
- 	}
--	chip->speed_hz = spi->max_speed_hz;
- 
- 	chip->tmode = 0; /* Tx & Rx */
- 	/* Default SPI mode is SCPOL = 0, SCPH = 0 */
-
-
+That said: I haven't fiddled with this code in a while (it's Suka's at
+this point), and there might be arguments the other way on both of
+those.
