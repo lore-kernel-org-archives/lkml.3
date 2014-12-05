@@ -1,138 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121AbaLELSX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 06:18:23 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:37109 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaLELSU (ORCPT
+	id S1751831AbaLEKlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 05:41:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50243 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751122AbaLEKlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 06:18:20 -0500
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
-        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
-        hughd@google.com, hocko@suse.cz
-Subject: [PATCH v1 0/5] Reenable might_sleep() checks for might_fault()
-Date: Fri,  5 Dec 2014 12:18:04 +0100
-Message-Id: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120511-0029-0000-0000-00000209737F
+	Fri, 5 Dec 2014 05:41:06 -0500
+Date: Fri, 5 Dec 2014 10:40:09 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+Message-ID: <20141205104009.GE11889@leverpostej>
+References: <sc9836v4>
+ <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+Thread-Topic: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently discovered that might_fault() doesn't call might_sleep() anymore.
-Therefore bugs like:
-	spin_lock(&lock);
-	rc = copy_to_user(...);
-	spin_unlock(&lock);
-would not be detected with CONFIG_DEBUG_ATOMIC_SLEEP. The code was changed to
-disable false positives for code like:
-	pagefault_disable();
-	rc = copy_to_user(...);
-	pagefault_enable();
+Hi,
 
-Until now, pagefault_disable() and pagefault_enable() simply modified the
-preempt count, therefore telling the pagefault handler that the context is
-atomic and sleeping is disallowed.
+On Thu, Dec 04, 2014 at 11:34:15AM +0000, Chunyan Zhang wrote:
+> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
+> 
+> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+> standards based on ARMv8 multiple core architecture.Now we have only one
+> SoC(SC9836) based on this Platform in developing.
+> 
+> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+> of SC9836-UART.
+> 
+> This patchset also has patches which address "sprd" prefix and DT compatible
+> strings for nodes which appear un-documented.
+> 
+> This version code was tesed both on Fast Mode and sc9836-fpga board.
+> We use the latest boot-wrapper-aarch64 as the bootloader.
+> 
+> Changes from v3:
+> * Addressed review comments:
+> 	- Added the description of clock property for sc9836-uart
+> 	- Revised the size of GICC to be 8KiB
+> 	- Added another compatible string for psci-0.1
 
-In order to reenable might_sleep() checks for the correct path, we need a way to
-detect whether we run in a pagefault_disable() context.
+I had open questions on v3 regarding your PSCI imlpementation. You
+mentioned that you are using the aarch64 bootwrapper, but your DT
+describes PSCI 0.2, and the (upstream) bootwrapper does not implement
+PSCI 0.2. Adding the old PSCI compatible string is _not_ sufficient if
+you do not have a full PSCI 0.2 implementation.
 
-This series therefore introduces a separate pagefault_count and uses it to count
-the levels of pagefault_disable() per thread. might_sleep() checks are
-reactivated for the !pagefault_disable() path.
+Given that PSCI 0.2 requires more functionality to be implemented, I'd
+like to know that your implementation is spec-compliant (implementing
+the mandatory functions, nters the kernel in the correct state, etc),
+and that it has been tested.
 
-So this should now work:
-	spin_lock(&lock); /* also if left away */
-	pagefault_disable()
-	rc = copy_to_user(...);
-	pagefault_enable();
-	spin_unlock(&lock);
-And this should report a warning again:
-	spin_lock(&lock);
-	rc = copy_to_user(...);
-	spin_unlock(&lock);
+Would you be able to look at my comments from the last posting please?
 
-Please note that this series will not completely split the handling of
-pagefault_disable() and the preempt count. This will be done in another series.
-Purpose of this series is to reenable might_sleep() checks for might_fault(),
-avoiding to produce false positives.
-
-Cross compiled on powerpc, arm, sparc, sparc64, arm64, x86_64, i386, mips,
-alpha, ia64, xtensa, m68k, microblaze.
-
-Tested on s390. Would be good to get some feedback on the ASM offsets for m32r,
-sparc and xtensa (or if I should simply move the count to the end of the struct
-for these archs ...).
-
-Thanks!
-
-David
-
-
-David Hildenbrand (5):
-  uaccess: add pagefault_count to thread_info
-  uaccess: count pagefault_disable() levels in pagefault_count
-  mm, uaccess: trigger might_sleep() in might_fault() when pagefaults
-    are disabled
-  uaccess: clearify that uaccess may only sleep if pagefaults are not
-    disabled
-  uaccess: CONFIG_DEBUG_PAGEFAULT_COUNT to debug pagefault_count
-
- arch/alpha/include/asm/thread_info.h      |  1 +
- arch/arc/include/asm/thread_info.h        |  1 +
- arch/arm/include/asm/thread_info.h        |  1 +
- arch/arm64/include/asm/thread_info.h      |  1 +
- arch/avr32/include/asm/thread_info.h      |  1 +
- arch/avr32/include/asm/uaccess.h          | 12 +++++---
- arch/blackfin/include/asm/thread_info.h   |  1 +
- arch/c6x/include/asm/thread_info.h        |  1 +
- arch/cris/include/asm/thread_info.h       |  1 +
- arch/frv/include/asm/thread_info.h        |  1 +
- arch/hexagon/include/asm/thread_info.h    |  1 +
- arch/hexagon/include/asm/uaccess.h        |  3 +-
- arch/ia64/include/asm/thread_info.h       |  1 +
- arch/m32r/include/asm/thread_info.h       |  5 +--
- arch/m32r/include/asm/uaccess.h           | 30 ++++++++++++------
- arch/m68k/include/asm/thread_info.h       |  1 +
- arch/metag/include/asm/thread_info.h      |  1 +
- arch/microblaze/include/asm/thread_info.h |  1 +
- arch/microblaze/include/asm/uaccess.h     |  6 ++--
- arch/mips/include/asm/thread_info.h       |  1 +
- arch/mips/include/asm/uaccess.h           | 45 ++++++++++++++++++---------
- arch/mn10300/include/asm/thread_info.h    |  1 +
- arch/openrisc/include/asm/thread_info.h   |  1 +
- arch/parisc/include/asm/thread_info.h     |  1 +
- arch/powerpc/include/asm/thread_info.h    |  1 +
- arch/s390/include/asm/thread_info.h       |  1 +
- arch/s390/include/asm/uaccess.h           | 15 ++++++---
- arch/score/include/asm/thread_info.h      |  1 +
- arch/score/include/asm/uaccess.h          | 15 ++++++---
- arch/sh/include/asm/thread_info.h         |  1 +
- arch/sparc/include/asm/thread_info_32.h   | 20 ++++++------
- arch/sparc/include/asm/thread_info_64.h   | 17 ++++++-----
- arch/tile/include/asm/thread_info.h       |  1 +
- arch/tile/include/asm/uaccess.h           | 21 ++++++++-----
- arch/um/include/asm/thread_info.h         |  1 +
- arch/unicore32/include/asm/thread_info.h  |  1 +
- arch/x86/include/asm/thread_info.h        |  1 +
- arch/x86/include/asm/uaccess.h            | 15 ++++++---
- arch/x86/include/asm/uaccess_32.h         |  6 ++--
- arch/x86/lib/usercopy_32.c                |  6 ++--
- arch/xtensa/include/asm/thread_info.h     |  5 +--
- include/linux/kernel.h                    |  3 +-
- include/linux/uaccess.h                   | 51 ++++++++++++++++++++++++++-----
- lib/Kconfig.debug                         |  9 ++++++
- lib/strnlen_user.c                        |  6 ++--
- mm/maccess.c                              | 11 +++++++
- mm/memory.c                               | 19 +++++-------
- 47 files changed, 245 insertions(+), 101 deletions(-)
-
--- 
-1.8.5.5
-
+Thanks,
+Mark.
