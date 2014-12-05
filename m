@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaLEVgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:36:38 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:59040 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030AbaLEVgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:36:37 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Mike Turquette <mturquette@linaro.org>, kever.yang@rock-chips.com,
-        jay.xu@rock-chips.com, caesar.wang@rock-chips.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: rockchip: Add CLK_SET_RATE_PARENT to sclk_uart clocks
-Date: Fri, 05 Dec 2014 22:40:29 +0100
-Message-ID: <5769551.kTdgyxWvD4@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1417728785-18054-1-git-send-email-dianders@chromium.org>
-References: <1417728785-18054-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752033AbaLEViF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:38:05 -0500
+Received: from ns.horizon.com ([71.41.210.147]:20587 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751855AbaLEViD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:38:03 -0500
+Date: 5 Dec 2014 16:38:01 -0500
+Message-ID: <20141205213801.3844.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: borntraeger@de.ibm.com
+Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
+Cc: linux@horizon.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org
+In-Reply-To: <CA+55aFzzEhbkoXnVGXAbq-HxejmWSyjMBN_aQM61J_zZLPXwAw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 4. Dezember 2014, 13:33:05 schrieb Doug Anderson:
-> We'd like to be able to set the clock rate of the sclk_uart clocks and
-> actually be able to achieve clock rates greater than 24MHz.  To do
-> this we need to be able to pass rate changes upward.
+> Of prefer it to match the put_user model, which is (val, ptr). But as long
+> as there is your safety (and the whole point of the macro is that it
+> figures out the type from the pointer), I guess it doesn't matter too much
+> in practice.
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> I think my original suggestion also wrote it in lower case, since it
+> actually works like a function (well, template, whatever). Again kind of
+> like the user copy "functions".
+> 
+> But I don't care *that* strongly.
 
-applied this to my wip clk branch for 3.20 (on github)
+That's an excellent point.  But it means that Christian, you're free to
+do whatever seems good to you.
 
+I'm not rabid about it, either; I just figure that now is a good time
+to think carefully about it.
 
-Thanks
-Heiko
+Personally, after running through some different names that work
+with (src,dst) order I'd try the pairs:
+
+	READ_ONCE(var) / WRITE_ONCE(value,var)
+or
+	LOAD_ONCE(var) / STORE_ONCE(value,var)
+
+Of the two, I think I prefer the latter, because that's what the
+operations are called at the hardware level, so it's most evocative of
+the actual semantics.  "Assignment" is a higher-level concept.
+
+But as I said, whatever you think best.  I'd just like to advocate for
+some actual thinking, because it's going to be all over the kernel and
+a pain to change.
