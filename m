@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaLEXmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:42:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53862 "EHLO
+	id S1755229AbaLEXnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:43:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337AbaLEWqF (ORCPT
+	with ESMTP id S1752309AbaLEWqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:05 -0500
+	Fri, 5 Dec 2014 17:46:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.17 059/122] USB: uas: Add no-uas quirk for Hitachi usb-3 enclosures 4971:1012
-Date: Fri,  5 Dec 2014 14:43:53 -0800
-Message-Id: <20141205223314.521679360@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 055/122] USB: keyspan: fix tty line-status reporting
+Date: Fri,  5 Dec 2014 14:43:49 -0800
+Message-Id: <20141205223313.815102205@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,32 +28,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 8daee1352d51a32676b84bddcc0e3252d1caa833 upstream.
+commit 5d1678a33c731b56e245e888fdae5e88efce0997 upstream.
 
-These disks have a broken uas implementation, the tag field of the status
-iu-s is not set properly, so we need to fall-back to usb-storage for these.
+Fix handling of TTY error flags, which are not bitmasks and must
+specifically not be ORed together as this prevents the line discipline
+from recognising them.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Also insert null characters when reporting overrun errors as these are
+not associated with the received character.
+
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_uas.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/keyspan.c |   76 +++++++++++++++++++++++++++----------------
+ 1 file changed, 48 insertions(+), 28 deletions(-)
 
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -103,3 +103,10 @@ UNUSUAL_DEV(0x2109, 0x0711, 0x0000, 0x99
- 		"VL711",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -322,14 +322,19 @@ static void	usa26_indat_callback(struct
+ 			/* some bytes had errors, every byte has status */
+ 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+ 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
+-				int stat = data[i], flag = 0;
+-				if (stat & RXERROR_OVERRUN)
+-					flag |= TTY_OVERRUN;
+-				if (stat & RXERROR_FRAMING)
+-					flag |= TTY_FRAME;
+-				if (stat & RXERROR_PARITY)
+-					flag |= TTY_PARITY;
++				int stat = data[i];
++				int flag = TTY_NORMAL;
 +
-+/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
-+UNUSUAL_DEV(0x4971, 0x1012, 0x0000, 0x9999,
-+		"Hitachi",
-+		"External HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_UAS),
++				if (stat & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				/* XXX should handle break (0x10) */
++				if (stat & RXERROR_PARITY)
++					flag = TTY_PARITY;
++				else if (stat & RXERROR_FRAMING)
++					flag = TTY_FRAME;
++
+ 				tty_insert_flip_char(&port->port, data[i+1],
+ 						flag);
+ 			}
+@@ -650,14 +655,19 @@ static void	usa49_indat_callback(struct
+ 		} else {
+ 			/* some bytes had errors, every byte has status */
+ 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
+-				int stat = data[i], flag = 0;
+-				if (stat & RXERROR_OVERRUN)
+-					flag |= TTY_OVERRUN;
+-				if (stat & RXERROR_FRAMING)
+-					flag |= TTY_FRAME;
+-				if (stat & RXERROR_PARITY)
+-					flag |= TTY_PARITY;
++				int stat = data[i];
++				int flag = TTY_NORMAL;
++
++				if (stat & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				/* XXX should handle break (0x10) */
++				if (stat & RXERROR_PARITY)
++					flag = TTY_PARITY;
++				else if (stat & RXERROR_FRAMING)
++					flag = TTY_FRAME;
++
+ 				tty_insert_flip_char(&port->port, data[i+1],
+ 						flag);
+ 			}
+@@ -714,15 +724,19 @@ static void usa49wg_indat_callback(struc
+ 			 */
+ 			for (x = 0; x + 1 < len &&
+ 				    i + 1 < urb->actual_length; x += 2) {
+-				int stat = data[i], flag = 0;
++				int stat = data[i];
++				int flag = TTY_NORMAL;
+ 
+-				if (stat & RXERROR_OVERRUN)
+-					flag |= TTY_OVERRUN;
+-				if (stat & RXERROR_FRAMING)
+-					flag |= TTY_FRAME;
+-				if (stat & RXERROR_PARITY)
+-					flag |= TTY_PARITY;
++				if (stat & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				/* XXX should handle break (0x10) */
++				if (stat & RXERROR_PARITY)
++					flag = TTY_PARITY;
++				else if (stat & RXERROR_FRAMING)
++					flag = TTY_FRAME;
++
+ 				tty_insert_flip_char(&port->port, data[i+1],
+ 						     flag);
+ 				i += 2;
+@@ -785,14 +799,20 @@ static void usa90_indat_callback(struct
+ 			/* some bytes had errors, every byte has status */
+ 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+ 				for (i = 0; i + 1 < urb->actual_length; i += 2) {
+-					int stat = data[i], flag = 0;
+-					if (stat & RXERROR_OVERRUN)
+-						flag |= TTY_OVERRUN;
+-					if (stat & RXERROR_FRAMING)
+-						flag |= TTY_FRAME;
+-					if (stat & RXERROR_PARITY)
+-						flag |= TTY_PARITY;
++					int stat = data[i];
++					int flag = TTY_NORMAL;
++
++					if (stat & RXERROR_OVERRUN) {
++						tty_insert_flip_char(
++								&port->port, 0,
++								TTY_OVERRUN);
++					}
+ 					/* XXX should handle break (0x10) */
++					if (stat & RXERROR_PARITY)
++						flag = TTY_PARITY;
++					else if (stat & RXERROR_FRAMING)
++						flag = TTY_FRAME;
++
+ 					tty_insert_flip_char(&port->port,
+ 							data[i+1], flag);
+ 				}
 
 
