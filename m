@@ -1,176 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaLEOOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:14:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5794 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaLEOOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:14:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="425528292"
-Date: Fri, 5 Dec 2014 16:13:03 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net,
-        Will Arthur <will.c.arthur@intel.com>
-Subject: Re: [PATCH v9 6/8] tpm: TPM 2.0 baseline support
-Message-ID: <20141205141303.GF6993@intel.com>
-References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1417672518-4530-7-git-send-email-jarkko.sakkinen@linux.intel.com>
- <201412050017.40668.PeterHuewe@gmx.de>
+	id S1751453AbaLEKeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 05:34:12 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:57317 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaLEKeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 05:34:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: vishnupatekar <vishnupatekar0510@gmail.com>,
+        maxime.ripard@free-electrons.com, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, dmitry.torokhov@gmail.com,
+        benh@kernel.crashing.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org, robh+dt@kernel.org,
+        msalter@redhat.com, vishnupatekar <VishnuPatekar0510@gmail.com>,
+        jdelvare@suse.de
+Subject: Re: [PATCH 2/3] drivers:input:ps2 Added sunxi A20 ps2 driver, changed makefile and Kconfig
+Date: Fri, 05 Dec 2014 11:33:11 +0100
+Message-ID: <12237550.afophX20rO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1417647224-27950-1-git-send-email-VishnuPatekar0510@gmail.com>
+References: <1417647224-27950-1-git-send-email-VishnuPatekar0510@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412050017.40668.PeterHuewe@gmx.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:oAji2892+rNnFiG9YIn7YdqO/WqW52wLs7HkyxTpEIUYY8fF7qo
+ XPvVL/wz3yDCPKE6TAw8rRd1itNOM8c8Al7Qckl3CeiTteq2G/hkJ0mBdy9BQPihgMrPnSm
+ 3fcvd1+6xILEyNfH3Kn2H/dKdmeTXMv/K7BSSa95P009I/YCNsZwxH1qr7zgdzAg9qZwUg+
+ 9Kq0aWFzAS5xwO6l8VCFw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey
+On Thursday 04 December 2014 04:23:44 vishnupatekar wrote:
+> +
+> +#define DRIVER_NAME		"sunxi-ps2"
+> +
+> +#define RESSIZE(res)        (((res)->end - (res)->start)+1)
 
-is it cool if I prepare a separate set of fixes for all issues
-in v9? I do not see any problem that could not be fixed without
-major structural changes.
+Remove this and use the existing resource_size() function
 
-/Jarkko
+> +
+> +struct sunxips2data {
+> +	int irq;
+> +	spinlock_t ps2_lock;
+> +	void __iomem *base_address;	/* virt address of control registers*/
+> +	struct serio *serio;		/* serio*/
+> +	struct device *dev;
+> +	struct	clk	*pclk;
+> +};
 
-On Fri, Dec 05, 2014 at 12:17:40AM +0100, Peter Hüwe wrote:
-> Am Donnerstag, 4. Dezember 2014, 06:55:16 schrieb Jarkko Sakkinen:
-> > TPM 2.0 devices are separated by adding a field 'flags' to struct
-> > tpm_chip and defining a flag TPM_CHIP_FLAG_TPM2 for tagging them.
-> > 
-> > This patch adds the following internal functions:
-> > 
-> > - tpm2_get_random()
-> > - tpm2_get_tpm_pt()
-> > - tpm2_pcr_extend()
-> > - tpm2_pcr_read()
-> > - tpm2_startup()
-> > 
-> > Additionally, the following exported functions are implemented for
-> > implementing TPM 2.0 device drivers:
-> > 
-> > - tpm2_do_selftest()
-> > - tpm2_calc_ordinal_durations()
-> > - tpm2_gen_interrupt()
-> > 
-> > The existing functions that are exported for the use for existing
-> > subsystems have been changed to check the flags field in struct
-> > tpm_chip and use appropriate TPM 2.0 counterpart if
-> > TPM_CHIP_FLAG_TPM2 is est.
-> > 
-> > The code for tpm2_calc_ordinal_duration() and tpm2_startup() were
-> > originally written by Will Arthur.
-> > 
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> > Signed-off-by: Will Arthur <will.c.arthur@intel.com>
-> > ---
-> >  drivers/char/tpm/Makefile        |   2 +-
-> >  drivers/char/tpm/tpm-chip.c      |  27 +-
-> >  drivers/char/tpm/tpm-interface.c |  24 +-
-> >  drivers/char/tpm/tpm.h           |  61 +++++
-> >  drivers/char/tpm/tpm2-cmd.c      | 542
-> > +++++++++++++++++++++++++++++++++++++++ 5 files changed, 641
-> > insertions(+), 15 deletions(-)
-> >  create mode 100644 drivers/char/tpm/tpm2-cmd.c
-> > 
-> > diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> > index c715596..88848ed 100644
-> > --- a/drivers/char/tpm/Makefile
-> > +++ b/drivers/char/tpm/Makefile
-> > @@ -2,7 +2,7 @@
-> >  # Makefile for the kernel tpm device drivers.
-> >  #
-> >  obj-$(CONFIG_TCG_TPM) += tpm.o
-> > -tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o
-> > +tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o
-> >  tpm-$(CONFIG_ACPI) += tpm_ppi.o
-> > 
-> >  ifdef CONFIG_ACPI
-> > diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
-> > index 7741e28..3f3f2de 100644
-> > --- a/drivers/char/tpm/tpm-chip.c
-> > +++ b/drivers/char/tpm/tpm-chip.c
-> > @@ -195,15 +195,18 @@ int tpm_chip_register(struct tpm_chip *chip)
-> >  	if (rc)
-> >  		return rc;
-> > 
-> > -	rc = tpm_sysfs_add_device(chip);
-> > -	if (rc)
-> > -		goto del_misc;
-> > +	/* Populate sysfs for TPM1 devices. */
-> > +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
-> > +		rc = tpm_sysfs_add_device(chip);
-> > +		if (rc)
-> > +			goto del_misc;
-> > 
-> > -	rc = tpm_add_ppi(chip);
-> > -	if (rc)
-> > -		goto del_sysfs;
-> > +		rc = tpm_add_ppi(chip);
-> > +		if (rc)
-> > +			goto del_sysfs;
-> > 
-> > -	chip->bios_dir = tpm_bios_log_setup(chip->devname);
-> > +		chip->bios_dir = tpm_bios_log_setup(chip->devname);
-> > +	}
-> > 
-> >  	/* Make the chip available. */
-> >  	spin_lock(&driver_lock);
-> > @@ -236,10 +239,12 @@ void tpm_chip_unregister(struct tpm_chip *chip)
-> >  	spin_unlock(&driver_lock);
-> >  	synchronize_rcu();
-> > 
-> > -	if (chip->bios_dir)
-> > -		tpm_bios_log_teardown(chip->bios_dir);
-> > -	tpm_remove_ppi(chip);
-> > -	tpm_sysfs_del_device(chip);
-> > +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
-> > +		if (chip->bios_dir)
-> > +			tpm_bios_log_teardown(chip->bios_dir);
-> > +		tpm_remove_ppi(chip);
-> > +		tpm_sysfs_del_device(chip);
-> > +	}
-> > 
-> >  	tpm_dev_del_device(chip);
-> >  }
-> > diff --git a/drivers/char/tpm/tpm-interface.c
-> > b/drivers/char/tpm/tpm-interface.c index b6f6b17..8a14887 100644
-> > --- a/drivers/char/tpm/tpm-interface.c
-> > +++ b/drivers/char/tpm/tpm-interface.c
-> > @@ -360,7 +360,10 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char
-> > *buf, if (chip->vendor.irq)
-> >  		goto out_recv;
-> > 
-> > -	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
-> > +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-> > +		stop = jiffies + tpm2_calc_ordinal_duration(chip, ordinal);
-> > +	else
-> > +		stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
-> >  	do {
-> >  		u8 status = chip->ops->status(chip);
-> >  		if ((status & chip->ops->req_complete_mask) ==
-> > @@ -483,7 +486,7 @@ static const struct tpm_input_header tpm_startup_header
-> > = { static int tpm_startup(struct tpm_chip *chip, __be16 startup_type) {
-> >  	struct tpm_cmd_t start_cmd;
-> > -	start_cmd.header.in = tpm_startup_header;
-> > +
-> WHY?!? This renders tpm_startup useless.
-> 
-> So NACK for this part.
-> >  	start_cmd.params.startup_in.startup_type = startup_type;
-> >  	return tpm_transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
-> >  				"attempting to start the TPM");
-> 
-> I'll get you an TPM1.2 :)
-> 
-> Thanks
-> Peter
+As this is dynamically allocated, better embed the serio member
+directly to avoid allocating both separately.
+
+> +static int sunxips2_open(struct serio *pserio)
+> +{
+> +	struct sunxips2data *drvdata = pserio->port_data;
+> +	u32 src_clk = 0;
+> +	u32 clk_scdf;
+> +	u32 clk_pcdf;
+> +	u32 rval;
+> +
+> +	/*Set Line Control And Enable Interrupt*/
+> +	rval = SWPS2_LCTL_TXDTOEN|SWPS2_LCTL_STOPERREN|SWPS2_LCTL_ACKERREN|SWPS2_LCTL_PARERREN|SWPS2_LCTL_RXDTOEN;
+> +	writel(rval, drvdata->base_address + SW_PS2_LCTRL);
+> +
+> +	/*Reset FIFO*/
+> +	writel(0x3<<16 | 0x607, drvdata->base_address + SW_PS2_FCTRL);
+> +
+> +	src_clk = clk_get_rate(drvdata->pclk);
+> +
+> +	if (!src_clk) {
+> +		dev_info(drvdata->dev, "w_ps2c_set_sclk error, source clock is 0.");
+> +		return -1;
+> +	}
+> +
+> +	/*Set Clock Divider Register*/
+> +	clk_scdf = ((src_clk + (SW_PS2_SAMPLE_CLK>>1)) / SW_PS2_SAMPLE_CLK - 1);
+> +	clk_pcdf = ((SW_PS2_SAMPLE_CLK + (SW_PS2_SCLK>>1)) / SW_PS2_SCLK - 1);
+> +	rval = (clk_scdf<<8) | clk_pcdf;/* | (PS2_DEBUG_SEL<<16);*/
+> +	writel(rval, drvdata->base_address + SW_PS2_CLKDR);
+> +
+> +	/*Set Global Control Register*/
+> +	rval = SWPS2_RESET|SWPS2_INTEN|SWPS2_MASTER|SWPS2_BUSEN;
+> +	writel(rval, drvdata->base_address + SW_PS2_GCTRL);
+> +
+> +	udelay(100);
+
+100 microseconds is a rather long time to block the CPU for, so this
+needs a comment explaining why the particular delay is needed and why
+you can't use usleep_range() instead.
+
+> +static void sunxips2_close(struct serio *pserio)
+> +{
+> +       struct sunxips2data *drvdata = pserio->port_data;
+> +
+> +       spin_lock(&drvdata->ps2_lock);
+> +       /* Disable the PS2 interrupts */
+> +       writel(0, drvdata->base_address + SW_PS2_GCTRL);
+> +       spin_unlock(&drvdata->ps2_lock);
+> +}
+
+The locking is wrong here: you take the lock without disabling the
+interrupts first, so if the interrupt happens between the spin_lock()
+call and the writel(), the kernel will deadlock.
+
+You will either have to use spin_lock_irq() here, or find a justification
+for dropping the lock entirely.
+
+> +static int sunxips2_write(struct serio *pserio, unsigned char val)
+> +{
+> +	struct sunxips2data *drvdata = (struct sunxips2data *)pserio->port_data;
+> +	u32 timeout = 10000;
+> +
+> +	do {
+> +		if (readl(drvdata->base_address + SW_PS2_FSTAT) & SWPS2_FSTA_TXRDY) {
+> +			writel(val, drvdata->base_address + SW_PS2_DATA);
+> +			return 0;
+> +		}
+> +	} while (timeout--);
+> +
+> +	return -1;
+> +}
+
+We never return '-1' from in-kernel functions. Either make this a bool
+argument, or return a proper errno.h value. This should probably return
+-EIO.
+
+> +	drvdata->irq = irq;
+> +	drvdata->serio = serio;
+> +	drvdata->dev = dev;
+> +	error = devm_request_any_context_irq(drvdata->dev, drvdata->irq, &sunxips2_interrupt, 0,
+> +				DRIVER_NAME, drvdata);
+> +	if (error) {
+> +		dev_err(drvdata->dev,
+> +			"Couldn't allocate interrupt %d : error: %d\n", drvdata->irq, error);
+> +		return error;
+> +	}
+> +	return 0;		/* success */
+> +}
+
+Why any_context?
+
+	Arnd
