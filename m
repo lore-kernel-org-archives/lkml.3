@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaLEXeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:34:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54268 "EHLO
+	id S1754982AbaLEXe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:34:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaLEW4E (ORCPT
+	with ESMTP id S1753175AbaLEW4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:04 -0500
+	Fri, 5 Dec 2014 17:56:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.17 120/122] clk: qcom: Fix duplicate rbcpr clock name
-Date: Fri,  5 Dec 2014 14:44:54 -0800
-Message-Id: <20141205223324.261643265@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.17 073/122] brcmfmac: dont include linux/unaligned/access_ok.h
+Date: Fri,  5 Dec 2014 14:44:07 -0800
+Message-Id: <20141205223316.770127322@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,48 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Georgi Djakov <gdjakov@mm-sol.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 9a6cb70f40b0268297024949eb0a2689e3b7769b upstream.
+commit a1d69c60c44134f64945bbf6a6dfda22eaf4a214 upstream.
 
-There is a duplication in a clock name for apq8084 platform that causes
-the following warning: "RBCPR_CLK_SRC" redefined
+This is a specific implementation, <asm/unaligned.h> is the
+multiplexer that has the arch-specific knowledge of which
+of the implementations needs to be used, so include that.
 
-Resolve this by adding a MMSS_ prefix to this clock and making its name
-coherent with msm8974 platform.
+This issue was revealed by kbuild testing
+when <asm/unaligned.h> was added in <linux/ieee80211.h>
+resulting in redefinition of get_unaligned_be16 (and
+probably others).
 
-Fixes: 2b46cd23a5a2 ("clk: qcom: Add APQ8084 Multimedia Clock Controller (MMCC) support")
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/mmcc-apq8084.c               |    2 +-
- include/dt-bindings/clock/qcom,mmcc-apq8084.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/clk/qcom/mmcc-apq8084.c
-+++ b/drivers/clk/qcom/mmcc-apq8084.c
-@@ -3122,7 +3122,7 @@ static struct clk_regmap *mmcc_apq8084_c
- 	[ESC1_CLK_SRC] = &esc1_clk_src.clkr,
- 	[HDMI_CLK_SRC] = &hdmi_clk_src.clkr,
- 	[VSYNC_CLK_SRC] = &vsync_clk_src.clkr,
--	[RBCPR_CLK_SRC] = &rbcpr_clk_src.clkr,
-+	[MMSS_RBCPR_CLK_SRC] = &rbcpr_clk_src.clkr,
- 	[RBBMTIMER_CLK_SRC] = &rbbmtimer_clk_src.clkr,
- 	[MAPLE_CLK_SRC] = &maple_clk_src.clkr,
- 	[VDP_CLK_SRC] = &vdp_clk_src.clkr,
---- a/include/dt-bindings/clock/qcom,mmcc-apq8084.h
-+++ b/include/dt-bindings/clock/qcom,mmcc-apq8084.h
-@@ -60,7 +60,7 @@
- #define ESC1_CLK_SRC			43
- #define HDMI_CLK_SRC			44
- #define VSYNC_CLK_SRC			45
--#define RBCPR_CLK_SRC			46
-+#define MMSS_RBCPR_CLK_SRC		46
- #define RBBMTIMER_CLK_SRC		47
- #define MAPLE_CLK_SRC			48
- #define VDP_CLK_SRC			49
+--- a/drivers/net/wireless/brcm80211/brcmfmac/pcie.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/pcie.c
+@@ -19,10 +19,10 @@
+ #include <linux/pci.h>
+ #include <linux/vmalloc.h>
+ #include <linux/delay.h>
+-#include <linux/unaligned/access_ok.h>
+ #include <linux/interrupt.h>
+ #include <linux/bcma/bcma.h>
+ #include <linux/sched.h>
++#include <asm/unaligned.h>
+ 
+ #include <soc.h>
+ #include <chipcommon.h>
 
 
