@@ -1,197 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaLENym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:54:42 -0500
-Received: from mail.smart-weblications.de ([188.65.144.61]:49086 "EHLO
-	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751184AbaLENyk (ORCPT
+	id S1753423AbaLENzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:55:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53438 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872AbaLENzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:54:40 -0500
-Message-ID: <5481B944.2000002@smart-weblications.de>
-Date: Fri, 05 Dec 2014 14:55:16 +0100
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>
-CC: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg>
-In-Reply-To: <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Dec 2014 08:55:43 -0500
+Message-ID: <1417787693.3227.9.camel@pengutronix.de>
+Subject: Re: [PATCH v18 06/12] dt-bindings: add document for dw_hdmi
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk, Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
+Date: Fri, 05 Dec 2014 14:54:53 +0100
+In-Reply-To: <1417760834-17141-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417760834-17141-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Freitag, den 05.12.2014, 14:27 +0800 schrieb Andy Yan:
+> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-Am 05.12.2014 10:55, schrieb Julian Anastasov:
+This binding is mostly a copy of the existing
+Documentation/devicetree/bindings/drm/imx/hdmi.txt, but there is a new
+reg-io-width property to configure the register access bus width and we
+have added new compatibles "rockchip,rk3288-dw-hdmi" and the common
+"snps,dw-hdmi-tx". Could we get an Ack for this and patch 11 by the
+device tree maintainers?
 
+regards
+Philipp
+
+> ---
 > 
-> On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+> Changes in v18:
+> - add port bindings
+> - correct some spelling mistakes in dw_hdmi bindings doc
 > 
->> i tried with 3.12.33 without any XFRM and now got this one (which is reproducable):
->>
->> [  233.956012] BUG: unable to handle kernel NULL pointer dereference at 00000000
->>                                    00000014
->> [  233.956218] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack
+> Changes in v17: None
+> Changes in v16:
+> - describe ddc-i2c-bus as optional
+> - add common clocks bindings
 > 
-> 	It seems fix from 3.13 was not sent to 3.12 stable:
+> Changes in v15: None
+> Changes in v14: None
+> Changes in v13: None
+> Changes in v12: None
+> Changes in v11: None
+> Changes in v10: None
+> Changes in v9: None
+> Changes in v8:
+> - correct some spelling mistake
+> - modify ddc-i2c-bus and interrupt description
 > 
-> commit b25adce1606427fd8 ("ipvs: correct usage/allocation of seqadj ext in 
-> ipvs")
+> Changes in v7: None
+> Changes in v6: None
+> Changes in v5: None
+> Changes in v4: None
+> Changes in v3: None
 > 
-> 	There was related change but it is not needed
-> for stable kernels:
+>  .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 50 ++++++++++++++++++++++
+>  1 file changed, 50 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
 > 
-> commit db12cf27435356017e ("netfilter: WARN about wrong usage of sequence 
-> number adjustments"
-> 
-> 	Simon, can we try commit b25adce1606427fd8 for 3.12?
+> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+> new file mode 100644
+> index 0000000..a905c14
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+> @@ -0,0 +1,50 @@
+> +DesignWare HDMI bridge bindings
+> +
+> +Required properties:
+> +- compatible: platform specific such as:
+> +   * "snps,dw-hdmi-tx"
+> +   * "fsl,imx6q-hdmi"
+> +   * "fsl,imx6dl-hdmi"
+> +   * "rockchip,rk3288-dw-hdmi"
+> +- reg: Physical base address and length of the controller's registers.
+> +- interrupts: The HDMI interrupt number
+> +- clocks, clock-names : must have the phandles to the HDMI iahb and isfr clocks,
+> +  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
+> +  the clocks are soc specific, the clock-names should be "iahb", "isfr"
+> +-port@[X]: SoC specific port nodes with endpoint definitions as defined
+> +   in Documentation/devicetree/bindings/media/video-interfaces.txt,
+> +   please refer to the SoC specific binding document:
+> +    * Documentation/devicetree/bindings/drm/imx/hdmi.txt
+> +    * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+> +
+> +Optional properties
+> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
+> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
+> +- clocks, clock-names: phandle to the HDMI CEC clock, name should be "cec"
+> +
+> +Example:
+> +	hdmi: hdmi@0120000 {
+> +		compatible = "fsl,imx6q-hdmi";
+> +		reg = <0x00120000 0x9000>;
+> +		interrupts = <0 115 0x04>;
+> +		gpr = <&gpr>;
+> +		clocks = <&clks 123>, <&clks 124>;
+> +		clock-names = "iahb", "isfr";
+> +		ddc-i2c-bus = <&i2c2>;
+> +
+> +		port@0 {
+> +			reg = <0>;
+> +
+> +			hdmi_mux_0: endpoint {
+> +				remote-endpoint = <&ipu1_di0_hdmi>;
+> +			};
+> +		};
+> +
+> +		port@1 {
+> +			reg = <1>;
+> +
+> +			hdmi_mux_1: endpoint {
+> +				remote-endpoint = <&ipu1_di1_hdmi>;
+> +			};
+> +		};
+> +	};
 
 
->> setup is like this:
->>
->>
->> #virtual=<myVIP>:21
->> #       real=10.10.1.20:21 masq
-[...]
->> #       service=ftp
->> #       scheduler=rr
->> #       protocol=tcp
->> #       checktype=connect
->>
->> ( i remarked it to prevent fruther crashes...)
->>
->> when ip_vs_ftp is loaded and someone trying to make a ftp connection, the system
->> panics instantly.
->>
->> 10.10.1.20 - 10.10.1.23 are lxc-containers using veth connected to the bridge
->> running on 4 different nodes. The node running ldirector/ipvsadm has also one of
->> those containers running (don't know if that matters)
-> 
-> 	It is always good to know the setup. Do you access VIP
-> from local clients (from director)?
-> 
-
-Not for ftp, but we have mail as well in the same setup, and yes, there we do
-access it from local client.
-
->> brctl show
->> bridge name     bridge id               STP enabled     interfaces
->> br0             8000.00259052bbf4       no              bond0
->>                                                         vethMKELUc
-
-[...]
-
-> 	Before I create patch to avoid rerouting for
-> LOCAL_IN you can try to set IPVS sysctl var "snat_reroute" to 0
-> or even to change ip_vs_route_me_harder() function just to return 0.
-> snat_reroute=1 (a default value) is needed if you have
-> multiple links to clients and use ip rules to select
-> correct route by src ip (after SNAT). If you have single
-> uplink snat_reroute can be 0.
-> 
-
-
-ip rule show
-
-0:      from all lookup local
-32765:  from all to 10.10.0.0/16 lookup 200
-
-I use ip rules, but this is not for source but destination. I need this to
-enable clients from the local net to connect to some VIPs so they get there
-correct route back.
-
-I have also seen "b25adce1606427fd8 ipvs: correct usage/allocation of seqadj ext
-in ipvs" in the net while googling, but i thought that it would be included in
-3.12.33 as the patch is over a year old and since this is marked as stable i did
-not expect any issues.
-
-Maybe i would not have stubmled accross this if the ocfs2 devs were as fast as
-the netdev-devs! But to my ocfs2 isseu/bug i still have no reply until today. So
-thank you for the fast responses! I would like to test any patch for 3.12.
-
-If i understand correctly, i set:
-
-echo 0 > /proc/sys/net/ipv4/vs/snat_reroute
-modprobe ip_vs_ftp
-
-and reenable ftp ipvs?
-
-It does not crash, but ftp is not working with neither PASV nor PORT:
-
-
-[14:47:42] [R] Verbindung herstellen zu 192.168.10.62 -> IP=192.168.10.62 PORT=21
-[14:47:42] [R] Verbunden mit 192.168.10.62
-[14:47:43] [R] 220 (vsFTPd 3.0.2)
-[14:47:43] [R] USER (hidden)
-[14:47:43] [R] 331 Please specify the password.
-[14:47:43] [R] PASS (hidden)
-[14:47:43] [R] 230 Login successful.
-[14:47:43] [R] SYST
-[14:47:43] [R] 215 UNIX Type: L8
-[14:47:43] [R] FEAT
-[14:47:43] [R] 211-Features:
-[14:47:43] [R]  EPRT
-[14:47:43] [R]  EPSV
-[14:47:43] [R]  MDTM
-[14:47:43] [R]  PASV
-[14:47:43] [R]  REST STREAM
-[14:47:43] [R]  SIZE
-[14:47:43] [R]  TVFS
-[14:47:43] [R]  UTF8
-[14:47:43] [R] 211 End
-[14:47:43] [R] PWD
-[14:47:43] [R] 257 "/"
-[14:47:43] [R] CWD /
-[14:47:43] [R] 250 Directory successfully changed.
-[14:47:43] [R] PWD
-[14:47:43] [R] 257 "/"
-[14:47:43] [R] TYPE A
-[14:47:43] [R] 200 Switching to ASCII mode.
-[14:47:43] [R] PASV
-[14:47:43] [R] 227 Entering Passive Mode (10,10,1,23,251,6).
-[14:47:43] [R] Datenkanal-IP öffnen: 192.168.10.62 PORT: 64262
-[14:47:44] [R] Datensocket-Fehler: Verbindung abgewiesen
-[14:47:44] [R] List Fehler
-[14:47:44] [R] PASV
-[14:47:44] [R] 227 Entering Passive Mode (10,10,1,23,250,144).
-[14:47:44] [R] Datenkanal-IP öffnen: 192.168.10.62 PORT: 64144
-[14:47:45] [R] Datensocket-Fehler: Verbindung abgewiesen
-[14:47:45] [R] List Fehler
-[14:47:45] [R] PASV-Modus fehlgeschlagen, PORT -Modus versuchen...
-[14:47:45] [R] Auf PORT: 62505 warten, Verbindung erwarten.
-[14:47:45] [R] PORT 192,168,200,13,244,41
-[14:47:45] [R] 500 Illegal PORT command.
-[14:47:45] [R] List Fehler
-[14:48:14] [R] QUIT
-[14:48:14] [R] 221 Goodbye.
-[14:48:14] [R] Ausgeloggt: 192.168.10.62
-
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
