@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaLEWqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
+	id S1752563AbaLEWqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:46:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaLEWqN (ORCPT
+	with ESMTP id S1752452AbaLEWqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Lehrer <lehrer@gmail.com>, Bart Van Assche <bvanassche@acm.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 083/122] srp-target: Retry when QP creation fails with ENOMEM
-Date: Fri,  5 Dec 2014 14:44:17 -0800
-Message-Id: <20141205223318.288990007@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.17 074/122] of/irq: Drop obsolete interrupts vs interrupts-extended text
+Date: Fri,  5 Dec 2014 14:44:08 -0800
+Message-Id: <20141205223316.934917486@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,48 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit ab477c1ff5e0a744c072404bf7db51bfe1f05b6e upstream.
+commit 66865de4314caca30598244b86817e774c188afa upstream.
 
-It is not guaranteed to that srp_sq_size is supported
-by the HCA. So if we failed to create the QP with ENOMEM,
-try with a smaller srp_sq_size. Keep it up until we hit
-MIN_SRPT_SQ_SIZE, then fail the connection.
+a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
+first") updated the description to say that:
 
-Reported-by: Mark Lehrer <lehrer@gmail.com>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+  - Both 'interrupts' and 'interrupts-extended' may be present
+  - Software should prefer 'interrupts-extended'
+  - Software that doesn't comprehend 'interrupts-extended' may use
+    'interrupts'
+
+But there is still a paragraph at the end that prohibits having both and
+says 'interrupts' should be preferred.
+
+Remove the contradictory text.
+
+Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/devicetree/bindings/interrupt-controller/interrupts.txt |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2092,6 +2092,7 @@ static int srpt_create_ch_ib(struct srpt
- 	if (!qp_init)
- 		goto out;
+--- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
++++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+@@ -30,10 +30,6 @@ should only be used when a device has mu
+   Example:
+ 	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
  
-+retry:
- 	ch->cq = ib_create_cq(sdev->device, srpt_completion, NULL, ch,
- 			      ch->rq_size + srp_sq_size, 0);
- 	if (IS_ERR(ch->cq)) {
-@@ -2115,6 +2116,13 @@ static int srpt_create_ch_ib(struct srpt
- 	ch->qp = ib_create_qp(sdev->pd, qp_init);
- 	if (IS_ERR(ch->qp)) {
- 		ret = PTR_ERR(ch->qp);
-+		if (ret == -ENOMEM) {
-+			srp_sq_size /= 2;
-+			if (srp_sq_size >= MIN_SRPT_SQ_SIZE) {
-+				ib_destroy_cq(ch->cq);
-+				goto retry;
-+			}
-+		}
- 		printk(KERN_ERR "failed to create_qp ret= %d\n", ret);
- 		goto err_destroy_cq;
- 	}
+-A device node may contain either "interrupts" or "interrupts-extended", but not
+-both. If both properties are present, then the operating system should log an
+-error and use only the data in "interrupts".
+-
+ 2) Interrupt controller nodes
+ -----------------------------
+ 
 
 
