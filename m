@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaLEVo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:44:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53052 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLEVo4 (ORCPT
+	id S1752015AbaLEVtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:49:16 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:50504 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaLEVtP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:44:56 -0500
-Date: Fri, 5 Dec 2014 13:44:55 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Sanchayan Maity <maitysanchayan@gmail.com>, a.zummo@towertech.it,
-        rtc-linux@googlegroups.com, shawn.guo@linaro.org,
+	Fri, 5 Dec 2014 16:49:15 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Darren Hart <dvhart@infradead.org>, Alex Hung <alex.hung@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCHv2] drivers/rtc/rtc-snvs: Add clock support
-Message-Id: <20141205134455.7901c40277cbc2093ccabfd2@linux-foundation.org>
-In-Reply-To: <5536a0707e516d0f4a0c6eaf9d4d9291@agner.ch>
-References: <cover.1417585458.git.maitysanchayan@gmail.com>
-	<bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
-	<20141204161207.0753031dc675793e9534c1de@linux-foundation.org>
-	<5536a0707e516d0f4a0c6eaf9d4d9291@agner.ch>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+Date: Fri, 05 Dec 2014 22:49:11 +0100
+Message-ID: <2697957.miSb4Rm7HK@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0-rc7+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <201412052223.25059@pali>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <94523420.RuhoUzmTQs@xps13> <201412052223.25059@pali>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Dec 2014 15:54:15 +0100 Stefan Agner <stefan@agner.ch> wrote:
+On Friday 05 December 2014 22:23:25 Pali Rohár wrote:
+> On Friday 05 December 2014 22:12:42 Gabriele Mazzotta wrote:
+> > On Friday 05 December 2014 22:03:24 Pali Rohár wrote:
+> > > On Friday 05 December 2014 21:53:10 Gabriele Mazzotta wrote:
+> > > > On Friday 05 December 2014 21:38:17 Pali Rohár wrote:
+> > > > > On Wednesday 03 December 2014 14:00:23 Darren Hart wrote:
+> > > > > > On Thu, Dec 04, 2014 at 10:55:32AM +0100, Pali Rohár 
+> wrote:
+> > > > > > > Darren, I think that if we do not solve problem with
+> > > > > > > duplicate key events (in dell-wireless.c) we should
+> > > > > > > postpone these patches to later kernel version. It
+> > > > > > > is better to not have such regression as it confuse
+> > > > > > > software like NetworkManager which is widely used.
+> > > > > > 
+> > > > > > OK, that's what I needed. Thanks. Ignore my previous
+> > > > > > request, you answered it here. I will drop
+> > > > > > dell-wireless.c and look for a combined solution from
+> > > > > > you and Alex for the next release.
+> > > > > > 
+> > > > > > Thanks,
+> > > > > 
+> > > > > And according to discussion about Side effect of
+> > > > > pressing special keys at [1] [2] we should not report
+> > > > > this wireless key event (as input device) to userspace.
+> > > > > And Alex's driver is doing that.
+> > > > > 
+> > > > > [1] -
+> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
+> > > > > 2.h tml [2] -
+> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
+> > > > > 4.h tml
+> > > > 
+> > > > Alex's patch is for those laptop whose BIOS only sends a
+> > > > notification to DELLABCE when Fn keys are pressed. His
+> > > > patch simply translates these ACPI notifications to
+> > > > KEY_RFKILL keypresses.
+> > > 
+> > > Yes, and your last patch disables sending such KEY events to
+> > > userspace (in dell-wmi driver). BIOS already handle changes,
+> > > so key press should not be reported to userspace... [1]
+> > > (from previous email).
+> > 
+> > This is not true if ARBT (with 1 as parameter) is called. When
+> > this is done, the BIOS stops managing the radio devices
+> > completely and reporting KEY_RFKILL to userspace becomes a
+> > necessity. I guess that the laptops on which this patch was
+> > tested behaved like mine after ARBT is called, given that the
+> > call was missing completely in the original patch.
+> > 
+> 
+> Ok. It means that at least original Alex patch needs to be 
+> reworked (so we will do not see duplicate events problem and 
+> problem described in previous email).
+> 
+> But my other question is... If ARBT(1) is called then it disables 
+> BIOS support for managing radio devices on your laptop. Why we 
+> need patch which disabling useful functionality (= ability to 
+> disable wifi rfkill)? We still do not have patch which can 
+> correctly set rfkill state by software on laptops of your fn key 
+> type.
 
-> It can be fixed, with something like this:
-> 
-> @@ -346,7 +347,10 @@ static int snvs_rtc_resume(struct device *dev)
->  }
->  #endif
->  
-> -static SIMPLE_DEV_PM_OPS(snvs_rtc_pm_ops, snvs_rtc_suspend,
-> snvs_rtc_resume);
-> +static const struct dev_pm_ops snvs_rtc_pm_ops = {
-> +       .suspend_noirq = snvs_rtc_suspend,
-> +       .resume_noirq = snvs_rtc_resume,
-> +};
->  
->  static const struct of_device_id snvs_dt_ids[] = {
->         { .compatible = "fsl,sec-v4.0-mon-rtc-lp", },
-> 
-> 
-> 
-> Andrew, this patch is already merged, so it would need another fix for
-> this, right?
+That's what happens on my laptop, but Alex said that the laptops on
+which he worked, ARBT was empty, so I guess it's not always a choice.
+In order not to break things, all the laptops that support both the
+methods must be set to the correct mode through ARBT when the module
+is loaded. If this is not done, then what you say is correct, we should
+not report KEY_RFKILL, or at least do it selectively, but I guess that
+this is not be possible without a whitelist (that we don't have).
 
-A replacement patch is OK.  An incremental patch is OK too.  I almost
-always turn the replacement into an incremental so that I and others
-can see what changed.
+> > > > Correct if I'm wrong, but shouldn't his patch have no
+> > > > effects on your laptop? If I'm not wrong, CRBT returns 2
+> > > > on your laptop, so the input device is not even created.
+> > > > Am I missing something?
+> > > > 
+> > > > Gabriele
+> > > 
+> > > Yes, it has no effect for my laptop.
+> 
+> 
+
