@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135AbaLEWye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:54:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53990 "EHLO
+	id S1752957AbaLEWzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:55:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53977 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaLEWqL (ORCPT
+	with ESMTP id S1752391AbaLEWqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:11 -0500
+	Fri, 5 Dec 2014 17:46:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Moore <chris.moore@emulex.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 032/122] IB/isert: Adjust CQ size to HW limits
-Date: Fri,  5 Dec 2014 14:43:26 -0800
-Message-Id: <20141205223310.314999838@linuxfoundation.org>
+        Pontus Fuchs <pontusf@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "Daniel (Deognyoun) Kim" <dekim@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.17 071/122] brcmfmac: fix conversion of channel width 20MHZ_NOHT
+Date: Fri,  5 Dec 2014 14:44:05 -0800
+Message-Id: <20141205223316.448920055@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,63 +34,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Moore <Chris.Moore@Emulex.Com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit b1a5ad006b34ded9dc7ec64988deba1b3ecad367 upstream.
+commit 0cd75b19899fd86b51a6480fb8c00dcd85a54591 upstream.
 
-isert has an issue of trying to create a CQ with more CQEs than are
-supported by the hardware, that currently results in failures during
-isert_device creation during first session login.
+The function chandef_to_chanspec() failed when converting a
+chandef with bandwidth set to NL80211_CHAN_WIDTH_20_NOHT. This
+was reported by user running the device in AP mode.
 
-This is the isert version of the patch that Minh Tran submitted for
-iser, and is simple a workaround required to function with existing
-ocrdma hardware.
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 304 at
+	drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c:381
+		chandef_to_chanspec.isra.11+0x158/0x184()
 
-Signed-off-by: Chris Moore <chris.moore@emulex.com>
-Reviewied-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Modules linked in:
+
+CPU: 0 PID: 304 Comm: hostapd Not tainted 3.16.0-rc7-abb+g64aa90f #8
+
+[<c0014bb4>] (unwind_backtrace) from [<c0012314>] (show_stack+0x10/0x14)
+[<c0012314>] (show_stack) from [<c001d3f8>] (warn_slowpath_common+0x6c/0x8c)
+[<c001d3f8>] (warn_slowpath_common) from [<c001d4b4>] (warn_slowpath_null+0x1c/0x24)
+[<c001d4b4>] (warn_slowpath_null) from [<c03449a4>] (chandef_to_chanspec.isra.11+0x158/0x184)
+[<c03449a4>] (chandef_to_chanspec.isra.11) from [<c0348e00>] (brcmf_cfg80211_start_ap+0x1e4/0x614)
+[<c0348e00>] (brcmf_cfg80211_start_ap) from [<c04d1468>] (nl80211_start_ap+0x288/0x414)
+[<c04d1468>] (nl80211_start_ap) from [<c043d144>] (genl_rcv_msg+0x21c/0x38c)
+[<c043d144>] (genl_rcv_msg) from [<c043c740>] (netlink_rcv_skb+0xac/0xc0)
+[<c043c740>] (netlink_rcv_skb) from [<c043cf14>] (genl_rcv+0x20/0x34)
+[<c043cf14>] (genl_rcv) from [<c043c0a0>] (netlink_unicast+0x150/0x20c)
+[<c043c0a0>] (netlink_unicast) from [<c043c4b8>] (netlink_sendmsg+0x2b8/0x398)
+[<c043c4b8>] (netlink_sendmsg) from [<c04066a4>] (sock_sendmsg+0x84/0xa8)
+[<c04066a4>] (sock_sendmsg) from [<c0407c5c>] (___sys_sendmsg.part.29+0x268/0x278)
+[<c0407c5c>] (___sys_sendmsg.part.29) from [<c0408bdc>] (__sys_sendmsg+0x4c/0x7c)
+[<c0408bdc>] (__sys_sendmsg) from [<c000ec60>] (ret_fast_syscall+0x0/0x44)
+---[ end trace 965ee2158c9905a2 ]---
+
+Reported-by: Pontus Fuchs <pontusf@broadcom.com>
+Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
+Reviewed-by: Daniel (Deognyoun) Kim <dekim@broadcom.com>
+Reviewed-by: Franky (Zhenhui) Lin <frankyl@broadcom.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -225,12 +225,16 @@ isert_create_device_ib_res(struct isert_
- 	struct isert_cq_desc *cq_desc;
- 	struct ib_device_attr *dev_attr;
- 	int ret = 0, i, j;
-+	int max_rx_cqe, max_tx_cqe;
- 
- 	dev_attr = &device->dev_attr;
- 	ret = isert_query_device(ib_dev, dev_attr);
- 	if (ret)
- 		return ret;
- 
-+	max_rx_cqe = min(ISER_MAX_RX_CQ_LEN, dev_attr->max_cqe);
-+	max_tx_cqe = min(ISER_MAX_TX_CQ_LEN, dev_attr->max_cqe);
-+
- 	/* asign function handlers */
- 	if (dev_attr->device_cap_flags & IB_DEVICE_MEM_MGT_EXTENSIONS &&
- 	    dev_attr->device_cap_flags & IB_DEVICE_SIGNATURE_HANDOVER) {
-@@ -272,7 +276,7 @@ isert_create_device_ib_res(struct isert_
- 						isert_cq_rx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_RX_CQ_LEN, i);
-+						max_rx_cqe, i);
- 		if (IS_ERR(device->dev_rx_cq[i])) {
- 			ret = PTR_ERR(device->dev_rx_cq[i]);
- 			device->dev_rx_cq[i] = NULL;
-@@ -284,7 +288,7 @@ isert_create_device_ib_res(struct isert_
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_TX_CQ_LEN, i);
-+						max_tx_cqe, i);
- 		if (IS_ERR(device->dev_tx_cq[i])) {
- 			ret = PTR_ERR(device->dev_tx_cq[i]);
- 			device->dev_tx_cq[i] = NULL;
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -298,6 +298,7 @@ static u16 chandef_to_chanspec(struct br
+ 	primary_offset = ch->center_freq1 - ch->chan->center_freq;
+ 	switch (ch->width) {
+ 	case NL80211_CHAN_WIDTH_20:
++	case NL80211_CHAN_WIDTH_20_NOHT:
+ 		ch_inf.bw = BRCMU_CHAN_BW_20;
+ 		WARN_ON(primary_offset != 0);
+ 		break;
+@@ -322,6 +323,10 @@ static u16 chandef_to_chanspec(struct br
+ 				ch_inf.sb = BRCMU_CHAN_SB_LU;
+ 		}
+ 		break;
++	case NL80211_CHAN_WIDTH_80P80:
++	case NL80211_CHAN_WIDTH_160:
++	case NL80211_CHAN_WIDTH_5:
++	case NL80211_CHAN_WIDTH_10:
+ 	default:
+ 		WARN_ON_ONCE(1);
+ 	}
+@@ -332,6 +337,7 @@ static u16 chandef_to_chanspec(struct br
+ 	case IEEE80211_BAND_5GHZ:
+ 		ch_inf.band = BRCMU_CHAN_BAND_5G;
+ 		break;
++	case IEEE80211_BAND_60GHZ:
+ 	default:
+ 		WARN_ON_ONCE(1);
+ 	}
 
 
