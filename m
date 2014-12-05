@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaLEXQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:16:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
+	id S1754362AbaLEXRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:17:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902AbaLEXGf (ORCPT
+	with ESMTP id S1753892AbaLEXGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:35 -0500
+	Fri, 5 Dec 2014 18:06:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristina Ciocan <cristina.ciocan@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 22/45] iio: Fix IIO_EVENT_CODE_EXTRACT_DIR bit mask
-Date: Fri,  5 Dec 2014 14:45:05 -0800
-Message-Id: <20141205223320.243725499@linuxfoundation.org>
+        Jiri Bohac <jbohac@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 15/45] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
+Date: Fri,  5 Dec 2014 14:44:58 -0800
+Message-Id: <20141205223319.084965109@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,32 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristina Ciocan <cristina.ciocan@intel.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit ccf54555da9a5e91e454b909ca6a5303c7d6b910 upstream.
+[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
 
-The direction field is set on 7 bits, thus we need to AND it with 0111 111 mask
-in order to retrieve it, that is 0x7F, not 0xCF as it is now.
+This fixes an old regression introduced by commit
+b0d0d915 (ipx: remove the BKL).
 
-Fixes: ade7ef7ba (staging:iio: Differential channel handling)
-Signed-off-by: Cristina Ciocan <cristina.ciocan@intel.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+When a recvmsg syscall blocks waiting for new data, no data can be sent on the
+same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
+
+This breaks mars-nwe (NetWare emulator):
+- the ncpserv process reads the request using recvmsg
+- ncpserv forks and spawns nwconn
+- ncpserv calls a (blocking) recvmsg and waits for new requests
+- nwconn deadlocks in sendmsg on the same socket
+
+Commit b0d0d915 has simply replaced BKL locking with
+lock_sock/release_sock. Unlike now, BKL got unlocked while
+sleeping, so a blocking recvmsg did not block a concurrent
+sendmsg.
+
+Only keep the socket locked while actually working with the socket data and
+release it prior to calling skb_recv_datagram().
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/iio/events.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipx/af_ipx.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/include/linux/iio/events.h
-+++ b/include/linux/iio/events.h
-@@ -90,7 +90,7 @@ enum iio_event_direction {
+--- a/net/ipx/af_ipx.c
++++ b/net/ipx/af_ipx.c
+@@ -1778,6 +1778,7 @@ static int ipx_recvmsg(struct kiocb *ioc
+ 	struct ipxhdr *ipx = NULL;
+ 	struct sk_buff *skb;
+ 	int copied, rc;
++	bool locked = true;
  
- #define IIO_EVENT_CODE_EXTRACT_TYPE(mask) ((mask >> 56) & 0xFF)
+ 	lock_sock(sk);
+ 	/* put the autobinding in */
+@@ -1804,6 +1805,8 @@ static int ipx_recvmsg(struct kiocb *ioc
+ 	if (sock_flag(sk, SOCK_ZAPPED))
+ 		goto out;
  
--#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0xCF)
-+#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0x7F)
- 
- #define IIO_EVENT_CODE_EXTRACT_CHAN_TYPE(mask) ((mask >> 32) & 0xFF)
++	release_sock(sk);
++	locked = false;
+ 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 				flags & MSG_DONTWAIT, &rc);
+ 	if (!skb)
+@@ -1837,7 +1840,8 @@ static int ipx_recvmsg(struct kiocb *ioc
+ out_free:
+ 	skb_free_datagram(sk, skb);
+ out:
+-	release_sock(sk);
++	if (locked)
++		release_sock(sk);
+ 	return rc;
+ }
  
 
 
