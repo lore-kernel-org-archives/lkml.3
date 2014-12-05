@@ -1,135 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaLERlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:41:16 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:38930 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaLERlO convert rfc822-to-8bit (ORCPT
+	id S1751964AbaLERmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:42:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44294 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaLERmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:41:14 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        m.szyprowski@samsung.com, aneesh.kumar@linux.vnet.ibm.com,
-        iamjoonsoo.kim@lge.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: Re: [PATCH] CMA: add the amount of cma memory in meminfo
-In-Reply-To: <547FCCE9.2020600@huawei.com>
-Organization: http://mina86.com/
-References: <547FCCE9.2020600@huawei.com>
-User-Agent: Notmuch/0.19~rc1+1~g03aea4f (http://notmuchmail.org) Emacs/25.0.50.3 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:141205:linux-mm@kvack.org::FYgqImNRfZgAk6th:00000000000000000000000000000000000000000000mIr
-X-Hashcash: 1:20:141205:qiuxishi@huawei.com::ehmTg8N4Ql55nXwD:0000000000000000000000000000000000000000002kVe
-X-Hashcash: 1:20:141205:linux-kernel@vger.kernel.org::lVs9iZztM4mIrixF:00000000000000000000000000000000038b6
-X-Hashcash: 1:20:141205:akpm@linux-foundation.org::Hv8DJiSqeH4ZoOJM:0000000000000000000000000000000000004kOE
-X-Hashcash: 1:20:141205:qiuxishi@huawei.com::FmxgbhzwFupO47Uq:0000000000000000000000000000000000000000004/Bj
-X-Hashcash: 1:20:141205:aneesh.kumar@linux.vnet.ibm.com::gWWF29JwW7UwT0pc:000000000000000000000000000000A0d0
-X-Hashcash: 1:20:141205:iamjoonsoo.kim@lge.com::k22Wxl4aVHTeOsq8:0000000000000000000000000000000000000008l0B
-X-Hashcash: 1:20:141205:m.szyprowski@samsung.com::xo/nvjtMVfpylwal:0000000000000000000000000000000000000D31W
-Date: Fri, 05 Dec 2014 18:41:04 +0100
-Message-ID: <xa1ty4qm9eq7.fsf@mina86.com>
+	Fri, 5 Dec 2014 12:42:02 -0500
+Message-ID: <5481EE65.1090705@codeaurora.org>
+Date: Fri, 05 Dec 2014 19:41:57 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] UBI: Split __wl_get_peb()
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-6-git-send-email-richard@nod.at>
+In-Reply-To: <1416835236-25185-6-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04 2014, Xishi Qiu <qiuxishi@huawei.com> wrote:
-> Add the amount of cma memory in the following meminfo.
-> /proc/meminfo
-> /sys/devices/system/node/nodeXX/meminfo
+On 11/24/2014 3:20 PM, Richard Weinberger wrote:
+> Make it two functions, wl_get_wle() and wl_get_peb().
+> wl_get_peb() works exactly like __wl_get_peb() but wl_get_wle()
+> does not call produce_free_peb().
+> While refilling the fastmap user pool we cannot release ubi->wl_lock
+> as produce_free_peb() does.
+> Hence the fastmap logic uses now wl_get_wle().
+
+hmmm... confused... I don't see fastmap code changed
+
 >
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-
-No second look:
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 > ---
->  drivers/base/node.c | 16 ++++++++++------
->  fs/proc/meminfo.c   | 12 +++++++++---
->  2 files changed, 19 insertions(+), 9 deletions(-)
+>   drivers/mtd/ubi/wl.c | 61 ++++++++++++++++++++++++++++++++--------------------
+>   1 file changed, 38 insertions(+), 23 deletions(-)
 >
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index 472168c..a27e4e0 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -120,6 +120,9 @@ static ssize_t node_read_meminfo(struct device *dev,
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  		       "Node %d AnonHugePages:  %8lu kB\n"
->  #endif
-> +#ifdef CONFIG_CMA
-> +		       "Node %d FreeCMAPages:   %8lu kB\n"
-> +#endif
->  			,
->  		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
->  		       nid, K(node_page_state(nid, NR_WRITEBACK)),
-> @@ -136,14 +139,15 @@ static ssize_t node_read_meminfo(struct device *dev,
->  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
->  				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
->  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
-> -#ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
-> -			, nid,
-> -			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
-> -			HPAGE_PMD_NR));
-> -#else
-> -		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +		       , nid, K(node_page_state(nid,
-> +				NR_ANON_TRANSPARENT_HUGEPAGES) * HPAGE_PMD_NR)
-> +#endif
-> +#ifdef CONFIG_CMA
-> +		       , nid, K(node_page_state(nid, NR_FREE_CMA_PAGES))
->  #endif
-> +			);
->  	n += hugetlb_report_node_meminfo(nid, buf + n);
->  	return n;
->  }
-> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-> index aa1eee0..d42e082 100644
-> --- a/fs/proc/meminfo.c
-> +++ b/fs/proc/meminfo.c
-> @@ -138,6 +138,9 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  		"AnonHugePages:  %8lu kB\n"
->  #endif
-> +#ifdef CONFIG_CMA
-> +		"FreeCMAPages:   %8lu kB\n"
-> +#endif
->  		,
->  		K(i.totalram),
->  		K(i.freeram),
-> @@ -187,11 +190,14 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
->  		vmi.used >> 10,
->  		vmi.largest_chunk >> 10
->  #ifdef CONFIG_MEMORY_FAILURE
-> -		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
-> +		, atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
->  #endif
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> -		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
-> -		   HPAGE_PMD_NR)
-> +		, K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
-> +				HPAGE_PMD_NR)
-> +#endif
-> +#ifdef CONFIG_CMA
-> +		, K(global_page_state(NR_FREE_CMA_PAGES))
->  #endif
->  		);
->  
-> -- 
-> 2.0.0
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 7730b97..f028b68 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -499,13 +499,46 @@ out:
+>   #endif
 >
+>   /**
+> - * __wl_get_peb - get a physical eraseblock.
+> + * wl_get_wle - get a mean wl entry to be used by wl_get_peb() or
+> + * refill_wl_user_pool().
+> + * @ubi: UBI device description object
+> + *
+> + * This function returns a a wear leveling entry in case of success and
+
+If you upload a new version, you have a double "a" here: "returns a a 
+wear leveling"
+
+> + * NULL in case of failure.
+> + */
+> +static struct ubi_wl_entry *wl_get_wle(struct ubi_device *ubi)
+> +{
+> +	struct ubi_wl_entry *e;
+> +
+> +	e = find_mean_wl_entry(ubi, &ubi->free);
+> +	if (!e) {
+> +		ubi_err(ubi, "no free eraseblocks");
+> +		return NULL;
+> +	}
+> +
+> +	self_check_in_wl_tree(ubi, e, &ubi->free);
+> +
+> +	/*
+> +	 * Move the physical eraseblock to the protection queue where it will
+> +	 * be protected from being moved for some time.
+> +	 */
+
+I don't think this comment is valid anymore....
+
+> +	rb_erase(&e->u.rb, &ubi->free);
+> +	ubi->free_count--;
+> +	dbg_wl("PEB %d EC %d", e->pnum, e->ec);
+> +
+> +	return e;
+> +}
+> +
+> +/**
+> + * wl_get_peb - get a physical eraseblock.
+>    * @ubi: UBI device description object
+>    *
+>    * This function returns a physical eraseblock in case of success and a
+>    * negative error code in case of failure.
+> + * It is the low level component of ubi_wl_get_peb() in the non-fastmap
+> + * case.
+>    */
+> -static int __wl_get_peb(struct ubi_device *ubi)
+> +static int wl_get_peb(struct ubi_device *ubi)
+>   {
+>   	int err;
+>   	struct ubi_wl_entry *e;
+> @@ -524,27 +557,9 @@ retry:
+>   		goto retry;
+>   	}
+>
+> -	e = find_mean_wl_entry(ubi, &ubi->free);
+> -	if (!e) {
+> -		ubi_err(ubi, "no free eraseblocks");
+> -		return -ENOSPC;
+> -	}
+> -
+> -	self_check_in_wl_tree(ubi, e, &ubi->free);
+> -
+> -	/*
+> -	 * Move the physical eraseblock to the protection queue where it will
+> -	 * be protected from being moved for some time.
+> -	 */
+> -	rb_erase(&e->u.rb, &ubi->free);
+> -	ubi->free_count--;
+> -	dbg_wl("PEB %d EC %d", e->pnum, e->ec);
+> -#ifndef CONFIG_MTD_UBI_FASTMAP
+> -	/* We have to enqueue e only if fastmap is disabled,
+> -	 * is fastmap enabled prot_queue_add() will be called by
+> -	 * ubi_wl_get_peb() after removing e from the pool. */
+> +	e = wl_get_wle(ubi);
+>   	prot_queue_add(ubi, e);
+> -#endif
+> +
+>   	return e->pnum;
+>   }
+>
+> @@ -704,7 +719,7 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
+>   	int peb, err;
+>
+>   	spin_lock(&ubi->wl_lock);
+> -	peb = __wl_get_peb(ubi);
+> +	peb = wl_get_peb(ubi);
+>   	spin_unlock(&ubi->wl_lock);
+>
+>   	if (peb < 0)
 >
 
+
+Thanks,
+Tanya Brokhman
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
