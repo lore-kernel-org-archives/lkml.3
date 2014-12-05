@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233AbaLEQRa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:17:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41631 "EHLO mx1.redhat.com"
+	id S1751347AbaLEQSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:18:22 -0500
+Received: from tex.lwn.net ([70.33.254.29]:44379 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896AbaLEQR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:17:29 -0500
-Date: Fri, 5 Dec 2014 14:17:01 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, Luiz Capitulino <lcapitulino@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, kvm@vger.kernel.org
-Subject: Re: [patch -rt 2/2] KVM: lapic: mark LAPIC timer handler as irqsafe
-Message-ID: <20141205161701.GA29003@amt.cnet>
-References: <20141125172108.992070524@redhat.com>
- <20141125172329.580701786@redhat.com>
- <5474D476.3020506@redhat.com>
- <alpine.DEB.2.11.1411252123480.3961@nanos>
- <54806756.30503@redhat.com>
+	id S1750937AbaLEQSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 11:18:21 -0500
+Date: Fri, 5 Dec 2014 11:18:18 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Streetman <ddstreet@ieee.org>, Jennings <sjennings@variantweb.net>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        Siva Yerramreddy <yshivakrishna@gmail.com>
+Subject: Re: [PATCH linux-next] Documentation: Build mic/mpssd only for
+ x86_64
+Message-ID: <20141205111818.551a870f@lwn.net>
+In-Reply-To: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+References: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54806756.30503@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 02:53:26PM +0100, Paolo Bonzini wrote:
-> 
-> 
-> On 25/11/2014 21:24, Thomas Gleixner wrote:
-> > On Tue, 25 Nov 2014, Rik van Riel wrote:
-> >> On 11/25/2014 12:21 PM, Marcelo Tosatti wrote:
-> >>> Since lapic timer handler only wakes up a simple waitqueue,
-> >>> it can be executed from hardirq context.
-> >>>
-> >>> Reduces average cyclictest latency by 3us.
-> >>
-> >> Can this patch be merged in the KVM tree, and go
-> >> upstream via Paolo?
-> > 
-> > Not really as it has RT dependencies ....
-> 
-> Can hrtimer_start_expires even return ETIME on a non-RT kernel?  If yes,
-> I can take patch 2.  If not, it's better to keep both patches in the RT
-> tree.
-> 
-> Paolo
+On Thu,  4 Dec 2014 13:27:29 -0800
+Ashutosh Dixit <ashutosh.dixit@intel.com> wrote:
 
-It can't. We're still evaluating the necessity of this patch, will
-resubmit accordingly.
+> mic/mpssd along with MIC drivers are currently only usable on
+> x86_64. So build mic/mpssd only for x86_64 to avoid build breaks on
+> big-endian systems.
 
+I can certainly apply this.  But it seems to me that this kind of code
+doesn't belong in the documentation directory.  How about a patch to move
+it to tools/ ?
+
+jon
