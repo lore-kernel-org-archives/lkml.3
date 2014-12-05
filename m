@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaLEI5q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:57:46 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5487 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752621AbaLEI5p convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:57:45 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'akpm@linux-foundation.org'" <akpm@linux-foundation.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>
-Date: Fri, 5 Dec 2014 16:57:38 +0800
-Subject: [RFC] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
-Thread-Topic: [RFC] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
-Thread-Index: AdAQaYTRBP+XSfzeRTCVl77g86jARg==
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752890AbaLENx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:53:27 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:59522 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaLENxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 08:53:25 -0500
+Date: Fri, 5 Dec 2014 13:51:33 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Sekhar Nori <nsekhar@ti.com>,
+        <uwe@kleine-koenig.org>
+Subject: Re: [PATCH] tty: serial: serial-omap: depend on !8250_omap
+Message-ID: <20141205135133.37fb96f6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20141202015118.GA1891@saruman>
+References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
+	<20141129094823.GA10840@linutronix.de>
+	<20141129173418.GY2817@atomide.com>
+	<20141201140914.728aaa46@lxorguk.ukuu.org.uk>
+	<20141201231338.GA14524@fuloong-minipc.musicnaut.iki.fi>
+	<20141202015118.GA1891@saruman>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add KPF_ZERO_PAGE flag for zero_page,
-so that userspace process can notice zero_page from
-/proc/kpageflags, and then do memory analysis more accurately.
+On Mon, 1 Dec 2014 19:51:18 -0600
+Felipe Balbi <balbi@ti.com> wrote:
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- fs/proc/page.c                         | 3 +++
- include/uapi/linux/kernel-page-flags.h | 1 +
- 2 files changed, 4 insertions(+)
+> On Tue, Dec 02, 2014 at 01:13:38AM +0200, Aaro Koskinen wrote:
+> > Hi,
+> > 
+> > On Mon, Dec 01, 2014 at 02:09:14PM +0000, One Thousand Gnomes wrote:
+> > > > Well the nightmare userspace switch from ttyS to ttyO few years ago is
+> > > > something we want to avoid.. I think the best solution would be to make
+> > > > serial-omap.c transparently provide support for ttyO using the new 8250
+> > > > code so both ttyS and ttyO devices would just work. Otherwise it will
+> > > > be years of "my serial port stopped working" questions again.
+> > > 
+> > > Thata a udev problem not a kernel one surely.
+> > 
+> > People also use serial console to observe the early kernel boot before
+> > the userspace is started.
+> 
+> right, we need a way to tell the kernel that ttyO%d and ttyS%d are the
+> exact same device so that console=ttyO0 and console=ttyS0 mean the same
+> thing. That maintains backwards compatibility and lets people move on
 
-diff --git a/fs/proc/page.c b/fs/proc/page.c
-index 1e3187d..120dbf7 100644
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -136,6 +136,9 @@ u64 stable_page_flags(struct page *page)
- 	if (PageBalloon(page))
- 		u |= 1 << KPF_BALLOON;
- 
-+	if (is_zero_pfn(page_to_pfn(page)))
-+		u |= 1 << KPF_ZERO_PAGE;
-+
- 	u |= kpf_copy_bit(k, KPF_LOCKED,	PG_locked);
- 
- 	u |= kpf_copy_bit(k, KPF_SLAB,		PG_slab);
-diff --git a/include/uapi/linux/kernel-page-flags.h b/include/uapi/linux/kernel-page-flags.h
-index 2f96d23..a6c4962 100644
---- a/include/uapi/linux/kernel-page-flags.h
-+++ b/include/uapi/linux/kernel-page-flags.h
-@@ -32,6 +32,7 @@
- #define KPF_KSM			21
- #define KPF_THP			22
- #define KPF_BALLOON		23
-+#define KPF_ZERO_PAGE		24
- 
- 
- #endif /* _UAPILINUX_KERNEL_PAGE_FLAGS_H */
--- 
-2.1.3
+Yes.. and that possibly also means a temporary char driver that claims
+ttyO* and simply redirects the calls into the tty.
