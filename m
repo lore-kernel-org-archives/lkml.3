@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbaLEXss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:48:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
+	id S1754656AbaLEXsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:48:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaLEWp5 (ORCPT
+	with ESMTP id S1751709AbaLEWp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:45:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ido Shamay <idos@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 027/122] net/mlx4_en: Add VXLAN ndo calls to the PF net device ops too
-Date: Fri,  5 Dec 2014 14:43:21 -0800
-Message-Id: <20141205223309.518027993@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 036/122] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Date: Fri,  5 Dec 2014 14:43:30 -0800
+Message-Id: <20141205223310.921695603@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,53 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-[ Upstream commit 9737c6ab7afbc950e997ef80cba2c40dbbd16ea4 ]
+commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
 
-This is currently missing, which results in a crash when one attempts
-to set VXLAN tunnel over the mlx4_en when acting as PF.
+On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
+5 seconds after the end of a playback.
 
-	[ 2408.785472] BUG: unable to handle kernel NULL pointer dereference at (null)
-	[...]
-	[ 2408.994104] Call Trace:
-	[ 2408.996584]  [<ffffffffa021f7f5>] ? vxlan_get_rx_port+0xd6/0x103 [vxlan]
-	[ 2409.003316]  [<ffffffffa021f71f>] ? vxlan_lowerdev_event+0xf2/0xf2 [vxlan]
-	[ 2409.010225]  [<ffffffffa0630358>] mlx4_en_start_port+0x862/0x96a [mlx4_en]
-	[ 2409.017132]  [<ffffffffa063070f>] mlx4_en_open+0x17f/0x1b8 [mlx4_en]
+The SMALL_POP bit should fix this, but its definition is incorrect:
+according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
+bit 1.
 
-While here, make sure to invoke vxlan_get_rx_port() only when VXLAN
-offloads are actually enabled and not when they are only supported.
+Fix the definition accordingly and enable the bit as intended per the code
+comment.
 
-Reported-by: Ido Shamay <idos@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+After applying this change, no loud 'click' sound is heard after playback
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1693,7 +1693,7 @@ int mlx4_en_start_port(struct net_device
- 	mlx4_set_stats_bitmap(mdev->dev, &priv->stats_bitmap);
+---
+ sound/soc/codecs/sgtl5000.c |    3 +--
+ sound/soc/codecs/sgtl5000.h |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1316,8 +1316,7 @@ static int sgtl5000_probe(struct snd_soc
  
- #ifdef CONFIG_MLX4_EN_VXLAN
--	if (priv->mdev->dev->caps.flags2 & MLX4_DEV_CAP_FLAG2_VXLAN_OFFLOADS)
-+	if (priv->mdev->dev->caps.tunnel_offload_mode == MLX4_TUNNEL_OFFLOAD_MODE_VXLAN)
- 		vxlan_get_rx_port(dev);
- #endif
- 	priv->port_up = true;
-@@ -2403,6 +2403,10 @@ static const struct net_device_ops mlx4_
- 	.ndo_rx_flow_steer	= mlx4_en_filter_rfs,
- #endif
- 	.ndo_get_phys_port_id	= mlx4_en_get_phys_port_id,
-+#ifdef CONFIG_MLX4_EN_VXLAN
-+	.ndo_add_vxlan_port	= mlx4_en_add_vxlan_port,
-+	.ndo_del_vxlan_port	= mlx4_en_del_vxlan_port,
-+#endif
- };
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+-				SGTL5000_SMALL_POP,
+-				SGTL5000_SMALL_POP);
++				SGTL5000_SMALL_POP, 1);
  
- int mlx4_en_init_netdev(struct mlx4_en_dev *mdev, int port,
+ 	/* disable short cut detector */
+ 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -275,7 +275,7 @@
+ #define SGTL5000_BIAS_CTRL_MASK			0x000e
+ #define SGTL5000_BIAS_CTRL_SHIFT		1
+ #define SGTL5000_BIAS_CTRL_WIDTH		3
+-#define SGTL5000_SMALL_POP			0x0001
++#define SGTL5000_SMALL_POP			0
+ 
+ /*
+  * SGTL5000_CHIP_MIC_CTRL
 
 
