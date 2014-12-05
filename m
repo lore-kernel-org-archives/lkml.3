@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaLESi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:38:58 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:49227 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaLESi4 (ORCPT
+	id S1751862AbaLESkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:40:04 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45483 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaLESkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:38:56 -0500
+	Fri, 5 Dec 2014 13:40:01 -0500
+Date: Fri, 5 Dec 2014 18:39:45 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
+References: <5481794E.4050406@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <20141205171501.GA1320@redhat.com>
-References: <547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-Date: Fri, 5 Dec 2014 10:38:55 -0800
-X-Google-Sender-Auth: BTIWRTkr7FP4c1keMSRq6ddbNZ4
-Message-ID: <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5481794E.4050406@broadcom.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 9:15 AM, Dave Jones <davej@redhat.com> wrote:
->
-> A bisect later, and I landed on a kernel that ran for a day, before
-> spewing NMI messages, recovering, and then..
->
-> http://codemonkey.org.uk/junk/log.txt
+On Fri, Dec 05, 2014 at 09:22:22AM +0000, Arend van Spriel wrote:
+> For our brcm80211 development we are working on getting brcmfmac driver
+> up and running on a Broadcom ARM-based platform. The wireless device is
+> a PCIe device, which is hooked up to the system behind a PCIe host
+> bridge, and we transfer information between host and device using a
+> descriptor ring buffer allocated using dma_alloc_coherent(). We mostly
+> tested on x86 and seen no issue. However, on this ARM platform
+> (single-core A9) we detect occasionally that the descriptor content is
+> invalid. When this occurs we do a dma_sync_single_for_cpu() and this is
+> retried a number of times if the problem persists. Actually, found out
+> that someone made a mistake by using virt_to_dma(va) to get the
+> dma_handle parameter. So probably we only provided a delay in the retry
+> loop. After fixing that a single call to dma_sync_single_for_cpu() is
+> sufficient. The DMA-API-HOWTO clearly states that:
 
-I have to admit I'm seeing absolutely nothing sensible in there.
+Does your system have an L2 cache? What's the SoC topology, can PCIe see
+such L2 cache (or snoop the L1 caches)?
 
-Call it bad, and see if bisection ends up slowly -oh so slowly -
-pointing to some direction. Because I don't think it's the hardware,
-considering that apparently 3.16 is solid. And the spews themselves
-are so incomprehensible that I'm not seeing any pattern what-so-ever.
+Also, are you certain that dma_alloc_coherent() ends up creating a
+non-cacheable mapping in Linux (this call translates to a function
+pointer call which may or may not create non-cacheable memory, depending
+on the "dma-coherent" property passed via DT).
 
-                     Linus
+-- 
+Catalin
