@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617AbaLEW7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:59:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1753672AbaLEXAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:00:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaLEW41 (ORCPT
+	with ESMTP id S1753432AbaLEW4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:27 -0500
+	Fri, 5 Dec 2014 17:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.14 45/73] of/irq: Drop obsolete interrupts vs interrupts-extended text
-Date: Fri,  5 Dec 2014 14:44:51 -0800
-Message-Id: <20141205224435.291991564@linuxfoundation.org>
+        Eric Paire <eric.paire@st.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        gong.chen@linux.intel.com, John Sullivan <jsrhbz@kanargh.force9.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Theodore Tso <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 68/73] bitops: Fix shift overflow in GENMASK macros
+Date: Fri,  5 Dec 2014 14:45:14 -0800
+Message-Id: <20141205224435.971829083@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -30,46 +35,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Maxime COQUELIN <maxime.coquelin@st.com>
 
-commit 66865de4314caca30598244b86817e774c188afa upstream.
+commit 00b4d9a14125f1e51874def2b9de6092e007412d upstream.
 
-a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
-first") updated the description to say that:
+On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
+instead of the expected ~0UL.
 
-  - Both 'interrupts' and 'interrupts-extended' may be present
-  - Software should prefer 'interrupts-extended'
-  - Software that doesn't comprehend 'interrupts-extended' may use
-    'interrupts'
+This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
 
-But there is still a paragraph at the end that prohibits having both and
-says 'interrupts' should be preferred.
+This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
+1 << 64 for GENMASK_ULL.
 
-Remove the contradictory text.
-
-Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Brian Norris <computersforpeace@gmail.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Rob Herring <robh@kernel.org>
+Reported-by: Eric Paire <eric.paire@st.com>
+Suggested-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: linux@rasmusvillemoes.dk
+Cc: gong.chen@linux.intel.com
+Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Fixes: 10ef6b0dffe4 ("bitops: Introduce a more generic BITMASK macro")
+Link: http://lkml.kernel.org/r/1415267659-10563-1-git-send-email-maxime.coquelin@st.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- Documentation/devicetree/bindings/interrupt-controller/interrupts.txt |    4 ----
- 1 file changed, 4 deletions(-)
-
---- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-@@ -30,10 +30,6 @@ should only be used when a device has mu
-   Example:
- 	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index be5fd38bd5a0..5d858e02997f 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -18,8 +18,11 @@
+  * position @h. For example
+  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+  */
+-#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+-#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
++#define GENMASK(h, l) \
++	(((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
++
++#define GENMASK_ULL(h, l) \
++	(((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
  
--A device node may contain either "interrupts" or "interrupts-extended", but not
--both. If both properties are present, then the operating system should log an
--error and use only the data in "interrupts".
--
- 2) Interrupt controller nodes
- -----------------------------
- 
+ extern unsigned int __sw_hweight8(unsigned int w);
+ extern unsigned int __sw_hweight16(unsigned int w);
 
 
