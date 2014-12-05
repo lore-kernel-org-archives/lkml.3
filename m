@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaLEXYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:24:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
+	id S1753523AbaLEXZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:25:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaLEW4N (ORCPT
+	with ESMTP id S1753309AbaLEW4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:13 -0500
+	Fri, 5 Dec 2014 17:56:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.14 33/73] staging: r8188eu: Add new device ID for DLink GO-USB-N150
-Date: Fri,  5 Dec 2014 14:44:39 -0800
-Message-Id: <20141205224434.933455037@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 03/73] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
+Date: Fri,  5 Dec 2014 14:44:09 -0800
+Message-Id: <20141205224434.031688097@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -28,28 +30,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 6d4556fc0309608f760f1d329df56d77fdd0c31a upstream.
+commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
 
-The DLink GO-USB-N150 with revision B1 uses this driver.
+There's nothing special enough about the espfix64 double fault fixup to
+justify writing it in assembly.  Move it to C.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+This also fixes a bug: if the double fault came from an IST stack, the
+old asm code would return to a partially uninitialized stack frame.
+
+Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/entry_64.S |   34 ++--------------------------------
+ arch/x86/kernel/traps.c    |   24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 32 deletions(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -57,6 +57,7 @@ static struct usb_device_id rtw_usb_id_t
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
-+	{USB_DEVICE(0x2001, 0x3311)}, /* DLink GO-USB-N150 REV B1 */
- 	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
- 	{}	/* Terminating entry */
- };
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1053,6 +1053,7 @@ ENTRY(native_iret)
+ 	jnz native_irq_return_ldt
+ #endif
+ 
++.global native_irq_return_iret
+ native_irq_return_iret:
+ 	iretq
+ 	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+@@ -1147,37 +1148,6 @@ ENTRY(retint_kernel)
+ 	CFI_ENDPROC
+ END(common_interrupt)
+ 
+-	/*
+-	 * If IRET takes a fault on the espfix stack, then we
+-	 * end up promoting it to a doublefault.  In that case,
+-	 * modify the stack to make it look like we just entered
+-	 * the #GP handler from user space, similar to bad_iret.
+-	 */
+-#ifdef CONFIG_X86_ESPFIX64
+-	ALIGN
+-__do_double_fault:
+-	XCPT_FRAME 1 RDI+8
+-	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
+-	sarq $PGDIR_SHIFT,%rax
+-	cmpl $ESPFIX_PGD_ENTRY,%eax
+-	jne do_double_fault		/* No, just deliver the fault */
+-	cmpl $__KERNEL_CS,CS(%rdi)
+-	jne do_double_fault
+-	movq RIP(%rdi),%rax
+-	cmpq $native_irq_return_iret,%rax
+-	jne do_double_fault		/* This shouldn't happen... */
+-	movq PER_CPU_VAR(kernel_stack),%rax
+-	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+-	movq %rax,RSP(%rdi)
+-	movq $0,(%rax)			/* Missing (lost) #GP error code */
+-	movq $general_protection,RIP(%rdi)
+-	retq
+-	CFI_ENDPROC
+-END(__do_double_fault)
+-#else
+-# define __do_double_fault do_double_fault
+-#endif
+-
+ /*
+  * End of kprobes section
+  */
+@@ -1379,7 +1349,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault __do_double_fault
++paranoiderrorentry double_fault do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -244,6 +244,30 @@ dotraplinkage void do_double_fault(struc
+ 	static const char str[] = "double fault";
+ 	struct task_struct *tsk = current;
+ 
++#ifdef CONFIG_X86_ESPFIX64
++	extern unsigned char native_irq_return_iret[];
++
++	/*
++	 * If IRET takes a non-IST fault on the espfix64 stack, then we
++	 * end up promoting it to a doublefault.  In that case, modify
++	 * the stack to make it look like we just entered the #GP
++	 * handler from user space, similar to bad_iret.
++	 */
++	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
++		regs->cs == __KERNEL_CS &&
++		regs->ip == (unsigned long)native_irq_return_iret)
++	{
++		struct pt_regs *normal_regs = task_pt_regs(current);
++
++		/* Fake a #GP(0) from userspace. */
++		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
++		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
++		regs->ip = (unsigned long)general_protection;
++		regs->sp = (unsigned long)&normal_regs->orig_ax;
++		return;
++	}
++#endif
++
+ 	exception_enter();
+ 	/* Return not checked because double check cannot be ignored */
+ 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
 
 
