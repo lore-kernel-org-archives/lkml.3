@@ -1,55 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaLEG1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:27:24 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:40736 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaLEG1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:27:22 -0500
-Date: Fri, 5 Dec 2014 06:27:19 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm intel fixes
-Message-ID: <alpine.DEB.2.00.1412050626130.17905@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752183AbaLEG1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:27:47 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:43535 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390AbaLEG1p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 01:27:45 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <e59b051c1cf6f5b5e009da2757d778da>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
+        Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v18 06/12] dt-bindings: add document for dw_hdmi
+Date: Fri,  5 Dec 2014 14:27:14 +0800
+Message-Id: <1417760834-17141-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-Hi Linus,
+---
 
-two intel stable fixes, that should be it from me for this round.
+Changes in v18:
+- add port bindings
+- correct some spelling mistakes in dw_hdmi bindings doc
 
-Dave.
+Changes in v17: None
+Changes in v16:
+- describe ddc-i2c-bus as optional
+- add common clocks bindings
 
-The following changes since commit ebea76f5b95caddb59f49a3e288da26358e6ab1f:
+Changes in v15: None
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
 
-  Merge tag 'media/v3.18-rc8' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2014-12-04 16:06:02 -0800)
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
 
-are available in the git repository at:
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 50 ++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+new file mode 100644
+index 0000000..a905c14
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+@@ -0,0 +1,50 @@
++DesignWare HDMI bridge bindings
++
++Required properties:
++- compatible: platform specific such as:
++   * "snps,dw-hdmi-tx"
++   * "fsl,imx6q-hdmi"
++   * "fsl,imx6dl-hdmi"
++   * "rockchip,rk3288-dw-hdmi"
++- reg: Physical base address and length of the controller's registers.
++- interrupts: The HDMI interrupt number
++- clocks, clock-names : must have the phandles to the HDMI iahb and isfr clocks,
++  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
++  the clocks are soc specific, the clock-names should be "iahb", "isfr"
++-port@[X]: SoC specific port nodes with endpoint definitions as defined
++   in Documentation/devicetree/bindings/media/video-interfaces.txt,
++   please refer to the SoC specific binding document:
++    * Documentation/devicetree/bindings/drm/imx/hdmi.txt
++    * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
++
++Optional properties
++- reg-io-width: the width of the reg:1,4, default set to 1 if not present
++- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
++- clocks, clock-names: phandle to the HDMI CEC clock, name should be "cec"
++
++Example:
++	hdmi: hdmi@0120000 {
++		compatible = "fsl,imx6q-hdmi";
++		reg = <0x00120000 0x9000>;
++		interrupts = <0 115 0x04>;
++		gpr = <&gpr>;
++		clocks = <&clks 123>, <&clks 124>;
++		clock-names = "iahb", "isfr";
++		ddc-i2c-bus = <&i2c2>;
++
++		port@0 {
++			reg = <0>;
++
++			hdmi_mux_0: endpoint {
++				remote-endpoint = <&ipu1_di0_hdmi>;
++			};
++		};
++
++		port@1 {
++			reg = <1>;
++
++			hdmi_mux_1: endpoint {
++				remote-endpoint = <&ipu1_di1_hdmi>;
++			};
++		};
++	};
+-- 
+1.9.1
 
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 3e3282c0a23d8eb9438dcf4ac908a5eb48c7038b:
-
-  Merge tag 'drm-intel-fixes-2014-12-04' of git://anongit.freedesktop.org/drm-intel into drm-fixes (2014-12-05 11:12:29 +1000)
-
-----------------------------------------------------------------
-
-Daniel Vetter (2):
-      drm/i915: More cautious with pch fifo underruns
-      drm/i915: Unlock panel even when LVDS is disabled
-
-Dave Airlie (1):
-      Merge tag 'drm-intel-fixes-2014-12-04' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-
- drivers/gpu/drm/i915/intel_display.c |  2 --
- drivers/gpu/drm/i915/intel_lvds.c    | 22 +++++++++++-----------
- 2 files changed, 11 insertions(+), 13 deletions(-)
