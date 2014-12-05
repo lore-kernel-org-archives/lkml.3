@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaLEIrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:47:13 -0500
-Received: from mout.gmx.net ([212.227.17.21]:60604 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579AbaLEIrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:47:12 -0500
-From: Marc Dietrich <marvin24@gmx.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Heyang Zhou <zhy@mrl.im>, linux-kernel@vger.kernel.org
-Subject: Re: GPL violation: China Telecom uses a modified linux kernel in itsproduct without sources
-Date: Fri, 05 Dec 2014 09:46:55 +0100
-Message-ID: <26257370.kL1FLWdD9r@fb07-iapwap2>
-User-Agent: KMail/4.14.3 (Linux/3.18.0-rc7-12.gfc9498b-desktop+; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141203215009.GA31938@amd>
-References: <1417610321.11684.4.camel@mrl.im> <20141203215009.GA31938@amd>
+	id S1752964AbaLEIse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:48:34 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34006 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaLEIsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:48:32 -0500
+Message-Id: <20141205084147.153643952@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Fri, 05 Dec 2014 08:48:29 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joerg Roedel <joro@8bytes.org>, Borislav Petkov <bp@alien8.de>
+Subject: [patch 1/5] x86, smpboot: Remove pointless preempt_disable() in
+ native_smp_prepare_cpus()
+References: <20141204234737.728961990@linutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:x/nr+nHy9NnDhyKgX5Yi0lKMYdgrPIAWegqnM2lHI7dRlygi6rl
- bIvsFBG3CJHSrViL8rgXAJhRH6Wcei1y2w85gwjxN4t+Du6eWYcDgDL7GDQqCCqQbY4Xy/8
- FCCydGdTd2rsMIPCNti2EWLj1ljJ0wGzNSM7262ezfFPgS5rC1llB12Ey6yG1vdzNzLc3Rv
- PpaWJ/Prps2wpOEcOSoTg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline;
+ filename=x86-smpboot-remove-pointless-preempt-disables.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. Dezember 2014, 22:50:09 schrieb Pavel Machek:
-> Hi!
-> 
-> > I think China Telecom is violating GPL in one of its products, iTV.
-> > The product uses linux as its OS. To run on MIPS architecture, it does a
-> > lot of modification to linux kernel. But there is NO source published. I
-> > phoned them and they just refused to open the source.
-> > The product 'iTV' is distributed and being used by many people. And I'm
-> > sure that it uses Linux kernel, for I've checked its UART output.
-> 
-> This would be right place to coordinate action:
-> 
-> http://en.wikipedia.org/wiki/Gpl-violations.org
-> 
-> ...but for some reason, Gpl-violations.org does not work for me.
+There is no reason to keep preemption disabled in this function.
 
-there is not much kernel devs can do about this. Better read this first and 
-then ask the FSF for help.
+We only have two other threads live: kthreadd and idle. Neither of
+them is going to preempt. But that preempt_disable forces all the code
+inside to do GFP_ATOMIC allocations which is just insane.
 
-https://www.gnu.org/licenses/gpl-violation.html
+Remove it.
 
-Marc
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/smpboot.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+Index: tip/arch/x86/kernel/smpboot.c
+===================================================================
+--- tip.orig/arch/x86/kernel/smpboot.c
++++ tip/arch/x86/kernel/smpboot.c
+@@ -1084,7 +1084,6 @@ void __init native_smp_prepare_cpus(unsi
+ {
+ 	unsigned int i;
+ 
+-	preempt_disable();
+ 	smp_cpu_index_default();
+ 
+ 	/*
+@@ -1102,22 +1101,19 @@ void __init native_smp_prepare_cpus(unsi
+ 	}
+ 	set_cpu_sibling_map(0);
+ 
+-
+ 	if (smp_sanity_check(max_cpus) < 0) {
+ 		pr_info("SMP disabled\n");
+ 		disable_smp();
+-		goto out;
++		return;
+ 	}
+ 
+ 	default_setup_apic_routing();
+ 
+-	preempt_disable();
+ 	if (read_apic_id() != boot_cpu_physical_apicid) {
+ 		panic("Boot APIC ID in local APIC unexpected (%d vs %d)",
+ 		     read_apic_id(), boot_cpu_physical_apicid);
+ 		/* Or can we switch back to PIC here? */
+ 	}
+-	preempt_enable();
+ 
+ 	connect_bsp_APIC();
+ 
+@@ -1151,8 +1147,6 @@ void __init native_smp_prepare_cpus(unsi
+ 		uv_system_init();
+ 
+ 	set_mtrr_aps_delayed_init();
+-out:
+-	preempt_enable();
+ }
+ 
+ void arch_enable_nonboot_cpus_begin(void)
+
 
