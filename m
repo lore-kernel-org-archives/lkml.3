@@ -1,109 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaLEM4t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:56:49 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:30119 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaLEM4s convert rfc822-to-8bit (ORCPT
+	id S1753332AbaLEMya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:54:30 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:50730 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLEMxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:56:48 -0500
-X-IronPort-AV: E=Sophos;i="5.07,522,1413270000"; 
-   d="scan'208";a="52529090"
-From: Hante Meuleman <meuleman@broadcom.com>
-To: Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arend Van Spriel <arend@broadcom.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: RE: using DMA-API on ARM
-Thread-Topic: using DMA-API on ARM
-Thread-Index: AQHQEGz8Uq/ZoaNhbU+cR76RcmjkiZyBRZEAgAAsfoD//36ZUA==
-Date: Fri, 5 Dec 2014 12:56:45 +0000
-Message-ID: <F51492713EF10846800D8C0ED37A7DCE019016E1@SJEXCHMB15.corp.ad.broadcom.com>
-References: <5481794E.4050406@broadcom.com>
- <20141205094507.GP11285@n2100.arm.linux.org.uk>
- <20141205122423.GK1630@arm.com>
-In-Reply-To: <20141205122423.GK1630@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 5 Dec 2014 07:53:04 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <86034aa07a72b6b8233f7a869d9af804>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, dianders@chromium.org
+Cc: olof@lixom.net, huangtao@rock-chips.com, ulrich.prinz@googlemail.com,
+        zyw@rock-chips.com, cf@rock-chips.com,
+        linux-rockchip@lists.infradead.org, Yunzhi Li <lyz@rock-chips.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: [PATCH v2 1/5] phy: add a driver for the Rockchip SoC internal USB2.0 PHY.
+Date: Fri,  5 Dec 2014 20:52:17 +0800
+Message-Id: <1417783941-2418-2-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
+References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem is with data coming from device, so DMA from device to host. The DMA takes place from device local memory to host memory, where the host memory is allocated with dma_alloc_coherent, which we thought should not be cached. The host is an ARM (as is the device). The data being DMA'ed ends up in a ring buffer. This ring is only being read by host when it is a d2h ring (device to host). Each entry in the ring is 32 bytes, and contains a sequence number. The sequence number is a modulo 253 and the ring has 256 entries. At some point we read a sequence number which was "old". Then we loop to see if the sequence number changes. The loop is 1024 times and uses an rmb() call. This does not help. After looping 1024 times it is still reading the same value for sequence number. Now it can happen that 256 entries further we are still reading this old sequence (so iso reading a seqnum which is off by 3, it is off by 6). This was an indication that it was cached. So instead of using rmb() we used dma_sync_single_for_cpu. When using that call the problem was fixed. Whenever an old sequence number was read a single call to dma_sync_single_for_cpu would flush the cache and the next read would be correct. 
+This patche to add a generic PHY driver for ROCKCHIP usb PHYs,
+currently this driver can support RK3288. The RK3288 SoC have
+three independent USB PHY IPs which are all configured through a
+set of registers located in the GRF (general register files)
+module.
 
-However: this indicates that dma_alloc_coherent on an ARM target may result in a memory buffer which can be cached which conflicts with the API of this function. This problem has sofar not been observed on x86 hosts.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+---
 
-Regards,
-Hante
+ drivers/phy/Kconfig            |   7 ++
+ drivers/phy/Makefile           |   1 +
+ drivers/phy/phy-rockchip-usb.c | 179 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 187 insertions(+)
+ create mode 100644 drivers/phy/phy-rockchip-usb.c
 
------Original Message-----
-From: Will Deacon [mailto:will.deacon@arm.com] 
-Sent: vrijdag 5 december 2014 13:24
-To: Russell King - ARM Linux
-Cc: Arend Van Spriel; Marek Szyprowski; linux-arm-kernel@lists.infradead.org; David Miller; linux-kernel@vger.kernel.org; brcm80211-dev-list; linux-wireless
-Subject: Re: using DMA-API on ARM
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index ccad880..e3a5857 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
+ 	depends on OF
+ 	select GENERIC_PHY
+ 
++config PHY_ROCKCHIP_RK3288_USB2
++	tristate "Rockchip USB2 RK3288 PHY Driver"
++	depends on ARCH_ROCKCHIP && OF
++	select GENERIC_PHY
++	help
++	  Enable this to support the Rockchip USB 2.0 PHY.
++
+ config PHY_ST_SPEAR1310_MIPHY
+ 	tristate "ST SPEAR1310-MIPHY driver"
+ 	select GENERIC_PHY
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index aa74f96..12c17f6 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+ phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+ obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
++obj-$(CONFIG_PHY_ROCKCHIP_RK3288_USB2) += phy-rockchip-usb.o
+ obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+ obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
+ obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
+diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
+new file mode 100644
+index 0000000..3132db9
+--- /dev/null
++++ b/drivers/phy/phy-rockchip-usb.c
+@@ -0,0 +1,179 @@
++/*
++ * Rockchip usb PHY driver
++ *
++ * Copyright (C) 2014 Yunzhi Li <lyz@rock-chips.com>
++ * Copyright (C) 2014 ROCKCHIP, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/reset.h>
++#include <linux/regmap.h>
++#include <linux/mfd/syscon.h>
++
++#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
++
++#define SIDDQ_MSK		(1 << (13 + 16))
++#define SIDDQ_ON		(1 << 13)
++#define SIDDQ_OFF		(0 << 13)
++
++enum rk3288_phy_id {
++	RK3288_OTG,
++	RK3288_HOST0,
++	RK3288_HOST1,
++	RK3288_NUM_PHYS,
++};
++
++struct rockchip_usb_phy {
++	struct regmap *reg_base;
++	unsigned int reg_offset;
++	struct clk *clk;
++	struct phy *phy;
++};
++
++static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
++					   bool siddq)
++{
++	return regmap_write(phy->reg_base, phy->reg_offset,
++			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
++}
++
++static int rockchip_usb_phy_power_off(struct phy *_phy)
++{
++	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
++	int ret = 0;
++
++	/* Power down usb phy analog blocks by set siddq 1*/
++	ret = rockchip_usb_phy_power(phy, 1);
++	if (ret)
++		return ret;
++
++	clk_disable_unprepare(phy->clk);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int rockchip_usb_phy_power_on(struct phy *_phy)
++{
++	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
++	int ret = 0;
++
++	ret = clk_prepare_enable(phy->clk);
++	if (ret)
++		return ret;
++
++	/* Power up usb phy analog blocks by set siddq 0*/
++	ret = rockchip_usb_phy_power(phy, 0);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static struct phy *rockchip_usb_phy_xlate(struct device *dev,
++					struct of_phandle_args *args)
++{
++	struct rockchip_usb_phy *phy_array = dev_get_drvdata(dev);
++
++	if (WARN_ON(args->args[0] == 0 || args->args[0] >= RK3288_NUM_PHYS))
++		return ERR_PTR(-ENODEV);
++
++	return (phy_array + args->args[0])->phy;
++}
++
++static struct phy_ops ops = {
++	.power_on	= rockchip_usb_phy_power_on,
++	.power_off	= rockchip_usb_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static int rockchip_usb_phy_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct rockchip_usb_phy *rk_phy;
++	struct rockchip_usb_phy *phy_array;
++	struct phy_provider *phy_provider;
++	struct regmap *grf;
++	char clk_name[16];
++	int i;
++
++	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
++	if (IS_ERR(grf)) {
++		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
++		return PTR_ERR(grf);
++	}
++
++	phy_array = devm_kzalloc(dev, RK3288_NUM_PHYS * sizeof(*rk_phy),
++				 GFP_KERNEL);
++	if (!phy_array)
++		return -ENOMEM;
++
++	for (i = 0; i < RK3288_NUM_PHYS; i++) {
++		rk_phy = &phy_array[i];
++
++		rk_phy->reg_base = grf;
++
++		rk_phy->reg_offset = ROCKCHIP_RK3288_UOC(i);
++
++		snprintf(clk_name, sizeof(clk_name), "usbphy%d", i);
++		rk_phy->clk = devm_clk_get(dev, clk_name);
++		if (IS_ERR(rk_phy->clk)) {
++			dev_warn(dev, "failed to get clock %s\n", clk_name);
++			rk_phy->clk = NULL;
++		}
++
++		rk_phy->phy = devm_phy_create(dev, NULL, &ops);
++		if (IS_ERR(rk_phy->phy)) {
++			dev_err(dev, "failed to create PHY %d\n", i);
++			return PTR_ERR(rk_phy->phy);
++		}
++		phy_set_drvdata(rk_phy->phy, rk_phy);
++	}
++
++	platform_set_drvdata(pdev, phy_array);
++
++	phy_provider = devm_of_phy_provider_register(dev,
++						     rockchip_usb_phy_xlate);
++	return PTR_ERR_OR_ZERO(phy_provider);
++}
++
++static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
++	{ .compatible = "rockchip,rk3288-usb-phy" },
++	{}
++};
++
++MODULE_DEVICE_TABLE(of, rockchip_usb_phy_dt_ids);
++
++static struct platform_driver rockchip_usb_driver = {
++	.probe		= rockchip_usb_phy_probe,
++	.driver		= {
++		.name	= "rockchip-usb-phy",
++		.owner	= THIS_MODULE,
++		.of_match_table = rockchip_usb_phy_dt_ids,
++	},
++};
++
++module_platform_driver(rockchip_usb_driver);
++
++MODULE_AUTHOR("Yunzhi Li <lyz@rock-chips.com>");
++MODULE_DESCRIPTION("Rockchip USB 2.0 PHY driver");
++MODULE_LICENSE("GPL v2");
+-- 
+2.0.0
 
-On Fri, Dec 05, 2014 at 09:45:08AM +0000, Russell King - ARM Linux wrote:
-> On Fri, Dec 05, 2014 at 10:22:22AM +0100, Arend van Spriel wrote:
-> > For our brcm80211 development we are working on getting brcmfmac driver
-> > up and running on a Broadcom ARM-based platform. The wireless device is
-> > a PCIe device, which is hooked up to the system behind a PCIe host
-> > bridge, and we transfer information between host and device using a
-> > descriptor ring buffer allocated using dma_alloc_coherent(). We mostly
-> > tested on x86 and seen no issue. However, on this ARM platform
-> > (single-core A9) we detect occasionally that the descriptor content is
-> > invalid. When this occurs we do a dma_sync_single_for_cpu() and this is
-> > retried a number of times if the problem persists. Actually, found out
-> > that someone made a mistake by using virt_to_dma(va) to get the
-> > dma_handle parameter. So probably we only provided a delay in the retry
-> > loop. After fixing that a single call to dma_sync_single_for_cpu() is
-> > sufficient. The DMA-API-HOWTO clearly states that:
-> > 
-> > """
-> > the hardware should guarantee that the device and the CPU can access the
-> > data in parallel and will see updates made by each other without any
-> > explicit software flushing.
-> > """
-> > 
-> > So it seems incorrect that we would need to do a dma_sync for this
-> > memory. That we do need it seems like this memory can end up in
-> > cache(?), or whatever happens, in some rare condition. Is there anyway
-> > to investigate this situation either through DMA-API or some low-level
-> > ARM specific functions.
-> 
-> It's been a long while since I looked at the code, and the code for
-> dma_alloc_coherent() has completely changed since then with the
-> addition of CMA.  I'm afraid that anything I would say about it would
-> not be accurate without research into the possible paths through that
-> code - it's no longer just a simple allocator.
-> 
-> What you say is correct however: the memory should not have any cache
-> lines associated with it, if it does, there's a bug somewhere.
-> 
-> Also, the memory will be weakly ordered, which means that writes to such
-> memory can be reordered.  If ordering matters, barriers should be used.
-> rmb() and wmb() can be used for this.
-> 
-> (Added Marek for comment on dma_alloc_coherent(), Will for comment on
-> barrier stuff.)
 
-I'm not quite clear on the issue being seen here: is this on write from
-the CPU to the descriptor ring, or the other way around (or both?).
-
-Either way, you need barriers on the CPU side to ensure ordering of
-accesses to the buffer. rmb/wmb will work, but are heavier than what you
-need (relaxed versions have been proposed on LKML recently).
-
-Will
