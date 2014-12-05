@@ -1,331 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaLEG00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:26:26 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:52069 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaLEG0Y (ORCPT
+	id S1752025AbaLEG0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:26:30 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:17066
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320AbaLEG00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:26:24 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <88e9e0a423a6b4775ce727259340e2f6>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v18 04/12] drm: imx: imx-hdmi: split phy configuration to platform driver
-Date: Fri,  5 Dec 2014 14:25:50 +0800
-Message-Id: <1417760750-17047-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
+	Fri, 5 Dec 2014 01:26:26 -0500
+X-IronPort-AV: E=Sophos;i="5.07,521,1413237600"; 
+   d="scan'208";a="91873678"
+Date: Fri, 5 Dec 2014 07:26:22 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
+ pr_warn() in mppe_rekey()
+In-Reply-To: <1417733101.2721.20.camel@perches.com>
+Message-ID: <alpine.DEB.2.02.1412050726000.2059@localhost6.localdomain6>
+References: <5307CAA2.8060406@users.sourceforge.net>  <530A72AA.3000601@users.sourceforge.net>  <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>  <530B5FB6.6010207@users.sourceforge.net>  <alpine.DEB.2.10.1402241710370.2074@hadrien> 
+ <530C5E18.1020800@users.sourceforge.net>  <alpine.DEB.2.10.1402251014170.2080@hadrien>  <530CD2C4.4050903@users.sourceforge.net>  <alpine.DEB.2.10.1402251840450.7035@hadrien>  <530CF8FF.8080600@users.sourceforge.net>  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+  <530DD06F.4090703@users.sourceforge.net>  <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>  <5317A59D.4@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>  <547C82A6.2030808@users.sourceforge.net>  <547CA157.1080401@cogentembedded.com>
+  <5480DA32.8000201@users.sourceforge.net>  <5480DBDE.7040604@users.sourceforge.net>  <1417731809.2721.17.camel@perches.com>  <5480DFB5.4090708@users.sourceforge.net> <1417733101.2721.20.camel@perches.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hdmi phy configuration is platform specific, which can be adusted
-according to the board to get the best SI
+On Thu, 4 Dec 2014, Joe Perches wrote:
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+> On Thu, 2014-12-04 at 23:27 +0100, SF Markus Elfring wrote:
+> > >> diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
+> > > []
+> > >> @@ -172,9 +172,8 @@ static void mppe_rekey(struct ppp_mppe_state * state, int initial_key)
+> > >>  		setup_sg(sg_in, state->sha1_digest, state->keylen);
+> > >>  		setup_sg(sg_out, state->session_key, state->keylen);
+> > >>  		if (crypto_blkcipher_encrypt(&desc, sg_out, sg_in,
+> > >> -					     state->keylen) != 0) {
+> > >> -    		    printk(KERN_WARNING "mppe_rekey: cipher_encrypt failed\n");
+> > >> -		}
+> > >> +					     state->keylen) != 0)
+> > >> +			pr_warn("mppe_rekey: cipher_encrypt failed\n");
+> > > 
+> > > It's generally nicer to replace embedded function names
+> > > with "%s: ", __func__
+> > > 
+> > > 			pr_warn("%s: cipher_encrypt failed\n", __func__);
+> > 
+> > Do you want that I send a third patch series for the fine-tuning of these parameters?
+> 
+> If you want.
+> 
+> I just wanted you to be aware of it for future patches.
 
----
+Markus, are you sure that you cannot use netdev_warn in this case?
 
-Changes in v18: None
-Changes in v17: None
-Changes in v16: None
-Changes in v15: None
-Changes in v14: None
-Changes in v13:
-- split phy configuration from patch#4
-
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c       | 85 +++++++-----------------------------
- drivers/gpu/drm/imx/imx-hdmi.h       | 29 ++++++++++++
- drivers/gpu/drm/imx/imx-hdmi_pltfm.c | 57 ++++++++++++++++++++++++
- 3 files changed, 101 insertions(+), 70 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index d72f82c..409fb4f 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -713,76 +713,14 @@ static void imx_hdmi_phy_sel_interface_control(struct imx_hdmi *hdmi, u8 enable)
- 			 HDMI_PHY_CONF0_SELDIPIF_MASK);
- }
- 
--enum {
--	RES_8,
--	RES_10,
--	RES_12,
--	RES_MAX,
--};
--
--struct mpll_config {
--	unsigned long mpixelclock;
--	struct {
--		u16 cpce;
--		u16 gmp;
--	} res[RES_MAX];
--};
--
--static const struct mpll_config mpll_config[] = {
--	{
--		45250000, {
--			{ 0x01e0, 0x0000 },
--			{ 0x21e1, 0x0000 },
--			{ 0x41e2, 0x0000 }
--		},
--	}, {
--		92500000, {
--			{ 0x0140, 0x0005 },
--			{ 0x2141, 0x0005 },
--			{ 0x4142, 0x0005 },
--		},
--	}, {
--		148500000, {
--			{ 0x00a0, 0x000a },
--			{ 0x20a1, 0x000a },
--			{ 0x40a2, 0x000a },
--		},
--	}, {
--		~0UL, {
--			{ 0x00a0, 0x000a },
--			{ 0x2001, 0x000f },
--			{ 0x4002, 0x000f },
--		},
--	}
--};
--
--struct curr_ctrl {
--	unsigned long mpixelclock;
--	u16 curr[RES_MAX];
--};
--
--static const struct curr_ctrl curr_ctrl[] = {
--	/*	pixelclk     bpp8    bpp10   bpp12 */
--	{
--		 54000000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		 58400000, { 0x091c, 0x06dc, 0x06dc },
--	}, {
--		 72000000, { 0x06dc, 0x06dc, 0x091c },
--	}, {
--		 74250000, { 0x06dc, 0x0b5c, 0x091c },
--	}, {
--		118800000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		216000000, { 0x06dc, 0x0b5c, 0x091c },
--	}
--};
--
- static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 			      unsigned char res, int cscon)
- {
- 	unsigned res_idx, i;
- 	u8 val, msec;
-+	const struct mpll_config *mpll_config = hdmi->plat_data->mpll_cfg;
-+	const struct curr_ctrl   *curr_ctrl = hdmi->plat_data->cur_ctr;
-+	const struct sym_term *sym_term =  hdmi->plat_data->sym_term;
- 
- 	if (prep)
- 		return -EINVAL;
-@@ -828,7 +766,7 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_test_clear(hdmi, 0);
- 
- 	/* PLL/MPLL Cfg - always match on final entry */
--	for (i = 0; i < ARRAY_SIZE(mpll_config) - 1; i++)
-+	for (i = 0; mpll_config[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    mpll_config[i].mpixelclock)
- 			break;
-@@ -836,12 +774,12 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].cpce, 0x06);
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].gmp, 0x15);
- 
--	for (i = 0; i < ARRAY_SIZE(curr_ctrl); i++)
-+	for (i = 0; curr_ctrl[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    curr_ctrl[i].mpixelclock)
- 			break;
- 
--	if (i >= ARRAY_SIZE(curr_ctrl)) {
-+	if (curr_ctrl[i].mpixelclock == (~0UL)) {
- 		dev_err(hdmi->dev, "Pixel clock %d - unsupported by HDMI\n",
- 			hdmi->hdmi_data.video_mode.mpixelclock);
- 		return -EINVAL;
-@@ -852,10 +790,17 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 
- 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
- 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
-+
-+	for (i = 0; sym_term[i].mpixelclock != (~0UL); i++)
-+		if (hdmi->hdmi_data.video_mode.mpixelclock <=
-+		    sym_term[i].mpixelclock)
-+			break;
-+
- 	/* RESISTANCE TERM 133Ohm Cfg */
--	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].term, 0x19);  /* TXTERM */
- 	/* PREEMP Cgf 0.00 */
--	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].sym_ctr, 0x09);  /* CKSYMTXCTRL */
-+
- 	/* TX/CK LVL 10 */
- 	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
- 	/* REMOVE CLK TERM */
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.h b/drivers/gpu/drm/imx/imx-hdmi.h
-index 86c6c5b..db407f0 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.h
-+++ b/drivers/gpu/drm/imx/imx-hdmi.h
-@@ -1037,6 +1037,35 @@ enum imx_hdmi_devtype {
- 
- struct imx_hdmi_plat_data {
- 	enum imx_hdmi_devtype dev_type;
-+	const struct mpll_config *mpll_cfg;
-+	const struct curr_ctrl *cur_ctr;
-+	const struct sym_term *sym_term;
-+};
-+
-+enum {
-+	RES_8,
-+	RES_10,
-+	RES_12,
-+	RES_MAX,
-+};
-+
-+struct mpll_config {
-+	unsigned long mpixelclock;
-+	struct {
-+		u16 cpce;
-+		u16 gmp;
-+	} res[RES_MAX];
-+};
-+
-+struct curr_ctrl {
-+	unsigned long mpixelclock;
-+	u16 curr[RES_MAX];
-+};
-+
-+struct sym_term {
-+	unsigned long mpixelclock;
-+	u16 sym_ctr;    /*clock symbol and transmitter control*/
-+	u16 term;       /*transmission termination value*/
- };
- 
- int imx_hdmi_bind(struct device *dev, struct device *master,
-diff --git a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-index 690181d..830531f 100644
---- a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-@@ -28,6 +28,57 @@ struct imx_hdmi_priv {
- 	struct regmap *regmap;
- };
- 
-+static const struct mpll_config imx_mpll_cfg[] = {
-+	{
-+		45250000, {
-+			{ 0x01e0, 0x0000 },
-+			{ 0x21e1, 0x0000 },
-+			{ 0x41e2, 0x0000 }
-+		},
-+	}, {
-+		92500000, {
-+			{ 0x0140, 0x0005 },
-+			{ 0x2141, 0x0005 },
-+			{ 0x4142, 0x0005 },
-+	},
-+	}, {
-+		148500000, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x20a1, 0x000a },
-+			{ 0x40a2, 0x000a },
-+		},
-+	}, {
-+		~0UL, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x2001, 0x000f },
-+			{ 0x4002, 0x000f },
-+		},
-+	}
-+};
-+
-+static const struct curr_ctrl imx_cur_ctr[] = {
-+	/*      pixelclk     bpp8    bpp10   bpp12 */
-+	{
-+		54000000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		58400000, { 0x091c, 0x06dc, 0x06dc },
-+	}, {
-+		72000000, { 0x06dc, 0x06dc, 0x091c },
-+	}, {
-+		74250000, { 0x06dc, 0x0b5c, 0x091c },
-+	}, {
-+		118800000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		216000000, { 0x06dc, 0x0b5c, 0x091c },
-+	}
-+};
-+
-+static const struct sym_term imx_sym_term[] = {
-+	/*pixelclk   symbol   term*/
-+	{ 148500000, 0x800d, 0x0005 },
-+	{ ~0UL,      0x0000, 0x0000 }
-+};
-+
- static int imx_hdmi_parse_dt(struct imx_hdmi_priv *hdmi)
- {
- 	struct device_node *np = hdmi->dev->of_node;
-@@ -88,10 +139,16 @@ static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
- };
- 
- static struct imx_hdmi_plat_data imx6q_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6Q_HDMI,
- };
- 
- static struct imx_hdmi_plat_data imx6dl_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6DL_HDMI,
- };
- 
--- 
-1.9.1
-
-
+julia
