@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaLEGia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:38:30 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:43305 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaLEGi3 (ORCPT
+	id S1751495AbaLEGi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:38:57 -0500
+Received: from out4133-146.mail.aliyun.com ([42.120.133.146]:35586 "EHLO
+	out4133-146.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998AbaLEGi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:38:29 -0500
+	Fri, 5 Dec 2014 01:38:56 -0500
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R831e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g08150;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=9;RT=9;SR=0;
+Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+To: <jun.zhang@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>
+Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        "'Chuansheng Liu'" <chuansheng.liu@intel.com>,
+        "'Changcheng Liu'" <changcheng.liu@intel.com>,
+        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
+        <pang.xunlei@zte.com.cn>
+References: <1417759082-28385-1-git-send-email-jun.zhang@intel.com>
+In-Reply-To: <1417759082-28385-1-git-send-email-jun.zhang@intel.com>
+Subject: Re: [PATCH] sched/fair: fix find_idlest_cpu return -1
+Date: Fri, 05 Dec 2014 14:38:36 +0800
+Message-ID: <012601d01056$1965d3c0$4c317b40$@alibaba-inc.com>
 MIME-Version: 1.0
-In-Reply-To: <54813C03.8040009@oracle.com>
-References: <20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<20141202193252.GB17595@redhat.com>
-	<547E4C14.6040509@oracle.com>
-	<54813C03.8040009@oracle.com>
-Date: Thu, 4 Dec 2014 22:38:28 -0800
-X-Google-Sender-Auth: gbuijnAQ8TXopHc5SJ9SyE49eHI
-Message-ID: <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQFWNYHfbOOkCJpjduiTEsk24TCgO510QGZA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 9:00 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> Just to add to this: I've enabled the simplest level of verbosity in the fault
-> injection options, and RCU stalls are again easy to trigger:
+Cc: pang.xunlei@zte.com.cn
+> 
+> From: zhang jun <jun.zhang@intel.com>
+> 
+> find_idlest_cpu return -1 is not reasonable, set default value to this_cpu.
+> 
+> Signed-off-by: zhang jun <jun.zhang@intel.com>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> Signed-off-by: Changcheng Liu <changcheng.liu@intel.com>
+> Cc: Hillf Danton <hillf.zj@alibaba-inc.com>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> Cc: <stable@vger.kernel.org> # 3.14.25
+> ---
+>  kernel/sched/fair.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9b4c4f3..9d18887 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4151,7 +4151,7 @@ static int
+>  find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>  {
+>  	unsigned long load, min_load = ULONG_MAX;
+> -	int idlest = -1;
+> +	int idlest = this_cpu;
+>  	int i;
+> 
+>  	/* Traverse only the allowed CPUs */
+> @@ -4284,7 +4284,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+>  		}
+> 
+>  		new_cpu = find_idlest_cpu(group, p, cpu);
+> -		if (new_cpu == -1 || new_cpu == cpu) {
+> +		if (new_cpu == cpu) {
+>  			/* Now try balancing at a lower domain level of cpu */
+>  			sd = sd->child;
+>  			continue;
+> --
+> 1.7.9.5
 
-Where do you log to?
-
-In particular, do you have some serial line logging enabled (perhaps
-even without anybody listening)? Or network logging?
-
-We've definitely had cases where logging itself is so slow that it
-triggers watchdogs etc. Logging to a serial line can take for*ever* in
-modern terms..
-
-                      Linus
