@@ -1,89 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaLEMoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:44:18 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17573 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaLEMoQ (ORCPT
+	id S1752514AbaLELSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:18:39 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:60457 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaLELSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:44:16 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-1e-5481a89d5a09
-Message-id: <5481A88F.9090308@samsung.com>
-Date: Fri, 05 Dec 2014 13:43:59 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v4 1/3] clk: samsung: Fix clock disable failure because
- domain being gated
-References: <1417777254-26579-1-git-send-email-k.kozlowski@samsung.com>
- <1417777254-26579-2-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1417777254-26579-2-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xy7pzVzSGGCw8aGixccZ6Vou2KwfZ
-	LY7+LrB4/cLQov/xa2aLp5sfM1mcbXrDbrHp8TVWi8u75rBZzDi/j8li7ZG77BZPJ1xks1i1
-	6w+jA6/H3+fXWTx2zrrL7rFpVSebx51re9g8Ni+p9+jbsorR4/MmuQD2KC6blNSczLLUIn27
-	BK6M07M2shfM4a2Yd2sDawPjW64uRk4OCQETibZlU9khbDGJC/fWs4HYQgJLGSUu3VTsYuQC
-	sj8xSjw8uoQVJMEroCVx+dphJhCbRUBVoufUJ7AGNgFDid6jfYwgtqhAhMTJu3vYIeoFJX5M
-	vscCYosIhEns+r2UBWQos8ANZol31yaBNQsLJEhcP/iQBWJbK6PEyodtYBs4BTwktvbcBdrM
-	AdShJ3H/ohZImFlAXmLzmrfMExgFZiHZMQuhahaSqgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS
-	9ZLzczcxQuLl6w7GpcesDjEKcDAq8fD+iGsMEWJNLCuuzD3EKMHBrCTCmzwbKMSbklhZlVqU
-	H19UmpNafIiRiYNTqoEx9n6ttWX7JQPLSgXbk9O+rZ15y+uMQYXsI6OU5wmsNWWhrE7RC3+9
-	+Jdj9VMocG7MkdJEXRUth6fdbf1N2vNTbrqfW+8573WMzYMek426R9d5RtUV1T0/5F5400yx
-	6dYSns2NN8NumZ9kO23w1uzVdK9ME+993W9zK3RfXdL4pFh9L+Mk0wMlluKMREMt5qLiRAD0
-	KZqhdQIAAA==
+	Fri, 5 Dec 2014 06:18:30 -0500
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
+        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
+        hughd@google.com, hocko@suse.cz
+Subject: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in might_fault() when pagefaults are disabled
+Date: Fri,  5 Dec 2014 12:18:07 +0100
+Message-Id: <1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
+References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120511-0013-0000-0000-0000021B7982
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+Commit 662bbcb2747c ("mm, sched: Allow uaccess in atomic with
+pagefault_disable()") removed might_sleep() checks for all user access code
+(that uses might_fault()).
 
-On 05/12/14 12:00, Krzysztof Kozlowski wrote:
-> Audio subsystem clocks are located in separate block. If clock for this
-> block (from main clock domain) 'mau_epll' is gated then any read or
-> write to audss registers will block.
-> 
-> This was observed on Exynos 5420 platforms (Arndale Octa and Peach
-> Pi/Pit) after introducing runtime PM to pl330 DMA driver. After that
-> commit the 'mau_epll' was gated, because the "amba" clock was disabled
-> and there were no more users of mau_epll. The system hang on disabling
-> unused clocks from audss block.
-> 
-> Unfortunately the 'mau_epll' clock is not parent of some of audss clocks.
-> 
-> Whenever system wants to operate on audss clocks it has to enable epll
-> clock. The solution reuses common clk-gate/divider/mux code and duplicates
-> clk_register_*() functions.
-> 
-> Additionally this patch fixes memory leak of clock gate/divider/mux
-> structures. The leak exists in generic clk_register_*() functions. Patch
-> replaces them with custom code with managed allocation.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Reported-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+The reason was to disable wrong "sleep in atomic" warnings in the following
+scenario:
+    pagefault_disable()
+    rc = copy_to_user(...)
+    pagefault_enable()
 
-Instead of this big patch perhaps for v3.19 we could just add
-a clk_enable() call in exynos5420 clock controller driver, to make
-sure the required clock is always enabled, as it was before you have
-added runtime PM support to the PL330 DMA controller driver ?
+Which is valid, as pagefault_disable() increments the preempt counter and
+therefore disables the pagefault handler. copy_to_user() will not sleep and return
+an invalid return code if a page is not available.
 
-It sounds like a workaround but wouldn't be as intrusive as this
-patch.
+However, as all might_sleep() checks are removed, CONFIG_DEBUG_ATOMIC_SLEEP
+would no longer detect the following scenario:
+    spin_lock(&lock);
+    rc = copy_to_user(...)
+    spin_unlock(&lock)
 
---
-Regards,
-Sylwester
+If the kernel is compiled with preemption turned on, the preempt counter would
+be incremented and copy_to_user() would never sleep. However, with preemption
+turned off, the preempt counter will not be touched, we will therefore sleep in
+atomic context. We really want to enable CONFIG_DEBUG_ATOMIC_SLEEP checks for
+user access functions again, otherwise horrible deadlocks might be hard to debug.
+
+Root of all evil is that pagefault_disable() acted almost as preempt_disable(),
+depending on preemption being turned on/off.
+
+As we now have pagefault_disabled(), we can use it to distingusih whether user
+acces functions might sleep.
+
+Convert might_fault() into a makro that calls __might_fault(), to allow proper
+file + line messages in case of a might_sleep() warning. We can't move the code
+directly into kernel.h for now, as that results in ugly header recursions we
+can't avoid for now.
+
+Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+---
+ include/linux/kernel.h |  3 ++-
+ mm/memory.c            | 19 +++++++------------
+ 2 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f55..aa0907e 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -227,7 +227,8 @@ static inline u32 reciprocal_scale(u32 val, u32 ep_ro)
+ 
+ #if defined(CONFIG_MMU) && \
+ 	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
+-void might_fault(void);
++#define might_fault() __might_fault(__FILE__, __LINE__)
++void __might_fault(const char *file, int line);
+ #else
+ static inline void might_fault(void) { }
+ #endif
+diff --git a/mm/memory.c b/mm/memory.c
+index d5f2ae9..54dde04 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3700,7 +3700,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
+ }
+ 
+ #if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+-void might_fault(void)
++void __might_fault(const char *file, int line)
+ {
+ 	/*
+ 	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
+@@ -3710,21 +3710,16 @@ void might_fault(void)
+ 	 */
+ 	if (segment_eq(get_fs(), KERNEL_DS))
+ 		return;
+-
+-	/*
+-	 * it would be nicer only to annotate paths which are not under
+-	 * pagefault_disable, however that requires a larger audit and
+-	 * providing helpers like get_user_atomic.
+-	 */
+-	if (in_atomic())
++	if (unlikely(!pagefault_disabled())) {
++		__might_sleep(file, line, 0);
+ 		return;
+-
+-	__might_sleep(__FILE__, __LINE__, 0);
+-
++	}
++#if defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+ 	if (current->mm)
+ 		might_lock_read(&current->mm->mmap_sem);
++#endif
+ }
+-EXPORT_SYMBOL(might_fault);
++EXPORT_SYMBOL(__might_fault);
+ #endif
+ 
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
+-- 
+1.8.5.5
+
