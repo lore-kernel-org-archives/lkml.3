@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368AbaLEDg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 22:36:56 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45120 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaLEDgy (ORCPT
+	id S933556AbaLEDiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:38:51 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:29445 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaLEDiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 22:36:54 -0500
-Date: Wed, 3 Dec 2014 05:43:23 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] dell-smo8800: Add more acpi ids and change description
- of driver
-Message-ID: <20141203134323.GI75099@vmdeb7>
-References: <1411994748-11229-1-git-send-email-pali.rohar@gmail.com>
- <20140929205604.GA34181@vmdeb7>
- <201411230338.26239@pali>
+	Thu, 4 Dec 2014 22:38:50 -0500
+Message-ID: <5481289E.4060504@huawei.com>
+Date: Fri, 5 Dec 2014 11:38:06 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411230338.26239@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v12 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
+References: <1417671172-52915-1-git-send-email-wangnan0@huawei.com>	 <1417671360-53399-1-git-send-email-wangnan0@huawei.com> <1417710073.2239.10.camel@linaro.org>
+In-Reply-To: <1417710073.2239.10.camel@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 03:38:26AM +0100, Pali Rohár wrote:
-> Oops, I lost this mail somewhere...
+On 2014/12/5 0:21, Jon Medhurst (Tixy) wrote:
+> On Thu, 2014-12-04 at 13:36 +0800, Wang Nan wrote:
 > 
-> I copied these ids from windows driver inf file. I did not tested 
-> them because I do not have machine which reports these ids. It 
-> looks like all SMOXX devices have same acpi structure (one IRQ). 
-> So adding ids could not break anything (if acpi device will not 
-> have for some reason IRQ specified, device probe function will 
-> fail).
 
-Please resend with a complete message body and the typo fix below.
+[trim some text]
 
 > 
-> On Monday 29 September 2014 22:56:04 Darren Hart wrote:
-> > On Mon, Sep 29, 2014 at 02:45:48PM +0200, Pali Rohár wrote:
-> > 
-> > Please see Documentation/SubmittingPatches, 15) The canonical
-> > patch format, and provide a complete message body.
-> > 
-> > Have you validated each of the 6 ACPI IDs added to the driver?
-> > 
-> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > ---
-> > > 
-> > >  drivers/platform/x86/Kconfig        |    4 ++--
-> > >  drivers/platform/x86/dell-smo8800.c |   10 ++++++++--
-> > >  2 files changed, 10 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/platform/x86/Kconfig
-> > > b/drivers/platform/x86/Kconfig index 3bbcbf1..ba9ee4f
-> > > 100644
-> > > --- a/drivers/platform/x86/Kconfig
-> > > +++ b/drivers/platform/x86/Kconfig
-> > > @@ -128,10 +128,10 @@ config DELL_WMI_AIO
-> > > 
-> > >  	  be called dell-wmi-aio.
-> > >  
-> > >  config DELL_SMO8800
-> > > 
-> > > -	tristate "Dell Latitude freefall driver (ACPI
-> > > SMO8800/SMO8810)" +	tristate "Dell Latitude freefall driver
-> > > (ACPI SMO88XX)"
-> > > 
-> > >  	depends on ACPI
-> > >  	---help---
-> > > 
-> > > -	  Say Y here if you want to support SMO8800/SMO8810
-> > > freefall device +	  Say Y here if you want to support
-> > > SMO88XX freefall device
-> > 
-> > "devices" now that multiple are supported.
-> > 
-> > Thanks,
+> I have retested this patch and on one of the arm test cases I get an
+> undefined instruction exception in kprobe_arm_test_cases. When this
+> happens PC points to the second nop below. 
 > 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
+> 
+> 80028a38:	e320f000 	nop	{0}
+> 80028a3c:	e11000b2 	ldrh	r0, [r0, -r2]
+> 80028a40:	e320f000 	nop	{0}
+> 
+> As all three instructions will have probes on them during testing, and
+> un-optimised probes are implemented by using an undefined instruction to
+> act as a breakpoint, my first thought was that we have a race condition
+> somewhere with adding, removing or optimizing probes. Though a reboot a
+> retest failed in the same way on the same instruction, so I'm not 100%
+> convinced about strictly timing related bugs.
+>  
+
+Does the problem appear in your platform in each time? Currently I have only
+QEMU machine for testing and haven't seen problem like this before. Could
+you please provide a detail steps for me to reproduce it? Or do you just
+enable kprobe test code when booting and this exception simply appear twice?
+
+> Meanwhile, I have some review comments of the code below...
+> 
+
+[trim some code]
+
+>> +	/*
+>> +	 * Add more 4 byte for potential AEABI requirement. If probing is triggered
+>> +	 * when SP % 8 == 4, we sub SP by another 4 bytes.
+>> +	 */
+>> +	stack_protect += orig->ainsn.stack_space + 4;
+> 
+> The above comment and code don't match up any more with the code in
+> optprobe_template_entry, it should be '+ 7' here. Alternatively, change
+> the code in optprobe_template_entry back to use 4 as I suggested.
+> 
+> 
+
+Looks like we don't really need this 4 bytes. ASM code should operate SP correctly in
+each case.
 
 
 
--- 
-Darren Hart
-Intel Open Source Technology Center
