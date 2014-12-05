@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaLEXjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:39:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374AbaLEWqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752376AbaLEWqI (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 17:46:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53858 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaLEWqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:46:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.17 030/122] PCI/MSI: Add device flag indicating that 64-bit MSIs dont work
-Date: Fri,  5 Dec 2014 14:43:24 -0800
-Message-Id: <20141205223309.995067034@linuxfoundation.org>
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.17 044/122] of/base: Fix PowerPC address parsing hack
+Date: Fri,  5 Dec 2014 14:43:38 -0800
+Message-Id: <20141205223312.151610598@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -31,83 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
+commit 746c9e9f92dde2789908e51a354ba90a1962a2eb upstream.
 
-This can be set by quirks/drivers to be used by the architecture code
-that assigns the MSI addresses.
+We have a historical hack that treats missing ranges properties as the
+equivalent of an empty one. This is needed for ancient PowerMac "bad"
+device-trees, and shouldn't be enabled for any other PowerPC platform,
+otherwise we get some nasty layout of devices in sysfs or even
+duplication when a set of otherwise identically named devices is
+created multiple times under a different parent node with no ranges
+property.
 
-We additionally add verification in the core MSI code that the values
-assigned by the architecture do satisfy the limitation in order to fail
-gracefully if they don't (ie. the arch hasn't been updated to deal with
-that quirk yet).
+This fix is needed for the PowerNV i2c busses to be exposed properly
+and will fix a number of other embedded cases.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/msi.c   |   26 ++++++++++++++++++++++++++
- include/linux/pci.h |    1 +
- 2 files changed, 27 insertions(+)
+ drivers/of/address.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -610,6 +610,20 @@ static struct msi_desc *msi_setup_entry(
- 	return entry;
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -403,6 +403,21 @@ static struct of_bus *of_match_bus(struc
+ 	return NULL;
  }
  
-+static int msi_verify_entries(struct pci_dev *dev)
++static int of_empty_ranges_quirk(void)
 +{
-+	struct msi_desc *entry;
++	if (IS_ENABLED(CONFIG_PPC)) {
++		/* To save cycles, we cache the result */
++		static int quirk_state = -1;
 +
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		if (!dev->no_64bit_msi || !entry->msg.address_hi)
-+			continue;
-+		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
-+			" tried to assign one above 4G\n");
-+		return -EIO;
++		if (quirk_state < 0)
++			quirk_state =
++				of_machine_is_compatible("Power Macintosh") ||
++				of_machine_is_compatible("MacRISC");
++		return quirk_state;
 +	}
-+	return 0;
++	return false;
 +}
 +
- /**
-  * msi_capability_init - configure device's MSI capability structure
-  * @dev: pointer to the pci_dev data structure of MSI device function
-@@ -647,6 +661,13 @@ static int msi_capability_init(struct pc
- 		return ret;
+ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+ 			    struct of_bus *pbus, __be32 *addr,
+ 			    int na, int ns, int pna, const char *rprop)
+@@ -428,12 +443,10 @@ static int of_translate_one(struct devic
+ 	 * This code is only enabled on powerpc. --gcl
+ 	 */
+ 	ranges = of_get_property(parent, rprop, &rlen);
+-#if !defined(CONFIG_PPC)
+-	if (ranges == NULL) {
++	if (ranges == NULL && !of_empty_ranges_quirk()) {
+ 		pr_err("OF: no ranges; cannot translate\n");
+ 		return 1;
  	}
- 
-+	ret = msi_verify_entries(dev);
-+	if (ret) {
-+		msi_mask_irq(entry, mask, ~mask);
-+		free_msi_irqs(dev);
-+		return ret;
-+	}
-+
- 	ret = populate_msi_sysfs(dev);
- 	if (ret) {
- 		msi_mask_irq(entry, mask, ~mask);
-@@ -760,6 +781,11 @@ static int msix_capability_init(struct p
- 	if (ret)
- 		goto out_avail;
- 
-+	/* Check if all MSI entries honor device restrictions */
-+	ret = msi_verify_entries(dev);
-+	if (ret)
-+		goto out_free;
-+
- 	/*
- 	 * Some devices require MSI-X to be enabled before we can touch the
- 	 * MSI-X registers.  We need to mask all the vectors to prevent
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -331,6 +331,7 @@ struct pci_dev {
- 	unsigned int	is_added:1;
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
-+	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
- 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
- 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
+-#endif /* !defined(CONFIG_PPC) */
+ 	if (ranges == NULL || rlen == 0) {
+ 		offset = of_read_number(addr, na);
+ 		memset(addr, 0, pna * 4);
 
 
