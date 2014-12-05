@@ -1,135 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669AbaLEErm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:47:42 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60318 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933316AbaLEErl (ORCPT
+	id S1754382AbaLEEzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:55:55 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:21350 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838AbaLEEzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:47:41 -0500
-From: "Joshua I. James" <joshua@cybercrimetech.com>
-X-Google-Original-From: "Joshua I. James" <Joshua@cybercrimetech.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Joshua I. James" <joshua@cybercrimetech.com>
-Subject: [PATCH] staging: kernel: fixed style warnings in acct.c
-Date: Fri,  5 Dec 2014 13:47:34 +0900
-Message-Id: <1417754854-6576-1-git-send-email-Joshua@cybercrimetech.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 4 Dec 2014 23:55:54 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v13 0/7] ARM: kprobes: OPTPROBES and other improvements.
+Date: Fri, 5 Dec 2014 12:52:08 +0800
+Message-ID: <1417755128-71318-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Joshua I. James" <joshua@cybercrimetech.com>
+This is v12 of optprobe related patch series. Most of this series are
+comments and commit message fixes, except a minor modification in opt-arm.c
+related on stack operations. Also, author of one patch is fixed.
 
-Fixed style errors identified by checkpatch.
+Previous discussions can be found:
 
-Output of checkpatch:
-WARNING: Missing a blank line after declarations
-WARNING: line over 80 characters
-ERROR: spaces required around that '==' (ctx:VxV)
-+#if ACCT_VERSION==2
+https://lkml.org/lkml/2014/12/4/4
+https://lkml.org/lkml/2014/12/1/64
+https://lkml.org/lkml/2014/11/22/18
+https://lkml.org/lkml/2014/11/21/55
+https://lkml.org/lkml/2014/11/18/26
+https://lkml.org/lkml/2014/11/19/31
+https://lkml.org/lkml/2014/11/18/41
+https://lkml.org/lkml/2014/10/25/48
+https://lkml.org/lkml/2014/10/22/254
+https://lkml.org/lkml/2014/8/27/255
+https://lkml.org/lkml/2014/8/12/12
+https://lkml.org/lkml/2014/8/8/992
+https://lkml.org/lkml/2014/8/8/5
+https://lkml.org/lkml/2014/8/5/63
 
-Signed-off-by: Joshua I. James <joshua@cybercrimetech.com>
----
- kernel/acct.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 33738ef..322159c 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -105,6 +105,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
- 
- 	if (acct->active) {
- 		u64 suspend = sbuf.f_blocks * SUSPEND;
-+
- 		do_div(suspend, 100);
- 		if (sbuf.f_bavail <= suspend) {
- 			acct->active = 0;
-@@ -112,6 +113,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
- 		}
- 	} else {
- 		u64 resume = sbuf.f_blocks * RESUME;
-+
- 		do_div(resume, 100);
- 		if (sbuf.f_bavail >= resume) {
- 			acct->active = 1;
-@@ -152,8 +154,10 @@ again:
- 
- static void close_work(struct work_struct *work)
- {
--	struct bsd_acct_struct *acct = container_of(work, struct bsd_acct_struct, work);
-+	struct bsd_acct_struct *acct =
-+		container_of(work, struct bsd_acct_struct, work);
- 	struct file *file = acct->file;
-+
- 	if (file->f_op->flush)
- 		file->f_op->flush(file, NULL);
- 	__fput_sync(file);
-@@ -165,6 +169,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
- {
- 	if (acct) {
- 		struct pid_namespace *ns = acct->ns;
-+
- 		do_acct_process(acct);
- 		INIT_WORK(&acct->work, close_work);
- 		init_completion(&acct->done);
-@@ -182,6 +187,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
- static void acct_pin_kill(struct fs_pin *pin)
- {
- 	struct bsd_acct_struct *acct;
-+
- 	acct = container_of(pin, struct bsd_acct_struct, pin);
- 	mutex_lock(&acct->lock);
- 	if (!acct->ns) {
-@@ -448,15 +454,17 @@ static void fill_ac(acct_t *ac)
- #endif
- 	do_div(elapsed, AHZ);
- 	ac->ac_btime = get_seconds() - elapsed;
--#if ACCT_VERSION==2
-+#if ACCT_VERSION == 2
- 	ac->ac_ahz = AHZ;
- #endif
- 
- 	spin_lock_irq(&current->sighand->siglock);
- 	tty = current->signal->tty;	/* Safe as we hold the siglock */
- 	ac->ac_tty = tty ? old_encode_dev(tty_devnum(tty)) : 0;
--	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_utime)));
--	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_stime)));
-+	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(
-+		cputime_to_jiffies(pacct->ac_utime)));
-+	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(
-+		cputime_to_jiffies(pacct->ac_stime)));
- 	ac->ac_flag = pacct->ac_flag;
- 	ac->ac_mem = encode_comp_t(pacct->ac_mem);
- 	ac->ac_minflt = encode_comp_t(pacct->ac_minflt);
-@@ -504,8 +512,8 @@ static void do_acct_process(struct bsd_acct_struct *acct)
- 
- 		ac.ac_pid = task_tgid_nr_ns(current, ns);
- 		rcu_read_lock();
--		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent),
--					     ns);
-+		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(
-+			current->real_parent), ns);
- 		rcu_read_unlock();
- 	}
- #endif
-@@ -516,6 +524,7 @@ static void do_acct_process(struct bsd_acct_struct *acct)
- 	if (file_start_write_trylock(file)) {
- 		/* it's been opened O_APPEND, so position is irrelevant */
- 		loff_t pos = 0;
-+
- 		__kernel_write(file, (char *)&ac, sizeof(acct_t), &pos);
- 		file_end_write(file);
- 	}
-@@ -573,6 +582,7 @@ static void slow_acct_process(struct pid_namespace *ns)
- {
- 	for ( ; ns; ns = ns->parent) {
- 		struct bsd_acct_struct *acct = acct_get(ns);
-+
- 		if (acct) {
- 			do_acct_process(acct);
- 			mutex_unlock(&acct->lock);
+Jon Medhurst (1):
+  ARM: kprobes: Add test cases for stack consuming instructions
+
+Masami Hiramatsu (1):
+  kprobes: Pass the original kprobe for preparing optimized kprobe
+
+Wang Nan (5):
+  ARM: probes: move all probe code to dedicate directory
+  ARM: kprobes: introduces checker
+  ARM: kprobes: collects stack consumption for store instructions
+  ARM: kprobes: disallow probing stack consuming instructions
+  ARM: kprobes: enable OPTPROBES for ARM 32
+
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/{kernel => include/asm}/insn.h            |   0
+ arch/arm/include/asm/kprobes.h                     |  30 +-
+ arch/arm/{kernel => include/asm}/patch.h           |   0
+ arch/arm/include/asm/probes.h                      |  13 +
+ arch/arm/kernel/Makefile                           |  16 +-
+ arch/arm/kernel/entry-armv.S                       |   3 +-
+ arch/arm/kernel/ftrace.c                           |   3 +-
+ arch/arm/kernel/jump_label.c                       |   5 +-
+ arch/arm/kernel/patch.c                            |   3 +-
+ arch/arm/probes/Makefile                           |   7 +
+ .../{kernel/probes-arm.c => probes/decode-arm.c}   |  12 +-
+ .../{kernel/probes-arm.h => probes/decode-arm.h}   |   7 +-
+ .../probes-thumb.c => probes/decode-thumb.c}       |  16 +-
+ .../probes-thumb.h => probes/decode-thumb.h}       |  10 +-
+ arch/arm/{kernel/probes.c => probes/decode.c}      |  74 ++++-
+ arch/arm/{kernel/probes.h => probes/decode.h}      |  13 +-
+ arch/arm/probes/kprobes/Makefile                   |  12 +
+ .../kprobes-arm.c => probes/kprobes/actions-arm.c} |   9 +-
+ .../kprobes/actions-common.c}                      |   4 +-
+ .../kprobes/actions-thumb.c}                       |  10 +-
+ arch/arm/probes/kprobes/checkers-arm.c             |  99 +++++++
+ arch/arm/probes/kprobes/checkers-common.c          | 101 +++++++
+ arch/arm/probes/kprobes/checkers-thumb.c           | 110 ++++++++
+ arch/arm/probes/kprobes/checkers.h                 |  54 ++++
+ .../{kernel/kprobes.c => probes/kprobes/core.c}    |  23 +-
+ .../{kernel/kprobes.h => probes/kprobes/core.h}    |  10 +-
+ arch/arm/probes/kprobes/opt-arm.c                  | 313 +++++++++++++++++++++
+ .../kprobes/test-arm.c}                            |  31 +-
+ .../kprobes-test.c => probes/kprobes/test-core.c}  |   8 +-
+ .../kprobes-test.h => probes/kprobes/test-core.h}  |   2 +-
+ .../kprobes/test-thumb.c}                          |  16 +-
+ arch/arm/probes/uprobes/Makefile                   |   2 +
+ .../uprobes-arm.c => probes/uprobes/actions-arm.c} |   6 +-
+ .../{kernel/uprobes.c => probes/uprobes/core.c}    |   8 +-
+ .../{kernel/uprobes.h => probes/uprobes/core.h}    |   0
+ arch/x86/kernel/kprobes/opt.c                      |   3 +-
+ include/linux/kprobes.h                            |   3 +-
+ kernel/kprobes.c                                   |   4 +-
+ 40 files changed, 951 insertions(+), 91 deletions(-)
+ rename arch/arm/{kernel => include/asm}/insn.h (100%)
+ rename arch/arm/{kernel => include/asm}/patch.h (100%)
+ create mode 100644 arch/arm/probes/Makefile
+ rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
+ rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (93%)
+ rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (98%)
+ rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (90%)
+ rename arch/arm/{kernel/probes.c => probes/decode.c} (85%)
+ rename arch/arm/{kernel/probes.h => probes/decode.h} (97%)
+ create mode 100644 arch/arm/probes/kprobes/Makefile
+ rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (98%)
+ rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/kprobes/checkers-arm.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-common.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-thumb.c
+ create mode 100644 arch/arm/probes/kprobes/checkers.h
+ rename arch/arm/{kernel/kprobes.c => probes/kprobes/core.c} (96%)
+ rename arch/arm/{kernel/kprobes.h => probes/kprobes/core.h} (83%)
+ create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+ rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (97%)
+ rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
+ rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (99%)
+ rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/uprobes/Makefile
+ rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/uprobes.c => probes/uprobes/core.c} (97%)
+ rename arch/arm/{kernel/uprobes.h => probes/uprobes/core.h} (100%)
+
 -- 
-1.9.1
+1.8.4
 
