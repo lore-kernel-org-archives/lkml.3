@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaLEXe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:34:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
+	id S1755022AbaLEXfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:35:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaLEW4D (ORCPT
+	with ESMTP id S1753164AbaLEW4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.17 073/122] brcmfmac: dont include linux/unaligned/access_ok.h
-Date: Fri,  5 Dec 2014 14:44:07 -0800
-Message-Id: <20141205223316.770127322@linuxfoundation.org>
+        Binyamin Sagal <bensagal@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.17 081/122] Input: synaptics - adjust min/max on Thinkpad E540
+Date: Fri,  5 Dec 2014 14:44:15 -0800
+Message-Id: <20141205223317.961601014@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -31,42 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Ben Sagal <bensagal@gmail.com>
 
-commit a1d69c60c44134f64945bbf6a6dfda22eaf4a214 upstream.
+commit bce4f9e764c36bc35dd5c9cf9e057c09f422397d upstream.
 
-This is a specific implementation, <asm/unaligned.h> is the
-multiplexer that has the arch-specific knowledge of which
-of the implementations needs to be used, so include that.
+The LEN2006 Synaptics touchpad (as found in Thinkpad E540) returns wrong
+min max values.
 
-This issue was revealed by kbuild testing
-when <asm/unaligned.h> was added in <linux/ieee80211.h>
-resulting in redefinition of get_unaligned_be16 (and
-probably others).
+touchpad-edge-detector output:
+>  Touchpad SynPS/2 Synaptics TouchPad on /dev/input/event6
+>  Move one finger around the touchpad to detect the actual edges
+>  Kernel says:    x [1472..5674], y [1408..4684]
+>  Touchpad sends: x [1264..5675], y [1171..4688]
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88211
+Signed-off-by: Binyamin Sagal <bensagal@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmfmac/pcie.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/mouse/synaptics.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/pcie.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/pcie.c
-@@ -19,10 +19,10 @@
- #include <linux/pci.h>
- #include <linux/vmalloc.h>
- #include <linux/delay.h>
--#include <linux/unaligned/access_ok.h>
- #include <linux/interrupt.h>
- #include <linux/bcma/bcma.h>
- #include <linux/sched.h>
-+#include <asm/unaligned.h>
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -143,6 +143,10 @@ static const struct min_max_quirk min_ma
+ 		(const char * const []){"LEN2001", NULL},
+ 		1024, 5022, 2508, 4832
+ 	},
++	{
++		(const char * const []){"LEN2006", NULL},
++		1264, 5675, 1171, 4688
++	},
+ 	{ }
+ };
  
- #include <soc.h>
- #include <chipcommon.h>
 
 
