@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaLEXGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:06:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
+	id S1754105AbaLEXJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:09:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaLEXGe (ORCPT
+	with ESMTP id S1753489AbaLEXGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:34 -0500
+	Fri, 5 Dec 2014 18:06:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 17/45] ASoC: sgtl5000: Fix SMALL_POP bit definition
-Date: Fri,  5 Dec 2014 14:45:00 -0800
-Message-Id: <20141205223319.431433993@linuxfoundation.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 09/45] sparc64: Fix constraints on swab helpers.
+Date: Fri,  5 Dec 2014 14:44:52 -0800
+Message-Id: <20141205223318.196237614@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,53 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+[ Upstream commit 5a2b59d3993e8ca4f7788a48a23e5cb303f26954 ]
 
-commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
+We are reading the memory location, so we have to have a memory
+constraint in there purely for the sake of showing the data flow
+to the compiler.
 
-On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
-5 seconds after the end of a playback.
-
-The SMALL_POP bit should fix this, but its definition is incorrect:
-according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
-bit 1.
-
-Fix the definition accordingly and enable the bit as intended per the code
-comment.
-
-After applying this change, no loud 'click' sound is heard after playback
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Reported-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/sgtl5000.c |    3 +--
- sound/soc/codecs/sgtl5000.h |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ arch/sparc/include/uapi/asm/swab.h |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -1317,8 +1317,7 @@ static int sgtl5000_probe(struct snd_soc
+--- a/arch/sparc/include/uapi/asm/swab.h
++++ b/arch/sparc/include/uapi/asm/swab.h
+@@ -9,9 +9,9 @@ static inline __u16 __arch_swab16p(const
+ {
+ 	__u16 ret;
  
- 	/* enable small pop, introduce 400ms delay in turning off */
- 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
--				SGTL5000_SMALL_POP,
--				SGTL5000_SMALL_POP);
-+				SGTL5000_SMALL_POP, 1);
+-	__asm__ __volatile__ ("lduha [%1] %2, %0"
++	__asm__ __volatile__ ("lduha [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab16p __arch_swab16p
+@@ -20,9 +20,9 @@ static inline __u32 __arch_swab32p(const
+ {
+ 	__u32 ret;
  
- 	/* disable short cut detector */
- 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -275,7 +275,7 @@
- #define SGTL5000_BIAS_CTRL_MASK			0x000e
- #define SGTL5000_BIAS_CTRL_SHIFT		1
- #define SGTL5000_BIAS_CTRL_WIDTH		3
--#define SGTL5000_SMALL_POP			0x0001
-+#define SGTL5000_SMALL_POP			0
+-	__asm__ __volatile__ ("lduwa [%1] %2, %0"
++	__asm__ __volatile__ ("lduwa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab32p __arch_swab32p
+@@ -31,9 +31,9 @@ static inline __u64 __arch_swab64p(const
+ {
+ 	__u64 ret;
  
- /*
-  * SGTL5000_CHIP_MIC_CTRL
+-	__asm__ __volatile__ ("ldxa [%1] %2, %0"
++	__asm__ __volatile__ ("ldxa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab64p __arch_swab64p
 
 
