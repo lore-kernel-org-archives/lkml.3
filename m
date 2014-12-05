@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaLERXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:23:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48333 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLERXH (ORCPT
+	id S1751472AbaLER1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:27:12 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39679 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751026AbaLER1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:23:07 -0500
-Date: Fri, 5 Dec 2014 12:22:50 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-Message-ID: <20141205172250.GA2895@laptop.dumpdata.com>
-References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>
- <5480528F.8010106@citrix.com>
- <1107877503.20141204141054@eikelenboom.it>
- <548064EA.8090905@citrix.com>
- <308719815.20141204150909@eikelenboom.it>
- <5480702F.2060004@citrix.com>
- <1578910783.20141204155025@eikelenboom.it>
- <1417707546.15750.100.camel@bling.home>
- <54818929.5000008@citrix.com>
+	Fri, 5 Dec 2014 12:27:11 -0500
+Date: Fri, 5 Dec 2014 17:27:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
+        Peter Maydell <Peter.Maydell@arm.com>
+Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Message-ID: <20141205172701.GW11285@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
+ <20140915113325.GD12361@n2100.arm.linux.org.uk>
+ <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
+ <20141205120506.GH1630@arm.com>
+ <20141205170745.GA31222@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54818929.5000008@citrix.com>
+In-Reply-To: <20141205170745.GA31222@e104818-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:30:01AM +0000, David Vrabel wrote:
-> On 04/12/14 15:39, Alex Williamson wrote:
-> > 
-> > I don't know what workaround you're talking about.  As devices are
-> > released from the user, vfio-pci attempts to reset them.  If
-> > pci_reset_function() returns success we mark the device clean, otherwise
-> > it gets marked dirty.  Each time a device is released, if there are
-> > dirty devices we test whether we can try a bus/slot reset to clean them.
-> > In the case of assigning a GPU this typically means that the GPU or
-> > audio function come through first, there's no reset mechanism so it gets
-> > marked dirty, the next device comes through and we manage to try a bus
-> > reset.  vfio-pci does not have any device specific resets, all
-> > functionality is added to the PCI-core, thank-you-very-much.  I even
-> > posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
-> > bad so that pci_reset_function() won't claim that worked.  All VGA
-> > access quirks are done in QEMU, the kernel doesn't have any business in
-> > remapping config space over MMIO regions or trapping other config space
-> > backdoors.
+On Fri, Dec 05, 2014 at 05:07:45PM +0000, Catalin Marinas wrote:
+> On Fri, Dec 05, 2014 at 12:05:06PM +0000, Will Deacon wrote:
+> > Care to submit this as a proper patch? We should at least fix Peter's issue
+> > before doing things like extending headers, which won't work for older
+> > kernels anyway.
 > 
-> Thanks for the info Alex, I hadn't got around to actually looking and
-> the vfio-pci code and was just going to what Sander said.
+> Quick fix is the revert of the whole patch, together with removing
+> PAGE_ALIGN(end) in poison_init_mem() on arm32. If Russell is ok with
+> this patch, we can take it via the arm64 tree, otherwise I'll send you a
+> partial revert only for the arm64 part.
+
+Not really.  Let's look at the history.
+
+For years, we've been poisoning memory, page aligning the end pointer.
+This has never been an issue.
+
+However, patch 8167/1 changed things so we freed the overlapping pages.
+Since we've always poisoned up to the end of the final page, freeing it
+should not be a problem, especially as (I said above) we've been poisoning
+it for years.
+
+The issue is more about what happens at the start.
+
+In any case:
+
+> >From 8e317c6be00abe280de4dcdd598d2e92009174b6 Mon Sep 17 00:00:00 2001
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> Date: Fri, 5 Dec 2014 16:41:52 +0000
+> Subject: [PATCH] Revert "ARM: 8167/1: extend the reserved memory for initrd to
+>  be page aligned"
 > 
-> We probably do need to have a more in depth look at now PCI devices and
-> handled by both the toolstack and pciback but in the short term I would
-> like a simple solution that does not extend the ABI.
-
-Could you enumerate the 'simple solution' then please? I am having
-a frustrating time figuring out what it is that you are proposing.
-
-
+> This reverts commit 421520ba98290a73b35b7644e877a48f18e06004. There is
+> no guarantee that the boot-loader places other images like dtb in a
+> different page than initrd start/end. When this happens, such pages must
+> not be freed. The free_reserved_area() already takes care of rounding up
+> "start" and rounding down "end" to avoid freeing partially used pages.
 > 
-> David
+> In addition to the revert, this patch also removes the arm32
+> PAGE_ALIGN(end) when calculating the size of the memory to be poisoned.
+
+which makes the summary line rather misleading, and I really don't think
+we need to do this on ARM for the simple reason that we've been doing it
+for soo long that it can't be an issue.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
