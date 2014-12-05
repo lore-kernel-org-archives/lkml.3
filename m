@@ -1,52 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaLEF5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 00:57:07 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:38823 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaLEF5E (ORCPT
+	id S1751889AbaLEF66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 00:58:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51298 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaLEF6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 00:57:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
-References: <1417610126-7957-1-git-send-email-harinik@xilinx.com>
-	<1417610126-7957-2-git-send-email-harinik@xilinx.com>
-	<CAA7nrtg_G+U2EVxy0joZC+fBGyXS_uOwe1RZ8PyoDv7icu6OBw@mail.gmail.com>
-Date: Fri, 5 Dec 2014 11:27:01 +0530
-Message-ID: <CAFcVECJtMJUAcjLTQ1eP=qBr2Lbf0DUy5dSE7f9UpT8a-9h6yQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] i2c: cadence: Handle > 252 byte transfers
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: rajeev kumar <rajeevkumar.linux@gmail.com>
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vishnum@xilinx.com" <vishnum@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Dec 2014 00:58:55 -0500
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/12] ipv6 equivalent of "ipv4: Avoid reading user iov twice after raw_probe_proto_opt"
+Date: Fri,  5 Dec 2014 05:58:43 +0000
+Message-Id: <1417759133-18370-2-git-send-email-viro@ZenIV.linux.org.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20141205055623.GQ29748@ZenIV.linux.org.uk>
+References: <20141205055623.GQ29748@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-On Fri, Dec 5, 2014 at 11:11 AM, rajeev kumar
-<rajeevkumar.linux@gmail.com> wrote:
-> On Wed, Dec 3, 2014 at 6:05 PM, Harini Katakam <harinik@xilinx.com> wrote:
->> The I2C controller sends a NACK to the slave when transfer size register
->> reaches zero, irrespective of the hold bit. So, in order to handle transfers
->> greater than 252 bytes, the transfer size register has to be maintained at a
->> value >= 1. This patch implements the same.
->
-> Why 252 Bytes ?  Is it word allign or what ?
->
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ net/ipv6/raw.c | 112 ++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 56 insertions(+), 56 deletions(-)
 
-It is the maximum transfer size that can be written that is a multiple of
-the data interrupt (this occurs when the fifo has 14 bytes).
-I will include an explanation in driver as well.
+diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
+index 8baa53e..942f67b 100644
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -672,65 +672,62 @@ error:
+ 	return err;
+ }
+ 
+-static int rawv6_probe_proto_opt(struct flowi6 *fl6, struct msghdr *msg)
++struct raw6_frag_vec {
++	struct msghdr *msg;
++	int hlen;
++	char c[4];
++};
++
++static int rawv6_probe_proto_opt(struct raw6_frag_vec *rfv, struct flowi6 *fl6)
+ {
+-	struct iovec *iov;
+-	u8 __user *type = NULL;
+-	u8 __user *code = NULL;
+-	u8 len = 0;
+-	int probed = 0;
+-	int i;
+-
+-	if (!msg->msg_iov)
+-		return 0;
++	int err = 0;
++	switch (fl6->flowi6_proto) {
++	case IPPROTO_ICMPV6:
++		rfv->hlen = 2;
++		err = memcpy_from_msg(rfv->c, rfv->msg, rfv->hlen);
++		if (!err) {
++			fl6->fl6_icmp_type = rfv->c[0];
++			fl6->fl6_icmp_code = rfv->c[1];
++		}
++		break;
++	case IPPROTO_MH:
++		rfv->hlen = 4;
++		err = memcpy_from_msg(rfv->c, rfv->msg, rfv->hlen);
++		if (!err)
++			fl6->fl6_mh_type = rfv->c[2];
++	}
++	return err;
++}
+ 
+-	for (i = 0; i < msg->msg_iovlen; i++) {
+-		iov = &msg->msg_iov[i];
+-		if (!iov)
+-			continue;
++static int raw6_getfrag(void *from, char *to, int offset, int len, int odd,
++		       struct sk_buff *skb)
++{
++	struct raw6_frag_vec *rfv = from;
+ 
+-		switch (fl6->flowi6_proto) {
+-		case IPPROTO_ICMPV6:
+-			/* check if one-byte field is readable or not. */
+-			if (iov->iov_base && iov->iov_len < 1)
+-				break;
+-
+-			if (!type) {
+-				type = iov->iov_base;
+-				/* check if code field is readable or not. */
+-				if (iov->iov_len > 1)
+-					code = type + 1;
+-			} else if (!code)
+-				code = iov->iov_base;
+-
+-			if (type && code) {
+-				if (get_user(fl6->fl6_icmp_type, type) ||
+-				    get_user(fl6->fl6_icmp_code, code))
+-					return -EFAULT;
+-				probed = 1;
+-			}
+-			break;
+-		case IPPROTO_MH:
+-			if (iov->iov_base && iov->iov_len < 1)
+-				break;
+-			/* check if type field is readable or not. */
+-			if (iov->iov_len > 2 - len) {
+-				u8 __user *p = iov->iov_base;
+-				if (get_user(fl6->fl6_mh_type, &p[2 - len]))
+-					return -EFAULT;
+-				probed = 1;
+-			} else
+-				len += iov->iov_len;
++	if (offset < rfv->hlen) {
++		int copy = min(rfv->hlen - offset, len);
+ 
+-			break;
+-		default:
+-			probed = 1;
+-			break;
+-		}
+-		if (probed)
+-			break;
++		if (skb->ip_summed == CHECKSUM_PARTIAL)
++			memcpy(to, rfv->c + offset, copy);
++		else
++			skb->csum = csum_block_add(
++				skb->csum,
++				csum_partial_copy_nocheck(rfv->c + offset,
++							  to, copy, 0),
++				odd);
++
++		odd = 0;
++		offset += copy;
++		to += copy;
++		len -= copy;
++
++		if (!len)
++			return 0;
+ 	}
+-	return 0;
++
++	offset -= rfv->hlen;
++
++	return ip_generic_getfrag(rfv->msg->msg_iov, to, offset, len, odd, skb);
+ }
+ 
+ static int rawv6_sendmsg(struct kiocb *iocb, struct sock *sk,
+@@ -745,6 +742,7 @@ static int rawv6_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	struct ipv6_txoptions *opt = NULL;
+ 	struct ip6_flowlabel *flowlabel = NULL;
+ 	struct dst_entry *dst = NULL;
++	struct raw6_frag_vec rfv;
+ 	struct flowi6 fl6;
+ 	int addr_len = msg->msg_namelen;
+ 	int hlimit = -1;
+@@ -848,7 +846,9 @@ static int rawv6_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	opt = ipv6_fixup_options(&opt_space, opt);
+ 
+ 	fl6.flowi6_proto = proto;
+-	err = rawv6_probe_proto_opt(&fl6, msg);
++	rfv.msg = msg;
++	rfv.hlen = 0;
++	err = rawv6_probe_proto_opt(&rfv, &fl6);
+ 	if (err)
+ 		goto out;
+ 
+@@ -889,7 +889,7 @@ back_from_confirm:
+ 		err = rawv6_send_hdrinc(sk, msg->msg_iov, len, &fl6, &dst, msg->msg_flags);
+ 	else {
+ 		lock_sock(sk);
+-		err = ip6_append_data(sk, ip_generic_getfrag, msg->msg_iov,
++		err = ip6_append_data(sk, raw6_getfrag, &rfv,
+ 			len, 0, hlimit, tclass, opt, &fl6, (struct rt6_info *)dst,
+ 			msg->msg_flags, dontfrag);
+ 
+-- 
+2.1.3
 
-Regards,
-Harini
