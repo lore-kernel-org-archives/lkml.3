@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaLEWw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:52:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53900 "EHLO
+	id S1752689AbaLEWw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:52:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53977 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaLEWqO (ORCPT
+	with ESMTP id S1752458AbaLEWqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Qipan Li <Qipan.Li@csr.com>, Barry Song <Baohua.Song@csr.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 087/122] spi: Fix mapping from vmalloc-ed buffer to scatter list
-Date: Fri,  5 Dec 2014 14:44:21 -0800
-Message-Id: <20141205223318.881920786@linuxfoundation.org>
+Subject: [PATCH 3.17 088/122] spi: sirf: fix word width configuration
+Date: Fri,  5 Dec 2014 14:44:22 -0800
+Message-Id: <20141205223318.991494649@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,47 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Qipan Li <Qipan.Li@csr.com>
 
-commit c1aefbdd050e1fb15e92bcaf34d95b17ea952097 upstream.
+commit 9c4b19a07dddda3ba35a2eb9b4134d485908e2f5 upstream.
 
-We can only use page_address on memory that has been mapped using kmap,
-when the buffer passed to the SPI has been allocated by vmalloc the page
-has not necessarily been mapped through kmap. This means sometimes
-page_address will return NULL causing the pointer we pass to sg_set_buf
-to be invalid.
+commit 8c328a262f ("spi: sirf: Avoid duplicate code in various
+bits_per_word cases") is wrong in setting data width register of
+fifo is not right, it should use sspi->word_width >> 1 to set
+related bits. According to hardware spec, the mapping between
+register value and data width:
+0 - byte
+1 - WORD
+2 - DWORD
 
-As we only call page_address so that we can pass a virtual address to
-sg_set_buf which will then immediately call virt_to_page on it, fix this
-by calling sg_set_page directly rather then relying on the sg_set_buf
-helper.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Fixes: 8c328a262f ("spi: sirf: Avoid duplicate code in various bits_per_word cases") is wrong in setting data width register of
+Signed-off-by: Qipan Li <Qipan.Li@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/spi/spi-sirf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -609,13 +609,13 @@ static int spi_map_buf(struct spi_master
- 				sg_free_table(sgt);
- 				return -ENOMEM;
- 			}
--			sg_buf = page_address(vm_page) +
--				((size_t)buf & ~PAGE_MASK);
-+			sg_set_page(&sgt->sgl[i], vm_page,
-+				    min, offset_in_page(buf));
- 		} else {
- 			sg_buf = buf;
-+			sg_set_buf(&sgt->sgl[i], sg_buf, min);
- 		}
+--- a/drivers/spi/spi-sirf.c
++++ b/drivers/spi/spi-sirf.c
+@@ -565,9 +565,9 @@ spi_sirfsoc_setup_transfer(struct spi_de
  
--		sg_set_buf(&sgt->sgl[i], sg_buf, min);
+ 	sspi->word_width = DIV_ROUND_UP(bits_per_word, 8);
+ 	txfifo_ctrl = SIRFSOC_SPI_FIFO_THD(SIRFSOC_SPI_FIFO_SIZE / 2) |
+-					   sspi->word_width;
++					   (sspi->word_width >> 1);
+ 	rxfifo_ctrl = SIRFSOC_SPI_FIFO_THD(SIRFSOC_SPI_FIFO_SIZE / 2) |
+-					   sspi->word_width;
++					   (sspi->word_width >> 1);
  
- 		buf += min;
- 		len -= min;
+ 	if (!(spi->mode & SPI_CS_HIGH))
+ 		regval |= SIRFSOC_SPI_CS_IDLE_STAT;
 
 
