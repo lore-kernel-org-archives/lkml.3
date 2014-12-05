@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684AbaLEEUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:20:09 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60302 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462AbaLEEUH (ORCPT
+	id S933620AbaLEEaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:30:14 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:60402 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933361AbaLEEaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:20:07 -0500
+	Thu, 4 Dec 2014 23:30:12 -0500
+Date: Thu, 4 Dec 2014 23:30:08 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: pang.xunlei@zte.com.cn
+cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kernel-owner@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [PATCH] optimize ktime_divns for constant divisors
+In-Reply-To: <OF0EDEDB1C.C03829F7-ON48257DA5.00062083-48257DA5.0007628B@zte.com.cn>
+Message-ID: <alpine.LFD.2.11.1412042056240.470@knanqh.ubzr>
+References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <3913269.qTFsa05Ysv@wuerfel> <alpine.LFD.2.11.1412040143260.470@knanqh.ubzr> <OF0EDEDB1C.C03829F7-ON48257DA5.00062083-48257DA5.0007628B@zte.com.cn>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20141204183242.GJ7944@katana>
-References: <1417610126-7957-1-git-send-email-harinik@xilinx.com>
-	<1417610126-7957-2-git-send-email-harinik@xilinx.com>
-	<20141204183242.GJ7944@katana>
-Date: Fri, 5 Dec 2014 09:50:04 +0530
-Message-ID: <CAFcVEC+mpfjYB2K5eci-BFfjyKXvbxOOBVX_CH=ck1xJ+V9goQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] i2c: cadence: Handle > 252 byte transfers
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vishnum@xilinx.com" <vishnum@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 5 Dec 2014, pang.xunlei@zte.com.cn wrote:
 
-On Fri, Dec 5, 2014 at 12:02 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> +             /*
->> +              * If the device is sending data If there is further
->> +              * data to be sent. Calculate the available space
->> +              * in FIFO and fill the FIFO with that many bytes.
->> +              */
->
-> This comment looks broken. In general, I think there should be more
-> comments explaining why things have to be done this way.
->
+> Nicolas,
+> 
+> On Thursday 04 December 2014 15:23:37: Nicolas Pitre wrote:
+> > Nicolas Pitre <nicolas.pitre@linaro.org> 
+> > 
+> > u64 ktime_to_us(ktime_t kt)
+> > {
+> >    u64 ns = ktime_to_ns(kt);
+> >    u32 x_lo, x_hi, y_lo, y_hi;
+> >    u64 res, carry;
+> > 
+> >    x_hi = ns >> 32;
+> >    x_lo = ns;
+> >    y_hi = 0x83126e97;
+> >    y_lo = 0x8d4fdf3b;
+> > 
+> >    res = (u64)x_lo * y_lo;
+> >    carry = (u64)(u32)res + y_lo;
+> >    res = (res >> 32) + (carry >> 32);
+> > 
+> >    res += (u64)x_lo * y_hi;
+> >    carry = (u64)(u32)res + (u64)x_hi * y_lo;
+> >    res = (res >> 32) + (carry >> 32);
+> > 
+> >    res += (u64)x_hi * y_hi;
+> >    return res >> 9;
+> > }
+> 
+> What's the first carry operation for?
 
-There's some grammatical errors here. Let me correct it and add more
-comments.
+Hmmm... OK there is a bug.
 
-Regards,
-Harini
+The code should actually be:
+
+	res = (u64)x_lo * y_lo;
+	carry = (u64)(u32)res + y_lo;
+	res = (res >> 32) + (carry >> 32) + y_hi;
+
+(the addition of y_hi was missing on the third line of the above block)
+
+The equation is: res = (y + x*y) >> 9
+
+> Moreover, I think the carry operations can be omitted, like below:
+> u64 ktime_to_us(ktime_t kt)
+> {
+>          u64 ns = ktime_to_ns(kt);
+>          u32 x_lo, x_hi, y_lo, y_hi;
+>          u64 res;
+> 
+>          x_hi = ns >> 32;
+>          x_lo = ns;
+>          y_hi = 0x83126e97;
+>          y_lo = 0x8d4fdf3b;
+> 
+>          res = (u64)x_lo * y_lo;
+>          res = (res >> 32);
+
+See above. y must be added to res before shifting, and that may cause an 
+overflow.
+
+>          res += (u64)x_lo * y_hi + (u64)x_hi * y_lo;
+
+That, too, risk overflowing.
+
+Let's say x_lo = 0xffffffff and x_hi = 0xffffffff.  You get:
+
+	0xffffffff * 0x83126e97 ->  0x83126e967ced9169
+	0xffffffff * 0x8d4fdf3b ->  0x8d4fdf3a72b020c5
+	                           -------------------
+	                           0x110624dd0ef9db22e
+
+Therefore the sum doesn't fit into a u64 variable.
+
+It is possible to skip carry handling but only when the MSB of both 
+constants are zero.  Here it is not the case.
+
+>          res = (res >> 32);
+> 
+>          res += (u64)x_hi * y_hi;
+> 
+>          return res >> 9;
+> }
+> 
+> Also, I ran this code using ktime "122500000000", and it results as
+> 122499999 due to the y_lo deviation,
+
+Please see bug fix above.
+
+> maybe can use 0x8d4fdf3c instead?
+
+No, that won't work with 0xfffffffffffffd97 for example.
+
+
+Nicolas
