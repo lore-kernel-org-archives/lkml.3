@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617AbaLED2H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 22:28:07 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42443 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933139AbaLED2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 22:28:04 -0500
-Date: Wed, 3 Dec 2014 05:34:32 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: mjg59@srcf.ucam.org, pavel@ucw.cz, pali.rohar@gmail.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] dell-wmi: Don't send unneeded keypresses
-Message-ID: <20141203133431.GG75099@vmdeb7>
-References: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com>
+	id S933578AbaLEDaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 22:30:25 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:58959 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932098AbaLEDaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 22:30:24 -0500
+Date: Fri, 05 Dec 2014 12:29:39 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH] clk: remove unnecessary substitution
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <1390889387-24137-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1390889387-24137-1-git-send-email-yamada.m@jp.panasonic.com>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20141205122939.E213.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:16:20AM +0100, Gabriele Mazzotta wrote:
-> Currently dell-wmi reports keypresses for WMI events that are
-> notifications of changes performed by the BIOS.
-> This patch series make sure that no keypresses are sent for those
-> events so that nothing is done from userspace. 
+Hi, Mike Turquette
+
+I posted this trivial fix about 10 months ago.
+
+Is it applicable?
+
+
+
+On Tue, 28 Jan 2014 15:09:47 +0900
+Masahiro Yamada <yamada.m@jp.panasonic.com> wrote:
+
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> ---
+>  drivers/clk/clk.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Gabriele Mazzotta (3):
->   dell-wmi: Use appropriate keycode for radio state changes
->   dell-wmi: Don't report keypresses for radio state changes
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 2b38dc9..d97b313 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1637,7 +1637,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
+>  
+>  	if (clk->num_parents == 1) {
+>  		if (IS_ERR_OR_NULL(clk->parent))
+> -			ret = clk->parent = __clk_lookup(clk->parent_names[0]);
+> +			clk->parent = __clk_lookup(clk->parent_names[0]);
+>  		ret = clk->parent;
+>  		goto out;
+>  	}
+> -- 
+> 1.8.3.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Merged into one patch, queued.
 
->   dell-wmi: Don't report keypresses on keybord illumination change
-
-Queued.
-
-Thanks Gabriele.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
