@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbaLEXhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:37:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54232 "EHLO
+	id S932073AbaLEXhj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:37:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaLEW4B (ORCPT
+	with ESMTP id S1752875AbaLEW4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luciano Coelho <luciano.coelho@intel.com>,
+        Matti Gottlieb <matti.gottlieb@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 118/122] iwlwifi: mvm: check TLV flag before trying to use hotspot firmware commands
-Date: Fri,  5 Dec 2014 14:44:52 -0800
-Message-Id: <20141205223323.968604402@linuxfoundation.org>
+Subject: [PATCH 3.17 117/122] iwlwifi: mvm: ROC - bug fixes around time events and locking
+Date: Fri,  5 Dec 2014 14:44:51 -0800
+Message-Id: <20141205223323.808426507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,59 +29,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <luciano.coelho@intel.com>
+From: Matti Gottlieb <matti.gottlieb@intel.com>
 
-commit 5ac6c72e594471acfa5b00210c51d533a73413ad upstream.
+commit a6cc5163149532734b84c86cbffa4994e527074b upstream.
 
-Older firmwares do not provide support for the HOT_SPOT_CMD command.
-Check for the appropriate TLV flag that declares hotspot support in
-the firmware to prevent a firmware assertion failure that can be
-triggered from the userspace,
+Don't add the time event to the list. We added it several
+times the same time event, which leads to an infinite loop
+when walking the list.
 
-Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Since we (currently) don't support more than one ROC for STA
+vif at a time, enforce this and don't add the time event
+to any list.
+
+We were also missing the locking of the mutex which led to
+a lockdep splat - fix that.
+
+Signed-off-by: Matti Gottlieb <matti.gottlieb@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-fw.h       |    4 +++-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |   12 +++++++++---
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c   |   25 ++++++++++++++++---------
+ drivers/net/wireless/iwlwifi/mvm/time-event.c |    2 +-
+ 2 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-fw.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-fw.h
-@@ -138,9 +138,11 @@ enum iwl_ucode_tlv_api {
- /**
-  * enum iwl_ucode_tlv_capa - ucode capabilities
-  * @IWL_UCODE_TLV_CAPA_D0I3_SUPPORT: supports D0i3
-+ * @IWL_UCODE_TLV_CAPA_HOTSPOT_SUPPORT: supports Hot Spot Command
-  */
- enum iwl_ucode_tlv_capa {
--	IWL_UCODE_TLV_CAPA_D0I3_SUPPORT		= BIT(0),
-+	IWL_UCODE_TLV_CAPA_D0I3_SUPPORT			= BIT(0),
-+	IWL_UCODE_TLV_CAPA_HOTSPOT_SUPPORT		= BIT(18),
- };
- 
- /* The default calibrate table size if not specified by firmware file */
 --- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
 +++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -2476,9 +2476,15 @@ static int iwl_mvm_roc(struct ieee80211_
+@@ -515,7 +515,8 @@ static void iwl_mvm_mac_tx(struct ieee80
+ 	}
  
+ 	if (IEEE80211_SKB_CB(skb)->hw_queue == IWL_MVM_OFFCHANNEL_QUEUE &&
+-	    !test_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status))
++	    !test_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status) &&
++	    !test_bit(IWL_MVM_STATUS_ROC_AUX_RUNNING, &mvm->status))
+ 		goto drop;
+ 
+ 	/* treat non-bufferable MMPDUs as broadcast if sta is sleeping */
+@@ -2403,14 +2404,19 @@ static int iwl_mvm_send_aux_roc_cmd(stru
+ 	/* Set the node address */
+ 	memcpy(aux_roc_req.node_addr, vif->addr, ETH_ALEN);
+ 
++	lockdep_assert_held(&mvm->mutex);
++
++	spin_lock_bh(&mvm->time_event_lock);
++
++	if (WARN_ON(te_data->id == HOT_SPOT_CMD)) {
++		spin_unlock_bh(&mvm->time_event_lock);
++		return -EIO;
++	}
++
+ 	te_data->vif = vif;
+ 	te_data->duration = duration;
+ 	te_data->id = HOT_SPOT_CMD;
+ 
+-	lockdep_assert_held(&mvm->mutex);
+-
+-	spin_lock_bh(&mvm->time_event_lock);
+-	list_add_tail(&te_data->list, &mvm->time_event_list);
+ 	spin_unlock_bh(&mvm->time_event_lock);
+ 
+ 	/*
+@@ -2466,22 +2472,23 @@ static int iwl_mvm_roc(struct ieee80211_
+ 	IWL_DEBUG_MAC80211(mvm, "enter (%d, %d, %d)\n", channel->hw_value,
+ 			   duration, type);
+ 
++	mutex_lock(&mvm->mutex);
++
  	switch (vif->type) {
  	case NL80211_IFTYPE_STATION:
--		/* Use aux roc framework (HS20) */
--		ret = iwl_mvm_send_aux_roc_cmd(mvm, channel,
--					       vif, duration);
-+		if (mvm->fw->ucode_capa.capa[0] &
-+		    IWL_UCODE_TLV_CAPA_HOTSPOT_SUPPORT) {
-+			/* Use aux roc framework (HS20) */
-+			ret = iwl_mvm_send_aux_roc_cmd(mvm, channel,
-+						       vif, duration);
-+			goto out_unlock;
-+		}
-+		IWL_ERR(mvm, "hotspot not supported\n");
-+		ret = -EINVAL;
- 		goto out_unlock;
+ 		/* Use aux roc framework (HS20) */
+ 		ret = iwl_mvm_send_aux_roc_cmd(mvm, channel,
+ 					       vif, duration);
+-		return ret;
++		goto out_unlock;
  	case NL80211_IFTYPE_P2P_DEVICE:
  		/* handle below */
+ 		break;
+ 	default:
+ 		IWL_ERR(mvm, "vif isn't P2P_DEVICE: %d\n", vif->type);
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out_unlock;
+ 	}
+ 
+-	mutex_lock(&mvm->mutex);
+-
+ 	for (i = 0; i < NUM_PHY_CTX; i++) {
+ 		phy_ctxt = &mvm->phy_ctxts[i];
+ 		if (phy_ctxt->ref == 0 || mvmvif->phy_ctxt == phy_ctxt)
+--- a/drivers/net/wireless/iwlwifi/mvm/time-event.c
++++ b/drivers/net/wireless/iwlwifi/mvm/time-event.c
+@@ -303,8 +303,8 @@ static int iwl_mvm_aux_roc_te_handle_not
+ 		te_data->running = false;
+ 		te_data->vif = NULL;
+ 		te_data->uid = 0;
++		te_data->id = TE_MAX;
+ 	} else if (le32_to_cpu(notif->action) == TE_V2_NOTIF_HOST_EVENT_START) {
+-		set_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status);
+ 		set_bit(IWL_MVM_STATUS_ROC_AUX_RUNNING, &mvm->status);
+ 		te_data->running = true;
+ 		ieee80211_ready_on_channel(mvm->hw); /* Start TE */
 
 
