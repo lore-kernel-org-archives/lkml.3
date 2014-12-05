@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaLEJyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 04:54:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32614 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886AbaLEJyh (ORCPT
+	id S1751091AbaLEKaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 05:30:13 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:46876 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaLEKaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 04:54:37 -0500
-Date: Fri, 5 Dec 2014 12:54:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 1/2] compiler: use compiler to detect integer overflows
-Message-ID: <20141205095423.GB4963@mwanda>
-References: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com>
- <CA+55aFzyDC=o_Beg+8hjW8+TQXYWCgQo_yfjgHsTz0LRTiomWA@mail.gmail.com>
- <547620E6.10306@oracle.com>
- <CA+55aFyiCg23eL=y0nE8a-6_tBAtB097J8v_BtpUcHU8sc3hyQ@mail.gmail.com>
- <20141127204257.GA11014@mwanda>
+	Fri, 5 Dec 2014 05:30:11 -0500
+X-IronPort-AV: E=Sophos;i="5.07,521,1413244800"; 
+   d="scan'208";a="200646006"
+Message-ID: <54818929.5000008@citrix.com>
+Date: Fri, 5 Dec 2014 10:30:01 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127204257.GA11014@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>
+CC: <bhelgaas@google.com>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-pci@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
+ or bus with 'do_flr' SysFS attribute
+References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com>	 <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it>	 <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it>	 <5480702F.2060004@citrix.com> <1578910783.20141204155025@eikelenboom.it> <1417707546.15750.100.camel@bling.home>
+In-Reply-To: <1417707546.15750.100.camel@bling.home>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
+On 04/12/14 15:39, Alex Williamson wrote:
+> 
+> I don't know what workaround you're talking about.  As devices are
+> released from the user, vfio-pci attempts to reset them.  If
+> pci_reset_function() returns success we mark the device clean, otherwise
+> it gets marked dirty.  Each time a device is released, if there are
+> dirty devices we test whether we can try a bus/slot reset to clean them.
+> In the case of assigning a GPU this typically means that the GPU or
+> audio function come through first, there's no reset mechanism so it gets
+> marked dirty, the next device comes through and we manage to try a bus
+> reset.  vfio-pci does not have any device specific resets, all
+> functionality is added to the PCI-core, thank-you-very-much.  I even
+> posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
+> bad so that pci_reset_function() won't claim that worked.  All VGA
+> access quirks are done in QEMU, the kernel doesn't have any business in
+> remapping config space over MMIO regions or trapping other config space
+> backdoors.
 
-Is this what you are looking for?  This list is made with next-20141204.
+Thanks for the info Alex, I hadn't got around to actually looking and
+the vfio-pci code and was just going to what Sander said.
 
-It's mostly code which does:
+We probably do need to have a more in depth look at now PCI devices and
+handled by both the toolstack and pciback but in the short term I would
+like a simple solution that does not extend the ABI.
 
-	x = foo + bar;
-	if (x < foo)
-
-We compile the kernel with -fnostrict-overflow so GCC won't optimize
-these checks away.  I don't think they cause a problem?
-
-There are some false positives which do:
-
-	if ((u16)(u16_foo + u16_bar) < u16_foo) {
-
-regards,
-dan carpenter
-
-kernel/events/core.c:4534 perf_sample_ustack_size() warn: signed overflow undefined. 'header_size + stack_size < header_size'
-kernel/delayacct.c:112 __delayacct_add_tsk() warn: signed overflow undefined. 'd->cpu_delay_total + t2 < d->cpu_delay_total'
-kernel/delayacct.c:116 __delayacct_add_tsk() warn: signed overflow undefined. 'd->cpu_run_virtual_total + t3 < d->cpu_run_virtual_total'
-mm/fadvise.c:71 SYSC_fadvise64_64() warn: signed overflow undefined. 'offset + len < len'
-fs/ntfs/runlist.c:778 ntfs_mapping_pairs_decompress() warn: signed overflow undefined. 'attr + () < attr'
-fs/ntfs/index.c:293 ntfs_index_lookup() warn: signed overflow undefined. 'kaddr + ((vcn << idx_ni->itype.index.vcn_size_bits) & ~(~(((1) << 12) - 1))) < kaddr'
-fs/ntfs/index.c:351 ntfs_index_lookup() warn: signed overflow undefined. '&ia->index + () < ia'
-fs/ntfs/inode.c:507 ntfs_is_extended_system_file() warn: signed overflow undefined. 'attr + () < attr'
-fs/ntfs/dir.c:336 ntfs_lookup_inode_by_name() warn: signed overflow undefined. 'kaddr + ((vcn << dir_ni->itype.index.vcn_size_bits) & ~(~(((1) << 12) - 1))) < kaddr'
-fs/ntfs/dir.c:394 ntfs_lookup_inode_by_name() warn: signed overflow undefined. '&ia->index + () < ia'
-fs/ntfs/dir.c:1199 ntfs_readdir() warn: signed overflow undefined. '&ir->index + () < ir'
-fs/ntfs/dir.c:1313 ntfs_readdir() warn: signed overflow undefined. 'kaddr + (ia_pos & ~(~(((1) << 12) - 1)) & ~(ndir->itype.index.block_size - 1)) < kaddr'
-fs/ntfs/dir.c:1381 ntfs_readdir() warn: signed overflow undefined. '&ia->index + () < ia'
-fs/ntfs/super.c:1890 load_system_files() warn: signed overflow undefined. 'ctx->attr + () < ctx->attr'
-fs/cifs/smb2pdu.c:1124 SMB2_open() warn: signed overflow undefined. 'uni_path_len / 8 * 8 < uni_path_len'
-fs/ext4/extents.c:4794 ext4_zero_range() warn: signed overflow undefined. '(((offset) - 1) | (((1 << blkbits) - 1))) + 1 < offset'
-fs/sync.c:288 SYSC_sync_file_range() warn: signed overflow undefined. 'offset + nbytes < offset'
-drivers/hid/hid-tmff.c:76 tmff_scale_s8() warn: signed overflow undefined. '(((in + 128) * (maximum - minimum)) / 255) + minimum < minimum'
-drivers/hid/hid-tmff.c:63 tmff_scale_u16() warn: signed overflow undefined. '(in * (maximum - minimum) / 65535) + minimum < minimum'
-drivers/staging/lustre/lustre/obdclass/lprocfs_status.c:212 lprocfs_write_frac_helper() warn: signed overflow undefined. 'end + 1 < end'
-drivers/staging/speakup/kobjects.c:800 message_store_helper() warn: signed overflow undefined. 'firstmessage + index < firstmessage'
-drivers/scsi/mpt2sas/mpt2sas_ctl.c:1986 _ctl_diag_read_buffer() warn: signed overflow undefined. 'diag_data + karg.bytes_to_read < diag_data'
-drivers/scsi/mpt3sas/mpt3sas_ctl.c:2018 _ctl_diag_read_buffer() warn: signed overflow undefined. 'diag_data + karg.bytes_to_read < diag_data'
-drivers/block/floppy.c:2450 copy_buffer() warn: signed overflow undefined. 'floppy_track_buffer + ((fsector_t - buffer_min) << 9) < floppy_track_buffer'
-drivers/block/floppy.c:2760 make_raw_rw_request() warn: signed overflow undefined. 'floppy_track_buffer + ((aligned_sector_t - buffer_min) << 9) < floppy_track_buffer'
-drivers/infiniband/core/cma.c:2716 cma_resolve_ib_udp() warn: signed overflow undefined. 'offset + conn_param->private_data_len < conn_param->private_data_len'
-drivers/infiniband/core/cma.c:2773 cma_connect_ib() warn: signed overflow undefined. 'offset + conn_param->private_data_len < conn_param->private_data_len'
-drivers/video/fbdev/riva/riva_hw.c:1016 nv10CalcArbitration() warn: signed overflow undefined. '(clwm / 8) * 8 < clwm'
-drivers/video/fbdev/nvidia/nv_hw.c:569 nv10CalcArbitration() warn: signed overflow undefined. '(clwm / 8) * 8 < clwm'
-lib/vsprintf.c:1756 vsnprintf() warn: signed overflow undefined. 'buf + size < buf'
-lib/vsprintf.c:2192 bstr_printf() warn: signed overflow undefined. 'buf + size < buf'
-net/netfilter/ipset/ip_set_core.c:901 ip_set_create() warn: signed overflow undefined. 'inst->ip_set_max + 64 < inst->ip_set_max'
-net/irda/irlap.c:660 irlap_generate_rand_time_slot() warn: signed overflow undefined. 's + rand % (S - s) < S'
-net/sunrpc/auth_gss/gss_krb5_mech.c:193 simple_get_bytes() warn: signed overflow undefined. 'p + len < p'
-net/sunrpc/auth_gss/gss_krb5_mech.c:209 simple_get_netobj() warn: signed overflow undefined. 'p + len < p'
-net/sunrpc/auth_gss/gss_krb5_mech.c:296 gss_import_v1_context() warn: signed overflow undefined. 'p + 20 < p'
-net/sunrpc/auth_gss/auth_gss.c:154 simple_get_bytes() warn: signed overflow undefined. 'p + len < p'
-net/sunrpc/auth_gss/auth_gss.c:257 gss_fill_context() warn: signed overflow undefined. 'p + seclen < p'
-net/sunrpc/auth_gss/auth_gss.c:170 simple_get_netobj() warn: signed overflow undefined. 'p + len < p'
-net/sunrpc/xdr.c:572 xdr_reserve_space() warn: signed overflow undefined. 'p + (nbytes >> 2) < p'
-net/sunrpc/xdr.c:832 __xdr_inline_decode() warn: signed overflow undefined. 'p + nwords < p'
-security/keys/keyctl.c:856 keyctl_chown_key() warn: signed overflow undefined. 'newowner->qnbytes + key->quotalen < newowner->qnbytes'
-security/keys/key.c:380 key_payload_reserve() warn: signed overflow undefined. 'key->user->qnbytes + delta < key->user->qnbytes'
+David
