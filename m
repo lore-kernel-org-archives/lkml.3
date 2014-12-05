@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaLEXRU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:17:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54661 "EHLO
+	id S1754324AbaLEXRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:17:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893AbaLEXGd (ORCPT
+	with ESMTP id S1753901AbaLEXGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:33 -0500
+	Fri, 5 Dec 2014 18:06:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.10 16/45] PCI/MSI: Add device flag indicating that 64-bit MSIs dont work
-Date: Fri,  5 Dec 2014 14:44:59 -0800
-Message-Id: <20141205223319.262380654@linuxfoundation.org>
+        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.10 21/45] powerpc/pseries: Fix endiannes issue in RTAS call from xmon
+Date: Fri,  5 Dec 2014 14:45:04 -0800
+Message-Id: <20141205223320.068297798@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,85 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
+commit 3b8a3c01096925a824ed3272601082289d9c23a5 upstream.
 
-This can be set by quirks/drivers to be used by the architecture code
-that assigns the MSI addresses.
+On pseries system (LPAR) xmon failed to enter when running in LE mode,
+system is hunging. Inititating xmon will lead to such an output on the
+console:
 
-We additionally add verification in the core MSI code that the values
-assigned by the architecture do satisfy the limitation in order to fail
-gracefully if they don't (ie. the arch hasn't been updated to deal with
-that quirk yet).
+SysRq : Entering xmon
+cpu 0x15: Vector: 0  at [c0000003f39ffb10]
+    pc: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    lr: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    sp: c0000003f39ffc70
+   msr: 8000000000009033
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+Bad kernel stack pointer fafb4b0 at eca7cc4
+cpu 0x15: Vector: 300 (Data Access) at [c000000007f07d40]
+    pc: 000000000eca7cc4
+    lr: 000000000eca7c44
+    sp: fafb4b0
+   msr: 8000000000001000
+   dar: 10000000
+ dsisr: 42000000
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+cpu 0x15: Exception 300 (Data Access) in xmon, returning to main loop
+xmon: WARNING: bad recursive fault on cpu 0x15
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+The root cause is that xmon is calling RTAS to turn off the surveillance
+when entering xmon, and RTAS is requiring big endian parameters.
+
+This patch is byte swapping the RTAS arguments when running in LE mode.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/msi.c   |   26 ++++++++++++++++++++++++++
- include/linux/pci.h |    1 +
- 2 files changed, 27 insertions(+)
+ arch/powerpc/xmon/xmon.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -530,6 +530,20 @@ out_unroll:
- 	return ret;
- }
- 
-+static int msi_verify_entries(struct pci_dev *dev)
-+{
-+	struct msi_desc *entry;
-+
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		if (!dev->no_64bit_msi || !entry->msg.address_hi)
-+			continue;
-+		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
-+			" tried to assign one above 4G\n");
-+		return -EIO;
-+	}
-+	return 0;
-+}
-+
- /**
-  * msi_capability_init - configure device's MSI capability structure
-  * @dev: pointer to the pci_dev data structure of MSI device function
-@@ -583,6 +597,13 @@ static int msi_capability_init(struct pc
- 		return ret;
- 	}
- 
-+	ret = msi_verify_entries(dev);
-+	if (ret) {
-+		msi_mask_irq(entry, mask, ~mask);
-+		free_msi_irqs(dev);
-+		return ret;
-+	}
-+
- 	ret = populate_msi_sysfs(dev);
- 	if (ret) {
- 		msi_mask_irq(entry, mask, ~mask);
-@@ -698,6 +719,11 @@ static int msix_capability_init(struct p
- 	if (ret)
- 		goto error;
- 
-+	/* Check if all MSI entries honor device restrictions */
-+	ret = msi_verify_entries(dev);
-+	if (ret)
-+		goto error;
-+
- 	/*
- 	 * Some devices require MSI-X to be enabled before we can touch the
- 	 * MSI-X registers.  We need to mask all the vectors to prevent
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -310,6 +310,7 @@ struct pci_dev {
- 	unsigned int	is_added:1;
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
-+	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
- 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
- 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
+--- a/arch/powerpc/xmon/xmon.c
++++ b/arch/powerpc/xmon/xmon.c
+@@ -288,10 +288,10 @@ static inline void disable_surveillance(
+ 	args.token = rtas_token("set-indicator");
+ 	if (args.token == RTAS_UNKNOWN_SERVICE)
+ 		return;
+-	args.nargs = 3;
+-	args.nret = 1;
++	args.nargs = cpu_to_be32(3);
++	args.nret = cpu_to_be32(1);
+ 	args.rets = &args.args[3];
+-	args.args[0] = SURVEILLANCE_TOKEN;
++	args.args[0] = cpu_to_be32(SURVEILLANCE_TOKEN);
+ 	args.args[1] = 0;
+ 	args.args[2] = 0;
+ 	enter_rtas(__pa(&args));
 
 
