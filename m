@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaLETMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:12:22 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3415 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbaLETMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:12:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="425659051"
-Message-ID: <1417806738.2404.42.camel@jtkirshe-mobl>
-Subject: Re: [linux-nics] [PATCHv4 net] i40e: Implement ndo_gso_check()
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: netdev@vger.kernel.org, linux.nics@intel.com, jesse@nicira.com,
-        linux-kernel@vger.kernel.org, therbert@google.com
-Date: Fri, 05 Dec 2014 11:12:18 -0800
-In-Reply-To: <1417804872-58635-1-git-send-email-joestringer@nicira.com>
-References: <1417804872-58635-1-git-send-email-joestringer@nicira.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-/JLSzmwM3fWPYUpVgLir"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751794AbaLETPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:15:14 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:57959 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaLETPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 14:15:12 -0500
+Date: Fri, 5 Dec 2014 14:14:17 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-12-05
+Message-ID: <20141205191416.GD28319@tuxdriver.com>
+References: <20141205125318.GA24487@t440s.lan>
+ <20141205164149.GA1087@t440s.P-661HNU-F1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141205164149.GA1087@t440s.P-661HNU-F1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-/JLSzmwM3fWPYUpVgLir
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2014-12-05 at 10:41 -0800, Joe Stringer wrote:
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for IPIP, GRE, UDP
-> tunnels.
->=20
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+On Fri, Dec 05, 2014 at 06:41:49PM +0200, Johan Hedberg wrote:
+> Hi John,
+> 
+> Marcel had a couple more patches that were supposed to be in the pull
+> request, so here's a new one that supersedes the one I made earlier
+> today.
+> 
+> In addition to the previous one this contains two more cleanups to
+> mac802154 as well as support for some new HCI features from the
+> Bluetooth 4.2 specification.
+> 
+> From the original request:
+> 
+> "Here's what should be the last bluetooth-next pull request for 3.19.
+> It's rather large but the majority of it is the Low Energy Secure
+> Connections feature that's part of the Bluetooth 4.2 specification. The
+> specification went public only this week so we couldn't publish the
+> corresponding code before that. The code itself can nevertheless be
+> considered fairly mature as it's been in development for over 6 months
+> and gone through several interoperability test events.
+> 
+> Besides LE SC the pull request contains an important fix for command
+> complete events for mgmt sockets which also fixes some leaks of hci_conn
+> objects when powering off or unplugging Bluetooth adapters.
+> 
+> A smaller feature that's part of the pull request is service discovery
+> support. This is like normal device discovery except that devices not
+> matching specific UUIDs or strong enough RSSI are filtered out.
+> 
+> Other changes that the pull request contains are firmware dump support
+> to the btmrvl driver, firmware download support for Broadcom BCM20702A0
+> variants, as well as some coding style cleanups in 6lowpan &
+> ieee802154/mac802154 code."
+> 
+> Please let me know if there are any issues pulling. Thanks.
+> 
+> Johan
+> 
 > ---
-> v4: Simplify the check to just do tunnel header length.
->     Fix #define style issue.
-> v3: Drop IPIP and GRE (no driver support even though hw supports it).
->     Check for UDP outer protocol for UDP tunnels.
-> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
->     Add MAX_INNER_LENGTH (as 80).
-> ---
->  drivers/net/ethernet/intel/i40e/i40e_main.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
+> The following changes since commit f6af675ef5489c69fc3d4faf8c6f477df3cbf8b9:
+> 
+>   Bluetooth: Automatically flushable packets aren't allowed on LE links (2014-11-27 12:12:27 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 5a34bd5f5d8119def4feb1d2b4e3906b71059416:
+> 
+>   Bluetooth: Enable events for P-256 Public Key and DHKey commands (2014-12-05 18:17:49 +0200)
 
-Thanks Joe, I will update the patch in my queue with your latest
-version.
+Pulling now...
 
---=-/JLSzmwM3fWPYUpVgLir
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUggOSAAoJEOVv75VaS+3ORPQP/icXPGo54pqmCAvn6/vxqjwC
-xdSXAMJXlwESSlqEaMQBj3Y3s4diGVRDZKsF04wSu3f780fflmdVcmgsPuJSNl0D
-2b1A3QV+Jz6H3co/asKni0pdmzk8NuuoT3J7cj1ZmInHJyaM1SYfYgqLRTvBgAsL
-XQ+OhAC1NLSJO4LS3sGB0NDc2ZdBc/hA0ZpyrVL9CEkOhJZEw/LSMg6OT17LlMo+
-BtmKxlsGrOQKC6HfyFazKm3sQ1jOML2IPhDcI9Oqu6xB0PQn3M5125qJWwyeKcU2
-sghS2ZK3UQO/WDjeRcV00EIE7SuLhFV5eizImXxDE6+atmIafkAEFgvCpV5PcNW8
-kSw8+lijY9Uo54JSVKaMwCoOik+Q0PMOyyJa4IS1AyqQ1ZUzDmWXVN5L18Lf2knc
-4OP7H9k7vnpA10C33fVs221vRuXnx/YqDYQ8PoOosRqhvfVsjFFzJSeEur1HgNDs
-meu+eUC9wNQqPqsZTIutmfMVd702N3Jughkyvl8uWvumuaiZlwt5nZ727m/MT4ej
-deAyZcUJoBpQp8ObDtUYUVJbaZbMKeqcwka0EK59TeE1zmwu620N6OkJyxNmzw7f
-9BCGzaF88MLJ18w2hN4ldwHxR7+P3W1ATpxuTLBeljkaBoJaGVPAqLHGwP6HViFn
-i8kdW3QSX6zeGwIkdQAV
-=nqLs
------END PGP SIGNATURE-----
-
---=-/JLSzmwM3fWPYUpVgLir--
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
