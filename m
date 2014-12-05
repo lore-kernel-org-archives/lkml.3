@@ -1,164 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaLESXR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:23:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:60118 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaLESXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:23:15 -0500
-Date: Fri, 5 Dec 2014 10:23:02 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH 3/3 v2] f2fs: call radix_tree_preload before
- radix_tree_insert
-Message-ID: <20141205182302.GA6978@jaegeuk-mac02>
+	id S1751458AbaLESYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:24:55 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39756 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750862AbaLESYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 13:24:54 -0500
+Date: Fri, 5 Dec 2014 18:24:43 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205182443.GX11285@n2100.arm.linux.org.uk>
+References: <5481794E.4050406@broadcom.com>
+ <4565667.WCBuNmaazQ@wuerfel>
+ <20141205111114.GQ11285@n2100.arm.linux.org.uk>
+ <20141205173839.GB31222@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141205173839.GB31222@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change log from v1:
- o remain GFP_ATOMIC for free_nid list due to its spin_lock
+On Fri, Dec 05, 2014 at 05:38:39PM +0000, Catalin Marinas wrote:
+> On Fri, Dec 05, 2014 at 11:11:14AM +0000, Russell King - ARM Linux wrote:
+> > In any case, wouldn't using a u64 type for "address" be better - isn't
+> > "long long" 128-bit on 64-bit architectures?
+> 
+> No, it's still 64-bit. There is no 128-bit integer in the C standard.
 
->From 769ec6e5b7d4a8115447736871be8bffaaba3a7d Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-Date: Wed, 3 Dec 2014 20:47:26 -0800
-Subject: [PATCH] f2fs: call radix_tree_preload before radix_tree_insert
+Actually, that's a fallicy.
 
-This patch tries to fix:
+The C99 standard (like previous versions) does not define exactly the
+number of bits in each type.  It defines ranks of type, and says that
+lower ranks are a subrange of integers with higher ranks (for the same
+signed-ness.)  See section 6.2.5.
 
- BUG: using smp_processor_id() in preemptible [00000000] code: f2fs_gc-254:0/384
-  (radix_tree_node_alloc+0x14/0x74) from [<c033d8a0>] (radix_tree_insert+0x110/0x200)
-  (radix_tree_insert+0x110/0x200) from [<c02e8264>] (gc_data_segment+0x340/0x52c)
-  (gc_data_segment+0x340/0x52c) from [<c02e8658>] (f2fs_gc+0x208/0x400)
-  (f2fs_gc+0x208/0x400) from [<c02e8a98>] (gc_thread_func+0x248/0x28c)
-  (gc_thread_func+0x248/0x28c) from [<c0139944>] (kthread+0xa0/0xac)
-  (kthread+0xa0/0xac) from [<c0105ef8>] (ret_from_fork+0x14/0x3c)
+So, it merely states that:
 
-The reason is that f2fs calls radix_tree_insert under enabled preemption.
-So, before calling it, we need to call radix_tree_preload.
+range(char) <= range(short) <= range(int) <= range(long) <= range(long long)
 
-Otherwise, we should use _GFP_WAIT for the radix tree, and use mutex or
-semaphore to cover the radix tree operations.
+So, an implementation could have:
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/checkpoint.c |  8 ++++++++
- fs/f2fs/gc.c         |  6 ++----
- fs/f2fs/node.c       | 11 +++++++++--
- 3 files changed, 19 insertions(+), 6 deletions(-)
+char: 8  short: 16 int: 16 long: 32 long long: 64
+char: 8  short: 16 int: 32 long: 32 long long: 64
+char: 8  short: 16 int: 32 long: 64 long long: 64
+char: 8  short: 16 int: 64 long: 64 long long: 64
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 20a917b..6a81b73 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -304,6 +304,11 @@ static void __add_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type)
- 	struct inode_management *im = &sbi->im[type];
- 	struct ino_entry *e;
- retry:
-+	if (radix_tree_preload(GFP_NOFS)) {
-+		cond_resched();
-+		goto retry;
-+	}
-+
- 	spin_lock(&im->ino_lock);
- 
- 	e = radix_tree_lookup(&im->ino_root, ino);
-@@ -311,11 +316,13 @@ retry:
- 		e = kmem_cache_alloc(ino_entry_slab, GFP_ATOMIC);
- 		if (!e) {
- 			spin_unlock(&im->ino_lock);
-+			radix_tree_preload_end();
- 			goto retry;
- 		}
- 		if (radix_tree_insert(&im->ino_root, ino, e)) {
- 			spin_unlock(&im->ino_lock);
- 			kmem_cache_free(ino_entry_slab, e);
-+			radix_tree_preload_end();
- 			goto retry;
- 		}
- 		memset(e, 0, sizeof(struct ino_entry));
-@@ -326,6 +333,7 @@ retry:
- 			im->ino_num++;
- 	}
- 	spin_unlock(&im->ino_lock);
-+	radix_tree_preload_end();
- }
- 
- static void __remove_ino_entry(struct f2fs_sb_info *sbi, nid_t ino, int type)
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index a1af74f..2c58c58 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -351,7 +351,6 @@ static struct inode *find_gc_inode(struct gc_inode_list *gc_list, nid_t ino)
- static void add_gc_inode(struct gc_inode_list *gc_list, struct inode *inode)
- {
- 	struct inode_entry *new_ie;
--	int ret;
- 
- 	if (inode == find_gc_inode(gc_list, inode->i_ino)) {
- 		iput(inode);
-@@ -361,8 +360,7 @@ retry:
- 	new_ie = f2fs_kmem_cache_alloc(winode_slab, GFP_NOFS);
- 	new_ie->inode = inode;
- 
--	ret = radix_tree_insert(&gc_list->iroot, inode->i_ino, new_ie);
--	if (ret) {
-+	if (radix_tree_insert(&gc_list->iroot, inode->i_ino, new_ie)) {
- 		kmem_cache_free(winode_slab, new_ie);
- 		goto retry;
- 	}
-@@ -703,7 +701,7 @@ int f2fs_gc(struct f2fs_sb_info *sbi)
- 	struct cp_control cpc;
- 	struct gc_inode_list gc_list = {
- 		.ilist = LIST_HEAD_INIT(gc_list.ilist),
--		.iroot = RADIX_TREE_INIT(GFP_ATOMIC),
-+		.iroot = RADIX_TREE_INIT(GFP_NOFS),
- 	};
- 
- 	cpc.reason = test_opt(sbi, FASTBOOT) ? CP_UMOUNT : CP_SYNC;
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index b47555f..8de4f55 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1447,15 +1447,22 @@ static int add_free_nid(struct f2fs_sb_info *sbi, nid_t nid, bool build)
- 	i->nid = nid;
- 	i->state = NID_NEW;
- 
-+	if (radix_tree_preload(GFP_NOFS)) {
-+		kmem_cache_free(free_nid_slab, i);
-+		return 0;
-+	}
-+
- 	spin_lock(&nm_i->free_nid_list_lock);
- 	if (radix_tree_insert(&nm_i->free_nid_root, i->nid, i)) {
- 		spin_unlock(&nm_i->free_nid_list_lock);
-+		radix_tree_preload_end();
- 		kmem_cache_free(free_nid_slab, i);
- 		return 0;
- 	}
- 	list_add_tail(&i->list, &nm_i->free_nid_list);
- 	nm_i->fcnt++;
- 	spin_unlock(&nm_i->free_nid_list_lock);
-+	radix_tree_preload_end();
- 	return 1;
- }
- 
-@@ -1994,8 +2001,8 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
- 
- 	INIT_RADIX_TREE(&nm_i->free_nid_root, GFP_ATOMIC);
- 	INIT_LIST_HEAD(&nm_i->free_nid_list);
--	INIT_RADIX_TREE(&nm_i->nat_root, GFP_ATOMIC);
--	INIT_RADIX_TREE(&nm_i->nat_set_root, GFP_ATOMIC);
-+	INIT_RADIX_TREE(&nm_i->nat_root, GFP_NOIO);
-+	INIT_RADIX_TREE(&nm_i->nat_set_root, GFP_NOIO);
- 	INIT_LIST_HEAD(&nm_i->nat_entries);
- 
- 	mutex_init(&nm_i->build_lock);
+or even:
+
+char: 8  short: 16 int: 32 long: 64 long long: 128
+
+and that would still be compliant with C99, since it continues to meet
+the criteria about the required data types specified in the standard.
+
 -- 
-2.1.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
