@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaLETPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:15:14 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57959 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaLETPM (ORCPT
+	id S1751733AbaLETWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:22:11 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:8578 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaLETWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:15:12 -0500
-Date: Fri, 5 Dec 2014 14:14:17 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-12-05
-Message-ID: <20141205191416.GD28319@tuxdriver.com>
-References: <20141205125318.GA24487@t440s.lan>
- <20141205164149.GA1087@t440s.P-661HNU-F1>
+	Fri, 5 Dec 2014 14:22:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,523,1413270000"; 
+   d="scan'208";a="52397365"
+Message-ID: <548205DD.4080101@broadcom.com>
+Date: Fri, 5 Dec 2014 20:22:05 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141205164149.GA1087@t440s.P-661HNU-F1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: using DMA-API on ARM
+References: <5481794E.4050406@broadcom.com> <20141205094507.GP11285@n2100.arm.linux.org.uk> <20141205122423.GK1630@arm.com> <F51492713EF10846800D8C0ED37A7DCE019016E1@SJEXCHMB15.corp.ad.broadcom.com> <20141205132332.GS11285@n2100.arm.linux.org.uk> <20141205150648.GT11285@n2100.arm.linux.org.uk> <20141205182851.GC31222@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141205182851.GC31222@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 06:41:49PM +0200, Johan Hedberg wrote:
-> Hi John,
-> 
-> Marcel had a couple more patches that were supposed to be in the pull
-> request, so here's a new one that supersedes the one I made earlier
-> today.
-> 
-> In addition to the previous one this contains two more cleanups to
-> mac802154 as well as support for some new HCI features from the
-> Bluetooth 4.2 specification.
-> 
-> From the original request:
-> 
-> "Here's what should be the last bluetooth-next pull request for 3.19.
-> It's rather large but the majority of it is the Low Energy Secure
-> Connections feature that's part of the Bluetooth 4.2 specification. The
-> specification went public only this week so we couldn't publish the
-> corresponding code before that. The code itself can nevertheless be
-> considered fairly mature as it's been in development for over 6 months
-> and gone through several interoperability test events.
-> 
-> Besides LE SC the pull request contains an important fix for command
-> complete events for mgmt sockets which also fixes some leaks of hci_conn
-> objects when powering off or unplugging Bluetooth adapters.
-> 
-> A smaller feature that's part of the pull request is service discovery
-> support. This is like normal device discovery except that devices not
-> matching specific UUIDs or strong enough RSSI are filtered out.
-> 
-> Other changes that the pull request contains are firmware dump support
-> to the btmrvl driver, firmware download support for Broadcom BCM20702A0
-> variants, as well as some coding style cleanups in 6lowpan &
-> ieee802154/mac802154 code."
-> 
-> Please let me know if there are any issues pulling. Thanks.
-> 
-> Johan
-> 
-> ---
-> The following changes since commit f6af675ef5489c69fc3d4faf8c6f477df3cbf8b9:
-> 
->   Bluetooth: Automatically flushable packets aren't allowed on LE links (2014-11-27 12:12:27 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to 5a34bd5f5d8119def4feb1d2b4e3906b71059416:
-> 
->   Bluetooth: Enable events for P-256 Public Key and DHKey commands (2014-12-05 18:17:49 +0200)
+On 12/05/14 19:28, Catalin Marinas wrote:
+> On Fri, Dec 05, 2014 at 03:06:48PM +0000, Russell King - ARM Linux wrote:
+>> I've been doing more digging into the current DMA code, and I'm dismayed
+>> to see that there's new bugs in it...
+>>
+>> commit 513510ddba9650fc7da456eefeb0ead7632324f6
+>> Author: Laura Abbott<lauraa@codeaurora.org>
+>> Date:   Thu Oct 9 15:26:40 2014 -0700
+>>
+>>      common: dma-mapping: introduce common remapping functions
+>>
+>> This uses map_vm_area() to achieve the remapping of pages allocated inside
+>> dma_alloc_coherent().  dma_alloc_coherent() is documented in a rather
+>> round-about way in Documentation/DMA-API.txt:
+>>
+>> | Part Ia - Using large DMA-coherent buffers
+>> | ------------------------------------------
+>> |
+>> | void *
+>> | dma_alloc_coherent(struct device *dev, size_t size,
+>> |                              dma_addr_t *dma_handle, gfp_t flag)
+>> |
+>> | void
+>> | dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
+>> |                            dma_addr_t dma_handle)
+>> |
+>> | Free a region of consistent memory you previously allocated.  dev,
+>> | size and dma_handle must all be the same as those passed into
+>> | dma_alloc_coherent().  cpu_addr must be the virtual address returned by
+>> | the dma_alloc_coherent().
+>> |
+>> | Note that unlike their sibling allocation calls, these routines
+>> | may only be called with IRQs enabled.
+>>
+>> Note that very last paragraph.  What this says is that it is explicitly
+>> permitted to call dma_alloc_coherent() with IRQs disabled.
+>
+> This is solved by using a pre-allocated, pre-mapped atomic_pool which
+> avoids any further mapping. __dma_alloc() calls __alloc_from_pool() when
+> !__GFP_WAIT.
 
-Pulling now...
+So we are actually calling dma_alloc_coherent() with GFP_KERNEL during 
+device probe. That last paragraph Russell pointed out seems to suggest 
+this is not allowed.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> This code got pretty complex and we may find bugs. It can be simplified
+> by a pre-allocated non-cacheable region that is safe in atomic context
+> (how big you allocate this is hard to say).
+>
+>> If the problem which you (Broadcom) are suffering from is down to the
+>> issue I suspect (that being having mappings with different cache
+>> attributes) then I'm not sure that there's anything we can realistically
+>> do about that.  There's a number of issues which make it hard to see a
+>> way forward.
+>
+> I'm still puzzled by this problem, so I don't have any suggestion yet. I
+> wouldn't blame the mismatched attributes yet as I haven't seen such
+> problem in practice (but you never know).
+>
+> How does the DT describe this device? Could it have some dma-coherent
+> property in there that causes dma_alloc_coherent() to create a cacheable
+> memory?
+
+Ok. Will add it to our todo list: check DTS files for dma-coherent property.
+
+Thanks,
+Arend
+
+> The reverse could also cause problems: the device is coherent but the
+> CPU creates a non-cacheable mapping.
+>
+
