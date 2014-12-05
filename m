@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaLEXrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:47:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
+	id S932233AbaLEXrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:47:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaLEWp7 (ORCPT
+	with ESMTP id S1752238AbaLEWp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:45:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bard Liao <bardliao@realtek.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 041/122] ASoC: rt5670: correct the incorrect default values
-Date: Fri,  5 Dec 2014 14:43:35 -0800
-Message-Id: <20141205223311.652685719@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 042/122] ASoC: cs42l51: re-hook of_match_table pointer
+Date: Fri,  5 Dec 2014 14:43:36 -0800
+Message-Id: <20141205223311.824869395@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,114 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bard Liao <bardliao@realtek.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit ac87f22147098da9cf83a0b413ef7dda42277d85 upstream.
+commit 2cb1e0259f50c7be88eb277c7442fa74a3ce7c57 upstream.
 
-The patch corrects the incorrect default register values.
+In commit a1253ef6d3fa ("ASoC: cs42l51: split i2c from codec driver"),
+the I2C part of the CS42L51 was moved to a separate file, but the
+definition of the of_device_id array was left in the driver file
+itself, no longer connected to the platform_driver structure using the
+.of_match_table pointer.
 
-Signed-off-by: Bard Liao <bardliao@realtek.com>
+This commit exports the of_device_id array in cs42l51, and uses it as
+.of_match_able in cs42l51-i2c.c. This solution was suggested by Brian
+Austin.
+
+Fixes: a1253ef6d3fa ("ASoC: cs42l51: split i2c from codec driver")
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Brian Austin <brian.austin@cirrus.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/rt5670.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ sound/soc/codecs/cs42l51-i2c.c |    1 +
+ sound/soc/codecs/cs42l51.c     |    4 +++-
+ sound/soc/codecs/cs42l51.h     |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/rt5670.c
-+++ b/sound/soc/codecs/rt5670.c
-@@ -100,18 +100,18 @@ static const struct reg_default rt5670_r
- 	{ 0x4c, 0x5380 },
- 	{ 0x4f, 0x0073 },
- 	{ 0x52, 0x00d3 },
--	{ 0x53, 0xf0f0 },
-+	{ 0x53, 0xf000 },
- 	{ 0x61, 0x0000 },
- 	{ 0x62, 0x0001 },
- 	{ 0x63, 0x00c3 },
- 	{ 0x64, 0x0000 },
--	{ 0x65, 0x0000 },
-+	{ 0x65, 0x0001 },
- 	{ 0x66, 0x0000 },
- 	{ 0x6f, 0x8000 },
- 	{ 0x70, 0x8000 },
- 	{ 0x71, 0x8000 },
- 	{ 0x72, 0x8000 },
--	{ 0x73, 0x1110 },
-+	{ 0x73, 0x7770 },
- 	{ 0x74, 0x0e00 },
- 	{ 0x75, 0x1505 },
- 	{ 0x76, 0x0015 },
-@@ -125,21 +125,21 @@ static const struct reg_default rt5670_r
- 	{ 0x83, 0x0000 },
- 	{ 0x84, 0x0000 },
- 	{ 0x85, 0x0000 },
--	{ 0x86, 0x0008 },
-+	{ 0x86, 0x0004 },
- 	{ 0x87, 0x0000 },
- 	{ 0x88, 0x0000 },
- 	{ 0x89, 0x0000 },
- 	{ 0x8a, 0x0000 },
- 	{ 0x8b, 0x0000 },
--	{ 0x8c, 0x0007 },
-+	{ 0x8c, 0x0003 },
- 	{ 0x8d, 0x0000 },
- 	{ 0x8e, 0x0004 },
- 	{ 0x8f, 0x1100 },
- 	{ 0x90, 0x0646 },
- 	{ 0x91, 0x0c06 },
- 	{ 0x93, 0x0000 },
--	{ 0x94, 0x0000 },
--	{ 0x95, 0x0000 },
-+	{ 0x94, 0x1270 },
-+	{ 0x95, 0x1000 },
- 	{ 0x97, 0x0000 },
- 	{ 0x98, 0x0000 },
- 	{ 0x99, 0x0000 },
-@@ -150,11 +150,11 @@ static const struct reg_default rt5670_r
- 	{ 0x9e, 0x0400 },
- 	{ 0xae, 0x7000 },
- 	{ 0xaf, 0x0000 },
--	{ 0xb0, 0x6000 },
-+	{ 0xb0, 0x7000 },
- 	{ 0xb1, 0x0000 },
- 	{ 0xb2, 0x0000 },
- 	{ 0xb3, 0x001f },
--	{ 0xb4, 0x2206 },
-+	{ 0xb4, 0x220c },
- 	{ 0xb5, 0x1f00 },
- 	{ 0xb6, 0x0000 },
- 	{ 0xb7, 0x0000 },
-@@ -171,25 +171,25 @@ static const struct reg_default rt5670_r
- 	{ 0xcf, 0x1813 },
- 	{ 0xd0, 0x0690 },
- 	{ 0xd1, 0x1c17 },
--	{ 0xd3, 0xb320 },
-+	{ 0xd3, 0xa220 },
- 	{ 0xd4, 0x0000 },
- 	{ 0xd6, 0x0400 },
- 	{ 0xd9, 0x0809 },
- 	{ 0xda, 0x0000 },
- 	{ 0xdb, 0x0001 },
- 	{ 0xdc, 0x0049 },
--	{ 0xdd, 0x0009 },
-+	{ 0xdd, 0x0024 },
- 	{ 0xe6, 0x8000 },
- 	{ 0xe7, 0x0000 },
--	{ 0xec, 0xb300 },
-+	{ 0xec, 0xa200 },
- 	{ 0xed, 0x0000 },
--	{ 0xee, 0xb300 },
-+	{ 0xee, 0xa200 },
- 	{ 0xef, 0x0000 },
- 	{ 0xf8, 0x0000 },
- 	{ 0xf9, 0x0000 },
- 	{ 0xfa, 0x8010 },
- 	{ 0xfb, 0x0033 },
--	{ 0xfc, 0x0080 },
-+	{ 0xfc, 0x0100 },
- };
+--- a/sound/soc/codecs/cs42l51-i2c.c
++++ b/sound/soc/codecs/cs42l51-i2c.c
+@@ -46,6 +46,7 @@ static struct i2c_driver cs42l51_i2c_dri
+ 	.driver = {
+ 		.name = "cs42l51",
+ 		.owner = THIS_MODULE,
++		.of_match_table = cs42l51_of_match,
+ 	},
+ 	.probe = cs42l51_i2c_probe,
+ 	.remove = cs42l51_i2c_remove,
+--- a/sound/soc/codecs/cs42l51.c
++++ b/sound/soc/codecs/cs42l51.c
+@@ -558,11 +558,13 @@ error:
+ }
+ EXPORT_SYMBOL_GPL(cs42l51_probe);
  
- static bool rt5670_volatile_register(struct device *dev, unsigned int reg)
+-static const struct of_device_id cs42l51_of_match[] = {
++const struct of_device_id cs42l51_of_match[] = {
+ 	{ .compatible = "cirrus,cs42l51", },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, cs42l51_of_match);
++EXPORT_SYMBOL_GPL(cs42l51_of_match);
++
+ MODULE_AUTHOR("Arnaud Patard <arnaud.patard@rtp-net.org>");
+ MODULE_DESCRIPTION("Cirrus Logic CS42L51 ALSA SoC Codec Driver");
+ MODULE_LICENSE("GPL");
+--- a/sound/soc/codecs/cs42l51.h
++++ b/sound/soc/codecs/cs42l51.h
+@@ -22,6 +22,7 @@ struct device;
+ 
+ extern const struct regmap_config cs42l51_regmap;
+ int cs42l51_probe(struct device *dev, struct regmap *regmap);
++extern const struct of_device_id cs42l51_of_match[];
+ 
+ #define CS42L51_CHIP_ID			0x1B
+ #define CS42L51_CHIP_REV_A		0x00
 
 
