@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaLEWu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:50:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54009 "EHLO
+	id S1752877AbaLEWvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:51:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53980 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480AbaLEWqQ (ORCPT
+	with ESMTP id S1752461AbaLEWqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:16 -0500
+	Fri, 5 Dec 2014 17:46:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Cernekee <cernekee@gmail.com>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 3.17 075/122] of: Fix crash if an earlycon driver is not found
-Date: Fri,  5 Dec 2014 14:44:09 -0800
-Message-Id: <20141205223317.075077519@linuxfoundation.org>
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.17 089/122] mac80211: Fix regression that triggers a kernel BUG with CCMP
+Date: Fri,  5 Dec 2014 14:44:23 -0800
+Message-Id: <20141205223319.158829281@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,40 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Cernekee <cernekee@gmail.com>
+From: Ronald Wahl <ronald.wahl@raritan.com>
 
-commit ab74d00a39f70e1bc34a01322bb59f3750ca7a8c upstream.
+commit 4f031fa9f188b2b0641ac20087d9e16bcfb4e49d upstream.
 
-__earlycon_of_table_sentinel.compatible is a char[128], not a pointer, so
-it will never be NULL.  Checking it against NULL causes the match loop to
-run past the end of the array, and eventually match a bogus entry, under
-the following conditions:
+Commit 7ec7c4a9a686c608315739ab6a2b0527a240883c (mac80211: port CCMP to
+cryptoapi's CCM driver) introduced a regression when decrypting empty
+packets (data_len == 0). This will lead to backtraces like:
 
- - Kernel command line specifies "earlycon" with no parameters
- - DT has a stdout-path pointing to a UART node
- - The UART driver doesn't use OF_EARLYCON_DECLARE (or maybe the console
-   driver is compiled out)
+(scatterwalk_start) from [<c01312f4>] (scatterwalk_map_and_copy+0x2c/0xa8)
+(scatterwalk_map_and_copy) from [<c013a5a0>] (crypto_ccm_decrypt+0x7c/0x25c)
+(crypto_ccm_decrypt) from [<c032886c>] (ieee80211_aes_ccm_decrypt+0x160/0x170)
+(ieee80211_aes_ccm_decrypt) from [<c031c628>] (ieee80211_crypto_ccmp_decrypt+0x1ac/0x238)
+(ieee80211_crypto_ccmp_decrypt) from [<c032ef28>] (ieee80211_rx_handlers+0x870/0x1d24)
+(ieee80211_rx_handlers) from [<c0330c7c>] (ieee80211_prepare_and_rx_handle+0x8a0/0x91c)
+(ieee80211_prepare_and_rx_handle) from [<c0331260>] (ieee80211_rx+0x568/0x730)
+(ieee80211_rx) from [<c01d3054>] (__carl9170_rx+0x94c/0xa20)
+(__carl9170_rx) from [<c01d3324>] (carl9170_rx_stream+0x1fc/0x320)
+(carl9170_rx_stream) from [<c01cbccc>] (carl9170_usb_tasklet+0x80/0xc8)
+(carl9170_usb_tasklet) from [<c00199dc>] (tasklet_hi_action+0x88/0xcc)
+(tasklet_hi_action) from [<c00193c8>] (__do_softirq+0xcc/0x200)
+(__do_softirq) from [<c0019734>] (irq_exit+0x80/0xe0)
+(irq_exit) from [<c0009c10>] (handle_IRQ+0x64/0x80)
+(handle_IRQ) from [<c000c3a0>] (__irq_svc+0x40/0x4c)
+(__irq_svc) from [<c0009d44>] (arch_cpu_idle+0x2c/0x34)
 
-Fix this by checking to see if match->compatible is a non-empty string.
+Such packets can appear for example when using the carl9170 wireless driver
+because hardware sometimes generates garbage when the internal FIFO overruns.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Signed-off-by: Rob Herring <robh@kernel.org>
+This patch adds an additional length check.
+
+Fixes: 7ec7c4a9a686 ("mac80211: port CCMP to cryptoapi's CCM driver")
+Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/fdt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/aes_ccm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -773,7 +773,7 @@ int __init early_init_dt_scan_chosen_ser
- 	if (offset < 0)
- 		return -ENODEV;
+--- a/net/mac80211/aes_ccm.c
++++ b/net/mac80211/aes_ccm.c
+@@ -53,6 +53,9 @@ int ieee80211_aes_ccm_decrypt(struct cry
+ 		__aligned(__alignof__(struct aead_request));
+ 	struct aead_request *aead_req = (void *) aead_req_data;
  
--	while (match->compatible) {
-+	while (match->compatible[0]) {
- 		unsigned long addr;
- 		if (fdt_node_check_compatible(fdt, offset, match->compatible)) {
- 			match++;
++	if (data_len == 0)
++		return -EINVAL;
++
+ 	memset(aead_req, 0, sizeof(aead_req_data));
+ 
+ 	sg_init_one(&pt, data, data_len);
 
 
