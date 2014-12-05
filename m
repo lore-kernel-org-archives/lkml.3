@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaLEVtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:49:16 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:50504 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaLEVtP convert rfc822-to-8bit (ORCPT
+	id S1752046AbaLEVuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:50:04 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:61639 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLEVuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:49:15 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Darren Hart <dvhart@infradead.org>, Alex Hung <alex.hung@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Date: Fri, 05 Dec 2014 22:49:11 +0100
-Message-ID: <2697957.miSb4Rm7HK@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0-rc7+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <201412052223.25059@pali>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <94523420.RuhoUzmTQs@xps13> <201412052223.25059@pali>
+	Fri, 5 Dec 2014 16:50:01 -0500
+Message-ID: <548228F5.4020801@gmail.com>
+Date: Sat, 06 Dec 2014 05:51:49 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rth@twiddle.net" <rth@twiddle.net>,
+        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
+        "mattst88@gmail.com" <mattst88@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
+        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, minchan@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] arch: uapi: asm: mman.h: Let MADV_FREE have same value
+ for all architectures
+References: <5480E715.3020900@gmail.com> <20141205001446.GC10064@birch.djwong.org>
+In-Reply-To: <20141205001446.GC10064@birch.djwong.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 December 2014 22:23:25 Pali Rohár wrote:
-> On Friday 05 December 2014 22:12:42 Gabriele Mazzotta wrote:
-> > On Friday 05 December 2014 22:03:24 Pali Rohár wrote:
-> > > On Friday 05 December 2014 21:53:10 Gabriele Mazzotta wrote:
-> > > > On Friday 05 December 2014 21:38:17 Pali Rohár wrote:
-> > > > > On Wednesday 03 December 2014 14:00:23 Darren Hart wrote:
-> > > > > > On Thu, Dec 04, 2014 at 10:55:32AM +0100, Pali Rohár 
-> wrote:
-> > > > > > > Darren, I think that if we do not solve problem with
-> > > > > > > duplicate key events (in dell-wireless.c) we should
-> > > > > > > postpone these patches to later kernel version. It
-> > > > > > > is better to not have such regression as it confuse
-> > > > > > > software like NetworkManager which is widely used.
-> > > > > > 
-> > > > > > OK, that's what I needed. Thanks. Ignore my previous
-> > > > > > request, you answered it here. I will drop
-> > > > > > dell-wireless.c and look for a combined solution from
-> > > > > > you and Alex for the next release.
-> > > > > > 
-> > > > > > Thanks,
-> > > > > 
-> > > > > And according to discussion about Side effect of
-> > > > > pressing special keys at [1] [2] we should not report
-> > > > > this wireless key event (as input device) to userspace.
-> > > > > And Alex's driver is doing that.
-> > > > > 
-> > > > > [1] -
-> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
-> > > > > 2.h tml [2] -
-> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
-> > > > > 4.h tml
-> > > > 
-> > > > Alex's patch is for those laptop whose BIOS only sends a
-> > > > notification to DELLABCE when Fn keys are pressed. His
-> > > > patch simply translates these ACPI notifications to
-> > > > KEY_RFKILL keypresses.
-> > > 
-> > > Yes, and your last patch disables sending such KEY events to
-> > > userspace (in dell-wmi driver). BIOS already handle changes,
-> > > so key press should not be reported to userspace... [1]
-> > > (from previous email).
-> > 
-> > This is not true if ARBT (with 1 as parameter) is called. When
-> > this is done, the BIOS stops managing the radio devices
-> > completely and reporting KEY_RFKILL to userspace becomes a
-> > necessity. I guess that the laptops on which this patch was
-> > tested behaved like mine after ARBT is called, given that the
-> > call was missing completely in the original patch.
-> > 
+On 12/05/2014 08:14 AM, Darrick J. Wong wrote:
+> On Fri, Dec 05, 2014 at 06:58:29AM +0800, Chen Gang wrote:
+>> For uapi, need try to let all macros have same value, and MADV_FREE is
+>> added into main branch recently, so need redefine MADV_FREE for it.
+>>
+>> At present, '8' can be shared with all architectures, so redefine it to
+>> '8'.
 > 
-> Ok. It means that at least original Alex patch needs to be 
-> reworked (so we will do not see duplicate events problem and 
-> problem described in previous email).
+> Hmmm... you might want to talk to the dietlibc people if you do this:
 > 
-> But my other question is... If ARBT(1) is called then it disables 
-> BIOS support for managing radio devices on your laptop. Why we 
-> need patch which disabling useful functionality (= ability to 
-> disable wifi rfkill)? We still do not have patch which can 
-> correctly set rfkill state by software on laptops of your fn key 
-> type.
+> $ grep -rn MADV_FREE /usr/include/
+> /usr/include/diet/sys/mman.h:101:#define MADV_FREE      0x5             /* (Solaris) contents can be freed */
+> 
+> Though the sole definition only exists on sparc/powerpc/powerpc64, so who
+> knows...
+>
 
-That's what happens on my laptop, but Alex said that the laptops on
-which he worked, ARBT was empty, so I guess it's not always a choice.
-In order not to break things, all the laptops that support both the
-methods must be set to the correct mode through ARBT when the module
-is loaded. If this is not done, then what you say is correct, we should
-not report KEY_RFKILL, or at least do it selectively, but I guess that
-this is not be possible without a whitelist (that we don't have).
+Excuse me, I am not quite familiar about dietlibc. If possible, please
+help forward this mail to them, and Cc me (if necessary).
 
-> > > > Correct if I'm wrong, but shouldn't his patch have no
-> > > > effects on your laptop? If I'm not wrong, CRBT returns 2
-> > > > on your laptop, so the input device is not even created.
-> > > > Am I missing something?
-> > > > 
-> > > > Gabriele
-> > > 
-> > > Yes, it has no effect for my laptop.
-> 
-> 
+Thanks.
+-- 
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
