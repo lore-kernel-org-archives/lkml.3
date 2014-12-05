@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaLEXuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:50:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaLEWp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752153AbaLEWp4 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 17:45:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53742 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLEWpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:45:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 008/122] MIPS: fix EVA & non-SMP non-FPU FP context signal handling
-Date: Fri,  5 Dec 2014 14:43:02 -0800
-Message-Id: <20141205223306.740952173@linuxfoundation.org>
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Huacai Chen <chenhc@lemote.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>
+Subject: [PATCH 3.17 011/122] MIPS: Loongson: Make platform serial setup always built-in.
+Date: Fri,  5 Dec 2014 14:43:05 -0800
+Message-Id: <20141205223307.178282002@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,55 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Burton <paul.burton@imgtec.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 14fa12df1d6bc1d3389a0fa842e0ebd8e8a9af26 upstream.
+commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
 
-The save_fp_context & restore_fp_context pointers were being assigned
-to the wrong variables if either:
+If SERIAL_8250 is compiled as a module, the platform specific setup
+for Loongson will be a module too, and it will not work very well.
+At least on Loongson 3 it will trigger a build failure,
+since loongson_sysconf is not exported to modules.
 
-  - The kernel is configured for UP & runs on a system without an FPU,
-    since b2ead5282885 "MIPS: Move & rename
-    fpu_emulator_{save,restore}_context".
+Fix by making the platform specific serial code always built-in.
 
-  - The kernel is configured for EVA, since ca750649e08c "MIPS: kernel:
-    signal: Prevent save/restore FPU context in user memory".
-
-This would lead to FP context being clobbered incorrectly when setting
-up a sigcontext, then the garbage values being saved uselessly when
-returning from the signal.
-
-Fix by swapping the pointer assignments appropriately.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8230/
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8533/
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/signal.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/mips/loongson/common/Makefile |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/mips/kernel/signal.c
-+++ b/arch/mips/kernel/signal.c
-@@ -658,13 +658,13 @@ static int signal_setup(void)
- 		save_fp_context = _save_fp_context;
- 		restore_fp_context = _restore_fp_context;
- 	} else {
--		save_fp_context = copy_fp_from_sigcontext;
--		restore_fp_context = copy_fp_to_sigcontext;
-+		save_fp_context = copy_fp_to_sigcontext;
-+		restore_fp_context = copy_fp_from_sigcontext;
- 	}
- #endif /* CONFIG_SMP */
- #else
--	save_fp_context = copy_fp_from_sigcontext;;
--	restore_fp_context = copy_fp_to_sigcontext;
-+	save_fp_context = copy_fp_to_sigcontext;
-+	restore_fp_context = copy_fp_from_sigcontext;
- #endif
+--- a/arch/mips/loongson/common/Makefile
++++ b/arch/mips/loongson/common/Makefile
+@@ -11,7 +11,8 @@ obj-$(CONFIG_PCI) += pci.o
+ # Serial port support
+ #
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-obj-$(CONFIG_SERIAL_8250) += serial.o
++loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
++obj-y += $(loongson-serial-m) $(loongson-serial-y)
+ obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
+ obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
  
- 	return 0;
 
 
