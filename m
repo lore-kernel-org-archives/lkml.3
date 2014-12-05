@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaLEXGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:06:41 -0500
+	id S1753697AbaLEXKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:10:51 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899AbaLEXGe (ORCPT
+	with ESMTP id S1753987AbaLEXGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:34 -0500
+	Fri, 5 Dec 2014 18:06:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 20/45] powerpc/pseries: Honor the generic "no_64bit_msi" flag
-Date: Fri,  5 Dec 2014 14:45:03 -0800
-Message-Id: <20141205223319.921572039@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 05/45] x86_64, traps: Rework bad_iret
+Date: Fri,  5 Dec 2014 14:44:48 -0800
+Message-Id: <20141205223317.569714507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -28,29 +30,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 415072a041bf50dbd6d56934ffc0cbbe14c97be8 upstream.
+commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
 
-Instead of the arch specific quirk which we are deprecating
+It's possible for iretq to userspace to fail.  This can happen because
+of a bad CS, SS, or RIP.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Historically, we've handled it by fixing up an exception from iretq to
+land at bad_iret, which pretends that the failed iret frame was really
+the hardware part of #GP(0) from userspace.  To make this work, there's
+an extra fixup to fudge the gs base into a usable state.
+
+This is suboptimal because it loses the original exception.  It's also
+buggy because there's no guarantee that we were on the kernel stack to
+begin with.  For example, if the failing iret happened on return from an
+NMI, then we'll end up executing general_protection on the NMI stack.
+This is bad for several reasons, the most immediate of which is that
+general_protection, as a non-paranoid idtentry, will try to deliver
+signals and/or schedule from the wrong stack.
+
+This patch throws out bad_iret entirely.  As a replacement, it augments
+the existing swapgs fudge into a full-blown iret fixup, mostly written
+in C.  It's should be clearer and more correct.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/msi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/entry_64.S |   45 +++++++++++++++++++--------------------------
+ arch/x86/kernel/traps.c    |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 26 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -426,7 +426,7 @@ static int rtas_setup_msi_irqs(struct pc
- 	 */
- again:
- 	if (type == PCI_CAP_ID_MSI) {
--		if (pdn->force_32bit_msi) {
-+		if (pdev->no_64bit_msi) {
- 			rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, nvec);
- 			if (rc < 0) {
- 				/*
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1070,8 +1070,13 @@ ENTRY(native_iret)
+ 
+ .global native_irq_return_iret
+ native_irq_return_iret:
++	/*
++	 * This may fault.  Non-paranoid faults on return to userspace are
++	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
++	 * Double-faults due to espfix64 are handled in do_double_fault.
++	 * Other faults here are fatal.
++	 */
+ 	iretq
+-	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+ native_irq_return_ldt:
+@@ -1099,25 +1104,6 @@ native_irq_return_ldt:
+ 	jmp native_irq_return_iret
+ #endif
+ 
+-	.section .fixup,"ax"
+-bad_iret:
+-	/*
+-	 * The iret traps when the %cs or %ss being restored is bogus.
+-	 * We've lost the original trap vector and error code.
+-	 * #GPF is the most likely one to get for an invalid selector.
+-	 * So pretend we completed the iret and took the #GPF in user mode.
+-	 *
+-	 * We are now running with the kernel GS after exception recovery.
+-	 * But error_entry expects us to have user GS to match the user %cs,
+-	 * so swap back.
+-	 */
+-	pushq $0
+-
+-	SWAPGS
+-	jmp general_protection
+-
+-	.previous
+-
+ 	/* edi: workmask, edx: work */
+ retint_careful:
+ 	CFI_RESTORE_STATE
+@@ -1613,16 +1599,15 @@ error_sti:
+ 
+ /*
+  * There are two places in the kernel that can potentially fault with
+- * usergs. Handle them here. The exception handlers after iret run with
+- * kernel gs again, so don't set the user space flag. B stepping K8s
+- * sometimes report an truncated RIP for IRET exceptions returning to
+- * compat mode. Check for these here too.
++ * usergs. Handle them here.  B stepping K8s sometimes report a
++ * truncated RIP for IRET exceptions returning to compat mode. Check
++ * for these here too.
+  */
+ error_kernelspace:
+ 	incl %ebx
+ 	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	je error_bad_iret
+ 	movl %ecx,%eax	/* zero extend */
+ 	cmpq %rax,RIP+8(%rsp)
+ 	je bstep_iret
+@@ -1633,7 +1618,15 @@ error_kernelspace:
+ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+-	jmp error_swapgs
++	/* fall through */
++
++error_bad_iret:
++	SWAPGS
++	mov %rsp,%rdi
++	call fixup_bad_iret
++	mov %rax,%rsp
++	decl %ebx	/* Return to usergs */
++	jmp error_sti
+ 	CFI_ENDPROC
+ END(error_entry)
+ 
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -381,6 +381,35 @@ asmlinkage __kprobes struct pt_regs *syn
+ 		*regs = *eregs;
+ 	return regs;
+ }
++
++struct bad_iret_stack {
++	void *error_entry_ret;
++	struct pt_regs regs;
++};
++
++asmlinkage __visible
++struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
++{
++	/*
++	 * This is called from entry_64.S early in handling a fault
++	 * caused by a bad iret to user mode.  To handle the fault
++	 * correctly, we want move our stack frame to task_pt_regs
++	 * and we want to pretend that the exception came from the
++	 * iret target.
++	 */
++	struct bad_iret_stack *new_stack =
++		container_of(task_pt_regs(current),
++			     struct bad_iret_stack, regs);
++
++	/* Copy the IRET target to the new stack. */
++	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
++
++	/* Copy the remainder of the stack from the current stack. */
++	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
++
++	BUG_ON(!user_mode_vm(&new_stack->regs));
++	return new_stack;
++}
+ #endif
+ 
+ /*
 
 
