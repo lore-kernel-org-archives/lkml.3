@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaLEIov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:44:51 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:45763 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751579AbaLEIot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:44:49 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44553942"
-Message-ID: <54816CD3.90107@cn.fujitsu.com>
-Date: Fri, 5 Dec 2014 16:29:07 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752732AbaLEIrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:47:13 -0500
+Received: from mout.gmx.net ([212.227.17.21]:60604 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751579AbaLEIrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:47:12 -0500
+From: Marc Dietrich <marvin24@gmx.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Heyang Zhou <zhy@mrl.im>, linux-kernel@vger.kernel.org
+Subject: Re: GPL violation: China Telecom uses a modified linux kernel in itsproduct without sources
+Date: Fri, 05 Dec 2014 09:46:55 +0100
+Message-ID: <26257370.kL1FLWdD9r@fb07-iapwap2>
+User-Agent: KMail/4.14.3 (Linux/3.18.0-rc7-12.gfc9498b-desktop+; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141203215009.GA31938@amd>
+References: <1417610321.11684.4.camel@mrl.im> <20141203215009.GA31938@amd>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] net: introduce helper macra CMSG_FOREACH_HDR
-References: <54815B40.1050909@cn.fujitsu.com> <1417766552.2721.45.camel@perches.com>
-In-Reply-To: <1417766552.2721.45.camel@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:x/nr+nHy9NnDhyKgX5Yi0lKMYdgrPIAWegqnM2lHI7dRlygi6rl
+ bIvsFBG3CJHSrViL8rgXAJhRH6Wcei1y2w85gwjxN4t+Du6eWYcDgDL7GDQqCCqQbY4Xy/8
+ FCCydGdTd2rsMIPCNti2EWLj1ljJ0wGzNSM7262ezfFPgS5rC1llB12Ey6yG1vdzNzLc3Rv
+ PpaWJ/Prps2wpOEcOSoTg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-Thanks for your comment.
-On 12/05/2014 04:02 PM, Joe Perches wrote:
-
-> On Fri, 2014-12-05 at 15:14 +0800, Gu Zheng wrote:
->> Introduce helper macra
+Am Mittwoch, 3. Dezember 2014, 22:50:09 schrieb Pavel Machek:
+> Hi!
 > 
-> macro
-
-Ah~, it's a typo.
-
+> > I think China Telecom is violating GPL in one of its products, iTV.
+> > The product uses linux as its OS. To run on MIPS architecture, it does a
+> > lot of modification to linux kernel. But there is NO source published. I
+> > phoned them and they just refused to open the source.
+> > The product 'iTV' is distributed and being used by many people. And I'm
+> > sure that it uses Linux kernel, for I've checked its UART output.
 > 
->> CMSG_FOREACH_HDR as a wrapper of the enumerating
->> cmsghdr from msghdr, just cleanup. 
+> This would be right place to coordinate action:
 > 
-> maybe better to use lower case "for_each_cmsg_hdr"
-> or some such.
+> http://en.wikipedia.org/wiki/Gpl-violations.org
+> 
+> ...but for some reason, Gpl-violations.org does not work for me.
 
-But this will make it out of the ordinary, as the existed ones
-are all upper.
+there is not much kernel devs can do about this. Better read this first and 
+then ask the FSF for help.
 
-David, what's your opinion?
+https://www.gnu.org/licenses/gpl-violation.html
 
-Regards,
-Gu
-
-> 
-> checkpatch would recognize that too as long as it
-> uses "for_each".
-> 
->> diff --git a/include/linux/socket.h b/include/linux/socket.h
-> []
->> @@ -94,6 +94,10 @@ struct cmsghdr {
->>  			     (cmsg)->cmsg_len <= (unsigned long) \
->>  			     ((mhdr)->msg_controllen - \
->>  			      ((char *)(cmsg) - (char *)(mhdr)->msg_control)))
->> +#define CMSG_FOREACH_HDR(cmsg, msg)  \
->> +	for (cmsg = CMSG_FIRSTHDR(msg); \
->> +	     cmsg; \
->> +	     cmsg = CMSG_NXTHDR(msg, cmsg))
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Marc
 
