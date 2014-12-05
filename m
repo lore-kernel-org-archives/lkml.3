@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaLEIIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:08:48 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:19528 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752130AbaLEIIp (ORCPT
+	id S1752666AbaLEII6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:08:58 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:61431 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaLEIIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:08:45 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 5 Dec 2014 16:08:42 +0800
-Subject: RE: [RFC V2] mm:add zero_page _mapcount when mapped into user space
-Thread-Topic: [RFC V2] mm:add zero_page _mapcount when mapped into user space
-Thread-Index: AdAQVi6i9fnYaniFTiOXXd35RG3ixgADGPWA
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313EC@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
-	<20141202113014.GA22683@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
-	<20141204122813.GA523@node.dhcp.inet.fi>
- <CALYGNiPWw6=tryWn_kCs+6H1uSjApBDnqORxuNEd=DuGCo71qA@mail.gmail.com>
-In-Reply-To: <CALYGNiPWw6=tryWn_kCs+6H1uSjApBDnqORxuNEd=DuGCo71qA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 5 Dec 2014 03:08:55 -0500
+From: Harini Katakam <harinik@xilinx.com>
+To: wsa@the-dreams.de, mark.rutland@arm.com
+Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, harinik@xilinx.com,
+        harinikatakamlinux@gmail.com, Vishnu Motghare <vishnum@xilinx.com>
+Subject: [PATCH v3 2/2] i2c: cadence: Check for errata condition involving master receive
+Date: Fri,  5 Dec 2014 13:38:04 +0530
+Message-Id: <1417766884-8383-3-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417766884-8383-1-git-send-email-harinik@xilinx.com>
+References: <1417766884-8383-1-git-send-email-harinik@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB588v5E008332
 
-> -----Original Message-----
-> From: Konstantin Khlebnikov [mailto:koct9i@gmail.com]
-> Sent: Friday, December 05, 2014 2:39 PM
-> To: Kirill A. Shutemov
-> Cc: Wang, Yalin; linux-kernel@vger.kernel.org; linux-mm@kvack.org; linux-
-> arm-kernel@lists.infradead.org
-> Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user
-> space
-> 
-> On Thu, Dec 4, 2014 at 3:28 PM, Kirill A. Shutemov <kirill@shutemov.name>
-> wrote:
-> > On Thu, Dec 04, 2014 at 02:10:53PM +0800, Wang, Yalin wrote:
-> >> > -----Original Message-----
-> >> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> >> > Sent: Tuesday, December 02, 2014 7:30 PM
-> >> > To: Wang, Yalin
-> >> > Cc: 'linux-kernel@vger.kernel.org'; 'linux-mm@kvack.org';
-> >> > 'linux-arm- kernel@lists.infradead.org'
-> >> > Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into
-> >> > user space
-> >> >
-> >> > On Tue, Dec 02, 2014 at 05:27:36PM +0800, Wang, Yalin wrote:
-> >> > > This patch add/dec zero_page's _mapcount to make sure the
-> >> > > mapcount is correct for zero_page, so that when read from
-> >> > > /proc/kpagecount, zero_page's mapcount is also correct, userspace
-> >> > > process like procrank can calculate PSS correctly.
-> 
-> Instead of tweaking mapcount you could mark zero-pages in /proc/kpageflags
-> and handle them accordingly in userspace. Or mark zero pages with special
-> magic _mapcount and detect it in /proc/kpagecount.
-> 
-I think add KPF_ZERO_PAGE in kpageflags is better.
-I will make another patch for review .
+Cadence I2C controller has the following bugs:
+- completion indication is not given to the driver at the end of
+a read/receive transfer with HOLD bit set.
+- Invalid read transaction are generated on the bus when HW timeout
+condition occurs with HOLD bit set.
 
-Thanks
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+As a result of the above, if a set of messages to be transferred with
+repeated start includes any transfer following a read transfer,
+completion is never indicated and timeout occurs.
+Hence a check is implemented to return -EOPNOTSUPP for such sequences.
+
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
+Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+---
+
+v3:
+Add warning in case of unsupported transfer.
+
+v2:
+Dont defeteature repeated start. Just check for unsupported conditions in the
+driver and return error.
+
+---
+ drivers/i2c/busses/i2c-cadence.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
+index 5f5d4fa..3ea3b7a 100644
+--- a/drivers/i2c/busses/i2c-cadence.c
++++ b/drivers/i2c/busses/i2c-cadence.c
+@@ -541,6 +541,21 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 	 * processed with a repeated start.
+ 	 */
+ 	if (num > 1) {
++		/*
++		 * This controller does not give completion interrupt after a
++		 * master receive transfer if HOLD bit is set (repeated start),
++		 * resulting in SW timeout. Hence, if a receive transfer is
++		 * followed by any other transfer, an error is returned
++		 * indicating that this sequence is not supported.
++		 */
++		for (count = 0; count < num-1; count++) {
++			if (msgs[count].flags & I2C_M_RD)
++				dev_warn(adap->dev.parent,
++					"No support for repeated start when\t");
++				dev_warn(adap->dev.parent,
++					"receive is followed by a transfer\n");
++				return -EOPNOTSUPP;
++		}
+ 		id->bus_hold_flag = 1;
+ 		reg = cdns_i2c_readreg(CDNS_I2C_CR_OFFSET);
+ 		reg |= CDNS_I2C_CR_HOLD;
+-- 
+1.7.9.5
+
