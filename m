@@ -1,98 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaLEMxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:53:13 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:51406 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaLEMxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:53:04 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <6e6eb1fd1f2a561c9d7a8b02e87f6f05>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, ulrich.prinz@googlemail.com,
-        zyw@rock-chips.com, cf@rock-chips.com,
-        linux-rockchip@lists.infradead.org, Yunzhi Li <lyz@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/5] ARM: dts: add rk3288 usb PHY
-Date: Fri,  5 Dec 2014 20:52:20 +0800
-Message-Id: <1417783941-2418-5-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
+	id S1753354AbaLENGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:06:14 -0500
+Received: from mga03.intel.com ([134.134.136.65]:4115 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249AbaLENGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 08:06:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,522,1413270000"; 
+   d="scan'208";a="619155209"
+Date: Fri, 5 Dec 2014 15:05:33 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
+        josh.triplett@intel.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Will Arthur <will.c.arthur@intel.com>,
+        tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v9 8/8] tpm: TPM 2.0 FIFO Interface
+Message-ID: <20141205130533.GA6993@intel.com>
+References: <1417672518-4530-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1417672518-4530-9-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <alpine.DEB.2.11.1412041459470.5705@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1412041459470.5705@localhost.localdomain>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dt nodes for rk3288 usb PHY.
+On Thu, Dec 04, 2014 at 03:25:12PM +0000, Scot Doyle wrote:
+> Hi Jarkko,
+> 
+> On Thu, 4 Dec 2014, Jarkko Sakkinen wrote:
+> > From: Will Arthur <will.c.arthur@intel.com>
+> > 
+> > Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
+> > instead of calling tpm_get_timeouts(), assign duration and timeout
+> > values defined in the TPM 2.0 PTP specification.
+> > 
+> > Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> > ---
+> >  drivers/char/tpm/tpm_tis.c | 80 ++++++++++++++++++++++++++++++++++++++--------
+> >  1 file changed, 67 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> > index 89e1abb..71cbb2d 100644
+> > --- a/drivers/char/tpm/tpm_tis.c
+> > +++ b/drivers/char/tpm/tpm_tis.c
+> > @@ -1,5 +1,6 @@
+> >  /*
+> >   * Copyright (C) 2005, 2006 IBM Corporation
+> > + * Copyright (C) 2014 Intel Corporation
+> >   *
+> >   * Authors:
+> >   * Leendert van Doorn <leendert@watson.ibm.com>
+> > @@ -44,6 +45,10 @@ enum tis_status {
+> >  	TPM_STS_DATA_EXPECT = 0x08,
+> >  };
+> >  
+> > +enum tis_status3 {
+> > +	TPM_STS3_TPM2_FAM = 0x04,
+> > +};
+> > +
+> >  enum tis_int_flags {
+> >  	TPM_GLOBAL_INT_ENABLE = 0x80000000,
+> >  	TPM_INTF_BURST_COUNT_STATIC = 0x100,
+> > @@ -70,6 +75,7 @@ enum tis_defaults {
+> >  #define	TPM_INT_STATUS(l)		(0x0010 | ((l) << 12))
+> >  #define	TPM_INTF_CAPS(l)		(0x0014 | ((l) << 12))
+> >  #define	TPM_STS(l)			(0x0018 | ((l) << 12))
+> > +#define	TPM_STS3(l)			(0x001b | ((l) << 12))
+> >  #define	TPM_DATA_FIFO(l)		(0x0024 | ((l) << 12))
+> >  
+> >  #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
+> > @@ -363,6 +369,7 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
+> >  {
+> >  	int rc;
+> >  	u32 ordinal;
+> > +	unsigned long dur;
+> >  
+> >  	rc = tpm_tis_send_data(chip, buf, len);
+> >  	if (rc < 0)
+> > @@ -374,9 +381,14 @@ static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
+> >  
+> >  	if (chip->vendor.irq) {
+> >  		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+> > +
+> > +		if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> > +			dur = tpm2_calc_ordinal_duration(chip, ordinal);
+> > +		else
+> > +			dur = tpm_calc_ordinal_duration(chip, ordinal);
+> > +
+> >  		if (wait_for_tpm_stat
+> > -		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
+> > -		     tpm_calc_ordinal_duration(chip, ordinal),
+> > +		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID, dur,
+> >  		     &chip->vendor.read_queue, false) < 0) {
+> >  			rc = -ETIME;
+> >  			goto out_err;
+> > @@ -588,6 +600,7 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+> >  	int rc, i, irq_s, irq_e, probe;
+> >  	struct tpm_chip *chip;
+> >  	struct priv_data *priv;
+> > +	u8 sts3;
+> >  
+> >  	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
+> >  	if (priv == NULL)
+> > @@ -604,11 +617,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+> >  	if (!chip->vendor.iobase)
+> >  		return -EIO;
+> >  
+> > +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
+> > +	if ((sts3 & TPM_STS3_TPM2_FAM) == TPM_STS3_TPM2_FAM)
+> > +		chip->flags = TPM_CHIP_FLAG_TPM2;
+> > +
+> >  	/* Default timeouts */
+> > -	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > -	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> > -	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > -	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > +	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
+> > +		chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
+> > +		chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
+> > +		chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
+> > +		chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
+> > +		chip->vendor.duration[TPM_SHORT] =
+> > +			usecs_to_jiffies(TPM2_DURATION_SHORT);
+> > +		chip->vendor.duration[TPM_MEDIUM] =
+> > +			usecs_to_jiffies(TPM2_DURATION_MEDIUM);
+> > +		chip->vendor.duration[TPM_LONG] =
+> > +			usecs_to_jiffies(TPM2_DURATION_LONG);
+> > +	} else {
+> > +		chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > +		chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
+> > +		chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > +		chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+> > +	}
+> >  
+> >  	if (wait_startup(chip, 0) != 0) {
+> >  		rc = -ENODEV;
+> > @@ -623,8 +653,8 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+> >  	vendor = ioread32(chip->vendor.iobase + TPM_DID_VID(0));
+> >  	chip->vendor.manufacturer_id = vendor;
+> >  
+> > -	dev_info(dev,
+> > -		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
+> > +	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
+> > +		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
+> >  		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
+> >  
+> >  	if (!itpm) {
+> > @@ -665,6 +695,23 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+> >  	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
+> >  		dev_dbg(dev, "\tData Avail Int Support\n");
+> >  
+> > +	/* get the timeouts before testing for irqs */
+> > +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2) && tpm_get_timeouts(chip)) {
+> > +		dev_err(dev, "Could not get TPM timeouts and durations\n");
+> > +		rc = -ENODEV;
+> > +		goto out_err;
+> > +	}
+> > +
+> > +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> > +		rc = tpm2_do_selftest(chip);
+> > +	else
+> > +		rc = tpm_do_selftest(chip);
+> > +	if (rc) {
+> > +		dev_err(dev, "TPM self test failed\n");
+> > +		rc = -ENODEV;
+> > +		goto out_err;
+> > +	}
+> > +
+> >  	/* INTERRUPT Setup */
+> >  	init_waitqueue_head(&chip->vendor.read_queue);
+> >  	init_waitqueue_head(&chip->vendor.int_queue);
+> 
+> In Peter's for-james branch, commit 0e6cb01, the v1.2 calls to
+> tpm_get_timeouts and tpm_do_selftest were moved toward the end of 
+> tpm_tis_init.
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
----
+Right. My bad. Could this be reverted with a separate fix or do
+I prepare a new patch set? I would propose the former...
 
- arch/arm/boot/dts/rk3288.dtsi | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+> > @@ -720,7 +767,10 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+> >  			chip->vendor.probed_irq = 0;
+> >  
+> >  			/* Generate Interrupts */
+> > -			tpm_gen_interrupt(chip);
+> > +			if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> > +				tpm2_gen_interrupt(chip);
+> > +			else
+> > +				tpm_gen_interrupt(chip);
+> >  
+> >  			chip->vendor.irq = chip->vendor.probed_irq;
+> >  
+> > @@ -808,14 +858,18 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+> >  static int tpm_tis_resume(struct device *dev)
+> >  {
+> >  	struct tpm_chip *chip = dev_get_drvdata(dev);
+> > -	int ret;
+> > +	int ret = 0;
+> >  
+> >  	if (chip->vendor.irq)
+> >  		tpm_tis_reenable_interrupts(chip);
+> >  
+> > -	ret = tpm_pm_resume(dev);
+> > -	if (!ret)
+> > -		tpm_do_selftest(chip);
+> > +	if (chip->flags & TPM_CHIP_FLAG_TPM2)
+> > +		tpm2_do_selftest(chip);
+> > +	else {
+> > +		ret = tpm_pm_resume(dev);
+> > +		if (!ret)
+> > +			tpm_do_selftest(chip);
+> > +	}
+> >  
+> >  	return ret;
+> >  }
+> > -- 
+> > 2.1.0
+> > 
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 874e66d..a663c4c 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -329,12 +329,21 @@
- 		status = "disabled";
- 	};
- 
-+	usbphy: phy {
-+		#phy-cells = <1>;
-+		compatible = "rockchip,rk3288-usb-phy";
-+		rockchip,grf = <&grf>;
-+		status = "disabled";
-+	};
-+
- 	usb_host0_ehci: usb@ff500000 {
- 		compatible = "generic-ehci";
- 		reg = <0xff500000 0x100>;
- 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST0>;
- 		clock-names = "usbhost";
-+		phys = <&usbphy 1>;
-+		phy-names = "usb";
- 		status = "disabled";
- 	};
- 
-@@ -347,6 +356,8 @@
- 		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST1>;
- 		clock-names = "otg";
-+		phys = <&usbphy 2>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
-@@ -357,6 +368,8 @@
- 		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_OTG0>;
- 		clock-names = "otg";
-+		phys = <&usbphy 0>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
--- 
-2.0.0
-
-
+/Jarkko
