@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaLELUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 06:20:39 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:42985 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751604AbaLELU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 06:20:28 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] powerpc32: fix warning from include/asm-generic/termios-base.h
-Message-Id: <20141205112025.330971A5D4F@localhost.localdomain>
-Date: Fri,  5 Dec 2014 12:20:25 +0100 (CET)
+	id S1752860AbaLENXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:23:08 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:59462 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaLENXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 08:23:06 -0500
+Date: Fri, 5 Dec 2014 13:22:50 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Alex Dubov <alex.dubov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, corbet@lwn.net,
+        richardcochran@gmail.com
+Subject: Re: syscall: introduce sendfd() syscall (v.2)
+Message-ID: <20141205132250.6f2f9ec1@lxorguk.ukuu.org.uk>
+In-Reply-To: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+References: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When size is equal to 1, the test is always true so lets eliminate both 0 and 1
-at first.
 
-include/asm-generic/termios-base.h: In function 'user_termio_to_kernel_termios':
-include/asm-generic/termios-base.h:35:2: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
-  if (get_user(termios->c_line, &termio->c_line) < 0)
-  ^
-include/asm-generic/termios-base.h: In function 'kernel_termios_to_user_termio':
-include/asm-generic/termios-base.h:57:6: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
-      put_user(termios->c_line,  &termio->c_line) < 0 ||
-      ^
+> 2.a. If task A has sufficient capabilities to send signals to task B, then
+> task A is already in position to do anything it wants with task B, including
+> killing it outright.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Not entirely true.
 
----
- arch/powerpc/include/asm/uaccess.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+- We have securirty models like SELinux
+- We have namespaces and being able to send an fd between namespaces is
+  not quite as flexible as you would make it
 
-diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
-index 9485b43..f3028d2 100644
---- a/arch/powerpc/include/asm/uaccess.h
-+++ b/arch/powerpc/include/asm/uaccess.h
-@@ -54,7 +54,7 @@
- 
- #define __access_ok(addr, size, segment)	\
- 	(((addr) <= (segment).seg) &&		\
--	 (((size) == 0) || (((size) - 1) <= ((segment).seg - (addr)))))
-+	 (((size) <= 1) || (((size) - 1) <= ((segment).seg - (addr)))))
- 
- #endif
- 
--- 
-2.1.0
+I suspect therefore it needs security hooks but otherwise looks more sane
+than the current AF_UNIX approach.
 
