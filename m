@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaLESvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:51:18 -0500
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:56502 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaLESvQ (ORCPT
+	id S1751893AbaLESxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:53:15 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45526 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaLESxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:51:16 -0500
+	Fri, 5 Dec 2014 13:53:13 -0500
+Date: Fri, 5 Dec 2014 18:53:03 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141205185303.GG31222@e104818-lin.cambridge.arm.com>
+References: <5481794E.4050406@broadcom.com>
+ <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <5481EB52.6060706@gmail.com>
-References: <20141203015537.13886.50830.stgit@linux-yegoshin>
-	<20141203015824.13886.74616.stgit@linux-yegoshin>
-	<5481EB52.6060706@gmail.com>
-Date: Fri, 5 Dec 2014 10:51:15 -0800
-X-Google-Sender-Auth: 1BTdWi0hR1syVSk-T-Cz5N7FCQY
-Message-ID: <CAGXu5jJJx0O7GhHghy+sC4fJL2O=RsO+Zgm78r9SNt-aTbhqcw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
-From: Kees Cook <keescook@chromium.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Zubair.Kakakhel@imgtec.com, geert+renesas@glider.be,
-        david.daney@cavium.com, Peter Zijlstra <peterz@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, davidlohr@hp.com,
-        "Maciej W. Rozycki" <macro@linux-mips.org>, chenhc@lemote.com,
-        cl@linux.com, Ingo Molnar <mingo@kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        James Hogan <james.hogan@imgtec.com>, Tejun Heo <tj@kernel.org>,
-        alex@alex-smith.me.uk, Paolo Bonzini <pbonzini@redhat.com>,
-        John Crispin <blogic@openwrt.org>,
-        Paul Burton <paul.burton@imgtec.com>, qais.yousef@imgtec.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Markos Chandras <markos.chandras@imgtec.com>, dengcheng.zhu@imgtec.com,
-        manuel.lauss@gmail.com, lars.persson@axis.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 9:28 AM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 12/02/2014 05:58 PM, Leonid Yegoshin wrote:
->>
->> This is a last step of 3 patches which shift FPU emulation out of
->> stack into protected area. So, it disables a default executable stack.
->>
->> Additionally, it sets a default data area non-executable protection.
->>
->> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
->
->
-> NAK!
->
-> Some programs require an executable stack, this patch will break them.
+On Fri, Dec 05, 2014 at 06:39:45PM +0000, Catalin Marinas wrote:
+> On Fri, Dec 05, 2014 at 09:22:22AM +0000, Arend van Spriel wrote:
+> > For our brcm80211 development we are working on getting brcmfmac driver
+> > up and running on a Broadcom ARM-based platform. The wireless device is
+> > a PCIe device, which is hooked up to the system behind a PCIe host
+> > bridge, and we transfer information between host and device using a
+> > descriptor ring buffer allocated using dma_alloc_coherent(). We mostly
+> > tested on x86 and seen no issue. However, on this ARM platform
+> > (single-core A9) we detect occasionally that the descriptor content is
+> > invalid. When this occurs we do a dma_sync_single_for_cpu() and this is
+> > retried a number of times if the problem persists. Actually, found out
+> > that someone made a mistake by using virt_to_dma(va) to get the
+> > dma_handle parameter. So probably we only provided a delay in the retry
+> > loop. After fixing that a single call to dma_sync_single_for_cpu() is
+> > sufficient. The DMA-API-HOWTO clearly states that:
+> 
+> Does your system have an L2 cache? What's the SoC topology, can PCIe see
+> such L2 cache (or snoop the L1 caches)?
 
-Have you tested this?
+BTW, if you really have a PL310-like L2 cache, have a look at some
+patches (I've seen similar symptoms) and make sure your configuration is
+correct:
 
-> You can only select a non-executable stack in response to PT_GNU_STACK
-> program headers in the ELF file of the executable program.
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6395/1
 
-This is already handled by fs/binfmt_elf.c. It does the parsing of the
-PT_GNU_STACK needs, and sets up the stack flags appropriately. All the
-change to VM_DATA_DEFAULT_FLAGS does is make sure that EXSTACK_DEFAULT
-now means no VM_EXEC by default. If PT_GNU_STACK requires it, it gets
-added back in.
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6529/1
 
--Kees
-
->
-> David Daney
->
->
->
->> ---
->>   arch/mips/include/asm/page.h |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
->> index 3be81803595d..d49ba81cb4ed 100644
->> --- a/arch/mips/include/asm/page.h
->> +++ b/arch/mips/include/asm/page.h
->> @@ -230,7 +230,7 @@ extern int __virt_addr_valid(const volatile void
->> *kaddr);
->>   #define virt_addr_valid(kaddr)
->> \
->>         __virt_addr_valid((const volatile void *) (kaddr))
->>
->> -#define VM_DATA_DEFAULT_FLAGS  (VM_READ | VM_WRITE | VM_EXEC | \
->> +#define VM_DATA_DEFAULT_FLAGS  (VM_READ | VM_WRITE | \
->>                                  VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->>
->>   #define UNCAC_ADDR(addr)      ((addr) - PAGE_OFFSET + UNCAC_BASE)
->>
->>
->>
->>
->
-
-
+The first one is vexpress specific. The second one was eventually
+discarded by Russell (I don't remember the reason, I guess it's because
+SoC code is supposed to set the right bits in there anyway). In your
+case, such bits may be set up by firmware, so Linux cannot fix anything
+up.
 
 -- 
-Kees Cook
-Chrome OS Security
+Catalin
