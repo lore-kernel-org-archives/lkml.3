@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaLERkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:40:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:53280 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474AbaLERkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:40:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,523,1413270000"; 
-   d="scan'208";a="633369728"
-Date: Fri, 5 Dec 2014 23:10:45 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] DMA: Fix allocation size for PL330 data buffer depth.
-Message-ID: <20141205174045.GU3411@intel.com>
-References: <1415294412-13818-1-git-send-email-Liviu.Dudau@arm.com>
- <20141112093952.GD24582@intel.com>
- <20141114123301.GK12037@e106497-lin.cambridge.arm.com>
+	id S1751778AbaLERlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:41:16 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38930 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaLERlO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 12:41:14 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        m.szyprowski@samsung.com, aneesh.kumar@linux.vnet.ibm.com,
+        iamjoonsoo.kim@lge.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: Re: [PATCH] CMA: add the amount of cma memory in meminfo
+In-Reply-To: <547FCCE9.2020600@huawei.com>
+Organization: http://mina86.com/
+References: <547FCCE9.2020600@huawei.com>
+User-Agent: Notmuch/0.19~rc1+1~g03aea4f (http://notmuchmail.org) Emacs/25.0.50.3 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:141205:linux-mm@kvack.org::FYgqImNRfZgAk6th:00000000000000000000000000000000000000000000mIr
+X-Hashcash: 1:20:141205:qiuxishi@huawei.com::ehmTg8N4Ql55nXwD:0000000000000000000000000000000000000000002kVe
+X-Hashcash: 1:20:141205:linux-kernel@vger.kernel.org::lVs9iZztM4mIrixF:00000000000000000000000000000000038b6
+X-Hashcash: 1:20:141205:akpm@linux-foundation.org::Hv8DJiSqeH4ZoOJM:0000000000000000000000000000000000004kOE
+X-Hashcash: 1:20:141205:qiuxishi@huawei.com::FmxgbhzwFupO47Uq:0000000000000000000000000000000000000000004/Bj
+X-Hashcash: 1:20:141205:aneesh.kumar@linux.vnet.ibm.com::gWWF29JwW7UwT0pc:000000000000000000000000000000A0d0
+X-Hashcash: 1:20:141205:iamjoonsoo.kim@lge.com::k22Wxl4aVHTeOsq8:0000000000000000000000000000000000000008l0B
+X-Hashcash: 1:20:141205:m.szyprowski@samsung.com::xo/nvjtMVfpylwal:0000000000000000000000000000000000000D31W
+Date: Fri, 05 Dec 2014 18:41:04 +0100
+Message-ID: <xa1ty4qm9eq7.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141114123301.GK12037@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 12:33:01PM +0000, Liviu Dudau wrote:
-> On Wed, Nov 12, 2014 at 09:39:52AM +0000, Vinod Koul wrote:
-> > On Thu, Nov 06, 2014 at 05:20:12PM +0000, Liviu Dudau wrote:
-> > > The datasheet for PL330 says that the data buffer value in the CRD
-> > > register is 10bits wide. However, the value stored is "minus one",
-> > > which the driver corrects for. Maximum value that the data buffer
-> > > depth can have is 1024 lines, which requires 11 bits for storage.
-> > > 
-> > > While making updates I found printing the peripheral ID as a hex
-> > > value to be more useful as the datasheet shows the values that way.
-> > 
-> > Applied, thanks
-> 
-> Thanks!
-> 
-> > 
-> > Please snure you use the right subsytem name
-> 
-> Sorry about that. Just for clarity, it should've been 'dmaengine', right?
-Yes...
+On Thu, Dec 04 2014, Xishi Qiu <qiuxishi@huawei.com> wrote:
+> Add the amount of cma memory in the following meminfo.
+> /proc/meminfo
+> /sys/devices/system/node/nodeXX/meminfo
+>
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+
+No second look:
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
+> ---
+>  drivers/base/node.c | 16 ++++++++++------
+>  fs/proc/meminfo.c   | 12 +++++++++---
+>  2 files changed, 19 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/base/node.c b/drivers/base/node.c
+> index 472168c..a27e4e0 100644
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -120,6 +120,9 @@ static ssize_t node_read_meminfo(struct device *dev,
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  		       "Node %d AnonHugePages:  %8lu kB\n"
+>  #endif
+> +#ifdef CONFIG_CMA
+> +		       "Node %d FreeCMAPages:   %8lu kB\n"
+> +#endif
+>  			,
+>  		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+>  		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+> @@ -136,14 +139,15 @@ static ssize_t node_read_meminfo(struct device *dev,
+>  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+>  				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+>  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+> -#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+> -			, nid,
+> -			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+> -			HPAGE_PMD_NR));
+> -#else
+> -		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +		       , nid, K(node_page_state(nid,
+> +				NR_ANON_TRANSPARENT_HUGEPAGES) * HPAGE_PMD_NR)
+> +#endif
+> +#ifdef CONFIG_CMA
+> +		       , nid, K(node_page_state(nid, NR_FREE_CMA_PAGES))
+>  #endif
+> +			);
+>  	n += hugetlb_report_node_meminfo(nid, buf + n);
+>  	return n;
+>  }
+> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+> index aa1eee0..d42e082 100644
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -138,6 +138,9 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  		"AnonHugePages:  %8lu kB\n"
+>  #endif
+> +#ifdef CONFIG_CMA
+> +		"FreeCMAPages:   %8lu kB\n"
+> +#endif
+>  		,
+>  		K(i.totalram),
+>  		K(i.freeram),
+> @@ -187,11 +190,14 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>  		vmi.used >> 10,
+>  		vmi.largest_chunk >> 10
+>  #ifdef CONFIG_MEMORY_FAILURE
+> -		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+> +		, atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+>  #endif
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> -		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+> -		   HPAGE_PMD_NR)
+> +		, K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+> +				HPAGE_PMD_NR)
+> +#endif
+> +#ifdef CONFIG_CMA
+> +		, K(global_page_state(NR_FREE_CMA_PAGES))
+>  #endif
+>  		);
+>  
+> -- 
+> 2.0.0
+>
+>
 
 -- 
-~vinod
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
