@@ -1,234 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaLEMxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:53:33 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:42780 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaLEMx3 (ORCPT
+	id S1751389AbaLEOUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:20:33 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:1235 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaLEOUc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:53:29 -0500
-Date: Fri, 5 Dec 2014 14:53:18 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2014-12-05
-Message-ID: <20141205125318.GA24487@t440s.lan>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Fri, 5 Dec 2014 09:20:32 -0500
+X-IronPort-AV: E=Sophos;i="5.07,522,1413270000"; 
+   d="scan'208";a="52206883"
+From: Hante Meuleman <meuleman@broadcom.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Will Deacon <will.deacon@arm.com>, Arend Van Spriel <arend@broadcom.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: RE: using DMA-API on ARM
+Thread-Topic: using DMA-API on ARM
+Thread-Index: AQHQEGz8Uq/ZoaNhbU+cR76RcmjkiZyBRZEAgAAsfoD//36ZUIAAke4A//+IlJA=
+Date: Fri, 5 Dec 2014 14:20:30 +0000
+Message-ID: <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com>
+References: <5481794E.4050406@broadcom.com>
+ <20141205094507.GP11285@n2100.arm.linux.org.uk>
+ <20141205122423.GK1630@arm.com>
+ <F51492713EF10846800D8C0ED37A7DCE019016E1@SJEXCHMB15.corp.ad.broadcom.com>
+ <20141205132332.GS11285@n2100.arm.linux.org.uk>
+In-Reply-To: <20141205132332.GS11285@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ok, I'll add the necessary debug to get all the information out, 
+but it will take some time to get it done, so I won't have anything 
+before Monday.
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+-----Original Message-----
+From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
+Sent: vrijdag 5 december 2014 14:24
+To: Hante Meuleman
+Cc: Will Deacon; Arend Van Spriel; Marek Szyprowski; linux-arm-kernel@lists.infradead.org; David Miller; linux-kernel@vger.kernel.org; brcm80211-dev-list; linux-wireless
+Subject: Re: using DMA-API on ARM
 
-Hi John,
+Please wrap your message - replying to a message which looks like this in
+my editor is far from easy, and gives me much more work to /manually/
+reformat it before I can reply to it:
 
-Here's what should be the last bluetooth-next pull request for 3.19.
-It's rather large but the majority of it is the Low Energy Secure
-Connections feature that's part of the Bluetooth 4.2 specification. The
-specification went public only this week so we couldn't publish the
-corresponding code before that. The code itself can nevertheless be
-considered fairly mature as it's been in development for over 6 months
-and gone through several interoperability test events.
+On Fri, Dec 05, 2014 at 12:56:45PM +0000, Hante Meuleman wrote:
+> The problem is with data coming from device, so DMA from device to host. The $
+>
+> However: this indicates that dma_alloc_coherent on an ARM target may result i$
+>
+> Regards,
+> Hante
 
-Besides LE SC the pull request contains an important fix for command
-complete events for mgmt sockets which also fixes some leaks of hci_conn
-objects when powering off or unplugging Bluetooth adapters.
+Thanks.
 
-A smaller feature that's part of the pull request is service discovery
-support. This is like normal device discovery except that devices not
-matching specific UUIDs or strong enough RSSI are filtered out.
+On Fri, Dec 05, 2014 at 12:56:45PM +0000, Hante Meuleman wrote:
+> However: this indicates that dma_alloc_coherent on an ARM target may
+> result in a memory buffer which can be cached which conflicts with
+> the API of this function.
 
-Other changes that the pull request contains are firmware dump support
-to the btmrvl driver, firmware download support for Broadcom BCM20702A0
-variants, as well as some coding style cleanups in 6lowpan &
-ieee802154/mac802154 code.
+If the memory has an alias which is cacheable, it is possible for cache
+lines to get allocated via that alias, even if the alias has no explicit
+accesses to it.
 
-Please let me know if there are any issues pulling. Thanks.
+This is something which I've been going on for quite literally /years/ -
+mismatched cache attributes can cause unpredictable behaviour.  I've had
+a lot of push back from people who are of the opinion that "if it works
+for me, then there isn't a problem" and I eventually gave up fighting
+the battle, especially as the ARM architecture people weakened my
+reasoning behind it by publishing a relaxation of the "no differing
+attributes" issue.  This was particularly true of those who wanted to
+use ioremap() on system memory - and cases such as
+dma_init_coherent_memory().
 
-Johan
+So, I never fixed this problem in the original DMA allocator code; I
+basically gave up with it.  It's a latent bug which did need to be fixed,
+and is still present today in the non-CMA case.
 
----
-The following changes since commit f6af675ef5489c69fc3d4faf8c6f477df3cbf8b9:
+The symptoms which you are reporting sound very much like this kind of
+problem - the virtual address for the memory returned by
+dma_alloc_coherent() will not be cacheable memory - it will have been
+remapped using map_vm_area().  However, there could very well be a fully
+cacheable lowmem mapping of that memory, which if a read (speculative or
+otherwise) will bring a cache line in, and because the caches are VIPT
+or PIPT, that cache line can be hit via the non-cacheable mapping too.
 
-  Bluetooth: Automatically flushable packets aren't allowed on LE links (2014-11-27 12:12:27 +0200)
+What I /really/ need is more evidence of this to tell those disbelievers
+where to stick their flawed arguments. :)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-
-for you to fetch changes up to da25cf6a9869cff52b4fd189fdcd322ad2daf023:
-
-  Bluetooth: Report invalid RSSI for service discovery and background scan (2014-12-05 14:14:28 +0200)
-
-----------------------------------------------------------------
-Amitkumar Karwar (1):
-      Bluetooth: btmrvl: remove extra newline character
-
-Heinrich Siebmanns (1):
-      Bluetooth: Add support for Broadcom BCM20702A0 variants firmware download
-
-Jakub Pawlowski (4):
-      Bluetooth: Add definitions for MGMT_OP_START_SERVICE_DISCOVERY
-      Bluetooth: Add extra discovery fields for storing filter information
-      Bluetooth: Add logic for UUID filter handling
-      Bluetooth: Add support for Start Service Discovery command
-
-Johan Hedberg (62):
-      Bluetooth: Track both local and remote L2CAP fixed channel mask
-      Bluetooth: Simplify Link Key Notification event handling logic
-      Bluetooth: Add basic SMP defines for LE Secure Connections
-      Bluetooth: Make auth_req mask dependent on SC enabled or not
-      Bluetooth: Add SMP flag for SC and set it when necessary.
-      Bluetooth: Update SMP security level to/from auth_req for SC
-      Bluetooth: Add mgmt support for LE Secure Connections LTK types
-      Bluetooth: Set the correct security level for SC LTKs
-      Bluetooth: Use custom macro for testing BR/EDR SC enabled
-      Bluetooth: Add mgmt_set_secure_conn support for any LE adapter
-      Bluetooth: Update LTK lookup to correctly deal with SC LTKs
-      Bluetooth: Remove unused hci_find_ltk function
-      Bluetooth: Rename hci_find_ltk_by_addr to hci_find_ltk
-      Bluetooth: Set link key generation bit if necessary for LE SC
-      Bluetooth: Add basic support for AES-CMAC
-      Bluetooth: Add ECC library for LE Secure Connections
-      Bluetooth: Add basic support for sending our LE SC public key
-      Bluetooth: Add handler function for receiving LE SC public key
-      Bluetooth: Add support for sending LE SC Confirm value
-      Bluetooth: Add LE SC support for responding to Pairing Confirm PDU
-      Bluetooth: Add support for LE SC numeric comparison
-      Bluetooth: Add support for handling LE SC user response
-      Bluetooth: Add support for LE SC DHKey check PDU
-      Bluetooth: Add support for LE SC key generation
-      Bluetooth: Track authentication method in SMP context
-      Bluetooth: Add selection of the SC authentication method
-      Bluetooth: Detect SMP SC debug keys
-      Bluetooth: Add check for accidentally generating a debug key
-      Bluetooth: Set correct LTK type and authentication for SC
-      Bluetooth: Add support for SC just-works pairing
-      Bluetooth: Fix BR/EDR Link Key type when derived through LE SC
-      Bluetooth: Add passkey entry support for LE SC
-      Bluetooth: Fix DHKey Check sending order for slave role
-      Bluetooth: Add dummy handler for LE SC keypress notification
-      Bluetooth: Use debug keys for SMP when HCI_USE_DEBUG_KEYS is set
-      Bluetooth: Add hci_conn flag for new link key generation
-      Bluetooth: Add debugfs switch for forcing SMP over BR/EDR
-      Bluetooth: Add skeleton for BR/EDR SMP channel
-      Bluetooth: Add full SMP BR/EDR support
-      Bluetooth: Add SC-only mode support for SMP
-      Bluetooth: Unify remote OOB data functions
-      Bluetooth: Store address type with OOB data
-      Bluetooth: Add support for adding remote OOB data for LE
-      Bluetooth: Set SMP OOB flag if OOB data is available
-      Bluetooth: Add basic LE SC OOB support for remote OOB data
-      Bluetooth: Introduce SMP_DBG macro for low-level debuging
-      Bluetooth: Fix missing const declarations in SMP functions
-      Bluetooth: Organize SMP crypto functions to logical sections
-      Bluetooth: Fix SMP debug key handling
-      Bluetooth: Fix minor coding style issue in smp.c
-      Bluetooth: Fix false-positive "uninitialized" compiler warning
-      Bluetooth: Add callback to create proper cmd_complete events
-      Bluetooth: Store parameter length with pending mgmt commands
-      Bluetooth: Convert Disconnect mgmt command to use cmd_complete callback
-      Bluetooth: Use cmd_complete callback for authentication mgmt commands
-      Bluetooth: Convert Pair Device to use cmd_complete callback
-      Bluetooth: Convert Unpair Device to use cmd_complete callback
-      Bluetooth: Convert discovery commands to use cmd_complete callback
-      Bluetooth: Convert Get Clock Info to use cmd_complete callback
-      Bluetooth: Fix initializing hci_conn RSSI to invalid value
-      Bluetooth: Fix Get Conn Info to use cmd_complete callback
-      Bluetooth: Remove redundant reverse_base_uuid variable
-
-Marcel Holtmann (13):
-      Bluetooth: Increase minor version of core module
-      Bluetooth: Increment management interface revision
-      Bluetooth: Simplify the error handling of Start Discovery command
-      Bluetooth: Use {start,stop}_discovery_complete handler for cmd_complete
-      Bluetooth: Split triggering of discovery commands into separate function
-      Bluetooth: Add HCI_RSSI_INVALID for unknown RSSI value
-      Bluetooth: Filter device found events based on RSSI threshold
-      Bluetooth: Add framework for device found filtering based on UUID
-      Bluetooth: Add helper function for clearing the discovery filter
-      Bluetooth: Fix memory leaks from discovery filter UUID list
-      Bluetooth: Clear discovery filter before starting background scan
-      Bluetooth: Fix discovery filter when no RSSI is available
-      Bluetooth: Report invalid RSSI for service discovery and background scan
-
-Stefan Schmidt (5):
-      net/6lowpan: Remove FSF address from GPL statement.
-      net/ieee802154: Make sure alignment matches parenthesis..
-      net/ieee802154: Remove and add extra blank lines as needed.
-      net/mac802154: Remove extra blank lines.
-      net/mac802154: No need for an extra space when casting
-
-Xinming Hu (1):
-      Bluetooth: btmrvl add firmware dump support
-
- drivers/bluetooth/Kconfig          |    1 +
- drivers/bluetooth/btmrvl_debugfs.c |   31 +
- drivers/bluetooth/btmrvl_drv.h     |   20 +
- drivers/bluetooth/btmrvl_main.c    |   21 +-
- drivers/bluetooth/btmrvl_sdio.c    |  304 ++++++-
- drivers/bluetooth/btmrvl_sdio.h    |    5 +
- drivers/bluetooth/btusb.c          |    3 +-
- include/net/bluetooth/hci.h        |    2 +
- include/net/bluetooth/hci_core.h   |   38 +-
- include/net/bluetooth/l2cap.h      |    6 +-
- include/net/bluetooth/mgmt.h       |   12 +
- net/6lowpan/iphc.c                 |    3 -
- net/bluetooth/Kconfig              |    1 +
- net/bluetooth/Makefile             |    2 +-
- net/bluetooth/af_bluetooth.c       |    2 +-
- net/bluetooth/ecc.c                |  816 ++++++++++++++++++
- net/bluetooth/ecc.h                |   54 ++
- net/bluetooth/hci_conn.c           |    1 +
- net/bluetooth/hci_core.c           |  165 ++--
- net/bluetooth/hci_event.c          |   53 +-
- net/bluetooth/l2cap_core.c         |   41 +-
- net/bluetooth/mgmt.c               |  869 ++++++++++++--------
- net/bluetooth/smp.c                | 1543 ++++++++++++++++++++++++++++++++---
- net/bluetooth/smp.h                |   51 +-
- net/ieee802154/6lowpan_rtnl.c      |    1 -
- net/ieee802154/af_ieee802154.c     |    4 +-
- net/ieee802154/dgram.c             |    1 -
- net/ieee802154/netlink.c           |    3 +-
- net/ieee802154/nl-mac.c            |   14 -
- net/ieee802154/nl-phy.c            |    1 -
- net/ieee802154/raw.c               |    1 -
- net/mac802154/llsec.c              |   19 +-
- net/mac802154/mib.c                |    6 -
- 33 files changed, 3459 insertions(+), 635 deletions(-)
- create mode 100644 net/bluetooth/ecc.c
- create mode 100644 net/bluetooth/ecc.h
-
-
---ibTvN161/egqYuK8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUgaq+AAoJECQj9vv5qNQSW1EP/0wOHsF4U3iRgKHKIUe5+0/r
-5iMVVnFqF1bbDLe7sKBeChTN8M4T7Z54E3TLoN5mf+WWoKfmsw+YfB8niFAMx2kz
-Y/J5pjFjqLMmDQ647/Wm1kMjIZyG5JAqMCLTcyetODYH+4LRyc5VoXkgeiqynEWU
-O6zzGVtmEbw/kCspgpFZWbeHmvVpueX5Mg5Vb6IuhzSWsZyL1wBQtMQjD/d9UWhb
-jBMelt0rWNrgMLPqVvyhrRhtteZEgF9MYKHjQA7jFBNhu9OldwMK7z2eKfgNkH5a
-rOa/GlK5RhmObQSWpl3lcHvk+Ny/Qr10qvSMvLPvEuGzXAXuegb7iqFbshvrmx0G
-WMmopu03IswjJYoEqKJHJlkZECNr+tMGYNmG21zkQAuHkeM2zdR/vrtDg6pX32aA
-hXYvzNNCZ/ZDDPL2zZDHmb7B56viVXOiYXkfkN9VDeOcFdrQ5aMiKoCnpA68MAxS
-VqnmjdPbCejX7U42dpw210Mmopthbh8xQ8dicBtRTt1/vJDW169b0VddJXGbXFeu
-x5my/ZgUD9A9DoY8Sb4PGzsfAxjMN7wTY882SjFZKBsm4YQdCjHyIsXvgCKFFbIl
-2CVnuLI2JE1ZqDulo0ckfFTcYOvYZ+5cvtVQn3iSO8Gzt3Sv0qqr5+mCBTCKwhmt
-OgIAE/DGljL1b57/3M9d
-=f4cw
------END PGP SIGNATURE-----
-
---ibTvN161/egqYuK8--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
