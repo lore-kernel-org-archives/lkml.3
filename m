@@ -1,40 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751112AbaLEPhL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 10:37:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54995 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749AbaLEPhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 10:37:09 -0500
-Date: Fri, 5 Dec 2014 13:36:49 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/8] perf tools: Add --buildid-dir option to set cache
- directory
-Message-ID: <20141205153649.GC2285@redhat.com>
-References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
- <1417460789-13874-4-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417460789-13874-4-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751317AbaLEPkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 10:40:23 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:40714 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLEPkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 10:40:21 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeff Layton <jlayton@primarydata.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>, <stable@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] fs: nfsd: Fix signedness bug in compare_blob
+Date: Fri,  5 Dec 2014 16:40:07 +0100
+Message-Id: <1417794008-16944-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1417706452-30204-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1417706452-30204-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 01, 2014 at 08:06:24PM +0100, Jiri Olsa escreveu:
-> Adding --buildid-dir to be able to set specific cache
-> directory. It's going to be handy for buildid tests
-> coming in shortly.
+Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
+bug) are in rich supply.
 
-Thanks, applied.
+In this variant, the problem is that struct xdr_netobj::len has type
+unsigned int, so the expression o1->len - o2->len _also_ has type
+unsigned int; it has completely well-defined semantics, and the result
+is some non-negative integer, which is always representable in a long
+long. But this means that if the conditional triggers, we are
+guaranteed to return a positive value from compare_blob.
+
+In this case it could be fixed by
+
+-       res = o1->len - o2->len;
++       res = (long long)o1->len - (long long)o2->len;
+
+but I'd rather eliminate the usually broken 'return a - b;' idiom.
+
+Reviewed-by: Jeff Layton <jlayton@primarydata.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+
+Notes:
+    How this could ever have worked is beyond me - compare_blob seems to
+    be used to maintain an rbtree, and I wouldn't expect rbtrees to behave
+    well if the comparison function doesn't satisfy the basic invariant
+    sign(cmp(a, b)) == -sign(cmp(b, a)).
+    
+    v2: Same patch. Slightly less generic subject. Added Jeff's
+    Reviewed-by and Cc stable.
+
+ fs/nfsd/nfs4state.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index e9c3afe4b5d3..d504cd6927f8 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1711,15 +1711,14 @@ static int copy_cred(struct svc_cred *target, struct svc_cred *source)
+ 	return 0;
+ }
+ 
+-static long long
++static int
+ compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
+ {
+-	long long res;
+-
+-	res = o1->len - o2->len;
+-	if (res)
+-		return res;
+-	return (long long)memcmp(o1->data, o2->data, o1->len);
++	if (o1->len < o2->len)
++		return -1;
++	if (o1->len > o2->len)
++		return 1;
++	return memcmp(o1->data, o2->data, o1->len);
+ }
+ 
+ static int same_name(const char *n1, const char *n2)
+@@ -1907,7 +1906,7 @@ add_clp_to_name_tree(struct nfs4_client *new_clp, struct rb_root *root)
+ static struct nfs4_client *
+ find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
+ {
+-	long long cmp;
++	int cmp;
+ 	struct rb_node *node = root->rb_node;
+ 	struct nfs4_client *clp;
+ 
+-- 
+2.0.4
+
