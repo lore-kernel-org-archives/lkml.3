@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaLEQUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:20:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48072 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896AbaLEQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:20:54 -0500
-Date: Fri, 5 Dec 2014 17:20:51 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, Joerg Roedel <jroedel@suse.de>,
-        kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
-        Olaf Hering <ohering@suse.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
-	hypercall when non CONFIG_PREEMPT
-Message-ID: <20141205162051.GK25677@wotan.suse.de>
-References: <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com> <20141201223611.GM25677@wotan.suse.de> <547D9E56.50708@citrix.com> <20141203022833.GS25677@wotan.suse.de> <547E939F.40106@suse.com> <20141203193947.GD25677@wotan.suse.de>
+	id S1751301AbaLEQcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:32:05 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:40825 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaLEQcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 11:32:04 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: vladimir_zapolskiy@mentor.com
+X-SENDER-IP: 210.21.233.66
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <f4004c508dc39cedd1731c17355ab840>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5481DDF2.6010700@rock-chips.com>
+Date: Sat, 06 Dec 2014 00:31:46 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141203193947.GD25677@wotan.suse.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
+Subject: Re: [PATCH v18 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
+References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com> <1417787724.3227.10.camel@pengutronix.de>
+In-Reply-To: <1417787724.3227.10.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 08:39:47PM +0100, Luis R. Rodriguez wrote:
-> On Wed, Dec 03, 2014 at 05:37:51AM +0100, Juergen Gross wrote:
-> > On 12/03/2014 03:28 AM, Luis R. Rodriguez wrote:
-> >> On Tue, Dec 02, 2014 at 11:11:18AM +0000, David Vrabel wrote:
-> >>> On 01/12/14 22:36, Luis R. Rodriguez wrote:
-> >>>>
-> >>>> Then I do agree its a fair analogy (and find this obviously odd that how
-> >>>> widespread cond_resched() is), we just don't have an equivalent for IRQ
-> >>>> context, why not avoid the special check then and use this all the time in the
-> >>>> middle of a hypercall on the return from an interrupt (e.g., the timer
-> >>>> interrupt)?
-> >>>
-> >>> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
-> >>
-> >> OK thanks! That explains why we need some asm code but in that submission you
-> >> still also had used is_preemptible_hypercall(regs) and in the new
-> >> implementation you use a CPU variable xen_in_preemptible_hcall prior to calling
-> >> preempt_schedule_irq(). I believe you added the CPU variable because
-> >> preempt_schedule_irq() will preempt first without any checks if it should, I'm
-> >> asking why not do something like cond_resched_irq() where we check with
-> >> should_resched() prior to preempting and that way we can avoid having to use
-> >> the CPU variable?
-> >
-> > Because that could preempt at any asynchronous interrupt making the
-> > no-preempt kernel fully preemptive. 
-> 
-> OK yeah I see. That still doesn't negate the value of using something
-> like cond_resched_irq() with a should_resched() on only critical hypercalls.
-> The current implementation (patch by David) forces preemption without
-> checking for should_resched() so it would preempt unnecessarily at least
-> once.
-> 
-> > How would you know you are just
-> > doing a critical hypercall which should be preempted?
-> 
-> You would not, you're right. I was just trying to see if we could generalize
-> an API for this to avoid having users having to create their own CPU variables
-> but this all seems very specialized as we want to use this on the timer
-> so if we do generalize a cond_resched_irq() perhaps the documentation can
-> warn about this type of case or abuse.
+Hi Philipp:
+On 2014年12月05日 21:55, Philipp Zabel wrote:
+> Hi Andy,
+>
+> Am Freitag, den 05.12.2014, 14:22 +0800 schrieb Andy Yan:
+>> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+>> use the interface compatible Designware HDMI IP, but they also have some
+>> lightly differences, such as phy pll configuration, register width(imx hdmi
+>> register is one byte, but rk3288 is 4 bytes width and can only be accessed
+>> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
+>> support.
+>>
+>> To reuse the imx-hdmi driver, we make this patch set:
+>> (1): fix some CodingStyle warning to make checkpatch happy
+>> (2): convert imx-hdmi to drm_bridge
+>> (3): split platform specific code
+>> (4): move imx-hdmi to bridge/dw_hdmi
+>> (5): extend dw_hdmi.c to support rk3288 hdmi
+>> (6): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
+>>
+>> Changes in v18:
+>> - remove a multiple blank lines in imx-hdmi.c
+>> - fix a checkpatch warning in imx-hdmi_pltfm.c
+>> - add port bindings
+>> - correct some spelling mistakes in dw_hdmi bindings doc
+>> - correct some spelling mistakes in dw_hdmi-rockchip bindings doc
+> [...]
+>
+> I am happy with the series so far. Pending Acks from the device tree
+> maintainers for the new binding documents, I'd like to apply either the
+> whole of it on top of
+>      git://git.pengutronix.de/git/pza/linux.git imx-drm/next
+> or take at least the i.MX specific patches (1-5) because of the
+> dependency on the imx-drm OF helper conversion.
+>
+> regards
+> Philipp
+>
+>
+>
+>
+  I am very glad to see you are happy with the patch set, it's would be 
+very
+  nice if you can apply all of it.
+  Thanks very much for you review.
 
-David's patch had the check only it was x86 based, if we use cond_resched_irq()
-we can leave that aspect out to be done through asm inlines or it'll use the
-generic shoudl_resched(), that should save some code on the asm implementations.
 
-I have some patches now which generalizees this, I also have more information
-about this can happen exactly, and a way to triggger it on small systems with
-some hacks to emulate possibly backend behaviour on larger systems. In the worst
-case this can be a dangerious situation to be in. I'll send some new RFTs.
-
- Luis
