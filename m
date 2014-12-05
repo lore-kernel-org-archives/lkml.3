@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390AbaLESPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:15:20 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:58162 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaLESPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:15:18 -0500
+	id S1751361AbaLESSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:18:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59985 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121AbaLESSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 13:18:44 -0500
+Date: Fri, 5 Dec 2014 10:18:32 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [PATCH 1/3] f2fs: fix missing kmem_cache_free
+Message-ID: <20141205181832.GB6641@jaegeuk-mac02>
+References: <1417740583-1681-1-git-send-email-jaegeuk@kernel.org>
+ <548127D9.4030007@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <5481C92E.6020805@oracle.com>
-References: <20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<20141202193252.GB17595@redhat.com>
-	<547E4C14.6040509@oracle.com>
-	<54813C03.8040009@oracle.com>
-	<CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
-	<5481C92E.6020805@oracle.com>
-Date: Fri, 5 Dec 2014 10:15:17 -0800
-X-Google-Sender-Auth: nM2CVXblQ3RPRyHWXbJw6uYv6gc
-Message-ID: <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <548127D9.4030007@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 7:03 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> Yes, it's going to a serial line, but it's only about 100 lines/second on
-> average. I wouldn't expect it to cause anything to hang!
+Hi Gu,
 
-A regular 16650 serial chip? Running at 115kbps, I assume? So that's
-about 11kB/s.
+On Fri, Dec 05, 2014 at 11:34:49AM +0800, Gu Zheng wrote:
+> Hi Jaegeuk, 
+> On 12/05/2014 08:49 AM, Jaegeuk Kim wrote:
+> 
+> > This patch fixes missing kmem_cache_free when handling errors.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/node.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > index b1466cf..c59341d 100644
+> > --- a/fs/f2fs/node.c
+> > +++ b/fs/f2fs/node.c
+> > @@ -158,7 +158,7 @@ retry:
+> >  		head->entry_cnt = 0;
+> >  
+> >  		if (radix_tree_insert(&nm_i->nat_set_root, set, head)) {
+> > -			cond_resched();
+> > +			kmem_cache_free(nat_entry_set_slab, head);
+> 
+> Why not reuse the allocated entry?
+> This routine is under nat_tree_lock, so the free_old->research->alloc_new
+> is needless, because no other ones can race with us.
 
-And the serial console is polling, since it can't sleep or depend on interrupts.
+IMO, this issue is quite different one that you're mentioning.
+This patch just fixes a missing kfree.
 
-At a average line length of what, 40 characters? At less than 300
-lines/s, you'd be using up 100% of one CPU. And since the printouts
-are serialized, that would be all other CPU's too..
+> 
+> >  			goto retry;
+> 
+> And radix_tree_insert can only fail -ENOMEM here, IMO, the in-time retry step
+> makes very little sense here. How about retaining the "cond_resched()" and retry
+> insert later?
 
-100 lines/s _average_ means that I can easily see it be 300lines/s for a while.
+I think the following patches related to radix_tree_preload that I submitted
+would address that.
+But, still it seems that I need to review the retrial paths again.
 
-So yeah. The serial console is simply not designed to handle
-continuous output. It's for the "occasional" stuff.
+Thanks,
 
-The fact that your rcu lockups go away when you make the fault
-injection be quiet makes me really suspect this is related.
-
-                       Linus
+> 
+> If I misread something, please correct me.:)
+> 
+> Thanks,
+> Gu
+> 
+> >  		}
+> >  	}
