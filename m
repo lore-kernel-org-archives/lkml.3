@@ -1,145 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaLEXz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:55:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519AbaLEWpt (ORCPT
+	id S1752023AbaLEX4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:56:36 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:43132 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLEX4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:45:49 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 012/122] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
-Date: Fri,  5 Dec 2014 14:43:06 -0800
-Message-Id: <20141205223307.358671996@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
-References: <20141205223305.514276242@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 5 Dec 2014 18:56:33 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAD=FV=Vfe_UUT=fTdQESEyrE56Jy4p9NtKh80PkR+C4mDCHDxA@mail.gmail.com>
+References: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
+ <1417576563-5033-1-git-send-email-addy.ke@rock-chips.com> <CAD=FV=Vfe_UUT=fTdQESEyrE56Jy4p9NtKh80PkR+C4mDCHDxA@mail.gmail.com>
+From: Alexandru Stan <amstan@chromium.org>
+Date: Fri, 5 Dec 2014 15:56:11 -0800
+Message-ID: <CAHNYxRxga=HQDBaw5Tp84TwH9BVe9B286Eh4rtwVdd=QTaE=0A@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: dw_mmc: add quirk for broken data transfer over scheme
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+Seems like the BROKEN_DTO also affects EVENT_DATA_COMPLETE, sometimes we don't
+see that (but we do see EVENT_XFER_COMPLETE), leave the state machine and never
+come back to it to timeout. I have this happening on emmc specifically, haven't
+seen it on sdmmc yet.
 
-------------------
+The fix is to also start the timer when we don't see a EVENT_DATA_COMPLETE.
 
-From: Andy Lutomirski <luto@amacapital.net>
+More details for how I debugged this can be found at:
+https://chromium-review.googlesource.com/#/c/233691/
 
-commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
+In ~100 reboot tests I haven't seen any hangs, whereas before it was
+hanging about 20% of the time.
 
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 50865e7..c678206 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1685,8 +1685,17 @@ static void dw_mci_tasklet_func(unsigned long priv)
 
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
-
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kernel/entry_64.S |   34 ++--------------------------------
- arch/x86/kernel/traps.c    |   24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
-
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -841,6 +841,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
- 
-+.global native_irq_return_iret
- native_irq_return_iret:
- 	iretq
- 	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
-@@ -935,37 +936,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
--
- /*
-  * APIC interrupts.
-  */
-@@ -1137,7 +1107,7 @@ idtentry overflow do_overflow has_error_
- idtentry bounds do_bounds has_error_code=0
- idtentry invalid_op do_invalid_op has_error_code=0
- idtentry device_not_available do_device_not_available has_error_code=0
--idtentry double_fault __do_double_fault has_error_code=1 paranoid=1
-+idtentry double_fault do_double_fault has_error_code=1 paranoid=1
- idtentry coprocessor_segment_overrun do_coprocessor_segment_overrun has_error_code=0
- idtentry invalid_TSS do_invalid_TSS has_error_code=1
- idtentry segment_not_present do_segment_not_present has_error_code=1
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -259,6 +259,30 @@ dotraplinkage void do_double_fault(struc
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
+                case STATE_DATA_BUSY:
+                        if (!test_and_clear_bit(EVENT_DATA_COMPLETE,
+-                                               &host->pending_events))
++                                               &host->pending_events)) {
++                               if (host->quirks & DW_MCI_QUIRK_BROKEN_DTO) {
++                                       drto_clks = mci_readl(host, TMOUT) >> 8;
++                                       drto_ms = DIV_ROUND_UP(drto_clks * 1000,
++                                                              host->bus_hz);
 +
-+	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
-+	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
-+
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
-+	}
-+#endif
-+
- 	exception_enter();
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
++                                       mod_timer(&host->dto_timer, jiffies +
++                                               msecs_to_jiffies(drto_ms));
++                               }
+                                break;
++                       }
+
+                        host->data = NULL;
+                        set_bit(EVENT_DATA_COMPLETE, &host->completed_events);
+Alexandru Stan (amstan)
 
 
+On Tue, Dec 2, 2014 at 9:08 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Addy,
+>
+> On Tue, Dec 2, 2014 at 7:16 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+>> This patch add a new quirk to add a s/w timer to notify the driver
+>> to terminate current transfer and report a data timeout to the core,
+>> if DTO interrupt does NOT come within the given time.
+>>
+>> dw_mmc call mmc_request_done func to finish transfer depends on
+>> DTO interrupt. If DTO interrupt does not come in sending data state,
+>> the current transfer will be blocked.
+>>
+>> But this case really exists, when driver reads tuning data from
+>> card on RK3288-pink2 board. I measured waveforms by oscilloscope
+>> and found that card clock was always on and data lines were always
+>> holded high level in sending data state.
+>>
+>> We got the reply from synopsys:
+>> There are two counters but both use the same value of [31:8] bits.
+>> Data timeout counter doesn't wait for stop clock and you should get
+>> DRTO even when the clock is not stopped.
+>> Host Starvation timeout counter is triggered with stop clock condition.
+>>
+>> This means that host should get DRTO and DTO interrupt.
+>>
+>> But we really don't get any data-related interrupt in RK3X SoCs.
+>> And driver can't get data transfer state, it can do nothing but wait for.
+>>
+>> We don't know why we have this problem, but we need it to fix this problem now.
+>> And I will post a follow up change when we find the root cause.
+>>
+>> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+>> ---
+>> Changes in v2:
+>> - fix some typo.
+>> - remove extra timeout value (250ms).
+>> - remove dw_mci_dto_start_monitor func.
+>> - use "broken-dto" for new quirk and change Subject for it.
+>>
+>> Changes in v3:
+>> - Remove dts for broken-dto, just add this quirk in dw_mci_rockchip_init
+>>
+>>  drivers/mmc/host/dw_mmc-rockchip.c |  3 +++
+>>  drivers/mmc/host/dw_mmc.c          | 41 +++++++++++++++++++++++++++++++++++++-
+>>  include/linux/mmc/dw_mmc.h         |  5 +++++
+>>  3 files changed, 48 insertions(+), 1 deletion(-)
+>
+> This seems reasonable to me.  I do hope that you can get to a root
+> cause, but I don't think this is a terrible bit of code to carry.
+> Obviously it's up to the folks who maintain dw_mmc and the mmc
+> subsystem, but:
+>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
