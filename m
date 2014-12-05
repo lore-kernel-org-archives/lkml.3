@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242AbaLEXxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:53:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
+	id S932168AbaLEXxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:53:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbaLEWpw (ORCPT
+	with ESMTP id S1751947AbaLEWpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:45:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.17 002/122] MIPS: lib: memcpy: Restore NOP on delay slot before returning to caller
-Date: Fri,  5 Dec 2014 14:42:56 -0800
-Message-Id: <20141205223305.902282340@linuxfoundation.org>
+        Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 020/122] inetdevice: fixed signed integer overflow
+Date: Fri,  5 Dec 2014 14:43:14 -0800
+Message-Id: <20141205223308.498849992@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,39 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
 
-commit 51b1029d9966060c6ad02030e6f251425b4f06c1 upstream.
+[ Upstream commit 84bc88688e3f6ef843aa8803dbcd90168bb89faf ]
 
-Commit cf62a8b8134dd3 ("MIPS: lib: memcpy: Use macro to build the
-copy_user code") switched to a macro in order to build the memcpy
-symbols in preparation for the EVA support. However, this commit
-also removed the NOP instruction after the 'jr ra' when returning
-back to the caller. This had no visible side-effects since the next
-instruction was a load to the t0 register which was already in the
-clobbered list, but it may have undesired effects in the future
-if some other code is introduced in between the .Ldone and
-the .Ll_exc_copy labels.
+There could be a signed overflow in the following code.
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8512/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+The expression, (32-logmask) is comprised between 0 and 31 included.
+It may be equal to 31.
+In such a case the left shift will produce a signed integer overflow.
+According to the C99 Standard, this is an undefined behavior.
+A simple fix is to replace the signed int 1 with the unsigned int 1U.
+
+Signed-off-by: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/mips/lib/memcpy.S |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/inetdevice.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/lib/memcpy.S
-+++ b/arch/mips/lib/memcpy.S
-@@ -503,6 +503,7 @@
- 	STOREB(t0, NBYTES-2(dst), .Ls_exc_p1\@)
- .Ldone\@:
- 	jr	ra
-+	 nop
- 	.if __memcpy == 1
- 	END(memcpy)
- 	.set __memcpy, 0
+--- a/include/linux/inetdevice.h
++++ b/include/linux/inetdevice.h
+@@ -242,7 +242,7 @@ static inline void in_dev_put(struct in_
+ static __inline__ __be32 inet_make_mask(int logmask)
+ {
+ 	if (logmask)
+-		return htonl(~((1<<(32-logmask))-1));
++		return htonl(~((1U<<(32-logmask))-1));
+ 	return 0;
+ }
+ 
 
 
