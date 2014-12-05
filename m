@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941AbaLEXeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:34:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754908AbaLEXeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:34:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54268 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183AbaLEW4E (ORCPT
+	with ESMTP id S1753185AbaLEW4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        bill bonaparte <programme110@gmail.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.17 122/122] netfilter: conntrack: fix race in __nf_conntrack_confirm against get_next_corpse
-Date: Fri,  5 Dec 2014 14:44:56 -0800
-Message-Id: <20141205223324.613437397@linuxfoundation.org>
+        Georgi Djakov <gdjakov@mm-sol.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.17 120/122] clk: qcom: Fix duplicate rbcpr clock name
+Date: Fri,  5 Dec 2014 14:44:54 -0800
+Message-Id: <20141205223324.261643265@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,68 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bill bonaparte <programme110@gmail.com>
+From: Georgi Djakov <gdjakov@mm-sol.com>
 
-commit 5195c14c8b27cc0b18220ddbf0e5ad3328a04187 upstream.
+commit 9a6cb70f40b0268297024949eb0a2689e3b7769b upstream.
 
-After removal of the central spinlock nf_conntrack_lock, in
-commit 93bb0ceb75be2 ("netfilter: conntrack: remove central
-spinlock nf_conntrack_lock"), it is possible to race against
-get_next_corpse().
+There is a duplication in a clock name for apq8084 platform that causes
+the following warning: "RBCPR_CLK_SRC" redefined
 
-The race is against the get_next_corpse() cleanup on
-the "unconfirmed" list (a per-cpu list with seperate locking),
-which set the DYING bit.
+Resolve this by adding a MMSS_ prefix to this clock and making its name
+coherent with msm8974 platform.
 
-Fix this race, in __nf_conntrack_confirm(), by removing the CT
-from unconfirmed list before checking the DYING bit.  In case
-race occured, re-add the CT to the dying list.
-
-While at this, fix coding style of the comment that has been
-updated.
-
-Fixes: 93bb0ceb75be2 ("netfilter: conntrack: remove central spinlock nf_conntrack_lock")
-Reported-by: bill bonaparte <programme110@gmail.com>
-Signed-off-by: bill bonaparte <programme110@gmail.com>
-Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Fixes: 2b46cd23a5a2 ("clk: qcom: Add APQ8084 Multimedia Clock Controller (MMCC) support")
+Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_core.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/clk/qcom/mmcc-apq8084.c               |    2 +-
+ include/dt-bindings/clock/qcom,mmcc-apq8084.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -611,12 +611,16 @@ __nf_conntrack_confirm(struct sk_buff *s
- 	 */
- 	NF_CT_ASSERT(!nf_ct_is_confirmed(ct));
- 	pr_debug("Confirming conntrack %p\n", ct);
--	/* We have to check the DYING flag inside the lock to prevent
--	   a race against nf_ct_get_next_corpse() possibly called from
--	   user context, else we insert an already 'dead' hash, blocking
--	   further use of that particular connection -JM */
-+
-+	/* We have to check the DYING flag after unlink to prevent
-+	 * a race against nf_ct_get_next_corpse() possibly called from
-+	 * user context, else we insert an already 'dead' hash, blocking
-+	 * further use of that particular connection -JM.
-+	 */
-+	nf_ct_del_from_dying_or_unconfirmed_list(ct);
- 
- 	if (unlikely(nf_ct_is_dying(ct))) {
-+		nf_ct_add_to_dying_list(ct);
- 		nf_conntrack_double_unlock(hash, reply_hash);
- 		local_bh_enable();
- 		return NF_ACCEPT;
-@@ -636,8 +640,6 @@ __nf_conntrack_confirm(struct sk_buff *s
- 		    zone == nf_ct_zone(nf_ct_tuplehash_to_ctrack(h)))
- 			goto out;
- 
--	nf_ct_del_from_dying_or_unconfirmed_list(ct);
--
- 	/* Timer relative to confirmation time, not original
- 	   setting time, otherwise we'd get timer wrap in
- 	   weird delay cases. */
+--- a/drivers/clk/qcom/mmcc-apq8084.c
++++ b/drivers/clk/qcom/mmcc-apq8084.c
+@@ -3122,7 +3122,7 @@ static struct clk_regmap *mmcc_apq8084_c
+ 	[ESC1_CLK_SRC] = &esc1_clk_src.clkr,
+ 	[HDMI_CLK_SRC] = &hdmi_clk_src.clkr,
+ 	[VSYNC_CLK_SRC] = &vsync_clk_src.clkr,
+-	[RBCPR_CLK_SRC] = &rbcpr_clk_src.clkr,
++	[MMSS_RBCPR_CLK_SRC] = &rbcpr_clk_src.clkr,
+ 	[RBBMTIMER_CLK_SRC] = &rbbmtimer_clk_src.clkr,
+ 	[MAPLE_CLK_SRC] = &maple_clk_src.clkr,
+ 	[VDP_CLK_SRC] = &vdp_clk_src.clkr,
+--- a/include/dt-bindings/clock/qcom,mmcc-apq8084.h
++++ b/include/dt-bindings/clock/qcom,mmcc-apq8084.h
+@@ -60,7 +60,7 @@
+ #define ESC1_CLK_SRC			43
+ #define HDMI_CLK_SRC			44
+ #define VSYNC_CLK_SRC			45
+-#define RBCPR_CLK_SRC			46
++#define MMSS_RBCPR_CLK_SRC		46
+ #define RBBMTIMER_CLK_SRC		47
+ #define MAPLE_CLK_SRC			48
+ #define VDP_CLK_SRC			49
 
 
