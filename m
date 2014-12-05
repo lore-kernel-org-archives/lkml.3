@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaLEWxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:53:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54009 "EHLO
+	id S1753056AbaLEWxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:53:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447AbaLEWqM (ORCPT
+	with ESMTP id S1752455AbaLEWqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:12 -0500
+	Fri, 5 Dec 2014 17:46:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Bohac <jbohac@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 026/122] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
-Date: Fri,  5 Dec 2014 14:43:20 -0800
-Message-Id: <20141205223309.366183236@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.17 085/122] iser-target: Handle DEVICE_REMOVAL event on network portal listener correctly
+Date: Fri,  5 Dec 2014 14:44:19 -0800
+Message-Id: <20141205223318.600317256@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,66 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
 
-[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
+commit 3b726ae2de02a406cc91903f80132daee37b6f1b upstream.
 
-This fixes an old regression introduced by commit
-b0d0d915 (ipx: remove the BKL).
+In this case the cm_id->context is the isert_np, and the cm_id->qp
+is NULL, so use that to distinct the cases.
 
-When a recvmsg syscall blocks waiting for new data, no data can be sent on the
-same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
+Since we don't expect any other events on this cm_id we can
+just return -1 for explicit termination of the cm_id by the
+cma layer.
 
-This breaks mars-nwe (NetWare emulator):
-- the ncpserv process reads the request using recvmsg
-- ncpserv forks and spawns nwconn
-- ncpserv calls a (blocking) recvmsg and waits for new requests
-- nwconn deadlocks in sendmsg on the same socket
-
-Commit b0d0d915 has simply replaced BKL locking with
-lock_sock/release_sock. Unlike now, BKL got unlocked while
-sleeping, so a blocking recvmsg did not block a concurrent
-sendmsg.
-
-Only keep the socket locked while actually working with the socket data and
-release it prior to calling skb_recv_datagram().
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipx/af_ipx.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -1764,6 +1764,7 @@ static int ipx_recvmsg(struct kiocb *ioc
- 	struct ipxhdr *ipx = NULL;
- 	struct sk_buff *skb;
- 	int copied, rc;
-+	bool locked = true;
- 
- 	lock_sock(sk);
- 	/* put the autobinding in */
-@@ -1790,6 +1791,8 @@ static int ipx_recvmsg(struct kiocb *ioc
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 
-+	release_sock(sk);
-+	locked = false;
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &rc);
- 	if (!skb) {
-@@ -1826,7 +1829,8 @@ static int ipx_recvmsg(struct kiocb *ioc
- out_free:
- 	skb_free_datagram(sk, skb);
- out:
--	release_sock(sk);
-+	if (locked)
-+		release_sock(sk);
- 	return rc;
+---
+ drivers/infiniband/ulp/isert/ib_isert.c |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
+
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -810,14 +810,25 @@ wake_up:
+ 	complete(&isert_conn->conn_wait);
  }
  
+-static void
++static int
+ isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
+ {
+-	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++	struct isert_conn *isert_conn;
++
++	if (!cma_id->qp) {
++		struct isert_np *isert_np = cma_id->context;
++
++		isert_np->np_cm_id = NULL;
++		return -1;
++	}
++
++	isert_conn = (struct isert_conn *)cma_id->context;
+ 
+ 	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
++
++	return 0;
+ }
+ 
+ static int
+@@ -832,6 +843,9 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	switch (event->event) {
+ 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+ 		ret = isert_connect_request(cma_id, event);
++		if (ret)
++			pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
++				event->event, ret);
+ 		break;
+ 	case RDMA_CM_EVENT_ESTABLISHED:
+ 		isert_connected_handler(cma_id);
+@@ -841,7 +855,7 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+ 		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id, disconnect);
+ 		break;
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
+ 	default:
+@@ -849,12 +863,6 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 		break;
+ 	}
+ 
+-	if (ret != 0) {
+-		pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
+-		       event->event, ret);
+-		dump_stack();
+-	}
+-
+ 	return ret;
+ }
+ 
+@@ -3210,7 +3218,8 @@ isert_free_np(struct iscsi_np *np)
+ {
+ 	struct isert_np *isert_np = (struct isert_np *)np->np_context;
+ 
+-	rdma_destroy_id(isert_np->np_cm_id);
++	if (isert_np->np_cm_id)
++		rdma_destroy_id(isert_np->np_cm_id);
+ 
+ 	np->np_context = NULL;
+ 	kfree(isert_np);
 
 
