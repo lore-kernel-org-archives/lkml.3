@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaLEXWC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:22:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
+	id S1754551AbaLEXWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:22:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291AbaLEW4Q (ORCPT
+	with ESMTP id S1753365AbaLEW4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andy Lutomirski <luto@amacapital.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 04/73] x86_64, traps: Stop using IST for #SS
-Date: Fri,  5 Dec 2014 14:44:10 -0800
-Message-Id: <20141205224434.060223759@linuxfoundation.org>
+Subject: [PATCH 3.14 05/73] x86_64, traps: Rework bad_iret
+Date: Fri,  5 Dec 2014 14:44:11 -0800
+Message-Id: <20141205224434.095985157@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -32,20 +32,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Lutomirski <luto@amacapital.net>
 
-commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
+commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
 
-On a 32-bit kernel, this has no effect, since there are no IST stacks.
+It's possible for iretq to userspace to fail.  This can happen because
+of a bad CS, SS, or RIP.
 
-On a 64-bit kernel, #SS can only happen in user code, on a failed iret
-to user space, a canonical violation on access via RSP or RBP, or a
-genuine stack segment violation in 32-bit kernel code.  The first two
-cases don't need IST, and the latter two cases are unlikely fatal bugs,
-and promoting them to double faults would be fine.
+Historically, we've handled it by fixing up an exception from iretq to
+land at bad_iret, which pretends that the failed iret frame was really
+the hardware part of #GP(0) from userspace.  To make this work, there's
+an extra fixup to fudge the gs base into a usable state.
 
-This fixes a bug in which the espfix64 code mishandles a stack segment
-violation.
+This is suboptimal because it loses the original exception.  It's also
+buggy because there's no guarantee that we were on the kernel stack to
+begin with.  For example, if the failing iret happened on return from an
+NMI, then we'll end up executing general_protection on the NMI stack.
+This is bad for several reasons, the most immediate of which is that
+general_protection, as a non-paranoid idtentry, will try to deliver
+signals and/or schedule from the wrong stack.
 
-This saves 4k of memory per CPU and a tiny bit of code.
+This patch throws out bad_iret entirely.  As a replacement, it augments
+the existing swapgs fudge into a full-blown iret fixup, mostly written
+in C.  It's should be clearer and more correct.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
@@ -53,113 +60,128 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/page_32_types.h |    1 -
- arch/x86/include/asm/page_64_types.h |   11 +++++------
- arch/x86/include/asm/traps.h         |    1 +
- arch/x86/kernel/dumpstack_64.c       |    1 -
- arch/x86/kernel/entry_64.S           |    2 +-
- arch/x86/kernel/traps.c              |   18 +-----------------
- 6 files changed, 8 insertions(+), 26 deletions(-)
+ arch/x86/kernel/entry_64.S |   45 +++++++++++++++++++--------------------------
+ arch/x86/kernel/traps.c    |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 26 deletions(-)
 
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -20,7 +20,6 @@
- #define THREAD_SIZE_ORDER	1
- #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
- 
--#define STACKFAULT_STACK 0
- #define DOUBLEFAULT_STACK 1
- #define NMI_STACK 0
- #define DEBUG_STACK 0
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -14,12 +14,11 @@
- #define IRQ_STACK_ORDER 2
- #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
- 
--#define STACKFAULT_STACK 1
--#define DOUBLEFAULT_STACK 2
--#define NMI_STACK 3
--#define DEBUG_STACK 4
--#define MCE_STACK 5
--#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-+#define DOUBLEFAULT_STACK 1
-+#define NMI_STACK 2
-+#define DEBUG_STACK 3
-+#define MCE_STACK 4
-+#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
- 
- #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
- #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -39,6 +39,7 @@ asmlinkage void simd_coprocessor_error(v
- 
- #ifdef CONFIG_TRACING
- asmlinkage void trace_page_fault(void);
-+#define trace_stack_segment stack_segment
- #define trace_divide_error divide_error
- #define trace_bounds bounds
- #define trace_invalid_op invalid_op
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
- 		[ DEBUG_STACK-1			]	= "#DB",
- 		[ NMI_STACK-1			]	= "NMI",
- 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
--		[ STACKFAULT_STACK-1		]	= "#SS",
- 		[ MCE_STACK-1			]	= "#MC",
- #if DEBUG_STKSZ > EXCEPTION_STKSZ
- 		[ N_EXCEPTION_STACKS ...
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -1519,7 +1519,7 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTO
+@@ -1055,8 +1055,13 @@ ENTRY(native_iret)
  
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
--paranoiderrorentry stack_segment do_stack_segment
-+errorentry stack_segment do_stack_segment
- #ifdef CONFIG_XEN
- zeroentry xen_debug do_debug
- zeroentry xen_int3 do_int3
+ .global native_irq_return_iret
+ native_irq_return_iret:
++	/*
++	 * This may fault.  Non-paranoid faults on return to userspace are
++	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
++	 * Double-faults due to espfix64 are handled in do_double_fault.
++	 * Other faults here are fatal.
++	 */
+ 	iretq
+-	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+ native_irq_return_ldt:
+@@ -1084,25 +1089,6 @@ native_irq_return_ldt:
+ 	jmp native_irq_return_iret
+ #endif
+ 
+-	.section .fixup,"ax"
+-bad_iret:
+-	/*
+-	 * The iret traps when the %cs or %ss being restored is bogus.
+-	 * We've lost the original trap vector and error code.
+-	 * #GPF is the most likely one to get for an invalid selector.
+-	 * So pretend we completed the iret and took the #GPF in user mode.
+-	 *
+-	 * We are now running with the kernel GS after exception recovery.
+-	 * But error_entry expects us to have user GS to match the user %cs,
+-	 * so swap back.
+-	 */
+-	pushq $0
+-
+-	SWAPGS
+-	jmp general_protection
+-
+-	.previous
+-
+ 	/* edi: workmask, edx: work */
+ retint_careful:
+ 	CFI_RESTORE_STATE
+@@ -1629,16 +1615,15 @@ error_sti:
+ 
+ /*
+  * There are two places in the kernel that can potentially fault with
+- * usergs. Handle them here. The exception handlers after iret run with
+- * kernel gs again, so don't set the user space flag. B stepping K8s
+- * sometimes report an truncated RIP for IRET exceptions returning to
+- * compat mode. Check for these here too.
++ * usergs. Handle them here.  B stepping K8s sometimes report a
++ * truncated RIP for IRET exceptions returning to compat mode. Check
++ * for these here too.
+  */
+ error_kernelspace:
+ 	incl %ebx
+ 	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	je error_bad_iret
+ 	movl %ecx,%eax	/* zero extend */
+ 	cmpq %rax,RIP+8(%rsp)
+ 	je bstep_iret
+@@ -1649,7 +1634,15 @@ error_kernelspace:
+ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+-	jmp error_swapgs
++	/* fall through */
++
++error_bad_iret:
++	SWAPGS
++	mov %rsp,%rdi
++	call fixup_bad_iret
++	mov %rax,%rsp
++	decl %ebx	/* Return to usergs */
++	jmp error_sti
+ 	CFI_ENDPROC
+ END(error_entry)
+ 
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -218,27 +218,11 @@ DO_ERROR_INFO(X86_TRAP_UD,     SIGILL,
- DO_ERROR     (X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",	coprocessor_segment_overrun			  )
- DO_ERROR     (X86_TRAP_TS,     SIGSEGV, "invalid TSS",			invalid_TSS					  )
- DO_ERROR     (X86_TRAP_NP,     SIGBUS,  "segment not present",		segment_not_present				  )
--#ifdef CONFIG_X86_32
- DO_ERROR     (X86_TRAP_SS,     SIGBUS,  "stack segment",		stack_segment					  )
--#endif
- DO_ERROR_INFO(X86_TRAP_AC,     SIGBUS,  "alignment check",		alignment_check,	     BUS_ADRALN, 0	  )
+@@ -384,6 +384,35 @@ asmlinkage __kprobes struct pt_regs *syn
+ 		*regs = *eregs;
+ 	return regs;
+ }
++
++struct bad_iret_stack {
++	void *error_entry_ret;
++	struct pt_regs regs;
++};
++
++asmlinkage __visible
++struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
++{
++	/*
++	 * This is called from entry_64.S early in handling a fault
++	 * caused by a bad iret to user mode.  To handle the fault
++	 * correctly, we want move our stack frame to task_pt_regs
++	 * and we want to pretend that the exception came from the
++	 * iret target.
++	 */
++	struct bad_iret_stack *new_stack =
++		container_of(task_pt_regs(current),
++			     struct bad_iret_stack, regs);
++
++	/* Copy the IRET target to the new stack. */
++	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
++
++	/* Copy the remainder of the stack from the current stack. */
++	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
++
++	BUG_ON(!user_mode_vm(&new_stack->regs));
++	return new_stack;
++}
+ #endif
  
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
--dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
--{
--	enum ctx_state prev_state;
--
--	prev_state = exception_enter();
--	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
--		preempt_conditional_sti(regs);
--		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
--		preempt_conditional_cli(regs);
--	}
--	exception_exit(prev_state);
--}
--
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- {
- 	static const char str[] = "double fault";
-@@ -772,7 +756,7 @@ void __init trap_init(void)
- 	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
- 	set_intr_gate(X86_TRAP_TS, invalid_TSS);
- 	set_intr_gate(X86_TRAP_NP, segment_not_present);
--	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(X86_TRAP_SS, stack_segment);
- 	set_intr_gate(X86_TRAP_GP, general_protection);
- 	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
- 	set_intr_gate(X86_TRAP_MF, coprocessor_error);
+ /*
 
 
