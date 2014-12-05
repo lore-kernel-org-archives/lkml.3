@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaLEMXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:23:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26743 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493AbaLEMXJ (ORCPT
+	id S1751612AbaLELqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:46:38 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:33871 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaLELqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:23:09 -0500
-Date: Fri, 5 Dec 2014 15:22:14 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 5/6] net-PPP: Delete an unnecessary assignment in
- mppe_alloc()
-Message-ID: <20141205122214.GB4912@mwanda>
-References: <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <547B4886.4080406@users.sourceforge.net>
- <547B496E.604@users.sourceforge.net>
- <547C5CBC.6060607@cogentembedded.com>
- <547C82A6.2030808@users.sourceforge.net>
- <547CA157.1080401@cogentembedded.com>
- <5480DA32.8000201@users.sourceforge.net>
- <5480DDC1.6040101@users.sourceforge.net>
+	Fri, 5 Dec 2014 06:46:36 -0500
+Date: Fri, 5 Dec 2014 12:46:29 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
+        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
+        hughd@google.com, hocko@suse.cz
+Subject: Re: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in
+ might_fault() when pagefaults are disabled
+Message-ID: <20141205124629.2c77290f@thinkpad-w530>
+In-Reply-To: <20141205114529.GD4213@osiris>
+References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141205114529.GD4213@osiris>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5480DDC1.6040101@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120511-0021-0000-0000-0000020822B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 11:18:41PM +0100, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Thu, 4 Dec 2014 22:33:34 +0100
+> On Fri, Dec 05, 2014 at 12:18:07PM +0100, David Hildenbrand wrote:
+> > -void might_fault(void)
+> > +void __might_fault(const char *file, int line)
+> >  {
+> >  	/*
+> >  	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
+> > @@ -3710,21 +3710,16 @@ void might_fault(void)
+> >  	 */
+> >  	if (segment_eq(get_fs(), KERNEL_DS))
+> >  		return;
+> > -
+> > -	/*
+> > -	 * it would be nicer only to annotate paths which are not under
+> > -	 * pagefault_disable, however that requires a larger audit and
+> > -	 * providing helpers like get_user_atomic.
+> > -	 */
+> > -	if (in_atomic())
+> > +	if (unlikely(!pagefault_disabled())) {
+> > +		__might_sleep(file, line, 0);
+> >  		return;
+> > -
+> > -	__might_sleep(__FILE__, __LINE__, 0);
+> > -
+> > +	}
 > 
-> The data structure element "arc4" was assigned a null pointer by the
-> mppe_alloc() function if a previous function call "crypto_alloc_blkcipher"
-> failed.
+> This should be likely() instead of unlikely(), no?
+> I'd rather write this
+> 
+> 	if (pagefault_disabled())
+>  		return;
+> 	__might_sleep(file, line, 0);
+> 
+> and leave the likely stuff completely away.
 
-No.  crypto_alloc_blkcipher() returns error pointers and not NULL.
+Makes perfect sense!
 
-This patch creates a bug.
+Thanks!
 
-regards,
-dan carpenter
-
+David
 
