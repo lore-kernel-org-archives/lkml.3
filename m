@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaLEWrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:47:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
+	id S1752708AbaLEWrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:47:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53996 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430AbaLEWqU (ORCPT
+	with ESMTP id S1752517AbaLEWqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:20 -0500
+	Fri, 5 Dec 2014 17:46:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Gaurav Minocha <gaurav.minocha.os@gmail.com>
-Subject: [PATCH 3.17 076/122] of/selftest: Fix off-by-one error in removal path
-Date: Fri,  5 Dec 2014 14:44:10 -0800
-Message-Id: <20141205223317.227994267@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>
+Subject: [PATCH 3.17 100/122] net/ping: handle protocol mismatching scenario
+Date: Fri,  5 Dec 2014 14:44:34 -0800
+Message-Id: <20141205223321.034961165@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,44 +33,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Jane Zhou <a17711@motorola.com>
 
-commit c1a2086e2d8c4eb4e8630ba752e911ec180dec67 upstream.
+commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
 
-The removal path for selftest data has an off by one error that causes
-the code to dereference beyond the end of the nodes[] array on the first
-pass through. The old code only worked by chance on a lot of platforms,
-but the bug was recently exposed on aarch64.
+ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
+dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
+sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
+sock will be returned.
+the fix is to "continue" the searching, if no matching, return NULL.
 
-The fix is simple. Decrement the node count before dereferencing, not
-after.
-
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Jane Zhou <a17711@motorola.com>
+Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/selftest.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ipv4/ping.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -799,7 +799,7 @@ static void selftest_data_remove(void)
- 		return;
- 	}
- 
--	while (last_node_index >= 0) {
-+	while (last_node_index-- > 0) {
- 		if (nodes[last_node_index]) {
- 			np = of_find_node_by_path(nodes[last_node_index]->full_name);
- 			if (strcmp(np->full_name, "/aliases") != 0) {
-@@ -812,7 +812,6 @@ static void selftest_data_remove(void)
- 				}
- 			}
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -217,6 +217,8 @@ static struct sock *ping_lookup(struct n
+ 					     &ipv6_hdr(skb)->daddr))
+ 				continue;
+ #endif
++		} else {
++			continue;
  		}
--		last_node_index--;
- 	}
- }
  
+ 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
 
 
