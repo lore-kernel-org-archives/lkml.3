@@ -1,196 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643AbaLEHMB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 02:12:01 -0500
-Received: from mailout.micron.com ([137.201.242.129]:51935 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaLEHL7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 02:11:59 -0500
-From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Marek Vasut <marex@denx.de>
-CC: "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-Subject: [V6 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for Micron
- spi nor
-Thread-Topic: [V6 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AdAQWnqsiImr5KpARvijPY3FrXHl/Q==
-Date: Fri, 5 Dec 2014 07:09:59 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EF2C5@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21150.005
-X-TM-AS-Result: No--4.398800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1751521AbaLEHTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 02:19:12 -0500
+Received: from mout.web.de ([212.227.15.14]:53851 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877AbaLEHTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 02:19:10 -0500
+Message-ID: <54815C5F.8090702@users.sourceforge.net>
+Date: Fri, 05 Dec 2014 08:18:55 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by pr_warn()
+ in mppe_rekey()
+References: <5307CAA2.8060406@users.sourceforge.net>	 <530B5FB6.6010207@users.sourceforge.net>	 <alpine.DEB.2.10.1402241710370.2074@hadrien>	 <530C5E18.1020800@users.sourceforge.net>	 <alpine.DEB.2.10.1402251014170.2080@hadrien>	 <530CD2C4.4050903@users.sourceforge.net>	 <alpine.DEB.2.10.1402251840450.7035@hadrien>	 <530CF8FF.8080600@users.sourceforge.net>	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	 <530DD06F.4090703@users.sourceforge.net>	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	 <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>	 <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>	 <547C82A6.2030808@users.sourceforge.net>	 <547CA157.1080401@cogentembedded.com>	 <5480DA32.8000201@users.sourceforge.net>	 <5480DBDE.7040604@users.sourceforge.net>	 <1417731809.2721.17.camel@perches.com>	 <5480DFB5.4090708@users.sourceforge.net> <1417733101.2721.20.camel@perches.com>
+In-Reply-To: <1417733101.2721.20.camel@perches.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:tlOu3F0asddvgOOWuWSpbHMiZdBSQLWqLOI7FsWQQTZxiUHGwzD
+ 8cHqCYK80GTSQt3oeXqP09wjRRS0otRUPRPv1zmEbAFd2rQI5vECHobED2Ff2yZ8ZTcjkf1
+ OT5qlr/q+iqlDY8fxcb6ik1j9ci/OPCi9MqO+FT5bHRSMghbV251GLp2nrIpQG7IA+MtrBU
+ kipfr3mD35A0dCBAAvCug==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+>>> It's generally nicer to replace embedded function names
+>>> with "%s: ", __func__
+>>>
+>>> 			pr_warn("%s: cipher_encrypt failed\n", __func__);
+>>
+>> Do you want that I send a third patch series for the fine-tuning of these parameters?
+> 
+> If you want.
 
-For Micron SPI NOR flash,enabling or disabling quad I/O protocol can be done
-By two methods, which are to use EVCR(Enhanced Volatile Configuration Register)
-and the ENTER QUAD I/O MODE command.There is no difference between these two
-methods.Unfortunately,for some Micron spi nor flashes,there no ENTER Quad I/O
-command(35h),such as n25q064.But for all current Micron spi nor,if it support
-quad I/O mode,using EVCR definitely be supported.It is a recommended method to
-enable Quad I/O mode by EVCR,Quad I/O protocol bit 7.When EVCR bit 7 is reset
-to 0,the SPI NOR flash will operate in quad I/O mode.
+Would "a committer" fix such a small source code adjustment also without a resend of
+a patch series?
 
-This patch has been tested on N25Q512A and MT25TL256BAA1ESF.Micron spi nor of 
-spi_nor_ids[] table all support this method.
 
-Signed-off-by: bean huo <beanhuo@micron.com>
-Acked-by: Marek Vasut <marex@denx.de>
----
-v1-v2:
-	Modified to that capture wait_till_ready()
-	return value,if error,directly return its
-	the value.
- v2-v3:
-	Directly use the reurning error value of
-	read_reg and write_reg,instead of -EINVAL.
- v3-v4:
-	Modify commit logs that wraped into 80 columns.
- v4-v5:
-	Rebuild new patch based on latest linux-mtd.
- v5-v6:
-	Rebuild patch based on latest l2-mtd.
-	add some comments.
-	Add SPI_NOR_QUAD_READ flag in the spi_nor_ids[] for Micron spi nor.
+> I just wanted you to be aware of it for future patches.
 
- drivers/mtd/spi-nor/spi-nor.c |   61 +++++++++++++++++++++++++++++++++++------
- include/linux/mtd/spi-nor.h   |    7 +++++
- 2 files changed, 60 insertions(+), 8 deletions(-)
+Thanks for your tip.
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index 0f8ec3c..128941e 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -560,14 +560,14 @@ static const struct spi_device_id spi_nor_ids[] = {
- 	{ "mx66l1g55g",  INFO(0xc2261b, 0, 64 * 1024, 2048, SPI_NOR_QUAD_READ) },
- 
- 	/* Micron */
--	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64, 0) },
--	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
--	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, 0) },
--	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
--	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
--	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
--	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
--	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
-+	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64, SPI_NOR_QUAD_READ) },
-+	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, SPI_NOR_QUAD_READ) },
-+	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, SPI_NOR_QUAD_READ) },
-+	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, SPI_NOR_QUAD_READ) },
-+	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K | SPI_NOR_QUAD_READ) },
-+	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
-+	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
-+	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
- 
- 	/* PMC */
- 	{ "pm25lv512",   INFO(0,        0, 32 * 1024,    2, SECT_4K_PMC) },
-@@ -891,6 +891,44 @@ static int spansion_quad_enable(struct spi_nor *nor)
- 	return 0;
- }
- 
-+static int micron_quad_enable(struct spi_nor *nor)
-+{
-+	int ret, val;
-+
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+
-+	write_enable(nor);
-+
-+	/* set EVCR ,enable quad I/O */
-+	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-+	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error while writing EVCR register\n");
-+		return ret;
-+	}
-+
-+	ret = spi_nor_wait_till_ready(nor);
-+	if (ret)
-+		return ret;
-+
-+	/* read EVCR and check it */
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+	if (val & EVCR_QUAD_EN_MICRON) {
-+		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int set_quad_mode(struct spi_nor *nor, struct flash_info *info)
- {
- 	int status;
-@@ -903,6 +941,13 @@ static int set_quad_mode(struct spi_nor *nor, struct flash_info *info)
- 			return -EINVAL;
- 		}
- 		return status;
-+	case CFI_MFR_ST:
-+		status = micron_quad_enable(nor);
-+		if (status) {
-+			dev_err(nor->dev, "Micron quad-read not enabled\n");
-+			return -EINVAL;
-+		}
-+		return status;
- 	default:
- 		status = spansion_quad_enable(nor);
- 		if (status) {
-diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
-index 63aeccf..4720b86 100644
---- a/include/linux/mtd/spi-nor.h
-+++ b/include/linux/mtd/spi-nor.h
-@@ -56,6 +56,10 @@
- /* Used for Spansion flashes only. */
- #define SPINOR_OP_BRWR		0x17	/* Bank register write */
- 
-+/* Used for Micron flashes only. */
-+#define SPINOR_OP_RD_EVCR      0x65    /* Read EVCR register */
-+#define SPINOR_OP_WD_EVCR      0x61    /* Write EVCR register */
-+
- /* Status Register bits. */
- #define SR_WIP			1	/* Write in progress */
- #define SR_WEL			2	/* Write enable latch */
-@@ -67,6 +71,9 @@
- 
- #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
- 
-+/* Enhanced Volatile Configuration Register bits */
-+#define EVCR_QUAD_EN_MICRON    0x80    /* Micron Quad I/O */
-+
- /* Flag Status Register bits */
- #define FSR_READY		0x80
- 
--- 
-1.7.9.5
+Does it make sense to express such implementation details in the Linux coding
+style documentation more explicitly (besides the fact that this update suggestion
+was also triggered by a warning from the script "checkpatch.pl").
 
+Regards,
+Markus
