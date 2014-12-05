@@ -1,150 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaLEVIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:08:24 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaLEVIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:08:23 -0500
-Message-ID: <54821EC3.3030107@nod.at>
-Date: Fri, 05 Dec 2014 22:08:19 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] UBI: Fastmap: Fix races in ubi_wl_get_peb()
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-5-git-send-email-richard@nod.at> <5481AE79.1090900@codeaurora.org> <5481B120.5020409@nod.at> <5481E336.8090303@codeaurora.org>
-In-Reply-To: <5481E336.8090303@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1751894AbaLEVLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:11:24 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46288 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLEVLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:11:22 -0500
+From: Mariusz Gorski <marius.gorski@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Willy Tarreau <w@1wt.eu>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: panel: Remove magic numbers in LCD commands
+Date: Fri,  5 Dec 2014 22:10:43 +0100
+Message-Id: <1417813843-7589-1-git-send-email-marius.gorski@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tanya,
+Get rid of magic numbers in LCD commands and replace them with defined
+values, so that it's more obvious that the commands are doing.
 
-Am 05.12.2014 um 17:54 schrieb Tanya Brokhman:
-> Hi Richard
-> 
-> On 12/5/2014 3:20 PM, Richard Weinberger wrote:
->> Tanya,
->>
->> Am 05.12.2014 um 14:09 schrieb Tanya Brokhman:
->>> On 11/24/2014 3:20 PM, Richard Weinberger wrote:
->>>> ubi_wl_get_peb() has two problems, it reads the pool
->>>> size and usage counters without any protection.
->>>> While reading one value would be perfectly fine it reads multiple
->>>> values and compares them. This is racy and can lead to incorrect
->>>> pool handling.
->>>> Furthermore ubi_update_fastmap() is called without wl_lock held,
->>>> before incrementing the used counter it needs to be checked again.
->>>
->>> I didn't see where you fixed the ubi_update_fastmap issue you just mentioned.
->>
->> This is exactly what you're questioning below.
->> We have to recheck as the pool counter could have changed.
->>
-> 
-> Oh, I understood the commit msg a bit differently, but now I see that it was my mistake. thanks!
-> 
->>>> It could happen that another thread consumed all PEBs from the
->>>> pool and the counter goes beyond ->size.
->>>>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>> ---
->>>>    drivers/mtd/ubi/ubi.h |  3 ++-
->>>>    drivers/mtd/ubi/wl.c  | 34 +++++++++++++++++++++++-----------
->>>>    2 files changed, 25 insertions(+), 12 deletions(-)
->>>>
->>>> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
->>>> index 04c4c05..d672412 100644
->>>> --- a/drivers/mtd/ubi/ubi.h
->>>> +++ b/drivers/mtd/ubi/ubi.h
->>>> @@ -439,7 +439,8 @@ struct ubi_debug_info {
->>>>     * @pq_head: protection queue head
->>>>     * @wl_lock: protects the @used, @free, @pq, @pq_head, @lookuptbl, @move_from,
->>>>     *         @move_to, @move_to_put @erase_pending, @wl_scheduled, @works,
->>>> - *         @erroneous, @erroneous_peb_count, and @fm_work_scheduled fields
->>>> + *         @erroneous, @erroneous_peb_count, @fm_work_scheduled, @fm_pool,
->>>> + *         and @fm_wl_pool fields
->>>>     * @move_mutex: serializes eraseblock moves
->>>>     * @work_sem: used to wait for all the scheduled works to finish and prevent
->>>>     * new works from being submitted
->>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>>> index cb2e571..7730b97 100644
->>>> --- a/drivers/mtd/ubi/wl.c
->>>> +++ b/drivers/mtd/ubi/wl.c
->>>> @@ -629,24 +629,36 @@ void ubi_refill_pools(struct ubi_device *ubi)
->>>>     */
->>>>    int ubi_wl_get_peb(struct ubi_device *ubi)
->>>>    {
->>>> -    int ret;
->>>> +    int ret, retried = 0;
->>>>        struct ubi_fm_pool *pool = &ubi->fm_pool;
->>>>        struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
->>>>
->>>> -    if (!pool->size || !wl_pool->size || pool->used == pool->size ||
->>>> -        wl_pool->used == wl_pool->size)
->>>> +again:
->>>> +    spin_lock(&ubi->wl_lock);
->>>> +    /* We check here also for the WL pool because at this point we can
->>>> +     * refill the WL pool synchronous. */
->>>> +    if (pool->used == pool->size || wl_pool->used == wl_pool->size) {
->>>> +        spin_unlock(&ubi->wl_lock);
->>>>            ubi_update_fastmap(ubi);
->>>> -
->>>> -    /* we got not a single free PEB */
->>>> -    if (!pool->size)
->>>> -        ret = -ENOSPC;
->>>> -    else {
->>>>            spin_lock(&ubi->wl_lock);
->>>> -        ret = pool->pebs[pool->used++];
->>>> -        prot_queue_add(ubi, ubi->lookuptbl[ret]);
->>>> +    }
->>>> +
->>>> +    if (pool->used == pool->size) {
->>>
->>> Im confused about this "if" condition. You just tested pool->used == pool->size in the previous "if". If in the previous if pool->used != pool->size and wl_pool->used !=
->>> wl_pool->size, you didn't enter, the lock is still held so pool->used != pool->size still. If in the previos "if" wl_pool->used == wl_pool->size was true nd tou released the lock,
->>> ubi_update_fastmap(ubi) was called, which refills the pools. So again, if pools were refilled pool->used would be 0 here and pool->size > 0.
->>>
->>> So in both cases I don't see how at this point pool->used == pool->size could ever be true?
->>
->> If we enter the "if (pool->used == pool->size || wl_pool->used == wl_pool->size) {" branch we unlock wl_lock and call ubi_update_fastmap().
->> Another thread can enter ubi_wl_get_peb() and alter the pool counter. So we have to recheck the counter after taking wl_lock again.
-> 
-> hmmm... ok. Perhaps a comment could be added in the code to explain this case in a few words?
-> 
+Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+---
+ drivers/staging/panel/panel.c | 83 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 57 insertions(+), 26 deletions(-)
 
-Makes sense, I'll add a comment.
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index b68a9c3..fbba46f 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -130,6 +130,28 @@
+ #define LCD_FLAG_N		0x0040	/* 2-rows mode */
+ #define LCD_FLAG_L		0x0080	/* backlight enabled */
+ 
++/* LCD commands */
++#define LCD_CMD_DISPLAY_CLEAR	0x01	/* Clear entire display */
++
++#define LCD_CMD_ENTRY_MODE	0x04	/* Set entry mode */
++#define LCD_CMD_CURSOR_INC	0x02	/* Increment cursor */
++
++#define LCD_CMD_DISPLAY_CTRL	0x08	/* Display control */
++#define LCD_CMD_DISPLAY_ON	0x04	/* Set display on */
++#define LCD_CMD_CURSOR_ON	0x02	/* Set cursor on */
++#define LCD_CMD_BLINK_ON	0x01	/* Set blink on */
++
++#define LCD_CMD_SHIFT		0x10	/* Shift cursor/display */
++#define LCD_CMD_DISPLAY_SHIFT	0x08	/* Shift display instead of cursor */
++#define LCD_CMD_SHIFT_RIGHT	0x04	/* Shift display/cursor to the right */
++
++#define LCD_CMD_FUNCTION_SET	0x20	/* Set function */
++#define LCD_CMD_DATA_LEN_8BITS	0x10	/* Set data length to 8 bits */
++
++#define LCD_CMD_SET_CGRAM_ADDR	0x40	/* Set char generator RAM address */
++
++#define LCD_CMD_SET_DDRAM_ADDR	0x80	/* Set display data RAM address */
++
+ #define LCD_ESCAPE_LEN		24	/* max chars for LCD escape command */
+ #define LCD_ESCAPE_CHAR	27	/* use char 27 for escape command */
+ 
+@@ -883,7 +905,7 @@ static void lcd_write_data_tilcd(int data)
+ 
+ static void lcd_gotoxy(void)
+ {
+-	lcd_write_cmd(0x80	/* set DDRAM address */
++	lcd_write_cmd(LCD_CMD_SET_DDRAM_ADDR
+ 		      | (lcd.addr.y ? lcd.hwidth : 0)
+ 		      /* we force the cursor to stay at the end of the
+ 			 line if it wants to go farther */
+@@ -991,7 +1013,7 @@ static void lcd_clear_fast_tilcd(void)
+ /* clears the display and resets X/Y */
+ static void lcd_clear_display(void)
+ {
+-	lcd_write_cmd(0x01);	/* clear display */
++	lcd_write_cmd(LCD_CMD_DISPLAY_CLEAR);
+ 	lcd.addr.x = 0;
+ 	lcd.addr.y = 0;
+ 	/* we must wait a few milliseconds (15) */
+@@ -1005,26 +1027,29 @@ static void lcd_init_display(void)
+ 
+ 	long_sleep(20);		/* wait 20 ms after power-up for the paranoid */
+ 
+-	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
++	/* 8bits, 1 line, small fonts; let's do it 3 times */
++	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
+ 	long_sleep(10);
+-	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
++	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
+ 	long_sleep(10);
+-	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
++	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
+ 	long_sleep(10);
+ 
+-	lcd_write_cmd(0x30	/* set font height and lines number */
++	/* set font height and lines number */
++	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS
+ 		      | ((lcd.flags & LCD_FLAG_F) ? 4 : 0)
+ 		      | ((lcd.flags & LCD_FLAG_N) ? 8 : 0)
+ 	    );
+ 	long_sleep(10);
+ 
+-	lcd_write_cmd(0x08);	/* display off, cursor off, blink off */
++	/* display off, cursor off, blink off */
++	lcd_write_cmd(LCD_CMD_DISPLAY_CTRL);
+ 	long_sleep(10);
+ 
+-	lcd_write_cmd(0x08	/* set display mode */
+-		      | ((lcd.flags & LCD_FLAG_D) ? 4 : 0)
+-		      | ((lcd.flags & LCD_FLAG_C) ? 2 : 0)
+-		      | ((lcd.flags & LCD_FLAG_B) ? 1 : 0)
++	lcd_write_cmd(LCD_CMD_DISPLAY_CTRL	/* set display mode */
++		      | ((lcd.flags & LCD_FLAG_D) ? LCD_CMD_DISPLAY_ON : 0)
++		      | ((lcd.flags & LCD_FLAG_C) ? LCD_CMD_CURSOR_ON : 0)
++		      | ((lcd.flags & LCD_FLAG_B) ? LCD_CMD_BLINK_ON : 0)
+ 	    );
+ 
+ 	lcd_backlight((lcd.flags & LCD_FLAG_L) ? 1 : 0);
+@@ -1032,7 +1057,7 @@ static void lcd_init_display(void)
+ 	long_sleep(10);
+ 
+ 	/* entry mode set : increment, cursor shifting */
+-	lcd_write_cmd(0x06);
++	lcd_write_cmd(LCD_CMD_ENTRY_MODE | LCD_CMD_CURSOR_INC);
+ 
+ 	lcd_clear_display();
+ }
+@@ -1116,7 +1141,7 @@ static inline int handle_lcd_special_code(void)
+ 		if (lcd.addr.x > 0) {
+ 			/* back one char if not at end of line */
+ 			if (lcd.addr.x < lcd.bwidth)
+-				lcd_write_cmd(0x10);
++				lcd_write_cmd(LCD_CMD_SHIFT);
+ 			lcd.addr.x--;
+ 		}
+ 		processed = 1;
+@@ -1124,19 +1149,20 @@ static inline int handle_lcd_special_code(void)
+ 	case 'r':	/* shift cursor right */
+ 		if (lcd.addr.x < lcd.width) {
+ 			/* allow the cursor to pass the end of the line */
+-			if (lcd.addr.x <
+-			    (lcd.bwidth - 1))
+-				lcd_write_cmd(0x14);
++			if (lcd.addr.x < (lcd.bwidth - 1))
++				lcd_write_cmd(LCD_CMD_SHIFT |
++						LCD_CMD_SHIFT_RIGHT);
+ 			lcd.addr.x++;
+ 		}
+ 		processed = 1;
+ 		break;
+ 	case 'L':	/* shift display left */
+-		lcd_write_cmd(0x18);
++		lcd_write_cmd(LCD_CMD_SHIFT | LCD_CMD_DISPLAY_SHIFT);
+ 		processed = 1;
+ 		break;
+ 	case 'R':	/* shift display right */
+-		lcd_write_cmd(0x1C);
++		lcd_write_cmd(LCD_CMD_SHIFT | LCD_CMD_DISPLAY_SHIFT |
++				LCD_CMD_SHIFT_RIGHT);
+ 		processed = 1;
+ 		break;
+ 	case 'k': {	/* kill end of line */
+@@ -1205,7 +1231,7 @@ static inline int handle_lcd_special_code(void)
+ 			esc++;
+ 		}
+ 
+-		lcd_write_cmd(0x40 | (cgaddr * 8));
++		lcd_write_cmd(LCD_CMD_SET_CGRAM_ADDR | (cgaddr * 8));
+ 		for (addr = 0; addr < cgoffset; addr++)
+ 			lcd_write_data(cgbytes[addr]);
+ 
+@@ -1244,13 +1270,18 @@ static inline int handle_lcd_special_code(void)
+ 		if ((oldflags ^ lcd.flags) &
+ 		    (LCD_FLAG_B | LCD_FLAG_C | LCD_FLAG_D))
+ 			/* set display mode */
+-			lcd_write_cmd(0x08
+-				      | ((lcd.flags & LCD_FLAG_D) ? 4 : 0)
+-				      | ((lcd.flags & LCD_FLAG_C) ? 2 : 0)
+-				      | ((lcd.flags & LCD_FLAG_B) ? 1 : 0));
++			/* TODO: This indent party here got ugly, clean it! */
++			lcd_write_cmd(LCD_CMD_DISPLAY_CTRL
++				      | ((lcd.flags & LCD_FLAG_D)
++						      ? LCD_CMD_DISPLAY_ON : 0)
++				      | ((lcd.flags & LCD_FLAG_C)
++						      ? LCD_CMD_CURSOR_ON : 0)
++				      | ((lcd.flags & LCD_FLAG_B)
++						      ? LCD_CMD_BLINK_ON : 0));
+ 		/* check whether one of F,N flags was changed */
+ 		else if ((oldflags ^ lcd.flags) & (LCD_FLAG_F | LCD_FLAG_N))
+-			lcd_write_cmd(0x30
++			lcd_write_cmd(LCD_CMD_FUNCTION_SET
++				      | LCD_CMD_DATA_LEN_8BITS
+ 				      | ((lcd.flags & LCD_FLAG_F) ? 4 : 0)
+ 				      | ((lcd.flags & LCD_FLAG_N) ? 8 : 0));
+ 		/* check whether L flag was changed */
+@@ -1291,13 +1322,13 @@ static void lcd_write_char(char c)
+ 				   end of the line */
+ 				if (lcd.addr.x < lcd.bwidth)
+ 					/* back one char */
+-					lcd_write_cmd(0x10);
++					lcd_write_cmd(LCD_CMD_SHIFT);
+ 				lcd.addr.x--;
+ 			}
+ 			/* replace with a space */
+ 			lcd_write_data(' ');
+ 			/* back one char again */
+-			lcd_write_cmd(0x10);
++			lcd_write_cmd(LCD_CMD_SHIFT);
+ 			break;
+ 		case '\014':
+ 			/* quickly clear the display */
+-- 
+2.1.3
 
->>>>            spin_unlock(&ubi->wl_lock);
->>>> +        if (retried) {
->>>> +            ubi_err(ubi, "Unable to get a free PEB from user WL pool");
->>>> +            ret = -ENOSPC;
->>>> +            goto out;
->>>> +        }
->>>> +        retried = 1;
->>>
->>> Why did you decide to retry in this function? and why only 1 retry attempt? I'm not against it, trying to understand the logic.
->>
->> Because failing immediately with -ENOSPC is not nice.
-> 
-> Why not? this is what was done before....
-
-The behavior from before was not good.
-If we return here a -ENOSPC it is not because we ran out of free PEBs, it is because the pool contains
-no free PEBs and needs refilling.
-As between refilling the pool and requesting a fresh PEB from it another thread could "steal" all PEBs
-we retry.
-
-> I think what I really bothers me in this case is that you don't sleep, you branch immediately to retry again, so the chances that there will be context switch and free pebs appear
-> aren't that high.
-> I'm used to functions using some sort of "retry" logic to sleep before retrying. Of course sleeping isn't a good idea here. That's why the "retry" bugs me a bit.
-
-You mean a cond_resched()?
-This retry-logic is common pattern in UBI. For exmaple see ubi_wl_put_peb().
-
-Thanks,
-//richard
