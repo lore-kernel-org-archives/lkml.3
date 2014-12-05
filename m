@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaLEWqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:46:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54000 "EHLO
+	id S1752840AbaLEWu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:50:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaLEWqM (ORCPT
+	with ESMTP id S1752486AbaLEWqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:12 -0500
+	Fri, 5 Dec 2014 17:46:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 034/122] ASoC: rsnd: remove unsupported PAUSE flag
-Date: Fri,  5 Dec 2014 14:43:28 -0800
-Message-Id: <20141205223310.618148890@linuxfoundation.org>
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 3.17 093/122] dmaengine: sun6i: Fix memcpy operation
+Date: Fri,  5 Dec 2014 14:44:27 -0800
+Message-Id: <20141205223319.895553610@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -29,32 +29,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit 706c66213e5e623e23f521b1acbd8171af7a3549 upstream.
+commit 1f9cd915b64bb95f7b41667b4bf8b22f0a0a557b upstream.
 
-R-Car sound doesn't support PAUSE.
-Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
+The prep_memcpy call was not setting any meaningful burst and width because it
+was relying on the dma_slave_config was not set already.
 
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Rework the needed conversion functions, and hardcode the width and burst to
+use.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/sh/rcar/core.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/dma/sun6i-dma.c |   67 +++++++++++++++++++++++-------------------------
+ 1 file changed, 33 insertions(+), 34 deletions(-)
 
---- a/sound/soc/sh/rcar/core.c
-+++ b/sound/soc/sh/rcar/core.c
-@@ -888,8 +888,7 @@ static int rsnd_dai_probe(struct platfor
- static struct snd_pcm_hardware rsnd_pcm_hardware = {
- 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
- 			SNDRV_PCM_INFO_MMAP		|
--			SNDRV_PCM_INFO_MMAP_VALID	|
--			SNDRV_PCM_INFO_PAUSE,
-+			SNDRV_PCM_INFO_MMAP_VALID,
- 	.buffer_bytes_max	= 64 * 1024,
- 	.period_bytes_min	= 32,
- 	.period_bytes_max	= 8192,
+--- a/drivers/dma/sun6i-dma.c
++++ b/drivers/dma/sun6i-dma.c
+@@ -230,30 +230,25 @@ static inline void sun6i_dma_dump_chan_r
+ 		readl(pchan->base + DMA_CHAN_CUR_PARA));
+ }
+ 
+-static inline int convert_burst(u32 maxburst, u8 *burst)
++static inline s8 convert_burst(u32 maxburst)
+ {
+ 	switch (maxburst) {
+ 	case 1:
+-		*burst = 0;
+-		break;
++		return 0;
+ 	case 8:
+-		*burst = 2;
+-		break;
++		return 2;
+ 	default:
+ 		return -EINVAL;
+ 	}
+-
+-	return 0;
+ }
+ 
+-static inline int convert_buswidth(enum dma_slave_buswidth addr_width, u8 *width)
++static inline s8 convert_buswidth(enum dma_slave_buswidth addr_width)
+ {
+ 	if ((addr_width < DMA_SLAVE_BUSWIDTH_1_BYTE) ||
+ 	    (addr_width > DMA_SLAVE_BUSWIDTH_4_BYTES))
+ 		return -EINVAL;
+ 
+-	*width = addr_width >> 1;
+-	return 0;
++	return addr_width >> 1;
+ }
+ 
+ static void *sun6i_dma_lli_add(struct sun6i_dma_lli *prev,
+@@ -284,26 +279,25 @@ static inline int sun6i_dma_cfg_lli(stru
+ 				    struct dma_slave_config *config)
+ {
+ 	u8 src_width, dst_width, src_burst, dst_burst;
+-	int ret;
+ 
+ 	if (!config)
+ 		return -EINVAL;
+ 
+-	ret = convert_burst(config->src_maxburst, &src_burst);
+-	if (ret)
+-		return ret;
+-
+-	ret = convert_burst(config->dst_maxburst, &dst_burst);
+-	if (ret)
+-		return ret;
+-
+-	ret = convert_buswidth(config->src_addr_width, &src_width);
+-	if (ret)
+-		return ret;
+-
+-	ret = convert_buswidth(config->dst_addr_width, &dst_width);
+-	if (ret)
+-		return ret;
++	src_burst = convert_burst(config->src_maxburst);
++	if (src_burst)
++		return src_burst;
++
++	dst_burst = convert_burst(config->dst_maxburst);
++	if (dst_burst)
++		return dst_burst;
++
++	src_width = convert_buswidth(config->src_addr_width);
++	if (src_width)
++		return src_width;
++
++	dst_width = convert_buswidth(config->dst_addr_width);
++	if (dst_width)
++		return dst_width;
+ 
+ 	lli->cfg = DMA_CHAN_CFG_SRC_BURST(src_burst) |
+ 		DMA_CHAN_CFG_SRC_WIDTH(src_width) |
+@@ -542,11 +536,10 @@ static struct dma_async_tx_descriptor *s
+ {
+ 	struct sun6i_dma_dev *sdev = to_sun6i_dma_dev(chan->device);
+ 	struct sun6i_vchan *vchan = to_sun6i_vchan(chan);
+-	struct dma_slave_config *sconfig = &vchan->cfg;
+ 	struct sun6i_dma_lli *v_lli;
+ 	struct sun6i_desc *txd;
+ 	dma_addr_t p_lli;
+-	int ret;
++	s8 burst, width;
+ 
+ 	dev_dbg(chan2dev(chan),
+ 		"%s; chan: %d, dest: %pad, src: %pad, len: %zu. flags: 0x%08lx\n",
+@@ -565,14 +558,21 @@ static struct dma_async_tx_descriptor *s
+ 		goto err_txd_free;
+ 	}
+ 
+-	ret = sun6i_dma_cfg_lli(v_lli, src, dest, len, sconfig);
+-	if (ret)
+-		goto err_dma_free;
++	v_lli->src = src;
++	v_lli->dst = dest;
++	v_lli->len = len;
++	v_lli->para = NORMAL_WAIT;
+ 
++	burst = convert_burst(8);
++	width = convert_buswidth(DMA_SLAVE_BUSWIDTH_4_BYTES);
+ 	v_lli->cfg |= DMA_CHAN_CFG_SRC_DRQ(DRQ_SDRAM) |
+ 		DMA_CHAN_CFG_DST_DRQ(DRQ_SDRAM) |
+ 		DMA_CHAN_CFG_DST_LINEAR_MODE |
+-		DMA_CHAN_CFG_SRC_LINEAR_MODE;
++		DMA_CHAN_CFG_SRC_LINEAR_MODE |
++		DMA_CHAN_CFG_SRC_BURST(burst) |
++		DMA_CHAN_CFG_SRC_WIDTH(width) |
++		DMA_CHAN_CFG_DST_BURST(burst) |
++		DMA_CHAN_CFG_DST_WIDTH(width);
+ 
+ 	sun6i_dma_lli_add(NULL, v_lli, p_lli, txd);
+ 
+@@ -580,8 +580,6 @@ static struct dma_async_tx_descriptor *s
+ 
+ 	return vchan_tx_prep(&vchan->vc, &txd->vd, flags);
+ 
+-err_dma_free:
+-	dma_pool_free(sdev->pool, v_lli, p_lli);
+ err_txd_free:
+ 	kfree(txd);
+ 	return NULL;
+@@ -938,6 +936,7 @@ static int sun6i_dma_probe(struct platfo
+ 	sdc->slave.device_prep_dma_memcpy	= sun6i_dma_prep_dma_memcpy;
+ 	sdc->slave.device_control		= sun6i_dma_control;
+ 	sdc->slave.chancnt			= NR_MAX_VCHANS;
++	sdc->slave.copy_align			= 4;
+ 
+ 	sdc->slave.dev = &pdev->dev;
+ 
 
 
