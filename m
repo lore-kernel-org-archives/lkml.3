@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaLEXyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:54:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53766 "EHLO
+	id S1754010AbaLEXx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:53:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaLEWpu (ORCPT
+	with ESMTP id S1751759AbaLEWpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:45:50 -0500
+	Fri, 5 Dec 2014 17:45:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.17 015/122] x86: Require exact match for noxsave command line option
-Date: Fri,  5 Dec 2014 14:43:09 -0800
-Message-Id: <20141205223307.817979705@linuxfoundation.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 019/122] sparc64: Fix constraints on swab helpers.
+Date: Fri,  5 Dec 2014 14:43:13 -0800
+Message-Id: <20141205223308.378293840@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,54 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+[ Upstream commit 5a2b59d3993e8ca4f7788a48a23e5cb303f26954 ]
 
-commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
+We are reading the memory location, so we have to have a memory
+constraint in there purely for the sake of showing the data flow
+to the compiler.
 
-We have some very similarly named command-line options:
-
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
-
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
-
-	__setup("foo", x86_foo_func...);
-
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
-
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-[ tglx: We really need to make __setup() more robust. ]
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/kernel/cpu/common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/include/uapi/asm/swab.h |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -146,6 +146,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
- 
- static int __init x86_xsave_setup(char *s)
+--- a/arch/sparc/include/uapi/asm/swab.h
++++ b/arch/sparc/include/uapi/asm/swab.h
+@@ -9,9 +9,9 @@ static inline __u16 __arch_swab16p(const
  {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVES);
+ 	__u16 ret;
+ 
+-	__asm__ __volatile__ ("lduha [%1] %2, %0"
++	__asm__ __volatile__ ("lduha [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab16p __arch_swab16p
+@@ -20,9 +20,9 @@ static inline __u32 __arch_swab32p(const
+ {
+ 	__u32 ret;
+ 
+-	__asm__ __volatile__ ("lduwa [%1] %2, %0"
++	__asm__ __volatile__ ("lduwa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab32p __arch_swab32p
+@@ -31,9 +31,9 @@ static inline __u64 __arch_swab64p(const
+ {
+ 	__u64 ret;
+ 
+-	__asm__ __volatile__ ("ldxa [%1] %2, %0"
++	__asm__ __volatile__ ("ldxa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab64p __arch_swab64p
 
 
