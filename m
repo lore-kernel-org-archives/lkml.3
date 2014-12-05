@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaLEXNH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:13:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
+	id S1754173AbaLEXNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:13:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897AbaLEXGi (ORCPT
+	with ESMTP id S1753947AbaLEXGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jurgen Kramer <gtmkramer@xs4all.nl>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 31/45] ALSA: usb-audio: Add ctrl message delay quirk for Marantz/Denon devices
-Date: Fri,  5 Dec 2014 14:45:14 -0800
-Message-Id: <20141205223321.691690360@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Matthias Fuchs <matthias.fuchs@esd.eu>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 30/45] can: esd_usb2: fix memory leak on disconnect
+Date: Fri,  5 Dec 2014 14:45:13 -0800
+Message-Id: <20141205223321.528432914@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -28,55 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jurgen Kramer <gtmkramer@xs4all.nl>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit 6e84a8d7ac3ba246ef44e313e92bc16a1da1b04a upstream.
+commit efbd50d2f62fc1f69a3dcd153e63ba28cc8eb27f upstream.
 
-This patch adds a USB control message delay quirk for a few specific Marantz/Denon
-devices. Without the delay the DACs will not work properly and produces the
-following type of messages:
+It seems struct esd_usb2 dev is not deallocated on disconnect. The patch adds
+the missing deallocation.
 
-Nov 15 10:09:21 orwell kernel: [   91.342880] usb 3-13: clock source 41 is not valid, cannot use
-Nov 15 10:09:21 orwell kernel: [   91.343775] usb 3-13: clock source 41 is not valid, cannot use
+Found by Linux Driver Verification project (linuxtesting.org).
 
-There are likely other Marantz/Denon devices using the same USB module which exhibit the
-same problems. But as this cannot be verified I limited the patch to the devices
-I could test.
-
-The following two devices are covered by this path:
-- Marantz SA-14S1
-- Marantz HD-DAC1
-
-Signed-off-by: Jurgen Kramer <gtmkramer@xs4all.nl>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Acked-by: Matthias Fuchs <matthias.fuchs@esd.eu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/can/usb/esd_usb2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -914,6 +914,20 @@ void snd_usb_ctl_msg_quirk(struct usb_de
- 	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x23ba) &&
- 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
- 		mdelay(20);
-+
-+	/* Marantz/Denon devices with USB DAC functionality need a delay
-+	 * after each class compliant request
-+	 */
-+	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x154e) &&
-+	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS) {
-+
-+		switch (le16_to_cpu(dev->descriptor.idProduct)) {
-+		case 0x3005: /* Marantz HD-DAC1 */
-+		case 0x3006: /* Marantz SA-14S1 */
-+			mdelay(20);
-+			break;
-+		}
-+	}
+--- a/drivers/net/can/usb/esd_usb2.c
++++ b/drivers/net/can/usb/esd_usb2.c
+@@ -1132,6 +1132,7 @@ static void esd_usb2_disconnect(struct u
+ 			}
+ 		}
+ 		unlink_all_urbs(dev);
++		kfree(dev);
+ 	}
  }
  
- /*
 
 
