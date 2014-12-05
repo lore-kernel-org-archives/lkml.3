@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaLEXjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:39:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53900 "EHLO
+	id S1754438AbaLEXjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:39:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaLEWqI (ORCPT
+	with ESMTP id S1752374AbaLEWqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        TieFu Chen <tienfu.chen@canonical.com>,
-        Kailang Yang <kailang@realtek.com>, Hui Wang <hui.wang@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 066/122] ALSA: hda - One more HP machine needs to change mute led quirk
-Date: Fri,  5 Dec 2014 14:44:00 -0800
-Message-Id: <20141205223315.624780173@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 030/122] PCI/MSI: Add device flag indicating that 64-bit MSIs dont work
+Date: Fri,  5 Dec 2014 14:43:24 -0800
+Message-Id: <20141205223309.995067034@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -30,37 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 911f632c701d9f15a54076cbaca82e7defb339e0 upstream.
+commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
 
-The machine originally use the quirk ALC269_FIXUP_HP_GPIO_MIC1_LED,
-but the LED doesn't work at all.
+This can be set by quirks/drivers to be used by the architecture code
+that assigns the MSI addresses.
 
-After this change, the machine will change to use
-ALC269_FIXUP_HP_MUTE_LED_MIC1 through pin_fixup_tbl[], and the LED
-works well.
+We additionally add verification in the core MSI code that the values
+assigned by the architecture do satisfy the limitation in order to fail
+gracefully if they don't (ie. the arch hasn't been updated to deal with
+that quirk yet).
 
-BugLink: https://bugs.launchpad.net/bugs/1389497
-Tested-by: TieFu Chen <tienfu.chen@canonical.com>
-Cc: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/pci/msi.c   |   26 ++++++++++++++++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 27 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5007,7 +5007,6 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x103c, 0x2223, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2224, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2225, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
--	SND_PCI_QUIRK(0x103c, 0x2246, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2253, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2254, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
- 	SND_PCI_QUIRK(0x103c, 0x2255, "HP", ALC269_FIXUP_HP_GPIO_MIC1_LED),
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -610,6 +610,20 @@ static struct msi_desc *msi_setup_entry(
+ 	return entry;
+ }
+ 
++static int msi_verify_entries(struct pci_dev *dev)
++{
++	struct msi_desc *entry;
++
++	list_for_each_entry(entry, &dev->msi_list, list) {
++		if (!dev->no_64bit_msi || !entry->msg.address_hi)
++			continue;
++		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
++			" tried to assign one above 4G\n");
++		return -EIO;
++	}
++	return 0;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -647,6 +661,13 @@ static int msi_capability_init(struct pc
+ 		return ret;
+ 	}
+ 
++	ret = msi_verify_entries(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
++	}
++
+ 	ret = populate_msi_sysfs(dev);
+ 	if (ret) {
+ 		msi_mask_irq(entry, mask, ~mask);
+@@ -760,6 +781,11 @@ static int msix_capability_init(struct p
+ 	if (ret)
+ 		goto out_avail;
+ 
++	/* Check if all MSI entries honor device restrictions */
++	ret = msi_verify_entries(dev);
++	if (ret)
++		goto out_free;
++
+ 	/*
+ 	 * Some devices require MSI-X to be enabled before we can touch the
+ 	 * MSI-X registers.  We need to mask all the vectors to prevent
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -331,6 +331,7 @@ struct pci_dev {
+ 	unsigned int	is_added:1;
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
++	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+ 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
+ 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
 
 
