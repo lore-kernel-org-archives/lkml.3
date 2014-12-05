@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaLENh6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:37:58 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:59491 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872AbaLENh5 (ORCPT
+	id S1752391AbaLEMGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:06:16 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:45123 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822AbaLEMGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:37:57 -0500
-Date: Fri, 5 Dec 2014 13:37:42 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alex Dubov <alex.dubov@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
-Message-ID: <20141205133742.4812db96@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141203104144.GA7495@localhost.localdomain>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
-	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
-	<20141202170037.GG29748@ZenIV.linux.org.uk>
-	<CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
-	<1417589446.5303.121.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20141203080800.GB5193@localhost.localdomain>
-	<CAFLxGvzZQ59BRdWiPyVhCEUrR2UD3Ozdg2DHzRUqNQocf9o-EA@mail.gmail.com>
-	<20141203104144.GA7495@localhost.localdomain>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Fri, 5 Dec 2014 07:06:14 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH v2] dell-smo8800: Add more ACPI ids and change description of driver
+Date: Fri,  5 Dec 2014 13:05:46 +0100
+Message-Id: <1417781146-6261-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20141203134323.GI75099@vmdeb7>
+References: <20141203134323.GI75099@vmdeb7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 11:41:44 +0100
-Richard Cochran <richardcochran@gmail.com> wrote:
+This patch adds other ACPI ids from Windows inf driver which should be handled
+by dell-smo8800 driver. ACPI devices have same structure -- one IRQ number.
 
-> On Wed, Dec 03, 2014 at 09:17:37AM +0100, Richard Weinberger wrote:
-> > Come on guys, get a cup of coffee and relax a bit...
-> 
-> I am relaxed, especially after I had a good laugh reading this:
-> 
->    On a less related note, I hope you will agree that the simpler
->    mechanism for this very in-demand feature is long overdue on Linux
->    (every man and his dog are passing fds around these days).
-> 
-> Really, in years and years of unix programming, I have not yet felt
-> the need to pass a file descriptor. Thats goes double for my dogs.
+This patch also updates description of module.
 
-Its underused in part because you need a pointy hat to do it in Unix, but
-it's a very common model elsewhere.
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+---
+ drivers/platform/x86/Kconfig        |    4 ++--
+ drivers/platform/x86/dell-smo8800.c |   10 ++++++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-Whether you need the syscall or just to write sendfd() acceptfd() in
-terms of AF_UNIX sockets in a library and bury the icky bits is another
-question. I think the reality is you'd probably end up doing the library
-*anyway* to deal with the fact it'll be 5 or more years before sendfd
-percolated everywhere even if it was merged today.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 3bbcbf1..4614f35 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -128,10 +128,10 @@ config DELL_WMI_AIO
+ 	  be called dell-wmi-aio.
+ 
+ config DELL_SMO8800
+-	tristate "Dell Latitude freefall driver (ACPI SMO8800/SMO8810)"
++	tristate "Dell Latitude freefall driver (ACPI SMO88XX)"
+ 	depends on ACPI
+ 	---help---
+-	  Say Y here if you want to support SMO8800/SMO8810 freefall device
++	  Say Y here if you want to support SMO88XX freefall devices
+ 	  on Dell Latitude laptops.
+ 
+ 	  To compile this driver as a module, choose M here: the module will
+diff --git a/drivers/platform/x86/dell-smo8800.c b/drivers/platform/x86/dell-smo8800.c
+index a653716..0aec4fd 100644
+--- a/drivers/platform/x86/dell-smo8800.c
++++ b/drivers/platform/x86/dell-smo8800.c
+@@ -1,5 +1,5 @@
+ /*
+- *  dell-smo8800.c - Dell Latitude ACPI SMO8800/SMO8810 freefall sensor driver
++ *  dell-smo8800.c - Dell Latitude ACPI SMO88XX freefall sensor driver
+  *
+  *  Copyright (C) 2012 Sonal Santan <sonal.santan@gmail.com>
+  *  Copyright (C) 2014 Pali Rohár <pali.rohar@gmail.com>
+@@ -209,7 +209,13 @@ static int smo8800_remove(struct acpi_device *device)
+ 
+ static const struct acpi_device_id smo8800_ids[] = {
+ 	{ "SMO8800", 0 },
++	{ "SMO8801", 0 },
+ 	{ "SMO8810", 0 },
++	{ "SMO8811", 0 },
++	{ "SMO8820", 0 },
++	{ "SMO8821", 0 },
++	{ "SMO8830", 0 },
++	{ "SMO8831", 0 },
+ 	{ "", 0 },
+ };
+ 
+@@ -228,6 +234,6 @@ static struct acpi_driver smo8800_driver = {
+ 
+ module_acpi_driver(smo8800_driver);
+ 
+-MODULE_DESCRIPTION("Dell Latitude freefall driver (ACPI SMO8800/SMO8810)");
++MODULE_DESCRIPTION("Dell Latitude freefall driver (ACPI SMO88XX)");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Sonal Santan, Pali Rohár");
+-- 
+1.7.9.5
 
-Alan
