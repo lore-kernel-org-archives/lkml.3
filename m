@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaLEVk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 16:40:29 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54915 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855AbaLEVk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 16:40:26 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: [RESEND][PATCH] crypto: drbg - panic on continuous self test error
-Date: Fri, 05 Dec 2014 22:40:21 +0100
-Message-ID: <1565261.ENnvzOKNx0@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+	id S1752167AbaLEVlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 16:41:16 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:36946 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaLEVlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 16:41:14 -0500
+Message-ID: <54822674.20907@gmail.com>
+Date: Fri, 05 Dec 2014 13:41:08 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Christoph Lameter <cl@linux.com>
+CC: Kees Cook <keescook@chromium.org>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Zubair.Kakakhel@imgtec.com, geert+renesas@glider.be,
+        david.daney@cavium.com, Peter Zijlstra <peterz@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, davidlohr@hp.com,
+        "Maciej W. Rozycki" <macro@linux-mips.org>, chenhc@lemote.com,
+        Ingo Molnar <mingo@kernel.org>, Richard Weinberger <richard@nod.at>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        James Hogan <james.hogan@imgtec.com>, Tejun Heo <tj@kernel.org>,
+        alex@alex-smith.me.uk, Paolo Bonzini <pbonzini@redhat.com>,
+        John Crispin <blogic@openwrt.org>,
+        Paul Burton <paul.burton@imgtec.com>, qais.yousef@imgtec.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <markos.chandras@imgtec.com>, dengcheng.zhu@imgtec.com,
+        manuel.lauss@gmail.com, lars.persson@axis.com
+Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
+References: <20141203015537.13886.50830.stgit@linux-yegoshin> <20141203015824.13886.74616.stgit@linux-yegoshin> <5481EB52.6060706@gmail.com> <CAGXu5jJJx0O7GhHghy+sC4fJL2O=RsO+Zgm78r9SNt-aTbhqcw@mail.gmail.com> <54820244.5010304@gmail.com> <alpine.DEB.2.11.1412051343330.5206@gentwo.org>
+In-Reply-To: <alpine.DEB.2.11.1412051343330.5206@gentwo.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a panic if the FIPS 140-2 self test error failed.
-Note, that entire code is only executed with fips_enabled (i.e. when the
-kernel is booted with fips=1. It is therefore not executed for 99.9% of
-all user base.
+On 12/05/2014 11:44 AM, Christoph Lameter wrote:
+> On Fri, 5 Dec 2014, David Daney wrote:
+>
+>> The problem is not with "modern" executables that are properly annotated with
+>> PT_GNU_STACK.
+>>
+>> My objection is to the intentional breaking of old executables that have no
+>> PT_GNU_STACK annotation, but require an executable stack.  Since we usually
+>> try not to break userspace, we cannot merge a patch like this one.
+>
+> How old are these and how many are still around?
 
-As mathematically such failure cannot occur, this panic should never be
-triggered. But to comply with NISTs current requirements, an endless
-loop must be replaced with the panic.
+As far as I can determine, no official GCC release defaults to 
+generating PT_GNU_STACK for MIPS, I could be mistaken though.  So to 
+answer your questions:  Very young, and all of them.
 
-When the new version of FIPS 140 will be released, this entire
-continuous self test function will be ripped out as it will not be
-needed any more.
 
-This patch is functionally equivalent as implemented in ansi_cprng.c and drivers/char/random.c.
+> Can the annotation be added with a tool?
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/drbg.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+I don't know, although I seem to recall that such a tool existed, and I 
+may have even used it in the past.  But, my google fu is not 
+sufficiently advanced to find it now, if it exists.
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 9fb38a5..2c46d5e 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -222,15 +222,6 @@ static inline unsigned short drbg_sec_strength(drbg_flag_t flags)
-  * function. Thus, the function implicitly knows the size of the
-  * buffer.
-  *
-- * The FIPS test can be called in an endless loop until it returns
-- * true. Although the code looks like a potential for a deadlock, it
-- * is not the case, because returning a false cannot mathematically
-- * occur (except once when a reseed took place and the updated state
-- * would is now set up such that the generation of new value returns
-- * an identical one -- this is most unlikely and would happen only once).
-- * Thus, if this function repeatedly returns false and thus would cause
-- * a deadlock, the integrity of the entire kernel is lost.
-- *
-  * @drbg DRBG handle
-  * @buf output buffer of random data to be checked
-  *
-@@ -257,6 +248,8 @@ static bool drbg_fips_continuous_test(struct drbg_state *drbg,
- 		return false;
- 	}
- 	ret = memcmp(drbg->prev, buf, drbg_blocklen(drbg));
-+	if (!ret)
-+		panic("DRBG continuous self test failed\n");
- 	memcpy(drbg->prev, buf, drbg_blocklen(drbg));
- 	/* the test shall pass when the two compared values are not equal */
- 	return ret != 0;
--- 
-2.1.0
-
+David Daney
 
