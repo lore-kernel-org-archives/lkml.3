@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaLEHfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 02:35:32 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58912 "EHLO mga11.intel.com"
+	id S1752151AbaLEHfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 02:35:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754AbaLEHf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 02:35:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="425384878"
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: bhelgaas@google.com, rjw@rjwysocki.net, mister.freeman@laposte.net,
-        aaron.lu@intel.com, tj@kernel.org, chuansheng.liu@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] PCI: Add disabling pm async quirk for JMicron chips
-Date: Fri,  5 Dec 2014 15:17:37 +0800
-Message-Id: <1417763857-11993-1-git-send-email-chuansheng.liu@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752360AbaLEHfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 02:35:37 -0500
+Message-ID: <5481602E.1030508@redhat.com>
+Date: Fri, 05 Dec 2014 15:35:10 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org, jiri@resnulli.us,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues
+ in tun.
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-3-git-send-email-pagupta@redhat.com> <20141203095210.GC9487@redhat.com> <1417661734.16500.0@smtp.corp.redhat.com> <20141204102013.GC17122@redhat.com>
+In-Reply-To: <20141204102013.GC17122@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some history from
-commit e6b7e41cdd8c ("ata: Disabling the async PM for JMicron chip 363/361")
-==
-Since v3.15, the PM feature of async noirq
-commit 76569faa62c4 ("PM / sleep: Asynchronous threads for resume_noirq") is introduced.
 
-Then Jay hit one system resuming issue that one of the JMicron controller
-can not be powered up successfully.
+On 12/04/2014 06:20 PM, Michael S. Tsirkin wrote:
+> On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
+>> > 
+>> > 
+>> > On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>>> > >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
+>>>> > >> Networking under kvm works best if we allocate a per-vCPU RX and TX
+>>>> > >> queue in a virtual NIC. This requires a per-vCPU queue on the host
+>>>> > >>side.
+>>>> > >> It is now safe to increase the maximum number of queues.
+>>>> > >> Preceding patche: 'net: allow large number of rx queues'
+>>> > >
+>>> > >s/patche/patch/
+>>> > >
+>>>> > >> made sure this won't cause failures due to high order memory
+>>>> > >> allocations. Increase it to 256: this is the max number of vCPUs
+>>>> > >> KVM supports.
+>>>> > >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+>>>> > >> Reviewed-by: David Gibson <dgibson@redhat.com>
+>>> > >
+>>> > >Hmm it's kind of nasty that each tun device is now using x16 memory.
+>>> > >Maybe we should look at using a flex array instead, and removing the
+>>> > >limitation altogether (e.g. make it INT_MAX)?
+>> > 
+>> > But this only happens when IFF_MULTIQUEUE were used.
+> I refer to this field:
+>         struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
+> if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
+> apparently unconditionally.
+>
+>
 
-His device tree is like below:
-                 +-1c.4-[02]--+-00.0  JMicron Technology Corp. JMB363 SATA/IDE Controller
-                 |            \-00.1  JMicron Technology Corp. JMB363 SATA/IDE Controller
-
-After investigation, we found the the Micron chip 363 included
-one SATA controller(0000:02:00.0) and one PATA controller(0000:02:00.1),
-these two controllers do not have parent-children relationship,
-but the PATA controller only can be powered on after the SATA controller
-has finished the powering on.
-
-If we enabled the async noirq(), then the below error is hit during noirq
-phase:
-pata_jmicron 0000:02:00.1: Refused to change power state, currently in D3
-Here for JMicron chip 363/361, we need forcedly to disable the async method.
-
-Bug detail: https://bugzilla.kernel.org/show_bug.cgi?id=81551
-==
-
-After that, Barto reported the same issue, but his Jmicron chip is JMB368,
-so it can not be covered by
-commit e6b7e41cdd8c ("ata: Disabling the async PM for JMicron chip 363/361").
-
-Bug link:
-https://bugzilla.kernel.org/show_bug.cgi?id=84861
-
-Here we think Jmicron chips have the same issue as describled in
-commit e6b7e41cdd8c ("ata: Disabling the async PM for JMicron chip 363/361"),
-
-so here add one quirk to disable the JMicron chips' PM async feature.
-
-Cc: stable@vger.kernel.org # 3.15+
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
----
- drivers/pci/quirks.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 90acb32..1963080 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1501,6 +1501,21 @@ static void quirk_jmicron_ata(struct pci_dev *pdev)
- 	pci_read_config_dword(pdev, PCI_CLASS_REVISION, &class);
- 	pdev->class = class >> 8;
- }
-+
-+/*
-+ * For JMicron chips, we need to disable the async_suspend method, otherwise
-+ * they will hit the power-on issue when doing device resume, add one quirk
-+ * solution to disable the async_suspend method.
-+ */
-+static void pci_async_suspend_fixup(struct pci_dev *pdev)
-+{
-+	    /*
-+		 * disabling the async_suspend method for JMicron chips to
-+		 * avoid device resuming issue.
-+		 */
-+	    device_disable_async_suspend(&pdev->dev);
-+}
-+
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB360, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB361, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB362, quirk_jmicron_ata);
-@@ -1519,6 +1534,8 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB3
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB366, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB368, quirk_jmicron_ata);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB369, quirk_jmicron_ata);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_JMICRON, PCI_ANY_ID,
-+		pci_async_suspend_fixup);
- 
- #endif
- 
--- 
-1.7.9.5
+How about just allocate one tfile if IFF_MULTIQUEUE were disabled?
 
