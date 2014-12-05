@@ -1,156 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437AbaLEBBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:01:30 -0500
-Received: from smtprelay0122.hostedemail.com ([216.40.44.122]:36850 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932820AbaLEBB3 (ORCPT
+	id S933374AbaLEBF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 20:05:27 -0500
+Received: from mail-bn1on0133.outbound.protection.outlook.com ([157.56.110.133]:59520
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932496AbaLEBF0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:01:29 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1543:1593:1594:1605:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:4250:4321:5007:6117:6119:6261:6691:6742:7514:7903:8603:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12346:12438:12517:12519:12555:12740:13146:13230:13972:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wing41_2996f9c820c39
-X-Filterd-Recvd-Size: 5264
-Message-ID: <1417741284.2721.26.camel@perches.com>
-Subject: [PATCH] x86: bpf_jit_comp: Remove inline from static function
- definitions
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Quentin Lambert <lambert.quentin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 04 Dec 2014 17:01:24 -0800
-In-Reply-To: <1417740382.22424.40.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
-	 <1417734048.2721.22.camel@perches.com>
-	 <1417734891.22424.2.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <CAADnVQ+3jiYOYReRLPUsFeG1p66ezo-TXBLX3BGQQh7V8QX0tQ@mail.gmail.com>
-	 <1417740382.22424.40.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Dec 2014 20:05:26 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Index: AQHQECZgV96rh8VVGkWJBdEtO5AWJJyALo0Q
+Date: Fri, 5 Dec 2014 01:05:22 +0000
+Message-ID: <BY2PR0301MB0711FE39D0A0189EFFC2F96FA0790@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417745206-10781-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1417745206-10781-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ed43::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-forefront-prvs: 04163EF38A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(13464003)(199003)(189002)(51704005)(106356001)(106116001)(68736005)(20776003)(64706001)(62966003)(50986999)(107886001)(107046002)(105586002)(1511001)(77156002)(46102003)(120916001)(87936001)(76576001)(99396003)(102836002)(54606007)(31966008)(2656002)(99286002)(97736003)(2421001)(122556002)(19580395003)(2561002)(2501002)(76176999)(33656002)(54356999)(19580405001)(74316001)(40100003)(101416001)(54206007)(86612001)(86362001)(575784001)(2201001)(92566001)(21056001)(4396001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0616;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the compiler decide instead.
 
-No change in object size x86-64 -O2 no profiling
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-On Thu, 2014-12-04 at 16:46 -0800, Eric Dumazet wrote:
-> On Thu, 2014-12-04 at 15:31 -0800, Alexei Starovoitov wrote:
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Thursday, December 4, 2014 6:07 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Cc: KY Srinivasan
+> Subject: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
 > 
-> > well, it is a trivial function even from compiler point of view.
-> > Dropping inline keyword doesn't help. gcc still inlines them.
-> > Changing all 3 functions to _noinline_ doesn't help either.
-> > So I think this patch is actually quite helpful to reduce code size.
 > 
-> Well, again this might depend on CONFIG_CC_OPTIMIZE_FOR_SIZE
-
--Os has a different size delta, but it's still
-smaller using this new function.
-
-> I guess people trying to get very small kernels are using this option.
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  arch/x86/include/uapi/asm/hyperv.h |   11 +++++
+>  drivers/hv/hv.c                    |   78
+> ++++++++++++++++++++++++++++++++++++
+>  drivers/hv/hyperv_vmbus.h          |   21 ++++++++++
+>  drivers/hv/vmbus_drv.c             |   40 +++++++++++++++++-
+>  4 files changed, 148 insertions(+), 2 deletions(-)
 > 
-> My point was : If we care about code size, we should also remove these
-> inline keywords at the same time, to increase SNR of netdev/lkml lists.
+> diff --git a/arch/x86/include/uapi/asm/hyperv.h
+> b/arch/x86/include/uapi/asm/hyperv.h
+> index 462efe7..90c458e 100644
+> --- a/arch/x86/include/uapi/asm/hyperv.h
+> +++ b/arch/x86/include/uapi/asm/hyperv.h
+> @@ -187,6 +187,17 @@
+>  #define HV_X64_MSR_SINT14			0x4000009E
+>  #define HV_X64_MSR_SINT15			0x4000009F
+> 
+> +/*
+> + * Synthetic Timer MSRs. Four timers per vcpu.
+> + */
+> +#define HV_X64_MSR_STIMER0_CONFIG		0x400000B0
+> +#define HV_X64_MSR_STIMER0_COUNT		0x400000B1
+> +#define HV_X64_MSR_STIMER1_CONFIG		0x400000B2
+> +#define HV_X64_MSR_STIMER1_COUNT		0x400000B3
+> +#define HV_X64_MSR_STIMER2_CONFIG		0x400000B4
+> +#define HV_X64_MSR_STIMER2_COUNT		0x400000B5
+> +#define HV_X64_MSR_STIMER3_CONFIG		0x400000B6
+> +#define HV_X64_MSR_STIMER3_COUNT		0x400000B7
+> 
+>  #define HV_X64_MSR_HYPERCALL_ENABLE		0x00000001
+>  #define HV_X64_MSR_HYPERCALL_PAGE_ADDRESS_SHIFT	12
+> diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c index 3e4235c..e2749c0 100644
+> --- a/drivers/hv/hv.c
+> +++ b/drivers/hv/hv.c
+> @@ -28,7 +28,9 @@
+>  #include <linux/hyperv.h>
+>  #include <linux/version.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/clockchips.h>
+>  #include <asm/hyperv.h>
+> +#include <asm/mshyperv.h>
+>  #include "hyperv_vmbus.h"
+> 
+>  /* The one and only */
+> @@ -37,6 +39,10 @@ struct hv_context hv_context = {
+>  	.hypercall_page		= NULL,
+>  };
+> 
+> +#define HV_TIMER_FREQUENCY (10 * 1000 * 1000) /* 100ns period */
+> +#define HV_MAX_MAX_DELTA_TICKS 0xffffffff #define
+> HV_MIN_DELTA_TICKS 1
+> +
+>  /*
+>   * query_hypervisor_info - Get version info of the windows hypervisor
+>   */
+> @@ -144,6 +150,8 @@ int hv_init(void)
+>  	       sizeof(int) * NR_CPUS);
+>  	memset(hv_context.event_dpc, 0,
+>  	       sizeof(void *) * NR_CPUS);
+> +	memset(hv_context.clk_evt, 0,
+> +	       sizeof(void *) * NR_CPUS);
+> 
+>  	max_leaf = query_hypervisor_info();
+> 
+> @@ -258,10 +266,63 @@ u16 hv_signal_event(void *con_id)
+>  	return status;
+>  }
+> 
+> +static int hv_ce_set_next_event(unsigned long delta,
+> +				struct clock_event_device *evt)
+> +{
+> +	cycle_t current_tick;
+> +
+> +	WARN_ON(evt->mode != CLOCK_EVT_MODE_ONESHOT);
+> +
+> +	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
+> +	current_tick += delta;
+> +	wrmsrl(HV_X64_MSR_STIMER0_COUNT, current_tick);
+> +	return 0;
+> +}
+> +
+> +static void hv_ce_setmode(enum clock_event_mode mode,
+> +			  struct clock_event_device *evt)
+> +{
+> +	union hv_timer_config timer_cfg;
+> +
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +		/* unsupported */
+> +		break;
+> +
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +		timer_cfg.enable = 1;
+> +		timer_cfg.auto_enable = 1;
+> +		timer_cfg.sintx = VMBUS_MESSAGE_SINT;
+> +		wrmsrl(HV_X64_MSR_STIMER0_CONFIG,
+> timer_cfg.as_uint64);
+> +		break;
+> +
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +		wrmsrl(HV_X64_MSR_STIMER0_COUNT, 0);
+> +		wrmsrl(HV_X64_MSR_STIMER0_CONFIG, 0);
+> +		break;
+> +	case CLOCK_EVT_MODE_RESUME:
+> +		break;
+> +	}
+> +}
+> +
+> +static void hv_init_clockevent_device(struct clock_event_device *dev,
+> +int cpu) {
+> +	dev->name = "Hyper-V clockevent";
+> +	dev->features = CLOCK_EVT_FEAT_ONESHOT;
+> +	dev->cpumask = cpumask_of(cpu);
+> +	dev->rating = 1000,
+> +	dev->owner = THIS_MODULE,
+> +
+> +	dev->set_mode = hv_ce_setmode;
+> +	dev->set_next_event = hv_ce_set_next_event; }
+> +
+> 
+>  int hv_synic_alloc(void)
+>  {
+>  	size_t size = sizeof(struct tasklet_struct);
+> +	size_t ced_size = sizeof(struct clock_event_device);
+>  	int cpu;
+> 
+>  	for_each_online_cpu(cpu) {
+> @@ -272,6 +333,13 @@ int hv_synic_alloc(void)
+>  		}
+>  		tasklet_init(hv_context.event_dpc[cpu], vmbus_on_event,
+> cpu);
+> 
+> +		hv_context.clk_evt[cpu] = kzalloc(ced_size, GFP_ATOMIC);
+> +		if (hv_context.clk_evt[cpu] == NULL) {
+> +			pr_err("Unable to allocate clock event device\n");
+> +			goto err;
+> +		}
+> +		hv_init_clockevent_device(hv_context.clk_evt[cpu], cpu);
+> +
+>  		hv_context.synic_message_page[cpu] =
+>  			(void *)get_zeroed_page(GFP_ATOMIC);
+> 
+> @@ -305,6 +373,7 @@ err:
+>  static void hv_synic_free_cpu(int cpu)
+>  {
+>  	kfree(hv_context.event_dpc[cpu]);
+> +	kfree(hv_context.clk_evt[cpu]);
+>  	if (hv_context.synic_event_page[cpu])
+>  		free_page((unsigned
+> long)hv_context.synic_event_page[cpu]);
+>  	if (hv_context.synic_message_page[cpu])
+> @@ -388,6 +457,15 @@ void hv_synic_init(void *arg)
+>  	hv_context.vp_index[cpu] = (u32)vp_index;
+> 
+>  	INIT_LIST_HEAD(&hv_context.percpu_list[cpu]);
+> +
+> +	/*
+> +	 * Register the per-cpu clockevent source.
+> +	 */
+> +	if (ms_hyperv.features & HV_X64_MSR_SYNTIMER_AVAILABLE)
+> +		clockevents_config_and_register(hv_context.clk_evt[cpu],
+> +						HV_TIMER_FREQUENCY,
+> +						HV_MIN_DELTA_TICKS,
+> +
+> 	HV_MAX_MAX_DELTA_TICKS);
+>  	return;
+>  }
+> 
+> diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h index
+> c386d8d..44b1c94 100644
+> --- a/drivers/hv/hyperv_vmbus.h
+> +++ b/drivers/hv/hyperv_vmbus.h
+> @@ -178,6 +178,23 @@ struct hv_message_header {
+>  	};
+>  };
+> 
+> +/*
+> + * Timer configuration register.
+> + */
+> +union hv_timer_config {
+> +	u64 as_uint64;
+> +	struct {
+> +		u64 enable:1;
+> +		u64 periodic:1;
+> +		u64 lazy:1;
+> +		u64 auto_enable:1;
+> +		u64 reserved_z0:12;
+> +		u64 sintx:4;
+> +		u64 reserved_z1:44;
+> +	};
+> +};
+> +
+> +
+>  /* Define timer message payload structure. */  struct
+> hv_timer_message_payload {
+>  	u32 timer_index;
+> @@ -519,6 +536,10 @@ struct hv_context {
+>  	 * buffer to post messages to the host.
+>  	 */
+>  	void *post_msg_page[NR_CPUS];
+> +	/*
+> +	 * Support PV clockevent device.
+> +	 */
+> +	struct clock_event_device *clk_evt[NR_CPUS];
+>  };
+> 
+>  extern struct hv_context hv_context;
+> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c index
+> 4d6b269..9e57c07 100644
+> --- a/drivers/hv/vmbus_drv.c
+> +++ b/drivers/hv/vmbus_drv.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/completion.h>
+>  #include <linux/hyperv.h>
+>  #include <linux/kernel_stat.h>
+> +#include <linux/clockchips.h>
+>  #include <asm/hyperv.h>
+>  #include <asm/hypervisor.h>
+>  #include <asm/mshyperv.h>
+> @@ -578,6 +579,37 @@ static void vmbus_onmessage_work(struct
+> work_struct *work)
+>  	kfree(ctx);
+>  }
+> 
+> +void hv_process_timer_expiration(struct hv_message *msg, int cpu) {
+> +	struct clock_event_device *dev = hv_context.clk_evt[cpu];
+> +
+> +	if (msg->header.message_type == HVMSG_NONE)
+> +		return;
+> +
+> +	if (dev->event_handler)
+> +		dev->event_handler(dev);
+> +
+> +	msg->header.message_type = HVMSG_NONE;
+> +
+> +	/*
+> +	 * Make sure the write to MessageType (ie set to
+> +	 * HVMSG_NONE) happens before we read the
+> +	 * MessagePending and EOMing. Otherwise, the EOMing
+> +	 * will not deliver any more messages since there is
+> +	 * no empty slot
+> +	 */
+> +	mb();
+> +
+> +	if (msg->header.message_flags.msg_pending) {
+> +		/*
+> +		 * This will cause message queue rescan to
+> +		 * possibly deliver another msg from the
+> +		 * hypervisor
+> +		 */
+> +		wrmsrl(HV_X64_MSR_EOM, 0);
+> +	}
+> +}
+> +
+>  static void vmbus_on_msg_dpc(unsigned long data)  {
+>  	int cpu = smp_processor_id();
+> @@ -667,8 +699,12 @@ static void vmbus_isr(void)
+>  	msg = (struct hv_message *)page_addr + VMBUS_MESSAGE_SINT;
+> 
+>  	/* Check if there are actual msgs to be processed */
+> -	if (msg->header.message_type != HVMSG_NONE)
+> -		tasklet_schedule(&msg_dpc);
+> +	if (msg->header.message_type != HVMSG_NONE) {
+> +		if (msg->header.message_type == HVMSG_TIMER_EXPIRED)
+> +			hv_process_timer_expiration(msg, cpu);
+> +		else
+> +			tasklet_schedule(&msg_dpc);
+> +	}
+>  }
+> 
+>  /*
+> --
+> 1.7.4.1
+Greg,
 
-Because there's no object change here, inline removals
-would probably be a good thing for this file.
+Please ignore this patch. I will add the commit message and resend it.
 
- arch/x86/net/bpf_jit_comp.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 09e2cea..626e013 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -24,7 +24,7 @@ extern u8 sk_load_byte_positive_offset[];
- extern u8 sk_load_word_negative_offset[], sk_load_half_negative_offset[];
- extern u8 sk_load_byte_negative_offset[];
- 
--static inline u8 *emit_code(u8 *ptr, u32 bytes, unsigned int len)
-+static u8 *emit_code(u8 *ptr, u32 bytes, unsigned int len)
- {
- 	if (len == 1)
- 		*ptr = bytes;
-@@ -52,12 +52,12 @@ static inline u8 *emit_code(u8 *ptr, u32 bytes, unsigned int len)
- #define EMIT4_off32(b1, b2, b3, b4, off) \
- 	do {EMIT4(b1, b2, b3, b4); EMIT(off, 4); } while (0)
- 
--static inline bool is_imm8(int value)
-+static bool is_imm8(int value)
- {
- 	return value <= 127 && value >= -128;
- }
- 
--static inline bool is_simm32(s64 value)
-+static bool is_simm32(s64 value)
- {
- 	return value == (s64) (s32) value;
- }
-@@ -94,7 +94,7 @@ static int bpf_size_to_x86_bytes(int bpf_size)
- #define X86_JGE 0x7D
- #define X86_JG  0x7F
- 
--static inline void bpf_flush_icache(void *start, void *end)
-+static void bpf_flush_icache(void *start, void *end)
- {
- 	mm_segment_t old_fs = get_fs();
- 
-@@ -133,7 +133,7 @@ static const int reg2hex[] = {
-  * which need extra byte of encoding.
-  * rax,rcx,...,rbp have simpler encoding
-  */
--static inline bool is_ereg(u32 reg)
-+static bool is_ereg(u32 reg)
- {
- 	return (1 << reg) & (BIT(BPF_REG_5) |
- 			     BIT(AUX_REG) |
-@@ -143,14 +143,14 @@ static inline bool is_ereg(u32 reg)
- }
- 
- /* add modifiers if 'reg' maps to x64 registers r8..r15 */
--static inline u8 add_1mod(u8 byte, u32 reg)
-+static u8 add_1mod(u8 byte, u32 reg)
- {
- 	if (is_ereg(reg))
- 		byte |= 1;
- 	return byte;
- }
- 
--static inline u8 add_2mod(u8 byte, u32 r1, u32 r2)
-+static u8 add_2mod(u8 byte, u32 r1, u32 r2)
- {
- 	if (is_ereg(r1))
- 		byte |= 1;
-@@ -160,13 +160,13 @@ static inline u8 add_2mod(u8 byte, u32 r1, u32 r2)
- }
- 
- /* encode 'dst_reg' register into x64 opcode 'byte' */
--static inline u8 add_1reg(u8 byte, u32 dst_reg)
-+static u8 add_1reg(u8 byte, u32 dst_reg)
- {
- 	return byte + reg2hex[dst_reg];
- }
- 
- /* encode 'dst_reg' and 'src_reg' registers into x64 opcode 'byte' */
--static inline u8 add_2reg(u8 byte, u32 dst_reg, u32 src_reg)
-+static u8 add_2reg(u8 byte, u32 dst_reg, u32 src_reg)
- {
- 	return byte + reg2hex[dst_reg] + (reg2hex[src_reg] << 3);
- }
-
-
+K. Y
