@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaLEXVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:21:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754573AbaLEXWC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:22:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368AbaLEW4R (ORCPT
+	with ESMTP id S1753291AbaLEW4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:17 -0500
+	Fri, 5 Dec 2014 17:56:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Vrabel <david.vrabel@citrix.com>, Wang Nan <wangnan0@huawei.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 07/73] x86, mm: Set NX across entire PMD at boot
-Date: Fri,  5 Dec 2014 14:44:13 -0800
-Message-Id: <20141205224434.153708323@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 04/73] x86_64, traps: Stop using IST for #SS
+Date: Fri,  5 Dec 2014 14:44:10 -0800
+Message-Id: <20141205224434.060223759@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -32,77 +30,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 upstream.
+commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
 
-When setting up permissions on kernel memory at boot, the end of the
-PMD that was split from bss remained executable. It should be NX like
-the rest. This performs a PMD alignment instead of a PAGE alignment to
-get the correct span of memory.
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
-Before:
----[ High Kernel Mapping ]---
-...
-0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
-0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
-0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
-0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
 
-After:
----[ High Kernel Mapping ]---
-...
-0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
-0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
-0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
 
-[ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
-        We really should unmap the reminder along with the holes
-        caused by init,initdata etc. but thats a different issue ]
+This saves 4k of memory per CPU and a tiny bit of code.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Wang Nan <wangnan0@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init_64.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/page_32_types.h |    1 -
+ arch/x86/include/asm/page_64_types.h |   11 +++++------
+ arch/x86/include/asm/traps.h         |    1 +
+ arch/x86/kernel/dumpstack_64.c       |    1 -
+ arch/x86/kernel/entry_64.S           |    2 +-
+ arch/x86/kernel/traps.c              |   18 +-----------------
+ 6 files changed, 8 insertions(+), 26 deletions(-)
 
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1110,7 +1110,7 @@ void mark_rodata_ro(void)
- 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
- 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
- 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
--	unsigned long all_end = PFN_ALIGN(&_end);
-+	unsigned long all_end;
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -20,7 +20,6 @@
+ #define THREAD_SIZE_ORDER	1
+ #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
  
- 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
- 	       (end - start) >> 10);
-@@ -1121,7 +1121,16 @@ void mark_rodata_ro(void)
- 	/*
- 	 * The rodata/data/bss/brk section (but not the kernel text!)
- 	 * should also be not-executable.
-+	 *
-+	 * We align all_end to PMD_SIZE because the existing mapping
-+	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
-+	 * split the PMD and the reminder between _brk_end and the end
-+	 * of the PMD will remain mapped executable.
-+	 *
-+	 * Any PMD which was setup after the one which covers _brk_end
-+	 * has been zapped already via cleanup_highmem().
- 	 */
-+	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
- 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
  
- 	rodata_test();
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -39,6 +39,7 @@ asmlinkage void simd_coprocessor_error(v
+ 
+ #ifdef CONFIG_TRACING
+ asmlinkage void trace_page_fault(void);
++#define trace_stack_segment stack_segment
+ #define trace_divide_error divide_error
+ #define trace_bounds bounds
+ #define trace_invalid_op invalid_op
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+ 		[ DEBUG_STACK-1			]	= "#DB",
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-		[ STACKFAULT_STACK-1		]	= "#SS",
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1519,7 +1519,7 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTO
+ 
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+-paranoiderrorentry stack_segment do_stack_segment
++errorentry stack_segment do_stack_segment
+ #ifdef CONFIG_XEN
+ zeroentry xen_debug do_debug
+ zeroentry xen_int3 do_int3
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -218,27 +218,11 @@ DO_ERROR_INFO(X86_TRAP_UD,     SIGILL,
+ DO_ERROR     (X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",	coprocessor_segment_overrun			  )
+ DO_ERROR     (X86_TRAP_TS,     SIGSEGV, "invalid TSS",			invalid_TSS					  )
+ DO_ERROR     (X86_TRAP_NP,     SIGBUS,  "segment not present",		segment_not_present				  )
+-#ifdef CONFIG_X86_32
+ DO_ERROR     (X86_TRAP_SS,     SIGBUS,  "stack segment",		stack_segment					  )
+-#endif
+ DO_ERROR_INFO(X86_TRAP_AC,     SIGBUS,  "alignment check",		alignment_check,	     BUS_ADRALN, 0	  )
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	enum ctx_state prev_state;
+-
+-	prev_state = exception_enter();
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
+-		preempt_conditional_sti(regs);
+-		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+-		preempt_conditional_cli(regs);
+-	}
+-	exception_exit(prev_state);
+-}
+-
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ {
+ 	static const char str[] = "double fault";
+@@ -772,7 +756,7 @@ void __init trap_init(void)
+ 	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
+ 	set_intr_gate(X86_TRAP_TS, invalid_TSS);
+ 	set_intr_gate(X86_TRAP_NP, segment_not_present);
+-	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_SS, stack_segment);
+ 	set_intr_gate(X86_TRAP_GP, general_protection);
+ 	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
+ 	set_intr_gate(X86_TRAP_MF, coprocessor_error);
 
 
