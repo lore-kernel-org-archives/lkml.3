@@ -1,51 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276AbaLEXqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:46:45 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:59448 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaLEXql (ORCPT
+	id S1755299AbaLEXrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:47:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaLEWp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:46:41 -0500
-Date: Fri, 5 Dec 2014 15:46:38 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] oom: don't assume that a coredumping thread will
- exit soon
-In-Reply-To: <20141203195020.GB11558@redhat.com>
-Message-ID: <alpine.DEB.2.10.1412051546200.2537@chino.kir.corp.google.com>
-References: <20141127230349.GA25075@redhat.com> <20141203195001.GA11558@redhat.com> <20141203195020.GB11558@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 5 Dec 2014 17:45:59 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bard Liao <bardliao@realtek.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 041/122] ASoC: rt5670: correct the incorrect default values
+Date: Fri,  5 Dec 2014 14:43:35 -0800
+Message-Id: <20141205223311.652685719@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
+References: <20141205223305.514276242@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014, Oleg Nesterov wrote:
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-> oom_kill.c assumes that PF_EXITING task should exit and free the memory
-> soon. This is wrong in many ways and one important case is the coredump.
-> A task can sleep in exit_mm() "forever" while the coredumping sub-thread
-> can need more memory.
-> 
-> Change the PF_EXITING checks to take SIGNAL_GROUP_COREDUMP into account,
-> we add the new trivial helper for that.
-> 
-> Note: this is only the first step, this patch doesn't try to solve other
-> problems. The SIGNAL_GROUP_COREDUMP check is obviously racy, a task can
-> participate in coredump after it was already observed in PF_EXITING state,
-> so TIF_MEMDIE (which also blocks oom-killer) still can be wrongly set.
-> fatal_signal_pending() can be true because of SIGNAL_GROUP_COREDUMP so
-> out_of_memory() and mem_cgroup_out_of_memory() shouldn't blindly trust it.
-> And even the name/usage of the new helper is confusing, an exiting thread
-> can only free its ->mm if it is the only/last task in thread group.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+------------------
 
-Acked-by: David Rientjes <rientjes@google.com>
+From: Bard Liao <bardliao@realtek.com>
+
+commit ac87f22147098da9cf83a0b413ef7dda42277d85 upstream.
+
+The patch corrects the incorrect default register values.
+
+Signed-off-by: Bard Liao <bardliao@realtek.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/codecs/rt5670.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+--- a/sound/soc/codecs/rt5670.c
++++ b/sound/soc/codecs/rt5670.c
+@@ -100,18 +100,18 @@ static const struct reg_default rt5670_r
+ 	{ 0x4c, 0x5380 },
+ 	{ 0x4f, 0x0073 },
+ 	{ 0x52, 0x00d3 },
+-	{ 0x53, 0xf0f0 },
++	{ 0x53, 0xf000 },
+ 	{ 0x61, 0x0000 },
+ 	{ 0x62, 0x0001 },
+ 	{ 0x63, 0x00c3 },
+ 	{ 0x64, 0x0000 },
+-	{ 0x65, 0x0000 },
++	{ 0x65, 0x0001 },
+ 	{ 0x66, 0x0000 },
+ 	{ 0x6f, 0x8000 },
+ 	{ 0x70, 0x8000 },
+ 	{ 0x71, 0x8000 },
+ 	{ 0x72, 0x8000 },
+-	{ 0x73, 0x1110 },
++	{ 0x73, 0x7770 },
+ 	{ 0x74, 0x0e00 },
+ 	{ 0x75, 0x1505 },
+ 	{ 0x76, 0x0015 },
+@@ -125,21 +125,21 @@ static const struct reg_default rt5670_r
+ 	{ 0x83, 0x0000 },
+ 	{ 0x84, 0x0000 },
+ 	{ 0x85, 0x0000 },
+-	{ 0x86, 0x0008 },
++	{ 0x86, 0x0004 },
+ 	{ 0x87, 0x0000 },
+ 	{ 0x88, 0x0000 },
+ 	{ 0x89, 0x0000 },
+ 	{ 0x8a, 0x0000 },
+ 	{ 0x8b, 0x0000 },
+-	{ 0x8c, 0x0007 },
++	{ 0x8c, 0x0003 },
+ 	{ 0x8d, 0x0000 },
+ 	{ 0x8e, 0x0004 },
+ 	{ 0x8f, 0x1100 },
+ 	{ 0x90, 0x0646 },
+ 	{ 0x91, 0x0c06 },
+ 	{ 0x93, 0x0000 },
+-	{ 0x94, 0x0000 },
+-	{ 0x95, 0x0000 },
++	{ 0x94, 0x1270 },
++	{ 0x95, 0x1000 },
+ 	{ 0x97, 0x0000 },
+ 	{ 0x98, 0x0000 },
+ 	{ 0x99, 0x0000 },
+@@ -150,11 +150,11 @@ static const struct reg_default rt5670_r
+ 	{ 0x9e, 0x0400 },
+ 	{ 0xae, 0x7000 },
+ 	{ 0xaf, 0x0000 },
+-	{ 0xb0, 0x6000 },
++	{ 0xb0, 0x7000 },
+ 	{ 0xb1, 0x0000 },
+ 	{ 0xb2, 0x0000 },
+ 	{ 0xb3, 0x001f },
+-	{ 0xb4, 0x2206 },
++	{ 0xb4, 0x220c },
+ 	{ 0xb5, 0x1f00 },
+ 	{ 0xb6, 0x0000 },
+ 	{ 0xb7, 0x0000 },
+@@ -171,25 +171,25 @@ static const struct reg_default rt5670_r
+ 	{ 0xcf, 0x1813 },
+ 	{ 0xd0, 0x0690 },
+ 	{ 0xd1, 0x1c17 },
+-	{ 0xd3, 0xb320 },
++	{ 0xd3, 0xa220 },
+ 	{ 0xd4, 0x0000 },
+ 	{ 0xd6, 0x0400 },
+ 	{ 0xd9, 0x0809 },
+ 	{ 0xda, 0x0000 },
+ 	{ 0xdb, 0x0001 },
+ 	{ 0xdc, 0x0049 },
+-	{ 0xdd, 0x0009 },
++	{ 0xdd, 0x0024 },
+ 	{ 0xe6, 0x8000 },
+ 	{ 0xe7, 0x0000 },
+-	{ 0xec, 0xb300 },
++	{ 0xec, 0xa200 },
+ 	{ 0xed, 0x0000 },
+-	{ 0xee, 0xb300 },
++	{ 0xee, 0xa200 },
+ 	{ 0xef, 0x0000 },
+ 	{ 0xf8, 0x0000 },
+ 	{ 0xf9, 0x0000 },
+ 	{ 0xfa, 0x8010 },
+ 	{ 0xfb, 0x0033 },
+-	{ 0xfc, 0x0080 },
++	{ 0xfc, 0x0100 },
+ };
+ 
+ static bool rt5670_volatile_register(struct device *dev, unsigned int reg)
+
+
