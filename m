@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaLEKlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 05:41:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50243 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751122AbaLEKlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 05:41:06 -0500
-Date: Fri, 5 Dec 2014 10:40:09 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
-Message-ID: <20141205104009.GE11889@leverpostej>
-References: <sc9836v4>
- <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	id S1752085AbaLEMGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:06:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969AbaLEMGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 07:06:12 -0500
+Message-ID: <54819FB2.6000408@suse.de>
+Date: Fri, 05 Dec 2014 13:06:10 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
-Thread-Topic: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Olof Johansson <olof@lixom.net>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: Enable CONFIG_COMPAT also for 64k page size
+References: <1417707993-82290-1-git-send-email-agraf@suse.de> <5480F12D.90007@suse.de> <CAOesGMi-sVTxdo8f7vNnYMgd+meBF+Gsf3Pk5VbHEPxv5Q6iDA@mail.gmail.com> <3551792.oHatG1W6W1@wuerfel>
+In-Reply-To: <3551792.oHatG1W6W1@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Thu, Dec 04, 2014 at 11:34:15AM +0000, Chunyan Zhang wrote:
-> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
-> 
-> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
-> standards based on ARMv8 multiple core architecture.Now we have only one
-> SoC(SC9836) based on this Platform in developing.
-> 
-> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
-> of SC9836-UART.
-> 
-> This patchset also has patches which address "sprd" prefix and DT compatible
-> strings for nodes which appear un-documented.
-> 
-> This version code was tesed both on Fast Mode and sc9836-fpga board.
-> We use the latest boot-wrapper-aarch64 as the bootloader.
-> 
-> Changes from v3:
-> * Addressed review comments:
-> 	- Added the description of clock property for sc9836-uart
-> 	- Revised the size of GICC to be 8KiB
-> 	- Added another compatible string for psci-0.1
 
-I had open questions on v3 regarding your PSCI imlpementation. You
-mentioned that you are using the aarch64 bootwrapper, but your DT
-describes PSCI 0.2, and the (upstream) bootwrapper does not implement
-PSCI 0.2. Adding the old PSCI compatible string is _not_ sufficient if
-you do not have a full PSCI 0.2 implementation.
+On 05.12.14 11:39, Arnd Bergmann wrote:
+> On Thursday 04 December 2014 15:48:50 Olof Johansson wrote:
+>> On Thu, Dec 4, 2014 at 3:41 PM, Alexander Graf <agraf@suse.de> wrote:
+>>> On 04.12.14 22:15, Olof Johansson wrote:
+>>>> On Thu, Dec 4, 2014 at 7:46 AM, Alexander Graf <agraf@suse.de> wrote:
+>>>>> With binutils 2.25 the default alignment for 32bit arm sections changed to
+>>>>> have everything 64k aligned. Armv7 binaries built with this binutils version
+>>>>> run successfully on an arm64 system.
+>>>>>
+>>>>> Since effectively there is now the chance to run armv7 code on arm64 even
+>>>>> with 64k page size, it doesn't make sense to block people from enabling
+>>>>> CONFIG_COMPAT on those configurations.
+>>>>>
+>>>>> Signed-off-by: Alexander Graf <agraf@suse.de>
+>>>>> ---
+>>>>>  arch/arm64/Kconfig | 1 -
+>>>>>  1 file changed, 1 deletion(-)
+>>>>>
+>>>>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>>>>> index 9532f8d..3cf4f238 100644
+>>>>> --- a/arch/arm64/Kconfig
+>>>>> +++ b/arch/arm64/Kconfig
+>>>>> @@ -409,7 +409,6 @@ source "fs/Kconfig.binfmt"
+>>>>>
+>>>>>  config COMPAT
+>>>>>         bool "Kernel support for 32-bit EL0"
+>>>>> -       depends on !ARM64_64K_PAGES
+>>>>>         select COMPAT_BINFMT_ELF
+>>>>>         select HAVE_UID16
+>>>>>         select OLD_SIGSUSPEND3
+>>>>
+>>>> This is hardly "compat". Sure, it's great to have a new binutils that
+>>>> has larger alignment, but practically not a single existing binary
+>>>> will work today if someone tries to do this.
+>>>
+>>> Yes, but IMHO that's an implementation detail. The same applies for
+>>> 32bit PPC binaries if you use 4k aligned segments. If your applications
+>>> are not aligned for your page size, you can't run them. The only
+>>> platform that managed nevertheless FWIW was IA64 ;).
+>>
+>> Yes, but there the binutils change happened early enough that by the
+>> time the kernel change went in, all major distros had binaries that
+>> were compatible.
+> 
+> What is the exact symptom you see when running an unaligned user
+> space binary on 64k-pages? Do we at least print a helpful error
+> message somewhere or does it just crash?
 
-Given that PSCI 0.2 requires more functionality to be implemented, I'd
-like to know that your implementation is spec-compliant (implementing
-the mandatory functions, nters the kernel in the correct state, etc),
-and that it has been tested.
+It simply doesn't start:
 
-Would you be able to look at my comments from the last posting please?
+init-4.2# /hello.binutils-2.23
+init-4.2# echo $?
+139
+init-4.2# /hello.binutils-2.25
 
-Thanks,
-Mark.
+
+
+
+
+Hello world!
+
+
+
+
+
+init-4.2# echo $?
+0
+init-4.2#
+
+
+I'm not sure how to give the user an actually helpful error output here
+though. The only real handle we have for executing a binary is to return
+an error code.
+
+
+Alex
