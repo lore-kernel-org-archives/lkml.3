@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaLEXoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:44:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53862 "EHLO
+	id S932182AbaLEXoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:44:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaLEWqD (ORCPT
+	with ESMTP id S1752300AbaLEWqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.17 052/122] staging: r8188eu: Add new device ID for DLink GO-USB-N150
-Date: Fri,  5 Dec 2014 14:43:46 -0800
-Message-Id: <20141205223313.348259289@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.17 053/122] USB: ssu100: fix overrun-error reporting
+Date: Fri,  5 Dec 2014 14:43:47 -0800
+Message-Id: <20141205223313.479859119@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,28 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Johan Hovold <johan@kernel.org>
 
-commit 6d4556fc0309608f760f1d329df56d77fdd0c31a upstream.
+commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
 
-The DLink GO-USB-N150 with revision B1 uses this driver.
+Fix reporting of overrun errors, which should only be reported once
+using the inserted null character.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ssu100.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -47,6 +47,7 @@ static struct usb_device_id rtw_usb_id_t
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
-+	{USB_DEVICE(0x2001, 0x3311)}, /* DLink GO-USB-N150 REV B1 */
- 	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
- 	{}	/* Terminating entry */
- };
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -490,10 +490,9 @@ static void ssu100_update_lsr(struct usb
+ 			if (*tty_flag == TTY_NORMAL)
+ 				*tty_flag = TTY_FRAME;
+ 		}
+-		if (lsr & UART_LSR_OE){
++		if (lsr & UART_LSR_OE) {
+ 			port->icount.overrun++;
+-			if (*tty_flag == TTY_NORMAL)
+-				*tty_flag = TTY_OVERRUN;
++			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
+ 		}
+ 	}
+ 
+@@ -511,12 +510,8 @@ static void ssu100_process_read_urb(stru
+ 	if ((len >= 4) &&
+ 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
+ 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
+-		if (packet[2] == 0x00) {
++		if (packet[2] == 0x00)
+ 			ssu100_update_lsr(port, packet[3], &flag);
+-			if (flag == TTY_OVERRUN)
+-				tty_insert_flip_char(&port->port, 0,
+-						TTY_OVERRUN);
+-		}
+ 		if (packet[2] == 0x01)
+ 			ssu100_update_msr(port, packet[3]);
+ 
 
 
