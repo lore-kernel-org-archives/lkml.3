@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaLEXLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:11:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
+	id S1754131AbaLEXLh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:11:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978AbaLEXGk (ORCPT
+	with ESMTP id S1753144AbaLEXGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 04/45] x86_64, traps: Stop using IST for #SS
-Date: Fri,  5 Dec 2014 14:44:47 -0800
-Message-Id: <20141205223317.408372867@linuxfoundation.org>
+        Mark Lehrer <lehrer@gmail.com>, Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 35/45] srp-target: Retry when QP creation fails with ENOMEM
+Date: Fri,  5 Dec 2014 14:45:18 -0800
+Message-Id: <20141205223322.324986506@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -30,126 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
+commit ab477c1ff5e0a744c072404bf7db51bfe1f05b6e upstream.
 
-On a 32-bit kernel, this has no effect, since there are no IST stacks.
+It is not guaranteed to that srp_sq_size is supported
+by the HCA. So if we failed to create the QP with ENOMEM,
+try with a smaller srp_sq_size. Keep it up until we hit
+MIN_SRPT_SQ_SIZE, then fail the connection.
 
-On a 64-bit kernel, #SS can only happen in user code, on a failed iret
-to user space, a canonical violation on access via RSP or RBP, or a
-genuine stack segment violation in 32-bit kernel code.  The first two
-cases don't need IST, and the latter two cases are unlikely fatal bugs,
-and promoting them to double faults would be fine.
-
-This fixes a bug in which the espfix64 code mishandles a stack segment
-violation.
-
-This saves 4k of memory per CPU and a tiny bit of code.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mark Lehrer <lehrer@gmail.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/page_32_types.h |    1 -
- arch/x86/include/asm/page_64_types.h |   11 +++++------
- arch/x86/kernel/dumpstack_64.c       |    1 -
- arch/x86/kernel/entry_64.S           |    2 +-
- arch/x86/kernel/traps.c              |   18 +-----------------
- 5 files changed, 7 insertions(+), 26 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -18,7 +18,6 @@
- #define THREAD_SIZE_ORDER	1
- #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2101,6 +2101,7 @@ static int srpt_create_ch_ib(struct srpt
+ 	if (!qp_init)
+ 		goto out;
  
--#define STACKFAULT_STACK 0
- #define DOUBLEFAULT_STACK 1
- #define NMI_STACK 0
- #define DEBUG_STACK 0
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -14,12 +14,11 @@
- #define IRQ_STACK_ORDER 2
- #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
- 
--#define STACKFAULT_STACK 1
--#define DOUBLEFAULT_STACK 2
--#define NMI_STACK 3
--#define DEBUG_STACK 4
--#define MCE_STACK 5
--#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-+#define DOUBLEFAULT_STACK 1
-+#define NMI_STACK 2
-+#define DEBUG_STACK 3
-+#define MCE_STACK 4
-+#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
- 
- #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
- #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
- 		[ DEBUG_STACK-1			]	= "#DB",
- 		[ NMI_STACK-1			]	= "NMI",
- 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
--		[ STACKFAULT_STACK-1		]	= "#SS",
- 		[ MCE_STACK-1			]	= "#MC",
- #if DEBUG_STKSZ > EXCEPTION_STKSZ
- 		[ N_EXCEPTION_STACKS ...
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1503,7 +1503,7 @@ apicinterrupt HYPERVISOR_CALLBACK_VECTOR
- 
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
--paranoiderrorentry stack_segment do_stack_segment
-+errorentry stack_segment do_stack_segment
- #ifdef CONFIG_XEN
- zeroentry xen_debug do_debug
- zeroentry xen_int3 do_int3
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -220,28 +220,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "copro
- 		coprocessor_segment_overrun)
- DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
- DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
--#ifdef CONFIG_X86_32
- DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
--#endif
- DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
- 		BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
--dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
--{
--	enum ctx_state prev_state;
--
--	prev_state = exception_enter();
--	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
--		preempt_conditional_sti(regs);
--		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
--		preempt_conditional_cli(regs);
--	}
--	exception_exit(prev_state);
--}
--
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- {
- 	static const char str[] = "double fault";
-@@ -769,7 +753,7 @@ void __init trap_init(void)
- 	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
- 	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
- 	set_intr_gate(X86_TRAP_NP, &segment_not_present);
--	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(X86_TRAP_SS, stack_segment);
- 	set_intr_gate(X86_TRAP_GP, &general_protection);
- 	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
- 	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
++retry:
+ 	ch->cq = ib_create_cq(sdev->device, srpt_completion, NULL, ch,
+ 			      ch->rq_size + srp_sq_size, 0);
+ 	if (IS_ERR(ch->cq)) {
+@@ -2124,6 +2125,13 @@ static int srpt_create_ch_ib(struct srpt
+ 	ch->qp = ib_create_qp(sdev->pd, qp_init);
+ 	if (IS_ERR(ch->qp)) {
+ 		ret = PTR_ERR(ch->qp);
++		if (ret == -ENOMEM) {
++			srp_sq_size /= 2;
++			if (srp_sq_size >= MIN_SRPT_SQ_SIZE) {
++				ib_destroy_cq(ch->cq);
++				goto retry;
++			}
++		}
+ 		printk(KERN_ERR "failed to create_qp ret= %d\n", ret);
+ 		goto err_destroy_cq;
+ 	}
 
 
