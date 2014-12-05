@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaLEBrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:47:52 -0500
-Received: from mail-by2on0135.outbound.protection.outlook.com ([207.46.100.135]:13343
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754717AbaLEBru convert rfc822-to-8bit (ORCPT
+	id S933469AbaLEBsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 20:48:32 -0500
+Received: from mga01.intel.com ([192.55.52.88]:29345 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827AbaLEBsa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:47:50 -0500
-From: Dudley Du <dudl@cypress.com>
-To: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-CC: Jeremiah Mahler <jmmahler@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Solda <dso@cypress.com>
-Subject: RE: [PATCH v12 01/19] input: cyapa: modify code to following kernel
- code style
-Thread-Topic: [PATCH v12 01/19] input: cyapa: modify code to following kernel
- code style
-Thread-Index: AQLSNRra1jZVB9nM0+wOVR3Z+Zb0TgHHg1DRAmgH20uaWSRXAIAAxZMAgACEFUA=
-Date: Fri, 5 Dec 2014 01:32:19 +0000
-Message-ID: <BN1PR06MB070B39C85B5299175E344D7D1790@BN1PR06MB070.namprd06.prod.outlook.com>
-References: <1417599025-21681-1-git-send-email-dudley.dulixin@gmail.com>
- <1417599025-21681-2-git-send-email-dudley.dulixin@gmail.com>
- <20141204045735.GA5362@newt.localdomain>
- <CO1PR06MB078B7C0303567890795B94BD1780@CO1PR06MB078.namprd06.prod.outlook.com>
- <20141204173212.GA3092@dtor-ws>
-In-Reply-To: <20141204173212.GA3092@dtor-ws>
+	Thu, 4 Dec 2014 20:48:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,519,1413270000"; 
+   d="scan'208";a="632994532"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "Zhang, Jun" <jun.zhang@intel.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Hillf Danton <hillf.zj@alibaba-inc.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Liu, Changcheng" <changcheng.liu@intel.com>
+Subject: RE: [PATCH v2] sched/fair: fix find_idlest_cpu return -1
+Thread-Topic: [PATCH v2] sched/fair: fix find_idlest_cpu return -1
+Thread-Index: AQHQD7wbCzODxs4zUUK8CCYucqaN15yAOvRg
+Date: Fri, 5 Dec 2014 01:48:25 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01EEA8AF@SHSMSX101.ccr.corp.intel.com>
+References: <1417693435-18247-1-git-send-email-jun.zhang@intel.com>
+ <CAKfTPtC3cULoGtNz3X+0J0XNe9-aMCrZAocaqiaGKpY+ek1ZSQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtC3cULoGtNz3X+0J0XNe9-aMCrZAocaqiaGKpY+ek1ZSQ@mail.gmail.com>
 Accept-Language: zh-CN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [157.95.211.187]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0601MB1077;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0601MB1077;
-x-forefront-prvs: 04163EF38A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(45984002)(199003)(164054003)(51704005)(13464003)(51164003)(24454002)(189002)(41574002)(2501002)(93886004)(110136001)(107046002)(106116001)(106356001)(105586002)(99286002)(77156002)(62966003)(74316001)(76576001)(4396001)(21056001)(40100003)(122556002)(46102003)(2351001)(97736003)(68736005)(31966008)(101416001)(19580395003)(54206007)(33656002)(19580405001)(66066001)(99396003)(20776003)(64706001)(120916001)(54606007)(87936001)(50986999)(2656002)(76176999)(54356999)(86362001)(92566001)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0601MB1077;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
 
-Thank you very much for the effort.
-I will re-post the series based on the your updated next branch when it ready.
-
-Thanks,
-Dudley
 
 > -----Original Message-----
-> From: dmitry.torokhov@gmail.com [mailto:dmitry.torokhov@gmail.com]
-> Sent: 2014?12?5? 1:32
-> To: Dudley Du
-> Cc: Jeremiah Mahler; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v12 01/19] input: cyapa: modify code to following kernel code
-> style
->
-> Dudley, Jeremiah,
->
-> On Thu, Dec 04, 2014 at 05:54:43AM +0000, Dudley Du wrote:
-> > Jeremiah,
+> From: Vincent Guittot [mailto:vincent.guittot@linaro.org]
+> Sent: Thursday, December 04, 2014 8:15 PM
+> To: Zhang, Jun
+> Cc: mingo@redhat.com; Peter Zijlstra; gregkh@linuxfoundation.org; Hillf
+> Danton; linux-kernel; stable@vger.kernel.org; Liu, Chuansheng; Liu,
+> Changcheng
+> Subject: Re: [PATCH v2] sched/fair: fix find_idlest_cpu return -1
+> 
+> On 4 December 2014 at 12:43,  <jun.zhang@intel.com> wrote:
+> > From: zhang jun <jun.zhang@intel.com>
 > >
-> > I didn't submitted this fix patch, but Dmitry has been helping apply the fix patch
-> quickly, maybe todoay or tommorrow.
->
-> The patches that I apply for the next merge window should appear first
-> in my 'next' branch in
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
->
-> and then in the linux-next and eventually in mainline.
->
-> >
-> > For the pathces that I made were worked based off of kernel mainline.
->
-> I resolved the conflicts and applied this 1/19 patch, next time you are
-> re-posting the series could you please base them off my 'next' branch?
-> It will help me applhy them much more easily.
->
-> Thanks!
->
-> --
-> Dmitry
+> > in function select_task_rq_fair, when find_idlest_cpu return -1 and sd->child
+> == NULL
+> > select_task_rq_fair return -1, system panic.
+> 
+> you forgot to add on which kernel version this patch applies.
+> 
+> We don't have such issue on 3.18-rc7 as find_idlest_cpu don't return
+> -1. We only need a cleanup of the test against -1 for 3.18-rc
+> 
+Agreed, so Jun can make two patches:
+The first one patch is in find_idlest_cpu() to not return -1 and based on stable-branch such as 3.14.x;
+The second patch is one cleanup for new_cpu == -1 judgment against the 3.18-rc, since it is no possibility now;
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+Best Regards
+Chuansheng
+
