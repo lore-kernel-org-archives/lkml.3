@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaLEWrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:47:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53996 "EHLO
+	id S1752683AbaLEWrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:47:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaLEWqT (ORCPT
+	with ESMTP id S1752530AbaLEWqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>
-Subject: [PATCH 3.17 100/122] net/ping: handle protocol mismatching scenario
-Date: Fri,  5 Dec 2014 14:44:34 -0800
-Message-Id: <20141205223321.034961165@linuxfoundation.org>
+        Lu Baolu <baolu.lu@linux.intel.com>,
+        Dmitry Nezhevenko <dion@inhex.net>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.17 101/122] Revert "xhci: clear root port wake on bits if controller isnt wake-up capable"
+Date: Fri,  5 Dec 2014 14:44:35 -0800
+Message-Id: <20141205223321.148102332@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -33,41 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jane Zhou <a17711@motorola.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
+commit 9b41ebd3cf0f68d8cad779d3eeba336f78262e43 upstream.
 
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
+commit ff8cbf250b44 ("xhci: clear root port wake on bits if controller isn't")
+can cause device detection error if runtime PM is enabled, and S3 wake
+is disabled. Revert it.
+https://bugzilla.kernel.org/show_bug.cgi?id=85701
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This commit got into stable and should be reverted from there as well.
+
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Reported-by: Dmitry Nezhevenko <dion@inhex.net>
+[Mathias Nyman: reword commit message]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/ping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/xhci-hub.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -217,6 +217,8 @@ static struct sock *ping_lookup(struct n
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -22,7 +22,6 @@
  
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
+ 
+ #include <linux/slab.h>
+-#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -1142,9 +1141,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup
+-				&& device_may_wakeup(hcd->self.controller)) {
+-
++		if (hcd->self.root_hub->do_remote_wakeup) {
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 
 
