@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaLEWDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:03:06 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54928 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933AbaLEWDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:03:04 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v4 4/5] crypto: AF_ALG: add random number generator support
-Date: Fri, 05 Dec 2014 23:02:59 +0100
-Message-ID: <7181491.MIJ5ay4MmI@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141205155359.GA30224@gondor.apana.org.au>
-References: <2105559.EmODblLYuY@tachyon.chronox.de> <1480776.TeURZV8VLa@tachyon.chronox.de> <20141205155359.GA30224@gondor.apana.org.au>
+	id S1752091AbaLEWHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:07:11 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58666 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751239AbaLEWHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:07:09 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linda Knippers <linda.knippers@hp.com>
+Cc: Ethan Zhao <ethan.zhao@oracle.com>, dirk.j.brandewie@intel.com,
+        kristen@linux.intel.com, viresh.kumar@linaro.org, corbet@lwn.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
+        alexey.kodanev@oracle.com
+Subject: Re: [PATCH 2/2 V8] intel_pstate: add kernel parameter to force loading.
+Date: Fri, 05 Dec 2014 23:28:33 +0100
+Message-ID: <1450362.V0bfHnJ0NE@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5481D8B9.2030603@hp.com>
+References: <1417772453-22483-1-git-send-email-ethan.zhao@oracle.com> <5481D8B9.2030603@hp.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 5. Dezember 2014, 23:53:59 schrieb Herbert Xu:
-
-Hi Herbert,
-
-> On Wed, Dec 03, 2014 at 08:59:01PM +0100, Stephan Mueller wrote:
-> > +static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
-> > +		       struct msghdr *msg, size_t len, int flags)
-> > +{
-> > +	struct sock *sk = sock->sk;
-> > +	struct alg_sock *ask = alg_sk(sk);
-> > +	struct rng_ctx *ctx = ask->private;
-> > +	int err = -EFAULT;
-> > +
-> > +	if (len == 0)
-> > +		return 0;
-> > +	if (len > MAXSIZE)
-> > +		len = MAXSIZE;
-> > +
-> > +	lock_sock(sk);
+On Friday, December 05, 2014 11:09:29 AM Linda Knippers wrote:
+> On 12/5/2014 4:40 AM, Ethan Zhao wrote:
+> > To force loading on Oracle Sun X86 servers, provide one kernel command line
+> > parameter
+> > 
+> >   intel_pstate = force
+> > 
+> > For those who be aware of the risk of no power capping capabily working and
+> > try to get better performance with this driver.
+> > 
+> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> > Tested-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+> > ---
+> >  v2: change to hardware vendor specific naming parameter.
+> >  v4: refine code and doc.
+> >  v5&v6: fix a typo in doc.
+> >  v7: change enum PCC to PPC.
+> >  v8: change the name of kernel command line parameter to generic one.
+> > 
+> >  Documentation/kernel-parameters.txt | 5 +++++
+> >  drivers/cpufreq/intel_pstate.c      | 6 +++++-
+> >  2 files changed, 10 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 479f332..7d0983e 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  		       disable
+> >  		         Do not enable intel_pstate as the default
+> >  		         scaling driver for the supported processors
+> > +		       force
+> > +			 Enable intel_pstate on systems where it may cause problems to
+> > +			 happen due to conflicts with platform firmware attempting to
+> > +			 drive P-states by itself in certain situations (for thermal 
+> > +			 control or power capping in general or other purposes).
 > 
-> This lock simply protects ctx->result.  Since you're using a
-> tiny buffer why not just put it on the stack?
-
-When I developed the DRBG code, I got comments that 128 byte variables shall 
-not be on the stack in kernel code.
-
-But if you agree that I can put a 128 byte variable on the stack, I will see 
-it done.
-
+> I suggest something like:
+> 			Enable intel_pstate on systems that prohibit it by
+> 			default in favor of acpi-cpufreq.  Forcing the
+> 			intel_pstate driver instead of acpi-cpufreq may disable
+> 			platform features, such as thermal controls and power
+> 			capping, that rely on ACPI p-state information being
+> 			used by the OS and therefore should be used with care.
+> 			This option does not work with processors that aren't
+> 			supported by the intel_pstate driver or on platforms
+> 			that use pcc-cpufreq instead of acpi-cpufreq.
 > 
-> > +		u8 *buf = kmalloc(seedsize, GFP_KERNEL);
-> > +		if (!buf)
-> > +			goto err;
-> > +		get_random_bytes(buf, seedsize);
-> > +		ret = crypto_rng_reset(private, buf, len);
-> 
-> I think you should leave the seeding and the seed to the user.
-> Perhaps do it through setsockopt (on the parent socket).
+> Maybe this is too specific but I believe it is accurate.  Comments?
 
-Sure. But please note that the seeding happens only when seedsize > 0. Such 
-seeding therefore is not performed for krng, and the DRBG because both seed 
-automatically.
+Looks good to me, thanks!
 
-Therefore, may I propose the following: We offer a setsockopt for (re)seeding. 
-For all RNGs with seedsize > 0, we return EAGAIN for recvmsg until a 
-setsockopt for at least seedsize is provided. That would imply that krng and 
-DRBG would be usable without seeding from user space.
 
 -- 
-Ciao
-Stephan
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
