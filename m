@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaLEXaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:30:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754106AbaLEXaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:30:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaLEW4I (ORCPT
+	with ESMTP id S1753241AbaLEW4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Ma <mapengyu@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.14 18/73] PCI: Support 64-bit bridge windows if we have 64-bit dma_addr_t
-Date: Fri,  5 Dec 2014 14:44:24 -0800
-Message-Id: <20141205224434.478291448@linuxfoundation.org>
+Subject: [PATCH 3.14 19/73] PCI/MSI: Add device flag indicating that 64-bit MSIs dont work
+Date: Fri,  5 Dec 2014 14:44:25 -0800
+Message-Id: <20141205224434.514103007@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,99 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 7fc986d8a9727e5d40da3c2c1c343da6142e82a9 upstream.
+commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
 
-Aaron reported that a 32-bit x86 kernel with Physical Address Extension
-(PAE) support complains about bridge prefetchable memory windows above 4GB:
+This can be set by quirks/drivers to be used by the architecture code
+that assigns the MSI addresses.
 
-  pci_bus 0000:00: root bus resource [mem 0x380000000000-0x383fffffffff]
-  ...
-  pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
-  pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
-  pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
-  pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
-  pci 0000:00:02.2: PCI bridge to [bus 03-04]
-  pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
-  pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
-  pci 0000:00:02.2: can't handle 64-bit address space for bridge
+We additionally add verification in the core MSI code that the values
+assigned by the architecture do satisfy the limitation in order to fail
+gracefully if they don't (ie. the arch hasn't been updated to deal with
+that quirk yet).
 
-In this kernel, unsigned long is 32 bits and dma_addr_t is 64 bits.
-Previously we used "unsigned long" to hold the bridge window address.  But
-this is a bus address, so we should use dma_addr_t instead.
-
-Use dma_addr_t to hold the bridge window base and limit.
-
-The question of whether the CPU can actually *address* the window is
-separate and depends on what the physical address space of the CPU is and
-whether the host bridge does any address translation.
-
-[bhelgaas: fix "shift count > width of type", changelog, stable tag]
-Fixes: d56dbf5bab8c ("PCI: Allocate 64-bit BARs above 4G when possible")
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
-Reported-by: Aaron Ma <mapengyu@gmail.com>
-Tested-by: Aaron Ma <mapengyu@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ drivers/pci/msi.c   |   26 ++++++++++++++++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 27 insertions(+)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -395,15 +395,16 @@ static void pci_read_bridge_mmio_pref(st
- {
- 	struct pci_dev *dev = child->self;
- 	u16 mem_base_lo, mem_limit_lo;
--	unsigned long base, limit;
-+	u64 base64, limit64;
-+	dma_addr_t base, limit;
- 	struct pci_bus_region region;
- 	struct resource *res;
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -599,6 +599,20 @@ error_attrs:
+ 	return ret;
+ }
  
- 	res = child->resource[2];
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
--	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
--	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
-+	base64 = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
-+	limit64 = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
- 
- 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
- 		u32 mem_base_hi, mem_limit_hi;
-@@ -417,18 +418,20 @@ static void pci_read_bridge_mmio_pref(st
- 		 * this, just assume they are not being used.
- 		 */
- 		if (mem_base_hi <= mem_limit_hi) {
--#if BITS_PER_LONG == 64
--			base |= ((unsigned long) mem_base_hi) << 32;
--			limit |= ((unsigned long) mem_limit_hi) << 32;
--#else
--			if (mem_base_hi || mem_limit_hi) {
--				dev_err(&dev->dev, "can't handle 64-bit "
--					"address space for bridge\n");
--				return;
--			}
--#endif
-+			base64 |= (u64) mem_base_hi << 32;
-+			limit64 |= (u64) mem_limit_hi << 32;
- 		}
++static int msi_verify_entries(struct pci_dev *dev)
++{
++	struct msi_desc *entry;
++
++	list_for_each_entry(entry, &dev->msi_list, list) {
++		if (!dev->no_64bit_msi || !entry->msg.address_hi)
++			continue;
++		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
++			" tried to assign one above 4G\n");
++		return -EIO;
++	}
++	return 0;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -652,6 +666,13 @@ static int msi_capability_init(struct pc
+ 		return ret;
  	}
-+
-+	base = (dma_addr_t) base64;
-+	limit = (dma_addr_t) limit64;
-+
-+	if (base != base64) {
-+		dev_err(&dev->dev, "can't handle bridge window above 4GB (bus address %#010llx)\n",
-+			(unsigned long long) base64);
-+		return;
+ 
++	ret = msi_verify_entries(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
 +	}
 +
- 	if (base <= limit) {
- 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
- 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
+ 	ret = populate_msi_sysfs(dev);
+ 	if (ret) {
+ 		msi_mask_irq(entry, mask, ~mask);
+@@ -767,6 +788,11 @@ static int msix_capability_init(struct p
+ 	if (ret)
+ 		goto out_avail;
+ 
++	/* Check if all MSI entries honor device restrictions */
++	ret = msi_verify_entries(dev);
++	if (ret)
++		goto out_free;
++
+ 	/*
+ 	 * Some devices require MSI-X to be enabled before we can touch the
+ 	 * MSI-X registers.  We need to mask all the vectors to prevent
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -324,6 +324,7 @@ struct pci_dev {
+ 	unsigned int	is_added:1;
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
++	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+ 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
+ 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
 
 
