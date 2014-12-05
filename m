@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaLEOWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:22:00 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:61596 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaLEOV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:21:59 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a1-5481bf859482
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Kukjin Kim <kgene@kernel.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
- failure due to domain being gated
-Date: Fri, 05 Dec 2014 15:15:34 +0100
-Message-id: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Nd3W/Y0hBteXCVpsnLGe1eLo7wKL
-	1y8MLfofv2a2eLr5MZPF2aY37BabHl9jtbi8aw6bxYzz+5gs1h65y27xdMJFNovDb9pZLX6c
-	6WaxWLXrD6MDn8flvl4mj7/Pr7N47Jx1l91j06pONo871/aweWxeUu/Rt2UVo8fnTXIBHFFc
-	NimpOZllqUX6dglcGRuOdLAX3BWvOHB/IWsD4xzhLkYODgkBE4m3kwy7GDmBTDGJC/fWs3Ux
-	cnEICSxllPi97C4ThNPHJPF70nZGkCo2AWOJzcuXsIHYIgITmCVuXncHKWIWOMooMb33LRNI
-	QligSGLPhKVsIBtYBFQlZv/xBwnzCrhLdJ1/zA6xTU7i5LHJrBMYuRcwMqxiFE0tTS4oTkrP
-	NdIrTswtLs1L10vOz93ECAnBrzsYlx6zOsQowMGoxMP7I64xRIg1say4MvcQowQHs5IIb/Js
-	oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGB4eJVlp2RXVsjxUbVJIyn6h2+dys3zX3vNqpTa8a
-	rVLcNPW+vaorVM1hPRPxK0ewfXLhruQWCYusS2ezX+QHHv9uuSnn2Jap7QpHKiMe6Rl5mm74
-	u2aGkY+2xe3g+Ssm92Xwnd6bmvUyvyA712uVHOvlq/ulm3k+zy9VWf94jVn9+cvH30YpsRRn
-	JBpqMRcVJwIAClSwAB8CAAA=
+	id S1751293AbaLEOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:24:29 -0500
+Received: from ou.quest-ce.net ([195.154.187.82]:59651 "EHLO ou.quest-ce.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896AbaLEOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 09:24:27 -0500
+Message-ID: <1417789428.11111.31.camel@opteya.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        Yann Droneaud <ydroneaud@opteya.com>
+Date: Fri, 05 Dec 2014 15:23:48 +0100
+In-Reply-To: <1417494533-24461-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1417494533-24461-1-git-send-email-yamada.m@jp.panasonic.com>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.8 (3.12.8-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 37.162.178.179
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: [PATCH] kbuild: remove old information in headers_install.txt
+ document
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Audio subsystem clocks are located in separate block. On Exynos 5420 if
-clock for this block (from main clock domain) 'mau_epll' is gated then
-any read or write to audss registers will block.
+Hi,
 
-This kind of boot hang was observed on Arndale Octa and Peach Pi/Pit
-after introducing runtime PM to pl330 DMA driver. After that commit the
-'mau_epll' was gated, because the "amba" clock was disabled and there
-were no more users of mau_epll.
+Le mardi 02 décembre 2014 à 13:28 +0900, Masahiro Yamada a écrit :
+> The arch header directories "include/asm-*" were moved long before.
+> 
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> ---
+> 
+>  Documentation/kbuild/headers_install.txt | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
+> index 951eb9f..0d8fe5e 100644
+> --- a/Documentation/kbuild/headers_install.txt
+> +++ b/Documentation/kbuild/headers_install.txt
+> @@ -28,10 +28,7 @@ optional arguments:
+>  
+>  ARCH indicates which architecture to produce headers for, and defaults to the
+>  current architecture.  The linux/asm directory of the exported kernel headers
+> -is platform-specific, to see a complete list of supported architectures use
+> -the command:
+> -
+> -  ls -d include/asm-* | sed 's/.*-//'
+> +is platform-specific.
+>  
+>  INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
+>  "./usr/include".
 
-The system hang on one of steps:
-1. Disabling unused clocks from audss block.
-2. During audss GPIO setup (just before probing i2s0 because
-   samsung_pinmux_setup() tried to access memory from audss block which was
-   gated.
+Back in september, I've already sent a patch[1] to address this,
+following a discussion with Sam Ravnborg[2]. See the mail thread[3].
 
-Add a workaround for this by enabling the 'mau_epll' clock in probe.
+Regards.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/clk/samsung/clk-exynos-audss.c | 29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+[1] http://lkml.kernel.org/r/b5181cf7604baa454c11f7aa92d07dd05349ce46.1410712841.git.ydroneaud@opteya.com
+[2] http://lkml.kernel.org/r/20140713212608.GB16496@ravnborg.org
+[3] http://lkml.kernel.org/g/cover.1410712841.git.ydroneaud@opteya.com
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index acce708ace18..0916a81fa932 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -29,6 +29,13 @@ static DEFINE_SPINLOCK(lock);
- static struct clk **clk_table;
- static void __iomem *reg_base;
- static struct clk_onecell_data clk_data;
-+/*
-+ * On Exynos5420 this will be a clock which has to be enabled before any
-+ * access to audss registers. Typically a child of EPLL.
-+ *
-+ * On other platforms this will be -ENODEV.
-+ */
-+static struct clk *epll;
- 
- #define ASS_CLK_SRC 0x0
- #define ASS_CLK_DIV 0x4
-@@ -98,6 +105,8 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "failed to map audss registers\n");
- 		return PTR_ERR(reg_base);
- 	}
-+	/* EPLL don't have to be enabled for boards other than Exynos5420 */
-+	epll = ERR_PTR(-ENODEV);
- 
- 	clk_table = devm_kzalloc(&pdev->dev,
- 				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
-@@ -115,8 +124,20 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 	pll_in = devm_clk_get(&pdev->dev, "pll_in");
- 	if (!IS_ERR(pll_ref))
- 		mout_audss_p[0] = __clk_get_name(pll_ref);
--	if (!IS_ERR(pll_in))
-+	if (!IS_ERR(pll_in)) {
- 		mout_audss_p[1] = __clk_get_name(pll_in);
-+
-+		if (variant == TYPE_EXYNOS5420) {
-+			epll = pll_in;
-+
-+			ret = clk_prepare_enable(epll);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+						"failed to prepare the epll clock\n");
-+				return ret;
-+			}
-+		}
-+	}
- 	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
- 				mout_audss_p, ARRAY_SIZE(mout_audss_p),
- 				CLK_SET_RATE_NO_REPARENT,
-@@ -203,6 +224,9 @@ unregister:
- 			clk_unregister(clk_table[i]);
- 	}
- 
-+	if (!IS_ERR(epll))
-+		clk_disable_unprepare(epll);
-+
- 	return ret;
- }
- 
-@@ -217,6 +241,9 @@ static int exynos_audss_clk_remove(struct platform_device *pdev)
- 			clk_unregister(clk_table[i]);
- 	}
- 
-+	if (!IS_ERR(epll))
-+		clk_disable_unprepare(epll);
-+
- 	return 0;
- }
- 
 -- 
-1.9.1
+Yann Droneaud
+OPTEYA
+
+
 
