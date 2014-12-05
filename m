@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaLER2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:28:54 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:46598 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaLER2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:28:53 -0500
-Message-ID: <5481EB52.6060706@gmail.com>
-Date: Fri, 05 Dec 2014 09:28:50 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751531AbaLERcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:32:47 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41711 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980AbaLERcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 12:32:45 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, "Menon, Nishanth" <nm@ti.com>
+Subject: [PATCH] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan node
+Date: Fri, 5 Dec 2014 11:32:18 -0600
+Message-ID: <1417800739-13146-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: linux-mips@linux-mips.org, Zubair.Kakakhel@imgtec.com,
-        geert+renesas@glider.be, david.daney@cavium.com, peterz@infradead.org,
-        paul.gortmaker@windriver.com, davidlohr@hp.com, macro@linux-mips.org,
-        chenhc@lemote.com, cl@linux.com, mingo@kernel.org, richard@nod.at,
-        zajec5@gmail.com, james.hogan@imgtec.com, keescook@chromium.org,
-        tj@kernel.org, alex@alex-smith.me.uk, pbonzini@redhat.com,
-        blogic@openwrt.org, paul.burton@imgtec.com, qais.yousef@imgtec.com,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        markos.chandras@imgtec.com, dengcheng.zhu@imgtec.com,
-        manuel.lauss@gmail.com, lars.persson@axis.com
-Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
-References: <20141203015537.13886.50830.stgit@linux-yegoshin> <20141203015824.13886.74616.stgit@linux-yegoshin>
-In-Reply-To: <20141203015824.13886.74616.stgit@linux-yegoshin>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 05:58 PM, Leonid Yegoshin wrote:
-> This is a last step of 3 patches which shift FPU emulation out of
-> stack into protected area. So, it disables a default executable stack.
->
-> Additionally, it sets a default data area non-executable protection.
->
-> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+From: "Menon, Nishanth" <nm@ti.com>
 
-NAK!
+TPS gpio now controls a 5v 500mA TL5209 regulator which may be supply
+a fan (such as AFB02505HHB) over J1 connector for various purposes.
+Provide device tree node to enable the same.
 
-Some programs require an executable stack, this patch will break them.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+Depends on the following:
+https://patchwork.kernel.org/patch/5439201/
+https://patchwork.kernel.org/patch/5439191/
 
-You can only select a non-executable stack in response to PT_GNU_STACK 
-program headers in the ELF file of the executable program.
+enable and disable can be controlled by
+echo '1' > /sys/class/hwmon/hwmon0/fan1_target
+and
+echo '0' > /sys/class/hwmon/hwmon0/fan1_target
 
-David Daney
+requires CONFIG_GPIO_PALMAS and CONFIG_SENSORS_GPIO_FAN to be operational
+Applies on 
+https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.19/dt-v2
 
+ arch/arm/boot/dts/am57xx-beagle-x15.dts |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-> ---
->   arch/mips/include/asm/page.h |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
-> index 3be81803595d..d49ba81cb4ed 100644
-> --- a/arch/mips/include/asm/page.h
-> +++ b/arch/mips/include/asm/page.h
-> @@ -230,7 +230,7 @@ extern int __virt_addr_valid(const volatile void *kaddr);
->   #define virt_addr_valid(kaddr)						\
->   	__virt_addr_valid((const volatile void *) (kaddr))
->
-> -#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
-> +#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
->   				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->
->   #define UNCAC_ADDR(addr)	((addr) - PAGE_OFFSET + UNCAC_BASE)
->
->
->
->
+diff --git a/arch/arm/boot/dts/am57xx-beagle-x15.dts b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+index 49edbda..7fe82ef 100644
+--- a/arch/arm/boot/dts/am57xx-beagle-x15.dts
++++ b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+@@ -80,6 +80,15 @@
+ 			default-state = "off";
+ 		};
+ 	};
++
++	gpio_fan {
++		/* Based on 5v 500mA AFB02505HHB */
++		compatible = "gpio-fan";
++		pinctrl-names = "default";
++		gpios =  <&tps659038_gpio 1 GPIO_ACTIVE_HIGH>;
++		gpio-fan,speed-map = <0    0
++				      13000 1>;
++	};
+ };
+ 
+ &dra7_pmx_core {
+@@ -314,6 +323,12 @@
+ 			wakeup-source;
+ 			ti,palmas-long-press-seconds = <12>;
+ 		};
++
++		tps659038_gpio: tps659038_gpio {
++			compatible = "ti,palmas-gpio";
++			gpio-controller;
++			#gpio-cells = <2>;
++		};
+ 	};
+ 
+ 	tmp102: tmp102@48 {
+-- 
+1.7.9.5
 
