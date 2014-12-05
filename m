@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaLESl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:41:29 -0500
-Received: from na6sys009bog035.obsmtp.com ([74.125.150.109]:34042 "HELO
-	na6sys009bog035.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751164AbaLESl2 (ORCPT
+	id S1751639AbaLESoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:44:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45491 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaLESoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:41:28 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, shannon.nelson@intel.com,
-        jesse.brandeburg@intel.com, jeffrey.t.kirsher@intel.com,
-        therbert@google.com, jesse@nicira.com, linux.nics@intel.com
-Subject: [PATCHv4 net] i40e: Implement ndo_gso_check()
-Date: Fri,  5 Dec 2014 10:41:12 -0800
-Message-Id: <1417804872-58635-1-git-send-email-joestringer@nicira.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 5 Dec 2014 13:44:32 -0500
+Date: Fri, 5 Dec 2014 18:44:18 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
+        Peter Maydell <Peter.Maydell@arm.com>
+Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Message-ID: <20141205184418.GF31222@e104818-lin.cambridge.arm.com>
+References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
+ <20140915113325.GD12361@n2100.arm.linux.org.uk>
+ <20141204120305.GC17783@e104818-lin.cambridge.arm.com>
+ <20141205120506.GH1630@arm.com>
+ <20141205170745.GA31222@e104818-lin.cambridge.arm.com>
+ <20141205172701.GW11285@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141205172701.GW11285@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ndo_gso_check() was recently introduced to allow NICs to report the
-offloading support that they have on a per-skb basis. Add an
-implementation for this driver which checks for IPIP, GRE, UDP tunnels.
+On Fri, Dec 05, 2014 at 05:27:02PM +0000, Russell King - ARM Linux wrote:
+> On Fri, Dec 05, 2014 at 05:07:45PM +0000, Catalin Marinas wrote:
+> > From 8e317c6be00abe280de4dcdd598d2e92009174b6 Mon Sep 17 00:00:00 2001
+> > From: Catalin Marinas <catalin.marinas@arm.com>
+> > Date: Fri, 5 Dec 2014 16:41:52 +0000
+> > Subject: [PATCH] Revert "ARM: 8167/1: extend the reserved memory for initrd to
+> >  be page aligned"
+> > 
+> > This reverts commit 421520ba98290a73b35b7644e877a48f18e06004. There is
+> > no guarantee that the boot-loader places other images like dtb in a
+> > different page than initrd start/end. When this happens, such pages must
+> > not be freed. The free_reserved_area() already takes care of rounding up
+> > "start" and rounding down "end" to avoid freeing partially used pages.
+> > 
+> > In addition to the revert, this patch also removes the arm32
+> > PAGE_ALIGN(end) when calculating the size of the memory to be poisoned.
+> 
+> which makes the summary line rather misleading, and I really don't think
+> we need to do this on ARM for the simple reason that we've been doing it
+> for soo long that it can't be an issue.
 
-Signed-off-by: Joe Stringer <joestringer@nicira.com>
----
-v4: Simplify the check to just do tunnel header length.
-    Fix #define style issue.
-v3: Drop IPIP and GRE (no driver support even though hw supports it).
-    Check for UDP outer protocol for UDP tunnels.
-v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
-    Add MAX_INNER_LENGTH (as 80).
----
- drivers/net/ethernet/intel/i40e/i40e_main.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+I started this as a revert and then realised that it doesn't solve
+anything for arm32 without changing the poisoning.
 
-diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-index c3a7f4a..9eedfd15 100644
---- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-@@ -7447,6 +7447,17 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
- 
- #endif /* USE_DEFAULT_FDB_DEL_DUMP */
- #endif /* HAVE_FDB_OPS */
-+#define I40E_MAX_TUNNEL_HDR_LEN		80
-+static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
-+{
-+	if (skb->encapsulation &&
-+	    (skb_inner_mac_header(skb) - skb_transport_header(skb) >
-+	     I40E_MAX_TUNNEL_HDR_LEN))
-+			return false;
-+
-+	return true;
-+}
-+
- static const struct net_device_ops i40e_netdev_ops = {
- 	.ndo_open		= i40e_open,
- 	.ndo_stop		= i40e_close,
-@@ -7487,6 +7498,7 @@ static const struct net_device_ops i40e_netdev_ops = {
- 	.ndo_fdb_dump		= i40e_ndo_fdb_dump,
- #endif
- #endif
-+	.ndo_gso_check		= i40e_gso_check,
- };
- 
- /**
+Anyway, if you are happy with how it is, I'll drop the arm32 part. As I
+said yesterday, the issue is worse for arm64 with 64K pages.
+
 -- 
-1.7.10.4
-
+Catalin
