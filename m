@@ -1,103 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646AbaLEEqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:46:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:54729 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933316AbaLEEqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:46:12 -0500
-Date: Fri, 5 Dec 2014 15:46:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian =?UTF-8?B?S8O2bmln?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-ID: <20141205154606.5a09c45f@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/7u5_eWGP6DNwZJHSimTOD.C"; protocol="application/pgp-signature"
+	id S933669AbaLEErm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:47:42 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60318 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933316AbaLEErl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 23:47:41 -0500
+From: "Joshua I. James" <joshua@cybercrimetech.com>
+X-Google-Original-From: "Joshua I. James" <Joshua@cybercrimetech.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Joshua I. James" <joshua@cybercrimetech.com>
+Subject: [PATCH] staging: kernel: fixed style warnings in acct.c
+Date: Fri,  5 Dec 2014 13:47:34 +0900
+Message-Id: <1417754854-6576-1-git-send-email-Joshua@cybercrimetech.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7u5_eWGP6DNwZJHSimTOD.C
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: "Joshua I. James" <joshua@cybercrimetech.com>
 
-Hi Dave,
+Fixed style errors identified by checkpatch.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/radeon/radeon_cs.c between commit 86b276385c6a
-("drm/radeon: sync all BOs involved in a CS v2") from Linus' tree and
-commit 975700d2cc84 ("drm/radeon: split semaphore and sync object
-handling v2") from the drm tree.
+Output of checkpatch:
+WARNING: Missing a blank line after declarations
+WARNING: line over 80 characters
+ERROR: spaces required around that '==' (ctx:VxV)
++#if ACCT_VERSION==2
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+Signed-off-by: Joshua I. James <joshua@cybercrimetech.com>
+---
+ kernel/acct.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/kernel/acct.c b/kernel/acct.c
+index 33738ef..322159c 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -105,6 +105,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
+ 
+ 	if (acct->active) {
+ 		u64 suspend = sbuf.f_blocks * SUSPEND;
++
+ 		do_div(suspend, 100);
+ 		if (sbuf.f_bavail <= suspend) {
+ 			acct->active = 0;
+@@ -112,6 +113,7 @@ static int check_free_space(struct bsd_acct_struct *acct)
+ 		}
+ 	} else {
+ 		u64 resume = sbuf.f_blocks * RESUME;
++
+ 		do_div(resume, 100);
+ 		if (sbuf.f_bavail >= resume) {
+ 			acct->active = 1;
+@@ -152,8 +154,10 @@ again:
+ 
+ static void close_work(struct work_struct *work)
+ {
+-	struct bsd_acct_struct *acct = container_of(work, struct bsd_acct_struct, work);
++	struct bsd_acct_struct *acct =
++		container_of(work, struct bsd_acct_struct, work);
+ 	struct file *file = acct->file;
++
+ 	if (file->f_op->flush)
+ 		file->f_op->flush(file, NULL);
+ 	__fput_sync(file);
+@@ -165,6 +169,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
+ {
+ 	if (acct) {
+ 		struct pid_namespace *ns = acct->ns;
++
+ 		do_acct_process(acct);
+ 		INIT_WORK(&acct->work, close_work);
+ 		init_completion(&acct->done);
+@@ -182,6 +187,7 @@ static void acct_kill(struct bsd_acct_struct *acct,
+ static void acct_pin_kill(struct fs_pin *pin)
+ {
+ 	struct bsd_acct_struct *acct;
++
+ 	acct = container_of(pin, struct bsd_acct_struct, pin);
+ 	mutex_lock(&acct->lock);
+ 	if (!acct->ns) {
+@@ -448,15 +454,17 @@ static void fill_ac(acct_t *ac)
+ #endif
+ 	do_div(elapsed, AHZ);
+ 	ac->ac_btime = get_seconds() - elapsed;
+-#if ACCT_VERSION==2
++#if ACCT_VERSION == 2
+ 	ac->ac_ahz = AHZ;
+ #endif
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	tty = current->signal->tty;	/* Safe as we hold the siglock */
+ 	ac->ac_tty = tty ? old_encode_dev(tty_devnum(tty)) : 0;
+-	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_utime)));
+-	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(cputime_to_jiffies(pacct->ac_stime)));
++	ac->ac_utime = encode_comp_t(jiffies_to_AHZ(
++		cputime_to_jiffies(pacct->ac_utime)));
++	ac->ac_stime = encode_comp_t(jiffies_to_AHZ(
++		cputime_to_jiffies(pacct->ac_stime)));
+ 	ac->ac_flag = pacct->ac_flag;
+ 	ac->ac_mem = encode_comp_t(pacct->ac_mem);
+ 	ac->ac_minflt = encode_comp_t(pacct->ac_minflt);
+@@ -504,8 +512,8 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+ 
+ 		ac.ac_pid = task_tgid_nr_ns(current, ns);
+ 		rcu_read_lock();
+-		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent),
+-					     ns);
++		ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(
++			current->real_parent), ns);
+ 		rcu_read_unlock();
+ 	}
+ #endif
+@@ -516,6 +524,7 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+ 	if (file_start_write_trylock(file)) {
+ 		/* it's been opened O_APPEND, so position is irrelevant */
+ 		loff_t pos = 0;
++
+ 		__kernel_write(file, (char *)&ac, sizeof(acct_t), &pos);
+ 		file_end_write(file);
+ 	}
+@@ -573,6 +582,7 @@ static void slow_acct_process(struct pid_namespace *ns)
+ {
+ 	for ( ; ns; ns = ns->parent) {
+ 		struct bsd_acct_struct *acct = acct_get(ns);
++
+ 		if (acct) {
+ 			do_acct_process(acct);
+ 			mutex_unlock(&acct->lock);
+-- 
+1.9.1
 
-diff --cc drivers/gpu/drm/radeon/radeon_cs.c
-index 6f377de099f9,75f22e5e999f..000000000000
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@@ -251,19 -251,22 +251,20 @@@ static int radeon_cs_get_ring(struct ra
- =20
-  static int radeon_cs_sync_rings(struct radeon_cs_parser *p)
-  {
- -	int i, r =3D 0;
- +	struct radeon_cs_reloc *reloc;
- +	int r;
- =20
- -	for (i =3D 0; i < p->nrelocs; i++) {
- +	list_for_each_entry(reloc, &p->validated, tv.head) {
-  		struct reservation_object *resv;
- =20
- -		if (!p->relocs[i].robj)
- -			continue;
- -
- -		resv =3D p->relocs[i].robj->tbo.resv;
- +		resv =3D reloc->robj->tbo.resv;
-- 		r =3D radeon_semaphore_sync_resv(p->rdev, p->ib.semaphore, resv,
-- 					       reloc->tv.shared);
-+ 		r =3D radeon_sync_resv(p->rdev, &p->ib.sync, resv,
- -				     p->relocs[i].tv.shared);
-++				     reloc->tv.shared);
-+=20
-  		if (r)
- -			break;
- +			return r;
-  	}
- -	return r;
- +	return 0;
-  }
- =20
-  /* XXX: note that this is called from the legacy UMS CS ioctl as well */
-
---Sig_/7u5_eWGP6DNwZJHSimTOD.C
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUgTiSAAoJEMDTa8Ir7ZwV3nkP/il5KIRGyjiHy+wJDIQ1VL+D
-VTOkk0Ec5ItqcZ8KjcaqsiKFGVIKtnbbO5EX8wOIxeZMwUeQ2nqYrXpx0Fq0ywa4
-NF2xQN3fzeFcCXkIBQ/RCEhP6nazUtOHvq2JnZ5S6+EEzqurCYYkVNH0WGCyoapX
-RD63h0uu8QIYBptb46MWtRSm2a7MeQQ6kdloZA3/b5rlfQDQCqjpdCojGaRjBIF2
-VbqG6unKoZaENgqa7ZzkzLuUxOqxgNhN2GzX9T13X9SFiLzaBFW4cJRzWXmVGfyW
-KwKouj6DXm6/4tB0iPnlqLrhMOAKTPAUqGlESiCZ5Rj/D2Lwlg9D0ZgYzuW3bc0q
-54rMvY+EoUSPBzTHAwzzKvf6AnfC9x98OTD8zZlWdwXkxZ3qVVsonLjnU2ESXpET
-FO+sKi5iNYVi+sStd2QQTVc0pmZczw6wVvbNxwVFjanxxioyHSb3ITQBfi08kfIW
-urAjOiEDdLh9wbLUBx9DrblMCDoQnq8GVA3hJG6vwRYoxu/QaHUpbDJoq314LdGC
-v54fUtcnyozNfByYV6eMYv50GQ7H6KL5e1EMxUofPjQc5EPLQvsWhqtXwMvHXMT6
-H+yZ8gOKh/I1WoQspEhkTOXuR6KAPe3+RMnI/Hh9EsE57QAwro0S28LC8A3p3jDN
-a9xoIh8bMsdEH95fPqHD
-=YHNE
------END PGP SIGNATURE-----
-
---Sig_/7u5_eWGP6DNwZJHSimTOD.C--
