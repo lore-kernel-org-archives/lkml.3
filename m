@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaLERQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:16:04 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:41621 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaLERQC (ORCPT
+	id S1751563AbaLERTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:19:00 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:52409 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaLERS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:16:02 -0500
-Date: Fri, 5 Dec 2014 12:15:58 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, pang.xunlei@zte.com.cn,
-        linux-kernel-owner@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] optimize ktime_divns for constant divisors
-In-Reply-To: <2145860.PBxl6kLNRF@wuerfel>
-Message-ID: <alpine.LFD.2.11.1412051052090.470@knanqh.ubzr>
-References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr> <OF0EDEDB1C.C03829F7-ON48257DA5.00062083-48257DA5.0007628B@zte.com.cn> <alpine.LFD.2.11.1412042056240.470@knanqh.ubzr> <2145860.PBxl6kLNRF@wuerfel>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 5 Dec 2014 12:18:58 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC 1/2] i2c: omap: fix buffer overruns during RX/TX data processing
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141204180946.GG2817@atomide.com>
+Date: Fri, 5 Dec 2014 20:18:53 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <46D905A0-2E71-4490-84BD-4D2467E13899@gmail.com>
+References: <1417294803-14729-1-git-send-email-al.kochet@gmail.com> <1417294803-14729-2-git-send-email-al.kochet@gmail.com> <20141201195841.GD2817@atomide.com> <B3F4FEFF-2333-473D-8A35-7D4EF1C44D90@gmail.com> <20141204180946.GG2817@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Dec 2014, Arnd Bergmann wrote:
+Hello, Tony!
 
+> The issue I'm seeing on 2430sdp is some earlier regression that
+> has started happening over the past year or so. 
 
-> > 
-> > That, too, risk overflowing.
-> > 
-> > Let's say x_lo = 0xffffffff and x_hi = 0xffffffff.  You get:
-> > 
-> >         0xffffffff * 0x83126e97 ->  0x83126e967ced9169
-> >         0xffffffff * 0x8d4fdf3b ->  0x8d4fdf3a72b020c5
-> >                                    -------------------
-> >                                    0x110624dd0ef9db22e
-> > 
-> > Therefore the sum doesn't fit into a u64 variable.
-> > 
-> > It is possible to skip carry handling but only when the MSB of both 
-> > constants are zero.  Here it is not the case.
-> 
-> If I understand this right, there are two possible optimizations to
-> avoid the overflow:
-> 
-> - for anything using monotonic time, or elapsed time, we can guarantee
->   that the upper bits are zero. Relying on monotonic time is a bit
->   dangerous, because that would mean introducing an API that works
->   with ktime_get() but not ktime_get_real(), and risk introducing
->   subtle bugs.
->   However, ktime_us_delta() could be optimized, and we can introduce
->   similar ktime_sec_delta() and ktime_ms_delta() functions with
->   the same properties.
+I don't have 2430sdp. And I couldn't  find 2430sdp schematics.
+Looks, like this is NDA stuff.
 
-Well, as Pang mentioned, ktime_t.tv64 is signed.  So if a negative value 
-were to be passed to the current version of ktime_divns() you wouldn't 
-get the expected answer as the first thing it does is
+> Of course the issue I'm seeing could be caused by hung twl4030
+> PMIC too.
 
-	u64 dclc = ktime_to_ns(kt);
+This could be switching twl4030 into inappropriate for 2430sdp mode.
 
-And do_div() works with unsigned values.
+For example, SMARTREFLEX_ENABLE bit is dangerous, because
+it switch twl-pads from VMODE to i2c.
+And when you set SMARTREFLEX_ENABLE, twl automatically drop
+VDD1 and VDD2 to 1.2V (if VDD1_SR_CONTROL was not initialized through
+BYPASS register early in the boot loader).
 
-So to say that we can assume that currently and for the forseeable 
-future, the top bit of ktime_t will never be set.  And if it does due to 
-a negative value then the code is already buggy.
+What mode is used in the 2430sdp? VMODE or Smartreflex?
 
-With that assumption in mind, we now have a maximum value of 
-0x7fffffffffffffff to divide i.e. 63 rather than 64 bits.  That means we 
-don't need the initial bias anymore to get correct results.  And the 
-constant looses its MSB too, removing the possibility for overflows in 
-the cross product.
+And, that is my assumption, may be it wrong again.
 
-Therefore the code becomes:
+I'd added trace in the twl_i2c_read_u8/twl_i2c_write_u8 functions to
+easy find concrete line of code, what cause problem (by register address).
 
-u64 ktime_to_us(ktime_t kt)
-{
-        u64 ns = ktime_to_ns(kt);
-        u32 x_lo, x_hi, y_lo, y_hi;
-        u64 res;
+Hang happens on access to 0x004b address group.
+That could be: BACKUP_REG, INT, PM_MASTER, PM_RECEIVER, RTC or
+SECURED_REG. It hard to tell which one cause hang without trace.
 
-        x_hi = ns >> 32;
-        x_lo = ns;
-        y_hi = 0x4189374b;
-        y_lo = 0xc6a7ef9e;
+Hope this helps.
 
-        res =  (u64)x_lo * y_lo;
-        res >>= 32;
-        res += (u64)x_lo * y_hi;
-        res += (u64)x_hi * y_lo;
-        res >>= 32;
-        res += (u64)x_hi * y_hi;
-
-        return res >> 8;
-}
-
-This is probably the best that can be done portably.
-
-> - one could always pre-shift the ktime_t value. For a division by
->   1000, we can shift right by 3 bits first, then do the multiplication
->   and then do another shift. Not sure if that helps at all or if
->   the extra shift operation makes this counterproductive.
-
-It could help in the full 64-bit range case as the remaining dividend 
-doesn't require a full 64-bit reciprocal constant, avoiding once again 
-the need for the initial bias and the carry handling.  Depending on the 
-actual reciprocal bit pattern this may not always be necessary.  It also 
-depends how cheap shifting a 64-bit value is (on ARM this requires 3 
-instructions and 3 registers).
-
-But in the specific case above this provides no gain.
-
-
-Nicolas
+Regards,
+Alexander.
 
