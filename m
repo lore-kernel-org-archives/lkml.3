@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbaLEJTs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 04:19:48 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:41301 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaLEJTq (ORCPT
+	id S1752770AbaLEMXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:23:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26743 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493AbaLEMXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 04:19:46 -0500
-Message-ID: <548178A2.9050409@de.ibm.com>
-Date: Fri, 05 Dec 2014 10:19:30 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 5 Dec 2014 07:23:09 -0500
+Date: Fri, 5 Dec 2014 15:22:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 5/6] net-PPP: Delete an unnecessary assignment in
+ mppe_alloc()
+Message-ID: <20141205122214.GB4912@mwanda>
+References: <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <547B4886.4080406@users.sourceforge.net>
+ <547B496E.604@users.sourceforge.net>
+ <547C5CBC.6060607@cogentembedded.com>
+ <547C82A6.2030808@users.sourceforge.net>
+ <547CA157.1080401@cogentembedded.com>
+ <5480DA32.8000201@users.sourceforge.net>
+ <5480DDC1.6040101@users.sourceforge.net>
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/9] kernel: Provide READ_ONCE and ASSIGN_ONCE
-References: <20141205021217.5337.qmail@ns.horizon.com>
-In-Reply-To: <20141205021217.5337.qmail@ns.horizon.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120509-0025-0000-0000-000002BD3B2A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5480DDC1.6040101@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.12.2014 um 03:12 schrieb George Spelvin:
->> +#define READ_ONCE(p) \
->> +	 typeof(p) __val; __read_once_size(&p, &__val, sizeof(__val)); __val; })
->> +
->> +#define ASSIGN_ONCE(val, p) \
->> +	({ typeof(p) __val; __val = val; __assign_once_size(&p, &__val, sizeof(__val)); __val; })
+On Thu, Dec 04, 2014 at 11:18:41PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Thu, 4 Dec 2014 22:33:34 +0100
 > 
-> Minor style nit: is it necessary to name a non-pointer variable "p"?
-> I expect typeof(p) to be a pointer type.
+> The data structure element "arc4" was assigned a null pointer by the
+> mppe_alloc() function if a previous function call "crypto_alloc_blkcipher"
+> failed.
 
-v might be better.
-> 
-> (The other fun style question, which is a lot less minor, is whether
-> ASSIGN_ONCE should be (src,dst) as above, or (dst,src) like = and
-> <string.h>.)
+No.  crypto_alloc_blkcipher() returns error pointers and not NULL.
 
-I tend to prefer dst, src, but Linus used src, dst in his proposal - so I used that.
+This patch creates a bug.
 
+regards,
+dan carpenter
 
 
