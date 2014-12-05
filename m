@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaLEN6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:58:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38405 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaLEN6a (ORCPT
+	id S1753286AbaLEOAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:00:17 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:61648 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaLEOAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:58:30 -0500
-Date: Fri, 5 Dec 2014 16:58:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 6/6] net-PPP: Delete another unnecessary assignment in
- mppe_alloc()
-Message-ID: <20141205135813.GF4912@mwanda>
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <547B4886.4080406@users.sourceforge.net>
- <547B496E.604@users.sourceforge.net>
- <547C5CBC.6060607@cogentembedded.com>
- <547C82A6.2030808@users.sourceforge.net>
- <547CA157.1080401@cogentembedded.com>
- <5480DA32.8000201@users.sourceforge.net>
- <5480DE25.2020802@users.sourceforge.net>
- <20141205122315.GC4912@mwanda>
+	Fri, 5 Dec 2014 09:00:15 -0500
+Date: Fri, 5 Dec 2014 06:00:11 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Athira Lekshmi <andnlnbn18@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Fixed missing blank line warning
+Message-ID: <20141205140011.GA5184@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Athira Lekshmi <andnlnbn18@gmail.com>, linux-kernel@vger.kernel.org
+References: <1417787034-7833-1-git-send-email-andnlnbn18@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141205122315.GC4912@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1417787034-7833-1-git-send-email-andnlnbn18@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 03:23:15PM +0300, Dan Carpenter wrote:
-> On Thu, Dec 04, 2014 at 11:20:21PM +0100, SF Markus Elfring wrote:
-> > From: Markus Elfring <elfring@users.sourceforge.net>
-> > Date: Thu, 4 Dec 2014 22:42:30 +0100
-> > 
-> > The data structure element "sha1" was assigned a null pointer by the
-> > mppe_alloc() after a function call "crypto_alloc_hash" failed.
+Athira,
+
+On Fri, Dec 05, 2014 at 07:13:54PM +0530, Athira Lekshmi wrote:
+> Fixed the checkpatch warning:
+> Missing a blank line after declarations
 > 
-> This patch is also buggy.
+> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+> ---
+>  drivers/watchdog/mixcomwd.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/watchdog/mixcomwd.c b/drivers/watchdog/mixcomwd.c
+> index be86ea3..03b7612e 100644
+> --- a/drivers/watchdog/mixcomwd.c
+> +++ b/drivers/watchdog/mixcomwd.c
+> @@ -183,6 +183,7 @@ static ssize_t mixcomwd_write(struct file *file, const char __user *data,
+>  
+>  			for (i = 0; i != len; i++) {
+>  				char c;
+> +
+>  				if (get_user(c, data + i))
+>  					return -EFAULT;
+>  				if (c == 'V')
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Actually it's ok.  I was just confused by the changelog.
+It is helpful to add a version number when patches are re-submitted to
+avoid them being confused for a new patch.  git-format-patch has the
+--reroll-count option which makes this easy to do.
 
-Sorry about that, Markus.
-
-regards,
-dan carpenter
-
+-- 
+- Jeremiah Mahler
