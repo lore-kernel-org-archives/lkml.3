@@ -1,154 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156AbaLEQyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:54:04 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59823 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750748AbaLEQyB (ORCPT
+	id S1751337AbaLEQyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:54:21 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:40884 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbaLEQyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:54:01 -0500
-Date: Fri, 5 Dec 2014 16:53:56 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [RFC 1/3] devfreq: dt-bindings: Document Exynos3250 devfreq
- driver
-Message-ID: <20141205165356.GC12849@leverpostej>
-References: <1417797988-29225-1-git-send-email-k.kozlowski@samsung.com>
- <1417797988-29225-2-git-send-email-k.kozlowski@samsung.com>
+	Fri, 5 Dec 2014 11:54:19 -0500
+Message-ID: <5481E336.8090303@codeaurora.org>
+Date: Fri, 05 Dec 2014 18:54:14 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417797988-29225-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] UBI: Fastmap: Fix races in ubi_wl_get_peb()
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-5-git-send-email-richard@nod.at> <5481AE79.1090900@codeaurora.org> <5481B120.5020409@nod.at>
+In-Reply-To: <5481B120.5020409@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 04:46:26PM +0000, Krzysztof Kozlowski wrote:
-> Add documentation for bindings used by Exynos3250 devfreq driver.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  .../bindings/arm/samsung/exynos3250-devfreq.txt    | 66 ++++++++++++++++++++++
->  1 file changed, 66 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
-> new file mode 100644
-> index 000000000000..047955e9e371
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
-> @@ -0,0 +1,66 @@
-> +Samsung Exynos3250 devfreq driver
+Hi Richard
 
-The binding should describe the hardware, not a particular driver of
-that hardware. Please write the binding (and its documentation) with
-that in mind, and drop references to the driver and "busfreq".
+On 12/5/2014 3:20 PM, Richard Weinberger wrote:
+> Tanya,
+>
+> Am 05.12.2014 um 14:09 schrieb Tanya Brokhman:
+>> On 11/24/2014 3:20 PM, Richard Weinberger wrote:
+>>> ubi_wl_get_peb() has two problems, it reads the pool
+>>> size and usage counters without any protection.
+>>> While reading one value would be perfectly fine it reads multiple
+>>> values and compares them. This is racy and can lead to incorrect
+>>> pool handling.
+>>> Furthermore ubi_update_fastmap() is called without wl_lock held,
+>>> before incrementing the used counter it needs to be checked again.
+>>
+>> I didn't see where you fixed the ubi_update_fastmap issue you just mentioned.
+>
+> This is exactly what you're questioning below.
+> We have to recheck as the pool counter could have changed.
+>
 
-With an adequate binding we can probe the device and forward the
-information to relevant driver(s) as necessary.
+Oh, I understood the commit msg a bit differently, but now I see that it 
+was my mistake. thanks!
 
-> +=================================
-> +
-> +The driver support changing frequencies and voltage for:
-> + - memory controller and bus,
-> + - peripheral buses (left and right).
+>>> It could happen that another thread consumed all PEBs from the
+>>> pool and the counter goes beyond ->size.
+>>>
+>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>> ---
+>>>    drivers/mtd/ubi/ubi.h |  3 ++-
+>>>    drivers/mtd/ubi/wl.c  | 34 +++++++++++++++++++++++-----------
+>>>    2 files changed, 25 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+>>> index 04c4c05..d672412 100644
+>>> --- a/drivers/mtd/ubi/ubi.h
+>>> +++ b/drivers/mtd/ubi/ubi.h
+>>> @@ -439,7 +439,8 @@ struct ubi_debug_info {
+>>>     * @pq_head: protection queue head
+>>>     * @wl_lock: protects the @used, @free, @pq, @pq_head, @lookuptbl, @move_from,
+>>>     *         @move_to, @move_to_put @erase_pending, @wl_scheduled, @works,
+>>> - *         @erroneous, @erroneous_peb_count, and @fm_work_scheduled fields
+>>> + *         @erroneous, @erroneous_peb_count, @fm_work_scheduled, @fm_pool,
+>>> + *         and @fm_wl_pool fields
+>>>     * @move_mutex: serializes eraseblock moves
+>>>     * @work_sem: used to wait for all the scheduled works to finish and prevent
+>>>     * new works from being submitted
+>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>>> index cb2e571..7730b97 100644
+>>> --- a/drivers/mtd/ubi/wl.c
+>>> +++ b/drivers/mtd/ubi/wl.c
+>>> @@ -629,24 +629,36 @@ void ubi_refill_pools(struct ubi_device *ubi)
+>>>     */
+>>>    int ubi_wl_get_peb(struct ubi_device *ubi)
+>>>    {
+>>> -    int ret;
+>>> +    int ret, retried = 0;
+>>>        struct ubi_fm_pool *pool = &ubi->fm_pool;
+>>>        struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
+>>>
+>>> -    if (!pool->size || !wl_pool->size || pool->used == pool->size ||
+>>> -        wl_pool->used == wl_pool->size)
+>>> +again:
+>>> +    spin_lock(&ubi->wl_lock);
+>>> +    /* We check here also for the WL pool because at this point we can
+>>> +     * refill the WL pool synchronous. */
+>>> +    if (pool->used == pool->size || wl_pool->used == wl_pool->size) {
+>>> +        spin_unlock(&ubi->wl_lock);
+>>>            ubi_update_fastmap(ubi);
+>>> -
+>>> -    /* we got not a single free PEB */
+>>> -    if (!pool->size)
+>>> -        ret = -ENOSPC;
+>>> -    else {
+>>>            spin_lock(&ubi->wl_lock);
+>>> -        ret = pool->pebs[pool->used++];
+>>> -        prot_queue_add(ubi, ubi->lookuptbl[ret]);
+>>> +    }
+>>> +
+>>> +    if (pool->used == pool->size) {
+>>
+>> Im confused about this "if" condition. You just tested pool->used == pool->size in the previous "if". If in the previous if pool->used != pool->size and wl_pool->used !=
+>> wl_pool->size, you didn't enter, the lock is still held so pool->used != pool->size still. If in the previos "if" wl_pool->used == wl_pool->size was true nd tou released the lock,
+>> ubi_update_fastmap(ubi) was called, which refills the pools. So again, if pools were refilled pool->used would be 0 here and pool->size > 0.
+>>
+>> So in both cases I don't see how at this point pool->used == pool->size could ever be true?
+>
+> If we enter the "if (pool->used == pool->size || wl_pool->used == wl_pool->size) {" branch we unlock wl_lock and call ubi_update_fastmap().
+> Another thread can enter ubi_wl_get_peb() and alter the pool counter. So we have to recheck the counter after taking wl_lock again.
 
+hmmm... ok. Perhaps a comment could be added in the code to explain this 
+case in a few words?
 
-What do left and right mean in this context?
+>
+>>>            spin_unlock(&ubi->wl_lock);
+>>> +        if (retried) {
+>>> +            ubi_err(ubi, "Unable to get a free PEB from user WL pool");
+>>> +            ret = -ENOSPC;
+>>> +            goto out;
+>>> +        }
+>>> +        retried = 1;
+>>
+>> Why did you decide to retry in this function? and why only 1 retry attempt? I'm not against it, trying to understand the logic.
+>
+> Because failing immediately with -ENOSPC is not nice.
 
-> +
-> +Memory controller and bus
-> +=========================
-> +Required properties:
-> + - compatible : should be "samsung,exynos3250-busfreq-mif"
-> + - reg : two sets (offset and length of the register) for PPMU registers
-> +	used by this devfreq driver
-> + - clock-names : one clock of name "dmc" to manage frequency
-> + - clocks : phandle and specifier for clock listed in clock-names property
-> + - vdd_mif-supply : phandle to MIF voltage regulator
+Why not? this is what was done before....
+I think what I really bothers me in this case is that you don't sleep, 
+you branch immediately to retry again, so the chances that there will be 
+context switch and free pebs appear aren't that high.
+I'm used to functions using some sort of "retry" logic to sleep before 
+retrying. Of course sleeping isn't a good idea here. That's why the 
+"retry" bugs me a bit.
 
-s/_/-/ in property names please.
+Before we do that I'll give UBI a second chance to produce a free PEB.
+>
+> Thanks,
+> //richard
+>
 
-> +
-> +Peripheral buses
-> +================
-> +Required properties:
-> + - compatible : should be "samsung,exynos3250-busfreq-int"
-
-What does "int" mean here?
-
-> + - reg : two sets (offset and length of the register) for PPMU registers
-> +	used by this devfreq driver
-> + - clock-names : names for PPMU clocks and bus clocks to manage frequencies;
-> +	All following clock names (and corresponding phandles) must be
-> +	provided:
-> +	- "ppmu_left", "ppmu_right",
-> +	- "aclk_400", "aclk_266", "aclk_200", "aclk_160", "aclk_gdl", "aclk_gdr", "mfc";
-> + - clocks : phandles and specifiers for clocks listed in clock-names property
-> + - vdd_mif-supply : phandle to INT voltage regulator
-
-s/_/-/ here too.
 
 Thanks,
-Mark.
-
-> +
-> +Example
-> +=======
-> +	busfreq_mif: busfreq@106A0000 {
-> +		compatible = "samsung,exynos3250-busfreq-mif";
-> +		reg = <0x106A0000 0x2000>, <0x106B0000 0x2000>;
-> +		clocks = <&cmu_dmc CLK_DIV_DMC>;
-> +		clock-names = "dmc";
-> +		vdd_mif-supply = <&buck1_reg>;
-> +		status = "okay";
-> +	};
-> +
-> +	busfreq_int: busfreq@116A0000 {
-> +		compatible = "samsung,exynos3250-busfreq-int";
-> +		reg = <0x116A0000 0x2000>, <0x112A0000 0x2000>;
-> +		clocks = <&cmu CLK_PPMULEFT>,
-> +			<&cmu CLK_PPMURIGHT>,
-> +			<&cmu CLK_DIV_ACLK_400_MCUISP>,
-> +			<&cmu CLK_DIV_ACLK_266>,
-> +			<&cmu CLK_DIV_ACLK_200>,
-> +			<&cmu CLK_DIV_ACLK_160>,
-> +			<&cmu CLK_DIV_GDL>,
-> +			<&cmu CLK_DIV_GDR>,
-> +			<&cmu CLK_DIV_MFC>;
-> +		clock-names = "ppmuleft",
-> +			"ppmuright",
-> +			"aclk_400",
-> +			"aclk_266",
-> +			"aclk_200",
-> +			"aclk_160",
-> +			"aclk_gdl",
-> +			"aclk_gdr",
-> +			"mfc";
-> +		vdd_int-supply = <&buck3_reg>;
-> +		status = "okay";
-> +	};
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Tanya Brokhman
+-- 
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
