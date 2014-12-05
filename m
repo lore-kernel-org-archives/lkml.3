@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaLETjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:39:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20768 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLETjL (ORCPT
+	id S1751874AbaLETlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:41:10 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:41232 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaLETlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:39:11 -0500
-Date: Fri, 5 Dec 2014 22:39:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 1/2] compiler: use compiler to detect integer overflows
-Message-ID: <20141205193901.GC4963@mwanda>
-References: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com>
- <CA+55aFzyDC=o_Beg+8hjW8+TQXYWCgQo_yfjgHsTz0LRTiomWA@mail.gmail.com>
- <547620E6.10306@oracle.com>
- <CA+55aFyiCg23eL=y0nE8a-6_tBAtB097J8v_BtpUcHU8sc3hyQ@mail.gmail.com>
- <20141127204257.GA11014@mwanda>
- <20141205095423.GB4963@mwanda>
- <CA+55aFxs=mF9vEMh1JN=UpF4UZ9-ojiN==PW8PJNWQ6D18NWFg@mail.gmail.com>
+	Fri, 5 Dec 2014 14:41:08 -0500
+Message-ID: <54820A4F.6000708@imgtec.com>
+Date: Fri, 5 Dec 2014 11:41:03 -0800
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxs=mF9vEMh1JN=UpF4UZ9-ojiN==PW8PJNWQ6D18NWFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: David Daney <ddaney.cavm@gmail.com>, Kees Cook <keescook@chromium.org>
+CC: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        <Zubair.Kakakhel@imgtec.com>, <geert+renesas@glider.be>,
+        <david.daney@cavium.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>, <davidlohr@hp.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>, <chenhc@lemote.com>,
+        <cl@linux.com>, "Ingo Molnar" <mingo@kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        James Hogan <james.hogan@imgtec.com>, Tejun Heo <tj@kernel.org>,
+        <alex@alex-smith.me.uk>, Paolo Bonzini <pbonzini@redhat.com>,
+        John Crispin <blogic@openwrt.org>,
+        Paul Burton <paul.burton@imgtec.com>, <qais.yousef@imgtec.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "Markos Chandras" <markos.chandras@imgtec.com>,
+        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
+        <lars.persson@axis.com>
+Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
+References: <20141203015537.13886.50830.stgit@linux-yegoshin> <20141203015824.13886.74616.stgit@linux-yegoshin> <5481EB52.6060706@gmail.com> <CAGXu5jJJx0O7GhHghy+sC4fJL2O=RsO+Zgm78r9SNt-aTbhqcw@mail.gmail.com> <54820244.5010304@gmail.com>
+In-Reply-To: <54820244.5010304@gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:50:19AM -0800, Linus Torvalds wrote:
-> On Fri, Dec 5, 2014 at 1:54 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> >
-> > There are some false positives which do:
-> >
-> >         if ((u16)(u16_foo + u16_bar) < u16_foo) {
-> 
-> Actually, the worse false positive is the ones that are pointer comparisons.
-> 
-> A compiler that does those as signed is just broken. It's happened,
-> but it's *still* completely broken.
-> 
+On 12/05/2014 11:06 AM, David Daney wrote:
+> On 12/05/2014 10:51 AM, Kees Cook wrote:
+>> On Fri, Dec 5, 2014 at 9:28 AM, David Daney <ddaney.cavm@gmail.com> 
+>> wrote:
+>>>
+>>> Some programs require an executable stack, this patch will break them.
+>>
+>> Have you tested this?
+>
+> Do you require empirical evidence that the patch is incorrect, or is 
+> it enough to just to trust me when I say that it is incorrect? 
+> Typically the burden of proof is with those proposing the patches.
+>
+>>
+>>> You can only select a non-executable stack in response to PT_GNU_STACK
+>>> program headers in the ELF file of the executable program.
+>>
+>> This is already handled by fs/binfmt_elf.c. It does the parsing of the
+>> PT_GNU_STACK needs, and sets up the stack flags appropriately. All the
+>> change to VM_DATA_DEFAULT_FLAGS does is make sure that EXSTACK_DEFAULT
+>> now means no VM_EXEC by default. If PT_GNU_STACK requires it, it gets
+>> added back in.
+>>
+>
+> The problem is not with "modern" executables that are properly 
+> annotated with PT_GNU_STACK.
+>
+> My objection is to the intentional breaking of old executables that 
+> have no PT_GNU_STACK annotation, but require an executable stack.  
+> Since we usually try not to break userspace, we cannot merge a patch 
+> like this one.
+>
 
-Oh.  Wow...  That's embarrassing.  I thought they were signed for some
-reason, and I thought it was weird, but I didn't think about it hard
-enough...
+I ran Debian, buildroot etc and I had only one problem - ssh_keygen is 
+built with PT_GNU_STACK annotation stack executable protection. And 
+debug output shows a spectacular discarding this setup from kernel by 
+GLIBC loader a couple of milliseconds later, at first library load. You 
+can test it yourself - run ssh_keygen and look into it's 
+/proc/<pid>/maps, stack would have +X.
 
-I'll redo this.
+The rest of Debian distribution, buildroot and Android runs fine with 
+this patch series.
 
-regards,
-dan carpenter
+Without any step forward the stack protection would be never solved. 
+GLIBC team looked into problem and they agree to fix a default 
+cancellation of no-X but they need a platform for that.
+
+
+But of course, we can delay this specific non-X setup for stack until 
+GLIBC fixes loader and do this patch optional or via boot flag.
+
+Note: I push this series not because of default non-X stack but because 
+an explicit PT_GNU_STACK no-X is ignored.
+
+
