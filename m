@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaLEXnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:43:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
+	id S932145AbaLEXnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:43:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaLEWqE (ORCPT
+	with ESMTP id S1752313AbaLEWqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:46:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.17 055/122] USB: keyspan: fix tty line-status reporting
-Date: Fri,  5 Dec 2014 14:43:49 -0800
-Message-Id: <20141205223313.815102205@linuxfoundation.org>
+        Aaron Ma <mapengyu@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 029/122] PCI: Support 64-bit bridge windows if we have 64-bit dma_addr_t
+Date: Fri,  5 Dec 2014 14:43:23 -0800
+Message-Id: <20141205223309.837780892@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -28,135 +29,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 5d1678a33c731b56e245e888fdae5e88efce0997 upstream.
+commit 7fc986d8a9727e5d40da3c2c1c343da6142e82a9 upstream.
 
-Fix handling of TTY error flags, which are not bitmasks and must
-specifically not be ORed together as this prevents the line discipline
-from recognising them.
+Aaron reported that a 32-bit x86 kernel with Physical Address Extension
+(PAE) support complains about bridge prefetchable memory windows above 4GB:
 
-Also insert null characters when reporting overrun errors as these are
-not associated with the received character.
+  pci_bus 0000:00: root bus resource [mem 0x380000000000-0x383fffffffff]
+  ...
+  pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
+  pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
+  pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
+  pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
+  pci 0000:00:02.2: PCI bridge to [bus 03-04]
+  pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
+  pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
+  pci 0000:00:02.2: can't handle 64-bit address space for bridge
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+In this kernel, unsigned long is 32 bits and dma_addr_t is 64 bits.
+Previously we used "unsigned long" to hold the bridge window address.  But
+this is a bus address, so we should use dma_addr_t instead.
+
+Use dma_addr_t to hold the bridge window base and limit.
+
+The question of whether the CPU can actually *address* the window is
+separate and depends on what the physical address space of the CPU is and
+whether the host bridge does any address translation.
+
+[bhelgaas: fix "shift count > width of type", changelog, stable tag]
+Fixes: d56dbf5bab8c ("PCI: Allocate 64-bit BARs above 4G when possible")
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
+Reported-by: Aaron Ma <mapengyu@gmail.com>
+Tested-by: Aaron Ma <mapengyu@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/keyspan.c |   76 +++++++++++++++++++++++++++----------------
- 1 file changed, 48 insertions(+), 28 deletions(-)
+ drivers/pci/probe.c |   28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -322,14 +322,19 @@ static void	usa26_indat_callback(struct
- 			/* some bytes had errors, every byte has status */
- 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
- 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
--				int stat = data[i], flag = 0;
--				if (stat & RXERROR_OVERRUN)
--					flag |= TTY_OVERRUN;
--				if (stat & RXERROR_FRAMING)
--					flag |= TTY_FRAME;
--				if (stat & RXERROR_PARITY)
--					flag |= TTY_PARITY;
-+				int stat = data[i];
-+				int flag = TTY_NORMAL;
-+
-+				if (stat & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+				}
- 				/* XXX should handle break (0x10) */
-+				if (stat & RXERROR_PARITY)
-+					flag = TTY_PARITY;
-+				else if (stat & RXERROR_FRAMING)
-+					flag = TTY_FRAME;
-+
- 				tty_insert_flip_char(&port->port, data[i+1],
- 						flag);
- 			}
-@@ -650,14 +655,19 @@ static void	usa49_indat_callback(struct
- 		} else {
- 			/* some bytes had errors, every byte has status */
- 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
--				int stat = data[i], flag = 0;
--				if (stat & RXERROR_OVERRUN)
--					flag |= TTY_OVERRUN;
--				if (stat & RXERROR_FRAMING)
--					flag |= TTY_FRAME;
--				if (stat & RXERROR_PARITY)
--					flag |= TTY_PARITY;
-+				int stat = data[i];
-+				int flag = TTY_NORMAL;
-+
-+				if (stat & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+				}
- 				/* XXX should handle break (0x10) */
-+				if (stat & RXERROR_PARITY)
-+					flag = TTY_PARITY;
-+				else if (stat & RXERROR_FRAMING)
-+					flag = TTY_FRAME;
-+
- 				tty_insert_flip_char(&port->port, data[i+1],
- 						flag);
- 			}
-@@ -714,15 +724,19 @@ static void usa49wg_indat_callback(struc
- 			 */
- 			for (x = 0; x + 1 < len &&
- 				    i + 1 < urb->actual_length; x += 2) {
--				int stat = data[i], flag = 0;
-+				int stat = data[i];
-+				int flag = TTY_NORMAL;
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -406,15 +406,16 @@ static void pci_read_bridge_mmio_pref(st
+ {
+ 	struct pci_dev *dev = child->self;
+ 	u16 mem_base_lo, mem_limit_lo;
+-	unsigned long base, limit;
++	u64 base64, limit64;
++	dma_addr_t base, limit;
+ 	struct pci_bus_region region;
+ 	struct resource *res;
  
--				if (stat & RXERROR_OVERRUN)
--					flag |= TTY_OVERRUN;
--				if (stat & RXERROR_FRAMING)
--					flag |= TTY_FRAME;
--				if (stat & RXERROR_PARITY)
--					flag |= TTY_PARITY;
-+				if (stat & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+				}
- 				/* XXX should handle break (0x10) */
-+				if (stat & RXERROR_PARITY)
-+					flag = TTY_PARITY;
-+				else if (stat & RXERROR_FRAMING)
-+					flag = TTY_FRAME;
+ 	res = child->resource[2];
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
+ 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
+-	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
+-	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
++	base64 = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
++	limit64 = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
+ 
+ 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
+ 		u32 mem_base_hi, mem_limit_hi;
+@@ -428,17 +429,20 @@ static void pci_read_bridge_mmio_pref(st
+ 		 * this, just assume they are not being used.
+ 		 */
+ 		if (mem_base_hi <= mem_limit_hi) {
+-#if BITS_PER_LONG == 64
+-			base |= ((unsigned long) mem_base_hi) << 32;
+-			limit |= ((unsigned long) mem_limit_hi) << 32;
+-#else
+-			if (mem_base_hi || mem_limit_hi) {
+-				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
+-				return;
+-			}
+-#endif
++			base64 |= (u64) mem_base_hi << 32;
++			limit64 |= (u64) mem_limit_hi << 32;
+ 		}
+ 	}
 +
- 				tty_insert_flip_char(&port->port, data[i+1],
- 						     flag);
- 				i += 2;
-@@ -785,14 +799,20 @@ static void usa90_indat_callback(struct
- 			/* some bytes had errors, every byte has status */
- 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
- 				for (i = 0; i + 1 < urb->actual_length; i += 2) {
--					int stat = data[i], flag = 0;
--					if (stat & RXERROR_OVERRUN)
--						flag |= TTY_OVERRUN;
--					if (stat & RXERROR_FRAMING)
--						flag |= TTY_FRAME;
--					if (stat & RXERROR_PARITY)
--						flag |= TTY_PARITY;
-+					int stat = data[i];
-+					int flag = TTY_NORMAL;
++	base = (dma_addr_t) base64;
++	limit = (dma_addr_t) limit64;
 +
-+					if (stat & RXERROR_OVERRUN) {
-+						tty_insert_flip_char(
-+								&port->port, 0,
-+								TTY_OVERRUN);
-+					}
- 					/* XXX should handle break (0x10) */
-+					if (stat & RXERROR_PARITY)
-+						flag = TTY_PARITY;
-+					else if (stat & RXERROR_FRAMING)
-+						flag = TTY_FRAME;
++	if (base != base64) {
++		dev_err(&dev->dev, "can't handle bridge window above 4GB (bus address %#010llx)\n",
++			(unsigned long long) base64);
++		return;
++	}
 +
- 					tty_insert_flip_char(&port->port,
- 							data[i+1], flag);
- 				}
+ 	if (base <= limit) {
+ 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
+ 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
 
 
