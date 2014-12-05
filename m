@@ -1,137 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaLEGeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:34:11 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:60113 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaLEGeJ (ORCPT
+	id S1752106AbaLEGes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:34:48 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:54095 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbaLEGer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:34:09 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <28fbef97c5c38cc3b2b25e31ac64efa6>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v18 11/12] dt-bindings: Add documentation for rockchip dw hdmi
-Date: Fri,  5 Dec 2014 14:33:33 +0800
-Message-Id: <1417761213-17382-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
+	Fri, 5 Dec 2014 01:34:47 -0500
+Message-ID: <54815200.4040807@hitachi.com>
+Date: Fri, 05 Dec 2014 15:34:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/2] ftracetest: Add --verbose option for showing echo
+ output
+References: <20141204194109.7376.84279.stgit@localhost.localdomain> <20141204194123.7376.22964.stgit@localhost.localdomain> <20141205050843.GA18217@sejong> <5481414B.5090805@hitachi.com> <20141205055245.GB18217@sejong>
+In-Reply-To: <20141205055245.GB18217@sejong>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+(2014/12/05 14:52), Namhyung Kim wrote:
+> On Fri, Dec 05, 2014 at 02:23:23PM +0900, Masami Hiramatsu wrote:
+>> (2014/12/05 14:08), Namhyung Kim wrote:
+>>> On Thu, Dec 04, 2014 at 02:41:23PM -0500, Masami Hiramatsu wrote:
+>>>> Add --verbose/-v option for showing echo output in testcases.
+>>>> This is good for checking the progress of testcases which
+>>>> take a longer time to run.
+>>>>
+>>>> To implement this feature, all the testcase failures are
+>>>> captured in ftracetest and send signal to set SIG_RESULT=FAIL.
+>>>>
+>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>> ---
+>>>
+>>> [SNIP]
+>>>> -  # setup PID and PPID, $$ is not updated.
+>>>> -  (cd $TRACING_DIR; read PID _ < /proc/self/stat ;
+>>>> -   set -e; set -x; . $1) >> $testlog 2>&1
+>>>> -  eval_result $? $SIG_RESULT
+>>>> +  if [ $VERBOSE -ne 0 ]; then
+>>>> +    __run_test $1 2>> $testlog | tee -a $testlog
+>>>
+>>> Shouldn't it be
+>>>
+>>>        __run_test $1 2>&1 | tee -a $testlog
+>>>
+>>> ?
+>>
+>> No, that outputs both stdout and stderr to $testlog and console.
+>> What I'd like to do above is only stdout to $testlog and console and
+>> stderr goes only to $testlog. (Note that __run_test set -x which outputs
+>> every executed command to stderr)
+> 
+> Hmm.. so the actual output of the failing command is not shown on
+> console even when -v option is given, right?
 
----
+No, if a command fails, the testcase is automatically terminated
+(by set -e) and $testlog is dumped on console, so that tester can
+trace back the log.
 
-Changes in v18:
-- correct some spelling mistakes in dw_hdmi-rockchip bindings doc
+> Anyway I worried about that the order of messages might be mixed..
+> 
+>   echo msg1 > /dev/stdout
+>   echo msg2 > /dev/stderr
+>   echo msg3 > /dev/stdout
+>   echo msg4 > /dev/stderr
+> 
+> So the output in this case can be like msg2, msg4, msg1, and msg3..?
 
-Changes in v17: None
-Changes in v16:
-- modify clocks bindings
-- descrbie ddc-i2c-bus as optional
+I'm not sure this can happen... Would you have any other good way to
+solve this?
 
-Changes in v15: None
-Changes in v14: None
-Changes in v13: None
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8:
-- Add documentation for rockchip dw hdmi
+Thank you,
 
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- .../devicetree/bindings/video/dw_hdmi-rockchip.txt | 46 ++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-
-diff --git a/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-new file mode 100644
-index 0000000..668091f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
-@@ -0,0 +1,46 @@
-+Rockchip specific extensions to the Synopsys Designware HDMI
-+================================
-+
-+Required properties:
-+- compatible: "rockchip,rk3288-dw-hdmi";
-+- reg: Physical base address and length of the controller's registers.
-+- clocks: phandle to hdmi iahb and isfr clocks.
-+- clock-names: should be "iahb" "isfr"
-+- rockchip,grf: this soc should set GRF regs to mux vopl/vopb.
-+- interrupts: HDMI interrupt number
-+- ports: contain a port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt. For
-+  vopb,set the reg = <0> and set the reg = <1> for vopl.
-+- reg-io-width: the width of the reg:1,4, the value should be 4 on
-+  rk3288 platform
-+
-+Optional properties
-+- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-+- clocks, clock-names: phandle to the HDMI CEC clock, name should be "cec"
-+
-+Example:
-+hdmi: hdmi@ff980000 {
-+	compatible = "rockchip,rk3288-dw-hdmi";
-+	reg = <0xff980000 0x20000>;
-+	reg-io-width = <4>;
-+	ddc-i2c-bus = <&i2c5>;
-+	rockchip,grf = <&grf>;
-+	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru  PCLK_HDMI_CTRL>, <&cru SCLK_HDMI_HDCP>;
-+	clock-names = "iahb", "isfr";
-+	status = "disabled";
-+	ports {
-+		hdmi_in: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			hdmi_in_vopb: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint = <&vopb_out_hdmi>;
-+			};
-+			hdmi_in_vopl: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint = <&vopl_out_hdmi>;
-+			};
-+		};
-+	};
-+};
 -- 
-1.9.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
