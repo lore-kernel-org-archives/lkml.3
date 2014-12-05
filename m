@@ -1,34 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaLETlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:41:17 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63095 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaLETlN (ORCPT
+	id S1751944AbaLEToK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:44:10 -0500
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:40484 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751233AbaLEToJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:41:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <54820244.5010304@gmail.com>
-References: <20141203015537.13886.50830.stgit@linux-yegoshin>
-	<20141203015824.13886.74616.stgit@linux-yegoshin>
-	<5481EB52.6060706@gmail.com>
-	<CAGXu5jJJx0O7GhHghy+sC4fJL2O=RsO+Zgm78r9SNt-aTbhqcw@mail.gmail.com>
-	<54820244.5010304@gmail.com>
-Date: Fri, 5 Dec 2014 11:41:13 -0800
-X-Google-Sender-Auth: 9zHzHXE-bX1kiOh0FK8sFQi1a5c
-Message-ID: <CAGXu5jJOCfXXMPYsWbp0wzF_PvTTKrcuy3=cSa0bCEn01M56dA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as non-executable
-From: Kees Cook <keescook@chromium.org>
+	Fri, 5 Dec 2014 14:44:09 -0500
+Date: Fri, 5 Dec 2014 13:44:03 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
 To: David Daney <ddaney.cavm@gmail.com>
-Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+cc: Kees Cook <keescook@chromium.org>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
         Linux MIPS Mailing List <linux-mips@linux-mips.org>,
         Zubair.Kakakhel@imgtec.com, geert+renesas@glider.be,
         david.daney@cavium.com, Peter Zijlstra <peterz@infradead.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>, davidlohr@hp.com,
         "Maciej W. Rozycki" <macro@linux-mips.org>, chenhc@lemote.com,
-        cl@linux.com, Ingo Molnar <mingo@kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Richard Weinberger <richard@nod.at>,
+        =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
         James Hogan <james.hogan@imgtec.com>, Tejun Heo <tj@kernel.org>,
         alex@alex-smith.me.uk, Paolo Bonzini <pbonzini@redhat.com>,
         John Crispin <blogic@openwrt.org>,
@@ -37,106 +28,25 @@ Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
         Ralf Baechle <ralf@linux-mips.org>,
         Markos Chandras <markos.chandras@imgtec.com>, dengcheng.zhu@imgtec.com,
         manuel.lauss@gmail.com, lars.persson@axis.com
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v3 3/3] MIPS: set stack/data protection as
+ non-executable
+In-Reply-To: <54820244.5010304@gmail.com>
+Message-ID: <alpine.DEB.2.11.1412051343330.5206@gentwo.org>
+References: <20141203015537.13886.50830.stgit@linux-yegoshin> <20141203015824.13886.74616.stgit@linux-yegoshin> <5481EB52.6060706@gmail.com> <CAGXu5jJJx0O7GhHghy+sC4fJL2O=RsO+Zgm78r9SNt-aTbhqcw@mail.gmail.com> <54820244.5010304@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 11:06 AM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 12/05/2014 10:51 AM, Kees Cook wrote:
->>
->> On Fri, Dec 5, 2014 at 9:28 AM, David Daney <ddaney.cavm@gmail.com> wrote:
->>>
->>> On 12/02/2014 05:58 PM, Leonid Yegoshin wrote:
->>>>
->>>>
->>>> This is a last step of 3 patches which shift FPU emulation out of
->>>> stack into protected area. So, it disables a default executable stack.
->>>>
->>>> Additionally, it sets a default data area non-executable protection.
->>>>
->>>> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
->>>
->>>
->>>
->>> NAK!
->>>
->>> Some programs require an executable stack, this patch will break them.
->>
->> Have you tested this?
->
-> Do you require empirical evidence that the patch is incorrect, or is it
-> enough to just to trust me when I say that it is incorrect?  Typically the
-> burden of proof is with those proposing the patches.
+On Fri, 5 Dec 2014, David Daney wrote:
 
-My fault, I misunderstood. (See below.)
-
->>> You can only select a non-executable stack in response to PT_GNU_STACK
->>> program headers in the ELF file of the executable program.
->>
->>
->> This is already handled by fs/binfmt_elf.c. It does the parsing of the
->> PT_GNU_STACK needs, and sets up the stack flags appropriately. All the
->> change to VM_DATA_DEFAULT_FLAGS does is make sure that EXSTACK_DEFAULT
->> now means no VM_EXEC by default. If PT_GNU_STACK requires it, it gets
->> added back in.
->>
->
-> The problem is not with "modern" executables that are properly annotated
-> with PT_GNU_STACK.
+> The problem is not with "modern" executables that are properly annotated with
+> PT_GNU_STACK.
 >
 > My objection is to the intentional breaking of old executables that have no
 > PT_GNU_STACK annotation, but require an executable stack.  Since we usually
 > try not to break userspace, we cannot merge a patch like this one.
 
-Ah! Okay. If legacy executables expected an executable stack for more
-reasons than FPU emulation, then yes, absolutely I agree with you.
+How old are these and how many are still around? Can the annotation be
+added with a tool?
 
--Kees
-
->
-> David Daney.
->
->
->
->> -Kees
->>
->>>
->>> David Daney
->>>
->>>
->>>
->>>> ---
->>>>    arch/mips/include/asm/page.h |    2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
->>>> index 3be81803595d..d49ba81cb4ed 100644
->>>> --- a/arch/mips/include/asm/page.h
->>>> +++ b/arch/mips/include/asm/page.h
->>>> @@ -230,7 +230,7 @@ extern int __virt_addr_valid(const volatile void
->>>> *kaddr);
->>>>    #define virt_addr_valid(kaddr)
->>>> \
->>>>          __virt_addr_valid((const volatile void *) (kaddr))
->>>>
->>>> -#define VM_DATA_DEFAULT_FLAGS  (VM_READ | VM_WRITE | VM_EXEC | \
->>>> +#define VM_DATA_DEFAULT_FLAGS  (VM_READ | VM_WRITE | \
->>>>                                   VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->>>>
->>>>    #define UNCAC_ADDR(addr)      ((addr) - PAGE_OFFSET + UNCAC_BASE)
->>>>
->>>>
->>>>
->>>>
->>>
->>
->>
->>
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
