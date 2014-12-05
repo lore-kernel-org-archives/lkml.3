@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaLEXYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:24:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754095AbaLEXYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:24:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298AbaLEW4N (ORCPT
+	with ESMTP id S1753332AbaLEW4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cristina Ciocan <cristina.ciocan@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 32/73] iio: Fix IIO_EVENT_CODE_EXTRACT_DIR bit mask
-Date: Fri,  5 Dec 2014 14:44:38 -0800
-Message-Id: <20141205224434.903639248@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.14 33/73] staging: r8188eu: Add new device ID for DLink GO-USB-N150
+Date: Fri,  5 Dec 2014 14:44:39 -0800
+Message-Id: <20141205224434.933455037@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,32 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristina Ciocan <cristina.ciocan@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit ccf54555da9a5e91e454b909ca6a5303c7d6b910 upstream.
+commit 6d4556fc0309608f760f1d329df56d77fdd0c31a upstream.
 
-The direction field is set on 7 bits, thus we need to AND it with 0111 111 mask
-in order to retrieve it, that is 0x7F, not 0xCF as it is now.
+The DLink GO-USB-N150 with revision B1 uses this driver.
 
-Fixes: ade7ef7ba (staging:iio: Differential channel handling)
-Signed-off-by: Cristina Ciocan <cristina.ciocan@intel.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/iio/events.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/iio/events.h
-+++ b/include/linux/iio/events.h
-@@ -72,7 +72,7 @@ struct iio_event_data {
- 
- #define IIO_EVENT_CODE_EXTRACT_TYPE(mask) ((mask >> 56) & 0xFF)
- 
--#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0xCF)
-+#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0x7F)
- 
- #define IIO_EVENT_CODE_EXTRACT_CHAN_TYPE(mask) ((mask >> 32) & 0xFF)
- 
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -57,6 +57,7 @@ static struct usb_device_id rtw_usb_id_t
+ 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
+ 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
++	{USB_DEVICE(0x2001, 0x3311)}, /* DLink GO-USB-N150 REV B1 */
+ 	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
+ 	{}	/* Terminating entry */
+ };
 
 
