@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaLEGjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:39:09 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:47334 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaLEGjF (ORCPT
+	id S1751989AbaLEGjq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:39:46 -0500
+Received: from smtprelay0035.hostedemail.com ([216.40.44.35]:59951 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751782AbaLEGjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:39:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141204122813.GA523@node.dhcp.inet.fi>
-References: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
-	<20141202113014.GA22683@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313E6@CNBJMBX05.corpusers.net>
-	<20141204122813.GA523@node.dhcp.inet.fi>
-Date: Fri, 5 Dec 2014 10:39:04 +0400
-Message-ID: <CALYGNiPWw6=tryWn_kCs+6H1uSjApBDnqORxuNEd=DuGCo71qA@mail.gmail.com>
-Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user space
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Dec 2014 01:39:45 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3873:4321:5007:6261:6691:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12679:12740:13069:13163:13229:13311:13357:14039:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hand00_54fd419ba2c3b
+X-Filterd-Recvd-Size: 1603
+Message-ID: <1417761582.2721.35.camel@perches.com>
+Subject: Re: [PATCH] staging: kernel: fixed style errors in pid.c
+From: Joe Perches <joe@perches.com>
+To: "Joshua I. James" <joshua@cybercrimetech.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 04 Dec 2014 22:39:42 -0800
+In-Reply-To: <1417760858-26831-1-git-send-email-Joshua@cybercrimetech.com>
+References: <1417760858-26831-1-git-send-email-Joshua@cybercrimetech.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 3:28 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> On Thu, Dec 04, 2014 at 02:10:53PM +0800, Wang, Yalin wrote:
->> > -----Original Message-----
->> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
->> > Sent: Tuesday, December 02, 2014 7:30 PM
->> > To: Wang, Yalin
->> > Cc: 'linux-kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
->> > kernel@lists.infradead.org'
->> > Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user
->> > space
->> >
->> > On Tue, Dec 02, 2014 at 05:27:36PM +0800, Wang, Yalin wrote:
->> > > This patch add/dec zero_page's _mapcount to make sure the mapcount is
->> > > correct for zero_page, so that when read from /proc/kpagecount,
->> > > zero_page's mapcount is also correct, userspace process like procrank
->> > > can calculate PSS correctly.
+On Fri, 2014-12-05 at 15:27 +0900, Joshua I. James wrote:
+> Fixed style errors identified by checkpatch.
 
-Instead of tweaking mapcount you could mark zero-pages in /proc/kpageflags
-and handle them accordingly in userspace. Or mark zero pages with special
-magic _mapcount and detect it in /proc/kpagecount.
+Your subject is not correct.
 
->> >
->> > I don't have specific code path to point to, but I would expect zero page
->> > with non-zero mapcount would cause a problem with rmap.
->> >
->> > How do you test the change?
->> >
->> I just test it to see the mapcount from /proc/pid/pagemap  and /proc/kpagecount ,
->> It works well,
->
-> I took a closer look and your patch is broken in multiple places:
->  - on zap_pte_range() you don't decrement mapcount;
->  - you don't update rss counters for mm;
->  - copy_one_pte() doesn't increase mapcount;
->  - ...
->
-> Basically, each and every vm_normal_page() call must be audited. As first
-> step. And you totally skip huge zero page.
->
-> Proper mapcount handling for zero page would require a lot more work and I
-> don't think it worth it. Gain is too small.
->
-> NAK.
->
->> The problem is that when I see /proc/pid/smaps ,
->> The Rss / Pss don't calculate zero_page map,
->> Because smaps_pte_entry() --> vm_normal_page( ),
->> Will return NULL for zero_page,
->>
->> But when userspace process cat /proc/pid/pagemap  ,
->> It will see zero_page mapped,
->> And will treat as Rss ,
->> This is weird, should we also omit zero_page in /proc/pid/pagemap ?
->> Or add zero_page as Rss in /proc/pid/smaps ?
->>
->> I think we should add zero_page into Rss ,
->> Because it is really mapped into userspace address space.
->> And will let userspace memory analysis more accurate .
->
-> It would be easier for userspace to find out pfn of zero page and take it
-> into account.
->
-> Note: some architectures have multiple zero page due to coloring.
->
-> --
->  Kirill A. Shutemov
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+This is not staging.
+
+Please submit patches only for drivers/staging until
+until you are _very_ familiar with kernel style.
+
+And most whitespace only changes to kernel/... are not
+particularly welcomed by the most experienced kernel
+developers.
+
+> diff --git a/kernel/pid.c b/kernel/pid.c
+[]
+> @@ -471,8 +478,10 @@ EXPORT_SYMBOL_GPL(get_task_pid);
+>  struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
+>  {
+>  	struct task_struct *result;
+> +
+>  	rcu_read_lock();
+>  	result = pid_task(pid, type);
+> +
+
+Unnecessary blank line added here.
+
+btw: using scripts/checkpatch.pl --fix-inplace --strict
+would have been better.
+
