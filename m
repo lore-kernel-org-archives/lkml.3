@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaLEW4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:56:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754485AbaLEXTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:19:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaLEW4P (ORCPT
+	with ESMTP id S1753384AbaLEW4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:15 -0500
+	Fri, 5 Dec 2014 17:56:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Troy Clark <tclark@matrixorbital.ca>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 38/73] usb: serial: ftdi_sio: add PIDs for Matrix Orbital products
-Date: Fri,  5 Dec 2014 14:44:44 -0800
-Message-Id: <20141205224435.085074037@linuxfoundation.org>
+        Mark Lehrer <lehrer@gmail.com>, Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 51/73] srp-target: Retry when QP creation fails with ENOMEM
+Date: Fri,  5 Dec 2014 14:44:57 -0800
+Message-Id: <20141205224435.467133069@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -28,118 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Troy Clark <tclark@matrixorbital.ca>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 204ec6e07ea7aff863df0f7c53301f9cbbfbb9d3 upstream.
+commit ab477c1ff5e0a744c072404bf7db51bfe1f05b6e upstream.
 
-Add PIDs for new Matrix Orbital GTT series products.
+It is not guaranteed to that srp_sq_size is supported
+by the HCA. So if we failed to create the QP with ENOMEM,
+try with a smaller srp_sq_size. Keep it up until we hit
+MIN_SRPT_SQ_SIZE, then fail the connection.
 
-Signed-off-by: Troy Clark <tclark@matrixorbital.ca>
-[johan: shorten commit message ]
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Reported-by: Mark Lehrer <lehrer@gmail.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   33 ++++++++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   39 ++++++++++++++++++++++++++++++++++----
- 2 files changed, 68 insertions(+), 4 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -483,6 +483,39 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FD_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FE_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FF_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_4701_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9300_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9301_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9302_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9303_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9304_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9305_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9306_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9307_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9308_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9309_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930A_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930B_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930C_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930D_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930E_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930F_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9310_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9311_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9312_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9313_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9314_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9315_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9316_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9317_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9318_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9319_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931A_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931B_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931C_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931D_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931E_PID) },
-+	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931F_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PERLE_ULTRAPORT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PIEGROUP_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TNC_X_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -926,8 +926,8 @@
- #define BAYER_CONTOUR_CABLE_PID        0x6001
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2091,6 +2091,7 @@ static int srpt_create_ch_ib(struct srpt
+ 	if (!qp_init)
+ 		goto out;
  
- /*
-- * The following are the values for the Matrix Orbital FTDI Range
-- * Anything in this range will use an FT232RL.
-+ * Matrix Orbital Intelligent USB displays.
-+ * http://www.matrixorbital.com
-  */
- #define MTXORB_VID			0x1B3D
- #define MTXORB_FTDI_RANGE_0100_PID	0x0100
-@@ -1186,8 +1186,39 @@
- #define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
- #define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
- #define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
--
--
-+#define MTXORB_FTDI_RANGE_4701_PID	0x4701
-+#define MTXORB_FTDI_RANGE_9300_PID	0x9300
-+#define MTXORB_FTDI_RANGE_9301_PID	0x9301
-+#define MTXORB_FTDI_RANGE_9302_PID	0x9302
-+#define MTXORB_FTDI_RANGE_9303_PID	0x9303
-+#define MTXORB_FTDI_RANGE_9304_PID	0x9304
-+#define MTXORB_FTDI_RANGE_9305_PID	0x9305
-+#define MTXORB_FTDI_RANGE_9306_PID	0x9306
-+#define MTXORB_FTDI_RANGE_9307_PID	0x9307
-+#define MTXORB_FTDI_RANGE_9308_PID	0x9308
-+#define MTXORB_FTDI_RANGE_9309_PID	0x9309
-+#define MTXORB_FTDI_RANGE_930A_PID	0x930A
-+#define MTXORB_FTDI_RANGE_930B_PID	0x930B
-+#define MTXORB_FTDI_RANGE_930C_PID	0x930C
-+#define MTXORB_FTDI_RANGE_930D_PID	0x930D
-+#define MTXORB_FTDI_RANGE_930E_PID	0x930E
-+#define MTXORB_FTDI_RANGE_930F_PID	0x930F
-+#define MTXORB_FTDI_RANGE_9310_PID	0x9310
-+#define MTXORB_FTDI_RANGE_9311_PID	0x9311
-+#define MTXORB_FTDI_RANGE_9312_PID	0x9312
-+#define MTXORB_FTDI_RANGE_9313_PID	0x9313
-+#define MTXORB_FTDI_RANGE_9314_PID	0x9314
-+#define MTXORB_FTDI_RANGE_9315_PID	0x9315
-+#define MTXORB_FTDI_RANGE_9316_PID	0x9316
-+#define MTXORB_FTDI_RANGE_9317_PID	0x9317
-+#define MTXORB_FTDI_RANGE_9318_PID	0x9318
-+#define MTXORB_FTDI_RANGE_9319_PID	0x9319
-+#define MTXORB_FTDI_RANGE_931A_PID	0x931A
-+#define MTXORB_FTDI_RANGE_931B_PID	0x931B
-+#define MTXORB_FTDI_RANGE_931C_PID	0x931C
-+#define MTXORB_FTDI_RANGE_931D_PID	0x931D
-+#define MTXORB_FTDI_RANGE_931E_PID	0x931E
-+#define MTXORB_FTDI_RANGE_931F_PID	0x931F
- 
- /*
-  * The Mobility Lab (TML)
++retry:
+ 	ch->cq = ib_create_cq(sdev->device, srpt_completion, NULL, ch,
+ 			      ch->rq_size + srp_sq_size, 0);
+ 	if (IS_ERR(ch->cq)) {
+@@ -2114,6 +2115,13 @@ static int srpt_create_ch_ib(struct srpt
+ 	ch->qp = ib_create_qp(sdev->pd, qp_init);
+ 	if (IS_ERR(ch->qp)) {
+ 		ret = PTR_ERR(ch->qp);
++		if (ret == -ENOMEM) {
++			srp_sq_size /= 2;
++			if (srp_sq_size >= MIN_SRPT_SQ_SIZE) {
++				ib_destroy_cq(ch->cq);
++				goto retry;
++			}
++		}
+ 		printk(KERN_ERR "failed to create_qp ret= %d\n", ret);
+ 		goto err_destroy_cq;
+ 	}
 
 
