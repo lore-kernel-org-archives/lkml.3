@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaLEO6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:58:54 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44373 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaLEO6v (ORCPT
+	id S1751347AbaLEO77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:59:59 -0500
+Received: from smarthost01a.mail.zen.net.uk ([212.23.1.1]:58016 "EHLO
+	smarthost01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750749AbaLEO76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:58:51 -0500
-Message-ID: <5481C7F9.1020909@ti.com>
-Date: Fri, 5 Dec 2014 20:28:01 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Yaniv Gardi <ygardi@codeaurora.org>
-CC: <James.Bottomley@HansenPartnership.com>, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <santoshsy@gmail.com>, <linux-scsi-owner@vger.kernel.org>,
-        <subhashj@codeaurora.org>, <noag@codeaurora.org>,
-        <draviv@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Vinayak Holikatti <vinholikatti@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Grant Likely <grant.likely@linaro.org>, Christoph Hellwig <hch@lst.de>,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        Raviv Shvili <rshvili@codeaurora.org>,
-        Sahitya Tummala <stummala@codeaurora.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] scsi: ufs: add support of generic PHY and ICE in Qualcomm
- chips
-References: <1417104021-2997-1-git-send-email-ygardi@codeaurora.org> <20141204155451.GA29255@infradead.org>
-In-Reply-To: <20141204155451.GA29255@infradead.org>
-Content-Type: text/plain; charset="windows-1252"
+	Fri, 5 Dec 2014 09:59:58 -0500
+Message-ID: <1417791592.2232.5.camel@linaro.org>
+Subject: Re: [PATCH v12 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
+        lizefan@huawei.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 05 Dec 2014 14:59:52 +0000
+In-Reply-To: <1417774227.2232.1.camel@linaro.org>
+References: <1417671172-52915-1-git-send-email-wangnan0@huawei.com>
+	 <1417671360-53399-1-git-send-email-wangnan0@huawei.com>
+	 <1417710073.2239.10.camel@linaro.org> <5481289E.4060504@huawei.com>
+	 <1417774227.2232.1.camel@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01a-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-12-05 at 10:10 +0000, Jon Medhurst (Tixy) wrote:
+[...]
+> I'm worried because this whole optimised kprobes has some rather
+> complicated interactions, e.g. can the background thread that changes
+> breakpoints to jumps (or back again?) could occur at the same time
+> another CPU is processing a kprobe that's been hit, or is in the process
+> of removing a probe.
+
+I think that is a plausible theory. We can have this situation...
+
+1. CPU A executes a probe's 'breakpoint' instruction and the undefined
+instruction exception handler is triggered.
+
+2. CPU B is executing the kprobes optimisation thread and replaces the
+'breakpoint' with a branch instruction.
+
+3. CPU A reads the invalid instruction from memory and because this is
+now the branch instruction it doesn't match
+KPROBE_ARM_BREAKPOINT_INSTRUCTION which kprobes registered to handle.
+This means the undefined instruction exception is treated as just that,
+execution of an undefined instruction.
+
+The above scenario is the exact reason why arch_disarm_kprobe is
+implemented to always use stop_machine to modify the code and we need to
+ensure the same happens with arch_optimize_kprobes.
+
+-- 
+Tixy
 
 
-On Thursday 04 December 2014 09:24 PM, Christoph Hellwig wrote:
-> On Thu, Nov 27, 2014 at 05:59:58PM +0200, Yaniv Gardi wrote:
->> In this change we add support to the generic PHY framework.
->> Two UFS phys are implemented:
->> qmp-20nm and qmp-28nm.
->>
->> Also, the files in this change implement the UFS HW (controller & PHY)
->> specific behavior in Qualcomm chips.
->> Relocation of a few header files is needed in order to expose routines
->> and data structures between PHY driver and UFS driver.
->>
->> Also, this change include the implementation of Inline Crypto Engine (ICE)
->> in Qualcomm chips.
-> 
-> This whole patch is a mess.  It does way to many things in one patch,
-> and it doesn't explain enough of it.
-> 
-> Please explain why you need it.  Especially as the PHY API is a generic
-> phy abstraction, so having to share defintions between the provider and
-> consumer seems wrong.  Even if you need some shared bits keep them to an
-> absolute minium insted of moving so much out of the driver directory.
-> Also if at all possible keep the shared data in a single header under
-> include/linux instead of having lots of global headers in a deep
-> directory structure.
-> 
-> Second split this into patches that do a single things, and explain why
-> you're doing each:
-> 
->  1) header move if/as needed
->  2) add 20nm phy driver
->  3) add 28nm phy driver
->  4) add ufs-qcom driver
->  5) add ufs-qcom-ice support
-> 
-> and so on.
-
-+1
-
--Kishon
