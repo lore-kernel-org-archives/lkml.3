@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaLEIkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:40:11 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:44738 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751604AbaLEIkJ (ORCPT
+	id S1752767AbaLEIkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:40:35 -0500
+Received: from ispman.iskranet.ru ([62.213.33.10]:59946 "EHLO
+	ispman.iskranet.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaLEIkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:40:09 -0500
-X-IronPort-AV: E=Sophos;i="5.07,521,1413237600"; 
-   d="scan'208";a="111425923"
-Date: Fri, 5 Dec 2014 09:40:01 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
- pr_warn() in mppe_rekey()
-In-Reply-To: <54816700.6090501@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1412050939360.2360@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net>  <530B5FB6.6010207@users.sourceforge.net>  <alpine.DEB.2.10.1402241710370.2074@hadrien>  <530C5E18.1020800@users.sourceforge.net>  <alpine.DEB.2.10.1402251014170.2080@hadrien>  <530CD2C4.4050903@users.sourceforge.net>
-  <alpine.DEB.2.10.1402251840450.7035@hadrien>  <530CF8FF.8080600@users.sourceforge.net>  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>  <530DD06F.4090703@users.sourceforge.net>  <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> 
- <5317A59D.4@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>  <547C82A6.2030808@users.sourceforge.net>  <547CA157.1080401@cogentembedded.com>  <5480DA32.8000201@users.sourceforge.net>  <5480DBDE.7040604@users.sourceforge.net> 
- <1417731809.2721.17.camel@perches.com>  <5480DFB5.4090708@users.sourceforge.net> <1417733101.2721.20.camel@perches.com> <alpine.DEB.2.02.1412050726000.2059@localhost6.localdomain6> <54816700.6090501@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 5 Dec 2014 03:40:32 -0500
+X-Greylist: delayed 696 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Dec 2014 03:40:30 EST
+From: Arseny Solokha <asolokha@kb.kras.ru>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arseny Solokha <asolokha@kb.kras.ru>
+Subject: [PATCH] OHCI: add a quirk for ULi M5237 blocking on reset
+Date: Fri,  5 Dec 2014 15:27:09 +0700
+Message-Id: <1417768029-31901-1-git-send-email-asolokha@kb.kras.ru>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arseny Solokha <asolokha@kb.kras.ru>
 
+Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
+introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
+board. The code path that was previously specific to NVIDIA controllers
+had then become taken for all chips.
 
-On Fri, 5 Dec 2014, SF Markus Elfring wrote:
+However, the M5237 installed on the board wedges solid when accessing
+its base+OHCI_FMINTERVAL register, making it impossible to boot any
+kernel newer than 3.1.8 on this particular and apparently other similar
+machines.
 
-> > Markus, are you sure that you cannot use netdev_warn in this case?
->
-> No. - I did not become familiar enough with the software infrastructure around
-> the mppe_rekey() function.
->
-> I do not see so far how I could determine a pointer for the first parameter there.
-> The data structure "ppp_mppe_state" (which is referenced by the input variable
-> "state") does not contain corresponding context information, does it?
+Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
 
-Indeed, I also don't see anything promising.
+The patch is suitable for the -next tree as well as all maintained
+kernels up to 3.2 inclusive.
 
-julia
+Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
+---
+ drivers/usb/host/pci-quirks.c | 14 +++++++++++---
+ include/linux/pci_ids.h       |  1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 2f3aceb..3b29478 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -571,7 +571,7 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ {
+ 	void __iomem *base;
+ 	u32 control;
+-	u32 fminterval;
++	u32 fminterval = 0;
+ 	int cnt;
+ 
+ 	if (!mmio_resource_enabled(pdev, 0))
+@@ -619,7 +619,13 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	}
+ 
+ 	/* software reset of the controller, preserving HcFmInterval */
+-	fminterval = readl(base + OHCI_FMINTERVAL);
++	if (!(pdev->vendor == PCI_VENDOR_ID_AL &&
++	      pdev->device == PCI_DEVICE_ID_AL_M5237)) {
++		/* ULi M5237 OHCI controller (10b9:5237) locks the whole system
++		 * when accessing the OHCI_FMINTERVAL offset.
++		 */
++		fminterval = readl(base + OHCI_FMINTERVAL);
++	}
+ 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
+ 
+ 	/* reset requires max 10 us delay */
+@@ -628,7 +634,9 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 			break;
+ 		udelay(1);
+ 	}
+-	writel(fminterval, base + OHCI_FMINTERVAL);
++	if (!(pdev->vendor == PCI_VENDOR_ID_AL &&
++	      pdev->device == PCI_DEVICE_ID_AL_M5237))
++		writel(fminterval, base + OHCI_FMINTERVAL);
+ 
+ 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
+ 	iounmap(base);
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 1fa99a3..266fc5c 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1107,6 +1107,7 @@
+ #define PCI_DEVICE_ID_AL_M5219		0x5219
+ #define PCI_DEVICE_ID_AL_M5228		0x5228
+ #define PCI_DEVICE_ID_AL_M5229		0x5229
++#define PCI_DEVICE_ID_AL_M5237		0x5237
+ #define PCI_DEVICE_ID_AL_M5451		0x5451
+ #define PCI_DEVICE_ID_AL_M7101		0x7101
+ 
+-- 
+2.2.0
+
