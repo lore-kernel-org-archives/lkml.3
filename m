@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446AbaLEAzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 19:55:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60541 "EHLO mga11.intel.com"
+	id S933461AbaLEA4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 19:56:23 -0500
+Received: from m12-13.163.com ([220.181.12.13]:58905 "EHLO m12-13.163.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933009AbaLEAzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 19:55:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,519,1413270000"; 
-   d="scan'208";a="632975616"
-Date: Fri, 5 Dec 2014 08:34:47 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, rkrcmar@redhat.com
-Subject: Re: [PATCH 6/9] KVM: cpuid: mask more bits in leaf 0xd and subleaves
-Message-ID: <20141205003446.GA6967@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1417708634-24333-1-git-send-email-pbonzini@redhat.com>
- <1417708634-24333-7-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417708634-24333-7-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754494AbaLEA4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Dec 2014 19:56:22 -0500
+X-Coremail-DSSMTP: 49.77.206.164
+From: weiyj_lk@163.com
+To: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next] drm/i915: Fix missing unlock on error in i915_gem_init_hw()
+Date: Fri,  5 Dec 2014 08:55:59 +0800
+Message-Id: <1417740959-342-1-git-send-email-weiyj_lk@163.com>
+X-Mailer: git-send-email 1.9.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CM-TRANSID: DcCowACHOGSiAoFU82fFAA--.958S2
+X-Coremail-Antispam: 1Uf129KBjvdXoW7Wr4DKF1kZryUJw4DCrW7Arb_yoW3KFg_K3
+	yjvrnrWr9rCF4q9Fy3uFs0vFyavF98ZF4rXr10qa4fJrnFyryDW3s3ur1UXr4xCFWkWF4k
+	X3Z5ZFn0vrn7CjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUnov3UUUUUU==
+X-Originating-IP: [49.77.206.164]
+X-CM-SenderInfo: pzhl5yxbonqiywtou0bp/1tbiJRZZ1k9pIRiCRgAAsn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-On Thu, Dec 04, 2014 at 04:57:11PM +0100, Paolo Bonzini wrote:
->- EAX=0Dh, ECX=1: output registers ECX/EDX are reserved.
->
->- EAX=0Dh, ECX>1: output register ECX bit 0 is clear for all the CPUID
->leaves we support, because variable "supported" comes from XCR0 and not
->XSS.  Bits above 0 are reserved, so ECX is overall zero.  Output register
->EDX is reserved.
->
->Source: Intel Architecture Instruction Set Extensions Programming
->Reference, ref. number 319433-022
->
->Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
->Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->---
-> arch/x86/kvm/cpuid.c | 10 ++++++++--
-> 1 file changed, 8 insertions(+), 2 deletions(-)
->
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Do you miss this in your patch?
+Add the missing unlock before return from function i915_gem_init_hw()
+in the error handling case.
 
-+       /* cpuid 0xD.1.eax */
-+       const u32 kvm_supported_word10_x86_features =
-+               F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
-+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/gpu/drm/i915/i915_gem.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-In addition, there is bisect issue if this is added in this patch.
-(4/9 will take advantage of kvm_supported_word10_x86_features)
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index d2ba315..3eeb2d0 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4879,8 +4879,10 @@ i915_gem_init_hw(struct drm_device *dev)
+ 	i915_gem_init_swizzling(dev);
+ 
+ 	ret = dev_priv->gt.init_rings(dev);
+-	if (ret)
++	if (ret) {
++		mutex_unlock(&dev->struct_mutex);
+ 		return ret;
++	}
+ 
+ 	for (i = 0; i < NUM_L3_SLICES(dev); i++)
+ 		i915_gem_l3_remap(&dev_priv->ring[RCS], i);
 
-Regards,
-Wanpeng Li 
-
->diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
->index 2f7bc2de9915..644bfe828ce1 100644
->--- a/arch/x86/kvm/cpuid.c
->+++ b/arch/x86/kvm/cpuid.c
->@@ -482,8 +482,14 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-> 					entry[i].ebx =
-> 						xstate_required_size(supported,
-> 								     true);
->-			} else if (entry[i].eax == 0 || !(supported & mask))
->-				continue;
->+			} else {
->+				if (entry[i].eax == 0 || !(supported & mask))
->+					continue;
->+				if (WARN_ON_ONCE(entry[i].ecx & 1))
->+					continue;
->+			}
->+			entry[i].ecx = 0;
->+			entry[i].edx = 0;
-> 			entry[i].flags |=
-> 			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-> 			++*nent;
->-- 
->1.8.3.1
->
