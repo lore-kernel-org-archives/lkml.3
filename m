@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaLEX3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:29:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54352 "EHLO
+	id S1753462AbaLEX3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:29:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaLEW4J (ORCPT
+	with ESMTP id S1753256AbaLEW4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:09 -0500
+	Fri, 5 Dec 2014 17:56:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Moore <chris.moore@emulex.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 21/73] IB/isert: Adjust CQ size to HW limits
-Date: Fri,  5 Dec 2014 14:44:27 -0800
-Message-Id: <20141205224434.571104661@linuxfoundation.org>
+        Roman Byshko <rbyshko@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 3.14 20/73] clockevent: sun4i: Fix race condition in the probe code
+Date: Fri,  5 Dec 2014 14:44:26 -0800
+Message-Id: <20141205224434.542656796@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,63 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Moore <Chris.Moore@Emulex.Com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit b1a5ad006b34ded9dc7ec64988deba1b3ecad367 upstream.
+commit 6bab4a8a1888729f17f4923cc5867e4674f66333 upstream.
 
-isert has an issue of trying to create a CQ with more CQEs than are
-supported by the hardware, that currently results in failures during
-isert_device creation during first session login.
+The interrupts were activated and the handler registered before the clockevent
+was registered in the probe function.
 
-This is the isert version of the patch that Minh Tran submitted for
-iser, and is simple a workaround required to function with existing
-ocrdma hardware.
+The interrupt handler, however, was making the assumption that the clockevent
+device was registered.
 
-Signed-off-by: Chris Moore <chris.moore@emulex.com>
-Reviewied-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+That could cause a null pointer dereference if the timer interrupt was firing
+during this narrow window.
+
+Fix that by moving the clockevent registration before the interrupt is enabled.
+
+Reported-by: Roman Byshko <rbyshko@gmail.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/clocksource/sun4i_timer.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -220,12 +220,16 @@ isert_create_device_ib_res(struct isert_
- 	struct isert_cq_desc *cq_desc;
- 	struct ib_device_attr *dev_attr;
- 	int ret = 0, i, j;
-+	int max_rx_cqe, max_tx_cqe;
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -182,6 +182,12 @@ static void __init sun4i_timer_init(stru
+ 	/* Make sure timer is stopped before playing with interrupts */
+ 	sun4i_clkevt_time_stop(0);
  
- 	dev_attr = &device->dev_attr;
- 	ret = isert_query_device(ib_dev, dev_attr);
- 	if (ret)
- 		return ret;
- 
-+	max_rx_cqe = min(ISER_MAX_RX_CQ_LEN, dev_attr->max_cqe);
-+	max_tx_cqe = min(ISER_MAX_TX_CQ_LEN, dev_attr->max_cqe);
++	sun4i_clockevent.cpumask = cpu_possible_mask;
++	sun4i_clockevent.irq = irq;
 +
- 	/* asign function handlers */
- 	if (dev_attr->device_cap_flags & IB_DEVICE_MEM_MGT_EXTENSIONS) {
- 		device->use_fastreg = 1;
-@@ -261,7 +265,7 @@ isert_create_device_ib_res(struct isert_
- 						isert_cq_rx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_RX_CQ_LEN, i);
-+						max_rx_cqe, i);
- 		if (IS_ERR(device->dev_rx_cq[i])) {
- 			ret = PTR_ERR(device->dev_rx_cq[i]);
- 			device->dev_rx_cq[i] = NULL;
-@@ -273,7 +277,7 @@ isert_create_device_ib_res(struct isert_
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_TX_CQ_LEN, i);
-+						max_tx_cqe, i);
- 		if (IS_ERR(device->dev_tx_cq[i])) {
- 			ret = PTR_ERR(device->dev_tx_cq[i]);
- 			device->dev_tx_cq[i] = NULL;
++	clockevents_config_and_register(&sun4i_clockevent, rate,
++					TIMER_SYNC_TICKS, 0xffffffff);
++
+ 	ret = setup_irq(irq, &sun4i_timer_irq);
+ 	if (ret)
+ 		pr_warn("failed to setup irq %d\n", irq);
+@@ -189,12 +195,6 @@ static void __init sun4i_timer_init(stru
+ 	/* Enable timer0 interrupt */
+ 	val = readl(timer_base + TIMER_IRQ_EN_REG);
+ 	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
+-
+-	sun4i_clockevent.cpumask = cpu_possible_mask;
+-	sun4i_clockevent.irq = irq;
+-
+-	clockevents_config_and_register(&sun4i_clockevent, rate,
+-					TIMER_SYNC_TICKS, 0xffffffff);
+ }
+ CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-timer",
+ 		       sun4i_timer_init);
 
 
