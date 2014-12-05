@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108AbaLEMoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:44:37 -0500
-Received: from mout.web.de ([212.227.15.4]:53912 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011AbaLEMof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:44:35 -0500
-Message-ID: <5481A8AE.9050506@users.sourceforge.net>
-Date: Fri, 05 Dec 2014 13:44:30 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753493AbaLEJzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 04:55:47 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:35196 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753130AbaLEJzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 04:55:44 -0500
+Date: Fri, 5 Dec 2014 11:55:23 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
+Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
+In-Reply-To: <5481173A.9060308@smart-weblications.de>
+Message-ID: <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg>
+References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 5/6] net-PPP: Delete an unnecessary assignment in mppe_alloc()
-References: <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net> <547CA157.1080401@cogentembedded.com> <5480DA32.8000201@users.sourceforge.net> <5480DDC1.6040101@users.sourceforge.net> <20141205122214.GB4912@mwanda>
-In-Reply-To: <20141205122214.GB4912@mwanda>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:IxYJcEf3A3o/kBA+9yEkKKvp8dqgUraUpmWzxvyNFvt4NM+pief
- tCBiUhVg/nUjIn4WYAKS0xjv1SbV/HNPtnAgVBJimcU22+vqClBprUhl3oV+qDd3PnRwNGu
- JRMTbjKonhVSYr2iAUTrF32/tRmBWgOODLqoFQw9XnCGBs8G20uBWdtwq+CrNK8DHvzaGzx
- R22kiDhnrqiZOqBrXrzrA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The data structure element "arc4" was assigned a null pointer by the
->> mppe_alloc() function if a previous function call "crypto_alloc_blkcipher"
->> failed.
+
+	Hello,
+
+	Adding Simon to CC...
+
+On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+
+> i tried with 3.12.33 without any XFRM and now got this one (which is reproducable):
 > 
-> crypto_alloc_blkcipher() returns error pointers and not NULL.
+> [  233.956012] BUG: unable to handle kernel NULL pointer dereference at 00000000
+>                                    00000014
+> [  233.956218] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack
 
-That is true.
+	It seems fix from 3.13 was not sent to 3.12 stable:
 
+commit b25adce1606427fd8 ("ipvs: correct usage/allocation of seqadj ext in 
+ipvs")
 
-> This patch creates a bug.
+	There was related change but it is not needed
+for stable kernels:
 
-Please explain: How?
+commit db12cf27435356017e ("netfilter: WARN about wrong usage of sequence 
+number adjustments"
 
-Did you notice that the data structure element "arc4" was reset
-to a null pointer if a failure was detected for the function
-call "crypto_alloc_blkcipher"?
+	Simon, can we try commit b25adce1606427fd8 for 3.12?
 
-Do you find this specific assignment still necessary for exception
-handling in the implementation of mppe_alloc() function?
+> setup is like this:
+> 
+> 
+> #virtual=<myVIP>:21
+> #       real=10.10.1.20:21 masq
+> #       real=10.10.1.21:21 masq
+> #       real=10.10.1.22:21 masq
+> #       real=10.10.1.23:21 masq
+> #       persistent=600
+> #       service=ftp
+> #       scheduler=rr
+> #       protocol=tcp
+> #       checktype=connect
+> 
+> ( i remarked it to prevent fruther crashes...)
+> 
+> when ip_vs_ftp is loaded and someone trying to make a ftp connection, the system
+> panics instantly.
+> 
+> 10.10.1.20 - 10.10.1.23 are lxc-containers using veth connected to the bridge
+> running on 4 different nodes. The node running ldirector/ipvsadm has also one of
+> those containers running (don't know if that matters)
 
-Regards,
-Markus
+	It is always good to know the setup. Do you access VIP
+from local clients (from director)?
+
+> brctl show
+> bridge name     bridge id               STP enabled     interfaces
+> br0             8000.00259052bbf4       no              bond0
+>                                                         vethMKELUc
+>                                                         vethXdWGqf
+>                                                         vethgJMmEb
+>                                                         vethmKNqFc
+> 
+> 
+> I disabled the ftp server lxc container on the node doing ip_vs, so that the
+> endpoint of the connection is not on the same node and tried again but with the
+> same result.
+> 
+> Unfortunatelly i cannot test with newer kernels than 3.12, because ocfs2 is
+> somehow broken in >= 3.14
+
+	Before I create patch to avoid rerouting for
+LOCAL_IN you can try to set IPVS sysctl var "snat_reroute" to 0
+or even to change ip_vs_route_me_harder() function just to return 0.
+snat_reroute=1 (a default value) is needed if you have
+multiple links to clients and use ip rules to select
+correct route by src ip (after SNAT). If you have single
+uplink snat_reroute can be 0.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
