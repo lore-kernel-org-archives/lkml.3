@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaLENzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 08:55:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53446 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaLENzt (ORCPT
+	id S1753424AbaLEN5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 08:57:45 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37887 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaLEN5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 08:55:49 -0500
-Message-ID: <1417787724.3227.10.camel@pengutronix.de>
-Subject: Re: [PATCH v18 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
-Date: Fri, 05 Dec 2014 14:55:24 +0100
-In-Reply-To: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 5 Dec 2014 08:57:43 -0500
+Date: Fri, 5 Dec 2014 16:57:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 5/6] net-PPP: Delete an unnecessary assignment in
+ mppe_alloc()
+Message-ID: <20141205135723.GE4912@mwanda>
+References: <5317A59D.4@users.sourceforge.net>
+ <547B4886.4080406@users.sourceforge.net>
+ <547B496E.604@users.sourceforge.net>
+ <547C5CBC.6060607@cogentembedded.com>
+ <547C82A6.2030808@users.sourceforge.net>
+ <547CA157.1080401@cogentembedded.com>
+ <5480DA32.8000201@users.sourceforge.net>
+ <5480DDC1.6040101@users.sourceforge.net>
+ <20141205122214.GB4912@mwanda>
+ <5481A8AE.9050506@users.sourceforge.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5481A8AE.9050506@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-Am Freitag, den 05.12.2014, 14:22 +0800 schrieb Andy Yan:
-> We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-> use the interface compatible Designware HDMI IP, but they also have some
-> lightly differences, such as phy pll configuration, register width(imx hdmi
-> register is one byte, but rk3288 is 4 bytes width and can only be accessed
-> by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
-> support.
+On Fri, Dec 05, 2014 at 01:44:30PM +0100, SF Markus Elfring wrote:
+> >> The data structure element "arc4" was assigned a null pointer by the
+> >> mppe_alloc() function if a previous function call "crypto_alloc_blkcipher"
+> >> failed.
+> > 
+> > crypto_alloc_blkcipher() returns error pointers and not NULL.
 > 
-> To reuse the imx-hdmi driver, we make this patch set:
-> (1): fix some CodingStyle warning to make checkpatch happy
-> (2): convert imx-hdmi to drm_bridge
-> (3): split platform specific code
-> (4): move imx-hdmi to bridge/dw_hdmi
-> (5): extend dw_hdmi.c to support rk3288 hdmi
-> (6): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
+> That is true.
 > 
-> Changes in v18:
-> - remove a multiple blank lines in imx-hdmi.c
-> - fix a checkpatch warning in imx-hdmi_pltfm.c
-> - add port bindings
-> - correct some spelling mistakes in dw_hdmi bindings doc
-> - correct some spelling mistakes in dw_hdmi-rockchip bindings doc
-[...]
 
-I am happy with the series so far. Pending Acks from the device tree
-maintainers for the new binding documents, I'd like to apply either the
-whole of it on top of
-    git://git.pengutronix.de/git/pza/linux.git imx-drm/next
-or take at least the i.MX specific patches (1-5) because of the
-dependency on the imx-drm OF helper conversion.
+Oh.  In that case, I misunderstood what you wrote.  Looking at it now,
+this patch is actually ok.
 
-regards
-Philipp
+regards,
+dan carpenter
 
