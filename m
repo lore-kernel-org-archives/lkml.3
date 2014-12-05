@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863AbaLEXcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:32:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	id S1754873AbaLEXdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:33:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445AbaLEW4G (ORCPT
+	with ESMTP id S1753210AbaLEW4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:06 -0500
+	Fri, 5 Dec 2014 17:56:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Panu Matilainen <pmatilai@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 13/73] ieee802154: fix error handling in ieee802154fake_probe()
-Date: Fri,  5 Dec 2014 14:44:19 -0800
-Message-Id: <20141205224434.329252053@linuxfoundation.org>
+Subject: [PATCH 3.14 12/73] ipv4: Fix incorrect error code when adding an unreachable route
+Date: Fri,  5 Dec 2014 14:44:18 -0800
+Message-Id: <20141205224434.300600770@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,52 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Panu Matilainen <pmatilai@redhat.com>
 
-[ Upstream commit 8c2dd54485ccee7fc4086611e188478584758c8d ]
+[ Upstream commit 49dd18ba4615eaa72f15c9087dea1c2ab4744cf5 ]
 
-In case of any failure ieee802154fake_probe() just calls unregister_netdev().
-But it does not look safe to unregister netdevice before it was registered.
+Trying to add an unreachable route incorrectly returns -ESRCH if
+if custom FIB rules are present:
 
-The patch implements straightforward resource deallocation in case of
-failure in ieee802154fake_probe().
+[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
+RTNETLINK answers: Network is unreachable
+[root@localhost ~]# ip rule add to 55.66.77.88 table 200
+[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
+RTNETLINK answers: No such process
+[root@localhost ~]#
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Commit 83886b6b636173b206f475929e58fac75c6f2446 ("[NET]: Change "not found"
+return value for rule lookup") changed fib_rules_lookup()
+to use -ESRCH as a "not found" code internally, but for user space it
+should be translated into -ENETUNREACH. Handle the translation centrally in
+ipv4-specific fib_lookup(), leaving the DECnet case alone.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+On a related note, commit b7a71b51ee37d919e4098cd961d59a883fd272d8
+("ipv4: removed redundant conditional") removed a similar translation from
+ip_route_input_slow() prematurely AIUI.
+
+Fixes: b7a71b51ee37 ("ipv4: removed redundant conditional")
+Signed-off-by: Panu Matilainen <pmatilai@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ieee802154/fakehard.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/ipv4/fib_rules.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ieee802154/fakehard.c
-+++ b/drivers/net/ieee802154/fakehard.c
-@@ -376,17 +376,20 @@ static int ieee802154fake_probe(struct p
- 
- 	err = wpan_phy_register(phy);
- 	if (err)
--		goto out;
-+		goto err_phy_reg;
- 
- 	err = register_netdev(dev);
--	if (err < 0)
--		goto out;
-+	if (err)
-+		goto err_netdev_reg;
- 
- 	dev_info(&pdev->dev, "Added ieee802154 HardMAC hardware\n");
- 	return 0;
- 
--out:
--	unregister_netdev(dev);
-+err_netdev_reg:
-+	wpan_phy_unregister(phy);
-+err_phy_reg:
-+	free_netdev(dev);
-+	wpan_phy_free(phy);
+--- a/net/ipv4/fib_rules.c
++++ b/net/ipv4/fib_rules.c
+@@ -62,6 +62,10 @@ int __fib_lookup(struct net *net, struct
+ 	else
+ 		res->tclassid = 0;
+ #endif
++
++	if (err == -ESRCH)
++		err = -ENETUNREACH;
++
  	return err;
  }
- 
+ EXPORT_SYMBOL_GPL(__fib_lookup);
 
 
