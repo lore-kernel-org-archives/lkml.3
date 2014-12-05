@@ -1,55 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaLEPW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 10:22:26 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33073 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaLEPWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 10:22:25 -0500
-From: Anjana Sasindran <anjanasasindran123@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        es.Sorensen@redhat.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org,
-        Anjana Sasindran <anjanasasindran123@gmail.com>
-Subject: [PATCH] staging: rtl8723au: hal: Added blank line after declaration
-Date: Fri,  5 Dec 2014 20:51:25 +0530
-Message-Id: <1417792885-5979-1-git-send-email-anjanasasindran123@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751051AbaLEPXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 10:23:38 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748AbaLEPXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 10:23:37 -0500
+Message-ID: <5481CDF4.3060706@nod.at>
+Date: Fri, 05 Dec 2014 16:23:32 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] UBI: Fastmap: Optimize anchor PEB search
+References: <1417350157-9373-1-git-send-email-richard@nod.at> <1417350157-9373-5-git-send-email-richard@nod.at>
+In-Reply-To: <1417350157-9373-5-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the checkpatch.pl warning:
+Am 30.11.2014 um 13:22 schrieb Richard Weinberger:
+> The UBI RB trees are sorted by the PEB number, hence
+> we don't have to traverse the whole tree because ubi_rb_for_each_entry()
+> walks the tree in sort order.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-WARNING: Missing blank line after declaration
+Please ignore this patch. It is horrible wrong.
 
-Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
----
- drivers/staging/rtl8723au/hal/odm.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/staging/rtl8723au/hal/odm.c b/drivers/staging/rtl8723au/hal/odm.c
-index 1c0f106d..cabe33a 100644
---- a/drivers/staging/rtl8723au/hal/odm.c
-+++ b/drivers/staging/rtl8723au/hal/odm.c
-@@ -1435,6 +1435,7 @@ static void ODM_EdcaTurboInit23a(struct dm_odm_t *pDM_Odm)
- {
- 
- 	struct rtw_adapter *Adapter = pDM_Odm->Adapter;
-+
- 	pDM_Odm->DM_EDCA_Table.bCurrentTurboEDCA = false;
- 	pDM_Odm->DM_EDCA_Table.bIsCurRDLState = false;
- 	Adapter->recvpriv.bIsAnyNonBEPkts = false;
-@@ -1591,6 +1592,7 @@ ConvertTo_dB23a(
- void ODM_SingleDualAntennaDefaultSetting(struct dm_odm_t *pDM_Odm)
- {
- 	struct sw_ant_sw *pDM_SWAT_Table = &pDM_Odm->DM_SWAT_Table;
-+
- 	pDM_SWAT_Table->ANTA_ON = true;
- 	pDM_SWAT_Table->ANTB_ON = true;
- }
--- 
-1.9.1
-
+*facepalm*,
+//richard
