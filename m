@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaLEWvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 17:51:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53988 "EHLO
+	id S1753008AbaLEWw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 17:52:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaLEWqP (ORCPT
+	with ESMTP id S1752456AbaLEWqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:46:15 -0500
+	Fri, 5 Dec 2014 17:46:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.17 090/122] vhost-scsi: Take configfs group dependency during VHOST_SCSI_SET_ENDPOINT
-Date: Fri,  5 Dec 2014 14:44:24 -0800
-Message-Id: <20141205223319.341913010@linuxfoundation.org>
+        Vlastimil Setka <setka@vsis.cz>,
+        Thor Thayer <tthayer@opensource.altera.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 086/122] spi: dw: Fix dynamic speed change.
+Date: Fri,  5 Dec 2014 14:44:20 -0800
+Message-Id: <20141205223318.725396892@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223305.514276242@linuxfoundation.org>
 References: <20141205223305.514276242@linuxfoundation.org>
@@ -31,88 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Thor Thayer <tthayer@opensource.altera.com>
 
-commit ab8edab132829b26dd13db6caca3c242cce35dc1 upstream.
+commit 0a8727e69778683495058852f783eeda141a754e upstream.
 
-This patch addresses a bug where individual vhost-scsi configfs endpoint
-groups can be removed from below while active exports to QEMU userspace
-still exist, resulting in an OOPs.
+An IOCTL call that calls spi_setup() and then dw_spi_setup() will
+overwrite the persisted last transfer speed. On each transfer, the
+SPI speed is compared to the last transfer speed to determine if the
+clock divider registers need to be updated (did the speed change?).
+This bug was observed with the spidev driver using spi-config to
+update the max transfer speed.
 
-It adds a configfs_depend_item() in vhost_scsi_set_endpoint() to obtain
-an explicit dependency on se_tpg->tpg_group in order to prevent individual
-vhost-scsi WWPN endpoints from being released via normal configfs methods
-while an QEMU ioctl reference still exists.
+This fix: Don't overwrite the persisted last transaction clock speed
+when updating the SPI parameters in dw_spi_setup(). On the next
+transaction, the new speed won't match the persisted last speed
+and the hardware registers will be updated.
+On initialization, the persisted last transaction clock
+speed will be 0 but will be updated after the first SPI
+transaction.
 
-Also, add matching configfs_undepend_item() in vhost_scsi_clear_endpoint()
-to release the dependency, once QEMU's reference to the individual group
-at /sys/kernel/config/target/vhost/$WWPN/$TPGT is released.
+Move zeroed clock divider check into clock change test because
+chip->clk_div is zero on startup and would cause a divide-by-zero
+error. The calculation was wrong as well (can't support odd #).
 
-(Fix up vhost_scsi_clear_endpoint() error path - DanC)
-
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Vlastimil Setka <setka@vsis.cz>
+Signed-off-by: Vlastimil Setka <setka@vsis.cz>
+Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/scsi.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/spi/spi-dw.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -1312,6 +1312,7 @@ static int
- vhost_scsi_set_endpoint(struct vhost_scsi *vs,
- 			struct vhost_scsi_target *t)
- {
-+	struct se_portal_group *se_tpg;
- 	struct tcm_vhost_tport *tv_tport;
- 	struct tcm_vhost_tpg *tpg;
- 	struct tcm_vhost_tpg **vs_tpg;
-@@ -1359,6 +1360,21 @@ vhost_scsi_set_endpoint(struct vhost_scs
- 				ret = -EEXIST;
- 				goto out;
- 			}
-+			/*
-+			 * In order to ensure individual vhost-scsi configfs
-+			 * groups cannot be removed while in use by vhost ioctl,
-+			 * go ahead and take an explicit se_tpg->tpg_group.cg_item
-+			 * dependency now.
-+			 */
-+			se_tpg = &tpg->se_tpg;
-+			ret = configfs_depend_item(se_tpg->se_tpg_tfo->tf_subsys,
-+						   &se_tpg->tpg_group.cg_item);
-+			if (ret) {
-+				pr_warn("configfs_depend_item() failed: %d\n", ret);
-+				kfree(vs_tpg);
-+				mutex_unlock(&tpg->tv_tpg_mutex);
-+				goto out;
-+			}
- 			tpg->tv_tpg_vhost_count++;
- 			tpg->vhost_scsi = vs;
- 			vs_tpg[tpg->tport_tpgt] = tpg;
-@@ -1401,6 +1417,7 @@ static int
- vhost_scsi_clear_endpoint(struct vhost_scsi *vs,
- 			  struct vhost_scsi_target *t)
- {
-+	struct se_portal_group *se_tpg;
- 	struct tcm_vhost_tport *tv_tport;
- 	struct tcm_vhost_tpg *tpg;
- 	struct vhost_virtqueue *vq;
-@@ -1449,6 +1466,13 @@ vhost_scsi_clear_endpoint(struct vhost_s
- 		vs->vs_tpg[target] = NULL;
- 		match = true;
- 		mutex_unlock(&tpg->tv_tpg_mutex);
-+		/*
-+		 * Release se_tpg->tpg_group.cg_item configfs dependency now
-+		 * to allow vhost-scsi WWPN se_tpg->tpg_group shutdown to occur.
-+		 */
-+		se_tpg = &tpg->se_tpg;
-+		configfs_undepend_item(se_tpg->se_tpg_tfo->tf_subsys,
-+				       &se_tpg->tpg_group.cg_item);
+--- a/drivers/spi/spi-dw.c
++++ b/drivers/spi/spi-dw.c
+@@ -382,9 +382,6 @@ static void pump_transfers(unsigned long
+ 	chip = dws->cur_chip;
+ 	spi = message->spi;
+ 
+-	if (unlikely(!chip->clk_div))
+-		chip->clk_div = dws->max_freq / chip->speed_hz;
+-
+ 	if (message->state == ERROR_STATE) {
+ 		message->status = -EIO;
+ 		goto early_exit;
+@@ -425,7 +422,7 @@ static void pump_transfers(unsigned long
+ 	if (transfer->speed_hz) {
+ 		speed = chip->speed_hz;
+ 
+-		if (transfer->speed_hz != speed) {
++		if ((transfer->speed_hz != speed) || (!chip->clk_div)) {
+ 			speed = transfer->speed_hz;
+ 
+ 			/* clk_div doesn't support odd number */
+@@ -586,7 +583,6 @@ static int dw_spi_setup(struct spi_devic
+ 		dev_err(&spi->dev, "No max speed HZ parameter\n");
+ 		return -EINVAL;
  	}
- 	if (match) {
- 		for (i = 0; i < VHOST_SCSI_MAX_VQ; i++) {
+-	chip->speed_hz = spi->max_speed_hz;
+ 
+ 	chip->tmode = 0; /* Tx & Rx */
+ 	/* Default SPI mode is SCPOL = 0, SCPH = 0 */
 
 
