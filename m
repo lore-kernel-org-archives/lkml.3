@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaLEXAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:00:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54457 "EHLO
+	id S1753638AbaLEXAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:00:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442AbaLEW40 (ORCPT
+	with ESMTP id S1753443AbaLEW40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 17:56:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jet Chen <jet.chen@intel.com>, "David S. Miller" <davem@davemloft.net>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Cong Wang <cwang@twopensource.com>
-Subject: [PATCH 3.14 71/73] batman: fix a bogus warning from batadv_is_on_batman_iface()
-Date: Fri,  5 Dec 2014 14:45:17 -0800
-Message-Id: <20141205224436.061307958@linuxfoundation.org>
+        Chris Webb <chris@arachsys.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Borislav Petkov <bp@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.14 72/73] x86: kvm: use alternatives for VMCALL vs. VMMCALL if kernel text is read-only
+Date: Fri,  5 Dec 2014 14:45:18 -0800
+Message-Id: <20141205224436.090266405@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -33,39 +32,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit b6ed5498601df40489606dbc14a9c7011c16630b upstream.
+commit c1118b3602c2329671ad5ec8bdf8e374323d6343 upstream.
 
-batman tries to search dev->iflink to check if it's a batman interface,
-but ->iflink could be 0, which is not a valid ifindex. It should just
-avoid iflink == 0 case.
+On x86_64, kernel text mappings are mapped read-only with CONFIG_DEBUG_RODATA.
+In that case, KVM will fail to patch VMCALL instructions to VMMCALL
+as required on AMD processors.
 
-Reported-by: Jet Chen <jet.chen@intel.com>
-Tested-by: Jet Chen <jet.chen@intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Antonio Quartulli <antonio@open-mesh.com>
-Cc: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The failure mode is currently a divide-by-zero exception, which obviously
+is a KVM bug that has to be fixed.  However, picking the right instruction
+between VMCALL and VMMCALL will be faster and will help if you cannot upgrade
+the hypervisor.
+
+Reported-by: Chris Webb <chris@arachsys.com>
+Tested-by: Chris Webb <chris@arachsys.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/batman-adv/hard-interface.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/cpufeature.h |    1 +
+ arch/x86/include/asm/kvm_para.h   |   10 ++++++++--
+ arch/x86/kernel/cpu/amd.c         |    7 +++++++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
---- a/net/batman-adv/hard-interface.c
-+++ b/net/batman-adv/hard-interface.c
-@@ -83,7 +83,7 @@ static bool batadv_is_on_batman_iface(co
- 		return true;
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -203,6 +203,7 @@
+ #define X86_FEATURE_DECODEASSISTS (8*32+12) /* AMD Decode Assists support */
+ #define X86_FEATURE_PAUSEFILTER (8*32+13) /* AMD filtered pause intercept */
+ #define X86_FEATURE_PFTHRESHOLD (8*32+14) /* AMD pause filter threshold */
++#define X86_FEATURE_VMMCALL	(8*32+15) /* Prefer vmmcall to vmcall */
  
- 	/* no more parents..stop recursion */
--	if (net_dev->iflink == net_dev->ifindex)
-+	if (net_dev->iflink == 0 || net_dev->iflink == net_dev->ifindex)
- 		return false;
  
- 	/* recurse over the parent device */
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -2,6 +2,7 @@
+ #define _ASM_X86_KVM_PARA_H
+ 
+ #include <asm/processor.h>
++#include <asm/alternative.h>
+ #include <uapi/asm/kvm_para.h>
+ 
+ extern void kvmclock_init(void);
+@@ -16,10 +17,15 @@ static inline bool kvm_check_and_clear_g
+ }
+ #endif /* CONFIG_KVM_GUEST */
+ 
+-/* This instruction is vmcall.  On non-VT architectures, it will generate a
+- * trap that we will then rewrite to the appropriate instruction.
++#ifdef CONFIG_DEBUG_RODATA
++#define KVM_HYPERCALL \
++        ALTERNATIVE(".byte 0x0f,0x01,0xc1", ".byte 0x0f,0x01,0xd9", X86_FEATURE_VMMCALL)
++#else
++/* On AMD processors, vmcall will generate a trap that we will
++ * then rewrite to the appropriate instruction.
+  */
+ #define KVM_HYPERCALL ".byte 0x0f,0x01,0xc1"
++#endif
+ 
+ /* For KVM hypercalls, a three-byte sequence of either the vmcall or the vmmcall
+  * instruction.  The hypervisor may replace it with something else but only the
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -508,6 +508,13 @@ static void early_init_amd(struct cpuinf
+ 	}
+ #endif
+ 
++	/*
++	 * This is only needed to tell the kernel whether to use VMCALL
++	 * and VMMCALL.  VMMCALL is never executed except under virt, so
++	 * we can set it unconditionally.
++	 */
++	set_cpu_cap(c, X86_FEATURE_VMMCALL);
++
+ 	/* F16h erratum 793, CVE-2013-6885 */
+ 	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
+ 		u64 val;
 
 
