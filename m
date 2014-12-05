@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948AbaLEXTC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:19:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389AbaLEW4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751392AbaLEW4T (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 17:56:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357AbaLEW4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 17:56:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 53/73] iser-target: Handle DEVICE_REMOVAL event on network portal listener correctly
-Date: Fri,  5 Dec 2014 14:44:59 -0800
-Message-Id: <20141205224435.525286957@linuxfoundation.org>
+        Troy Clark <tclark@matrixorbital.ca>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 38/73] usb: serial: ftdi_sio: add PIDs for Matrix Orbital products
+Date: Fri,  5 Dec 2014 14:44:44 -0800
+Message-Id: <20141205224435.085074037@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -29,96 +28,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+From: Troy Clark <tclark@matrixorbital.ca>
 
-commit 3b726ae2de02a406cc91903f80132daee37b6f1b upstream.
+commit 204ec6e07ea7aff863df0f7c53301f9cbbfbb9d3 upstream.
 
-In this case the cm_id->context is the isert_np, and the cm_id->qp
-is NULL, so use that to distinct the cases.
+Add PIDs for new Matrix Orbital GTT series products.
 
-Since we don't expect any other events on this cm_id we can
-just return -1 for explicit termination of the cm_id by the
-cma layer.
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Troy Clark <tclark@matrixorbital.ca>
+[johan: shorten commit message ]
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   29 +++++++++++++++++++----------
- 1 file changed, 19 insertions(+), 10 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |   33 ++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h |   39 ++++++++++++++++++++++++++++++++++----
+ 2 files changed, 68 insertions(+), 4 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -725,14 +725,25 @@ wake_up:
- 	complete(&isert_conn->conn_wait);
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -483,6 +483,39 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FD_PID) },
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FE_PID) },
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FF_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_4701_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9300_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9301_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9302_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9303_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9304_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9305_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9306_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9307_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9308_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9309_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930A_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930B_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930C_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930D_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930E_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930F_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9310_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9311_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9312_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9313_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9314_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9315_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9316_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9317_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9318_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9319_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931A_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931B_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931C_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931D_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931E_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931F_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PERLE_ULTRAPORT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PIEGROUP_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TNC_X_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -926,8 +926,8 @@
+ #define BAYER_CONTOUR_CABLE_PID        0x6001
  
--static void
-+static int
- isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
- {
--	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
-+	struct isert_conn *isert_conn;
-+
-+	if (!cma_id->qp) {
-+		struct isert_np *isert_np = cma_id->context;
-+
-+		isert_np->np_cm_id = NULL;
-+		return -1;
-+	}
-+
-+	isert_conn = (struct isert_conn *)cma_id->context;
- 
- 	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
-+
-+	return 0;
- }
- 
- static int
-@@ -747,6 +758,9 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
- 		ret = isert_connect_request(cma_id, event);
-+		if (ret)
-+			pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
-+				event->event, ret);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
- 		isert_connected_handler(cma_id);
-@@ -756,7 +770,7 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
- 		disconnect = true;
- 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
--		isert_disconnected_handler(cma_id, disconnect);
-+		ret = isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
-@@ -764,12 +778,6 @@ isert_cma_handler(struct rdma_cm_id *cma
- 		break;
- 	}
- 
--	if (ret != 0) {
--		pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
--		       event->event, ret);
--		dump_stack();
--	}
+ /*
+- * The following are the values for the Matrix Orbital FTDI Range
+- * Anything in this range will use an FT232RL.
++ * Matrix Orbital Intelligent USB displays.
++ * http://www.matrixorbital.com
+  */
+ #define MTXORB_VID			0x1B3D
+ #define MTXORB_FTDI_RANGE_0100_PID	0x0100
+@@ -1186,8 +1186,39 @@
+ #define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
+ #define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
+ #define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
 -
- 	return ret;
- }
+-
++#define MTXORB_FTDI_RANGE_4701_PID	0x4701
++#define MTXORB_FTDI_RANGE_9300_PID	0x9300
++#define MTXORB_FTDI_RANGE_9301_PID	0x9301
++#define MTXORB_FTDI_RANGE_9302_PID	0x9302
++#define MTXORB_FTDI_RANGE_9303_PID	0x9303
++#define MTXORB_FTDI_RANGE_9304_PID	0x9304
++#define MTXORB_FTDI_RANGE_9305_PID	0x9305
++#define MTXORB_FTDI_RANGE_9306_PID	0x9306
++#define MTXORB_FTDI_RANGE_9307_PID	0x9307
++#define MTXORB_FTDI_RANGE_9308_PID	0x9308
++#define MTXORB_FTDI_RANGE_9309_PID	0x9309
++#define MTXORB_FTDI_RANGE_930A_PID	0x930A
++#define MTXORB_FTDI_RANGE_930B_PID	0x930B
++#define MTXORB_FTDI_RANGE_930C_PID	0x930C
++#define MTXORB_FTDI_RANGE_930D_PID	0x930D
++#define MTXORB_FTDI_RANGE_930E_PID	0x930E
++#define MTXORB_FTDI_RANGE_930F_PID	0x930F
++#define MTXORB_FTDI_RANGE_9310_PID	0x9310
++#define MTXORB_FTDI_RANGE_9311_PID	0x9311
++#define MTXORB_FTDI_RANGE_9312_PID	0x9312
++#define MTXORB_FTDI_RANGE_9313_PID	0x9313
++#define MTXORB_FTDI_RANGE_9314_PID	0x9314
++#define MTXORB_FTDI_RANGE_9315_PID	0x9315
++#define MTXORB_FTDI_RANGE_9316_PID	0x9316
++#define MTXORB_FTDI_RANGE_9317_PID	0x9317
++#define MTXORB_FTDI_RANGE_9318_PID	0x9318
++#define MTXORB_FTDI_RANGE_9319_PID	0x9319
++#define MTXORB_FTDI_RANGE_931A_PID	0x931A
++#define MTXORB_FTDI_RANGE_931B_PID	0x931B
++#define MTXORB_FTDI_RANGE_931C_PID	0x931C
++#define MTXORB_FTDI_RANGE_931D_PID	0x931D
++#define MTXORB_FTDI_RANGE_931E_PID	0x931E
++#define MTXORB_FTDI_RANGE_931F_PID	0x931F
  
-@@ -2775,7 +2783,8 @@ isert_free_np(struct iscsi_np *np)
- {
- 	struct isert_np *isert_np = (struct isert_np *)np->np_context;
- 
--	rdma_destroy_id(isert_np->np_cm_id);
-+	if (isert_np->np_cm_id)
-+		rdma_destroy_id(isert_np->np_cm_id);
- 
- 	np->np_context = NULL;
- 	kfree(isert_np);
+ /*
+  * The Mobility Lab (TML)
 
 
