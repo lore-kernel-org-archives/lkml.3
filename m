@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaLEXKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:10:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996AbaLEXGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753995AbaLEXGl (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 18:06:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899AbaLEXGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 18:06:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 06/45] x86: Require exact match for noxsave command line option
-Date: Fri,  5 Dec 2014 14:44:49 -0800
-Message-Id: <20141205223317.725095524@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 20/45] powerpc/pseries: Honor the generic "no_64bit_msi" flag
+Date: Fri,  5 Dec 2014 14:45:03 -0800
+Message-Id: <20141205223319.921572039@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -30,54 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
+commit 415072a041bf50dbd6d56934ffc0cbbe14c97be8 upstream.
 
-We have some very similarly named command-line options:
+Instead of the arch specific quirk which we are deprecating
 
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
-
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
-
-	__setup("foo", x86_foo_func...);
-
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
-
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-[ tglx: We really need to make __setup() more robust. ]
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/platforms/pseries/msi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -144,6 +144,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
- 
- static int __init x86_xsave_setup(char *s)
- {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_AVX);
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -426,7 +426,7 @@ static int rtas_setup_msi_irqs(struct pc
+ 	 */
+ again:
+ 	if (type == PCI_CAP_ID_MSI) {
+-		if (pdn->force_32bit_msi) {
++		if (pdev->no_64bit_msi) {
+ 			rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, nvec);
+ 			if (rc < 0) {
+ 				/*
 
 
