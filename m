@@ -1,187 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaLETHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 14:07:51 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:35326 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941AbaLETFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 14:05:13 -0500
-From: "Javi Merino" <javi.merino@arm.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: punit.agrawal@arm.com, broonie@kernel.org,
-        Javi Merino <javi.merino@arm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC PATCH v6 3/9] tools lib traceevent: Add support for __print_u{8,16,32,64}_array()
-Date: Fri,  5 Dec 2014 19:04:14 +0000
-Message-Id: <1417806260-9264-4-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-X-OriginalArrivalTime: 05 Dec 2014 19:05:09.0798 (UTC) FILETIME=[63CD6460:01D010BE]
-X-MC-Unique: 114120519051201301
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1751801AbaLETJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 14:09:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50610 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374AbaLETJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 14:09:39 -0500
+From: Michal Kubecek <mkubecek@suse.cz>
+Date: Fri, 5 Dec 2014 17:05:49 +0100
+Subject: [PATCH net-next] macvlan: allow setting LRO independently of lower
+ device
+To: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20141205190937.99BD6A0BB0@unicorn.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB5J7w7a013877
 
-Trace can now generate traces with u8, u16, u32 and u64 dynamic
-arrays.  Add support to parse them.
+Since commit fbe168ba91f7 ("net: generic dev_disable_lro() stacked
+device handling"), dev_disable_lro() zeroes NETIF_F_LRO feature flag
+first for a macvlan device and then for its lower device. As an attempt
+to set NETIF_F_LRO to zero is ignored, dev_disable_lro() issues a
+warning and taints kernel.
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+Allowing NETIF_F_LRO to be set independently of the lower device
+consists of three parts:
+
+  - add the flag to hw_features to allow toggling it
+  - allow setting it to 0 even if lower device has the flag set
+  - add the flag to MACVLAN_FEATURES to restore copying from lower
+    device on macvlan creation
+
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
 ---
- tools/lib/traceevent/event-parse.c | 62 +++++++++++++++++++++++++++++++++++---
- tools/lib/traceevent/event-parse.h |  4 +++
- 2 files changed, 61 insertions(+), 5 deletions(-)
+ drivers/net/macvlan.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index f12ea53cc83b..f67260bddd65 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -753,6 +753,10 @@ static void free_arg(struct print_arg *arg)
- 		free_arg(arg->symbol.field);
- 		free_flag_sym(arg->symbol.symbols);
- 		break;
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		free_arg(arg->num.field);
- 		free_arg(arg->num.size);
-@@ -2827,6 +2831,22 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_hex(event, arg, tok);
- 	}
-+	if (strcmp(token, "__print_u8_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U8);
-+	}
-+	if (strcmp(token, "__print_u16_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U16);
-+	}
-+	if (strcmp(token, "__print_u32_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U32);
-+	}
-+	if (strcmp(token, "__print_u64_array") == 0) {
-+		free_token(token);
-+		return process_num(event, arg, tok, PRINT_U64);
-+	}
- 	if (strcmp(token, "__get_str") == 0) {
- 		free_token(token);
- 		return process_str(event, arg, tok);
-@@ -3355,6 +3375,10 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		break;
- 	case PRINT_FLAGS:
- 	case PRINT_SYMBOL:
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		break;
- 	case PRINT_TYPE:
-@@ -3660,7 +3684,7 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	unsigned long long val, fval;
- 	unsigned long addr;
- 	char *str;
--	unsigned char *hex;
-+	void *num;
- 	int print;
- 	int i, len;
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 9538674..10604db 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -747,7 +747,7 @@ static struct lock_class_key macvlan_netdev_addr_lock_key;
  
-@@ -3739,13 +3763,17 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			}
- 		}
- 		break;
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
- 	case PRINT_HEX:
- 		if (arg->num.field->type == PRINT_DYNAMIC_ARRAY) {
- 			unsigned long offset;
- 			offset = pevent_read_number(pevent,
- 				data + arg->num.field->dynarray.field->offset,
- 				arg->num.field->dynarray.field->size);
--			hex = data + (offset & 0xffff);
-+			num = data + (offset & 0xffff);
- 		} else {
- 			field = arg->num.field->field.field;
- 			if (!field) {
-@@ -3755,13 +3783,24 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 					goto out_warning_field;
- 				arg->num.field->field.field = field;
- 			}
--			hex = data + field->offset;
-+			num = data + field->offset;
- 		}
- 		len = eval_num_arg(data, size, event, arg->num.size);
- 		for (i = 0; i < len; i++) {
- 			if (i)
- 				trace_seq_putc(s, ' ');
--			trace_seq_printf(s, "%02x", hex[i]);
-+			if (arg->type == PRINT_HEX)
-+				trace_seq_printf(s, "%02x",
-+						((uint8_t *)num)[i]);
-+			else if (arg->type == PRINT_U8)
-+				trace_seq_printf(s, "%u", ((uint8_t *)num)[i]);
-+			else if (arg->type == PRINT_U16)
-+				trace_seq_printf(s, "%u", ((uint16_t *)num)[i]);
-+			else if (arg->type == PRINT_U32)
-+				trace_seq_printf(s, "%u", ((uint32_t *)num)[i]);
-+			else    /* PRINT_U64 */
-+				trace_seq_printf(s, "%lu",
-+						((uint64_t *)num)[i]);
- 		}
- 		break;
+ #define MACVLAN_FEATURES \
+ 	(NETIF_F_SG | NETIF_F_ALL_CSUM | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST | \
+-	 NETIF_F_GSO | NETIF_F_TSO | NETIF_F_UFO | \
++	 NETIF_F_GSO | NETIF_F_TSO | NETIF_F_UFO | NETIF_F_LRO | \
+ 	 NETIF_F_TSO_ECN | NETIF_F_TSO6 | NETIF_F_GRO | NETIF_F_RXCSUM | \
+ 	 NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_HW_VLAN_STAG_FILTER)
  
-@@ -4922,7 +4961,20 @@ static void print_args(struct print_arg *args)
- 		printf(")");
- 		break;
- 	case PRINT_HEX:
--		printf("__print_hex(");
-+	case PRINT_U8:
-+	case PRINT_U16:
-+	case PRINT_U32:
-+	case PRINT_U64:
-+		if (args->type == PRINT_HEX)
-+			printf("__print_hex(");
-+		else if (args->type == PRINT_U8)
-+			printf("__print_u8_array(");
-+		else if (args->type == PRINT_U16)
-+			printf("__print_u16_array(");
-+		else if (args->type == PRINT_U32)
-+			printf("__print_u32_array(");
-+		else /* PRINT_U64 */
-+			printf("__print_u64_array(");
- 		print_args(args->num.field);
- 		printf(", ");
- 		print_args(args->num.size);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 2bf72e908a74..51f1f0f0a3b5 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -272,6 +272,10 @@ enum print_arg_type {
- 	PRINT_FIELD,
- 	PRINT_FLAGS,
- 	PRINT_SYMBOL,
-+	PRINT_U8,
-+	PRINT_U16,
-+	PRINT_U32,
-+	PRINT_U64,
- 	PRINT_HEX,
- 	PRINT_TYPE,
- 	PRINT_STRING,
+@@ -784,6 +784,7 @@ static int macvlan_init(struct net_device *dev)
+ 				  (lowerdev->state & MACVLAN_STATE_MASK);
+ 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
+ 	dev->features		|= ALWAYS_ON_FEATURES;
++	dev->hw_features	|= NETIF_F_LRO;
+ 	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
+ 	dev->gso_max_size	= lowerdev->gso_max_size;
+ 	dev->iflink		= lowerdev->ifindex;
+@@ -936,15 +937,15 @@ static netdev_features_t macvlan_fix_features(struct net_device *dev,
+ 					      netdev_features_t features)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
++	netdev_features_t lowerdev_features = vlan->lowerdev->features;
+ 	netdev_features_t mask;
+ 
+ 	features |= NETIF_F_ALL_FOR_ALL;
+ 	features &= (vlan->set_features | ~MACVLAN_FEATURES);
+ 	mask = features;
+ 
+-	features = netdev_increment_features(vlan->lowerdev->features,
+-					     features,
+-					     mask);
++	lowerdev_features &= (features | ~NETIF_F_LRO);
++	features = netdev_increment_features(lowerdev_features, features, mask);
+ 	features |= ALWAYS_ON_FEATURES;
+ 	features &= ~NETIF_F_NETNS_LOCAL;
+ 
 -- 
-1.9.1
-
+1.8.4.5
 
