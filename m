@@ -1,127 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaLEIZQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:25:16 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:35217 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaLEIZN (ORCPT
+	id S1752681AbaLEI0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:26:12 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:12691 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516AbaLEI0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:25:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFo15y-ENW9M3bratoWQ_DL_mfT3FwQE4i+pscR0crmyBA@mail.gmail.com>
-References: <CAPDyKFpX5nXR18pKdLrtDrPK60p1y2CEqq+--3z3jczRRmKrqA@mail.gmail.com>
-	<1417434068-7344-1-git-send-email-amit.daniel@samsung.com>
-	<CAPDyKFo15y-ENW9M3bratoWQ_DL_mfT3FwQE4i+pscR0crmyBA@mail.gmail.com>
-Date: Fri, 5 Dec 2014 13:55:12 +0530
-X-Google-Sender-Auth: y6z-dwN7pEcdH74Mcyz3g9MJIQk
-Message-ID: <CADGdYn5tAV2QjJ1Q0vi-EoSzvaoaOnCzemR+=X3MqotY9T8d2Q@mail.gmail.com>
-Subject: Re: [PATCH] PM/ Domains: Export of_genpd_get_from_provider function.
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Dec 2014 03:26:10 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-99-54816c20321e
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: vinod.koul@intel.com
+Cc: dan.j.williams@intel.com, lars@metafoo.de, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        l.czerwinski@samsung.com, kyungmin.park@samsung.com,
+        k.kozlowski@samsung.com, padma.kvr@gmail.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v2 0/2] dma: pl330: improve status checking
+Date: Fri, 05 Dec 2014 09:25:53 +0100
+Message-id: <1417767955-5480-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e+xgK5CTmOIwbElvBbTp15gtFg99S+r
+	xesXhhZnm96wW/yaNonNYsnk+awWl3fNYbNYe+Quu0X7sjmsFg8O72S3eNm3n8WB22PnrLvs
+	Hov3vGTyWPLmEKtH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZax9+oOx4DRHxYnGLuYGxg72
+	LkZODgkBE4nmv4+gbDGJC/fWs3UxcnEICSxilLg/r4MJwmlnkrhz7CUbSBWbgI7Elu8TGEFs
+	EQEJie3P+thBipgFJjJJrO2/CFTEwSEsYC0xebIZSA2LgKrEjBWXWUFsXgEXie/rupghtslJ
+	nDw2mXUCI/cCRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHB9Ex6B+OqBotDjAIcjEo8
+	vCskGkOEWBPLiitzDzFKcDArifAWKgKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8964mRsiJJCe
+	WJKanZpakFoEk2Xi4JRqYLS6ot4j6rHeZYcpl/My3VifN+mTz8nGbiqex9PZ5nBzUsay9RPa
+	zk7zFZ5ukeIYOLmm+KuG63vvWnXvL/MiekP8lizOb7744Wu3/bbQiiOXM75zNasFT0s7cjtU
+	4ZT0hw11J7at0JrQe/Hvo22LgytnFPBkTZxxqH/igcZH+5OS/ZZsDV0mrqLEUpyRaKjFXFSc
+	CAAe8PklIgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 4, 2014 at 9:09 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 1 December 2014 at 12:41, Amit Daniel Kachhap
-> <amit.daniel@samsung.com> wrote:
->> This function looks up a PM domain form the provider. This will be
->> useful to add parent/child domain relationship from the SoC specific
->> code. The caller of the function must make sure that PM domain provider
->> is already registered.
->>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->> This patch may solve the same purpose which is done by earlier posts
->> 1) https://lkml.org/lkml/2014/11/24/319 - In this there were comments
->> for not using the PM domain name.
->>
->> 2) Ulf Hansson posted a patch
->> http://www.spinics.net/lists/linux-samsung-soc/msg39745.html which also solves
->> similar purpose but I feel this is slightly complex and involves changing
->> the genpd structure.
->>
->>
->>  drivers/base/power/domain.c |    3 ++-
->>  include/linux/pm_domain.h   |    8 ++++++++
->>  2 files changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
->> index d822753..5d7a2c1 100644
->> --- a/drivers/base/power/domain.c
->> +++ b/drivers/base/power/domain.c
->> @@ -2129,7 +2129,7 @@ EXPORT_SYMBOL_GPL(of_genpd_del_provider);
->>   * Returns a valid pointer to struct generic_pm_domain on success or ERR_PTR()
->>   * on failure.
->>   */
->> -static struct generic_pm_domain *of_genpd_get_from_provider(
->> +struct generic_pm_domain *of_genpd_get_from_provider(
->>                                         struct of_phandle_args *genpdspec)
->>  {
->>         struct generic_pm_domain *genpd = ERR_PTR(-ENOENT);
->> @@ -2149,6 +2149,7 @@ static struct generic_pm_domain *of_genpd_get_from_provider(
->>
->>         return genpd;
->>  }
->> +EXPORT_SYMBOL_GPL(of_genpd_get_from_provider);
->>
->>  /**
->>   * genpd_dev_pm_detach - Detach a device from its PM domain.
->> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
->> index 9690827..4954e24 100644
->> --- a/include/linux/pm_domain.h
->> +++ b/include/linux/pm_domain.h
->> @@ -282,6 +282,8 @@ typedef struct generic_pm_domain *(*genpd_xlate_t)(struct of_phandle_args *args,
->>  int __of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
->>                         void *data);
->>  void of_genpd_del_provider(struct device_node *np);
->> +struct generic_pm_domain *of_genpd_get_from_provider(
->> +                       struct of_phandle_args *genpdspec);
->>
->>  struct generic_pm_domain *__of_genpd_xlate_simple(
->>                                         struct of_phandle_args *genpdspec,
->> @@ -299,6 +301,12 @@ static inline int __of_genpd_add_provider(struct device_node *np,
->>  }
->>  static inline void of_genpd_del_provider(struct device_node *np) {}
->>
->> +static inline struct generic_pm_domain *of_genpd_get_from_provider(
->> +                       struct of_phandle_args *genpdspec)
->> +{
->> +       return NULL;
->> +}
->> +
->>  #define __of_genpd_xlate_simple                NULL
->>  #define __of_genpd_xlate_onecell       NULL
->>
->> --
->> 1.7.9.5
->>
->
-> This seems like a good approach!
->
-> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-Thanks.
->
-> Do, note that you will have to resend the patch to linux-pm list as
-> well. Unless Rafael is happy to pick it up from here.
-Sure. My fault.
+Hi,
 
-Regards,
-Amit
->
-> Kind regards
-> Uffe
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This series allows to check DMA transfer residue (number of bytes left
+to send/receive) by modifying pl330_tx_status() function, when struct
+dma_tx_state is filled with needed data. It also introduces DMA_PAUSE
+feature, which allows to halt DMA transfer before termination and read
+residue without risk of data loss.
+
+This features are needed for proper implementation of DMA transfers,
+particulary for serial drivers when transfer sizes are unknown and
+requests on DMA channels are terminated before transfer completion
+very ofter (it's becouse we terminate then in timeout interrupt to
+avoid latency which is usually undesirable).
+
+Best regards,
+Robert Baldyga
+
+Changelog:
+
+v2:
+- add pm_runtime support
+- make it working for multi-segment transfers
+- some cleanups
+
+v1: https://lkml.org/lkml/2014/11/25/554
+
+Robert Baldyga (2):
+  dma: pl330: improve pl330_tx_status() function
+  dma: pl330: add DMA_PAUSE feature
+
+ drivers/dma/pl330.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 85 insertions(+), 2 deletions(-)
+
+-- 
+1.9.1
+
