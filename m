@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaLEQSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 11:18:22 -0500
-Received: from tex.lwn.net ([70.33.254.29]:44379 "EHLO vena.lwn.net"
+	id S1751398AbaLEQUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 11:20:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48072 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaLEQSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 11:18:21 -0500
-Date: Fri, 5 Dec 2014 11:18:18 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Peter Foley <pefoley2@pefoley.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Streetman <ddstreet@ieee.org>, Jennings <sjennings@variantweb.net>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Daniel Borkmann <dborkman@redhat.com>, linuxppc-dev@lists.ozlabs.org,
-        Siva Yerramreddy <yshivakrishna@gmail.com>
-Subject: Re: [PATCH linux-next] Documentation: Build mic/mpssd only for
- x86_64
-Message-ID: <20141205111818.551a870f@lwn.net>
-In-Reply-To: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
-References: <25c04eb72c621fc9bdf0aae25782ff5bad5a4b97.1417728278.git.ashutosh.dixit@intel.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1750896AbaLEQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 11:20:54 -0500
+Date: Fri, 5 Dec 2014 17:20:51 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, Joerg Roedel <jroedel@suse.de>,
+        kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
+        Olaf Hering <ohering@suse.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
+	hypercall when non CONFIG_PREEMPT
+Message-ID: <20141205162051.GK25677@wotan.suse.de>
+References: <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com> <20141201223611.GM25677@wotan.suse.de> <547D9E56.50708@citrix.com> <20141203022833.GS25677@wotan.suse.de> <547E939F.40106@suse.com> <20141203193947.GD25677@wotan.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141203193947.GD25677@wotan.suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Dec 2014 13:27:29 -0800
-Ashutosh Dixit <ashutosh.dixit@intel.com> wrote:
+On Wed, Dec 03, 2014 at 08:39:47PM +0100, Luis R. Rodriguez wrote:
+> On Wed, Dec 03, 2014 at 05:37:51AM +0100, Juergen Gross wrote:
+> > On 12/03/2014 03:28 AM, Luis R. Rodriguez wrote:
+> >> On Tue, Dec 02, 2014 at 11:11:18AM +0000, David Vrabel wrote:
+> >>> On 01/12/14 22:36, Luis R. Rodriguez wrote:
+> >>>>
+> >>>> Then I do agree its a fair analogy (and find this obviously odd that how
+> >>>> widespread cond_resched() is), we just don't have an equivalent for IRQ
+> >>>> context, why not avoid the special check then and use this all the time in the
+> >>>> middle of a hypercall on the return from an interrupt (e.g., the timer
+> >>>> interrupt)?
+> >>>
+> >>> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
+> >>
+> >> OK thanks! That explains why we need some asm code but in that submission you
+> >> still also had used is_preemptible_hypercall(regs) and in the new
+> >> implementation you use a CPU variable xen_in_preemptible_hcall prior to calling
+> >> preempt_schedule_irq(). I believe you added the CPU variable because
+> >> preempt_schedule_irq() will preempt first without any checks if it should, I'm
+> >> asking why not do something like cond_resched_irq() where we check with
+> >> should_resched() prior to preempting and that way we can avoid having to use
+> >> the CPU variable?
+> >
+> > Because that could preempt at any asynchronous interrupt making the
+> > no-preempt kernel fully preemptive. 
+> 
+> OK yeah I see. That still doesn't negate the value of using something
+> like cond_resched_irq() with a should_resched() on only critical hypercalls.
+> The current implementation (patch by David) forces preemption without
+> checking for should_resched() so it would preempt unnecessarily at least
+> once.
+> 
+> > How would you know you are just
+> > doing a critical hypercall which should be preempted?
+> 
+> You would not, you're right. I was just trying to see if we could generalize
+> an API for this to avoid having users having to create their own CPU variables
+> but this all seems very specialized as we want to use this on the timer
+> so if we do generalize a cond_resched_irq() perhaps the documentation can
+> warn about this type of case or abuse.
 
-> mic/mpssd along with MIC drivers are currently only usable on
-> x86_64. So build mic/mpssd only for x86_64 to avoid build breaks on
-> big-endian systems.
+David's patch had the check only it was x86 based, if we use cond_resched_irq()
+we can leave that aspect out to be done through asm inlines or it'll use the
+generic shoudl_resched(), that should save some code on the asm implementations.
 
-I can certainly apply this.  But it seems to me that this kind of code
-doesn't belong in the documentation directory.  How about a patch to move
-it to tools/ ?
+I have some patches now which generalizees this, I also have more information
+about this can happen exactly, and a way to triggger it on small systems with
+some hacks to emulate possibly backend behaviour on larger systems. In the worst
+case this can be a dangerious situation to be in. I'll send some new RFTs.
 
-jon
+ Luis
