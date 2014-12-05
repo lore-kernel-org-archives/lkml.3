@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaLEJzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 04:55:47 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:35196 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753130AbaLEJzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 04:55:44 -0500
-Date: Fri, 5 Dec 2014 11:55:23 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-In-Reply-To: <5481173A.9060308@smart-weblications.de>
-Message-ID: <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg>
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1751370AbaLELpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 06:45:39 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:41150 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaLELph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 06:45:37 -0500
+Date: Fri, 5 Dec 2014 12:45:29 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
+        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
+        hughd@google.com, hocko@suse.cz
+Subject: Re: [PATCH v1 3/5] mm, uaccess: trigger might_sleep() in
+ might_fault() when pagefaults are disabled
+Message-ID: <20141205114529.GD4213@osiris>
+References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417778289-51567-4-git-send-email-dahi@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120511-0041-0000-0000-0000025FE0A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 05, 2014 at 12:18:07PM +0100, David Hildenbrand wrote:
+> -void might_fault(void)
+> +void __might_fault(const char *file, int line)
+>  {
+>  	/*
+>  	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
+> @@ -3710,21 +3710,16 @@ void might_fault(void)
+>  	 */
+>  	if (segment_eq(get_fs(), KERNEL_DS))
+>  		return;
+> -
+> -	/*
+> -	 * it would be nicer only to annotate paths which are not under
+> -	 * pagefault_disable, however that requires a larger audit and
+> -	 * providing helpers like get_user_atomic.
+> -	 */
+> -	if (in_atomic())
+> +	if (unlikely(!pagefault_disabled())) {
+> +		__might_sleep(file, line, 0);
+>  		return;
+> -
+> -	__might_sleep(__FILE__, __LINE__, 0);
+> -
+> +	}
 
-	Hello,
+This should be likely() instead of unlikely(), no?
+I'd rather write this
 
-	Adding Simon to CC...
+	if (pagefault_disabled())
+ 		return;
+	__might_sleep(file, line, 0);
 
-On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+and leave the likely stuff completely away.
 
-> i tried with 3.12.33 without any XFRM and now got this one (which is reproducable):
-> 
-> [  233.956012] BUG: unable to handle kernel NULL pointer dereference at 00000000
->                                    00000014
-> [  233.956218] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack
-
-	It seems fix from 3.13 was not sent to 3.12 stable:
-
-commit b25adce1606427fd8 ("ipvs: correct usage/allocation of seqadj ext in 
-ipvs")
-
-	There was related change but it is not needed
-for stable kernels:
-
-commit db12cf27435356017e ("netfilter: WARN about wrong usage of sequence 
-number adjustments"
-
-	Simon, can we try commit b25adce1606427fd8 for 3.12?
-
-> setup is like this:
-> 
-> 
-> #virtual=<myVIP>:21
-> #       real=10.10.1.20:21 masq
-> #       real=10.10.1.21:21 masq
-> #       real=10.10.1.22:21 masq
-> #       real=10.10.1.23:21 masq
-> #       persistent=600
-> #       service=ftp
-> #       scheduler=rr
-> #       protocol=tcp
-> #       checktype=connect
-> 
-> ( i remarked it to prevent fruther crashes...)
-> 
-> when ip_vs_ftp is loaded and someone trying to make a ftp connection, the system
-> panics instantly.
-> 
-> 10.10.1.20 - 10.10.1.23 are lxc-containers using veth connected to the bridge
-> running on 4 different nodes. The node running ldirector/ipvsadm has also one of
-> those containers running (don't know if that matters)
-
-	It is always good to know the setup. Do you access VIP
-from local clients (from director)?
-
-> brctl show
-> bridge name     bridge id               STP enabled     interfaces
-> br0             8000.00259052bbf4       no              bond0
->                                                         vethMKELUc
->                                                         vethXdWGqf
->                                                         vethgJMmEb
->                                                         vethmKNqFc
-> 
-> 
-> I disabled the ftp server lxc container on the node doing ip_vs, so that the
-> endpoint of the connection is not on the same node and tried again but with the
-> same result.
-> 
-> Unfortunatelly i cannot test with newer kernels than 3.12, because ocfs2 is
-> somehow broken in >= 3.14
-
-	Before I create patch to avoid rerouting for
-LOCAL_IN you can try to set IPVS sysctl var "snat_reroute" to 0
-or even to change ip_vs_route_me_harder() function just to return 0.
-snat_reroute=1 (a default value) is needed if you have
-multiple links to clients and use ip rules to select
-correct route by src ip (after SNAT). If you have single
-uplink snat_reroute can be 0.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
