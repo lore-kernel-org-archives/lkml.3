@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaLEXQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:16:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
+	id S1754300AbaLEXQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:16:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911AbaLEXGf (ORCPT
+	with ESMTP id S1753902AbaLEXGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Dec 2014 18:06:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 23/45] USB: ssu100: fix overrun-error reporting
-Date: Fri,  5 Dec 2014 14:45:06 -0800
-Message-Id: <20141205223320.398164211@linuxfoundation.org>
+        Cristina Ciocan <cristina.ciocan@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 22/45] iio: Fix IIO_EVENT_CODE_EXTRACT_DIR bit mask
+Date: Fri,  5 Dec 2014 14:45:05 -0800
+Message-Id: <20141205223320.243725499@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -28,49 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Cristina Ciocan <cristina.ciocan@intel.com>
 
-commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
+commit ccf54555da9a5e91e454b909ca6a5303c7d6b910 upstream.
 
-Fix reporting of overrun errors, which should only be reported once
-using the inserted null character.
+The direction field is set on 7 bits, thus we need to AND it with 0111 111 mask
+in order to retrieve it, that is 0x7F, not 0xCF as it is now.
 
-Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: ade7ef7ba (staging:iio: Differential channel handling)
+Signed-off-by: Cristina Ciocan <cristina.ciocan@intel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ssu100.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ include/linux/iio/events.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ssu100.c
-+++ b/drivers/usb/serial/ssu100.c
-@@ -495,10 +495,9 @@ static void ssu100_update_lsr(struct usb
- 			if (*tty_flag == TTY_NORMAL)
- 				*tty_flag = TTY_FRAME;
- 		}
--		if (lsr & UART_LSR_OE){
-+		if (lsr & UART_LSR_OE) {
- 			port->icount.overrun++;
--			if (*tty_flag == TTY_NORMAL)
--				*tty_flag = TTY_OVERRUN;
-+			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
- 		}
- 	}
+--- a/include/linux/iio/events.h
++++ b/include/linux/iio/events.h
+@@ -90,7 +90,7 @@ enum iio_event_direction {
  
-@@ -516,12 +515,8 @@ static void ssu100_process_read_urb(stru
- 	if ((len >= 4) &&
- 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
- 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
--		if (packet[2] == 0x00) {
-+		if (packet[2] == 0x00)
- 			ssu100_update_lsr(port, packet[3], &flag);
--			if (flag == TTY_OVERRUN)
--				tty_insert_flip_char(&port->port, 0,
--						TTY_OVERRUN);
--		}
- 		if (packet[2] == 0x01)
- 			ssu100_update_msr(port, packet[3]);
+ #define IIO_EVENT_CODE_EXTRACT_TYPE(mask) ((mask >> 56) & 0xFF)
+ 
+-#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0xCF)
++#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0x7F)
+ 
+ #define IIO_EVENT_CODE_EXTRACT_CHAN_TYPE(mask) ((mask >> 32) & 0xFF)
  
 
 
