@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaLEMGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 07:06:30 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:50078 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaLEMGP (ORCPT
+	id S1752377AbaLEM12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 07:27:28 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:47129 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaLEM1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 07:06:15 -0500
-Date: Fri, 5 Dec 2014 13:06:10 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: dln2: add suspend/resume functionality
-Message-ID: <20141205120610.GG11445@localhost>
-References: <1417089434-11274-1-git-send-email-octavian.purdila@intel.com>
- <20141205101741.GD11445@localhost>
- <CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
+	Fri, 5 Dec 2014 07:27:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141205104009.GE11889@leverpostej>
+References: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141205104009.GE11889@leverpostej>
+Date: Fri, 5 Dec 2014 20:27:23 +0800
+Message-ID: <CAAfSe-uz534FiZufojKa8MdBi=VFqhuoFLwof7K+FqXG--AGaw@mail.gmail.com>
+Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        allen.zhang@spreadtrum.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 01:51:17PM +0200, Octavian Purdila wrote:
-> On Fri, Dec 5, 2014 at 12:17 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Thu, Nov 27, 2014 at 01:57:14PM +0200, Octavian Purdila wrote:
-> >
-> >> @@ -753,11 +759,42 @@ static const struct usb_device_id dln2_table[] = {
-> >>
-> >>  MODULE_DEVICE_TABLE(usb, dln2_table);
-> >
-> > Place the new callbacks above the device id table.
-> >
-> >> +static int dln2_suspend(struct usb_interface *iface, pm_message_t message)
-> >> +{
-> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
-> >> +
-> >> +     dln2_stop(dln2);
-> >
-> > You should also stop the reads urbs here.
-> 
-> Do you mean usb_kill_urb()? I thought that was not necessary unless
-> the device is reset. However, going throught
-> Documentation/usb/power-management.txt again looks like it must be
-> done in suspend.
+On Fri, Dec 5, 2014 at 6:40 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Hi,
+>
+> On Thu, Dec 04, 2014 at 11:34:15AM +0000, Chunyan Zhang wrote:
+>> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
+>>
+>> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+>> standards based on ARMv8 multiple core architecture.Now we have only one
+>> SoC(SC9836) based on this Platform in developing.
+>>
+>> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+>> of SC9836-UART.
+>>
+>> This patchset also has patches which address "sprd" prefix and DT compatible
+>> strings for nodes which appear un-documented.
+>>
+>> This version code was tesed both on Fast Mode and sc9836-fpga board.
+>> We use the latest boot-wrapper-aarch64 as the bootloader.
+>>
+>> Changes from v3:
+>> * Addressed review comments:
+>>       - Added the description of clock property for sc9836-uart
+>>       - Revised the size of GICC to be 8KiB
+>>       - Added another compatible string for psci-0.1
+>
+> I had open questions on v3 regarding your PSCI imlpementation. You
+> mentioned that you are using the aarch64 bootwrapper, but your DT
+> describes PSCI 0.2, and the (upstream) bootwrapper does not implement
+> PSCI 0.2. Adding the old PSCI compatible string is _not_ sufficient if
+> you do not have a full PSCI 0.2 implementation.
+>
+> Given that PSCI 0.2 requires more functionality to be implemented, I'd
+> like to know that your implementation is spec-compliant (implementing
+> the mandatory functions, nters the kernel in the correct state, etc),
+> and that it has been tested.
+>
+> Would you be able to look at my comments from the last posting please?
+>
+> Thanks,
+> Mark.
+> --
 
-Yes, you should kill them explicitly. Any outstanding urbs will be
-killed by usb core if you fail to do this.
+Hi, Mark
 
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +static int dln2_resume(struct usb_interface *iface)
-> >> +{
-> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
-> >> +
-> >> +     dln2->disconnect = false;
-> >
-> > And surely you need to resubmit the read urbs in resume, or you will
-> > never receive any more data.
-> >
-> > How did you test this patch?
-> >
-> 
-> The resume cb is not called in my setup (kvm), only reset_resume. 
+Ok, I'll check it again with our related engineers.
 
-Please make sure to test your patches on proper hardware.
+Actually, I had read all of your comments carefully before sending
+each version of patches, and I replied you a few days early, I guess
+you may miss it :)
 
-> But I assume since the port is not reset when resume is called the
-> URBs are still queued.
+If we just implemented psci-0.1 until now, can we submit this path
+without "compatible = "arm,psci-0.2"", but only with " compatible =
+"arm,psci" ".
 
-No, they will have been killed by usb core even if you forget to do it,
-so this would prevent any further reads.
 
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +static int dln2_reset_resume(struct usb_interface *iface)
-> >> +{
-> >> +     struct dln2_dev *dln2 = usb_get_intfdata(iface);
-> >> +     int ret;
-> >> +
-> >> +     dln2_free_rx_urbs(dln2);
-> >> +     ret = dln2_setup_rx_urbs(dln2, iface->cur_altsetting);
-> >
-> > This doesn't make much sense. Why would you ever want to reallocate the
-> > urbs and their buffers here?
-> >
-> > If the device does not lose its state as you claim, then all you need to
-> > do is to resubmit the read urbs (as in resume).
-> >
-> The device itself does not lose state as it does not lose power and
-> does not react to USB port reset AFAICS (e.g. GPIO settings are
-> preserved). However the USB port is reset and I assumed I must
-> reallocate the URBs.
 
-You don't and should not.
-
-> I just found out that usb-serial uses usb_poisoin_urb and
-> usb_unpoison_urb for suspend/resume and this two looks like just what
-> I need.
-
-Why do you think so?
-
-> Should I use that instead?
-
-No.
-
-Johan
+Thanks,
+Chunyan
