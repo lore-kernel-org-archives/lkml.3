@@ -1,166 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaLERzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 12:55:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45304 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaLERzu (ORCPT
+	id S1751638AbaLER7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 12:59:11 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:58409 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121AbaLER7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 12:55:50 -0500
-Message-ID: <5481F1A1.50609@codeaurora.org>
-Date: Fri, 05 Dec 2014 19:55:45 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 5 Dec 2014 12:59:08 -0500
+Message-ID: <5481F269.4060404@suse.cz>
+Date: Fri, 05 Dec 2014 18:59:05 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] UBI: Fastmap: Make ubi_refill_pools() fair
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-7-git-send-email-richard@nod.at>
-In-Reply-To: <1416835236-25185-7-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Linux 3.12.34
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+I'm announcing the release of the 3.12.34 kernel.
 
-On 11/24/2014 3:20 PM, Richard Weinberger wrote:
-> Currently ubi_refill_pools() first fills the first and then
-> the second one.
-> If only very few free PEBs are available the second pool can get
-> zero PEBs.
-> Change ubi_refill_pools() to distribute free PEBs fair between
-> all pools.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->   drivers/mtd/ubi/wl.c | 77 +++++++++++++++++++++++++++-------------------------
->   1 file changed, 40 insertions(+), 37 deletions(-)
->
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index f028b68..c2822f7 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -583,59 +583,62 @@ static void return_unused_pool_pebs(struct ubi_device *ubi,
->   }
->
->   /**
-> - * refill_wl_pool - refills all the fastmap pool used by the
-> - * WL sub-system.
-> + * ubi_refill_pools - refills all fastmap PEB pools.
->    * @ubi: UBI device description object
->    */
-> -static void refill_wl_pool(struct ubi_device *ubi)
-> +void ubi_refill_pools(struct ubi_device *ubi)
->   {
-> +	struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
-> +	struct ubi_fm_pool *pool = &ubi->fm_pool;
->   	struct ubi_wl_entry *e;
-> -	struct ubi_fm_pool *pool = &ubi->fm_wl_pool;
-> +	int enough;
->
-> +	spin_lock(&ubi->wl_lock);
-> +
-> +	return_unused_pool_pebs(ubi, wl_pool);
->   	return_unused_pool_pebs(ubi, pool);
->
-> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
-> -		if (!ubi->free.rb_node ||
-> -		   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> -			break;
-> +	wl_pool->size = 0;
-> +	pool->size = 0;
->
-> -		e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
-> -		self_check_in_wl_tree(ubi, e, &ubi->free);
-> -		rb_erase(&e->u.rb, &ubi->free);
-> -		ubi->free_count--;
-> +	for (;;) {
+All users of the 3.12 kernel series must upgrade.
 
-You loop for max(pool->max_size, wl_pool->max_size) itterations. IMO, 
-the code will be more clear if you use for(i=0; i<max(pool->max_size, 
-wl_pool->max_size); i++) instead of "int enough".
-This is just coding style preference of course. I personally don't like 
-for(;;) that much.... Just a suggestion. :)
+The updated 3.12.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.12.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-> +		enough = 0;
-> +		if (pool->size < pool->max_size) {
-> +			if (!ubi->free.rb_node ||
-> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> +				break;
->
-> -		pool->pebs[pool->size] = e->pnum;
-> -	}
-> -	pool->used = 0;
-> -}
-> +			e = wl_get_wle(ubi);
-> +			if (!e)
-> +				break;
->
-> -/**
-> - * refill_wl_user_pool - refills all the fastmap pool used by ubi_wl_get_peb.
-> - * @ubi: UBI device description object
-> - */
-> -static void refill_wl_user_pool(struct ubi_device *ubi)
-> -{
-> -	struct ubi_fm_pool *pool = &ubi->fm_pool;
-> +			pool->pebs[pool->size] = e->pnum;
-> +			pool->size++;
-> +		} else
-> +			enough++;
->
-> -	return_unused_pool_pebs(ubi, pool);
-> +		if (wl_pool->size < wl_pool->max_size) {
-> +			if (!ubi->free.rb_node ||
-> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> +				break;
->
-> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
-> -		pool->pebs[pool->size] = __wl_get_peb(ubi);
-> -		if (pool->pebs[pool->size] < 0)
-> +			e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
-> +			self_check_in_wl_tree(ubi, e, &ubi->free);
-> +			rb_erase(&e->u.rb, &ubi->free);
-> +			ubi->free_count--;
+----------------------------------------------------------------
+The following changes since commit 0bbf78fb0ac62ef6f0970a49d7e0a1fb79d10dce:
 
-why don't you use wl_get_peb() here?
+  Linux 3.12.33 (2014-11-15 13:28:07 +0100)
 
-Other then that - I agree with the patch. So if you want to keep it as 
-is, I'll add Reviewed-by.
+are available in the git repository at:
 
-> +
-> +			wl_pool->pebs[wl_pool->size] = e->pnum;
-> +			wl_pool->size++;
-> +		} else
-> +			enough++;
-> +
-> +		if (enough == 2)
->   			break;
->   	}
-> +
-> +	wl_pool->used = 0;
->   	pool->used = 0;
-> -}
->
-> -/**
-> - * ubi_refill_pools - refills all fastmap PEB pools.
-> - * @ubi: UBI device description object
-> - */
-> -void ubi_refill_pools(struct ubi_device *ubi)
-> -{
-> -	spin_lock(&ubi->wl_lock);
-> -	refill_wl_pool(ubi);
-> -	refill_wl_user_pool(ubi);
->   	spin_unlock(&ubi->wl_lock);
->   }
->
->
+  git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/linux-stable.git tags/v3.12.34
 
+for you to fetch changes up to cbe6c8d6575ab39b78589f6083a842b6a9185295:
 
-Thanks,
-Tanya Brokhman
+  Linux 3.12.34 (2014-12-03 12:07:28 +0100)
+
+----------------------------------------------------------------
+This is the 3.12.34 stable release
+
+----------------------------------------------------------------
+Al Viro (1):
+      fix O_SYNC|O_APPEND syncing the wrong range on write()
+
+Alex Deucher (2):
+      drm/radeon: make sure mode init is complete in bandwidth_update
+      drm/radeon: add missing crtc unlock when setting up the MC
+
+Alexey Khoroshilov (1):
+      ieee802154: fix error handling in ieee802154fake_probe()
+
+Allen Pais (2):
+      sunvdc: add cdrom and v1.1 protocol support
+      sunvdc: compute vdisk geometry from capacity
+
+Andreas Larsson (1):
+      sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
+
+Andreas Rohner (1):
+      nilfs2: add missing blkdev_issue_flush() to nilfs_sync_fs()
+
+Andrey Vagin (1):
+      ipc: always handle a new value of auto_msgmni
+
+Andy Lutomirski (1):
+      x86, x32, audit: Fix x32's AUDIT_ARCH wrt audit
+
+Arnd Bergmann (3):
+      pcmcia: sa1100: H3100 and H3600 share a driver
+      pcmcia: pxa2xx: fix logic for lubbock
+      pcmcia: journada720: use sa1100 pin interfaces correctly
+
+Ben Dooks (1):
+      ARM: probes: fix instruction fetch order with <asm/opcodes.h>
+
+Bjorn Helgaas (3):
+      vmcore: Remove "weak" from function declarations
+      kgdb: Remove "weak" from kgdb_arch_pc() declaration
+      clocksource: Remove "weak" from clocksource_default_clock() declaration
+
+Christoph Hellwig (1):
+      scsi: only re-lock door after EH on devices that were reset
+
+Cristian Stoica (1):
+      crypto: caam - remove duplicated sg copy functions
+
+Dan Carpenter (2):
+      [media] usbvision-video: two use after frees
+      drivers/vlynq/vlynq.c: fix another resource size off by 1 error
+
+Daniel Borkmann (5):
+      net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
+      net: sctp: fix memory leak in auth key management
+      net: sctp: fix remote memory pressure from excessive queueing
+      net: sctp: fix panic on duplicate ASCONF chunks
+      net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
+
+David S. Miller (3):
+      sparc64: Fix crashes in schizo_pcierr_intr_other().
+      sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
+      sparc64: Fix constraints on swab helpers.
+
+Dmitry Eremin-Solenikov (1):
+      Input: wm97xx - adapt parameters to tosa touchscreen.
+
+Dmitry Torokhov (1):
+      Input: evdev - fix EVIOCG{type} ioctl
+
+Dwight Engen (3):
+      sunvdc: limit each sg segment to a page
+      vio: fix reuse of vio_dring slot
+      sunvdc: don't call VD_OP_GET_VTOC
+
+Emmanuel Grumbach (1):
+      iwlwifi: configure the LTR
+
+Ezequiel Garcia (1):
+      parport: Add support for the WCH353 1S/1P multi-IO card
+
+Fabian Frederick (1):
+      fs/jfs/jfs_inode.c: atomically set inode->i_flags
+
+Florian Westphal (2):
+      netfilter: nf_log: account for size of NLMSG_DONE attribute
+      netfilter: nfnetlink_log: fix maximum packet length logged to userspace
+
+Greg Kurz (1):
+      hwrng: pseries - port to new read API and fix stack corruption
+
+Heinz Mauelshagen (1):
+      dm raid: ensure superblock's size matches device's logical block size
+
+Helge Deller (1):
+      parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
+
+Herbert Xu (2):
+      tun: Fix csum_start with VLAN acceleration
+      macvtap: Fix csum_start when VLAN tags are present
+
+Houcheng Lin (1):
+      netfilter: nf_log: release skbuff on nlmsg put failure
+
+Ilya Dryomov (1):
+      libceph: do not crash on large auth tickets
+
+James Ralston (1):
+      ahci: Add Device IDs for Intel Sunrise Point PCH
+
+Jammy Zhou (1):
+      drm/radeon: set correct CE ram size for CIK
+
+Jan Kara (2):
+      block: Fix computation of merged request priority
+      nfs: Fix use of uninitialized variable in nfs_getattr()
+
+Jiri Bohac (1):
+      ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
+
+Jiri Slaby (1):
+      Linux 3.12.34
+
+Joe Schultz (2):
+      vme_tsi148: Fix PCI address mapping assumption
+      vme_tsi148: Fix typo in tsi148_slave_get()
+
+Joe Thornber (2):
+      dm thin: grab a virtual cell before looking up the mapping
+      dm btree: fix a recursion depth bug in btree walking code
+
+Johan Hovold (1):
+      pcmcia: at91_cf: fix deferred probe from __init
+
+Johannes Berg (2):
+      mac80211: properly flush delayed scan work on interface removal
+      mac80211: fix use-after-free in defragmentation
+
+Junjie Mao (1):
+      mac80211_hwsim: release driver when ieee80211_register_hw fails
+
+Kyle McMartin (1):
+      arm64: __clear_user: handle exceptions on strb
+
+Luciano Coelho (1):
+      mac80211: schedule the actual switch of the station before CSA count 0
+
+Marcelo Leitner (1):
+      vxlan: Do not reuse sockets for a different address family
+
+Martin Hauke (1):
+      qmi_wwan: Add support for HP lt4112 LTE/HSPA+ Gobi 4G Modem
+
+Martyn Welch (1):
+      VME: Stop using memcpy_[to|from]io() due to unwanted behaviour
+
+Mathias Krause (1):
+      pptp: fix stack info leak in pptp_getname()
+
+Max Filippov (1):
+      xtensa: re-wire umount syscall to sys_oldumount
+
+Michael Ellerman (1):
+      hwrng: pseries - Return errors to upper levels in pseries-rng.c
+
+Micky Ching (1):
+      drivers/memstick/host/rtsx_pci_ms.c: add cancel_work when remove driver
+
+Miklos Szeredi (1):
+      audit: keep inode pinned
+
+Mikulas Patocka (1):
+      dm bufio: change __GFP_IO to __GFP_FS in shrinker callbacks
+
+Nadav Amit (1):
+      KVM: x86: Don't report guest userspace emulation error to userspace
+
+Nathan Lynch (1):
+      ARM: 8198/1: make kuser helpers depend on MMU
+
+Pablo Neira (1):
+      netfilter: xt_bpf: add mising opaque struct sk_filter definition
+
+Pali Rohár (3):
+      Input: alps - ignore potential bare packets when device is out of sync
+      Input: alps - allow up to 2 invalid packets without resetting device
+      Input: alps - ignore bad data on Dell Latitudes E6440 and E7440
+
+Panu Matilainen (1):
+      ipv4: Fix incorrect error code when adding an unreachable route
+
+Paolo Bonzini (1):
+      x86: kvm: use alternatives for VMCALL vs. VMMCALL if kernel text is read-only
+
+Paul E. McKenney (1):
+      rcu: Make callers awaken grace-period kthread
+
+Peng Tao (1):
+      nfs: fix pnfs direct write memory leak
+
+Pranith Kumar (1):
+      rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads
+
+Qi Yong (1):
+      minix zmap block counts calculation fix
+
+Sergei Antonov (1):
+      hfsplus: emit proper file type from readdir
+
+Sougata Santra (1):
+      fs/hfsplus/extents.c: fix concurrent acess of alloc_blocks
+
+Stefan Richter (1):
+      firewire: cdev: prevent kernel stack leaking into ioctl arguments
+
+Steffen Klassert (3):
+      ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
+      sit: Use ipip6_tunnel_init as the ndo_init function.
+      gre6: Move the setting of dev->iflink into the ndo_init functions.
+
+Takashi Iwai (2):
+      ALSA: usb-audio: Fix memory leak in FTU quirk
+      pvpanic: Set high notifier priority
+
+Tejun Heo (1):
+      ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
+
+Theodore Ts'o (1):
+      ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+Tobias Klauser (1):
+      Input: altera_ps2 - write to correct register when disabling interrupts
+
+Trond Myklebust (4):
+      NFSv4: Ensure that we remove NFSv4.0 delegations when state has expired
+      NFS: Don't try to reclaim delegation open state if recovery failed
+      NFSv4: Fix races between nfs_remove_bad_delegation() and delegation return
+      NFSv4.1: nfs41_clear_delegation_stateid shouldn't trust NFS_DELEGATED_STATE
+
+Vincent BENAYOUN (1):
+      inetdevice: fixed signed integer overflow
+
+Vyacheslav Dubeyko (1):
+      hfsplus: fix remount issue
+
+Weijie Yang (1):
+      zram: avoid kunmap_atomic() of a NULL pointer
+
+Will Deacon (1):
+      ARM: 8191/1: decompressor: ensure I-side picks up relocated code
+
+ Makefile                                     |   2 +-
+ arch/arm/boot/compressed/head.S              |  20 +-
+ arch/arm/kernel/kprobes-common.c             |  19 +-
+ arch/arm/kernel/kprobes-thumb.c              |  21 +-
+ arch/arm/kernel/kprobes.c                    |   9 +-
+ arch/arm/mm/Kconfig                          |   1 +
+ arch/arm64/lib/clear_user.S                  |   2 +-
+ arch/parisc/include/uapi/asm/shmbuf.h        |  25 +--
+ arch/parisc/kernel/syscall_table.S           |   8 +-
+ arch/sparc/include/asm/atomic_32.h           |   2 +-
+ arch/sparc/include/asm/cmpxchg_32.h          |  12 +-
+ arch/sparc/include/asm/vio.h                 |  14 +-
+ arch/sparc/include/uapi/asm/swab.h           |  12 +-
+ arch/sparc/kernel/pci_schizo.c               |   6 +-
+ arch/sparc/kernel/smp_64.c                   |   4 +
+ arch/sparc/lib/atomic32.c                    |  27 +++
+ arch/x86/include/asm/cpufeature.h            |   1 +
+ arch/x86/include/asm/kvm_para.h              |  10 +-
+ arch/x86/kernel/cpu/amd.c                    |   7 +
+ arch/x86/kernel/ptrace.c                     |  11 +-
+ arch/x86/kvm/x86.c                           |   2 +-
+ arch/xtensa/include/uapi/asm/unistd.h        |   3 +-
+ drivers/ata/ahci.c                           |  19 +-
+ drivers/block/sunvdc.c                       | 176 ++++++++++++-----
+ drivers/char/hw_random/pseries-rng.c         |  23 ++-
+ drivers/crypto/caam/caamhash.c               |  22 ++-
+ drivers/crypto/caam/sg_sw_sec4.h             |  38 ----
+ drivers/firewire/core-cdev.c                 |   3 +-
+ drivers/gpu/drm/radeon/cik.c                 |   7 +-
+ drivers/gpu/drm/radeon/evergreen.c           |   4 +
+ drivers/gpu/drm/radeon/r100.c                |   3 +
+ drivers/gpu/drm/radeon/rs600.c               |   3 +
+ drivers/gpu/drm/radeon/rs690.c               |   3 +
+ drivers/gpu/drm/radeon/rv515.c               |   3 +
+ drivers/gpu/drm/radeon/si.c                  |   3 +
+ drivers/input/evdev.c                        |  13 +-
+ drivers/input/mouse/alps.c                   |  26 ++-
+ drivers/input/serio/altera_ps2.c             |   2 +-
+ drivers/input/touchscreen/wm97xx-core.c      |   4 +-
+ drivers/md/dm-bufio.c                        |  12 +-
+ drivers/md/dm-raid.c                         |  11 +-
+ drivers/md/dm-thin.c                         |  16 +-
+ .../md/persistent-data/dm-btree-internal.h   |   6 +
+ drivers/md/persistent-data/dm-btree-spine.c  |   2 +-
+ drivers/md/persistent-data/dm-btree.c        |  24 +--
+ .../media/usb/usbvision/usbvision-video.c    |   2 +
+ drivers/memstick/host/rtsx_pci_ms.c          |   1 +
+ drivers/net/ethernet/sun/sunvnet.c           |   4 +-
+ drivers/net/ieee802154/fakehard.c            |  13 +-
+ drivers/net/macvtap.c                        |   2 +
+ drivers/net/ppp/pptp.c                       |   4 +-
+ drivers/net/tun.c                            |  16 +-
+ drivers/net/usb/qmi_wwan.c                   |   1 +
+ drivers/net/vxlan.c                          |  28 ++-
+ drivers/net/wireless/iwlwifi/iwl-trans.h     |   2 +
+ .../net/wireless/iwlwifi/mvm/fw-api-power.h  |  35 +++-
+ drivers/net/wireless/iwlwifi/mvm/fw-api.h    |   1 +
+ drivers/net/wireless/iwlwifi/mvm/fw.c        |   9 +
+ drivers/net/wireless/iwlwifi/mvm/ops.c       |   1 +
+ drivers/net/wireless/iwlwifi/pcie/trans.c    |  16 +-
+ drivers/net/wireless/mac80211_hwsim.c        |   4 +-
+ drivers/parport/parport_serial.c             |   9 +
+ drivers/pcmcia/Kconfig                       |   2 +-
+ drivers/pcmcia/Makefile                      |   1 +
+ drivers/pcmcia/at91_cf.c                     |  11 +-
+ drivers/pcmcia/sa1111_jornada720.c           |  10 +-
+ drivers/platform/x86/pvpanic.c               |   1 +
+ drivers/scsi/scsi_error.c                    |   4 +-
+ drivers/staging/zram/zram_drv.c              |   3 +-
+ drivers/tty/serial/8250/8250_pci.c           |  10 +
+ drivers/vlynq/vlynq.c                        |   3 +-
+ drivers/vme/bridges/vme_ca91cx42.c           |  29 ++-
+ drivers/vme/bridges/vme_tsi148.c             |  28 +--
+ fs/cifs/file.c                               |   4 +-
+ fs/ext4/file.c                               |   2 +-
+ fs/ext4/inode.c                              |   4 +-
+ fs/hfsplus/dir.c                             |  20 +-
+ fs/hfsplus/extents.c                         |  14 +-
+ fs/hfsplus/options.c                         |   2 +-
+ fs/inode.c                                   |  31 +++
+ fs/ioprio.c                                  |  14 +-
+ fs/jfs/jfs_inode.c                           |  16 +-
+ fs/minix/bitmap.c                            |   2 +-
+ fs/minix/inode.c                             |   4 +-
+ fs/nfs/delegation.c                          |  25 ++-
+ fs/nfs/delegation.h                          |   1 +
+ fs/nfs/direct.c                              |   1 +
+ fs/nfs/inode.c                               |   2 +-
+ fs/nfs/nfs4proc.c                            |  68 ++++---
+ fs/nilfs2/file.c                             |   8 +-
+ fs/nilfs2/ioctl.c                            |   8 +-
+ fs/nilfs2/segment.c                          |   3 +
+ fs/nilfs2/super.c                            |   6 +
+ fs/nilfs2/the_nilfs.h                        |  22 +++
+ fs/ntfs/file.c                               |   2 +-
+ fs/sync.c                                    |  17 --
+ fs/xfs/xfs_file.c                            |   2 +-
+ include/linux/clocksource.h                  |   2 +-
+ include/linux/crash_dump.h                   |  15 +-
+ include/linux/fs.h                           |  11 +-
+ include/linux/inetdevice.h                   |   2 +-
+ include/linux/kgdb.h                         |   2 +-
+ include/linux/nfs_xdr.h                      |  11 ++
+ include/net/sctp/sctp.h                      |   5 +
+ include/net/sctp/sm.h                        |   6 +-
+ include/uapi/linux/netfilter/xt_bpf.h        |   2 +
+ ipc/ipc_sysctl.c                             |   3 +-
+ kernel/audit_tree.c                          |   1 +
+ kernel/rcutree.c                             |  22 ++-
+ mm/filemap.c                                 |   4 +-
+ net/ceph/crypto.c                            | 169 ++++++++++++----
+ net/ipv4/fib_rules.c                         |   4 +
+ net/ipv6/ip6_gre.c                           |   7 +-
+ net/ipv6/ip6_tunnel.c                        |  10 +-
+ net/ipv6/sit.c                               |  15 +-
+ net/ipx/af_ipx.c                             |   6 +-
+ net/mac80211/iface.c                         |   7 +-
+ net/mac80211/mlme.c                          |   3 +-
+ net/mac80211/rx.c                            |  14 +-
+ net/netfilter/nfnetlink_log.c                |  31 +--
+ net/sctp/associola.c                         |   2 +
+ net/sctp/auth.c                              |   2 -
+ net/sctp/inqueue.c                           |  33 +---
+ net/sctp/sm_make_chunk.c                     | 102 +++++-----
+ net/sctp/sm_statefuns.c                      |  21 +-
+ sound/usb/mixer_quirks.c                     |   6 +
+ 126 files changed, 1104 insertions(+), 583 deletions(-)
+
+thanks,
 -- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+js
