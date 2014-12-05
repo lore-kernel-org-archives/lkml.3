@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933698AbaLEEMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:12:18 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:58471 "EHLO
+	id S933715AbaLEEMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 23:12:25 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:58510 "EHLO
 	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933657AbaLEEMP (ORCPT
+	with ESMTP id S933657AbaLEEMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:12:15 -0500
+	Thu, 4 Dec 2014 23:12:22 -0500
 X-Listener-Flag: 11101
 From: Flora Fu <flora.fu@mediatek.com>
 To: Rob Herring <robh+dt@kernel.org>,
@@ -28,9 +28,9 @@ CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Dongdong Cheng <dongdong.cheng@mediatek.com>,
         HenryC Chen <henryc.chen@mediatek.com>,
         Menghui Lin <menghui.lin@mediatek.com>
-Subject: [PATCH v3 6/8] dt-bindings: Add document for MT6397 regulator
-Date: Fri, 5 Dec 2014 12:07:57 +0800
-Message-ID: <1417752479-4749-7-git-send-email-flora.fu@mediatek.com>
+Subject: [PATCH v3 8/8] ARM: dts: mt8135: Add support for MT6397 MFD and regulator
+Date: Fri, 5 Dec 2014 12:07:59 +0800
+Message-ID: <1417752479-4749-9-git-send-email-flora.fu@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
 In-Reply-To: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
 References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
@@ -41,38 +41,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add device tree for MT6397 MFD and regulator in mt8135-evbp1.dts board file
 
 Signed-off-by: Flora Fu <flora.fu@mediatek.com>
 ---
- .../bindings/regulator/mt6397-regulator.txt        | 217 +++++++++++++++++++++
- 1 file changed, 217 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
+ arch/arm/boot/dts/mt8135-evbp1.dts | 193 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/regulator/mt6397-regulator.txt b/Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
-new file mode 100644
-index 0000000..a42b1d6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
-@@ -0,0 +1,217 @@
-+Mediatek MT6397 Regulator Driver
+diff --git a/arch/arm/boot/dts/mt8135-evbp1.dts b/arch/arm/boot/dts/mt8135-evbp1.dts
+index cba80b8..627cc47 100644
+--- a/arch/arm/boot/dts/mt8135-evbp1.dts
++++ b/arch/arm/boot/dts/mt8135-evbp1.dts
+@@ -22,3 +22,196 @@
+ 		reg = <0 0x80000000 0 0x40000000>;
+ 	};
+ };
 +
-+Required properties:
-+- compatible: "mediatek,mt6397-regulator"
-+- mt6397regulator: List of regulators provided by this controller. It is named
-+  according to its regulator type, buck_<name> and ldo_<name>.
-+  The definition for each of these nodes is defined using the standard binding
-+  for regulators at Documentation/devicetree/bindings/regulator/regulator.txt.
-+
-+The valid names for regulators are::
-+BUCK:
-+  buck_vpca15, buck_vpca7, buck_vsramca15, buck_vsramca7, buck_vcore, buck_vgpu,
-+  buck_vdrm, buck_vio18
-+LDO:
-+  ldo_vtcxo, ldo_va28, ldo_vcama, ldo_vio28, ldo_vusb, ldo_vmc, ldo_vmch,
-+  ldo_vemc3v3, ldo_vgp1, ldo_vgp2, ldo_vgp3, ldo_vgp4, ldo_vgp5, ldo_vgp6,
-+  ldo_vibr
-+
-+Example:
++&pwrap {
 +	pmic {
 +		compatible = "mediatek,mt6397";
 +
@@ -85,7 +70,7 @@ index 0000000..a42b1d6
 +				regulator-min-microvolt = < 850000>;
 +				regulator-max-microvolt = <1350000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <200>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vpca7_reg: buck_vpca7 {
@@ -94,7 +79,7 @@ index 0000000..a42b1d6
 +				regulator-min-microvolt = < 850000>;
 +				regulator-max-microvolt = <1350000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <115>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vsramca15_reg: buck_vsramca15 {
@@ -103,8 +88,7 @@ index 0000000..a42b1d6
 +				regulator-min-microvolt = < 850000>;
 +				regulator-max-microvolt = <1350000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <115>;
-+
++				regulator-always-on;
 +			};
 +
 +			mt6397_vsramca7_reg: buck_vsramca7 {
@@ -113,8 +97,7 @@ index 0000000..a42b1d6
 +				regulator-min-microvolt = < 850000>;
 +				regulator-max-microvolt = <1350000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <115>;
-+
++				regulator-always-on;
 +			};
 +
 +			mt6397_vcore_reg: buck_vcore {
@@ -123,7 +106,7 @@ index 0000000..a42b1d6
 +				regulator-min-microvolt = < 850000>;
 +				regulator-max-microvolt = <1350000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <115>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vgpu_reg: buck_vgpu {
@@ -138,34 +121,31 @@ index 0000000..a42b1d6
 +			mt6397_vdrm_reg: buck_vdrm {
 +				regulator-compatible = "buck_vdrm";
 +				regulator-name = "vdrm";
-+				regulator-min-microvolt = < 800000>;
++				regulator-min-microvolt = <1200000>;
 +				regulator-max-microvolt = <1400000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <500>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vio18_reg: buck_vio18 {
 +				regulator-compatible = "buck_vio18";
 +				regulator-name = "vio18";
-+				regulator-min-microvolt = <1500000>;
-+				regulator-max-microvolt = <2120000>;
++				regulator-min-microvolt = <1620000>;
++				regulator-max-microvolt = <1980000>;
 +				regulator-ramp-delay = <12500>;
-+				regulator-enable-ramp-delay = <500>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vtcxo_reg: ldo_vtcxo {
 +				regulator-compatible = "ldo_vtcxo";
 +				regulator-name = "vtcxo";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-enable-ramp-delay = <90>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_va28_reg: ldo_va28 {
 +				regulator-compatible = "ldo_va28";
 +				regulator-name = "va28";
-+				/* fixed output 2.8 V */
-+				regulator-enable-ramp-delay = <218>;
++				regulator-always-on;
 +			};
 +
 +			mt6397_vcama_reg: ldo_vcama {
@@ -179,15 +159,12 @@ index 0000000..a42b1d6
 +			mt6397_vio28_reg: ldo_vio28 {
 +				regulator-compatible = "ldo_vio28";
 +				regulator-name = "vio28";
-+				/* fixed output 2.8 V */
-+				regulator-enable-ramp-delay = <240>;
++				regulator-always-on;
 +			};
 +
-+			mt6397_usb_reg: ldo_vusb {
++			mt6397_vusb_reg: ldo_vusb {
 +				regulator-compatible = "ldo_vusb";
 +				regulator-name = "vusb";
-+				/* fixed output 3.3 V */
-+				regulator-enable-ramp-delay = <218>;
 +			};
 +
 +			mt6397_vmc_reg: ldo_vmc {
@@ -223,7 +200,7 @@ index 0000000..a42b1d6
 +			};
 +
 +			mt6397_vgp2_reg: ldo_vgp2 {
-+				egulator-compatible = "ldo_vgp2";
++				regulator-compatible = "ldo_vgp2";
 +				regulator-name = "vcamio";
 +				regulator-min-microvolt = <1000000>;
 +				regulator-max-microvolt = <3300000>;
@@ -265,12 +242,13 @@ index 0000000..a42b1d6
 +			mt6397_vibr_reg: ldo_vibr {
 +				regulator-compatible = "ldo_vibr";
 +				regulator-name = "vibr";
-+				regulator-min-microvolt = <1200000>;
++				regulator-min-microvolt = <1300000>;
 +				regulator-max-microvolt = <3300000>;
 +				regulator-enable-ramp-delay = <218>;
 +			};
 +		};
 +	};
++};
 -- 
 1.8.1.1.dirty
 
