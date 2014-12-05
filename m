@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040AbaLEXH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:07:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
+	id S1753569AbaLEXI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:08:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035AbaLEXGo (ORCPT
+	with ESMTP id S1754018AbaLEXGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:44 -0500
+	Fri, 5 Dec 2014 18:06:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 41/45] nfsd: Fix slot wake up race in the nfsv4.1 callback code
-Date: Fri,  5 Dec 2014 14:45:24 -0800
-Message-Id: <20141205223323.285097065@linuxfoundation.org>
+        Vlastimil Setka <setka@vsis.cz>,
+        Thor Thayer <tthayer@opensource.altera.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 38/45] spi: dw: Fix dynamic speed change.
+Date: Fri,  5 Dec 2014 14:45:21 -0800
+Message-Id: <20141205223322.849106476@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,50 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Thor Thayer <tthayer@opensource.altera.com>
 
-commit c6c15e1ed303ffc47e696ea1c9a9df1761c1f603 upstream.
+commit 0a8727e69778683495058852f783eeda141a754e upstream.
 
-The currect code for nfsd41_cb_get_slot() and nfsd4_cb_done() has no
-locking in order to guarantee atomicity, and so allows for races of
-the form.
+An IOCTL call that calls spi_setup() and then dw_spi_setup() will
+overwrite the persisted last transfer speed. On each transfer, the
+SPI speed is compared to the last transfer speed to determine if the
+clock divider registers need to be updated (did the speed change?).
+This bug was observed with the spidev driver using spi-config to
+update the max transfer speed.
 
-Task 1                                  Task 2
-======                                  ======
-if (test_and_set_bit(0) != 0) {
-                                        clear_bit(0)
-                                        rpc_wake_up_next(queue)
-        rpc_sleep_on(queue)
-        return false;
-}
+This fix: Don't overwrite the persisted last transaction clock speed
+when updating the SPI parameters in dw_spi_setup(). On the next
+transaction, the new speed won't match the persisted last speed
+and the hardware registers will be updated.
+On initialization, the persisted last transaction clock
+speed will be 0 but will be updated after the first SPI
+transaction.
 
-This patch breaks the race condition by adding a retest of the bit
-after the call to rpc_sleep_on().
+Move zeroed clock divider check into clock change test because
+chip->clk_div is zero on startup and would cause a divide-by-zero
+error. The calculation was wrong as well (can't support odd #).
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Vlastimil Setka <setka@vsis.cz>
+Signed-off-by: Vlastimil Setka <setka@vsis.cz>
+Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4callback.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/spi/spi-dw.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -784,8 +784,12 @@ static bool nfsd41_cb_get_slot(struct nf
- {
- 	if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
- 		rpc_sleep_on(&clp->cl_cb_waitq, task, NULL);
--		dprintk("%s slot is busy\n", __func__);
--		return false;
-+		/* Race breaker */
-+		if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
-+			dprintk("%s slot is busy\n", __func__);
-+			return false;
-+		}
-+		rpc_wake_up_queued_task(&clp->cl_cb_waitq, task);
+--- a/drivers/spi/spi-dw.c
++++ b/drivers/spi/spi-dw.c
+@@ -394,9 +394,6 @@ static void pump_transfers(unsigned long
+ 	chip = dws->cur_chip;
+ 	spi = message->spi;
+ 
+-	if (unlikely(!chip->clk_div))
+-		chip->clk_div = dws->max_freq / chip->speed_hz;
+-
+ 	if (message->state == ERROR_STATE) {
+ 		message->status = -EIO;
+ 		goto early_exit;
+@@ -438,7 +435,7 @@ static void pump_transfers(unsigned long
+ 	if (transfer->speed_hz) {
+ 		speed = chip->speed_hz;
+ 
+-		if (transfer->speed_hz != speed) {
++		if ((transfer->speed_hz != speed) || (!chip->clk_div)) {
+ 			speed = transfer->speed_hz;
+ 			if (speed > dws->max_freq) {
+ 				printk(KERN_ERR "MRST SPI0: unsupported"
+@@ -677,7 +674,6 @@ static int dw_spi_setup(struct spi_devic
+ 		dev_err(&spi->dev, "No max speed HZ parameter\n");
+ 		return -EINVAL;
  	}
- 	return true;
- }
+-	chip->speed_hz = spi->max_speed_hz;
+ 
+ 	chip->tmode = 0; /* Tx & Rx */
+ 	/* Default SPI mode is SCPOL = 0, SCPH = 0 */
 
 
