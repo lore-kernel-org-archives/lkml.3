@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaLEXJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:09:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54766 "EHLO
+	id S1754130AbaLEXJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:09:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008AbaLEXGm (ORCPT
+	with ESMTP id S1753899AbaLEXGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:42 -0500
+	Fri, 5 Dec 2014 18:06:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 08/45] uprobes, x86: Fix _TIF_UPROBE vs _TIF_NOTIFY_RESUME
-Date: Fri,  5 Dec 2014 14:44:51 -0800
-Message-Id: <20141205223318.011852398@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Vrabel <david.vrabel@citrix.com>, Wang Nan <wangnan0@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 07/45] x86, mm: Set NX across entire PMD at boot
+Date: Fri,  5 Dec 2014 14:44:50 -0800
+Message-Id: <20141205223317.884981238@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -31,50 +32,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Kees Cook <keescook@chromium.org>
 
-commit 82975bc6a6df743b9a01810fb32cb65d0ec5d60b upstream.
+commit 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 upstream.
 
-x86 call do_notify_resume on paranoid returns if TIF_UPROBE is set but
-not on non-paranoid returns.  I suspect that this is a mistake and that
-the code only works because int3 is paranoid.
+When setting up permissions on kernel memory at boot, the end of the
+PMD that was split from bss remained executable. It should be NX like
+the rest. This performs a PMD alignment instead of a PAGE alignment to
+get the correct span of memory.
 
-Setting _TIF_NOTIFY_RESUME in the uprobe code was probably a workaround
-for the x86 bug.  With that bug fixed, we can remove _TIF_NOTIFY_RESUME
-from the uprobes code.
+Before:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+After:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+
+[ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
+        We really should unmap the reminder along with the holes
+        caused by init,initdata etc. but thats a different issue ]
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Wang Nan <wangnan0@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/thread_info.h |    2 +-
- kernel/events/uprobes.c            |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/mm/init_64.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -147,7 +147,7 @@ struct thread_info {
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
- 	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
--	 _TIF_USER_RETURN_NOTIFY)
-+	 _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1142,7 +1142,7 @@ void mark_rodata_ro(void)
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
+ 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+ 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
+-	unsigned long all_end = PFN_ALIGN(&_end);
++	unsigned long all_end;
  
- /* flags to check in __switch_to() */
- #define _TIF_WORK_CTXSW							\
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1511,7 +1511,6 @@ bool uprobe_deny_signal(void)
- 		if (__fatal_signal_pending(t) || arch_uprobe_xol_was_trapped(t)) {
- 			utask->state = UTASK_SSTEP_TRAPPED;
- 			set_tsk_thread_flag(t, TIF_UPROBE);
--			set_tsk_thread_flag(t, TIF_NOTIFY_RESUME);
- 		}
- 	}
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -1153,7 +1153,16 @@ void mark_rodata_ro(void)
+ 	/*
+ 	 * The rodata/data/bss/brk section (but not the kernel text!)
+ 	 * should also be not-executable.
++	 *
++	 * We align all_end to PMD_SIZE because the existing mapping
++	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
++	 * split the PMD and the reminder between _brk_end and the end
++	 * of the PMD will remain mapped executable.
++	 *
++	 * Any PMD which was setup after the one which covers _brk_end
++	 * has been zapped already via cleanup_highmem().
+ 	 */
++	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
+ 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
  
+ 	rodata_test();
 
 
