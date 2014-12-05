@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaLEXGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:06:39 -0500
+	id S1754154AbaLEXLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:11:53 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:54668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaLEXGe (ORCPT
+	with ESMTP id S1753971AbaLEXGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 18:06:34 -0500
+	Fri, 5 Dec 2014 18:06:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        JS Park <aitdark.park@samsung.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 18/45] ASoC: wm_adsp: Avoid attempt to free buffers that might still be in use
-Date: Fri,  5 Dec 2014 14:45:01 -0800
-Message-Id: <20141205223319.567341205@linuxfoundation.org>
+        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 34/45] Input: xpad - use proper endpoint type
+Date: Fri,  5 Dec 2014 14:45:17 -0800
+Message-Id: <20141205223322.178170076@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -30,33 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 9da7a5a9fdeeb76b2243f6b473363a7e6147ab6f upstream.
+commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
 
-We should not free any buffers associated with writing out coefficients
-to the DSP until all the async writes have completed. This patch updates
-the out of memory path when allocating a new buffer to include a call to
-regmap_async_complete.
+The xpad wireless endpoint is not a bulk endpoint on my devices, but
+rather an interrupt one, so the USB core complains when it is submitted.
+I'm guessing that the author really did mean that this should be an
+interrupt urb, but as there are a zillion different xpad devices out
+there, let's cover out bases and handle both bulk and interrupt
+endpoints just as easily.
 
-Reported-by: JS Park <aitdark.park@samsung.com>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_adsp.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/joystick/xpad.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/wm_adsp.c
-+++ b/sound/soc/codecs/wm_adsp.c
-@@ -964,6 +964,7 @@ static int wm_adsp_load_coeff(struct wm_
- 			  file, blocks, pos - firmware->size);
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -1002,9 +1002,19 @@ static int xpad_probe(struct usb_interfa
+ 		}
  
- out_fw:
-+	regmap_async_complete(regmap);
- 	release_firmware(firmware);
- 	wm_adsp_buf_free(&buf_list);
- out:
+ 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
+-		usb_fill_bulk_urb(xpad->bulk_out, udev,
+-				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+-				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
++			usb_fill_bulk_urb(xpad->bulk_out, udev,
++					  usb_sndbulkpipe(udev,
++							  ep_irq_in->bEndpointAddress),
++					  xpad->bdata, XPAD_PKT_LEN,
++					  xpad_bulk_out, xpad);
++		} else {
++			usb_fill_int_urb(xpad->bulk_out, udev,
++					 usb_sndintpipe(udev,
++							ep_irq_in->bEndpointAddress),
++					 xpad->bdata, XPAD_PKT_LEN,
++					 xpad_bulk_out, xpad, 0);
++		}
+ 
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
 
 
