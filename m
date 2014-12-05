@@ -1,293 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535AbaLECXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 21:23:24 -0500
-Received: from mail.smart-weblications.de ([188.65.144.61]:48087 "EHLO
-	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838AbaLECXW (ORCPT
+	id S933564AbaLECXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 21:23:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:44591 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933456AbaLECXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 21:23:22 -0500
-Message-ID: <5481173A.9060308@smart-weblications.de>
-Date: Fri, 05 Dec 2014 03:23:54 +0100
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 4 Dec 2014 21:23:31 -0500
+Message-ID: <5481170B.40508@oracle.com>
+Date: Fri, 05 Dec 2014 10:23:07 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-CC: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg>
-In-Reply-To: <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Kristen Carlson Accardi <kristen@linux.intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, dirk.j.brandewie@intel.com,
+        linda.knippers@hp.com, viresh.kumar@linaro.org, corbet@lwn.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com
+Subject: Re: [PATCH 2/2 V7] intel_pstate: add kernel parameter to force loading
+ on Sun X86 servers.
+References: <1417658851-8729-1-git-send-email-ethan.zhao@oracle.com> <22893638.NKVNYzPHrg@vostro.rjw.lan> <20141204143853.1adf98d8@kcaccard-desk.amr.corp.intel.com>
+In-Reply-To: <20141204143853.1adf98d8@kcaccard-desk.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Kristen,
 
-Am 05.12.2014 00:15, schrieb Julian Anastasov:
-> 
-> 	Hello,
-> 
-> On Thu, 4 Dec 2014, Steffen Klassert wrote:
-> 
->>> [16623.096721] Call Trace:
->>> [16623.096744]  <IRQ>
->>> [16623.096749]  [<ffffffff81547a7c>] ? xfrm_sk_policy_lookup+0x44/0x9b
->>> [16623.096802]  [<ffffffff81547ef7>] ? xfrm_lookup+0x91/0x446
->>> [16623.096832]  [<ffffffff81541316>] ? ip_route_me_harder+0x150/0x1b0
->>> [16623.096865]  [<ffffffffa01b6457>] ? ip_vs_route_me_harder+0x86/0x91 [ip_vs]
->>> [16623.096899]  [<ffffffffa01b797a>] ? ip_vs_out+0x2d3/0x5bc [ip_vs]
->>> [16623.096930]  [<ffffffff81501420>] ? ip_rcv_finish+0x2b8/0x2b8
+On 2014/12/5 6:38, Kristen Carlson Accardi wrote:
+> On Thu, 04 Dec 2014 23:10:58 +0100
+> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+>
+>> On Thursday, December 04, 2014 11:07:31 AM Ethan Zhao wrote:
+>>> To force loading on Oracle Sun X86 servers, provide one kernel command line
+>>> parameter
+>>>
+>>>    intel_pstate = ora_force
+>> I would suggest to change the name of the option to "oracle_force" or "sun_force"
+>> for clarity.
 >>
->> I really wonder why the xfrm_sk_policy_lookup codepath is taken here.
->> It looks like this is the processing of an inbound ipv4 packet that
->> is going to be rerouted to the output path by ipvs, so this packet
->> should not have socket context at all.
-> 
-> 	In above trace looks like IPVS-NAT is used between
-> local client and some real server. IPVS handles this skb
-> at LOCAL_IN and calls ip_vs_route_me_harder(). If we have
-> skb->sk at LOCAL_IN, my first thought is about early demux.
-> 
-> 	If I remember correctly, looking at commit f5a41847acc535e2
-> ("ipvs: move ip_route_me_harder for ICMP") that introduced
-> this rerouting (2.6.37), it was needed because at that time TCP
-> used rt_src from received skb to select daddr in ip_send_reply().
-> As packets to server are DNAT-ed and packets to client are
-> SNAT-ed we used rerouting to fill rt_src with correct IP
-> after SNAT.
-> 
-> 	Now when routing cache is removed in 3.6 and
-> tcp_v4_send_reset() is changed to provide ip_hdr(skb)->saddr
-> instead of rt_src it should be safe to remove this rerouting,
-> it is enough that ip_hdr(skb)->saddr was updated on IPVS-SNAT at
-> LOCAL_IN. In fact, rt_src was removed early in 3.0 with
-> commit 0a5ebb8000c5362 ("ipv4: Pass explicit daddr arg to 
-> ip_send_reply().").
-> 
-> 	This is only to explain above stack. Not sure
-> if problem is related somehow to early demux but such
-> commits look interesting:
-> 
-> - commit 6b8dbcf2c44fd7a ("bridge: netfilter: orphan skb before invoking 
-> ip netfilter hooks")
-> 
-> 	Also, it would be good to know which 3.x kernel between
-> 3.13 and 3.17 fixes the problem, it will narrow the search.
-> 
+>> Anyway, I need an ACK from Kristen if this patch is to be applied.
+>>
+>>> For those who be aware of the risk of no power capping capabily working and
+>>> try to get better performance with this driver.
+>>>
+>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>>> ---
+>>>   v2: change to hardware vendor specific naming parameter.
+>>>   v4: refine code and doc.
+>>>   v5&v6: fix a typo in doc.
+>>>   v7: change enum PCC to PPC.
+>>>
+>>>   Documentation/kernel-parameters.txt | 5 +++++
+>>>   drivers/cpufreq/intel_pstate.c      | 6 +++++-
+>>>   2 files changed, 10 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>> index 479f332..7d0983e 100644
+>>> --- a/Documentation/kernel-parameters.txt
+>>> +++ b/Documentation/kernel-parameters.txt
+>>> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>   		       disable
+>>>   		         Do not enable intel_pstate as the default
+>>>   		         scaling driver for the supported processors
+>>> +		       ora_force
+>>> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
+>>> +			 only for those who be aware of the risk of no power capping
+>>> +			 capability working and try to get better performance with this
+>>> +			 driver.
+>> That is not sufficiently clear.  What does "risk of no power capping capability
+>> working" mean, in particular?
+>>
+>>>   
+>>>   	intremap=	[X86-64, Intel-IOMMU]
+>>>   			on	enable Interrupt Remapping (default)
+>>> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+>>> index 1bb62ca..2654e13 100644
+>>> --- a/drivers/cpufreq/intel_pstate.c
+>>> +++ b/drivers/cpufreq/intel_pstate.c
+>>> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>>>   };
+>>>   
+>>>   static int __initdata no_load;
+>>> +static unsigned int  ora_force;
+>>>   
+>>>   static int intel_pstate_msrs_not_valid(void)
+>>>   {
+>>> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>>>   			case PSS:
+>>>   				return intel_pstate_no_acpi_pss();
+>>>   			case PPC:
+>>> -				return intel_pstate_has_acpi_ppc();
+>>> +				return intel_pstate_has_acpi_ppc() &&
+>>> +					(!ora_force);
+>>>   			}
+>>>   	}
+>>>   
+>>> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+>>>   
+>>>   	if (!strcmp(str, "disable"))
+>>>   		no_load = 1;
+>>> +	if (!strcmp(str, "ora_force"))
+>>> +		ora_force = 1;
+>>>   	return 0;
+>>>   }
+>>>   early_param("intel_pstate", intel_pstate_setup);
+>> And can anyone please remind me what was wrong with a "force" option that would
+>> work for everyone, not just Oracle/Sun?
+>>
+> That was my suggestion as well (i.e. a parameter to bypass the vendor
+> checks), but Linda didn't like it.  My personal opinion is that unless
+> it's generic, I don't really feel like having a force option solely for
+> oracle.  I'm not convinced you want this for production machines, and I
+> think for debug purposes I don't want a vendor specific param.
+   I am OK with a generic parameter.
+   Anyway I hope there is a parameter to allow us load intel_pstate on 
+Oracle boxes, specific to Oracle or generic.
 
+   Thanks,
+   Ethan
 
-i tried with 3.12.33 without any XFRM and now got this one (which is reproducable):
-
-[  233.956012] BUG: unable to handle kernel NULL pointer dereference at 00000000
-                                   00000014
-[  233.956218] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack
-                                   ]
-[  233.956371] PGD 0
-[  233.956493] Oops: 0000 [#1] SMP
-[  233.956680] Modules linked in: netconsole xt_nat xt_multiport veth iptable_ma
-                                   ngle xt_mark nf_conntrack_netlink nfnetlink
-ip_vs_rr ipt_MASQUERADE iptable_nat
-nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_tcpudp iptable_filter
-                                    ip_tables cpufreq_ondemand cpufreq_powersave
-cpufreq_conservative cpufreq_users                                    pace
-ocfs2_stack_o2cb ocfs2_dlm bridge stp llc bonding fuse nf_conntrack_ftp 802
-                               1q openvswitch gre vxlan xt_conntrack x_tables
-ocfs2_dlmfs dlm sctp ocfs2 ocfs2_                                    nodemanager
-ocfs2_stackglue configfs rbd kvm_intel kvm coretemp ip_vs_ftp ip_vs
-                        nf_nat nf_conntrack psmouse i2c_i801 serio_raw lpc_ich
-mfd_core evdev btrfs lzo_                                    decompress lzo_compress
-[  233.960221] CPU: 2 PID: 29996 Comm: vsftpd Not tainted 3.12.33 #4
-[  233.960298] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 1.1a 09/2
-                                   8/2011
-[  233.960395] task: ffff88075e87a2c0 ti: ffff8806a7444000 task.ti: ffff8806a744
-                                   4000
-[  233.960486] RIP: 0010:[<ffffffffa013a470>]  [<ffffffffa013a470>] nf_ct_seqadj
-                                   _set+0x60/0x90 [nf_conntrack]
-[  233.960632] RSP: 0018:ffff88083fc83998  EFLAGS: 00010206
-[  233.960709] RAX: 000000000000000c RBX: ffff8806cab452cc RCX: 0000000000000003
-[  233.960791] RDX: 0000000000000029 RSI: 0000000000000003 RDI: ffff8806cab452cc
-[  233.960875] RBP: 00000000ee38035a R08: ffff8807e2b1edc0 R09: ffff88083fc839a8
-[  233.960957] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
-[  233.961041] R13: 0000000000000000 R14: 0000000000000003 R15: ffff8806a75a50bc
-[  233.961124] FS:  00007ff22daec700(0000) GS:ffff88083fc80000(0000) knlGS:00000
-                                   00000000000
-[  233.961226] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  233.961303] CR2: 0000000000000014 CR3: 00000006b3259000 CR4: 00000000000407e0
-[  233.961384] Stack:
-[  233.961460]  ffff880815612b60 0000000000000012 0000000000000014 ffff8806cab45
-                                   2c8
-[  233.961776]  ffff8806a75a5001 ffffffffa014f681 0000000000000000 ffffffff00000
-                                   045
-[  233.962095]  ffff880800000048 0000001b00000003 ffff88083fc83a70 ffff880815612
-                                   b60
-[  233.962411] Call Trace:
-[  233.962482]  <IRQ>
-[  233.962538]  [<ffffffffa014f681>] ? __nf_nat_mangle_tcp_packet+0x109/0x120 [n
-                                   f_nat]
-[  233.962762]  [<ffffffffa017749e>] ? ip_vs_ftp_out.part.8+0x2b2/0x338 [ip_vs_f
-                                   tp]
-[  233.962866]  [<ffffffff814cb8c0>] ? __domain_mapping+0x25d/0x2a3
-[  233.962949]  [<ffffffff8154140c>] ? fib_table_lookup+0xe4/0x255
-[  233.963032]  [<ffffffffa015f858>] ? ip_vs_app_pkt_out+0x105/0x18b [ip_vs]
-[  233.963110]  [<ffffffffa0162ffc>] ? tcp_snat_handler+0x6b/0x320 [ip_vs]
-[  233.963189]  [<ffffffffa0155d3d>] ? ip_vs_conn_out_get_proto+0x1c/0x25 [ip_vs
-                                   ]
-[  233.963284]  [<ffffffffa0158937>] ? ip_vs_out+0x290/0x5bc [ip_vs]
-[  233.963362]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
-[  233.963442]  [<ffffffff81508e1f>] ? nf_iterate+0x42/0x80
-[  233.963519]  [<ffffffff81508ec6>] ? nf_hook_slow+0x69/0xff
-[  233.963595]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
-[  233.963667]  [<ffffffff8150f8ae>] ? ip_forward+0x22d/0x2cf
-[  233.963744]  [<ffffffff814e57ce>] ? __netif_receive_skb_core+0x5f0/0x66c
-[  233.963826]  [<ffffffff814e59df>] ? process_backlog+0x13e/0x13e
-[  233.963911]  [<ffffffffa0455e09>] ? br_handle_frame_finish+0x382/0x382 [bridg
-                                   e]
-[  233.964008]  [<ffffffff814e5a2b>] ? netif_receive_skb+0x4c/0x7d
-[  233.964090]  [<ffffffffa0455d95>] ? br_handle_frame_finish+0x30e/0x382 [bridg
-                                   e]
-[  233.964186]  [<ffffffffa0455fda>] ? br_handle_frame+0x1d1/0x217 [bridge]
-[  233.964267]  [<ffffffff814e567d>] ? __netif_receive_skb_core+0x49f/0x66c
-[  233.964350]  [<ffffffff814e592b>] ? process_backlog+0x8a/0x13e
-[  233.964429]  [<ffffffff814e5c31>] ? net_rx_action+0xa2/0x1c0
-[  233.964508]  [<ffffffff81047e2e>] ? __do_softirq+0xf6/0x24f
-[  233.964588]  [<ffffffff8106cbfd>] ? account_system_time+0x10f/0x169
-[  233.964669]  [<ffffffff815ad7dc>] ? call_softirq+0x1c/0x30
-[  233.964743]  <EOI>
-[  233.964801]  [<ffffffff8100464d>] ? do_softirq+0x2c/0x5f
-[  233.965013]  [<ffffffff81047ca1>] ? local_bh_enable+0x67/0x85
-[  233.965088]  [<ffffffff81511689>] ? ip_finish_output+0x2c9/0x322
-[  233.965165]  [<ffffffff8151240a>] ? ip_queue_xmit+0x2b7/0x2f0
-[  233.965239]  [<ffffffff81524772>] ? tcp_transmit_skb+0x6ef/0x755
-[  233.965316]  [<ffffffff815250e8>] ? tcp_write_xmit+0x886/0x9cb
-[  233.965391]  [<ffffffff8152527a>] ? __tcp_push_pending_frames+0x24/0x7e
-[  233.965473]  [<ffffffff8151a33c>] ? tcp_sendmsg+0xa4c/0xbfc
-[  233.965550]  [<ffffffff814d3477>] ? sock_aio_write+0xe3/0xfd
-[  233.965631]  [<ffffffff81122f4d>] ? do_sync_write+0x59/0x79
-[  233.965709]  [<ffffffff811239e3>] ? vfs_write+0xc4/0x182
-[  233.965786]  [<ffffffff81123daf>] ? SyS_write+0x45/0x7c
-[  233.965864]  [<ffffffff815ac35b>] ? tracesys+0xdd/0xe2
-[  233.965940] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
-                                    89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97
-c0 48 6b c0 0c 4c 01 e8 <8b> 70 08                                     39 70 04
-74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
-[  233.969602] RIP  [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrac
-                                   k]
-[  233.969746]  RSP <ffff88083fc83998>
-[  233.969816] CR2: 0000000000000014
-[  233.969919] ---[ end trace c6faf7aa989b11c2 ]---
-[  233.969999] Kernel panic - not syncing: Fatal exception in interrupt
-[  233.970081] Rebooting in 10 seconds..
-[  244.029931] ACPI MEMORY or I/O RESET_REG.
-
-
-node01:/ocfs2/usr/src/linux-3.12.33/scripts# ./decodecode < /tmp/oops-ipvsftp.txt
-[ 233.965940] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
-89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97 c0 48 6b c0 0c 4c 01 e8 <8b> 70 08
-39 70 04 74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
-All code
-========
-   0:   68 14 4d 01 c5          pushq  $0xffffffffc5014d14
-   5:   45 85 e4                test   %r12d,%r12d
-   8:   74 46                   je     0x50
-   a:   f0 80 4f 78 40          lock orb $0x40,0x78(%rdi)
-   f:   48 8d 5f 04             lea    0x4(%rdi),%rbx
-  13:   48 89 df                mov    %rbx,%rdi
-  16:   e8 00 12 47 e1          callq  0xffffffffe147121b
-  1b:   31 c0                   xor    %eax,%eax
-  1d:   41 83 fe 02             cmp    $0x2,%r14d
-  21:   0f 97 c0                seta   %al
-  24:   48 6b c0 0c             imul   $0xc,%rax,%rax
-  28:   4c 01 e8                add    %r13,%rax
-  2b:*  8b 70 08                mov    0x8(%rax),%esi           <-- trapping
-instruction
-  2e:   39 70 04                cmp    %esi,0x4(%rax)
-  31:   74 08                   je     0x3b
-  33:   89 ea                   mov    %ebp,%edx
-  35:   0f ca                   bswap  %edx
-  37:   39 10                   cmp    %edx,(%rax)
-  39:   79 0d                   jns    0x48
-  3b:   89 70 04                mov    %esi,0x4(%rax)
-  3e:   44                      rex.R
-  3f:   01                      .byte 0x1
-
-Code starting with the faulting instruction
-===========================================
-   0:   8b 70 08                mov    0x8(%rax),%esi
-   3:   39 70 04                cmp    %esi,0x4(%rax)
-   6:   74 08                   je     0x10
-   8:   89 ea                   mov    %ebp,%edx
-   a:   0f ca                   bswap  %edx
-   c:   39 10                   cmp    %edx,(%rax)
-   e:   79 0d                   jns    0x1d
-  10:   89 70 04                mov    %esi,0x4(%rax)
-  13:   44                      rex.R
-  14:   01                      .byte 0x1
-
-
-setup is like this:
-
-
-#virtual=<myVIP>:21
-#       real=10.10.1.20:21 masq
-#       real=10.10.1.21:21 masq
-#       real=10.10.1.22:21 masq
-#       real=10.10.1.23:21 masq
-#       persistent=600
-#       service=ftp
-#       scheduler=rr
-#       protocol=tcp
-#       checktype=connect
-
-( i remarked it to prevent fruther crashes...)
-
-when ip_vs_ftp is loaded and someone trying to make a ftp connection, the system
-panics instantly.
-
-10.10.1.20 - 10.10.1.23 are lxc-containers using veth connected to the bridge
-running on 4 different nodes. The node running ldirector/ipvsadm has also one of
-those containers running (don't know if that matters)
-
-brctl show
-bridge name     bridge id               STP enabled     interfaces
-br0             8000.00259052bbf4       no              bond0
-                                                        vethMKELUc
-                                                        vethXdWGqf
-                                                        vethgJMmEb
-                                                        vethmKNqFc
-
-
-I disabled the ftp server lxc container on the node doing ip_vs, so that the
-endpoint of the connection is not on the same node and tried again but with the
-same result.
-
-Unfortunatelly i cannot test with newer kernels than 3.12, because ocfs2 is
-somehow broken in >= 3.14
-
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
