@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaLEX0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:26:13 -0500
+	id S1753601AbaLEX2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 18:28:08 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:54240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaLEW4L (ORCPT
+	with ESMTP id S1753286AbaLEW4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 17:56:11 -0500
+	Fri, 5 Dec 2014 17:56:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miaoqing Pan <miaoqing@qca.qualcomm.com>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 28/73] ath9k: Fix RTC_DERIVED_CLK usage
-Date: Fri,  5 Dec 2014 14:44:34 -0800
-Message-Id: <20141205224434.788414246@linuxfoundation.org>
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 24/73] ASoC: fsi: remove unsupported PAUSE flag
+Date: Fri,  5 Dec 2014 14:44:30 -0800
+Message-Id: <20141205224434.658420738@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205224433.921659956@linuxfoundation.org>
 References: <20141205224433.921659956@linuxfoundation.org>
@@ -30,71 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miaoqing Pan <miaoqing@qca.qualcomm.com>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-commit 4e6ce4dc7ce71d0886908d55129d5d6482a27ff9 upstream.
+commit c1b9b9b1ad2df6144ca3fbe6989f7bd9ea5c5562 upstream.
 
-Based on the reference clock, which could be 25MHz or 40MHz,
-AR_RTC_DERIVED_CLK is programmed differently for AR9340 and AR9550.
-But, when a chip reset is done, processing the initvals
-sets the register back to the default value.
+FSI doesn't support PAUSE.
+Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
 
-Fix this by moving the code in ath9k_hw_init_pll() to
-ar9003_hw_override_ini(). Also, do this override for AR9531.
-
-Signed-off-by: Miaoqing Pan <miaoqing@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.c |   13 +++++++++++++
- drivers/net/wireless/ath/ath9k/hw.c         |   13 -------------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ sound/soc/sh/fsi.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -647,6 +647,19 @@ static void ar9003_hw_override_ini(struc
- 		ah->enabled_cals |= TX_CL_CAL;
- 	else
- 		ah->enabled_cals &= ~TX_CL_CAL;
-+
-+	if (AR_SREV_9340(ah) || AR_SREV_9531(ah) || AR_SREV_9550(ah)) {
-+		if (ah->is_clk_25mhz) {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e7ae);
-+		} else {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e800);
-+		}
-+		udelay(100);
-+	}
- }
- 
- static void ar9003_hw_prog_ini(struct ath_hw *ah,
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -858,19 +858,6 @@ static void ath9k_hw_init_pll(struct ath
- 	udelay(RTC_PLL_SETTLE_DELAY);
- 
- 	REG_WRITE(ah, AR_RTC_SLEEP_CLK, AR_RTC_FORCE_DERIVED_CLK);
--
--	if (AR_SREV_9340(ah) || AR_SREV_9550(ah)) {
--		if (ah->is_clk_25mhz) {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e7ae);
--		} else {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e800);
--		}
--		udelay(100);
--	}
- }
- 
- static void ath9k_hw_init_interrupt_masks(struct ath_hw *ah,
+--- a/sound/soc/sh/fsi.c
++++ b/sound/soc/sh/fsi.c
+@@ -1785,8 +1785,7 @@ static const struct snd_soc_dai_ops fsi_
+ static struct snd_pcm_hardware fsi_pcm_hardware = {
+ 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
+ 			SNDRV_PCM_INFO_MMAP		|
+-			SNDRV_PCM_INFO_MMAP_VALID	|
+-			SNDRV_PCM_INFO_PAUSE,
++			SNDRV_PCM_INFO_MMAP_VALID,
+ 	.buffer_bytes_max	= 64 * 1024,
+ 	.period_bytes_min	= 32,
+ 	.period_bytes_max	= 8192,
 
 
