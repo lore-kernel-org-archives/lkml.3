@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaLESkE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 13:40:04 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45483 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaLESkB (ORCPT
+	id S1751869AbaLESl3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 13:41:29 -0500
+Received: from na6sys009bog035.obsmtp.com ([74.125.150.109]:34042 "HELO
+	na6sys009bog035.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751164AbaLESl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 13:40:01 -0500
-Date: Fri, 5 Dec 2014 18:39:45 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
-References: <5481794E.4050406@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5481794E.4050406@broadcom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 5 Dec 2014 13:41:28 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, shannon.nelson@intel.com,
+        jesse.brandeburg@intel.com, jeffrey.t.kirsher@intel.com,
+        therbert@google.com, jesse@nicira.com, linux.nics@intel.com
+Subject: [PATCHv4 net] i40e: Implement ndo_gso_check()
+Date: Fri,  5 Dec 2014 10:41:12 -0800
+Message-Id: <1417804872-58635-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 09:22:22AM +0000, Arend van Spriel wrote:
-> For our brcm80211 development we are working on getting brcmfmac driver
-> up and running on a Broadcom ARM-based platform. The wireless device is
-> a PCIe device, which is hooked up to the system behind a PCIe host
-> bridge, and we transfer information between host and device using a
-> descriptor ring buffer allocated using dma_alloc_coherent(). We mostly
-> tested on x86 and seen no issue. However, on this ARM platform
-> (single-core A9) we detect occasionally that the descriptor content is
-> invalid. When this occurs we do a dma_sync_single_for_cpu() and this is
-> retried a number of times if the problem persists. Actually, found out
-> that someone made a mistake by using virt_to_dma(va) to get the
-> dma_handle parameter. So probably we only provided a delay in the retry
-> loop. After fixing that a single call to dma_sync_single_for_cpu() is
-> sufficient. The DMA-API-HOWTO clearly states that:
+ndo_gso_check() was recently introduced to allow NICs to report the
+offloading support that they have on a per-skb basis. Add an
+implementation for this driver which checks for IPIP, GRE, UDP tunnels.
 
-Does your system have an L2 cache? What's the SoC topology, can PCIe see
-such L2 cache (or snoop the L1 caches)?
+Signed-off-by: Joe Stringer <joestringer@nicira.com>
+---
+v4: Simplify the check to just do tunnel header length.
+    Fix #define style issue.
+v3: Drop IPIP and GRE (no driver support even though hw supports it).
+    Check for UDP outer protocol for UDP tunnels.
+v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+    Add MAX_INNER_LENGTH (as 80).
+---
+ drivers/net/ethernet/intel/i40e/i40e_main.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Also, are you certain that dma_alloc_coherent() ends up creating a
-non-cacheable mapping in Linux (this call translates to a function
-pointer call which may or may not create non-cacheable memory, depending
-on the "dma-coherent" property passed via DT).
-
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index c3a7f4a..9eedfd15 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -7447,6 +7447,17 @@ static int i40e_ndo_fdb_dump(struct sk_buff *skb,
+ 
+ #endif /* USE_DEFAULT_FDB_DEL_DUMP */
+ #endif /* HAVE_FDB_OPS */
++#define I40E_MAX_TUNNEL_HDR_LEN		80
++static bool i40e_gso_check(struct sk_buff *skb, struct net_device *dev)
++{
++	if (skb->encapsulation &&
++	    (skb_inner_mac_header(skb) - skb_transport_header(skb) >
++	     I40E_MAX_TUNNEL_HDR_LEN))
++			return false;
++
++	return true;
++}
++
+ static const struct net_device_ops i40e_netdev_ops = {
+ 	.ndo_open		= i40e_open,
+ 	.ndo_stop		= i40e_close,
+@@ -7487,6 +7498,7 @@ static const struct net_device_ops i40e_netdev_ops = {
+ 	.ndo_fdb_dump		= i40e_ndo_fdb_dump,
+ #endif
+ #endif
++	.ndo_gso_check		= i40e_gso_check,
+ };
+ 
+ /**
 -- 
-Catalin
+1.7.10.4
+
