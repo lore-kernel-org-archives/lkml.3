@@ -1,148 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaLEGCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:02:50 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51299 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaLEF6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 00:58:55 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/12] ip_generic_getfrag, udplite_getfrag: switch to passing msghdr
-Date: Fri,  5 Dec 2014 05:58:44 +0000
-Message-Id: <1417759133-18370-3-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141205055623.GQ29748@ZenIV.linux.org.uk>
-References: <20141205055623.GQ29748@ZenIV.linux.org.uk>
+	id S1751200AbaLEGQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:16:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37550 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088AbaLEGQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 01:16:39 -0500
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH] xen: fix sparse warning in p2m.c
+Date: Fri,  5 Dec 2014 07:16:35 +0100
+Message-Id: <1417760195-16911-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+The patch "Speed up set_phys_to_machine() by using read-only mappings"
+introduced a sparse warning:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+arch/x86/xen/p2m.c:628:13: sparse: incorrect type in argument 1
+                           (different address spaces)
+
+Avoid the warning.
+
+Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- include/net/udplite.h | 3 ++-
- net/ipv4/ip_output.c  | 6 +++---
- net/ipv4/raw.c        | 2 +-
- net/ipv4/udp.c        | 4 ++--
- net/ipv6/raw.c        | 2 +-
- net/ipv6/udp.c        | 2 +-
- net/l2tp/l2tp_ip6.c   | 2 +-
- 7 files changed, 11 insertions(+), 10 deletions(-)
+ arch/x86/xen/p2m.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/udplite.h b/include/net/udplite.h
-index 9a28a51..d5baaba 100644
---- a/include/net/udplite.h
-+++ b/include/net/udplite.h
-@@ -19,7 +19,8 @@ extern struct udp_table		udplite_table;
- static __inline__ int udplite_getfrag(void *from, char *to, int  offset,
- 				      int len, int odd, struct sk_buff *skb)
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 8b5db51..2defca9 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -615,6 +615,7 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
  {
--	return memcpy_fromiovecend(to, (struct iovec *) from, offset, len);
-+	struct msghdr *msg = from;
-+	return memcpy_fromiovecend(to, msg->msg_iov, offset, len);
- }
+ 	pte_t *ptep;
+ 	unsigned int level;
++	unsigned long __user *addr;
  
- /* Designate sk as UDP-Lite socket */
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 4a929ad..cdedcf1 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -752,14 +752,14 @@ EXPORT_SYMBOL(ip_fragment);
- int
- ip_generic_getfrag(void *from, char *to, int offset, int len, int odd, struct sk_buff *skb)
- {
--	struct iovec *iov = from;
-+	struct msghdr *msg = from;
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
--		if (memcpy_fromiovecend(to, iov, offset, len) < 0)
-+		if (memcpy_fromiovecend(to, msg->msg_iov, offset, len) < 0)
- 			return -EFAULT;
- 	} else {
- 		__wsum csum = 0;
--		if (csum_partial_copy_fromiovecend(to, iov, offset, len, &csum) < 0)
-+		if (csum_partial_copy_fromiovecend(to, msg->msg_iov, offset, len, &csum) < 0)
- 			return -EFAULT;
- 		skb->csum = csum_block_add(skb->csum, csum, odd);
+ 	/* don't track P2M changes in autotranslate guests */
+ 	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
+@@ -625,7 +626,8 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 		return true;
  	}
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 5c901eb..5d83bd2 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -478,7 +478,7 @@ static int raw_getfrag(void *from, char *to, int offset, int len, int odd,
  
- 	offset -= rfv->hlen;
+-	if (likely(!__put_user(mfn, xen_p2m_addr + pfn)))
++	addr = (unsigned long __user *)xen_p2m_addr + pfn;
++	if (likely(!__put_user(mfn, addr)))
+ 		return true;
  
--	return ip_generic_getfrag(rfv->msg->msg_iov, to, offset, len, odd, skb);
-+	return ip_generic_getfrag(rfv->msg, to, offset, len, odd, skb);
- }
- 
- static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index b2d6068..0cac250 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1036,7 +1036,7 @@ back_from_confirm:
- 
- 	/* Lockless fast path for the non-corking case. */
- 	if (!corkreq) {
--		skb = ip_make_skb(sk, fl4, getfrag, msg->msg_iov, ulen,
-+		skb = ip_make_skb(sk, fl4, getfrag, msg, ulen,
- 				  sizeof(struct udphdr), &ipc, &rt,
- 				  msg->msg_flags);
- 		err = PTR_ERR(skb);
-@@ -1067,7 +1067,7 @@ back_from_confirm:
- 
- do_append_data:
- 	up->len += ulen;
--	err = ip_append_data(sk, fl4, getfrag, msg->msg_iov, ulen,
-+	err = ip_append_data(sk, fl4, getfrag, msg, ulen,
- 			     sizeof(struct udphdr), &ipc, &rt,
- 			     corkreq ? msg->msg_flags|MSG_MORE : msg->msg_flags);
- 	if (err)
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index 942f67b..11a9283 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -727,7 +727,7 @@ static int raw6_getfrag(void *from, char *to, int offset, int len, int odd,
- 
- 	offset -= rfv->hlen;
- 
--	return ip_generic_getfrag(rfv->msg->msg_iov, to, offset, len, odd, skb);
-+	return ip_generic_getfrag(rfv->msg, to, offset, len, odd, skb);
- }
- 
- static int rawv6_sendmsg(struct kiocb *iocb, struct sock *sk,
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 7cfb5d74..5a164b6 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1299,7 +1299,7 @@ do_append_data:
- 		dontfrag = np->dontfrag;
- 	up->len += ulen;
- 	getfrag  =  is_udplite ?  udplite_getfrag : ip_generic_getfrag;
--	err = ip6_append_data(sk, getfrag, msg->msg_iov, ulen,
-+	err = ip6_append_data(sk, getfrag, msg, ulen,
- 		sizeof(struct udphdr), hlimit, tclass, opt, &fl6,
- 		(struct rt6_info *)dst,
- 		corkreq ? msg->msg_flags|MSG_MORE : msg->msg_flags, dontfrag);
-diff --git a/net/l2tp/l2tp_ip6.c b/net/l2tp/l2tp_ip6.c
-index 2177b96..8611f1b 100644
---- a/net/l2tp/l2tp_ip6.c
-+++ b/net/l2tp/l2tp_ip6.c
-@@ -619,7 +619,7 @@ static int l2tp_ip6_sendmsg(struct kiocb *iocb, struct sock *sk,
- 
- back_from_confirm:
- 	lock_sock(sk);
--	err = ip6_append_data(sk, ip_generic_getfrag, msg->msg_iov,
-+	err = ip6_append_data(sk, ip_generic_getfrag, msg,
- 			      ulen, transhdrlen, hlimit, tclass, opt,
- 			      &fl6, (struct rt6_info *)dst,
- 			      msg->msg_flags, dontfrag);
+ 	ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn), &level);
 -- 
-2.1.3
+2.1.2
 
