@@ -1,143 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaLEG1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 01:27:47 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:43535 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaLEG1p (ORCPT
+	id S1752235AbaLEG14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 01:27:56 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57256 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaLEG1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 01:27:45 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <e59b051c1cf6f5b5e009da2757d778da>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com,
-        Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v18 06/12] dt-bindings: add document for dw_hdmi
-Date: Fri,  5 Dec 2014 14:27:14 +0800
-Message-Id: <1417760834-17141-1-git-send-email-andy.yan@rock-chips.com>
+	Fri, 5 Dec 2014 01:27:53 -0500
+From: "Joshua I. James" <joshua@cybercrimetech.com>
+X-Google-Original-From: "Joshua I. James" <Joshua@cybercrimetech.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Joshua I. James" <joshua@cybercrimetech.com>
+Subject: [PATCH] staging: kernel: fixed style errors in pid.c
+Date: Fri,  5 Dec 2014 15:27:38 +0900
+Message-Id: <1417760858-26831-1-git-send-email-Joshua@cybercrimetech.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+From: "Joshua I. James" <joshua@cybercrimetech.com>
 
+Fixed style errors identified by checkpatch.
+
+ERROR: space prohibited after that open square bracket '['
+WARNING: Missing a blank line after declarations
+ERROR: space required before the open parenthesis '('
+WARNING: line over 80 characters
+WARNING: quoted string split across lines
+
+Signed-off-by: Joshua I. James <joshua@cybercrimetech.com>
 ---
+ kernel/pid.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-Changes in v18:
-- add port bindings
-- correct some spelling mistakes in dw_hdmi bindings doc
-
-Changes in v17: None
-Changes in v16:
-- describe ddc-i2c-bus as optional
-- add common clocks bindings
-
-Changes in v15: None
-Changes in v14: None
-Changes in v13: None
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8:
-- correct some spelling mistake
-- modify ddc-i2c-bus and interrupt description
-
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 50 ++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-new file mode 100644
-index 0000000..a905c14
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-@@ -0,0 +1,50 @@
-+DesignWare HDMI bridge bindings
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 9b9a266..8e92d38 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -72,7 +72,7 @@ struct pid_namespace init_pid_ns = {
+ 		.refcount       = ATOMIC_INIT(2),
+ 	},
+ 	.pidmap = {
+-		[ 0 ... PIDMAP_ENTRIES-1] = { ATOMIC_INIT(BITS_PER_PAGE), NULL }
++		[0 ... PIDMAP_ENTRIES-1] = { ATOMIC_INIT(BITS_PER_PAGE), NULL }
+ 	},
+ 	.last_pid = 0,
+ 	.nr_hashed = PIDNS_HASH_ADDING,
+@@ -142,6 +142,7 @@ static void set_last_pid(struct pid_namespace *pid_ns, int base, int pid)
+ {
+ 	int prev;
+ 	int last_write = base;
 +
-+Required properties:
-+- compatible: platform specific such as:
-+   * "snps,dw-hdmi-tx"
-+   * "fsl,imx6q-hdmi"
-+   * "fsl,imx6dl-hdmi"
-+   * "rockchip,rk3288-dw-hdmi"
-+- reg: Physical base address and length of the controller's registers.
-+- interrupts: The HDMI interrupt number
-+- clocks, clock-names : must have the phandles to the HDMI iahb and isfr clocks,
-+  as described in Documentation/devicetree/bindings/clock/clock-bindings.txt,
-+  the clocks are soc specific, the clock-names should be "iahb", "isfr"
-+-port@[X]: SoC specific port nodes with endpoint definitions as defined
-+   in Documentation/devicetree/bindings/media/video-interfaces.txt,
-+   please refer to the SoC specific binding document:
-+    * Documentation/devicetree/bindings/drm/imx/hdmi.txt
-+    * Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+ 	do {
+ 		prev = last_write;
+ 		last_write = cmpxchg(&pid_ns->last_pid, prev, pid);
+@@ -250,6 +251,7 @@ EXPORT_SYMBOL_GPL(put_pid);
+ static void delayed_put_pid(struct rcu_head *rhp)
+ {
+ 	struct pid *pid = container_of(rhp, struct pid, rcu);
 +
-+Optional properties
-+- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-+- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-+- clocks, clock-names: phandle to the HDMI CEC clock, name should be "cec"
+ 	put_pid(pid);
+ }
+ 
+@@ -263,8 +265,9 @@ void free_pid(struct pid *pid)
+ 	for (i = 0; i <= pid->level; i++) {
+ 		struct upid *upid = pid->numbers + i;
+ 		struct pid_namespace *ns = upid->ns;
 +
-+Example:
-+	hdmi: hdmi@0120000 {
-+		compatible = "fsl,imx6q-hdmi";
-+		reg = <0x00120000 0x9000>;
-+		interrupts = <0 115 0x04>;
-+		gpr = <&gpr>;
-+		clocks = <&clks 123>, <&clks 124>;
-+		clock-names = "iahb", "isfr";
-+		ddc-i2c-bus = <&i2c2>;
+ 		hlist_del_rcu(&upid->pid_chain);
+-		switch(--ns->nr_hashed) {
++		switch (--ns->nr_hashed) {
+ 		case 2:
+ 		case 1:
+ 			/* When all that is left in the pid namespace
+@@ -383,6 +386,7 @@ EXPORT_SYMBOL_GPL(find_vpid);
+ void attach_pid(struct task_struct *task, enum pid_type type)
+ {
+ 	struct pid_link *link = &task->pids[type];
 +
-+		port@0 {
-+			reg = <0>;
+ 	hlist_add_head_rcu(&link->node, &link->pid->tasks[type]);
+ }
+ 
+@@ -429,12 +433,15 @@ void transfer_pid(struct task_struct *old, struct task_struct *new,
+ struct task_struct *pid_task(struct pid *pid, enum pid_type type)
+ {
+ 	struct task_struct *result = NULL;
 +
-+			hdmi_mux_0: endpoint {
-+				remote-endpoint = <&ipu1_di0_hdmi>;
-+			};
-+		};
+ 	if (pid) {
+ 		struct hlist_node *first;
 +
-+		port@1 {
-+			reg = <1>;
+ 		first = rcu_dereference_check(hlist_first_rcu(&pid->tasks[type]),
+ 					      lockdep_tasklist_lock_is_held());
+ 		if (first)
+-			result = hlist_entry(first, struct task_struct, pids[(type)].node);
++			result = hlist_entry(first, struct task_struct,
++						pids[(type)].node);
+ 	}
+ 	return result;
+ }
+@@ -446,8 +453,7 @@ EXPORT_SYMBOL(pid_task);
+ struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+ {
+ 	rcu_lockdep_assert(rcu_read_lock_held(),
+-			   "find_task_by_pid_ns() needs rcu_read_lock()"
+-			   " protection");
++		"find_task_by_pid_ns() needs rcu_read_lock() protection");
+ 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
+ }
+ 
+@@ -459,6 +465,7 @@ struct task_struct *find_task_by_vpid(pid_t vnr)
+ struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
+ {
+ 	struct pid *pid;
 +
-+			hdmi_mux_1: endpoint {
-+				remote-endpoint = <&ipu1_di1_hdmi>;
-+			};
-+		};
-+	};
+ 	rcu_read_lock();
+ 	if (type != PIDTYPE_PID)
+ 		task = task->group_leader;
+@@ -471,8 +478,10 @@ EXPORT_SYMBOL_GPL(get_task_pid);
+ struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
+ {
+ 	struct task_struct *result;
++
+ 	rcu_read_lock();
+ 	result = pid_task(pid, type);
++
+ 	if (result)
+ 		get_task_struct(result);
+ 	rcu_read_unlock();
 -- 
 1.9.1
-
 
