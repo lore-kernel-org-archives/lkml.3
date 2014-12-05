@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbaLEXIq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 18:08:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbaLEXGm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754016AbaLEXGm (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Dec 2014 18:06:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54664 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515AbaLEXGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 18:06:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 37/45] iser-target: Handle DEVICE_REMOVAL event on network portal listener correctly
-Date: Fri,  5 Dec 2014 14:45:20 -0800
-Message-Id: <20141205223322.688305214@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 17/45] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Date: Fri,  5 Dec 2014 14:45:00 -0800
+Message-Id: <20141205223319.431433993@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
 References: <20141205223316.738290875@linuxfoundation.org>
@@ -29,96 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 3b726ae2de02a406cc91903f80132daee37b6f1b upstream.
+commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
 
-In this case the cm_id->context is the isert_np, and the cm_id->qp
-is NULL, so use that to distinct the cases.
+On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
+5 seconds after the end of a playback.
 
-Since we don't expect any other events on this cm_id we can
-just return -1 for explicit termination of the cm_id by the
-cma layer.
+The SMALL_POP bit should fix this, but its definition is incorrect:
+according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
+bit 1.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fix the definition accordingly and enable the bit as intended per the code
+comment.
+
+After applying this change, no loud 'click' sound is heard after playback
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   29 +++++++++++++++++++----------
- 1 file changed, 19 insertions(+), 10 deletions(-)
+ sound/soc/codecs/sgtl5000.c |    3 +--
+ sound/soc/codecs/sgtl5000.h |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -585,14 +585,25 @@ wake_up:
- 	complete(&isert_conn->conn_wait);
- }
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1317,8 +1317,7 @@ static int sgtl5000_probe(struct snd_soc
  
--static void
-+static int
- isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
- {
--	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
-+	struct isert_conn *isert_conn;
-+
-+	if (!cma_id->qp) {
-+		struct isert_np *isert_np = cma_id->context;
-+
-+		isert_np->np_cm_id = NULL;
-+		return -1;
-+	}
-+
-+	isert_conn = (struct isert_conn *)cma_id->context;
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+-				SGTL5000_SMALL_POP,
+-				SGTL5000_SMALL_POP);
++				SGTL5000_SMALL_POP, 1);
  
- 	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
-+
-+	return 0;
- }
+ 	/* disable short cut detector */
+ 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -275,7 +275,7 @@
+ #define SGTL5000_BIAS_CTRL_MASK			0x000e
+ #define SGTL5000_BIAS_CTRL_SHIFT		1
+ #define SGTL5000_BIAS_CTRL_WIDTH		3
+-#define SGTL5000_SMALL_POP			0x0001
++#define SGTL5000_SMALL_POP			0
  
- static int
-@@ -607,6 +618,9 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
- 		ret = isert_connect_request(cma_id, event);
-+		if (ret)
-+			pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
-+				event->event, ret);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
- 		isert_connected_handler(cma_id);
-@@ -616,7 +630,7 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
- 		disconnect = true;
- 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
--		isert_disconnected_handler(cma_id, disconnect);
-+		ret = isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
-@@ -624,12 +638,6 @@ isert_cma_handler(struct rdma_cm_id *cma
- 		break;
- 	}
- 
--	if (ret != 0) {
--		pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
--		       event->event, ret);
--		dump_stack();
--	}
--
- 	return ret;
- }
- 
-@@ -2233,7 +2241,8 @@ isert_free_np(struct iscsi_np *np)
- {
- 	struct isert_np *isert_np = (struct isert_np *)np->np_context;
- 
--	rdma_destroy_id(isert_np->np_cm_id);
-+	if (isert_np->np_cm_id)
-+		rdma_destroy_id(isert_np->np_cm_id);
- 
- 	np->np_context = NULL;
- 	kfree(isert_np);
+ /*
+  * SGTL5000_CHIP_MIC_CTRL
 
 
