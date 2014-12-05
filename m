@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaLEE6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 23:58:00 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:10976 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130AbaLEE56 (ORCPT
+	id S1751112AbaLEFBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 00:01:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16987 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaLEFBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 23:57:58 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v13 6/7] kprobes: Pass the original kprobe for preparing optimized kprobe
-Date: Fri, 5 Dec 2014 12:53:55 +0800
-Message-ID: <1417755235-71724-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1417755128-71318-1-git-send-email-wangnan0@huawei.com>
-References: <1417755128-71318-1-git-send-email-wangnan0@huawei.com>
+	Fri, 5 Dec 2014 00:01:06 -0500
+Message-ID: <54813C03.8040009@oracle.com>
+Date: Fri, 05 Dec 2014 00:00:51 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?windows-1252?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <20141127225637.GA24019@redhat.com> <m5dart$co$1@ger.gmane.org> <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com> <547b8a45.6e608c0a.20f9.1002@mx.google.com> <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com> <547bbe36.48548c0a.105c.779c@mx.google.com> <20141201191431.GA17385@linux.vnet.ibm.com> <547ccf74.a5198c0a.25de.26d9@mx.google.com> <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com> <20141201230339.GA20487@ret.masoncoding.com> <20141202193252.GB17595@redhat.com> <547E4C14.6040509@oracle.com>
+In-Reply-To: <547E4C14.6040509@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On 12/02/2014 06:32 PM, Sasha Levin wrote:
+> On 12/02/2014 02:32 PM, Dave Jones wrote:
+>> > On Mon, Dec 01, 2014 at 06:08:38PM -0500, Chris Mason wrote:
+>> >  > I'm not sure if this is related, but running trinity here, I noticed it
+>> >  > was stuck at 100% system time on every CPU.  perf report tells me we are
+>> >  > spending all of our time in spin_lock under the sync system call.
+>> >  > 
+>> >  > I think it's coming from contention in the bdi_queue_work() call from
+>> >  > inside sync_inodes_sb, which is spin_lock_bh(). 
+>> >  > 
+>> >  > I wonder if we're just spinning so hard on this one bh lock that we're
+>> >  > starving the watchdog?
+>> >  > 
+>> >  > Dave, do you have spinlock debugging on?  
+>> > 
+>> > That has been a constant, yes. I can try with that disabled some time.
+> Here's my side of the story: I was observing RCU lockups which went away when
+> I disabled verbose printing for fault injections. It seems that printing one
+> line ~10 times a second can cause that...
 
-Pass the original kprobe for preparing an optimized kprobe arch-dep
-part, since for some architecture (e.g. ARM32) requires the information
-in original kprobe.
+Just to add to this: I've enabled the simplest level of verbosity in the fault
+injection options, and RCU stalls are again easy to trigger:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/x86/kernel/kprobes/opt.c | 3 ++-
- include/linux/kprobes.h       | 3 ++-
- kernel/kprobes.c              | 4 ++--
- 3 files changed, 6 insertions(+), 4 deletions(-)
+[ 3926.110026] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 3926.110026] INFO: rcu_sched detected stalls on CPUs/tasks:
+[ 3926.110026]  0: (62 ticks this GP) idle=b63/140000000000002/0 softirq=20384/20384 last_accelerate: f772/8874, nonlazy_posted: 619783, ..
+[ 3926.110026]  (detected by 2, t=30002 jiffies, g=-222, c=-223, q=0)
+[ 3926.110026] Task dump for CPU 0:
+[ 3926.110026] kworker/dying   R  running task    13464     7      2 0x00080008
+[ 3926.110026]  ffffffff814db441 ffff88006aa3bd68 ffffffff814db441 ffffe8fff3c6c9d4
+[ 3926.110026]  00000000ffffffff ffff88006aa3bd88 ffffffff814db76b ffffffff93a27440
+[ 3926.110026]  dfffe90000000000 ffff88006aa26890 ffff88006aa26000 ffff88006aa3b5d8
+[ 3926.110026] Call Trace:
+[ 3926.110026]  [<ffffffff814db441>] ? get_parent_ip+0x11/0x50
+[ 3926.110026]  [<ffffffff814db441>] ? get_parent_ip+0x11/0x50
+[ 3926.110026]  [<ffffffff814db76b>] ? preempt_count_sub+0x11b/0x1d0
+[ 3926.110026]  [<ffffffff81429c57>] ? do_exit+0x1687/0x3f20
+[ 3926.110026]  [<ffffffff81485578>] ? worker_thread+0xa28/0x1760
+[ 3926.110026]  [<ffffffff81484b50>] ? process_one_work+0x17a0/0x17a0
+[ 3926.110026]  [<ffffffff8149d719>] ? kthread+0x229/0x320
+[ 3926.110026]  [<ffffffff8149d4f0>] ? kthread_worker_fn+0x7d0/0x7d0
+[ 3926.110026]  [<ffffffff91ffc0fc>] ? ret_from_fork+0x7c/0xb0
+[ 3926.110026]  [<ffffffff8149d4f0>] ? kthread_worker_fn+0x7d0/0x7d0
+[ 3926.110033]
+[ 3926.110033]  0: (62 ticks this GP) idle=b63/140000000000002/0 softirq=20384/20384 last_accelerate: f772/8876, nonlazy_posted: 619783, ..
+[ 3926.110033]  (detected by 10, t=30004 jiffies, g=15638, c=15637, q=63609)
+[ 3926.110033] Task dump for CPU 0:
+[ 3926.110033] kworker/dying   R  running task    13464     7      2 0x00080008
+[ 3926.110033]  ffffffff814db441 ffff88006aa3bd68 ffffffff814db441 ffffe8fff3c6c9d4
+[ 3926.110033]  00000000ffffffff ffff88006aa3bd88 ffffffff814db76b ffffffff93a27440
+[ 3926.110033]  dfffe90000000000 ffff88006aa26890 ffff88006aa26000 ffff88006aa3b5d8
+[ 3926.110033] Call Trace:
+[ 3926.110033]  [<ffffffff814db441>] ? get_parent_ip+0x11/0x50
+[ 3926.110033]  [<ffffffff814db441>] ? get_parent_ip+0x11/0x50
+[ 3926.110033]  [<ffffffff814db76b>] ? preempt_count_sub+0x11b/0x1d0
+[ 3926.110033]  [<ffffffff81429c57>] ? do_exit+0x1687/0x3f20
+[ 3926.110033]  [<ffffffff81485578>] ? worker_thread+0xa28/0x1760
+[ 3926.110033]  [<ffffffff81484b50>] ? process_one_work+0x17a0/0x17a0
+[ 3926.110033]  [<ffffffff8149d719>] ? kthread+0x229/0x320
+[ 3926.110033]  [<ffffffff8149d4f0>] ? kthread_worker_fn+0x7d0/0x7d0
+[ 3926.110033]  [<ffffffff91ffc0fc>] ? ret_from_fork+0x7c/0xb0
+[ 3926.110033]  [<ffffffff8149d4f0>] ? kthread_worker_fn+0x7d0/0x7d0
 
-diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
-index f1314d0..7028296 100644
---- a/arch/x86/kernel/kprobes/opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -320,7 +320,8 @@ void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-  * Target instructions MUST be relocatable (checked inside)
-  * This is called when new aggr(opt)probe is allocated or reused.
-  */
--int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op,
-+				  struct kprobe *__unused)
- {
- 	u8 *buf;
- 	int ret;
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index f7296e5..7ab2c93 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -308,7 +308,8 @@ struct optimized_kprobe {
- /* Architecture dependent functions for direct jump optimization */
- extern int arch_prepared_optinsn(struct arch_optimized_insn *optinsn);
- extern int arch_check_optimized_kprobe(struct optimized_kprobe *op);
--extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op);
-+extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op,
-+					 struct kprobe *orig);
- extern void arch_remove_optimized_kprobe(struct optimized_kprobe *op);
- extern void arch_optimize_kprobes(struct list_head *oplist);
- extern void arch_unoptimize_kprobes(struct list_head *oplist,
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3995f54..9f28aa7 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -717,7 +717,7 @@ static void prepare_optimized_kprobe(struct kprobe *p)
- 	struct optimized_kprobe *op;
- 
- 	op = container_of(p, struct optimized_kprobe, kp);
--	arch_prepare_optimized_kprobe(op);
-+	arch_prepare_optimized_kprobe(op, p);
- }
- 
- /* Allocate new optimized_kprobe and try to prepare optimized instructions */
-@@ -731,7 +731,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- 
- 	INIT_LIST_HEAD(&op->list);
- 	op->kp.addr = p->addr;
--	arch_prepare_optimized_kprobe(op);
-+	arch_prepare_optimized_kprobe(op, p);
- 
- 	return &op->kp;
- }
--- 
-1.8.4
 
+Thanks,
+Sasha
