@@ -1,135 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaLEItc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 03:49:32 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34011 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaLEIsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 03:48:33 -0500
-Message-Id: <20141205084147.232633738@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Fri, 05 Dec 2014 08:48:31 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Joerg Roedel <joro@8bytes.org>, Borislav Petkov <bp@alien8.de>
-Subject: [patch 2/5] iommu, x86: Restructure setup of the irq remapping feature
-References: <20141204234737.728961990@linutronix.de>
+	id S1753571AbaLEItn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 03:49:43 -0500
+Received: from mout.web.de ([212.227.17.11]:54658 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753441AbaLEItl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 03:49:41 -0500
+Message-ID: <5481719F.4050801@users.sourceforge.net>
+Date: Fri, 05 Dec 2014 09:49:35 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=iommu-restructure-setup.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Joe Perches <joe@perches.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by pr_warn()
+ in mppe_rekey()
+References: <5307CAA2.8060406@users.sourceforge.net>	 <530C5E18.1020800@users.sourceforge.net>	 <alpine.DEB.2.10.1402251014170.2080@hadrien>	 <530CD2C4.4050903@users.sourceforge.net>	 <alpine.DEB.2.10.1402251840450.7035@hadrien>	 <530CF8FF.8080600@users.sourceforge.net>	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	 <530DD06F.4090703@users.sourceforge.net>	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	 <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>	 <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>	 <547C82A6.2030808@users.sourceforge.net>	 <547CA157.1080401@cogentembedded.com>	 <5480DA32.8000201@users.sourceforge.net>	 <5480DBDE.7040604@users.sourceforge.net>	 <1417731809.2721.17.camel@perches.com>	 <5480DFB5.4090708@users.sourceforge.net>	 <1417733101.2721.20.camel@perches.com>	 <54815C5F.8090702@users.sourceforge.net> <1417766255.2721.43.camel@perches.com>
+In-Reply-To: <1417766255.2721.43.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:7M+uUubjib4pqwFRnv/idYk7psnbhXjtFCMIU8CfkFhL+KoScH8
+ J4s/dLcEZk2b9WJMX7d/2uVPcMqJ1LthYUZdguBoSIJSGb88eJIy5tW+uuLNiZskZ1P6LOo
+ E0zpDWFEbBF73/e8/bTcAM754ddrNXE0QbxLgkgP/EWjdS9QCJ9Ui6o6KeJTcP27XcbVyvj
+ 0+SiO5UJmD7+YnK8/8WVw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enable_IR_x2apic() calls setup_irq_remapping_ops() which by default
-installs the intel dmar remapping ops and then calls the amd iommu irq
-remapping prepare callback to figure out whether we are running on an
-AMD machine with irq remapping hardware.
+> It's a process, and it's not immediate.  Wait to see
+> if these get applied as-is.
 
-Right after that it calls irq_remapping_prepare() which pointlessly
-checks:
-	if (!remap_ops || !remap_ops->prepare)
-               return -ENODEV;
-and then calls
+Thanks for your constructive feedback.
 
-    remap_ops->prepare()
 
-which is silly in the AMD case as it got called from
-setup_irq_remapping_ops() already a few microseconds ago.
+> If the embedded function name use, which is trivial, bothers you,
+> send another patch later on that changes it.
 
-Simplify this and just collapse everything into
-irq_remapping_prepare().
+Not really at the moment ...
 
-The irq_remapping_prepare() remains still silly as it assigns blindly
-the intel ops, but that's not scope of this patch.
+I guess that I would prefer a general development of another semantic
+patch approach according to your request with the topic "Finding embedded
+function names?" a moment ago.
+https://systeme.lip6.fr/pipermail/cocci/2014-December/001517.html
+http://article.gmane.org/gmane.comp.version-control.coccinelle/4399
 
-The scope here is to move the preperatory work, i.e. memory
-allocations out of the atomic section which is required to enable irq
-remapping.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/irq_remapping.h |    2 --
- arch/x86/kernel/apic/apic.c          |    3 ---
- drivers/iommu/irq_remapping.c        |   19 +++++++------------
- 3 files changed, 7 insertions(+), 17 deletions(-)
-
-Index: tip/arch/x86/include/asm/irq_remapping.h
-===================================================================
---- tip.orig/arch/x86/include/asm/irq_remapping.h
-+++ tip/arch/x86/include/asm/irq_remapping.h
-@@ -31,7 +31,6 @@ struct irq_alloc_info;
- 
- #ifdef CONFIG_IRQ_REMAP
- 
--extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
- extern void set_irq_remapping_broken(void);
- extern int irq_remapping_prepare(void);
-@@ -58,7 +57,6 @@ static inline struct irq_domain *arch_ge
- 
- #else  /* CONFIG_IRQ_REMAP */
- 
--static inline void setup_irq_remapping_ops(void) { }
- static inline int irq_remapping_supported(void) { return 0; }
- static inline void set_irq_remapping_broken(void) { }
- static inline int irq_remapping_prepare(void) { return -ENODEV; }
-Index: tip/arch/x86/kernel/apic/apic.c
-===================================================================
---- tip.orig/arch/x86/kernel/apic/apic.c
-+++ tip/arch/x86/kernel/apic/apic.c
-@@ -1597,9 +1597,6 @@ void __init enable_IR_x2apic(void)
- 	int ret, x2apic_enabled = 0;
- 	int hardware_init_ret;
- 
--	/* Make sure irq_remap_ops are initialized */
--	setup_irq_remapping_ops();
--
- 	hardware_init_ret = irq_remapping_prepare();
- 	if (hardware_init_ret && !x2apic_supported())
- 		return;
-Index: tip/drivers/iommu/irq_remapping.c
-===================================================================
---- tip.orig/drivers/iommu/irq_remapping.c
-+++ tip/drivers/iommu/irq_remapping.c
-@@ -75,16 +75,6 @@ static __init int setup_irqremap(char *s
- }
- early_param("intremap", setup_irqremap);
- 
--void __init setup_irq_remapping_ops(void)
--{
--	remap_ops = &intel_irq_remap_ops;
--
--#ifdef CONFIG_AMD_IOMMU
--	if (amd_iommu_irq_ops.prepare() == 0)
--		remap_ops = &amd_iommu_irq_ops;
--#endif
--}
--
- void set_irq_remapping_broken(void)
- {
- 	irq_remap_broken = 1;
-@@ -103,9 +93,14 @@ int irq_remapping_supported(void)
- 
- int __init irq_remapping_prepare(void)
- {
--	if (!remap_ops || !remap_ops->prepare)
--		return -ENODEV;
-+	remap_ops = &intel_irq_remap_ops;
- 
-+#ifdef CONFIG_AMD_IOMMU
-+	if (amd_iommu_irq_ops.prepare() == 0) {
-+		remap_ops = &amd_iommu_irq_ops;
-+		return 0;
-+	}
-+#endif
- 	return remap_ops->prepare();
- }
- 
-
+Regards,
+Markus
 
