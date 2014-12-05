@@ -1,89 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933648AbaLEB64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:58:56 -0500
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:37653 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933499AbaLEB4g (ORCPT
+	id S1754986AbaLECBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 21:01:24 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:49856 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751838AbaLECBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:56:36 -0500
-From: Aditya Kali <adityakali@google.com>
-To: tj@kernel.org, lizefan@huawei.com, serge.hallyn@ubuntu.com,
-        luto@amacapital.net, ebiederm@xmission.com, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        mingo@redhat.com
-Cc: containers@lists.linux-foundation.org, jnagal@google.com,
-        vgoyal@redhat.com, richard.weinberger@gmail.com,
-        Aditya Kali <adityakali@google.com>
-Subject: [PATCHv3 3/8] cgroup: add function to get task's cgroup on default hierarchy
-Date: Thu,  4 Dec 2014 17:55:45 -0800
-Message-Id: <1417744550-6461-4-git-send-email-adityakali@google.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1417744550-6461-1-git-send-email-adityakali@google.com>
-References: <adityakali-cgroupns>
- <1417744550-6461-1-git-send-email-adityakali@google.com>
+	Thu, 4 Dec 2014 21:01:23 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44533917"
+Message-ID: <548112D8.70009@cn.fujitsu.com>
+Date: Fri, 5 Dec 2014 10:05:12 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: <paulmck@linux.vnet.ibm.com>
+CC: Pranith Kumar <bobby.prani@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH] tinification: Make SRCU optional by using CONFIG_SRCU
+References: <1417737024-13967-1-git-send-email-bobby.prani@gmail.com> <20141205001148.GC25340@linux.vnet.ibm.com>
+In-Reply-To: <20141205001148.GC25340@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_task_cgroup() returns the (reference counted) cgroup of the
-given task on the default hierarchy.
+On 12/05/2014 08:11 AM, Paul E. McKenney wrote:
+> On Thu, Dec 04, 2014 at 06:50:24PM -0500, Pranith Kumar wrote:
+>> SRCU is not necessary to be compiled by default in all cases. For tinification
+>> efforts not compiling SRCU unless necessary is desirable.
+>>
+>> The current patch tries to make compiling SRCU optional by introducing a new
+>> Kconfig option CONFIG_SRCU which is selected when any of the components making
+>> use of SRCU are selected.
+>>
+>> If we do not select CONFIG_SRCU, srcu.o will not be compiled at all.
+>>
+>>    text    data     bss     dec     hex filename
+>>    2007       0       0    2007     7d7 kernel/rcu/srcu.o
+>>
+>> Size of arch/powerpc/boot/zImage changes from
+>>
+>>    text    data     bss     dec     hex filename
+>>  831552   64180   23944  919676   e087c arch/powerpc/boot/zImage : before
+>>  829504   64180   23952  917636   e0084 arch/powerpc/boot/zImage : after
+>>
+>> so the savings are about ~2000 bytes.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> CC: Paul McKenney <paulmck@linux.vnet.ibm.com>
+>> CC: Josh Triplett <josh@joshtriplett.org>
+> 
+> I have queued this for testing.
+> 
+> Josh, does this look reasonable to you?
+> 
+> Lai, any issues?
+> 
+> 							Thanx, Paul
+> 
+>> ---
+>>  arch/arm/kvm/Kconfig     |  1 +
+>>  arch/arm64/kvm/Kconfig   |  1 +
+>>  arch/ia64/kvm/Kconfig    |  1 +
+>>  arch/mips/kvm/Kconfig    |  1 +
+>>  arch/powerpc/kvm/Kconfig |  1 +
+>>  arch/s390/kvm/Kconfig    |  1 +
+>>  arch/tile/kvm/Kconfig    |  1 +
+>>  arch/x86/Kconfig         |  1 +
+>>  arch/x86/kvm/Kconfig     |  1 +
+>>  drivers/clk/Kconfig      |  1 +
+>>  drivers/cpufreq/Kconfig  |  1 +
+>>  drivers/devfreq/Kconfig  |  1 +
+>>  drivers/md/Kconfig       |  1 +
+>>  drivers/net/Kconfig      |  1 +
+>>  fs/btrfs/Kconfig         |  1 +
+>>  fs/notify/Kconfig        |  1 +
+>>  init/Kconfig             | 10 ++++++++++
+>>  kernel/notifier.c        |  3 +++
+>>  kernel/rcu/Makefile      |  3 ++-
+>>  lib/Kconfig.debug        |  1 +
+>>  mm/Kconfig               |  1 +
+>>  security/tomoyo/Kconfig  |  1 +
+>>  22 files changed, 34 insertions(+), 1 deletion(-)
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aditya Kali <adityakali@google.com>
----
- include/linux/cgroup.h |  1 +
- kernel/cgroup.c        | 25 +++++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+Miss fs/quota/Kconfig?
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 9fd99f5..d6930de 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -579,6 +579,7 @@ static inline void pr_cont_cgroup_path(struct cgroup *cgrp)
- }
- 
- char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen);
-+struct cgroup *get_task_cgroup(struct task_struct *task);
- 
- int cgroup_add_dfl_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bb263d0..5d8fc84 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1966,6 +1966,31 @@ char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen)
- }
- EXPORT_SYMBOL_GPL(task_cgroup_path);
- 
-+/*
-+ * get_task_cgroup - returns the cgroup of the task in the default cgroup
-+ * hierarchy.
-+ *
-+ * @task: target task
-+ * This function returns the @task's cgroup on the default cgroup hierarchy. The
-+ * returned cgroup has its reference incremented (by calling cgroup_get()). So
-+ * the caller must cgroup_put() the obtained reference once it is done with it.
-+ */
-+struct cgroup *get_task_cgroup(struct task_struct *task)
-+{
-+	struct cgroup *cgrp;
-+
-+	mutex_lock(&cgroup_mutex);
-+	down_read(&css_set_rwsem);
-+
-+	cgrp = task_cgroup_from_root(task, &cgrp_dfl_root);
-+	cgroup_get(cgrp);
-+
-+	up_read(&css_set_rwsem);
-+	mutex_unlock(&cgroup_mutex);
-+	return cgrp;
-+}
-+EXPORT_SYMBOL_GPL(get_task_cgroup);
-+
- /* used to track tasks and other necessary states during migration */
- struct cgroup_taskset {
- 	/* the src and dst cset list running through cset->mg_node */
--- 
-2.2.0.rc0.207.ga3a616c
+./fs/quota/dquot.c:100: * Operation of reading pointer needs srcu_read_lock(&dquot_srcu), and
+./fs/quota/dquot.c:1609:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1657:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1695:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1724:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1756:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1797:	index = srcu_read_lock(&dquot_srcu);
+./fs/quota/dquot.c:1827: * protect them by srcu_read_lock().
 
+And
+
+./drivers/base/power/opp.c:90:	struct srcu_notifier_head head;
+./drivers/base/power/opp.c:439:		srcu_init_notifier_head(&dev_opp->head);
+./drivers/base/power/opp.c:484:	srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_ADD, new_opp);
+./drivers/base/power/opp.c:564:		srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_ENABLE,
+./drivers/base/power/opp.c:567:		srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_DISABLE,
+./drivers/base/power/opp.c:625:struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev)
+
+===
+
+include/linux/srcu.h and ./include/linux/notifier.h should also use
+"#ifdef CONFIG_SRCU .... "
+
+
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index ded8a67..1c581a0 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -137,6 +137,7 @@ config X86
+>>  	select HAVE_ACPI_APEI_NMI if ACPI
+>>  	select ACPI_LEGACY_TABLES_LOOKUP if ACPI
+>>  	select X86_FEATURE_NAMES if PROC_FS
+>> +	select SRCU
+
+
+
+
+Why you select SRCU when X86?
+
+>>
+>> +config SRCU
+>> +	bool "Sleepable form of RCU"
+
+Why it has a title? Somebody need to select it manually for third party kernel module?
+
+>> +	def_bool n
+>> +	help
+>> +	  This option selects the sleepable version of RCU. This version
+>> +	  permits arbitrary sleeping or blocking within RCU read-side critical
+>> +	  sections.
+
+You used "form" and "version" at the same time.
+
+
+>>
+>> +#ifdef CONFIG_SRCU
+>>  /*
+>>   *	SRCU notifier chain routines.    Registration and unregistration
+>>   *	use a mutex, and call_chain is synchronized by SRCU (no locks).
+>> @@ -528,6 +529,8 @@ void srcu_init_notifier_head(struct srcu_notifier_head *nh)
+>>  }
+>>  EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+>>
+>> +#endif /* CONFIG_SRCU */
+
+Do we need a new CONFIG_SRCU_NOTIFIER ?
