@@ -1,193 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaLEOsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 09:48:24 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:60107 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaLEOsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 09:48:23 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
+	id S1751413AbaLEOwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 09:52:03 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:38840 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaLEOwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 09:52:01 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Fri, 05 Dec 2014 15:54:15 +0100
+From: Stefan Agner <stefan@agner.ch>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Qiang Huang <h.huangqiang@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: page_alloc: embed OOM killing naturally into allocation slowpath
-Date: Fri,  5 Dec 2014 09:48:13 -0500
-Message-Id: <1417790893-32010-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.3
+Cc: Sanchayan Maity <maitysanchayan@gmail.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCHv2] drivers/rtc/rtc-snvs: Add clock support
+In-Reply-To: <20141204161207.0753031dc675793e9534c1de@linux-foundation.org>
+References: <cover.1417585458.git.maitysanchayan@gmail.com>
+ <bf8571fc7474877be39a5a4e9d4705358e63d840.1417585458.git.maitysanchayan@gmail.com>
+ <20141204161207.0753031dc675793e9534c1de@linux-foundation.org>
+Message-ID: <5536a0707e516d0f4a0c6eaf9d4d9291@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Dec  5 15:51:19 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5481c66712811323039139
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OOM killing invocation does a lot of duplicative checks against
-the task's allocation context.  Rework it to take advantage of the
-existing checks in the allocator slowpath.
+On 2014-12-05 01:12, Andrew Morton wrote:
+> On Wed,  3 Dec 2014 11:28:55 +0530 Sanchayan Maity
+> <maitysanchayan@gmail.com> wrote:
+> 
+>> This patch adds clock enable and disable support for
+>> the SNVS peripheral, which is required for using the
+>> RTC within the SNVS block.
+>>
+>> The clock is not strictly enforced, as this would
+>> break the i.MX devices. The clocking for the i.MX
+>> devices seems to be enabled elsewhere and enabling
+>> RTC SNVS for Vybrid results in a crash. This patch
+>> adds the clock support but also makes it optional
+>> so Vybrid platform can use the clock if defined
+>> while making sure not to break i.MX .
+>>
+>> ...
+> 
+> I assume this hasn't been tested with CONFIG_HAVE_CLK=n.  It all
+> *looks* OK, but the clk API does its tests for clk==NULL in some very
+> deep places.
+> 
+>> --- a/drivers/rtc/rtc-snvs.c
+>> +++ b/drivers/rtc/rtc-snvs.c
+> .
+>> ...
+>>
+>> @@ -288,10 +302,16 @@ static int snvs_rtc_probe(struct platform_device *pdev)
+>>  	if (IS_ERR(data->rtc)) {
+>>  		ret = PTR_ERR(data->rtc);
+>>  		dev_err(&pdev->dev, "failed to register rtc: %d\n", ret);
+>> -		return ret;
+>> +		goto error_rtc_device_register;
+>>  	}
+>>
+>>  	return 0;
+>> +
+>> +error_rtc_device_register:
+>> +	if (data->clk)
+>> +		clk_disable_unprepare(data->clk);
+> 
+> From my reading, there's no need to test data->clk here -
+> clk_disable_unprepare() handles that.
+> 
+> It doesn't hurt to test it - a reasonable approach would be to look
+> around at what other users of the clk API are doing, and do that.
+> 
+> 
+>> +	return ret;
+>>  }
+>>
+>>  #ifdef CONFIG_PM_SLEEP
+>> @@ -302,16 +322,26 @@ static int snvs_rtc_suspend(struct device *dev)
+>>  	if (device_may_wakeup(dev))
+>>  		enable_irq_wake(data->irq);
+>>
+>> +	if (data->clk)
+>> +		clk_disable_unprepare(data->clk);
+> 
+> Ditto.
+> 
+>>  	return 0;
+>>  }
+>>
+>>  static int snvs_rtc_resume(struct device *dev)
+>>  {
+>>  	struct snvs_rtc_data *data = dev_get_drvdata(dev);
+>> +	int ret;
+>>
+>>  	if (device_may_wakeup(dev))
+>>  		disable_irq_wake(data->irq);
+>>
+>> +	if (data->clk) {
+>> +		ret = clk_prepare_enable(data->clk);
+>> +		if (ret)
+>> +			return ret;
+>> +	}
+> 
 
-The OOM killer is invoked when the allocator is unable to reclaim any
-pages but the allocation has to keep looping.  Instead of having a
-check for __GFP_NORETRY hidden in oom_gfp_allowed(), just move the OOM
-invocation to the true branch of should_alloc_retry().  The __GFP_FS
-check from oom_gfp_allowed() can then be moved into the OOM avoidance
-branch in __alloc_pages_may_oom(), along with the PF_DUMPCORE test.
+Just discovered issue with suspend/resume I am testing right now: The
+alarm interrupt handler also reads registers which are part of SNVS and
+need clocks enabled. However, the resume function is called after IRQ's
+have been enabled, hence this leads to a abort:
 
-__alloc_pages_may_oom() can then signal to the caller whether the OOM
-killer was invoked, instead of requiring it to duplicate the order and
-high_zoneidx checks to guess this when deciding whether to continue.
+[   90.755222] Unhandled fault: external abort on non-linefetch (0x1008)
+at 0x908c604c
+[   90.762892] Internal error: : 1008 [#1] ARM
+[   90.767082] Modules linked in:
+[   90.770174] CPU: 0 PID: 421 Comm: sh Not tainted
+3.18.0-rc5-00135-g0689c67-dirty #1592
+[   90.778100] task: 8e03e800 ti: 8cad8000 task.ti: 8cad8000
+[   90.783530] PC is at snvs_rtc_irq_handler+0x14/0x74
+[   90.788424] LR is at handle_irq_event_percpu+0x3c/0x144
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/oom.h |  5 ----
- mm/page_alloc.c     | 78 +++++++++++++++++++++++------------------------------
- 2 files changed, 33 insertions(+), 50 deletions(-)
+It can be fixed, with something like this:
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index e8d6e1058723..4971874f54db 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -85,11 +85,6 @@ static inline void oom_killer_enable(void)
- 	oom_killer_disabled = false;
+@@ -346,7 +347,10 @@ static int snvs_rtc_resume(struct device *dev)
  }
+ #endif
  
--static inline bool oom_gfp_allowed(gfp_t gfp_mask)
--{
--	return (gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY);
--}
--
- extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+-static SIMPLE_DEV_PM_OPS(snvs_rtc_pm_ops, snvs_rtc_suspend,
+snvs_rtc_resume);
++static const struct dev_pm_ops snvs_rtc_pm_ops = {
++       .suspend_noirq = snvs_rtc_suspend,
++       .resume_noirq = snvs_rtc_resume,
++};
  
- /* sysctls */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 616a2c956b4b..88b64c09a8c0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2232,12 +2232,21 @@ static inline struct page *
- __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int classzone_idx, int migratetype)
-+	int classzone_idx, int migratetype, unsigned long *did_some_progress)
- {
- 	struct page *page;
- 
--	/* Acquire the per-zone oom lock for each zone */
-+	*did_some_progress = 0;
-+
-+	if (oom_killer_disabled)
-+		return NULL;
-+
-+	/*
-+	 * Acquire the per-zone oom lock for each zone.  If that
-+	 * fails, somebody else is making progress for us.
-+	 */
- 	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
-+		*did_some_progress = 1;
- 		schedule_timeout_uninterruptible(1);
- 		return NULL;
- 	}
-@@ -2263,12 +2272,18 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 		goto out;
- 
- 	if (!(gfp_mask & __GFP_NOFAIL)) {
-+		/* Coredumps can quickly deplete all memory reserves */
-+		if (current->flags & PF_DUMPCORE)
-+			goto out;
- 		/* The OOM killer will not help higher order allocs */
- 		if (order > PAGE_ALLOC_COSTLY_ORDER)
- 			goto out;
- 		/* The OOM killer does not needlessly kill tasks for lowmem */
- 		if (high_zoneidx < ZONE_NORMAL)
- 			goto out;
-+		/* The OOM killer does not compensate for light reclaim */
-+		if (!(gfp_mask & __GFP_FS))
-+			goto out;
- 		/*
- 		 * GFP_THISNODE contains __GFP_NORETRY and we never hit this.
- 		 * Sanity check for bare calls of __GFP_THISNODE, not real OOM.
-@@ -2281,7 +2296,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	}
- 	/* Exhausted what can be done so it's blamo time */
- 	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
--
-+	*did_some_progress = 1;
- out:
- 	oom_zonelist_unlock(zonelist, gfp_mask);
- 	return page;
-@@ -2571,7 +2586,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
- 		goto nopage;
- 
--restart:
- 	if (!(gfp_mask & __GFP_NO_KSWAPD))
- 		wake_all_kswapds(order, zonelist, high_zoneidx,
- 				preferred_zone, nodemask);
-@@ -2701,51 +2715,25 @@ rebalance:
- 	if (page)
- 		goto got_pg;
- 
--	/*
--	 * If we failed to make any progress reclaiming, then we are
--	 * running out of options and have to consider going OOM
--	 */
--	if (!did_some_progress) {
--		if (oom_gfp_allowed(gfp_mask)) {
--			if (oom_killer_disabled)
--				goto nopage;
--			/* Coredumps can quickly deplete all memory reserves */
--			if ((current->flags & PF_DUMPCORE) &&
--			    !(gfp_mask & __GFP_NOFAIL))
--				goto nopage;
--			page = __alloc_pages_may_oom(gfp_mask, order,
--					zonelist, high_zoneidx,
--					nodemask, preferred_zone,
--					classzone_idx, migratetype);
--			if (page)
--				goto got_pg;
--
--			if (!(gfp_mask & __GFP_NOFAIL)) {
--				/*
--				 * The oom killer is not called for high-order
--				 * allocations that may fail, so if no progress
--				 * is being made, there are no other options and
--				 * retrying is unlikely to help.
--				 */
--				if (order > PAGE_ALLOC_COSTLY_ORDER)
--					goto nopage;
--				/*
--				 * The oom killer is not called for lowmem
--				 * allocations to prevent needlessly killing
--				 * innocent tasks.
--				 */
--				if (high_zoneidx < ZONE_NORMAL)
--					goto nopage;
--			}
--
--			goto restart;
--		}
--	}
--
- 	/* Check if we should retry the allocation */
- 	pages_reclaimed += did_some_progress;
- 	if (should_alloc_retry(gfp_mask, order, did_some_progress,
- 						pages_reclaimed)) {
-+		/*
-+		 * If we fail to make progress by freeing individual
-+		 * pages, but the allocation wants us to keep going,
-+		 * start OOM killing tasks.
-+		 */
-+		if (!did_some_progress) {
-+			page = __alloc_pages_may_oom(gfp_mask, order, zonelist,
-+						high_zoneidx, nodemask,
-+						preferred_zone, classzone_idx,
-+						migratetype,&did_some_progress);
-+			if (page)
-+				goto got_pg;
-+			if (!did_some_progress)
-+				goto nopage;
-+		}
- 		/* Wait for some write requests to complete then retry */
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
--- 
-2.1.3
+ static const struct of_device_id snvs_dt_ids[] = {
+        { .compatible = "fsl,sec-v4.0-mon-rtc-lp", },
+
+
+
+Andrew, this patch is already merged, so it would need another fix for
+this, right?
+
+--
+Stefan
+
+> It could be omitted here also.
+> 
+>>  	return 0;
+>>  }
+>>  #endif
+
+
+
 
