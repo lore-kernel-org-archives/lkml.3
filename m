@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaLFRy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:54:58 -0500
-Received: from 1wt.eu ([62.212.114.60]:40706 "EHLO 1wt.eu"
+	id S1752430AbaLFRyy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:54:54 -0500
+Received: from 1wt.eu ([62.212.114.60]:40692 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356AbaLFRyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:55 -0500
-Message-Id: <20141206174148.631937314@1wt.eu>
+	id S1752169AbaLFRyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:50 -0500
+Message-Id: <20141206174148.502715555@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:53 +0100
+Date: Sat, 06 Dec 2014 18:41:50 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 05/25] x86-32, espfix: Remove filter for espfix32 due to race
+Cc: Brian Gerst <brgerst@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 02/25] x86, 64-bit: Move K8 B step iret fixup to fault entry
+ asm
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -25,41 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Brian Gerst <brgerst@gmail.com>
 
-commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
+Move the handling of truncated %rip from an iret fault to the fault
+entry path.
 
-It is not safe to use LAR to filter when to go down the espfix path,
-because the LDT is per-process (rather than per-thread) and another
-thread might change the descriptors behind our back.  Fortunately it
-is always *safe* (if a bit slow) to go down the espfix path, and a
-32-bit LDT stack segment is extremely rare.
+This allows x86-64 to use the standard search_extable() function.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-(cherry picked from 3.2 commit 6806fa8b6795aba9be8742a8f598f60eed26f875)
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <1255357103-5418-1-git-send-email-brgerst@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+(cherry picked from commit ae24ffe5ecec17c956ac25371d7c2e12b4b36e53)
+[wt: only merged to fix patch context and ease merging of next patches]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/entry_32.S | 5 -----
- 1 file changed, 5 deletions(-)
+ arch/x86/include/asm/uaccess.h |  1 -
+ arch/x86/kernel/entry_64.S     | 11 ++++++++---
+ arch/x86/mm/extable.c          | 31 -------------------------------
+ 3 files changed, 8 insertions(+), 35 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 8b5370c..db7dbe7 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -571,11 +571,6 @@ ENTRY(iret_exc)
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 61c5874..99f0ad7 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -570,7 +570,6 @@ extern struct movsl_mask {
+ #ifdef CONFIG_X86_32
+ # include "uaccess_32.h"
+ #else
+-# define ARCH_HAS_SEARCH_EXTABLE
+ # include "uaccess_64.h"
+ #endif
  
- 	CFI_RESTORE_STATE
- ldt_ss:
--	larl PT_OLDSS(%esp), %eax
--	jnz restore_nocheck
--	testl $0x00400000, %eax		# returning to 32bit stack?
--	jnz restore_nocheck		# allright, normal return
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 34a56a9..4f577eb 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1491,12 +1491,17 @@ error_kernelspace:
+ 	leaq irq_return(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+-	movl %ecx,%ecx	/* zero extend */
+-	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	movl %ecx,%eax	/* zero extend */
++	cmpq %rax,RIP+8(%rsp)
++	je bstep_iret
+ 	cmpq $gs_change,RIP+8(%rsp)
+ 	je error_swapgs
+ 	jmp error_sti
++
++bstep_iret:
++	/* Fix truncated RIP */
++	movq %rcx,RIP+8(%rsp)
++	je error_swapgs
+ END(error_entry)
+ 
+ 
+diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
+index 61b41ca..d0474ad 100644
+--- a/arch/x86/mm/extable.c
++++ b/arch/x86/mm/extable.c
+@@ -35,34 +35,3 @@ int fixup_exception(struct pt_regs *regs)
+ 
+ 	return 0;
+ }
 -
- #ifdef CONFIG_PARAVIRT
- 	/*
- 	 * The kernel can't run on a non-flat stack if paravirt mode
+-#ifdef CONFIG_X86_64
+-/*
+- * Need to defined our own search_extable on X86_64 to work around
+- * a B stepping K8 bug.
+- */
+-const struct exception_table_entry *
+-search_extable(const struct exception_table_entry *first,
+-	       const struct exception_table_entry *last,
+-	       unsigned long value)
+-{
+-	/* B stepping K8 bug */
+-	if ((value >> 32) == 0)
+-		value |= 0xffffffffUL << 32;
+-
+-	while (first <= last) {
+-		const struct exception_table_entry *mid;
+-		long diff;
+-
+-		mid = (last - first) / 2 + first;
+-		diff = mid->insn - value;
+-		if (diff == 0)
+-			return mid;
+-		else if (diff < 0)
+-			first = mid+1;
+-		else
+-			last = mid-1;
+-	}
+-	return NULL;
+-}
+-#endif
 -- 
 1.7.12.2.21.g234cd45.dirty
 
