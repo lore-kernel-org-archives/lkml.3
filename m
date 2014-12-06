@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaLFWkx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 17:40:53 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52043 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaLFWkw (ORCPT
+	id S1752637AbaLFWlp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 17:41:45 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:39664 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaLFWlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 17:40:52 -0500
-Date: Sat, 6 Dec 2014 14:41:17 -0800
-From: Tristan Lelong <tristan@lelong.xyz>
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: "Drokin, Oleg" <oleg.drokin@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "standby24x7@gmail.com" <standby24x7@gmail.com>,
-        "askb23@gmail.com" <askb23@gmail.com>,
-        "Hammond, John" <john.hammond@intel.com>,
-        "bergwolf@gmail.com" <bergwolf@gmail.com>,
-        "Wang, Di" <di.wang@intel.com>,
-        "Pershin, Mike" <mike.pershin@intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: lustre: replace static value with define
-Message-ID: <20141206224117.GB17675@dunderer>
-References: <1417850172-17092-1-git-send-email-tristan@lelong.xyz>
- <D0A88610.CE1D7%andreas.dilger@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D0A88610.CE1D7%andreas.dilger@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 6 Dec 2014 17:41:44 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Vineet Gupta <vgupta@synopsys.com>, linux-kernel@vger.kernel.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] arch: arc: plat-arcfpga: smp.c:  Remove some unused functions
+Date: Sat,  6 Dec 2014 23:44:23 +0100
+Message-Id: <1417905863-5310-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 05:09:29PM +0000, Dilger, Andreas wrote:
-> > 
-> >diff --git a/drivers/staging/lustre/lustre/fld/lproc_fld.c
-> >b/drivers/staging/lustre/lustre/fld/lproc_fld.c
-> >index 74b4db9..7a55941 100644
-> >--- a/drivers/staging/lustre/lustre/fld/lproc_fld.c
-> >+++ b/drivers/staging/lustre/lustre/fld/lproc_fld.c
-> >@@ -96,7 +96,7 @@ fld_proc_hash_seq_write(struct file *file,
-> > 	char *name;
-> > 	int i;
-> > 
-> >-	if (count > 80)
-> >+	if (count > LUSTRE_MDT_MAXNAMELEN)
-> > 		return -ENAMETOOLONG;
-> 
-> Sorry for the late reply, but this has nothing to do with an MDT service
-> name, so using this #define is misleading here.  As I wrote in my other
-> email, this only needs to be at most 8 characters.
-> 
+Removes some functions that are not used anywhere:
+idu_irq_get_pend() idu_irq_get_ack()
 
-I see that now, I will change that according to the other email.
+This was partially found by using a static code analysis program called cppcheck.
 
-Do you want me to redo this patch and still define the 80 as LUSTRE_MDT_MAXNAMELEN
-but without this last part (just the define and the string length declaration), or
-should we just let this go?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/arc/plat-arcfpga/smp.c |   27 ---------------------------
+ 1 file changed, 27 deletions(-)
 
-Thanks
+diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
+index 64797ba..2b1b42a 100644
+--- a/arch/arc/plat-arcfpga/smp.c
++++ b/arch/arc/plat-arcfpga/smp.c
+@@ -157,30 +157,3 @@ void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask)
+ 	IDU_SET_PARAM(mask);
+ 	IDU_SET_COMMAND(irq, IDU_IRQ_WBITMASK);
+ }
+-
+-/* Get the Interrupt Acknowledged status for IRQ (as CPU Bitmask) */
+-bool idu_irq_get_ack(uint8_t irq)
+-{
+-	uint32_t val;
+-
+-	IDU_SET_COMMAND(irq, IDU_IRQ_ACK);
+-	val = IDU_GET_PARAM();
+-
+-	return val & (1 << irq);
+-}
+-
+-/*
+- * Get the Interrupt Pending status for IRQ (as CPU Bitmask)
+- * -Pending means CPU has not yet noticed the IRQ (e.g. disabled)
+- * -After Interrupt has been taken, the IPI expcitily needs to be
+- *  cleared, to be acknowledged.
+- */
+-bool idu_irq_get_pend(uint8_t irq)
+-{
+-	uint32_t val;
+-
+-	IDU_SET_COMMAND(irq, IDU_IRQ_PEND);
+-	val = IDU_GET_PARAM();
+-
+-	return val & (1 << irq);
+-}
+-- 
+1.7.10.4
+
