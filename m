@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbaLFRza (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:55:30 -0500
-Received: from 1wt.eu ([62.212.114.60]:40772 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802AbaLFRzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752808AbaLFRzY (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 6 Dec 2014 12:55:24 -0500
-Message-Id: <20141206174149.021474424@1wt.eu>
+Received: from 1wt.eu ([62.212.114.60]:40759 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752700AbaLFRzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:16 -0500
+Message-Id: <20141206174148.596017245@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:02 +0100
+Date: Sat, 06 Dec 2014 18:41:52 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 14/25] x86_64, traps: Fix the espfix64 #DF fixup and rewrite
- it in C
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 04/25] x86-64, modify_ldt: Ban 16-bit segments on 64-bit
+ kernels
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -28,124 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
+commit b3b42ac2cbae1f3cecbb6229964a4d48af31d382 upstream.
 
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  We have
+a software workaround for that ("espfix") for the 32-bit kernel, but
+it relies on a nonzero stack segment base which is not available in
+32-bit mode.
 
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-(cherry picked from commit af726f21ed8af2cdaa4e93098dc211521218ae65)
-[wt: backport notes for 2.6.32 :
-  - Adaptations to entry_64.S in declaration of do_double_fault.
-  - no exception_enter() in 2.6.32. Seems to be only for context tracking.
-/wt]
+Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
+(no V86 mode), and most (if not quite all) 64-bit processors support
+virtualization for the users who really need it, simply reject
+attempts at creating a 16-bit segment when running on top of a 64-bit
+kernel.
+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from 3.2 commit a862b5c4076b1ba4dd6c87aebac478853dc6db47)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/entry_64.S | 34 ++--------------------------------
- arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
+ arch/x86/kernel/ldt.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 8e2f14a..c862780 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -871,6 +871,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ec6ef60..75e356c 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
  
-+.global native_irq_return_iret
- native_irq_return_iret:
- 	iretq
- 
-@@ -972,37 +973,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
--
- /*
-  * APIC interrupts.
-  */
-@@ -1179,7 +1149,7 @@ zeroentry overflow do_overflow
- zeroentry bounds do_bounds
- zeroentry invalid_op do_invalid_op
- zeroentry device_not_available do_device_not_available
--paranoiderrorentry double_fault __do_double_fault
-+paranoiderrorentry double_fault do_double_fault
- zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
- errorentry invalid_TSS do_invalid_TSS
- errorentry segment_not_present do_segment_not_present
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index c4cc05a..03563a4 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -230,6 +230,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
-+
 +	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
++	 * On x86-64 we do not support 16-bit segments due to
++	 * IRET leaking the high bits of the kernel stack address.
 +	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
-+
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
++#ifdef CONFIG_X86_64
++	if (!ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
 +	}
 +#endif
 +
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, 8, SIGSEGV);
- 
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
