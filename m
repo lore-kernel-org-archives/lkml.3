@@ -1,145 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaLFC2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 21:28:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65071 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751167AbaLFC2g (ORCPT
+	id S1752137AbaLFCcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 21:32:17 -0500
+Received: from mail-bn1on0115.outbound.protection.outlook.com ([157.56.110.115]:16334
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751051AbaLFCcQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 21:28:36 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] ARM / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Sat, 06 Dec 2014 03:50:03 +0100
-Message-ID: <2407638.dfZGaT4vm1@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Fri, 5 Dec 2014 21:32:16 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH V3 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Topic: [PATCH V3 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Index: AQHQEOGo1jT68BHah0aL3Qb0Zjbe5ZyB155w
+Date: Sat, 6 Dec 2014 02:32:06 +0000
+Message-ID: <BY2PR0301MB071187FDC0113EB30B1E40EFA0660@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417825644-20978-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1417825644-20978-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;
+x-forefront-prvs: 0417A3FFD2
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(189002)(199003)(105586002)(106356001)(106116001)(2501002)(2561002)(40100003)(99286002)(107886001)(77156002)(21056001)(4396001)(46102003)(74316001)(76576001)(97736003)(107046002)(122556002)(68736005)(31966008)(101416001)(2421001)(19580395003)(54206007)(33656002)(19580405001)(76176999)(66066001)(99396003)(20776003)(1511001)(62966003)(64706001)(120916001)(50986999)(2656002)(54356999)(86362001)(54606007)(87936001)(2201001)(92566001)(86612001)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0647;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere in the code under
-arch/arm/ (the defconfig files will be modified later).
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Friday, December 5, 2014 4:27 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Cc: KY Srinivasan
+> Subject: [PATCH V3 1/1] Drivers: hv: vmbus: Implement a clockevent device
+> 
+> Implement a clockevent device based on the timer support available on
+> Hyper-V.
+> In This version of the patch I have addressed Jason's review comments.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Jason Wang <jasowang@redhat.com>
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Greg,
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+Please drop this patch, I have mailed the wrong patch. I will send the correct one shortly.
 
-Please let me know if it is OK to take this one into linux-pm.
-
----
- arch/arm/kernel/perf_event.c       |    2 +-
- arch/arm/mach-davinci/pm_domain.c  |    2 +-
- arch/arm/mach-keystone/pm_domain.c |    2 +-
- arch/arm/mach-omap1/pm_bus.c       |    4 ++--
- arch/arm/mach-omap2/io.c           |    2 +-
- arch/arm/mach-omap2/omap_device.c  |    2 +-
- 6 files changed, 7 insertions(+), 7 deletions(-)
-
-Index: linux-pm/arch/arm/kernel/perf_event.c
-===================================================================
---- linux-pm.orig/arch/arm/kernel/perf_event.c
-+++ linux-pm/arch/arm/kernel/perf_event.c
-@@ -481,7 +481,7 @@ static void armpmu_disable(struct pmu *p
- 	armpmu->stop(armpmu);
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int armpmu_runtime_resume(struct device *dev)
- {
- 	struct arm_pmu_platdata *plat = dev_get_platdata(dev);
-Index: linux-pm/arch/arm/mach-davinci/pm_domain.c
-===================================================================
---- linux-pm.orig/arch/arm/mach-davinci/pm_domain.c
-+++ linux-pm/arch/arm/mach-davinci/pm_domain.c
-@@ -14,7 +14,7 @@
- #include <linux/pm_clock.h>
- #include <linux/platform_device.h>
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int davinci_pm_runtime_suspend(struct device *dev)
- {
- 	int ret;
-Index: linux-pm/arch/arm/mach-keystone/pm_domain.c
-===================================================================
---- linux-pm.orig/arch/arm/mach-keystone/pm_domain.c
-+++ linux-pm/arch/arm/mach-keystone/pm_domain.c
-@@ -19,7 +19,7 @@
- #include <linux/clk-provider.h>
- #include <linux/of.h>
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int keystone_pm_runtime_suspend(struct device *dev)
- {
- 	int ret;
-Index: linux-pm/arch/arm/mach-omap1/pm_bus.c
-===================================================================
---- linux-pm.orig/arch/arm/mach-omap1/pm_bus.c
-+++ linux-pm/arch/arm/mach-omap1/pm_bus.c
-@@ -21,7 +21,7 @@
- 
- #include "soc.h"
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int omap1_pm_runtime_suspend(struct device *dev)
- {
- 	int ret;
-@@ -59,7 +59,7 @@ static struct dev_pm_domain default_pm_d
- #define OMAP1_PM_DOMAIN (&default_pm_domain)
- #else
- #define OMAP1_PM_DOMAIN NULL
--#endif /* CONFIG_PM_RUNTIME */
-+#endif /* CONFIG_PM */
- 
- static struct pm_clk_notifier_block platform_bus_notifier = {
- 	.pm_domain = OMAP1_PM_DOMAIN,
-Index: linux-pm/arch/arm/mach-omap2/io.c
-===================================================================
---- linux-pm.orig/arch/arm/mach-omap2/io.c
-+++ linux-pm/arch/arm/mach-omap2/io.c
-@@ -359,7 +359,7 @@ static void __init omap_hwmod_init_posts
- 	u8 postsetup_state;
- 
- 	/* Set the default postsetup state for all hwmods */
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	postsetup_state = _HWMOD_STATE_IDLE;
- #else
- 	postsetup_state = _HWMOD_STATE_ENABLED;
-Index: linux-pm/arch/arm/mach-omap2/omap_device.c
-===================================================================
---- linux-pm.orig/arch/arm/mach-omap2/omap_device.c
-+++ linux-pm/arch/arm/mach-omap2/omap_device.c
-@@ -588,7 +588,7 @@ odbs_exit:
- 	return ERR_PTR(ret);
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int _od_runtime_suspend(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-
+K. Y
