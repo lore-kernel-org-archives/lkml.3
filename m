@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaLFR6n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:58:43 -0500
-Received: from 1wt.eu ([62.212.114.60]:40726 "EHLO 1wt.eu"
+	id S1753164AbaLFR7E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:59:04 -0500
+Received: from 1wt.eu ([62.212.114.60]:40722 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597AbaLFRzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:03 -0500
-Message-Id: <20141206174149.192584646@1wt.eu>
+	id S1752563AbaLFRzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:01 -0500
+Message-Id: <20141206174149.418344651@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:06 +0100
+Date: Sat, 06 Dec 2014 18:42:11 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [ 18/25] ALSA: control: Fix replacing user controls
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        Stefan Bader <stefan.bader@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 23/25] net: sctp: fix NULL pointer dereference in
+ af->from_addr_param on malformed packet
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -25,83 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-(commit 82262a46627bebb0febcc26664746c25cef08563 upstream)
+commit a6e1af6f5e9e75095ae1b004f6f00082e5fc4d2d upstream
 
-There are two issues with the current implementation for replacing user
-controls. The first is that the code does not check if the control is actually a
-user control and neither does it check if the control is owned by the process
-that tries to remove it. That allows userspace applications to remove arbitrary
-controls, which can cause a user after free if a for example a driver does not
-expect a control to be removed from under its feed.
+An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
+in the form of:
 
-The second issue is that on one hand when a control is replaced the
-user_ctl_count limit is not checked and on the other hand the user_ctl_count is
-increased (even though the number of user controls does not change). This allows
-userspace, once the user_ctl_count limit as been reached, to repeatedly replace
-a control until user_ctl_count overflows. Once that happens new controls can be
-added effectively bypassing the user_ctl_count limit.
+  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
 
-Both issues can be fixed by instead of open-coding the removal of the control
-that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
-proper permission checks as well as decrements user_ctl_count after the control
-has been removed.
+While the INIT chunk parameter verification dissects through many things
+in order to detect malformed input, it misses to actually check parameters
+inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
+IP address' parameter in ASCONF, which has as a subparameter an address
+parameter.
 
-Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
-beginning of the function if the control already exists is removed. This is not
-a problem though since the check is quite useless, because the lock that is
-protecting the control list is released between the check and before adding the
-new control to the list, which means that it is possible that a different
-control with the same settings is added to the list after the check. Luckily
-there is another check that is done while holding the lock in snd_ctl_add(), so
-we'll rely on that to make sure that the same control is not added twice.
+So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
+or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
+and thus sctp_get_af_specific() returns NULL, too, which we then happily
+dereference unconditionally through af->from_addr_param().
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[wt: fixes CVE-2014-4654 & CVE-2014-4655]
+The trace for the log:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+PGD 0
+Oops: 0000 [#1] SMP
+[...]
+Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
+RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
+ [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
+ [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+[...]
+
+A minimal way to address this is to check for NULL as we do on all
+other such occasions where we know sctp_get_af_specific() could
+possibly return with NULL.
+
+Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(cherry picked from commit e40607cbe270a9e8360907cb1e62ddf0736e4864)
+CVE-2014-7841
+BugLink: http://bugs.launchpad.net/bugs/1392820
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Andy Whitcroft <apw@canonical.com>
+Acked-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/core/control.c | 23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ net/sctp/sm_make_chunk.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index e91d79a..ffa7857 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -999,21 +999,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
- 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
- 	info->id.numid = 0;
- 	memset(&kctl, 0, sizeof(kctl));
--	down_write(&card->controls_rwsem);
--	_kctl = snd_ctl_find_id(card, &info->id);
--	err = 0;
--	if (_kctl) {
--		if (replace)
--			err = snd_ctl_remove(card, _kctl);
--		else
--			err = -EBUSY;
--	} else {
--		if (replace)
--			err = -ENOENT;
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index 5f2dc3f..9de3592 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2544,6 +2544,9 @@ do_addr_param:
+ 		addr_param = param.v + sizeof(sctp_addip_param_t);
+ 
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
++		if (af == NULL)
++			break;
 +
-+	if (replace) {
-+		err = snd_ctl_remove_user_ctl(file, &info->id);
-+		if (err)
-+			return err;
- 	}
--	up_write(&card->controls_rwsem);
--	if (err < 0)
--		return err;
-+
-+	if (card->user_ctl_count >= MAX_USER_CONTROLS)
-+		return -ENOMEM;
-+
- 	memcpy(&kctl.id, &info->id, sizeof(info->id));
- 	kctl.count = info->owner ? info->owner : 1;
- 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
+ 		af->from_addr_param(&addr, addr_param,
+ 				    htons(asoc->peer.port), 0);
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
