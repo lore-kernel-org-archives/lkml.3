@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaLFAiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 19:38:23 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:25554 "EHLO
+	id S1752108AbaLFAiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 19:38:15 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:29654 "EHLO
 	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaLFAiS (ORCPT
+	with ESMTP id S1751016AbaLFAiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 19:38:18 -0500
+	Fri, 5 Dec 2014 19:38:04 -0500
 X-IronPort-AV: E=Sophos;i="5.07,526,1413270000"; 
-   d="scan'208";a="52586704"
+   d="scan'208";a="52586686"
 From: Ray Jui <rjui@broadcom.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Mark Rutland" <mark.rutland@arm.com>,
@@ -24,9 +24,9 @@ CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
         <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
         "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH 4/5] ARM: dts: enable GPIO for Broadcom Cygnus
-Date: Fri, 5 Dec 2014 16:40:07 -0800
-Message-ID: <1417826408-1600-5-git-send-email-rjui@broadcom.com>
+Subject: [PATCH 1/5] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+Date: Fri, 5 Dec 2014 16:40:04 -0800
+Message-ID: <1417826408-1600-2-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417826408-1600-1-git-send-email-rjui@broadcom.com>
 References: <Ray Jui <rjui@broadcom.com>
@@ -37,34 +37,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables all 3 GPIO controllers including the ASIU GPIO, the
-chipcommonG GPIO, and the ALWAYS-ON GPIO, for Broadcom Cygnus SoC
+Document the GPIO device tree binding for Broadcom Cygnus SoC
 
 Signed-off-by: Ray Jui <rjui@broadcom.com>
 Reviewed-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/boot/dts/bcm-cygnus.dtsi |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ .../devicetree/bindings/gpio/brcm,cygnus-gpio.txt  |   85 ++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..c7587c1 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -54,6 +54,36 @@
- 
- 	/include/ "bcm-cygnus-clock.dtsi"
- 
-+	gpio_ccm: gpio@1800a000 {
-+		compatible = "brcm,cygnus-ccm-gpio";
-+		reg = <0x1800a000 0x50>,
-+			<0x0301d164 0x20>;
-+		ngpios = <24>;
-+		#gpio-cells = <2>;
-+		gpio-controller;
-+		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-controller;
-+	};
+diff --git a/Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt b/Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
+new file mode 100644
+index 0000000..24a1513
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
+@@ -0,0 +1,85 @@
++Broadcom Cygnus GPIO Controller
 +
++Required properties:
++
++- compatible:
++    Currently supported Cygnus GPIO controllers include:
++    "brcm,cygnus-ccm-gpio": ChipcommonG GPIO controller
++    "brcm,cygnus-asiu-gpio": ASIU GPIO controller
++    "brcm,cygnus-crmu-gpio": CRMU GPIO controller
++
++- reg:
++    Define the base and range of the I/O address space that contain the Cygnus
++GPIO controller registers
++
++- ngpios:
++    Total number of GPIOs the controller provides
++
++- #gpio-cells:
++    Must be two. The first cell is the GPIO pin number (within the
++controller's domain) and the second cell is used for the following:
++    bit[0]: polarity (0 for normal and 1 for inverted)
++    bit[18:16]: internal pull up/down: 0 - pull up/down disabled
++                                       1 - pull up enabled
++                                       2 - pull down enabled
++    bit[22:20]: drive strength: 0 - 2 mA
++                                1 - 4 mA
++                                2 - 6 mA
++                                3 - 8 mA
++                                4 - 10 mA
++                                5 - 12 mA
++                                6 - 14 mA
++                                7 - 16 mA
++
++- gpio-controller:
++    Specifies that the node is a GPIO controller
++
++Optional properties:
++
++- interrupt-controller:
++    Specifies that the node is an interrupt controller. Not all Cygnus GPIO
++interfaces support interrupt, e.g., the CRMU GPIO controller does not have its
++interrupt routed to the main processor's GIC
++
++- interrupts:
++    The interrupt outputs from the GPIO controller.
++
++- no-interrupt:
++    Specifies that the GPIO interface does not support interrupt
++
++Example:
 +	gpio_asiu: gpio@180a5000 {
 +		compatible = "brcm,cygnus-asiu-gpio";
 +		reg = <0x180a5000 0x668>;
@@ -84,9 +121,22 @@ index 5126f9e..c7587c1 100644
 +		no-interrupt;
 +	};
 +
- 	amba {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
++	/*
++	 * Touchscreen that uses the ASIU GPIO 100, with internal pull-up
++	 * enabled
++	 */
++	tsc {
++		...
++		...
++		gpio-event = <&gpio_asiu 100 0x10000>;
++	};
++
++	/* Bluetooth that uses the CRMU GPIO 2, with polarity inverted */
++	bluetooth {
++		...
++		...
++		bcm,rfkill-bank-sel = <&gpio_crmu 2 1>
++	}
 -- 
 1.7.9.5
 
