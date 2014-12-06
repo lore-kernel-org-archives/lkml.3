@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaLFMnL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 07:43:11 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:38278 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383AbaLFMnJ (ORCPT
+	id S1752514AbaLFMnV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 07:43:21 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47964 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385AbaLFMnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 07:43:09 -0500
-Date: Sat, 6 Dec 2014 07:43:04 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM / Kconfig: Replace PM_RUNTIME with PM in dependencies
-Message-ID: <20141206124304.GA18711@htj.dyndns.org>
-References: <1710744.OD8H2BOPgr@vostro.rjw.lan>
+	Sat, 6 Dec 2014 07:43:13 -0500
+Date: Sat, 6 Dec 2014 13:43:11 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
+ Flash class extension
+Message-ID: <20141206124310.GB3411@amd>
+References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
+ <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
+ <20141129125832.GA315@amd>
+ <547C539A.4010500@samsung.com>
+ <20141201130437.GB24737@amd>
+ <547C7420.4080801@samsung.com>
+ <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1710744.OD8H2BOPgr@vostro.rjw.lan>
+In-Reply-To: <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 03:54:35AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so Kconfig options
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
-> 
-> Replace PM_RUNTIME with PM in Kconfig dependencies throughout the
-> tree.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Acked-by: Tejun Heo <tj@kernel.org>
+> > The format of a sysfs attribute should be concise.
+> > The error codes are generic and map directly to the V4L2 Flash
+> > error codes.
+> >
+> 
+> Actually I'd like to see those flash fault code defined in LED
+> subsystem. And V4L2 will just include LED flash header file to use it.
+> Because flash fault code is not for V4L2 specific but it's a feature
+> of LED flash devices.
+> 
+> For clearing error code of flash devices, I think it depends on the
+> hardware. If most of our LED flash is using reading to clear error
+> code, we probably can make it simple as this now. But what if some
+> other LED flash devices are using writing to clear error code? we
+> should provide a API to that?
 
-Thanks.
+Actually, we should provide API that makes sense, and that is easy to
+use by userspace.
 
+I believe "read" is called read because it does not change anything,
+and it should stay that way in /sysfs. You may want to talk to sysfs
+maintainers if you plan on doing another semantics.
+									Pavel
 -- 
-tejun
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
