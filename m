@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaLFRzY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:55:24 -0500
-Received: from 1wt.eu ([62.212.114.60]:40759 "EHLO 1wt.eu"
+	id S1752780AbaLFRzV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:55:21 -0500
+Received: from 1wt.eu ([62.212.114.60]:40761 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700AbaLFRzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:16 -0500
-Message-Id: <20141206174148.596017245@1wt.eu>
+	id S1752730AbaLFRzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:17 -0500
+Message-Id: <20141206174148.982073196@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:52 +0100
+Date: Sat, 06 Dec 2014 18:42:01 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 04/25] x86-64, modify_ldt: Ban 16-bit segments on 64-bit
- kernels
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 13/25] x86_64, traps: Stop using IST for #SS
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -27,54 +27,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit b3b42ac2cbae1f3cecbb6229964a4d48af31d382 upstream.
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
-The IRET instruction, when returning to a 16-bit segment, only
-restores the bottom 16 bits of the user space stack pointer.  We have
-a software workaround for that ("espfix") for the 32-bit kernel, but
-it relies on a nonzero stack segment base which is not available in
-32-bit mode.
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
 
-Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
-(no V86 mode), and most (if not quite all) 64-bit processors support
-virtualization for the users who really need it, simply reject
-attempts at creating a 16-bit segment when running on top of a 64-bit
-kernel.
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-(cherry picked from 3.2 commit a862b5c4076b1ba4dd6c87aebac478853dc6db47)
+This saves 4k of memory per CPU and a tiny bit of code.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit 6f442be2fb22be02cafa606f1769fa1e6f894441)
+[wt: no CONFIG_TRACING on 2.6.32, Fixes CVE-2014-9090]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/kernel/ldt.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/x86/include/asm/page_32_types.h |  1 -
+ arch/x86/include/asm/page_64_types.h | 11 +++++------
+ arch/x86/kernel/dumpstack_64.c       |  1 -
+ arch/x86/kernel/entry_64.S           |  2 +-
+ arch/x86/kernel/traps.c              | 14 +-------------
+ 5 files changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index ec6ef60..75e356c 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 		}
- 	}
+diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+index 6f1b733..775c92f 100644
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -22,7 +22,6 @@
+ #endif
+ #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
  
-+	/*
-+	 * On x86-64 we do not support 16-bit segments due to
-+	 * IRET leaking the high bits of the kernel stack address.
-+	 */
-+#ifdef CONFIG_X86_64
-+	if (!ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
-+#endif
-+
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 7639dbf..a9e9937 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index a071e6b..5dc0882 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -23,7 +23,6 @@ static char x86_stack_ids[][8] = {
+ 		[DEBUG_STACK - 1] = "#DB",
+ 		[NMI_STACK - 1] = "NMI",
+ 		[DOUBLEFAULT_STACK - 1] = "#DF",
+-		[STACKFAULT_STACK - 1] = "#SS",
+ 		[MCE_STACK - 1] = "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[N_EXCEPTION_STACKS ...
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 4313d48..8e2f14a 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1434,7 +1434,7 @@ END(xen_failsafe_callback)
+ 
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+-paranoiderrorentry stack_segment do_stack_segment
++errorentry stack_segment do_stack_segment
+ #ifdef CONFIG_XEN
+ zeroentry xen_debug do_debug
+ zeroentry xen_int3 do_int3
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 7e37dce..c4cc05a 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -220,23 +220,11 @@ DO_ERROR_INFO(6, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN, regs->ip)
+ DO_ERROR(9, SIGFPE, "coprocessor segment overrun", coprocessor_segment_overrun)
+ DO_ERROR(10, SIGSEGV, "invalid TSS", invalid_TSS)
+ DO_ERROR(11, SIGBUS, "segment not present", segment_not_present)
+-#ifdef CONFIG_X86_32
+ DO_ERROR(12, SIGBUS, "stack segment", stack_segment)
+-#endif
+ DO_ERROR_INFO(17, SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-			12, SIGBUS) == NOTIFY_STOP)
+-		return;
+-	preempt_conditional_sti(regs);
+-	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
+-	preempt_conditional_cli(regs);
+-}
+-
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ {
+ 	static const char str[] = "double fault";
+@@ -927,7 +915,7 @@ void __init trap_init(void)
+ 	set_intr_gate(9, &coprocessor_segment_overrun);
+ 	set_intr_gate(10, &invalid_TSS);
+ 	set_intr_gate(11, &segment_not_present);
+-	set_intr_gate_ist(12, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(12, &stack_segment);
+ 	set_intr_gate(13, &general_protection);
+ 	set_intr_gate(14, &page_fault);
+ 	set_intr_gate(15, &spurious_interrupt_bug);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
