@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaLFFnx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 00:43:53 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60412 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908AbaLFFnv (ORCPT
+	id S1752277AbaLFFpm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 00:45:42 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:58698 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaLFFpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 00:43:51 -0500
-Date: Fri, 05 Dec 2014 21:48:18 -0800 (PST)
-Message-Id: <20141205.214818.1275634074992727284.davem@davemloft.net>
-To: ast@plumgrid.com
-Cc: mingo@kernel.org, luto@amacapital.net, dborkman@redhat.com,
-        hannes@stressinduktion.org, edumazet@google.com,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next 0/6] allow eBPF programs to be attached to
- sockets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1417475199-15950-1-git-send-email-ast@plumgrid.com>
-References: <1417475199-15950-1-git-send-email-ast@plumgrid.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sat, 6 Dec 2014 00:45:41 -0500
+Message-ID: <54829801.9000302@gmail.com>
+Date: Fri, 05 Dec 2014 21:45:37 -0800
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        frowand.list@gmail.com
+Subject: [PATCH] checkpatch: include text files in SPACE_BEFORE_TAB test
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Dec 2014 21:43:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Mon,  1 Dec 2014 15:06:33 -0800
+From: Frank Rowand <frank.rowand@sonymobile.com>
 
-> V1->V2:
-> 
-> fixed comments in sample code to state clearly that packet data is accessed
-> with LD_ABS instructions and not internal skb fields.
-> Also replaced constants in:
-> BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
-> with:
-> BPF_LD_ABS(BPF_B, ETH_HLEN + offsetof(struct iphdr, protocol) /* R0 = ip->proto */),
-> 
-> V1 cover:
-> 
-> Introduce BPF_PROG_TYPE_SOCKET_FILTER type of eBPF programs that can be
-> attached to sockets with setsockopt().
-> Allow such programs to access maps via lookup/update/delete helpers.
-> 
-> This feature was previewed by bpf manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
-> Now it can actually run.
-> 
-> 1st patch adds LD_ABS/LD_IND instruction verification and
-> 2nd patch adds new setsockopt() flag.
-> Patches 3-6 are examples in assembler and in C.
-> 
-> Though native eBPF programs are way more powerful than classic filters
-> (attachable through similar setsockopt() call), they don't have skb field
-> accessors yet. Like skb->pkt_type, skb->dev->ifindex are not accessible.
-> There are sevaral ways to achieve that. That will be in the next set of patches.
-> So in this set native eBPF programs can only read data from packet and
-> access maps.
-> 
-> The most powerful example is sockex2_kern.c from patch 6 where ~200 lines of C
-> are compiled into ~300 of eBPF instructions.
-> It shows how quite complex packet parsing can be done.
-> 
-> LLVM used to build examples is at https://github.com/iovisor/llvm
-> which is fork of llvm trunk that I'm cleaning up for upstreaming.
+git-am whined about a patch that I submitted for the Documentation
+subtree, (https://lkml.org/lkml/2014/11/24/636) but checkpatch does
+not.  Make checkpatch just as whiney.
 
-Series applied, thanks.
+This patch moves the SPACE_BEFORE_TAB test before the check that
+excludes text files and also before the test that excludes
+assembly files.  It seems to me that both CODE_INDENT and
+SPACE_BEFORE_TAB are valid tests for assembly files, but I
+added an if around the moved CODE_INDENT test to include only
+source files, not including assembly files.  Thus this patch
+does not change which files are subject to CODE_INDENT.
+
+The CODE_INDENT test is moved along with the SPACE_BEFORE_TAB
+test because the c76f4cb3d25e commit log says:
+
+    This SPACE_BEFORE_TAB test is done after CODE_INDENT.
+    
+    If there are spaces used at the beginning of a line that should be
+    converted to tabs, please make sure that the CODE_INDENT test and
+    conversion is done before this SPACE_BEFORE_TAB test and conversion.
+
+Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+---
+
+
+Andy, Joe,
+
+Assembly files are still excluded from the CODE_INDENT test -- do you
+want to make another change to include them?
+
+
+---
+ scripts/checkpatch.pl |   56 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 26 deletions(-)
+
+Index: b/scripts/checkpatch.pl
+===================================================================
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2389,6 +2389,36 @@ sub process {
+ 			}
+ 		}
+ 
++# at the beginning of a line any tabs must come first and anything
++# more than 8 must use tabs.
++# do CODE_INDENT test before SPACE_BEFORE_TAB test (c76f4cb3d25e)
++		if ($realfile =~ /\.(h|c|pl|dtsi|dts)$/) {
++			if ($rawline =~ /^\+\s* \t\s*\S/ ||
++			    $rawline =~ /^\+\s*        \s*/) {
++				my $herevet = "$here\n" . cat_vet($rawline) . "\n";
++				$rpt_cleaners = 1;
++				if (ERROR("CODE_INDENT",
++					  "code indent should use tabs where possible\n" . $herevet) &&
++				    $fix) {
++					$fixed[$fixlinenr] =~ s/^\+([ \t]+)/"\+" . tabify($1)/e;
++				}
++			}
++		}
++
++# check for space before tabs.
++		if ($rawline =~ /^\+/ && $rawline =~ / \t/) {
++			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
++			if (WARN("SPACE_BEFORE_TAB",
++				"please, no space before tabs\n" . $herevet) &&
++			    $fix) {
++				while ($fixed[$fixlinenr] =~
++					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
++				while ($fixed[$fixlinenr] =~
++					   s/(^\+.*) +\t/$1\t/) {}
++			}
++		}
++
++
+ # check we are in a valid source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|s|S|pl|sh|dtsi|dts)$/);
+ 
+@@ -2453,32 +2483,6 @@ sub process {
+ # check we are in a valid source file C or perl if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|pl|dtsi|dts)$/);
+ 
+-# at the beginning of a line any tabs must come first and anything
+-# more than 8 must use tabs.
+-		if ($rawline =~ /^\+\s* \t\s*\S/ ||
+-		    $rawline =~ /^\+\s*        \s*/) {
+-			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+-			$rpt_cleaners = 1;
+-			if (ERROR("CODE_INDENT",
+-				  "code indent should use tabs where possible\n" . $herevet) &&
+-			    $fix) {
+-				$fixed[$fixlinenr] =~ s/^\+([ \t]+)/"\+" . tabify($1)/e;
+-			}
+-		}
+-
+-# check for space before tabs.
+-		if ($rawline =~ /^\+/ && $rawline =~ / \t/) {
+-			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+-			if (WARN("SPACE_BEFORE_TAB",
+-				"please, no space before tabs\n" . $herevet) &&
+-			    $fix) {
+-				while ($fixed[$fixlinenr] =~
+-					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
+-				while ($fixed[$fixlinenr] =~
+-					   s/(^\+.*) +\t/$1\t/) {}
+-			}
+-		}
+-
+ # check for && or || at the start of a line
+ 		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
+ 			CHK("LOGICAL_CONTINUATIONS",
