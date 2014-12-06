@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaLFSAG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 13:00:06 -0500
-Received: from 1wt.eu ([62.212.114.60]:40713 "EHLO 1wt.eu"
+	id S1753192AbaLFSAo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 13:00:44 -0500
+Received: from 1wt.eu ([62.212.114.60]:40700 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458AbaLFRy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:56 -0500
-Message-Id: <20141206174149.105395374@1wt.eu>
+	id S1752091AbaLFRyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:53 -0500
+Message-Id: <20141206174148.851443989@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:04 +0100
+Date: Sat, 06 Dec 2014 18:41:58 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>, James Chapman <jchapman@katalix.com>,
-        David Miller <davem@davemloft.net>,
-        Phil Turnbull <phil.turnbull@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 16/25] net/l2tp: dont fall back on UDP [get|set]sockopt
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 10/25] x86, espfix: Make it possible to disable 16-bit
+ support
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -28,60 +27,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-(commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream)
+commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
 
-The l2tp [get|set]sockopt() code has fallen back to the UDP functions
-for socket option levels != SOL_PPPOL2TP since day one, but that has
-never actually worked, since the l2tp socket isn't an inet socket.
+Embedded systems, which may be very memory-size-sensitive, are
+extremely unlikely to ever encounter any 16-bit software, so make it
+a CONFIG_EXPERT option to turn off support for any 16-bit software
+whatsoever.
 
-As David Miller points out:
-
-  "If we wanted this to work, it'd have to look up the tunnel and then
-   use tunnel->sk, but I wonder how useful that would be"
-
-Since this can never have worked so nobody could possibly have depended
-on that functionality, just remove the broken code and return -EINVAL.
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: James Chapman <jchapman@katalix.com>
-Acked-by: David Miller <davem@davemloft.net>
-Cc: Phil Turnbull <phil.turnbull@oracle.com>
-Cc: Vegard Nossum <vegard.nossum@oracle.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: stable@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-[geissert: adjust file paths and context for 2.6.32]
-[wt: fixes CVE-2014-4943]
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from 3.2 commit 70d87cbbd92a3611655b39003176ee1033796bf7)
+[wt: backport notes for 2.6.32 :
+  - Fixed arch/x86/kernel/ldt.c (no IS_ENABLED on 2.6.32).
+  - No CONFIG_EXPERT condition in 2.6.32.
+/wt]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/net/pppol2tp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig           | 23 ++++++++++++++++++-----
+ arch/x86/kernel/entry_32.S | 12 ++++++++++++
+ arch/x86/kernel/entry_64.S |  8 ++++++++
+ arch/x86/kernel/ldt.c      |  6 ++++++
+ 4 files changed, 44 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/pppol2tp.c b/drivers/net/pppol2tp.c
-index 4cdc1cf..4c8f019 100644
---- a/drivers/net/pppol2tp.c
-+++ b/drivers/net/pppol2tp.c
-@@ -2190,7 +2190,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
- 	int err;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 026fe60..67c3187 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -882,14 +882,27 @@ config VM86
+ 	default y
+ 	depends on X86_32
+ 	---help---
+-	  This option is required by programs like DOSEMU to run 16-bit legacy
+-	  code on X86 processors. It also may be needed by software like
+-	  XFree86 to initialize some video cards via BIOS. Disabling this
+-	  option saves about 6k.
++	  This option is required by programs like DOSEMU to run
++	  16-bit real mode legacy code on x86 processors. It also may
++	  be needed by software like XFree86 to initialize some video
++	  cards via BIOS. Disabling this option saves about 6K.
++
++config X86_16BIT
++	bool "Enable support for 16-bit segments"
++	default y
++	---help---
++	  This option is required by programs like Wine to run 16-bit
++	  protected mode legacy code on x86 processors.  Disabling
++	  this option saves about 300 bytes on i386, or around 6K text
++	  plus 16K runtime memory on x86-64,
++
++config X86_ESPFIX32
++	def_bool y
++	depends on X86_16BIT && X86_32
  
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
+ config X86_ESPFIX64
+ 	def_bool y
+-	depends on X86_64
++	depends on X86_16BIT && X86_64
  
- 	if (optlen < sizeof(int))
- 		return -EINVAL;
-@@ -2314,7 +2314,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level,
- 	int err;
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index db7dbe7..c1207f7 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -543,6 +543,7 @@ syscall_exit:
+ restore_all:
+ 	TRACE_IRQS_IRET
+ restore_all_notrace:
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
+ 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
+ 	# are returning to the kernel.
+@@ -553,6 +554,7 @@ restore_all_notrace:
+ 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
+ 	CFI_REMEMBER_STATE
+ 	je ldt_ss			# returning to user-space with LDT SS
++#endif
+ restore_nocheck:
+ 	RESTORE_REGS 4			# skip orig_eax/error_code
+ 	CFI_ADJUST_CFA_OFFSET -4
+@@ -569,6 +571,7 @@ ENTRY(iret_exc)
+ 	.long irq_return,iret_exc
+ .previous
  
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
++#ifdef CONFIG_X86_ESPFIX32
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+ #ifdef CONFIG_PARAVIRT
+@@ -614,6 +617,7 @@ ldt_ss:
+ 	lss (%esp), %esp		/* switch to espfix segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
+ 	jmp restore_nocheck
++#endif
+ 	CFI_ENDPROC
+ ENDPROC(system_call)
  
- 	if (get_user(len, (int __user *) optlen))
- 		return -EFAULT;
+@@ -736,6 +740,7 @@ PTREGSCALL(vm86old)
+  * the high word of the segment base from the GDT and swiches to the
+  * normal stack and adjusts ESP with the matching offset.
+  */
++#ifdef CONFIG_X86_ESPFIX32
+ 	/* fixup the stack */
+ 	PER_CPU(gdt_page, %ebx)
+ 	mov GDT_ENTRY_ESPFIX_SS * 8 + 4(%ebx), %al /* bits 16..23 */
+@@ -748,8 +753,10 @@ PTREGSCALL(vm86old)
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	lss (%esp), %esp		/* switch to the normal stack segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
++#endif
+ .endm
+ .macro UNWIND_ESPFIX_STACK
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl %ss, %eax
+ 	/* see if on espfix stack */
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -760,6 +767,7 @@ PTREGSCALL(vm86old)
+ 	/* switch to normal stack */
+ 	FIXUP_ESPFIX_STACK
+ 27:
++#endif
+ .endm
+ 
+ /*
+@@ -1323,6 +1331,7 @@ END(debug)
+  */
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
++#ifdef CONFIG_X86_ESPFIX32
+ 	pushl %eax
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	movl %ss, %eax
+@@ -1330,6 +1339,7 @@ ENTRY(nmi)
+ 	popl %eax
+ 	CFI_ADJUST_CFA_OFFSET -4
+ 	je nmi_espfix_stack
++#endif
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	je nmi_stack_fixup
+ 	pushl %eax
+@@ -1372,6 +1382,7 @@ nmi_debug_stack_check:
+ 	FIX_STACK 24, nmi_stack_correct, 1
+ 	jmp nmi_stack_correct
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ nmi_espfix_stack:
+ 	/* We have a RING0_INT_FRAME here.
+ 	 *
+@@ -1397,6 +1408,7 @@ nmi_espfix_stack:
+ 	lss 12+4(%esp), %esp		# back to espfix stack
+ 	CFI_ADJUST_CFA_OFFSET -24
+ 	jmp irq_return
++#endif
+ 	CFI_ENDPROC
+ END(nmi)
+ 
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index a69901e..cf9e7d2 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -863,8 +863,10 @@ irq_return:
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+ 	jnz irq_return_ldt
++#endif
+ 
+ irq_return_iret:
+ 	INTERRUPT_RETURN
+@@ -882,6 +884,7 @@ ENTRY(native_iret)
+ 	.previous
+ #endif
+ 
++#ifdef CONFIG_X86_ESPFIX64
+ irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+@@ -905,6 +908,7 @@ irq_return_ldt:
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+ 	jmp irq_return_iret
++#endif
+ 
+ 	.section .fixup,"ax"
+ bad_iret:
+@@ -980,6 +984,7 @@ END(common_interrupt)
+ 	 * modify the stack to make it look like we just entered
+ 	 * the #GP handler from user space, similar to bad_iret.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	ALIGN
+ __do_double_fault:
+ 	XCPT_FRAME 1 RDI+8
+@@ -1005,6 +1010,9 @@ __do_double_fault:
+ 	retq
+ 	CFI_ENDPROC
+ END(__do_double_fault)
++#else
++# define __do_double_fault do_double_fault
++#endif
+ 
+ /*
+  * APIC interrupts.
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ec6ef60..4e668bb 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,12 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
++#ifndef CONFIG_X86_16BIT
++	if (!ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++#endif
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
