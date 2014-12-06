@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaLFPKw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:10:52 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:3169 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752393AbaLFPKt (ORCPT
+	id S1752813AbaLFPKg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:10:36 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47684 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752430AbaLFPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:10:49 -0500
-Message-Id: <681c51$omkd8a@relay.skynet.be>
-Date: 06 Dec 2014 16:09:36 +0100
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvIUABMcg1RR9Aqz/2dsb2JhbABZgwZSWIIhtFcBj2GGEyhrFwEBAQEBfYRfIxgXUxgkE4gmAxYBCM5xDYV1jk6BSWSDA4E6BYRSA5MhgwuDEog+PIYRgUWCaTABgQKBQAECAw
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>
-Subject: [GIT PULL REQUEST] watchdog - v3.18-rc7 Fixes
-X-Antivirus: avast! (VPS 141206-0, 06/12/2014), Outbound message
-X-Antivirus-Status: Clean
+	Sat, 6 Dec 2014 10:08:12 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Christian=20S=C3=BCnkenberg?= 
+	<christian.suenkenberg@hfg-karlsruhe.de>,
+        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 55/66] scsi: add Intel Multi-Flex to scsi scan blacklist
+Date: Sat,  6 Dec 2014 16:07:47 +0100
+Message-Id: <57c63d276bc4984cb67f8642401b55aaa3e45af6.1417878427.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
+References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
+In-Reply-To: <cover.1417878427.git.jslaby@suse.cz>
+References: <cover.1417878427.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Christian Sünkenberg <christian.suenkenberg@hfg-karlsruhe.de>
 
-Please pull from 'master' branch of
-        git://www.linux-watchdog.org/linux-watchdog.git
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-It will fix the watchdog mask bit offset for Exynos7.
+===============
 
-This will update the following files:
+commit 1899045510ff109980d9cc34e330fd8ca3631871 upstream.
 
- s3c2410_wdt.c |    2 +-
- 1 files changed, 1 insertion(+), 1 deletion(-)
+Intel Multi-Flex LUNs choke on REPORT SUPPORTED OPERATION CODES
+resulting in sd_mod hanging for several minutes on startup.
+The issue was introduced with WRITE SAME discovery heuristics.
 
-with these Changes:
+Fixes: 5db44863b6eb ("[SCSI] sd: Implement support for WRITE SAME")
+Signed-off-by: Christian Sünkenberg <christian.suenkenberg@hfg-karlsruhe.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/scsi/scsi_devinfo.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-commit 5476b2b77dae50c88aa6a85f21abeac38dde590f
-Author: Abhilash Kesavan <a.kesavan@samsung.com>
-Date:   Fri Oct 17 21:42:53 2014 +0530
-
-    watchdog: s3c2410_wdt: Fix the mask bit offset for Exynos7
-
-    The watchdog mask bit offset listed for Exynos7 is incorrect.
-    Fix this.
-
-    Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-    Acked-by: Naveen Krishna Chatradhi <naveenkrishna.ch@gmail.com
-    Reviewd-by: Guenter Roeck <linux@roeck-us.net>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index 8532c3e..1626dc6 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -161,7 +161,7 @@ static const struct s3c2410_wdt_variant drv_data_exynos5420 = {
- static const struct s3c2410_wdt_variant drv_data_exynos7 = {
-        .disable_reg = EXYNOS5_WDT_DISABLE_REG_OFFSET,
-        .mask_reset_reg = EXYNOS5_WDT_MASK_RESET_REG_OFFSET,
--       .mask_bit = 0,
-+       .mask_bit = 23,
-        .rst_stat_reg = EXYNOS5_RST_STAT_REG_OFFSET,
-        .rst_stat_bit = 23,     /* A57 WDTRESET */
-        .quirks = QUIRK_HAS_PMU_CONFIG | QUIRK_HAS_RST_STAT,
+diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+index 49014a143c6a..c1d04d4d3c6c 100644
+--- a/drivers/scsi/scsi_devinfo.c
++++ b/drivers/scsi/scsi_devinfo.c
+@@ -202,6 +202,7 @@ static struct {
+ 	{"IOMEGA", "Io20S         *F", NULL, BLIST_KEY},
+ 	{"INSITE", "Floptical   F*8I", NULL, BLIST_KEY},
+ 	{"INSITE", "I325VM", NULL, BLIST_KEY},
++	{"Intel", "Multi-Flex", NULL, BLIST_NO_RSOC},
+ 	{"iRiver", "iFP Mass Driver", NULL, BLIST_NOT_LOCKABLE | BLIST_INQUIRY_36},
+ 	{"LASOUND", "CDX7405", "3.10", BLIST_MAX5LUN | BLIST_SINGLELUN},
+ 	{"MATSHITA", "PD-1", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+-- 
+2.1.3
 
