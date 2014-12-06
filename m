@@ -1,110 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaLFRfb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:35:31 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52270 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaLFRf3 (ORCPT
+	id S1752242AbaLFRgk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:36:40 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:41415 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080AbaLFRgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:35:29 -0500
-Date: Sat, 6 Dec 2014 18:35:27 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg
-Subject: N900: fixing MMC at boot
-Message-ID: <20141206173526.GA7964@amd>
+	Sat, 6 Dec 2014 12:36:37 -0500
+Message-ID: <54833EA2.6040809@hp.com>
+Date: Sat, 06 Dec 2014 12:36:34 -0500
+From: Linda Knippers <linda.knippers@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: ethan <ethan.kernel@gmail.com>
+CC: Ethan Zhao <ethan.zhao@oracle.com>,
+        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
+        "kristen@linux.intel.com" <kristen@linux.intel.com>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "alexey.kodanev@oracle.com" <alexey.kodanev@oracle.com>
+Subject: Re: [PATCH 2/2 V8] intel_pstate: add kernel parameter to force loading.
+References: <1417772453-22483-1-git-send-email-ethan.zhao@oracle.com> <5481D8B9.2030603@hp.com> <CEF8DE9B-262F-4EED-B982-9CD52617EEC5@gmail.com>
+In-Reply-To: <CEF8DE9B-262F-4EED-B982-9CD52617EEC5@gmail.com>
+Content-Type: text/plain; charset=gbk
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 12/5/2014 9:16 PM, ethan wrote:
+> Linda，
+> 
+>> 在 2014年12月6日，00:09，Linda Knippers <linda.knippers@hp.com> 写道：
+>>
+>>> On 12/5/2014 4:40 AM, Ethan Zhao wrote:
+>>> To force loading on Oracle Sun X86 servers, provide one kernel command line
+>>> parameter
+>>>
+>>>  intel_pstate = force
+>>>
+>>> For those who be aware of the risk of no power capping capabily working and
+>>> try to get better performance with this driver.
+>>>
+>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>>> Tested-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+>>> ---
+>>> v2: change to hardware vendor specific naming parameter.
+>>> v4: refine code and doc.
+>>> v5&v6: fix a typo in doc.
+>>> v7: change enum PCC to PPC.
+>>> v8: change the name of kernel command line parameter to generic one.
+>>>
+>>> Documentation/kernel-parameters.txt | 5 +++++
+>>> drivers/cpufreq/intel_pstate.c      | 6 +++++-
+>>> 2 files changed, 10 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>> index 479f332..7d0983e 100644
+>>> --- a/Documentation/kernel-parameters.txt
+>>> +++ b/Documentation/kernel-parameters.txt
+>>> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>               disable
+>>>                 Do not enable intel_pstate as the default
+>>>                 scaling driver for the supported processors
+>>> +               force
+>>> +             Enable intel_pstate on systems where it may cause problems to
+>>> +             happen due to conflicts with platform firmware attempting to
+>>> +             drive P-states by itself in certain situations (for thermal 
+>>> +             control or power capping in general or other purposes).
+>>
+>> I suggest something like:
+>>            Enable intel_pstate on systems that prohibit it by
+>>            default in favor of acpi-cpufreq.  Forcing the
+>>            intel_pstate driver instead of acpi-cpufreq may disable
+>>            platform features, such as thermal controls and power
+>>            capping, that rely on ACPI p-state information being
+>                                                          P-States 
+>>             Used by the OS and therefore should be used with care.
+>                Indicated to OSPM                                                   caution 
+>>            This option does not work with processors that aren't
+>>            supported by the intel_pstate driver or on platforms
+>>            that use pcc-cpufreq instead of acpi-cpufreq.
+>>
+>> Maybe this is too specific but I believe it is accurate.  Comments?
+>>
+> 
+> Looks better to me, except some words commented. 
 
-For a long time, MMC was not working during boot... (making the box
-unusable without nfsroot). It seems problem is in the regulators,
-because with diff below, I was able to mount root on SD card for a
-first time ... in a long time.
+Your suggestions look fine to me.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz> [but not for upstream]
+-- ljk
+> 
+> Thanks,
+> Ethan
+>> -- ljk
+>>
+>>>
+>>>    intremap=    [X86-64, Intel-IOMMU]
+>>>            on    enable Interrupt Remapping (default)
+>>> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+>>> index 1bb62ca..2654e13 100644
+>>> --- a/drivers/cpufreq/intel_pstate.c
+>>> +++ b/drivers/cpufreq/intel_pstate.c
+>>> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>>> };
+>>>
+>>> static int __initdata no_load;
+>>> +static unsigned int  force_load;
+>>>
+>>> static int intel_pstate_msrs_not_valid(void)
+>>> {
+>>> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>>>            case PSS:
+>>>                return intel_pstate_no_acpi_pss();
+>>>            case PPC:
+>>> -                return intel_pstate_has_acpi_ppc();
+>>> +                return intel_pstate_has_acpi_ppc() &&
+>>> +                    (!force_load);
+>>>            }
+>>>    }
+>>>
+>>> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+>>>
+>>>    if (!strcmp(str, "disable"))
+>>>        no_load = 1;
+>>> +    if (!strcmp(str, "force"))
+>>> +        force_load = 1;
+>>>    return 0;
+>>> }
+>>> early_param("intel_pstate", intel_pstate_setup);
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index 8607433..07791c6 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -4,7 +4,8 @@ Optional properties:
- - regulator-name: A string used as a descriptive name for regulator outputs
- - regulator-min-microvolt: smallest voltage consumers may set
- - regulator-max-microvolt: largest voltage consumers may set
--- regulator-microvolt-offset: Offset applied to voltages to compensate for voltage drops
-+- regulator-microvolt-offset: Offset applied to voltages to compensate for 
-+  voltage drops
- - regulator-min-microamp: smallest current consumers may set
- - regulator-max-microamp: largest current consumers may set
- - regulator-always-on: boolean, regulator should never be disabled
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 11d8afd..707928d 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -287,31 +287,35 @@
- 	regulator-name = "V28";
- 	regulator-min-microvolt = <2800000>;
- 	regulator-max-microvolt = <2800000>;
--	regulator-always-on; /* due battery cover sensor */
-+	regulator-always-on; /* due to battery cover sensor */
- };
- 
- &vaux2 {
- 	regulator-name = "VCSI";
- 	regulator-min-microvolt = <1800000>;
- 	regulator-max-microvolt = <1800000>;
-+	regulator-always-on; /* FIXME */
- };
- 
- &vaux3 {
- 	regulator-name = "VMMC2_30";
- 	regulator-min-microvolt = <2800000>;
- 	regulator-max-microvolt = <3000000>;
-+	regulator-always-on; /* FIXME */
- };
- 
- &vaux4 {
- 	regulator-name = "VCAM_ANA_28";
- 	regulator-min-microvolt = <2800000>;
- 	regulator-max-microvolt = <2800000>;
-+	regulator-always-on; /* FIXME */
- };
- 
- &vmmc1 {
- 	regulator-name = "VMMC1";
- 	regulator-min-microvolt = <1850000>;
- 	regulator-max-microvolt = <3150000>;
-+	regulator-always-on; /* FIXME */
- };
- 
- &vmmc2 {
-@@ -339,13 +343,14 @@
- 	regulator-name = "VMMC2_IO_18";
- 	regulator-min-microvolt = <1800000>;
- 	regulator-max-microvolt = <1800000>;
-+	regulator-always-on; /* FIXME */
- };
- 
- &vio {
- 	regulator-name = "VIO";
- 	regulator-min-microvolt = <1800000>;
- 	regulator-max-microvolt = <1800000>;
--
-+	regulator-always-on; /* FIXME */
- };
- 
- &vintana1 {
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
