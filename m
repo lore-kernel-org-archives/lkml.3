@@ -1,95 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaLFK3A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 05:29:00 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63404 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaLFK27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 05:28:59 -0500
-Date: Sat, 6 Dec 2014 11:28:54 +0100
-From: Mariusz Gorski <marius.gorski@gmail.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S1752355AbaLFKbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 05:31:25 -0500
+Received: from mga03.intel.com ([134.134.136.65]:2595 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999AbaLFKbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 05:31:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="494656146"
+From: Robert Jarzmik <robert.jarzmik@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Berthier\, Emmanuel" <emmanuel.berthier@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        X86 ML <x86@kernel.org>, "Jarzmik\, Robert" <robert.jarzmik@intel.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: staging: panel: suggestions needed
-Message-ID: <20141206102853.GB2959@firebird>
-References: <20141202080214.GA4762@sudip-PC>
- <20141206084108.GA3404@1wt.eu>
- <20141206100933.GA7141@sudip-PC>
+Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
+	<1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+	<alpine.DEB.2.11.1411271609510.3961@nanos>
+	<CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
+	<65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com>
+	<CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
+	<65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
+	<CALCETrWxXm_Cvu+3dakCFX1GSN2KcaoxC+qbTr8Z7ha2CtEEXw@mail.gmail.com>
+	<alpine.DEB.2.11.1412022044410.16275@nanos>
+	<CALCETrW1hsmUrrG9KzfAujFuGcF1g1b8m++hJkxSGxketobUHw@mail.gmail.com>
+	<65CD3FC07F3BF942ABE211646D72D770356ECDFD@IRSMSX110.ger.corp.intel.com>
+	<CALCETrVk6XiFeAPKU4bM_ZFFSRmQQvDS=Ascs17qcRM3503ETQ@mail.gmail.com>
+	<65CD3FC07F3BF942ABE211646D72D770356ED34A@IRSMSX110.ger.corp.intel.com>
+	<CALCETrWr=6BnQ7r4KYDVJzeNPO-pxk9wRmkkLy+mM1T_85Y=jw@mail.gmail.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sat, 06 Dec 2014 11:31:19 +0100
+In-Reply-To: <CALCETrWr=6BnQ7r4KYDVJzeNPO-pxk9wRmkkLy+mM1T_85Y=jw@mail.gmail.com>
+	(Andy Lutomirski's message of "Thu, 4 Dec 2014 10:09:53 -0800")
+Message-ID: <87fvctnk7c.fsf@intel.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141206100933.GA7141@sudip-PC>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Supid,
+Andy Lutomirski <luto@amacapital.net> writes:
 
-On Sat, Dec 06, 2014 at 03:39:33PM +0530, Sudip Mukherjee wrote:
-> On Sat, Dec 06, 2014 at 09:41:08AM +0100, Willy Tarreau wrote:
-> > Hi Sudip,
-> > 
-> > [ CCing Mariusz who's currently cleaning up the driver ]
-> > 
-> > On Tue, Dec 02, 2014 at 01:32:14PM +0530, Sudip Mukherjee wrote:
-> > > Hi,
-> > > I have been looking at your panel driver, and am attaching a 20x4 alphanueric
-> > > lcd to it. Will start testing it in a few days as and when I get time. Looks
-> > > like, it is receiving mostly checkpatch and sparse cleanups.
-> > 
-> > yes mostly.
-> > 
-> > > Just wanted your opinion on few things I was thinking:
-> > > 	1) Number of lines you have fixed to 2 and 40 char per line. since I am
-> > > 	going to connect 20x4 , i need to remember that after displaying 20
-> > > 	character in 1st line, next char will come to 3rd line. instead why
-> > > 	don't we make the option of number of line to 4 ?
-> > 
-> > Feel free to do so. I never had the luck to own a 4-line LCD so this
-> > was never even planned. And yes, I remember something about 4-line LCDs
-> > using tricks such as 2x40 addressing being split into 4x20.
-> well, i work in a company which is in embedded training, so i have access to few hardware, and for this i can have 16x2 and 20x4 lcd, but no serial lcd ... :(
+> I don't really care about the number of instructions.
+Right, a couple of test/jz/jnz is negligible in the exception path, that's what
+I also think.
 
-Setting the height to 4 is not going to make it work properly - due to
-the way the display is working internally. I also own one in 4x20 size
-and after I get done with the cleaning stuff, I'm going to add proper
-support for it.
+>  But there are still all the nasty cases:
+>
+>  - Context switch during exception processing (both in the C handler
+> and in the retint code).
+>  - PMI during exception processing.
+>  - Exception while perf is poking at LBR msrs.
 
-> > 
-> > > 	2) The lcd commands you are writing to the lcd in an escape sequence
-> > > 	while writing to the lcd. Instead of that why don't we use ioctl for
-> > > 	lcd commands, and writing to the device will involve only sending data
-> > > 	to lcd ?
-> > 
-> > Because you cannot send that from a script. It's just as if you had to use
-> > an ioctl to clear your terminal, inverse its video or to move its cursor,
-> > it would not be very convenient.
-> yes, ioctl will not be possible from script. but here in India, we will usually use c code for embedded systems, on very rare occassion we will use scripts. and we will be using open(), read(), write(), ioctl() and close() system calls from our projects.
-> here, we can have both methods in the code. if someone is using escape sequence - that will work, and we can also have the ioctl for the same purpose.
-> > 
-> > > 	3) You have given fixed minor number in your code. Any problem if we
-> > > 	make it dynamic ?
-> > 
-> > No objection, but I think we should keep a config option to bind to the
-> > old minor. The rationale behind this is that this driver is mostly used
-> > in embedded systems with a fixed /dev.
-> ok. but one doubt: won't misc_register create the /dev entry automatically ?
-> 
-> thanks
-> sudip
-> > 
-> > > 	4) For now I am only attaching a LCD, but I also want to attach a
-> > > 	keypad to it. Can you please let me know about the schematic of the
-> <snip>
-> > init -> 
-> > select_in ->
-> > 
-> > And here's the module load command I used to run :
-> > insmod /tmp/panel-0.8.0.o parport=0 lcd_enabled=2 keypad_enabled=1 lcd_width=16 lcd_hwidth=16 lcd_height=2
-> > 
-> > Hoping this helps,
-> > Willy
-> > 
+Yes.
+Wasn't that what Thomas's suggestion on the per-cpu variable was solving ?
+Ie:
+        DEFINE_PER_CPU(unsigned long, lbr_dump_state) = LBR_OOPS_DISABLED;
+        ...
+
+We would have a "LBR resource" variable to track who owns the LBR :
+ - nobody : LBR_UNCLAIMED
+ - the exception handler : LBR_EXCEPTION_DEBUG_USAGE
+   - activated with a runtime variable or config
+   - impossible to activate if perf has hold of it
+ - the perf code : LBR_PERF_USAGE
+   - activated through perf infrastructure
+   - impossible to activated if exception handler has hold of it
+
+Now this solves the perf/exception concurrency on the LBR registers. If there is
+a rescheduling during the exception, or a PMI, can that have an impact ?
+ - case 1: nobody is handling LBR
+   => no impact, expception handlers won't touch LBR
+ - case 2: perf is handling LBR
+   => no imppact, exception handler won't touch LBR
+
+ - case 3: exception handlers are handling LBR
+
+   - case 3a: simple user exception
+       -> exception entry
+       -> is kernel exception == false => bypass LBR handling
+       -> exception handling
+
+   - case 3b: simple kernel exception
+       -> exception entry
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => STOP LBR
+       -> no reschedule, no PMI
+       -> exception handling
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => START LBR
+
+   - case 3c: kernel exception with PMI
+       -> exception entry
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => STOP LBR
+       -> PMI
+          can't touch LBR, as lbr_dump_state == EXCEPTION_OWNED
+       -> exception handling
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => START LBR
+
+   - case 3d: kernel exception with a reschedule inside
+       -> exception entry
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => STOP LBR
+       -> exception handling
+       -> context_switch()
+          -> perf cannot touch LBR, nobody can
+       -> test lbr_dump_state == EXCEPTION_OWNED => true => START LBR
+
+I might be very wrong in the description as I'm not that sharp on x86, but is
+there a flaw in the above cases ?
+
+If not, a couple of tests and Thomas's per-cpu variable can solve the issue,
+while keeping the exception handler code simple as Emmanual has proposed (given
+the additionnal test inclusion - which will be designed to not pollute the LBR),
+and having a small impact on perf to solve the resource acquire issue.
+
+Cheers.
+
+--
+Robert
