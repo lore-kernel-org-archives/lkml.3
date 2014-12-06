@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbaLFLlG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 06:41:06 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:48850 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077AbaLFLlE (ORCPT
+	id S1752467AbaLFLnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 06:43:42 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:54325 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaLFLnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 06:41:04 -0500
-From: Arjun Sreedharan <arjun024@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] calloc/xcalloc: fix argument order
-Date: Sat,  6 Dec 2014 17:10:43 +0530
-Message-Id: <1417866043-1877-1-git-send-email-arjun024@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Sat, 6 Dec 2014 06:43:41 -0500
+Message-ID: <5482EBE4.2050602@collabora.co.uk>
+Date: Sat, 06 Dec 2014 12:43:32 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: Mark Brown <broonie@kernel.org>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: dts: Configure regulators for suspend on exynos
+ Peach boards
+References: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk> <1415707485-28563-4-git-send-email-javier.martinez@collabora.co.uk> <5464198D.9030608@samsung.com>
+In-Reply-To: <5464198D.9030608@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-calloc() and xcalloc() takes @nmemb first and then @size.
-fix all w/ pattern "calloc\s*(\s*sizeof".
+Hello Kukjin,
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
----
- scripts/kconfig/mconf.c    | 4 ++--
- tools/perf/ui/hist.c       | 4 ++--
- tools/thermal/tmon/sysfs.c | 6 +++---
- 3 files changed, 7 insertions(+), 7 deletions(-)
+On 11/13/2014 03:38 AM, Kukjin Kim wrote:
+> On 11/11/14 21:04, Javier Martinez Canillas wrote:
+>> The regulator core now has support to choose if a regulator
+>> has to be enabled or disabled during system suspend and also
+>> supports changing the regulator operating mode during runtime
+>> and when the system enters into sleep mode.
+>>
+>> To lower power during suspend, configure the regulators state
+>> using the same configuration found in the ChromeOS 3.8 kernel.
+>>
+> Basically I'm fine on this dt changes but this should be queued after 
+> confirming 1st and 2nd on this series from regulator maintainer...
+> 
+> Once they are landing into regulator tree, I will apply this.
+> 
 
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 14cea74..4dd3755 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -330,10 +330,10 @@ static void set_subtitle(void)
- 	list_for_each_entry(sp, &trail, entries) {
- 		if (sp->text) {
- 			if (pos) {
--				pos->next = xcalloc(sizeof(*pos), 1);
-+				pos->next = xcalloc(1, sizeof(*pos));
- 				pos = pos->next;
- 			} else {
--				subtitles = pos = xcalloc(sizeof(*pos), 1);
-+				subtitles = pos = xcalloc(1, sizeof(*pos));
- 			}
- 			pos->text = sp->text;
- 		}
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 2af1837..dc0d095 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -162,8 +162,8 @@ static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
- 		return ret;
- 
- 	nr_members = evsel->nr_members;
--	fields_a = calloc(sizeof(*fields_a), nr_members);
--	fields_b = calloc(sizeof(*fields_b), nr_members);
-+	fields_a = calloc(nr_members, sizeof(*fields_a));
-+	fields_b = calloc(nr_members, sizeof(*fields_b));
- 
- 	if (!fields_a || !fields_b)
- 		goto out;
-diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
-index dfe4548..1c12536 100644
---- a/tools/thermal/tmon/sysfs.c
-+++ b/tools/thermal/tmon/sysfs.c
-@@ -446,7 +446,7 @@ int probe_thermal_sysfs(void)
- 		return -1;
- 	}
- 
--	ptdata.tzi = calloc(sizeof(struct tz_info), ptdata.max_tz_instance+1);
-+	ptdata.tzi = calloc(ptdata.max_tz_instance+1, sizeof(struct tz_info));
- 	if (!ptdata.tzi) {
- 		fprintf(stderr, "Err: allocate tz_info\n");
- 		return -1;
-@@ -454,8 +454,8 @@ int probe_thermal_sysfs(void)
- 
- 	/* we still show thermal zone information if there is no cdev */
- 	if (ptdata.nr_cooling_dev) {
--		ptdata.cdi = calloc(sizeof(struct cdev_info),
--				ptdata.max_cdev_instance + 1);
-+		ptdata.cdi = calloc(ptdata.max_cdev_instance + 1,
-+				sizeof(struct cdev_info));
- 		if (!ptdata.cdi) {
- 			free(ptdata.tzi);
- 			fprintf(stderr, "Err: allocate cdev_info\n");
--- 
-1.8.1.msysgit.1
+Mark already applied the patches from the 1st and 2nd series in the
+topic/suspend and topic/max77802 branches of his regulator tree [0].
 
+So I think is safe for you to pick this patch now.
+
+Thanks a lot and best regards,
+Javier
+
+[0]: git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
