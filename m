@@ -1,134 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaLFCMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 21:12:20 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58392 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751216AbaLFCMT (ORCPT
+	id S1752027AbaLFCOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 21:14:43 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:21040 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaLFCOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 21:12:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] tty / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Sat, 06 Dec 2014 03:33:47 +0100
-Message-ID: <1863568.HuOkEcjIrB@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Fri, 5 Dec 2014 21:14:41 -0500
+X-IronPort-AV: E=Sophos;i="5.07,526,1413270000"; 
+   d="scan'208";a="52590690"
+Message-ID: <5482668F.1040907@broadcom.com>
+Date: Fri, 5 Dec 2014 18:14:39 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Joe Perches <joe@perches.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] gpio: Cygnus: add GPIO driver
+References: <Ray Jui <rjui@broadcom.com>	 <1417826408-1600-1-git-send-email-rjui@broadcom.com>	 <1417826408-1600-3-git-send-email-rjui@broadcom.com> <1417829282.31745.3.camel@perches.com>
+In-Reply-To: <1417829282.31745.3.camel@perches.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Thanks for your review, Joe:
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+On 12/5/2014 5:28 PM, Joe Perches wrote:
+> On Fri, 2014-12-05 at 16:40 -0800, Ray Jui wrote:
+>> This GPIO driver supports all 3 GPIO controllers in the Broadcom Cygnus
+>> SoC. The 3 GPIO controllers are 1) the ASIU GPIO controller
+>> ("brcm,cygnus-asiu-gpio"), 2) the chipCommonG GPIO controller
+>> ("brcm,cygnus-ccm-gpio"), and 3) the ALWAYS-ON GPIO controller
+>> ("brcm,cygnus-crmu-gpio")
+>
+> trivia:
+>
+>> diff --git a/drivers/gpio/gpio-bcm-cygnus.c b/drivers/gpio/gpio-bcm-cygnus.c
+>
+>> +static inline struct bcm_cygnus_gpio *to_bcm_cygnus_gpio(
+>> +		struct gpio_chip *gc)
+>> +{
+>> +	return container_of(gc, struct bcm_cygnus_gpio, gc);
+>> +}
+>
+> Probably all of these inlines can just be static.
+>
+> The compiler does a pretty good job these days
+> of inlining where appropriate.
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-drivers/tty/.
+Okay I can remove all inlines.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+>
+>
+>> +static void bcm_cygnus_gpio_irq_handler(unsigned int irq,
+>> +		struct irq_desc *desc)
+>> +{
+>> +	struct bcm_cygnus_gpio *cygnus_gpio;
+>> +	struct irq_chip *chip = irq_desc_get_chip(desc);
+>> +	int i, bit;
+>> +
+>> +	chained_irq_enter(chip, desc);
+>> +
+>> +	cygnus_gpio = irq_get_handler_data(irq);
+>> +
+>> +	/* go through the entire GPIO banks and handle all interrupts */
+>> +	for (i = 0; i < cygnus_gpio->num_banks; i++) {
+>> +		unsigned long val = readl(cygnus_gpio->base +
+>> +				(i * GPIO_BANK_SIZE) +
+>> +				CYGNUS_GPIO_INT_MSTAT_OFFSET);
+>> +		if (val) {
+>
+> This if (val) and indentation isn't really necessary
+>
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+Note for_each_set_bit in this case iterates 32 times searching for bits 
+that are set. By having the if (val) check here, it can potentially save 
+some of such processing in the ISR. I agree with you that it introduces 
+one extra indent here but I think it's required.
 
-Please let me know if it is OK to take this one into linux-pm.
+>> +			for_each_set_bit(bit, &val, 32) {
+>
+> for_each_set_bit will effectively do the if above.
+>
+> 32 bit only code?
+> otherwise isn't this endian unsafe?
+>
 
----
- drivers/tty/serial/8250/8250_dw.c  |    2 +-
- drivers/tty/serial/8250/8250_mtk.c |    2 +-
- drivers/tty/serial/mfd.c           |    7 ++-----
- drivers/tty/serial/msm_serial_hs.c |    2 +-
- drivers/tty/serial/omap-serial.c   |    2 +-
- 5 files changed, 6 insertions(+), 9 deletions(-)
+Will change 'unsigned long val' to 'u32 val'.
 
-Index: linux-pm/drivers/tty/serial/8250/8250_dw.c
-===================================================================
---- linux-pm.orig/drivers/tty/serial/8250/8250_dw.c
-+++ linux-pm/drivers/tty/serial/8250/8250_dw.c
-@@ -489,7 +489,7 @@ static int dw8250_resume(struct device *
- }
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int dw8250_runtime_suspend(struct device *dev)
- {
- 	struct dw8250_data *data = dev_get_drvdata(dev);
-Index: linux-pm/drivers/tty/serial/8250/8250_mtk.c
-===================================================================
---- linux-pm.orig/drivers/tty/serial/8250/8250_mtk.c
-+++ linux-pm/drivers/tty/serial/8250/8250_mtk.c
-@@ -244,7 +244,7 @@ static int mtk8250_resume(struct device
- }
- #endif /* CONFIG_PM_SLEEP */
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int mtk8250_runtime_suspend(struct device *dev)
- {
- 	struct mtk8250_data *data = dev_get_drvdata(dev);
-Index: linux-pm/drivers/tty/serial/msm_serial_hs.c
-===================================================================
---- linux-pm.orig/drivers/tty/serial/msm_serial_hs.c
-+++ linux-pm/drivers/tty/serial/msm_serial_hs.c
-@@ -1792,7 +1792,7 @@ static void __exit msm_serial_hs_exit(vo
- }
- module_exit(msm_serial_hs_exit);
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int msm_hs_runtime_idle(struct device *dev)
- {
- 	/*
-Index: linux-pm/drivers/tty/serial/mfd.c
-===================================================================
---- linux-pm.orig/drivers/tty/serial/mfd.c
-+++ linux-pm/drivers/tty/serial/mfd.c
-@@ -1252,12 +1252,7 @@ static int serial_hsu_resume(struct pci_
- 	}
- 	return 0;
- }
--#else
--#define serial_hsu_suspend	NULL
--#define serial_hsu_resume	NULL
--#endif
- 
--#ifdef CONFIG_PM_RUNTIME
- static int serial_hsu_runtime_idle(struct device *dev)
- {
- 	pm_schedule_suspend(dev, 500);
-@@ -1274,6 +1269,8 @@ static int serial_hsu_runtime_resume(str
- 	return 0;
- }
- #else
-+#define serial_hsu_suspend		NULL
-+#define serial_hsu_resume		NULL
- #define serial_hsu_runtime_idle		NULL
- #define serial_hsu_runtime_suspend	NULL
- #define serial_hsu_runtime_resume	NULL
-Index: linux-pm/drivers/tty/serial/omap-serial.c
-===================================================================
---- linux-pm.orig/drivers/tty/serial/omap-serial.c
-+++ linux-pm/drivers/tty/serial/omap-serial.c
-@@ -1799,7 +1799,7 @@ static void serial_omap_mdr1_errataset(s
- 	}
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static void serial_omap_restore_context(struct uart_omap_port *up)
- {
- 	if (up->errata & UART_ERRATA_i202_MDR1_ACCESS)
+>> +				unsigned pin = NGPIOS_PER_BANK * i + bit;
+>> +				int child_irq =	bcm_cygnus_gpio_to_irq(
+>> +						&cygnus_gpio->gc, pin);
+>> +
+>> +				/*
+>> +				 * Clear the interrupt before invoking the
+>> +				 * handler, so we do not leave any window
+>> +				 */
+>> +				writel(1 << bit,
+>> +					cygnus_gpio->base +
+>> +					(i * GPIO_BANK_SIZE) +
+>> +					CYGNUS_GPIO_INT_CLR_OFFSET);
+>> +
+>> +				generic_handle_irq(child_irq);
+>> +			}
+>> +
+>> +		}
+>> +	}
+>> +
+>> +	chained_irq_exit(chip, desc);
+>> +}
+>> +
+>> +static void bcm_cygnus_gpio_irq_ack(struct irq_data *d)
+>> +{
+>> +	struct bcm_cygnus_gpio *cygnus_gpio = irq_data_get_irq_chip_data(d);
+>> +	unsigned gpio = d->hwirq;
+>> +	unsigned int offset, shift;
+>> +	u32 val;
+>> +
+>> +	offset = __gpio_reg_offset(cygnus_gpio, gpio) +
+>> +		CYGNUS_GPIO_INT_CLR_OFFSET;
+>> +	shift = __gpio_bitpos(cygnus_gpio, gpio);
+>> +
+>> +	val = 1 << shift;
+>> +	writel(val, cygnus_gpio->base + offset);
+>> +
+>> +	dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
+>> +			offset, shift);
+>> +}
+>
+>> +static struct irq_chip bcm_cygnus_gpio_irq_chip = {
+>> +	.name = "bcm-cygnus-gpio",
+>> +	.irq_ack = bcm_cygnus_gpio_irq_ack,
+>> +	.irq_mask = bcm_cygnus_gpio_irq_mask,
+>> +	.irq_unmask = bcm_cygnus_gpio_irq_unmask,
+>> +	.irq_set_type = bcm_cygnus_gpio_irq_set_type,
+>> +};
+>
+> const?
+>
 
+
+Sure, will add const to bcm_cygnus_gpio_irq_chip
+
+>> +static struct irq_domain_ops bcm_cygnus_irq_ops = {
+>> +	.map = bcm_cygnus_gpio_irq_map,
+>> +	.unmap = bcm_cygnus_gpio_irq_unmap,
+>> +	.xlate = irq_domain_xlate_twocell,
+>> +};
+>
+> const here too?
+>
+
+Yes, will make bcm_cygnus_irq_ops const.
+
+>> +#ifdef CONFIG_OF_GPIO
+>> +static void bcm_cygnus_gpio_set_pull(struct bcm_cygnus_gpio *cygnus_gpio,
+>> +		unsigned gpio, enum gpio_pull pull)
+>> +{
+>> +	unsigned int offset, shift;
+>> +	u32 val, up;
+>
+> 	bool up; ?
+>
+
+Okay I'll change the name from 'up' to 'pullup' to make it more readable.
+
+>> +	unsigned long flags;
+>> +
+>> +	switch (pull) {
+>> +	case GPIO_PULL_NONE:
+>> +		return;
+>> +	case GPIO_PULL_UP:
+>> +		up = 1;
+>> +		break;
+>> +	case GPIO_PULL_DOWN:
+>> +		up = 0;
+>> +		break;
+>> +	case GPIO_PULL_INVALID:
+>> +	default:
+>> +		return;
+>> +	}
+>
+> Maybe more sensible to group GPIO_PULL_NONE with GPIO_PULL_INVALID
+>
+>
+
+Good suggestion, will do the following:
+
+case GPIO_PULL_NONE:
+case GPIO_PULL_INVALID:
+default:
+        return;
+
+>> +static int bcm_cygnus_gpio_probe(struct platform_device *pdev)
+>> +{
+> []
+>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!res) {
+>> +		dev_err(&pdev->dev, "unable to get I/O resource");
+>
+> missing newline
+>
+>
+
+Right, will fix it with dev_err(&pdev->dev, "unable to get I/O resource\n");
