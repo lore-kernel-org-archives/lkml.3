@@ -1,87 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaLFNAS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 08:00:18 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:37339 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453AbaLFNAP (ORCPT
+	id S1752593AbaLFNAl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 08:00:41 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:53435 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbaLFNAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 08:00:15 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Ming Lei <ming.lei@canonical.com>
-Subject: Re: wl1251: NVS firmware data
-Date: Sat, 6 Dec 2014 14:00:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <201411271506.20457@pali> <201411271543.23527@pali> <CACVXFVMCJxQRUo94C8peT7G-VFkVeNYCWGKPYE5jq=twCULrpA@mail.gmail.com>
-In-Reply-To: <CACVXFVMCJxQRUo94C8peT7G-VFkVeNYCWGKPYE5jq=twCULrpA@mail.gmail.com>
+	Sat, 6 Dec 2014 08:00:39 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3920280.KLWdcTxFn6";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412061400.11406@pali>
+In-Reply-To: <20141024105200.GA20775@amd>
+References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
+ <1414007405-32186-3-git-send-email-atull@opensource.altera.com> <20141024105200.GA20775@amd>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Sat, 6 Dec 2014 13:00:17 +0000
+X-Google-Sender-Auth: vtwksjVnS_hYJWrZlCtrx0k9klE
+Message-ID: <CACxGe6sa=ysJAjx5TQZH5sKoas1PkoUUR4zT=Z35+uF6rrk-vw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] fpga manager: framework core
+To: Pavel Machek <pavel@denx.de>
+Cc: atull@opensource.altera.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, philip@balister.org,
+        rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
+        Nicolas Pitre <nico@linaro.org>, "Balbi, Felipe" <balbi@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        Yves Vandervennet <yvanderv@opensource.altera.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3920280.KLWdcTxFn6
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 24, 2014 at 11:52 AM, Pavel Machek <pavel@denx.de> wrote:
+> Hi!
+>
+>> * /sys/class/fpga_manager/<fpga>/firmware
+>>   Name of FPGA image file to load using firmware class.
+>>   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
+>
+> I .. still don't think this is good idea. What about namespaces?
+> The path corresponds to path in which namespace?
 
-On Thursday 27 November 2014 16:13:51 Ming Lei wrote:
-> > Which userspace helper programs for (automatic) firmware
-> > loading are used? Can be udev configured to use own program
-> > for loading
->=20
-> At default, udev had its builtin firmware helper, but some new
-> udev stops to handle firmware request.
->=20
-> If the udev you are using still supports to handle firmware
-> request, you can write your load helper and add your rule for
-> handling the special case. Otherwise, you need to write code
-> to monitor the netlink uevents from the kernel and handle
-> your firmware loading request.
->=20
-> Thanks,
-> Ming Lei
+I don't understand your concern here. This allows userspace to name
+the FPGA bitstream that the kernel will use during request_firmware(),
+and it will show up as the $FIRMWARE value in the uevent file, but it
+is still the responsibility of userspace to choose what to load, and
+it can freely ignore the setting of $FIRMWARE if it needs to.
 
-=46or Nokia N900 (and Maemo system) we are using older udev version=20
-(0.125), so here should be support for firmware helper.
+The process that actually loads the firmware into the kernel pretty
+much has to run in the normal linux environment. How do namespaces
+come into it? What exact problem do you see?
 
-And if some new udev version will not work, we can just revert=20
-back to older working... No need to use super-uber-fantastic=20
-systemd-udevd software which removing old useful code.
+>
+>> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
+>> +{
+>> +     int ret;
+>> +
+>> +     if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
+>> +             return -EBUSY;
+>> +
+>> +     dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
+>> +
+>> +     ret = __fpga_mgr_write(mgr, buf, count);
+>> +     clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
+>> +
+>> +     return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
+>
+> Is the EBUSY -- userspace please try again, but you don't know when to
+> try again -- right interface? I mean, normally kernel would wait, so
+> that userland does not have to poll?
 
-So looks like adding new rule file to udev for handling firmware=20
-requests from kernel could work...
+Custom locking schemes are just wrong. A mutex is the right thing to
+do here and then an -EBUSY isn't required.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+>
+>> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
+>> +                                    struct device_attribute *attr,
+>> +                                    const char *buf, size_t count)
+>> +{
+>> +     struct fpga_manager *mgr = dev_get_drvdata(dev);
+>> +     unsigned int len;
+>> +     char image_name[NAME_MAX];
 
---nextPart3920280.KLWdcTxFn6
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Hard coding a string length is a warning sign. That is the sort of
+thing that can memdup() or strdup() can handle.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>> +     int ret;
+>> +
+>> +     /* lose terminating \n */
+>> +     strcpy(image_name, buf);
+>> +     len = strlen(image_name);
+>> +     if (image_name[len - 1] == '\n')
+>> +             image_name[len - 1] = 0;
+>> +
+>> +     ret = fpga_mgr_firmware_write(mgr, image_name);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     return count;
+>> +}
+>
+> This shows why the interface is not right... Valid filename may
+> contain \n, right? It may even end with \n.
 
-iEYEABECAAYFAlSC/dsACgkQi/DJPQPkQ1LW0wCdHNXDxWf9cplGRZ/UoMOq/0AA
-5g0AnAt0Mc6UgJCnsqCOORi2jzB2XkjA
-=PR6b
------END PGP SIGNATURE-----
+That's not an interface problem, it implementation problem. The
+function absolutely should scrub and validate it's input. It should
+also make sure that the string doesn't have any special characters so
+that /bin/sh doesn't barf on it (because the string will appear in the
+uevent file). I would check other users of request_firmware() to see
+if any of them allow userspace to specify the filename.
 
---nextPart3920280.KLWdcTxFn6--
+That said, the other way to handle this is not to specify a valid
+filename through this interface at all. Just use a dummy placeholder
+name and expect userspace to load the correct file when the request is
+posted.
+
+g.
