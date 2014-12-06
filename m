@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaLFDXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 22:23:13 -0500
-Received: from ns.horizon.com ([71.41.210.147]:30139 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751081AbaLFDXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 22:23:12 -0500
-Date: 5 Dec 2014 22:23:10 -0500
-Message-ID: <20141206032310.27123.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: akpm@linux-foundation.org, linux@horizon.com
-Subject: [PATCH v2] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h> where it belongs
-Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org, rusty@rustcorp.com.au
-In-Reply-To: <20141205185821.08afc560.akpm@linux-foundation.org>
+	id S1751374AbaLFD30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 22:29:26 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46041 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaLFD3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 22:29:25 -0500
+Message-ID: <54827809.4000108@roeck-us.net>
+Date: Fri, 05 Dec 2014 19:29:13 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/45] 3.10.62-stable review
+References: <20141205223316.738290875@linuxfoundation.org>
+In-Reply-To: <20141205223316.738290875@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54827819.002E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's the only user of <linux/bug.h> in kernel.h, so that reduces
-the compile-time cost of #include <linux/kernel.h>
+On 12/05/2014 02:44 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.62 release.
+> There are 45 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Dec  7 22:32:54 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Only one user has to change: <linux/moduleparam.h>.  The <linux/types.h>
-there is needed for one function prototype that passes s16 parameters.
-My first reaction is to wonder if that can be gotten rid of, too.
+Build results:
+	total: 137 pass: 137 fail: 0
+Qemu tests:
+	total: 27 pass: 27 fail: 0
 
-Some other extraneous header files pruned while I was at it.
-Tested with allyesconfig & allmodconfig on x86-64, just to
-be sure.
+Details are available at http://server.roeck-us.net:8010/builders..
 
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: George Spelvin <linux@horizon.com>
----
-Look, even more header pruning.
+Guenter
 
- include/linux/kernel.h      | 10 ----------
- include/linux/moduleparam.h |  4 ++--
- include/linux/sysfs.h       | 15 ++++++++++++---
- 3 files changed, 14 insertions(+), 15 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f55..07080aa2 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -804,14 +804,4 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
- #endif
- 
--/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
--#define VERIFY_OCTAL_PERMISSIONS(perms)					\
--	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
--	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
--	 /* User perms >= group perms >= other perms */			\
--	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
--	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
--	 /* Other writable?  Generally considered a bad idea. */	\
--	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
--	 (perms))
- #endif
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 1c9effa2..974097df 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -1,9 +1,9 @@
- #ifndef _LINUX_MODULE_PARAMS_H
- #define _LINUX_MODULE_PARAMS_H
- /* (C) Copyright 2001, 2002 Rusty Russell IBM Corporation */
--#include <linux/init.h>
- #include <linux/stringify.h>
--#include <linux/kernel.h>
-+#include <linux/sysfs.h>
-+#include <linux/types.h>
- 
- /* You can override this manually, but generally this should match the
-    module name. */
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index f97d0dbb..3562f331 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -14,12 +14,10 @@
- 
- #include <linux/kernfs.h>
- #include <linux/compiler.h>
--#include <linux/errno.h>
--#include <linux/list.h>
- #include <linux/lockdep.h>
- #include <linux/kobject_ns.h>
- #include <linux/stat.h>
--#include <linux/atomic.h>
-+#include <linux/bug.h>
- 
- struct kobject;
- struct module;
-@@ -70,6 +68,17 @@ struct attribute_group {
-  * for examples..
-  */
- 
-+/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
-+#define VERIFY_OCTAL_PERMISSIONS(perms)					\
-+	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
-+	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
-+	 /* User perms >= group perms >= other perms */			\
-+	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
-+	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
-+	 /* Other writable?  Generally considered a bad idea. */	\
-+	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
-+	 (perms))
-+
- #define __ATTR(_name, _mode, _show, _store) {				\
- 	.attr = {.name = __stringify(_name),				\
- 		 .mode = VERIFY_OCTAL_PERMISSIONS(_mode) },		\
--- 
-2.1.3
