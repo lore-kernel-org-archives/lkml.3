@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaLFPze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:55:34 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:33453 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaLFPzd (ORCPT
+	id S1752218AbaLFQTZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 11:19:25 -0500
+Received: from mail-by2on0108.outbound.protection.outlook.com ([207.46.100.108]:60288
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751639AbaLFQTY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:55:33 -0500
-Message-ID: <54832761.1050700@gmail.com>
-Date: Sat, 06 Dec 2014 23:57:21 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "jejb@parisc-linux.org" <jejb@parisc-linux.org>
+	Sat, 6 Dec 2014 11:19:24 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        Joel Brobecker <brobecker@adacore.com>
-Subject: Re: [PATCH] arch: uapi: asm: mman.h: Let MADV_FREE have same value
- for all architectures
-References: <5480E715.3020900@gmail.com> <20141205065417.GA3358@bbox> <54822B19.2070804@gmail.com>
-In-Reply-To: <54822B19.2070804@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
+Thread-Index: AQHQEP8uz220NiObKUSbFrVqaEdmz5yCAxgAgAC62sA=
+Date: Sat, 6 Dec 2014 16:19:21 +0000
+Message-ID: <BY2PR0301MB07113876EAD7FDD4B09B09B3A0660@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417838324-26378-1-git-send-email-kys@microsoft.com>
+ <20141206050734.GA6562@kroah.com>
+In-Reply-To: <20141206050734.GA6562@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;
+x-forefront-prvs: 0417A3FFD2
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(377454003)(13464003)(51704005)(24454002)(54206007)(33656002)(19580395003)(66066001)(76176999)(19580405001)(68736005)(31966008)(101416001)(54606007)(87936001)(86612001)(2656002)(54356999)(50986999)(86362001)(102836002)(92566001)(77156002)(20776003)(99396003)(62966003)(64706001)(120916001)(110136001)(105586002)(106116001)(106356001)(99286002)(40100003)(122556002)(107046002)(97736003)(46102003)(74316001)(76576001)(21056001)(4396001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0662;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
-
-After this patch, our parisc can pass allmodconfig in linux next tree,
-for me, we can say parisc specific code have no touch for allmodconfig.
-:-)
-
-But for parisc gcc latest upstream compiler, I found several issues, and
-I shall try to analyse them and communicate with gcc related members.
-
-And I also want to consult about parisc assembly instructions, I can not
-find the related reference documents, could you help to have a check (or
-provide some related information for it)? related contents are below:
-
-  parisc support several store instructions: 'stb' (for store byte),
-  'stw(m)' (for store word), and 'std' (for store double word).
-
-  They should be in the same format in binary code, and have neighbour
-  numbers, and 'stw(m)' need be in the middle of 'stb' and 'std'. one
-  sample for the instruction 'inst' (it is 'unsigned int'):
-
-   - for ((inst >> 26) != 0x3):
-
-     stb: 0x18, or 0x19,
-     stw: 0x1a, stwm: 0x1b,
-     std: 0x1c.
-
-   - else ((inst >> 26) == 0x3), need check '(inst >> 6) & 0xf':
-
-     stb: 0x08, or 0x09,
-     stw: 0x0a,
-     std: 0x0b.
-
-  it is about my binutils/gdb patch for parisc, gdb want to recognize
-  'st??' to find the position for saving relate context (registers).
 
 
-Welcome any suggestions, ideas, and completions.
-
-Thanks.
-
-
-On 12/06/2014 06:00 AM, Chen Gang wrote:
-> On 12/05/2014 02:54 PM, Minchan Kim wrote:
->> On Fri, Dec 05, 2014 at 06:58:29AM +0800, Chen Gang wrote:
->>> For uapi, need try to let all macros have same value, and MADV_FREE is
->>> added into main branch recently, so need redefine MADV_FREE for it.
->>>
->>> At present, '8' can be shared with all architectures, so redefine it to
->>> '8'.
->>>
->>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>
->>
->> Hello Chen,
->>
->> Thanks for looking at this.
->> Feel free to add my sign.
->>
->> Acked-by: Minchan Kim <minchan@kernel.org>
->>
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, December 5, 2014 9:08 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Implement a clockevent device
 > 
-> OK, thanks.
+> On Fri, Dec 05, 2014 at 07:58:44PM -0800, K. Y. Srinivasan wrote:
+> > Implement a clockevent device based on the timer support available on
+> > Hyper-V.
+> > In this version of the patch I have addressed Jason's review comments.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Jason Wang <jasowang@redhat.com>
+> > ---
 > 
-> Originally I sent the same patch like you sent (but later than yours).
-> Geert suggested to use same value for MADV_FREE, and Carlos confirmed
-> it and suggested more things (sorry, I forgot to Cc them in this mail).
+> Why did you resend the 1st version of this patch?
 > 
+> If you didn't send the first version, why is there no more "vX" on the Subject
+> line?
 > 
-> Thanks.
-> 
+> confused.
 
+Greg,
 
--- 
-Chen Gang
+Sorry, please drop this. I will resend with the correct version number in the subject line.
 
-Open share and attitude like air water and life which God blessed
+Regards,
+
+K. Y
+> 
+> greg k-h
