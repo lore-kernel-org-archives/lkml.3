@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaLFWlp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 17:41:45 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:39664 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaLFWlo (ORCPT
+	id S1752480AbaLFWut (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 17:50:49 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34083 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaLFWur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 17:41:44 -0500
+	Sat, 6 Dec 2014 17:50:47 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Vineet Gupta <vgupta@synopsys.com>, linux-kernel@vger.kernel.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Subject: [PATCH] arch: arc: plat-arcfpga: smp.c:  Remove some unused functions
-Date: Sat,  6 Dec 2014 23:44:23 +0100
-Message-Id: <1417905863-5310-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Rob Herring <robh+dt@kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>, Joel Fernandes <joelf@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH] arch: arm: common: edma.c:  Remove some unused functions
+Date: Sat,  6 Dec 2014 23:53:26 +0100
+Message-Id: <1417906406-5527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Removes some functions that are not used anywhere:
-idu_irq_get_pend() idu_irq_get_ack()
+edma_shadow0_read() edma_or_array()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/arc/plat-arcfpga/smp.c |   27 ---------------------------
- 1 file changed, 27 deletions(-)
+ arch/arm/common/edma.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/arch/arc/plat-arcfpga/smp.c b/arch/arc/plat-arcfpga/smp.c
-index 64797ba..2b1b42a 100644
---- a/arch/arc/plat-arcfpga/smp.c
-+++ b/arch/arc/plat-arcfpga/smp.c
-@@ -157,30 +157,3 @@ void idu_irq_set_tgtcpu(uint8_t irq, uint32_t mask)
- 	IDU_SET_PARAM(mask);
- 	IDU_SET_COMMAND(irq, IDU_IRQ_WBITMASK);
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index d86771a..163273d 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -160,10 +160,6 @@ static inline void edma_modify_array(unsigned ctlr, int offset, int i,
+ {
+ 	edma_modify(ctlr, offset + (i << 2), and, or);
  }
--
--/* Get the Interrupt Acknowledged status for IRQ (as CPU Bitmask) */
--bool idu_irq_get_ack(uint8_t irq)
+-static inline void edma_or_array(unsigned ctlr, int offset, int i, unsigned or)
 -{
--	uint32_t val;
--
--	IDU_SET_COMMAND(irq, IDU_IRQ_ACK);
--	val = IDU_GET_PARAM();
--
--	return val & (1 << irq);
+-	edma_or(ctlr, offset + (i << 2), or);
 -}
--
--/*
-- * Get the Interrupt Pending status for IRQ (as CPU Bitmask)
-- * -Pending means CPU has not yet noticed the IRQ (e.g. disabled)
-- * -After Interrupt has been taken, the IPI expcitily needs to be
-- *  cleared, to be acknowledged.
-- */
--bool idu_irq_get_pend(uint8_t irq)
+ static inline void edma_or_array2(unsigned ctlr, int offset, int i, int j,
+ 		unsigned or)
+ {
+@@ -174,10 +170,6 @@ static inline void edma_write_array2(unsigned ctlr, int offset, int i, int j,
+ {
+ 	edma_write(ctlr, offset + ((i*2 + j) << 2), val);
+ }
+-static inline unsigned int edma_shadow0_read(unsigned ctlr, int offset)
 -{
--	uint32_t val;
--
--	IDU_SET_COMMAND(irq, IDU_IRQ_PEND);
--	val = IDU_GET_PARAM();
--
--	return val & (1 << irq);
+-	return edma_read(ctlr, EDMA_SHADOW0 + offset);
 -}
+ static inline unsigned int edma_shadow0_read_array(unsigned ctlr, int offset,
+ 		int i)
+ {
 -- 
 1.7.10.4
 
