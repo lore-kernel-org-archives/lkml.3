@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaLFR60 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:58:26 -0500
-Received: from 1wt.eu ([62.212.114.60]:40727 "EHLO 1wt.eu"
+	id S1753150AbaLFR6n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:58:43 -0500
+Received: from 1wt.eu ([62.212.114.60]:40726 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606AbaLFRzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:04 -0500
-Message-Id: <20141206174148.773173830@1wt.eu>
+	id S1752597AbaLFRzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:03 -0500
+Message-Id: <20141206174149.192584646@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:56 +0100
+Date: Sat, 06 Dec 2014 18:42:06 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 08/25] x86, espfix: Fix broken header guard
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Willy Tarreau <w@1wt.eu>
+Subject: [ 18/25] ALSA: control: Fix replacing user controls
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -27,32 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
+(commit 82262a46627bebb0febcc26664746c25cef08563 upstream)
 
-Header guard is #ifndef, not #ifdef...
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-(cherry picked from 3.2 commit 7d4a9eabfe6c7fed70941aceb3b20bf393652bcb)
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
+
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
+
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[wt: fixes CVE-2014-4654 & CVE-2014-4655]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/espfix.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/core/control.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/espfix.h b/arch/x86/include/asm/espfix.h
-index e2fb446..f017535 100644
---- a/arch/x86/include/asm/espfix.h
-+++ b/arch/x86/include/asm/espfix.h
-@@ -1,4 +1,4 @@
--#ifdef _ASM_X86_ESPFIX_H
-+#ifndef _ASM_X86_ESPFIX_H
- #define _ASM_X86_ESPFIX_H
- 
- #ifdef CONFIG_X86_64
+diff --git a/sound/core/control.c b/sound/core/control.c
+index e91d79a..ffa7857 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -999,21 +999,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
++
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
+ 	}
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
++
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
