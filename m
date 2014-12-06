@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaLFRzH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:55:07 -0500
-Received: from 1wt.eu ([62.212.114.60]:40712 "EHLO 1wt.eu"
+	id S1752696AbaLFRzN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:55:13 -0500
+Received: from 1wt.eu ([62.212.114.60]:40735 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454AbaLFRy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:56 -0500
-Message-Id: <20141206174149.148190571@1wt.eu>
+	id S1752403AbaLFRzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:06 -0500
+Message-Id: <20141206174148.893397497@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:05 +0100
+Date: Sat, 06 Dec 2014 18:41:59 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [ 17/25] ALSA: control: Dont access controls outside of
- protected regions
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 11/25] x86_64/entry/xen: Do not invoke espfix64 on Xen
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -26,59 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Andy Lutomirski <luto@amacapital.net>
 
-(commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream)
+commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
 
-A control that is visible on the card->controls list can be freed at any time.
-This means we must not access any of its memory while not holding the
-controls_rw_lock. Otherwise we risk a use after free access.
+This moves the espfix64 logic into native_iret.  To make this work,
+it gets rid of the native patch for INTERRUPT_RETURN:
+INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[wt: fixes CVE-2014-4653]
+This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+some bits of the Xen hypervisor's RSP (I think).
+
+[ hpa: this is a nonzero cost on native, but probably not enough to
+  measure. Xen needs to fix this in their own code, probably doing
+  something equivalent to espfix64. ]
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from 3.2 commit 8ba19cd8c351e16b6be4caca9338d19b0cb8eaa4)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- sound/core/control.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/irqflags.h     |  2 +-
+ arch/x86/kernel/entry_64.S          | 31 ++++++++++---------------------
+ arch/x86/kernel/paravirt_patch_64.c |  2 --
+ 3 files changed, 11 insertions(+), 24 deletions(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 8bf3a6d..e91d79a 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -325,6 +325,7 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
- {
- 	struct snd_ctl_elem_id id;
- 	unsigned int idx;
-+	unsigned int count;
- 	int err = -EINVAL;
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index 9e2b952..58b0c5c 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -130,7 +130,7 @@ static inline unsigned long __raw_local_irq_save(void)
  
- 	if (! kcontrol)
-@@ -356,8 +357,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
- 	card->controls_count += kcontrol->count;
- 	kcontrol->id.numid = card->last_numid + 1;
- 	card->last_numid += kcontrol->count;
-+	count = kcontrol->count;
- 	up_write(&card->controls_rwsem);
--	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
-+	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
- 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
- 	return 0;
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
  
-@@ -784,9 +786,9 @@ static int snd_ctl_elem_write(struct snd_card *card, struct snd_ctl_file *file,
- 			result = kctl->put(kctl, control);
- 		}
- 		if (result > 0) {
-+			struct snd_ctl_elem_id id = control->id;
- 			up_read(&card->controls_rwsem);
--			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
--				       &control->id);
-+			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
- 			return 0;
- 		}
- 	}
+-#define INTERRUPT_RETURN	iretq
++#define INTERRUPT_RETURN	jmp native_iret
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index cf9e7d2..4313d48 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -859,33 +859,27 @@ restore_args:
+ 	RESTORE_ARGS 0,8,0
+ 
+ irq_return:
++	INTERRUPT_RETURN
++
++ENTRY(native_iret)
+ 	/*
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
+ #ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+-	jnz irq_return_ldt
++	jnz native_irq_return_ldt
+ #endif
+ 
+-irq_return_iret:
+-	INTERRUPT_RETURN
+-
+-	.section __ex_table, "a"
+-	.quad irq_return_iret, bad_iret
+-	.previous
+-
+-#ifdef CONFIG_PARAVIRT
+-ENTRY(native_iret)
++native_irq_return_iret:
+ 	iretq
+ 
+ 	.section __ex_table,"a"
+-	.quad native_iret, bad_iret
++	.quad native_irq_return_iret, bad_iret
+ 	.previous
+-#endif
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+-irq_return_ldt:
++native_irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+ 	SWAPGS
+@@ -907,7 +901,7 @@ irq_return_ldt:
+ 	SWAPGS
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+-	jmp irq_return_iret
++	jmp native_irq_return_iret
+ #endif
+ 
+ 	.section .fixup,"ax"
+@@ -995,13 +989,8 @@ __do_double_fault:
+ 	cmpl $__KERNEL_CS,CS(%rdi)
+ 	jne do_double_fault
+ 	movq RIP(%rdi),%rax
+-	cmpq $irq_return_iret,%rax
+-#ifdef CONFIG_PARAVIRT
+-	je 1f
+-	cmpq $native_iret,%rax
+-#endif
++	cmpq $native_irq_return_iret,%rax
+ 	jne do_double_fault		/* This shouldn't happen... */
+-1:
+ 	movq PER_CPU_VAR(kernel_stack),%rax
+ 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+ 	movq %rax,RSP(%rdi)
+@@ -1560,7 +1549,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return_iret(%rip),%rcx
++	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
+index 3f08f34..a1da673 100644
+--- a/arch/x86/kernel/paravirt_patch_64.c
++++ b/arch/x86/kernel/paravirt_patch_64.c
+@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
+ DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
+ DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
+ DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
+-DEF_NATIVE(pv_cpu_ops, iret, "iretq");
+ DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
+ DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
+ DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
+@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
+ 		PATCH_SITE(pv_irq_ops, save_fl);
+ 		PATCH_SITE(pv_irq_ops, irq_enable);
+ 		PATCH_SITE(pv_irq_ops, irq_disable);
+-		PATCH_SITE(pv_cpu_ops, iret);
+ 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
 -- 
 1.7.12.2.21.g234cd45.dirty
 
