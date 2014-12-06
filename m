@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaLFEQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 23:16:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41101 "EHLO mx1.redhat.com"
+	id S1752361AbaLFEUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 23:20:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64824 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaLFEQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 23:16:44 -0500
-From: Amos Kong <akong@redhat.com>
-To: virtualization@lists.linux-foundation.org, rusty@rustcorp.com.au
-Cc: kvm@vger.kernel.org, m@bues.ch, mpm@selenic.com, amit.shah@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.apana.org.au
-Subject: [PATCH v5 0/6] fix hw_random stuck
-Date: Sat,  6 Dec 2014 12:16:36 +0800
-Message-Id: <1417839402-13490-1-git-send-email-akong@redhat.com>
+	id S1751255AbaLFEU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 23:20:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,527,1413270000"; 
+   d="scan'208";a="643333774"
+Message-ID: <5482835F.5090707@intel.com>
+Date: Sat, 06 Dec 2014 12:17:35 +0800
+From: Jike Song <jike.song@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gerd Hoffmann <kraxel@redhat.com>
+CC: "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Tian, Kevin" <kevin.tian@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
+        "Haron, Sandra" <sandra.haron@intel.com>
+Subject: Re: [ANNOUNCE][RFC] KVMGT - the implementation of Intel GVT-g(full
+ GPU virtualization) for KVM
+References: <547FC5DE.4010701@intel.com> <1417769421.11297.37.camel@nilsson.home.kraxel.org>
+In-Reply-To: <1417769421.11297.37.camel@nilsson.home.kraxel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I hotunplug a busy virtio-rng device or try to access
-hwrng attributes in non-smp guest, it gets stuck.
+On 12/05/2014 04:50 PM, Gerd Hoffmann wrote:
+> A few comments on the kernel stuff (brief look so far, also
+> compile-tested only, intel gfx on my test machine is too old).
+>
+>   * Noticed the kernel bits don't even compile when configured as
+>     module.  Everything (vgt, i915, kvm) must be compiled into the
+>     kernel.
 
-My hotplug tests:
+Yes, that's planned to be done along with separating hypervisor-related
+code from vgt.
 
-| test 0:
-|   hotunplug rng device from qemu monitor
-|
-| test 1:
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 2:
-|   guest) # dd if=/dev/random of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 4:
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   cat /sys/devices/virtual/misc/hw_random/rng_*
-|
-| test 5:
-|   guest) # dd if=/dev/hwrng of=/dev/null
-|   cancel dd process after 10 seconds
-|   guest) # dd if=/dev/hwrng of=/dev/null &
-|   hotunplug rng device from qemu monitor
-|
-| test 6:
-|   use a fifo as rng backend, execute test 0 ~ 5 with no input of fifo
+>   * Design approach still seems to be i915 on vgt not the other way
+>     around.
 
-V5: reset cleanup_done flag, drop redundant init of reference count, use
-    compiler barrier to prevent recording.
-V4: update patch 4 to fix corrupt, decrease last reference for triggering
-    the cleanup, fix unregister race pointed by Herbert
-V3: initialize kref to 1
-V2: added patch 2 to fix a deadlock, update current patch 3 to fix reference
-    counting issue
+So far yes.
 
-Amos Kong (1):
-  hw_random: move some code out mutex_lock for avoiding underlying
-    deadlock
+>
+> Qemu/SeaBIOS bits:
+>
+> I've seen the host bridge changes identity from i440fx to
+> copy-pci-ids-from-host.  Guess the reason for this is that seabios uses
+> this device to figure whenever it is running on i440fx or q35.  Correct?
+>
 
-Rusty Russell (5):
-  hw_random: place mutex around read functions and buffers.
-  hw_random: use reference counts on each struct hwrng.
-  hw_random: fix unregister race.
-  hw_random: don't double-check old_rng.
-  hw_random: don't init list element we're about to add to list.
+I did some trick in seabios/qemu. The purpose is to make qemu:
 
- drivers/char/hw_random/core.c | 173 ++++++++++++++++++++++++++++++------------
- include/linux/hw_random.h     |   3 +
- 2 files changed, 126 insertions(+), 50 deletions(-)
+	- provide IDs of an old host bridge to SeaBIOS
+	- provide IDs of new host bridge(the physical ones) to guest OS
 
--- 
-1.9.3
+So I made seabios to tell qemu that POST is done before jumping to guest
+OS context.
 
+This may be the simplest method to make things work, but yes, q35 emulation
+of qemu may have this unnecessary, see below.
+
+> What are the exact requirements for the device?  Must it match the host
+> exactly, to not confuse the guest intel graphics driver?  Or would
+> something more recent -- such as the q35 emulation qemu has -- be good
+> enough to make things work (assuming we add support for the
+> graphic-related pci config space registers there)?
+>
+
+I don't know that is exactly needed, we also need to have Windows
+driver considered.  However, I'm quite confident that, if things gonna
+work for IGD passthrough, it gonna work for GVT-g.
+
+> The patch also adds a dummy isa bridge at 0x1f.  Simliar question here:
+> What exactly is needed here?  Would things work if we simply use the q35
+> lpc device here?
+>
+
+Ditto.
+
+> more to come after I've read the paper linked above ...
+
+Thanks for review :)
+
+>
+> cheers,
+>    Gerd
+>
+
+--
+Thanks,
+Jike
