@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaLFPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:13:59 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47791 "EHLO
+	id S1753225AbaLFPN6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:13:58 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47772 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752339AbaLFPIL (ORCPT
+	by vger.kernel.org with ESMTP id S1752347AbaLFPIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:11 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@linux.intel.com>,
-        Dave Hansen <dave@sr71.net>, Fenghua Yu <fenghua.yu@intel.com>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 16/66] x86: Require exact match for 'noxsave' command line option
-Date: Sat,  6 Dec 2014 16:07:08 +0100
-Message-Id: <64d6bef08627721e538f457da75cf43aa64f838b.1417878427.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        linux-mips@linux-mips.org, Huacai Chen <chenhc@lemote.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 12/66] MIPS: Loongson: Make platform serial setup always built-in.
+Date: Sat,  6 Dec 2014 16:07:04 +0100
+Message-Id: <1518cde157af1021c44565d6260a152e65df214f.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -25,60 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
+commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
 
-We have some very similarly named command-line options:
+If SERIAL_8250 is compiled as a module, the platform specific setup
+for Loongson will be a module too, and it will not work very well.
+At least on Loongson 3 it will trigger a build failure,
+since loongson_sysconf is not exported to modules.
 
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
+Fix by making the platform specific serial code always built-in.
 
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
-
-	__setup("foo", x86_foo_func...);
-
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
-
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-[ tglx: We really need to make __setup() more robust. ]
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8533/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/cpu/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/loongson/common/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index d5f63dacf030..00cc6f79615d 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -144,6 +144,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
+diff --git a/arch/mips/loongson/common/Makefile b/arch/mips/loongson/common/Makefile
+index 9e4484ccbb03..9005a8d60969 100644
+--- a/arch/mips/loongson/common/Makefile
++++ b/arch/mips/loongson/common/Makefile
+@@ -11,7 +11,8 @@ obj-$(CONFIG_PCI) += pci.o
+ # Serial port support
+ #
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-obj-$(CONFIG_SERIAL_8250) += serial.o
++loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
++obj-y += $(loongson-serial-m) $(loongson-serial-y)
+ obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
+ obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
  
- static int __init x86_xsave_setup(char *s)
- {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_AVX);
 -- 
 2.1.3
 
