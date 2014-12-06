@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077AbaLFRyp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:54:45 -0500
-Received: from 1wt.eu ([62.212.114.60]:40665 "EHLO 1wt.eu"
+	id S1752327AbaLFRyu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:54:50 -0500
+Received: from 1wt.eu ([62.212.114.60]:40676 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaLFRyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:43 -0500
-Message-Id: <20141206174148.468191041@1wt.eu>
+	id S1752091AbaLFRyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:46 -0500
+Message-Id: <20141206174149.063219019@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:49 +0100
+Date: Sat, 06 Dec 2014 18:42:03 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 01/25] net: sendmsg: fix failed backport of "fix NULL pointer
- dereference"
+Subject: [ 15/25] x86_64, traps: Rework bad_iret
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Message-ID: <2a26e912d2438674771c36169c190830@local>
+In-Reply-To: <2a26e912d2438674771c36169c190830@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,36 +27,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Andy Lutomirski <luto@amacapital.net>
 
-Luis Henriques reported that while backporting commit 40eea80 ("net:
-sendmsg: fix NULL pointer dereference") and applying the diff by hand,
-I made a typo resulting in the same test being done twice, and msg_name
-not being tested.
+It's possible for iretq to userspace to fail.  This can happen because
+of a bad CS, SS, or RIP.
 
-This fixes cf90357 ("net: sendmsg: fix NULL pointer dereference")
-which was merged into 2.6.32.64.
+Historically, we've handled it by fixing up an exception from iretq to
+land at bad_iret, which pretends that the failed iret frame was really
+the hardware part of #GP(0) from userspace.  To make this work, there's
+an extra fixup to fudge the gs base into a usable state.
 
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+This is suboptimal because it loses the original exception.  It's also
+buggy because there's no guarantee that we were on the kernel stack to
+begin with.  For example, if the failing iret happened on return from an
+NMI, then we'll end up executing general_protection on the NMI stack.
+This is bad for several reasons, the most immediate of which is that
+general_protection, as a non-paranoid idtentry, will try to deliver
+signals and/or schedule from the wrong stack.
+
+This patch throws out bad_iret entirely.  As a replacement, it augments
+the existing swapgs fudge into a full-blown iret fixup, mostly written
+in C.  It's should be clearer and more correct.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit b645af2d5905c4e32399005b867987919cbfc3ae)
+[wt: notes for backport to 2.6.32:
+  - _ASM_EXTABLE was open-coded.
+  - removed unneeded CFI_ENDPROC
+  - removed __visible (introduced in 2.6.37-rc1, not needed here)
+/wt]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/compat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/entry_64.S | 48 ++++++++++++++++++----------------------------
+ arch/x86/kernel/traps.c    | 29 ++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 29 deletions(-)
 
-diff --git a/net/compat.c b/net/compat.c
-index 71ed839..a5848ac 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -83,7 +83,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- {
- 	int tot_len;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index c862780..d9bcee0 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -873,12 +873,14 @@ ENTRY(native_iret)
  
--	if (kern_msg->msg_namelen && kern_msg->msg_namelen) {
-+	if (kern_msg->msg_name && kern_msg->msg_namelen) {
- 		if (mode==VERIFY_READ) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
+ .global native_irq_return_iret
+ native_irq_return_iret:
++	/*
++	 * This may fault.  Non-paranoid faults on return to userspace are
++	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
++	 * Double-faults due to espfix64 are handled in do_double_fault.
++	 * Other faults here are fatal.
++	 */
+ 	iretq
+ 
+-	.section __ex_table,"a"
+-	.quad native_irq_return_iret, bad_iret
+-	.previous
+-
+ #ifdef CONFIG_X86_ESPFIX64
+ native_irq_return_ldt:
+ 	pushq_cfi %rax
+@@ -905,25 +907,6 @@ native_irq_return_ldt:
+ 	jmp native_irq_return_iret
+ #endif
+ 
+-	.section .fixup,"ax"
+-bad_iret:
+-	/*
+-	 * The iret traps when the %cs or %ss being restored is bogus.
+-	 * We've lost the original trap vector and error code.
+-	 * #GPF is the most likely one to get for an invalid selector.
+-	 * So pretend we completed the iret and took the #GPF in user mode.
+-	 *
+-	 * We are now running with the kernel GS after exception recovery.
+-	 * But error_entry expects us to have user GS to match the user %cs,
+-	 * so swap back.
+-	 */
+-	pushq $0
+-
+-	SWAPGS
+-	jmp general_protection
+-
+-	.previous
+-
+ 	/* edi: workmask, edx: work */
+ retint_careful:
+ 	CFI_RESTORE_STATE
+@@ -1512,16 +1495,15 @@ error_sti:
+ 
+ /*
+  * There are two places in the kernel that can potentially fault with
+- * usergs. Handle them here. The exception handlers after iret run with
+- * kernel gs again, so don't set the user space flag. B stepping K8s
+- * sometimes report an truncated RIP for IRET exceptions returning to
+- * compat mode. Check for these here too.
++ * usergs. Handle them here.  B stepping K8s sometimes report a
++ * truncated RIP for IRET exceptions returning to compat mode. Check
++ * for these here too.
+  */
+ error_kernelspace:
+ 	incl %ebx
+ 	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	je error_bad_iret
+ 	movl %ecx,%eax	/* zero extend */
+ 	cmpq %rax,RIP+8(%rsp)
+ 	je bstep_iret
+@@ -1532,7 +1514,15 @@ error_kernelspace:
+ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	/* fall through */
++
++error_bad_iret:
++	SWAPGS
++	mov %rsp,%rdi
++	call fixup_bad_iret
++	mov %rax,%rsp
++	decl %ebx	/* Return to usergs */
++	jmp error_sti
+ END(error_entry)
+ 
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 03563a4..8a39a6c 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -512,6 +512,35 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
+ 		*regs = *eregs;
+ 	return regs;
+ }
++
++struct bad_iret_stack {
++	void *error_entry_ret;
++	struct pt_regs regs;
++};
++
++asmlinkage
++struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
++{
++	/*
++	 * This is called from entry_64.S early in handling a fault
++	 * caused by a bad iret to user mode.  To handle the fault
++	 * correctly, we want move our stack frame to task_pt_regs
++	 * and we want to pretend that the exception came from the
++	 * iret target.
++	 */
++	struct bad_iret_stack *new_stack =
++		container_of(task_pt_regs(current),
++			     struct bad_iret_stack, regs);
++
++	/* Copy the IRET target to the new stack. */
++	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
++
++	/* Copy the remainder of the stack from the current stack. */
++	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
++
++	BUG_ON(!user_mode_vm(&new_stack->regs));
++	return new_stack;
++}
+ #endif
+ 
+ /*
 -- 
 1.7.12.2.21.g234cd45.dirty
 
