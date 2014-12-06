@@ -1,191 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaLFCdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 21:33:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52230 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751645AbaLFCdI (ORCPT
+	id S1752218AbaLFCe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 21:34:58 -0500
+Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:45000 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751016AbaLFCe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 21:33:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Tejun Heo <tj@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] PM / Kconfig: Replace PM_RUNTIME with PM in dependencies
-Date: Sat, 06 Dec 2014 03:54:35 +0100
-Message-ID: <1710744.OD8H2BOPgr@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 5 Dec 2014 21:34:57 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:981:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3872:3873:3874:4250:4321:5007:6261:6742:8603:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13141:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: train94_2aa6dc0ae0654
+X-Filterd-Recvd-Size: 3264
+Message-ID: <1417833291.31745.5.camel@perches.com>
+Subject: Re: [PATCH 2/5] gpio: Cygnus: add GPIO driver
+From: Joe Perches <joe@perches.com>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-gpio@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Date: Fri, 05 Dec 2014 18:34:51 -0800
+In-Reply-To: <5482668F.1040907@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
+	 <1417826408-1600-1-git-send-email-rjui@broadcom.com>
+	 <1417826408-1600-3-git-send-email-rjui@broadcom.com>
+	 <1417829282.31745.3.camel@perches.com> <5482668F.1040907@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, 2014-12-05 at 18:14 -0800, Ray Jui wrote:
+> On 12/5/2014 5:28 PM, Joe Perches wrote:
+> > On Fri, 2014-12-05 at 16:40 -0800, Ray Jui wrote:
+> >> +static void bcm_cygnus_gpio_irq_handler(unsigned int irq,
+> >> +		struct irq_desc *desc)
+> >> +{
+> >> +	struct bcm_cygnus_gpio *cygnus_gpio;
+> >> +	struct irq_chip *chip = irq_desc_get_chip(desc);
+> >> +	int i, bit;
+> >> +
+> >> +	chained_irq_enter(chip, desc);
+> >> +
+> >> +	cygnus_gpio = irq_get_handler_data(irq);
+> >> +
+> >> +	/* go through the entire GPIO banks and handle all interrupts */
+> >> +	for (i = 0; i < cygnus_gpio->num_banks; i++) {
+> >> +		unsigned long val = readl(cygnus_gpio->base +
+> >> +				(i * GPIO_BANK_SIZE) +
+> >> +				CYGNUS_GPIO_INT_MSTAT_OFFSET);
+> >> +		if (val) {
+> >
+> > This if (val) and indentation isn't really necessary
+> >
+> 
+> Note for_each_set_bit in this case iterates 32 times searching for bits 
+> that are set.
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so Kconfig options
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+No it doesn't.
 
-Replace PM_RUNTIME with PM in Kconfig dependencies throughout the
-tree.
+#define for_each_set_bit(bit, addr, size) \
+	for ((bit) = find_first_bit((addr), (size));		\
+	     (bit) < (size);					\
+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+find_first_bit:
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+ * Returns the bit number of the first set bit.
+ * If no bits are set, returns @size.
 
-Please let me know if it is OK to take this one into linux-pm.
+>  By having the if (val) check here, it can potentially save 
+> some of such processing in the ISR. I agree with you that it introduces 
+> one extra indent here but I think it's required.
+> 
+> >> +			for_each_set_bit(bit, &val, 32) {
+> >
+> > for_each_set_bit will effectively do the if above.
+> >
+> > 32 bit only code?
+> > otherwise isn't this endian unsafe?
+> >
+> 
+> Will change 'unsigned long val' to 'u32 val'.
 
----
- arch/arm/mach-exynos/Kconfig          |    2 +-
- arch/ia64/Kconfig                     |    2 +-
- drivers/ata/Kconfig                   |    2 +-
- drivers/media/platform/Kconfig        |    2 +-
- drivers/media/platform/s5p-tv/Kconfig |    2 +-
- drivers/staging/gdm72xx/Kconfig       |    2 +-
- drivers/usb/core/Kconfig              |    2 +-
- drivers/usb/phy/Kconfig               |    4 ++--
- drivers/usb/storage/Kconfig           |    2 +-
- 9 files changed, 10 insertions(+), 10 deletions(-)
+All the bit operations only work on long *
 
-Index: linux-pm/arch/arm/mach-exynos/Kconfig
-===================================================================
---- linux-pm.orig/arch/arm/mach-exynos/Kconfig
-+++ linux-pm/arch/arm/mach-exynos/Kconfig
-@@ -21,7 +21,7 @@ menuconfig ARCH_EXYNOS
- 	select HAVE_S3C_RTC if RTC_CLASS
- 	select PINCTRL
- 	select PINCTRL_EXYNOS
--	select PM_GENERIC_DOMAINS if PM_RUNTIME
-+	select PM_GENERIC_DOMAINS if PM
- 	select S5P_DEV_MFC
- 	select SRAM
- 	help
-Index: linux-pm/arch/ia64/Kconfig
-===================================================================
---- linux-pm.orig/arch/ia64/Kconfig
-+++ linux-pm/arch/ia64/Kconfig
-@@ -232,7 +232,7 @@ config IA64_SGI_UV
- config IA64_HP_SIM
- 	bool "Ski-simulator"
- 	select SWIOTLB
--	depends on !PM_RUNTIME
-+	depends on !PM
- 
- endchoice
- 
-Index: linux-pm/drivers/ata/Kconfig
-===================================================================
---- linux-pm.orig/drivers/ata/Kconfig
-+++ linux-pm/drivers/ata/Kconfig
-@@ -61,7 +61,7 @@ config ATA_ACPI
- 
- config SATA_ZPODD
- 	bool "SATA Zero Power Optical Disc Drive (ZPODD) support"
--	depends on ATA_ACPI && PM_RUNTIME
-+	depends on ATA_ACPI && PM
- 	default n
- 	help
- 	  This option adds support for SATA Zero Power Optical Disc
-Index: linux-pm/drivers/media/platform/Kconfig
-===================================================================
---- linux-pm.orig/drivers/media/platform/Kconfig
-+++ linux-pm/drivers/media/platform/Kconfig
-@@ -112,7 +112,7 @@ config VIDEO_OMAP3_DEBUG
- config VIDEO_S3C_CAMIF
- 	tristate "Samsung S3C24XX/S3C64XX SoC Camera Interface driver"
- 	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
--	depends on PM_RUNTIME
-+	depends on PM
- 	depends on ARCH_S3C64XX || PLAT_S3C24XX || COMPILE_TEST
- 	depends on HAS_DMA
- 	select VIDEOBUF2_DMA_CONTIG
-Index: linux-pm/drivers/media/platform/s5p-tv/Kconfig
-===================================================================
---- linux-pm.orig/drivers/media/platform/s5p-tv/Kconfig
-+++ linux-pm/drivers/media/platform/s5p-tv/Kconfig
-@@ -8,7 +8,7 @@
- 
- config VIDEO_SAMSUNG_S5P_TV
- 	bool "Samsung TV driver for S5P platform"
--	depends on PM_RUNTIME
-+	depends on PM
- 	depends on ARCH_S5PV210 || ARCH_EXYNOS || COMPILE_TEST
- 	default n
- 	---help---
-Index: linux-pm/drivers/staging/gdm72xx/Kconfig
-===================================================================
---- linux-pm.orig/drivers/staging/gdm72xx/Kconfig
-+++ linux-pm/drivers/staging/gdm72xx/Kconfig
-@@ -53,7 +53,7 @@ if WIMAX_GDM72XX_USB
- 
- config WIMAX_GDM72XX_USB_PM
- 	bool "Enable power management support"
--	depends on PM_RUNTIME
-+	depends on PM
- 	help
- 	  Enable USB power management in order to reduce power consumption
- 	  while the interface is not in use.
-Index: linux-pm/drivers/usb/core/Kconfig
-===================================================================
---- linux-pm.orig/drivers/usb/core/Kconfig
-+++ linux-pm/drivers/usb/core/Kconfig
-@@ -43,7 +43,7 @@ config USB_DYNAMIC_MINORS
- 
- config USB_OTG
- 	bool "OTG support"
--	depends on PM_RUNTIME
-+	depends on PM
- 	default n
- 	help
- 	  The most notable feature of USB OTG is support for a
-Index: linux-pm/drivers/usb/phy/Kconfig
-===================================================================
---- linux-pm.orig/drivers/usb/phy/Kconfig
-+++ linux-pm/drivers/usb/phy/Kconfig
-@@ -20,7 +20,7 @@ config AB8500_USB
- 
- config FSL_USB2_OTG
- 	bool "Freescale USB OTG Transceiver Driver"
--	depends on USB_EHCI_FSL && USB_FSL_USB2 && USB_OTG_FSM && PM_RUNTIME
-+	depends on USB_EHCI_FSL && USB_FSL_USB2 && USB_OTG_FSM && PM
- 	select USB_OTG
- 	select USB_PHY
- 	help
-@@ -153,7 +153,7 @@ config USB_MSM_OTG
- 
- config USB_MV_OTG
- 	tristate "Marvell USB OTG support"
--	depends on USB_EHCI_MV && USB_MV_UDC && PM_RUNTIME
-+	depends on USB_EHCI_MV && USB_MV_UDC && PM
- 	select USB_OTG
- 	select USB_PHY
- 	help
-Index: linux-pm/drivers/usb/storage/Kconfig
-===================================================================
---- linux-pm.orig/drivers/usb/storage/Kconfig
-+++ linux-pm/drivers/usb/storage/Kconfig
-@@ -41,7 +41,7 @@ config USB_STORAGE_REALTEK
- 
- config REALTEK_AUTOPM
- 	bool "Realtek Card Reader autosuspend support"
--	depends on USB_STORAGE_REALTEK && PM_RUNTIME
-+	depends on USB_STORAGE_REALTEK && PM
- 	default y
- 
- config USB_STORAGE_DATAFAB
 
