@@ -1,162 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaLFNCE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 08:02:04 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42296 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910AbaLFNCB (ORCPT
+	id S1752647AbaLFNC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 08:02:27 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53256 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613AbaLFNCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 08:02:01 -0500
+	Sat, 6 Dec 2014 08:02:24 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: Re: wl1251: NVS firmware data
+Date: Sat, 6 Dec 2014 14:02:21 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <201411271506.20457@pali> <20141127155840.GC24149@kroah.com> <20141206124954.GB17289@amd>
+In-Reply-To: <20141206124954.GB17289@amd>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1410240906340.23446@atx-linux-37>
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
- <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
- <20141024105200.GA20775@amd> <B914D894-E486-4EF1-8F84-169E939C58B4@konsulko.com>
- <alpine.DEB.2.02.1410240906340.23446@atx-linux-37>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Sat, 6 Dec 2014 13:01:40 +0000
-X-Google-Sender-Auth: AJZdSHq81g7x61KwKQyFWfkBz7U
-Message-ID: <CACxGe6tiLxbCThzjOqrQg44Ue3XJuuRgti5jZY=UrssSY8=xqg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-To: atull <atull@opensource.altera.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pavel Machek <pavel@denx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, philip@balister.org,
-        rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        Yves Vandervennet <yvanderv@opensource.altera.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart3316292.aab7oo1W3o";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412061402.21514@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 3:54 PM, atull <atull@opensource.altera.com> wrote:
-> On Fri, 24 Oct 2014, Pantelis Antoniou wrote:
->
->> Hi Pavel,
->>
->> > On Oct 24, 2014, at 1:52 PM, Pavel Machek <pavel@denx.de> wrote:
->> >
->> > Hi!
->> >
->> >> * /sys/class/fpga_manager/<fpga>/firmware
->> >>  Name of FPGA image file to load using firmware class.
->> >>  $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
->> >
->> > I .. still don't think this is good idea. What about namespaces?
->> > The path corresponds to path in which namespace?
->> >
->
-> Hi Pavel,
->
-> Sorry if my documentation is too brief here.  The context is the
-> firmware class.  The 'image.rbf' is a image file that is located
-> on the filesystem in the firmware search patch.
-> See Documentation/firmware_class/README.
->
-> Basically we need some way of loading a FPGA image to the FPGA.
-> I don't think any one way is going to meet everybody's needs so
-> I wanted to export enough functions from fpga-mgr.c that other
-> interfaces can by built.  I think firmware will work just fine
-> for some people and it is great in that it already exists in the
-> kernel.
->
-> If I missed your point, please let me know.
->
->>
->> FWIW the overlays patchset uses binary configfs attribute to make this work.
->>
->
-> Hi Pantelis,
->
-> Yes I think you've mentioned that before.  So that would be another
-> way of giving a device tree overlay to configfs, right?  I should
-> that to the documentation in the patch header.
->
->> >> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
->> >> +{
->> >> +  int ret;
->> >> +
->> >> +  if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
->> >> +          return -EBUSY;
->> >> +
->> >> +  dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
->> >> +
->> >> +  ret = __fpga_mgr_write(mgr, buf, count);
->> >> +  clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
->> >> +
->> >> +  return ret;
->> >> +}
->> >> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
->> >
->> > Is the EBUSY -- userspace please try again, but you don't know when to
->> > try again -- right interface? I mean, normally kernel would wait, so
->> > that userland does not have to poll?
->> >
->
-> Yes, for fpga_mgr_write it may be more useful for this to be
-> a blocking call.
->
->> >> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
->> >> +                                 struct device_attribute *attr,
->> >> +                                 const char *buf, size_t count)
->> >> +{
->> >> +  struct fpga_manager *mgr = dev_get_drvdata(dev);
->> >> +  unsigned int len;
->> >> +  char image_name[NAME_MAX];
->> >> +  int ret;
->> >> +
->> >> +  /* lose terminating \n */
->> >> +  strcpy(image_name, buf);
->> >> +  len = strlen(image_name);
->> >> +  if (image_name[len - 1] == '\n')
->> >> +          image_name[len - 1] = 0;
->> >> +
->> >> +  ret = fpga_mgr_firmware_write(mgr, image_name);
->> >> +  if (ret)
->> >> +          return ret;
->> >> +
->> >> +  return count;
->> >> +}
->> >
->> > This shows why the interface is not right... Valid filename may
->> > contain \n, right? It may even end with \n.
->> >
->>
->> I could argue that a valid firmware file is one that's well formed and does not
->> contain those characters.
->>
->> I guess this is only for make echo file >foo work. You could specify that echo -n file >foo is
->> required.
->>
->
-> I am accustomed to doing 'echo -n' for most of sysfs anyway.  Once in a
-> while I am a bonehead and forget the '-n' and spend a few minutes
-> wondering why this thing that worked last week suddenly rejects all
-> commands.  I'm just trying to make my user interface a bit user-friendly.
->
-> I will take out the '\n' stripping and update the documentation.  I didn't
-> realize this would be controversial.
+--nextPart3316292.aab7oo1W3o
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Don't. You're doing the right thing by scrubbing your input. Requiring
-'echo -n' is just stupid when it is so easy to make work easily.
+On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
+> On Thu 2014-11-27 07:58:40, Greg Kroah-Hartman wrote:
+> > On Thu, Nov 27, 2014 at 04:22:58PM +0100, Pali Roh=C3=A1r wrote:
+> > > On Thursday 27 November 2014 16:16:55 Greg Kroah-Hartman wrote:
+> > > > On Thu, Nov 27, 2014 at 03:43:23PM +0100, Pali Roh=C3=A1r wrote:
+> > > > > On Thursday 27 November 2014 15:21:44 Ming Lei wrote:
+> > > > > > On Thu, Nov 27, 2014 at 10:06 PM, Pali Roh=C3=A1r
+> > > > >=20
+> > > > > <pali.rohar@gmail.com> wrote:
+> > > > > > > Hello,
+> > > > > > >=20
+> > > > > > > wifi driver wl1251 needs NVS calibration data for
+> > > > > > > working. These data are loaded by driver via
+> > > > > > > request_firmware from userspace file:
+> > > > > > > ti-connectivity/wl1251-nvs.bin. In linux-fimrware
+> > > > > > > git tree there is generic wl1251-nvs.bin file
+> > > > > > > which is used by default.
+> > > > > > >=20
+> > > > > > > Driver wl1251 is used on Nokia N900 cellphone for
+> > > > > > > its wifi chip. This cellphone has one special MTD
+> > > > > > > partition (called CAL) where are stored some
+> > > > > > > configuration data in special binary (key-value)
+> > > > > > > format. And there is also stored correct
+> > > > > > > calibration data for specific device (each device
+> > > > > > > has different data). It is preferred to use those
+> > > > > > > data instead generic one (provided by
+> > > > > > > linux-firmware git tree).
+> > > > > > >=20
+> > > > > > > Now my question is: How to correctly load
+> > > > > > > calibration data from special Nokia N900 CAL
+> > > > > > > partition into wl1251 kernel driver?
+> > > > > >=20
+> > > > > > It is better to let user space script handle the
+> > > > > > request.
+> > > > >=20
+> > > > > Yes, this makes sense. Implementing CAL parser in
+> > > > > kernel wl1251 driver would be hard...
+> > > > >=20
+> > > > > > > By default kernel reads
+> > > > > > > ti-connectivity/wl1251-nvs.bin file from VFS if
+> > > > > > > exists without any userspace support. If it fails
+> > > > > > > then it fallback to loading via udev.
+> > > > > >=20
+> > > > > > You can remove or rename this file so that loading
+> > > > > > from user space can be triggered.
+> > > > >=20
+> > > > > It is no so easy... In case when CAL does not contains
+> > > > > NVS data then we want to use this generic NVS file.
+> > > > > And telling everybody to rename this is file is not
+> > > > > good solution...
+> > > >=20
+> > > > But that's up to your system configuration, not the
+> > > > kernel. Make a userspace package for the firmware that
+> > > > creates it in the format you need it to be in, for the
+> > > > hardware you have, and then there would not be any need
+> > > > for a kernel change, right?
+> > > >=20
+> > > > greg k-h
+> > >=20
+> > > Not so simple as you think. Some parts of NVS data are
+> > > configured based on location and cellular station. Data
+> > > are not static.
+> >=20
+> > Then you need a dynamic program that you control, in
+> > userspace, to dump the needed data into the kernel.  Don't
+> > try to do it with "static" firmware files.  Use the binary
+> > sysfs file interface for this if you want.
+>=20
+> Actually, this seems to be similar situation to fpga
+> programming.
+>=20
+> There, it is static firmware for 90% users, but some special
+> use cases want it more dynamic.
+> 									Pavel
 
-g.
+Greg, Ming, what do you think about this approach?
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 3d785eb..810c4b9 100644
+=2D-- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -111,6 +111,11 @@ static inline long firmware_loading_timeout(void)
+ #define FW_OPT_FALLBACK		0
+ #endif
+ #define FW_OPT_NO_WARN	(1U << 3)
++#ifdef CONFIG_FW_LOADER_USER_HELPER
++#define FW_OPT_PREFER_USER	(1U << 4)
++#else
++#define FW_OPT_PREFER_USER	0
++#endif
+=20
+ struct firmware_cache {
+ 	/* firmware_buf instance will be added into the below list */
+@@ -1131,7 +1136,20 @@ _request_firmware(const struct firmware **firmware_p=
+, const char *name,
+ 		}
+ 	}
+=20
+=2D	ret =3D fw_get_filesystem_firmware(device, fw->priv);
++	if (opt_flags & FW_OPT_PREFER_USER) {
++		ret =3D fw_load_from_user_helper(fw, name, device, opt_flags, timeout);
++		if (ret) {
++			dev_warn(device,
++				 "User helper firmware load for %s failed with error %d\n",
++				 name, ret);
++			dev_warn(device, "Falling back to direct firmware load\n");
++		}
++	} else {
++		ret =3D -EINVAL;
++	}
++
++	if (ret)
++		ret =3D fw_get_filesystem_firmware(device, fw->priv);
+ 	if (ret) {
+ 		if (!(opt_flags & FW_OPT_NO_WARN))
+ 			dev_warn(device,
+@@ -1218,6 +1236,28 @@ int request_firmware_direct(const struct firmware **=
+firmware_p,
+ EXPORT_SYMBOL_GPL(request_firmware_direct);
+=20
+ /**
++ * request_firmware_prefer_user: - prefer usermode helper for loading firm=
+ware
++ * @firmware_p: pointer to firmware image
++ * @name: name of firmware file
++ * @device: device for which firmware is being loaded
++ *
++ * This function works pretty much like request_firmware(), but it prefer
++ * usermode helper. If usermode helper fails then it fallback to direct ac=
+cess.
++ * Usefull for dynamic or model specific firmware data.
++ **/
++int request_firmware_prefer_user(const struct firmware **firmware_p,
++			    const char *name, struct device *device)
++{
++	int ret;
++	__module_get(THIS_MODULE);
++	ret =3D _request_firmware(firmware_p, name, device,
++				FW_OPT_UEVENT | FW_OPT_PREFER_USER);
++	module_put(THIS_MODULE);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
++
++/**
+  * release_firmware: - release the resource associated with a firmware ima=
+ge
+  * @fw: firmware resource to release
+  **/
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index 5c41c5e..d35c511 100644
+=2D-- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -47,6 +47,8 @@ int request_firmware_nowait(
+ 	void (*cont)(const struct firmware *fw, void *context));
+ int request_firmware_direct(const struct firmware **fw, const char *name,
+ 			    struct device *device);
++int request_firmware_prefer_user(const struct firmware **fw, const char *n=
+ame,
++				 struct device *device);
+=20
+ void release_firmware(const struct firmware *fw);
+ #else
+
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart3316292.aab7oo1W3o
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSC/l0ACgkQi/DJPQPkQ1JFLQCffxwnPouUxVMAHQ+1fdHCJBcK
+OUgAnRvWuGeSw8KY8V1TOrX9qSl8FqOJ
+=Koho
+-----END PGP SIGNATURE-----
+
+--nextPart3316292.aab7oo1W3o--
