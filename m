@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaLFPIa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:08:30 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47720 "EHLO
+	id S1752735AbaLFPJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:09:37 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47689 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752287AbaLFPIR (ORCPT
+	by vger.kernel.org with ESMTP id S1752367AbaLFPIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:08:17 -0500
+	Sat, 6 Dec 2014 10:08:14 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 26/66] ASoC: wm_adsp: Avoid attempt to free buffers that might still be in use
-Date: Sat,  6 Dec 2014 16:07:18 +0100
-Message-Id: <0655044cc4972492962c4bb6f6c7098beb0b98c2.1417878427.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 35/66] USB: keyspan: fix overrun-error reporting
+Date: Sat,  6 Dec 2014 16:07:27 +0100
+Message-Id: <7f293483b05b6f3472942b9c733daaf05ec2115e.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -24,39 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9da7a5a9fdeeb76b2243f6b473363a7e6147ab6f upstream.
+commit 855515a6d3731242d85850a206f2ec084c917338 upstream.
 
-We should not free any buffers associated with writing out coefficients
-to the DSP until all the async writes have completed. This patch updates
-the out of memory path when allocating a new buffer to include a call to
-regmap_async_complete.
+Fix reporting of overrun errors, which are not associated with a
+character. Instead insert a null character and report only once.
 
-Reported-by: JS Park <aitdark.park@samsung.com>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/wm_adsp.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/keyspan.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/sound/soc/codecs/wm_adsp.c b/sound/soc/codecs/wm_adsp.c
-index 61e871bf63dd..f0e97fcde1bf 100644
---- a/sound/soc/codecs/wm_adsp.c
-+++ b/sound/soc/codecs/wm_adsp.c
-@@ -1341,6 +1341,7 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
- 			  file, blocks, pos - firmware->size);
- 
- out_fw:
-+	regmap_async_complete(regmap);
- 	release_firmware(firmware);
- 	wm_adsp_buf_free(&buf_list);
- out:
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index d6960aebe246..7053e0a9bb05 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -312,12 +312,13 @@ static void	usa26_indat_callback(struct urb *urb)
+ 		if ((data[0] & 0x80) == 0) {
+ 			/* no errors on individual bytes, only
+ 			   possible overrun err */
+-			if (data[0] & RXERROR_OVERRUN)
+-				err = TTY_OVERRUN;
+-			else
+-				err = 0;
++			if (data[0] & RXERROR_OVERRUN) {
++				tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++			}
+ 			for (i = 1; i < urb->actual_length ; ++i)
+-				tty_insert_flip_char(&port->port, data[i], err);
++				tty_insert_flip_char(&port->port, data[i],
++								TTY_NORMAL);
+ 		} else {
+ 			/* some bytes had errors, every byte has status */
+ 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+@@ -791,13 +792,13 @@ static void usa90_indat_callback(struct urb *urb)
+ 			if ((data[0] & 0x80) == 0) {
+ 				/* no errors on individual bytes, only
+ 				   possible overrun err*/
+-				if (data[0] & RXERROR_OVERRUN)
+-					err = TTY_OVERRUN;
+-				else
+-					err = 0;
++				if (data[0] & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				for (i = 1; i < urb->actual_length ; ++i)
+ 					tty_insert_flip_char(&port->port,
+-							data[i], err);
++							data[i], TTY_NORMAL);
+ 			}  else {
+ 			/* some bytes had errors, every byte has status */
+ 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
 -- 
 2.1.3
 
