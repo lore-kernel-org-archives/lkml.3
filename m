@@ -1,157 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaLFXQa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 18:16:30 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46280 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaLFXQ1 (ORCPT
+	id S1752590AbaLFX1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 18:27:45 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:37781 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaLFX1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 18:16:27 -0500
-From: vishnupatekar <vishnupatekar0510@gmail.com>
-X-Google-Original-From: vishnupatekar <VishnuPatekar0510@gmail.com>
-To: linux-sunxi@googlegroups.com, dmitry.torokhov@gmail.com,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk
-Cc: leafy.myeh@newbietech.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        vishnupatekar <VishnuPatekar0510@gmail.com>
-Subject: [PATCHv2 3/3]  ARM:dts:sunxi:ps2 dt nodes for A10/A20 PS2 controller.
-Date: Sun,  7 Dec 2014 04:45:19 +0530
-Message-Id: <1417907719-26775-4-git-send-email-VishnuPatekar0510@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417907719-26775-1-git-send-email-VishnuPatekar0510@gmail.com>
-References: <1417907719-26775-1-git-send-email-VishnuPatekar0510@gmail.com>
+	Sat, 6 Dec 2014 18:27:44 -0500
+Date: Sun, 7 Dec 2014 07:27:34 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] crypto: AF_ALG: add AEAD support
+Message-ID: <20141206232734.GA6409@gondor.apana.org.au>
+References: <2105559.EmODblLYuY@tachyon.chronox.de>
+ <20141205154606.GA30180@gondor.apana.org.au>
+ <45756810.oFuGYtKPb9@tachyon.chronox.de>
+ <1677221.HN3xC7fa4q@tachyon.chronox.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1677221.HN3xC7fa4q@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Added ps2 nodes in lime2 board dts. By default ps20 and ps21 nodes are
- commented as ps20 pins conflict with HDMI connector
- on Lime2 Board.
+On Sat, Dec 06, 2014 at 09:08:54PM +0100, Stephan Mueller wrote:
+>
+> While implementing that request, I thought about setting the auth size as part 
+> of the msg control in sendmsg instead of setsockopt. This would save us a 
+> system call and thus CPU cycles.
 
-Signed-off-by: vishnupatekar <VishnuPatekar0510@gmail.com>
----
- arch/arm/boot/dts/sun4i-a10.dtsi                |   27 +++++++++++++++++++++
- arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts |   13 ++++++++++
- arch/arm/boot/dts/sun7i-a20.dtsi                |   29 +++++++++++++++++++++++
- 3 files changed, 69 insertions(+)
+No, this is a tfm property and therefore you can't set them on the
+child sockets sicne two child sockets would share the same tfm.
 
-diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index 5e2ec2d..4726e8d 100644
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -615,6 +615,19 @@
- 				allwinner,drive = <0>;
- 				allwinner,pull = <0>;
- 			};
-+			ps2_0_pins: ps2_0@0 {
-+				    allwinner,pins = "PI20","PI21";
-+				    allwinner,function = "ps2";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
-+			ps2_1_pins: ps2_1@0 {
-+				    allwinner,pins = "PH12","PH13";
-+				    allwinner,function = "ps2";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
-+
- 		};
- 
- 		timer@01c20c00 {
-@@ -781,5 +794,19 @@
- 			#address-cells = <1>;
- 			#size-cells = <0>;
- 		};
-+		ps20: ps2@0x01c2a000 {
-+			compatible = "allwinner,sun4i-a10-ps2";
-+			reg = <0x01c2a000 0x400>;
-+			interrupts = <0 62 4>;
-+			clocks = <&apb1_gates 6>;
-+			status = "disabled";
-+		};
-+		ps21: ps2@0x01c2a400 {
-+			compatible = "allwinner,sun4i-a10-ps2";
-+			reg = <0x01c2a400 0x400>;
-+			interrupts = <0 63 4>;
-+			clocks = <&apb1_gates 7>;
-+			status = "disabled";
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-index ed364d5..5624e63 100644
---- a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-@@ -112,6 +112,19 @@
- 			pinctrl-0 = <&uart0_pins_a>;
- 			status = "okay";
- 		};
-+		/* PS2 0 and PS2 1 are disabled by default
-+		To enable PS2 0 and PS2 1 uncomment below ps20 and ps21 nodes
-+		Please note that ps20 pins conflict with HDMI on Lime2 Board*/
-+		/*ps20: ps2@0x01c2a000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&ps2_0_pins>;
-+			status = "okay";
-+		};
-+		ps21: ps2@0x01c2a400 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&ps2_1_pins>;
-+			status = "okay";
-+		};*/
- 
- 		i2c0: i2c@01c2ac00 {
- 			pinctrl-names = "default";
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index 8605f2b..96fe37d 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -852,6 +852,19 @@
- 				    allwinner,drive = <0>;
- 				    allwinner,pull = <0>;
- 			};
-+			ps2_0_pins: ps2_0@0 {
-+				    allwinner,pins = "PI20","PI21";
-+				    allwinner,function = "ps2";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
-+			ps2_1_pins: ps2_1@0 {
-+				    allwinner,pins = "PH12","PH13";
-+				    allwinner,function = "ps2";
-+				    allwinner,drive = <0>;
-+				    allwinner,pull = <0>;
-+			};
-+
- 		};
- 
- 		timer@01c20c00 {
-@@ -1079,5 +1092,21 @@
- 			#interrupt-cells = <3>;
- 			interrupts = <1 9 0xf04>;
- 		};
-+		ps20: ps2@0x01c2a000 {
-+			compatible = "allwinner,sun7i-a20-ps2";
-+			reg = <0x01c2a000 0x400>;
-+			interrupts = <0 62 4>;
-+			clocks = <&apb1_gates 6>;
-+			status = "disabled";
-+		};
-+		ps21: ps2@0x01c2a400 {
-+			compatible = "allwinner,sun7i-a20-ps2";
-+			reg = <0x01c2a400 0x400>;
-+			interrupts = <0 63 4>;
-+			clocks = <&apb1_gates 7>;
-+			status = "disabled";
-+		};
-+
-+
- 	};
- };
+Cheers,
 -- 
-1.7.9.5
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
