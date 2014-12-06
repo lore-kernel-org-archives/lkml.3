@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaLFPLv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:11:51 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47769 "EHLO
+	id S1752870AbaLFPLt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:11:49 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47763 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752303AbaLFPIM (ORCPT
+	by vger.kernel.org with ESMTP id S1752310AbaLFPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,9 +12,9 @@ To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 63/66] gpu/radeon: Set flag to indicate broken 64-bit MSI
-Date: Sat,  6 Dec 2014 16:07:55 +0100
-Message-Id: <021e15481284fe72834def5cb456dcfd8b7d9529.1417878427.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 19/66] PCI/MSI: Add device flag indicating that 64-bit MSIs don't work
+Date: Sat,  6 Dec 2014 16:07:11 +0100
+Message-Id: <5545f8b0fca9fa9efe65d8084dbb536aebabdb61.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -30,50 +30,87 @@ From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
 ===============
 
-commit 91ed6fd2c383bb8f02d66e98b4a4d2f7207249dc upstream.
+commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
 
-Some radeon ASICs don't support all 64 address bits of MSIs despite
-advertising support for 64-bit MSIs in their configuration space.
+This can be set by quirks/drivers to be used by the architecture code
+that assigns the MSI addresses.
 
-This breaks on systems such as IBM POWER7/8, where 64-bit MSIs can
-be assigned with some of the high address bits set.
-
-This makes use of the newly introduced "no_64bit_msi" flag in structure
-pci_dev to allow the MSI allocation code to fallback to 32-bit MSIs
-on those adapters.
-
-Adding Alex's review tag. Patch to the driver is identical to the
-reviewed one, I dropped the arch/powerpc hunk rewrote the subject
-and cset comment.
+We additionally add verification in the core MSI code that the values
+assigned by the architecture do satisfy the limitation in order to fail
+gracefully if they don't (ie. the arch hasn't been updated to deal with
+that quirk yet).
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/pci/msi.c   | 26 ++++++++++++++++++++++++++
+ include/linux/pci.h |  1 +
+ 2 files changed, 27 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index cc9e8482cf30..a1a843058369 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -196,6 +196,16 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
- 	if (rdev->flags & RADEON_IS_AGP)
- 		return false;
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index b43f391dc8b6..89237c8eab1d 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -553,6 +553,20 @@ out_unroll:
+ 	return ret;
+ }
  
-+	/*
-+	 * Older chips have a HW limitation, they can only generate 40 bits
-+	 * of address for "64-bit" MSIs which breaks on some platforms, notably
-+	 * IBM POWER servers, so we limit them
-+	 */
-+	if (rdev->family < CHIP_BONAIRE) {
-+		dev_info(rdev->dev, "radeon: MSI limited to 32-bit\n");
-+		rdev->pdev->no_64bit_msi = 1;
++static int msi_verify_entries(struct pci_dev *dev)
++{
++	struct msi_desc *entry;
++
++	list_for_each_entry(entry, &dev->msi_list, list) {
++		if (!dev->no_64bit_msi || !entry->msg.address_hi)
++			continue;
++		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
++			" tried to assign one above 4G\n");
++		return -EIO;
++	}
++	return 0;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -606,6 +620,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 		return ret;
+ 	}
+ 
++	ret = msi_verify_entries(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
 +	}
 +
- 	/* force MSI on */
- 	if (radeon_msi == 1)
- 		return true;
+ 	ret = populate_msi_sysfs(dev);
+ 	if (ret) {
+ 		msi_mask_irq(entry, mask, ~mask);
+@@ -721,6 +742,11 @@ static int msix_capability_init(struct pci_dev *dev,
+ 	if (ret)
+ 		goto out_avail;
+ 
++	/* Check if all MSI entries honor device restrictions */
++	ret = msi_verify_entries(dev);
++	if (ret)
++		goto out_free;
++
+ 	/*
+ 	 * Some devices require MSI-X to be enabled before we can touch the
+ 	 * MSI-X registers.  We need to mask all the vectors to prevent
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index db4ce115705e..573c04929bd1 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -323,6 +323,7 @@ struct pci_dev {
+ 	unsigned int	is_added:1;
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
++	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+ 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
+ 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
 -- 
 2.1.3
 
