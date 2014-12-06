@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaLFSyM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 13:54:12 -0500
-Received: from mout.gmx.net ([212.227.15.15]:49579 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679AbaLFSyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 13:54:10 -0500
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: akpm@linux-foundation.org, jack@suse.cz, eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH v3 3/3] fanotify: dont set FAN_ONDIR implicitly on a marks ignored mask
-Date: Sat,  6 Dec 2014 19:53:38 +0100
-Message-Id: <1417892018-19440-3-git-send-email-LinoSanfilippo@gmx.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417892018-19440-1-git-send-email-LinoSanfilippo@gmx.de>
-References: <1417892018-19440-1-git-send-email-LinoSanfilippo@gmx.de>
-X-Provags-ID: V03:K0:5AGwxjB9SertOUtmVvFXEw2zYbQXHFYyQwKyVJGA/dLOksrQZ21
- nSQxKiqdmxSJZLxpnxk07zOc++8G26wCaUKkNfdAnG/BbCyBuvhOl+0L7grDSjsvVVIAcnh
- ZdZuHmdPaW63ZcssMAaPzPzvocBy0mOJYA1snTbqT3Tt/cW4+5DkUngN4SJckXogzTbAztL
- W0g6KYwQNQGlTlX5w4obg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752355AbaLFS63 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 13:58:29 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:40234 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaLFS61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 13:58:27 -0500
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: next-20141204 crashing on ext4_fill_super()
+Date: Sat, 06 Dec 2014 16:58:22 -0200
+Message-ID: <2144577.XOl86X9GoH@laptop>
+User-Agent: KMail/4.13.3 (Linux/3.13.0-40-generic; KDE/4.13.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently FAN_ONDIR is always set on a marks ignored mask when the event mask
-is extended without FAN_MARK_ONDIR being set. This may result in events for
-directories being ignored unexpectedly for call sequences like
+Hello, everyone.
 
-fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
-fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE, AT_FDCWD, "dir");
+next-20141204 started crashing on my laptop with the following error right 
+after I enter my disk encryption password:
 
-Also FAN_MARK_ONDIR is only honored when adding events to a marks mask, but
-not for event removal. Fix both issues by not setting FAN_ONDIR implicitly on
-the ignore mask any more. Instead treat FAN_ONDIR as any other event flag and
-require FAN_MARK_ONDIR to be set by the user for both event mask and ignore
-mask. Furthermore take FAN_MARK_ONDIR into account when set for event removal.
+http://opsfelder.com/~murilo/lkml/next-20141204_crash.jpg
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/notify/fanotify/fanotify.c      |  2 +-
- fs/notify/fanotify/fanotify_user.c | 24 ++++++++++++++++--------
- 2 files changed, 17 insertions(+), 9 deletions(-)
+The previous version next-20141203 was working just fine.  next-20141205 is 
+also crashing.
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index 30d3add..51ceb81 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -140,7 +140,7 @@ static bool fanotify_should_send_event(struct fsnotify_mark *inode_mark,
- 	}
- 
- 	if (S_ISDIR(path->dentry->d_inode->i_mode) &&
--	    (marks_ignored_mask & FS_ISDIR))
-+	    !(marks_mask & FS_ISDIR & ~marks_ignored_mask))
- 		return false;
- 
- 	if (event_mask & marks_mask & ~marks_ignored_mask)
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index ddc33fb..683d140 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -491,10 +491,17 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
- 
- 	spin_lock(&fsn_mark->lock);
- 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
-+		__u32 tmask = fsn_mark->mask & ~mask;
-+		if (flags & FAN_MARK_ONDIR)
-+			tmask &= ~FAN_ONDIR;
-+
- 		oldmask = fsn_mark->mask;
--		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask & ~mask));
-+		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
- 	} else {
- 		__u32 tmask = fsn_mark->ignored_mask & ~mask;
-+		if (flags & FAN_MARK_ONDIR)
-+			tmask &= ~FAN_ONDIR;
-+
- 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
- 	}
- 	*destroy = !(fsn_mark->mask | fsn_mark->ignored_mask);
-@@ -568,20 +575,21 @@ static __u32 fanotify_mark_add_to_mask(struct fsnotify_mark *fsn_mark,
- 
- 	spin_lock(&fsn_mark->lock);
- 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
-+		__u32 tmask = fsn_mark->mask | mask;
-+		if (flags & FAN_MARK_ONDIR)
-+			tmask |= FAN_ONDIR;
-+
- 		oldmask = fsn_mark->mask;
--		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask | mask));
-+		fsnotify_set_mark_mask_locked(fsn_mark, tmask);
- 	} else {
- 		__u32 tmask = fsn_mark->ignored_mask | mask;
-+		if (flags & FAN_MARK_ONDIR)
-+			tmask |= FAN_ONDIR;
-+
- 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
- 		if (flags & FAN_MARK_IGNORED_SURV_MODIFY)
- 			fsn_mark->flags |= FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY;
- 	}
--
--	if (!(flags & FAN_MARK_ONDIR)) {
--		__u32 tmask = fsn_mark->ignored_mask | FAN_ONDIR;
--		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
--	}
--
- 	spin_unlock(&fsn_mark->lock);
- 
- 	return mask & ~oldmask;
+Git-bisect pointed me to the commit [1] 
+d0079b903022160fee1d673a3c1f3154c84385eb "ext4: 
+ext4_da_convert_inline_data_to_extent drop locked page after error".
+
+I tried reverting it from next-20141204 but got no luck.
+
+I'd be happy if someone can help me getting this fixed.
+
+Thanks in advance.
+
+[1]
+commit d0079b903022160fee1d673a3c1f3154c84385eb
+Author: Dmitry Monakhov <dmonakhov@openvz.org>
+Date:   Tue Dec 2 18:46:20 2014 -0500
+
+    ext4: ext4_da_convert_inline_data_to_extent drop locked page after error
+
+    Testcase:
+    xfstests generic/270
+    MKFS_OPTIONS="-q -I 256 -O inline_data,64bit"
+
+    Call Trace:
+     [<ffffffff81144c76>] lock_page+0x35/0x39 -------> DEADLOCK
+     [<ffffffff81145260>] pagecache_get_page+0x65/0x15a
+     [<ffffffff811507fc>] truncate_inode_pages_range+0x1db/0x45c
+     [<ffffffff8120ea63>] ? ext4_da_get_block_prep+0x439/0x4b6
+     [<ffffffff811b29b7>] ? __block_write_begin+0x284/0x29c
+     [<ffffffff8120e62a>] ? ext4_change_inode_journal_flag+0x16b/0x16b
+     [<ffffffff81150af0>] truncate_inode_pages+0x12/0x14
+     [<ffffffff81247cb4>] ext4_truncate_failed_write+0x19/0x25
+     [<ffffffff812488cf>] ext4_da_write_inline_data_begin+0x196/0x31c
+     [<ffffffff81210dad>] ext4_da_write_begin+0x189/0x302
+     [<ffffffff810c07ac>] ? trace_hardirqs_on+0xd/0xf
+     [<ffffffff810ddd13>] ? read_seqcount_begin.clone.1+0x9f/0xcc
+     [<ffffffff8114309d>] generic_perform_write+0xc7/0x1c6
+     [<ffffffff810c040e>] ? mark_held_locks+0x59/0x77
+     [<ffffffff811445d1>] __generic_file_write_iter+0x17f/0x1c5
+     [<ffffffff8120726b>] ext4_file_write_iter+0x2a5/0x354
+     [<ffffffff81185656>] ? file_start_write+0x2a/0x2c
+     [<ffffffff8107bcdb>] ? bad_area_nosemaphore+0x13/0x15
+     [<ffffffff811858ce>] new_sync_write+0x8a/0xb2
+     [<ffffffff81186e7b>] vfs_write+0xb5/0x14d
+     [<ffffffff81186ffb>] SyS_write+0x5c/0x8c
+     [<ffffffff816f2529>] system_call_fastpath+0x12/0x17
+
+    Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+    Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+
 -- 
-1.9.1
-
+Murilo
