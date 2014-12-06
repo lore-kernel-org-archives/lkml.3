@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaLFPOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:14:00 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47739 "EHLO
+	id S1753240AbaLFPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:13:59 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47791 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752243AbaLFPIL (ORCPT
+	by vger.kernel.org with ESMTP id S1752339AbaLFPIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:11 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Miaoqing Pan <miaoqing@qca.qualcomm.com>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@linux.intel.com>,
+        Dave Hansen <dave@sr71.net>, Fenghua Yu <fenghua.yu@intel.com>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 28/66] ath9k: Fix RTC_DERIVED_CLK usage
-Date: Sat,  6 Dec 2014 16:07:20 +0100
-Message-Id: <1043c385dd176fc1061781f9a9896cff540f6ea7.1417878427.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 16/66] x86: Require exact match for 'noxsave' command line option
+Date: Sat,  6 Dec 2014 16:07:08 +0100
+Message-Id: <64d6bef08627721e538f457da75cf43aa64f838b.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -25,81 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miaoqing Pan <miaoqing@qca.qualcomm.com>
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4e6ce4dc7ce71d0886908d55129d5d6482a27ff9 upstream.
+commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
 
-Based on the reference clock, which could be 25MHz or 40MHz,
-AR_RTC_DERIVED_CLK is programmed differently for AR9340 and AR9550.
-But, when a chip reset is done, processing the initvals
-sets the register back to the default value.
+We have some very similarly named command-line options:
 
-Fix this by moving the code in ath9k_hw_init_pll() to
-ar9003_hw_override_ini(). Also, do this override for AR9531.
+arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
 
-js: remove AR_SREV_9531 test as 9531 support is not in 3.12 yet
+__setup() is designed to match options that take arguments, like
+"foo=bar" where you would have:
 
-Signed-off-by: Miaoqing Pan <miaoqing@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+	__setup("foo", x86_foo_func...);
+
+The problem is that "noxsave" actually _matches_ "noxsaves" in
+the same way that "foo" matches "foo=bar".  If you boot an old
+kernel that does not know about "noxsaves" with "noxsaves" on the
+command line, it will interpret the argument as "noxsave", which
+is not what you want at all.
+
+This makes the "noxsave" handler only return success when it finds
+an *exact* match.
+
+[ tglx: We really need to make __setup() more robust. ]
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.c | 13 +++++++++++++
- drivers/net/wireless/ath/ath9k/hw.c         | 13 -------------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/common.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-index e897648d3233..5092343efd7d 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -648,6 +648,19 @@ static void ar9003_hw_override_ini(struct ath_hw *ah)
- 		else
- 			ah->enabled_cals &= ~TX_CL_CAL;
- 	}
-+
-+	if (AR_SREV_9340(ah) || AR_SREV_9550(ah)) {
-+		if (ah->is_clk_25mhz) {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e7ae);
-+		} else {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e800);
-+		}
-+		udelay(100);
-+	}
- }
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index d5f63dacf030..00cc6f79615d 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -144,6 +144,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
  
- static void ar9003_hw_prog_ini(struct ath_hw *ah,
-diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
-index 4e0a9429e192..c6f255f1c95e 100644
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -916,19 +916,6 @@ static void ath9k_hw_init_pll(struct ath_hw *ah,
- 	udelay(RTC_PLL_SETTLE_DELAY);
- 
- 	REG_WRITE(ah, AR_RTC_SLEEP_CLK, AR_RTC_FORCE_DERIVED_CLK);
--
--	if (AR_SREV_9340(ah) || AR_SREV_9550(ah)) {
--		if (ah->is_clk_25mhz) {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e7ae);
--		} else {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e800);
--		}
--		udelay(100);
--	}
- }
- 
- static void ath9k_hw_init_interrupt_masks(struct ath_hw *ah,
+ static int __init x86_xsave_setup(char *s)
+ {
++	if (strlen(s))
++		return 0;
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
+ 	setup_clear_cpu_cap(X86_FEATURE_AVX);
 -- 
 2.1.3
 
