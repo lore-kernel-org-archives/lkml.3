@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaLFUlI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 15:41:08 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:40985 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaLFUlG convert rfc822-to-8bit (ORCPT
+	id S1752509AbaLFVPD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 16:15:03 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:49301 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaLFVPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 15:41:06 -0500
+	Sat, 6 Dec 2014 16:15:01 -0500
 MIME-Version: 1.0
 In-Reply-To: <CA+55aFz+WH+792=Rhec=X3t8h8jDqFrt-PSNLti6UsQPfMm6PA@mail.gmail.com>
 References: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
@@ -23,20 +23,18 @@ References: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
 	<20141206043719.66a1aec6@as>
 	<CAFrnU35+_kPvOcBv0OWPzJF=X1SGP32gYogw2ZrH54z1Cu6bDg@mail.gmail.com>
 	<CA+55aFz+WH+792=Rhec=X3t8h8jDqFrt-PSNLti6UsQPfMm6PA@mail.gmail.com>
-Date: Sat, 6 Dec 2014 12:41:04 -0800
-X-Google-Sender-Auth: s6TOIcfGSKiHc2DorDCPXUwToLA
-Message-ID: <CA+55aFyH+Kh+oSuQkxzFu=r7jABqzZ1VZSY-mswCTK51-YibQA@mail.gmail.com>
+Date: Sat, 6 Dec 2014 22:14:59 +0100
+Message-ID: <CAFrnU36WON57R3Pi21KWsFMkRwzOsJSrGS+H5NoFiz6JmsdEsg@mail.gmail.com>
 Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Martin van Es <mrvanes@gmail.com>
+From: Martin van Es <mrvanes@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 6, 2014 at 12:09 PM, Linus Torvalds
+On Sat, Dec 6, 2014 at 9:09 PM, Linus Torvalds
 <torvalds@linux-foundation.org> wrote:
 > On Sat, Dec 6, 2014 at 8:22 AM, Martin van Es <mrvanes@gmail.com> wrote:
 >>
@@ -44,12 +42,10 @@ On Sat, Dec 6, 2014 at 12:09 PM, Linus Torvalds
 >
 > If you can reproduce it with your spare J1900 system and could perhaps
 > bisect it there, that would be a huge help.
+>
 
-Side note: your load sounds superficially more like the one Dâniel
-Fraga had, who saw lockups with 3.17 but 3.18-rc7 actually works for
-him.
+I'll give it a shot and see if I can get to freeze it on 3.17.3 as a
+start by playing content from the prd backend, but don't expect fast
+respons times... busy man...
 
-But if you're running 3.17.3, I think you should already have all the
-relevant fixes throuigh the -stable tree.
-
-                       Linus
+M.
