@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaLFRzN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:55:13 -0500
-Received: from 1wt.eu ([62.212.114.60]:40735 "EHLO 1wt.eu"
+	id S1752875AbaLFRzc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:55:32 -0500
+Received: from 1wt.eu ([62.212.114.60]:40771 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752403AbaLFRzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:06 -0500
-Message-Id: <20141206174148.893397497@1wt.eu>
+	id S1752785AbaLFRzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:24 -0500
+Message-Id: <20141206174149.327885974@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:59 +0100
+Date: Sat, 06 Dec 2014 18:42:09 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 11/25] x86_64/entry/xen: Do not invoke espfix64 on Xen
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Andy Whitcroft <andy.whitcroft@canonical.com>,
+        Brad Figg <brad.figg@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 21/25] net: sctp: fix remote memory pressure from excessive
+ queueing
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -27,145 +29,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
+commit b2d33ef40de7161c23032106284959ae75bdf3cd upstream
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+This scenario is not limited to ASCONF, just taken as one
+example triggering the issue. When receiving ASCONF probes
+in the form of ...
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
+  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
+  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
+  ---- ASCONF_a; [ASCONF_b; ...; ASCONF_n;] JUNK ------>
+  [...]
+  ---- ASCONF_m; [ASCONF_o; ...; ASCONF_z;] JUNK ------>
 
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
+... where ASCONF_a, ASCONF_b, ..., ASCONF_z are good-formed
+ASCONFs and have increasing serial numbers, we process such
+ASCONF chunk(s) marked with !end_of_packet and !singleton,
+since we have not yet reached the SCTP packet end. SCTP does
+only do verification on a chunk by chunk basis, as an SCTP
+packet is nothing more than just a container of a stream of
+chunks which it eats up one by one.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-(cherry picked from 3.2 commit 8ba19cd8c351e16b6be4caca9338d19b0cb8eaa4)
+We could run into the case that we receive a packet with a
+malformed tail, above marked as trailing JUNK. All previous
+chunks are here goodformed, so the stack will eat up all
+previous chunks up to this point. In case JUNK does not fit
+into a chunk header and there are no more other chunks in
+the input queue, or in case JUNK contains a garbage chunk
+header, but the encoded chunk length would exceed the skb
+tail, or we came here from an entirely different scenario
+and the chunk has pdiscard=1 mark (without having had a flush
+point), it will happen, that we will excessively queue up
+the association's output queue (a correct final chunk may
+then turn it into a response flood when flushing the
+queue ;)): I ran a simple script with incremental ASCONF
+serial numbers and could see the server side consuming
+excessive amount of RAM [before/after: up to 2GB and more].
+
+The issue at heart is that the chunk train basically ends
+with !end_of_packet and !singleton markers and since commit
+2e3216cd54b1 ("sctp: Follow security requirement of responding
+with 1 packet") therefore preventing an output queue flush
+point in sctp_do_sm() -> sctp_cmd_interpreter() on the input
+chunk (chunk = event_arg) even though local_cork is set,
+but its precedence has changed since then. In the normal
+case, the last chunk with end_of_packet=1 would trigger the
+queue flush to accommodate possible outgoing bundling.
+
+In the input queue, sctp_inq_pop() seems to do the right thing
+in terms of discarding invalid chunks. So, above JUNK will
+not enter the state machine and instead be released and exit
+the sctp_assoc_bh_rcv() chunk processing loop. It's simply
+the flush point being missing at loop exit. Adding a try-flush
+approach on the output queue might not work as the underlying
+infrastructure might be long gone at this point due to the
+side-effect interpreter run.
+
+One possibility, albeit a bit of a kludge, would be to defer
+invalid chunk freeing into the state machine in order to
+possibly trigger packet discards and thus indirectly a queue
+flush on error. It would surely be better to discard chunks
+as in the current, perhaps better controlled environment, but
+going back and forth, it's simply architecturally not possible.
+I tried various trailing JUNK attack cases and it seems to
+look good now.
+
+Joint work with Vlad Yasevich.
+
+Fixes: 2e3216cd54b1 ("sctp: Follow security requirement of responding with 1 packet")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(cherry picked from commit 26b87c7881006311828bb0ab271a551a62dcceb4)
+CVE-2014-3688
+BugLink: http://bugs.launchpad.net/bugs/1386393
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Andy Whitcroft <andy.whitcroft@canonical.com>
+Signed-off-by: Brad Figg <brad.figg@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/irqflags.h     |  2 +-
- arch/x86/kernel/entry_64.S          | 31 ++++++++++---------------------
- arch/x86/kernel/paravirt_patch_64.c |  2 --
- 3 files changed, 11 insertions(+), 24 deletions(-)
+ net/sctp/inqueue.c      | 33 +++++++--------------------------
+ net/sctp/sm_statefuns.c |  3 +++
+ 2 files changed, 10 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-index 9e2b952..58b0c5c 100644
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -130,7 +130,7 @@ static inline unsigned long __raw_local_irq_save(void)
- 
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
- 
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index cf9e7d2..4313d48 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -859,33 +859,27 @@ restore_args:
- 	RESTORE_ARGS 0,8,0
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
- 
--irq_return_iret:
--	INTERRUPT_RETURN
+diff --git a/net/sctp/inqueue.c b/net/sctp/inqueue.c
+index bbf5dd2..7f33bfa 100644
+--- a/net/sctp/inqueue.c
++++ b/net/sctp/inqueue.c
+@@ -149,18 +149,9 @@ struct sctp_chunk *sctp_inq_pop(struct sctp_inq *queue)
+ 		} else {
+ 			/* Nothing to do. Next chunk in the packet, please. */
+ 			ch = (sctp_chunkhdr_t *) chunk->chunk_end;
 -
--	.section __ex_table, "a"
--	.quad irq_return_iret, bad_iret
--	.previous
+ 			/* Force chunk->skb->data to chunk->chunk_end.  */
+-			skb_pull(chunk->skb,
+-				 chunk->chunk_end - chunk->skb->data);
 -
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
+-			/* Verify that we have at least chunk headers
+-			 * worth of buffer left.
+-			 */
+-			if (skb_headlen(chunk->skb) < sizeof(sctp_chunkhdr_t)) {
+-				sctp_chunk_free(chunk);
+-				chunk = queue->in_progress = NULL;
+-			}
++			skb_pull(chunk->skb, chunk->chunk_end - chunk->skb->data);
++			/* We are guaranteed to pull a SCTP header. */
+ 		}
+ 	}
  
- 	.section __ex_table,"a"
--	.quad native_iret, bad_iret
-+	.quad native_irq_return_iret, bad_iret
- 	.previous
--#endif
+@@ -196,24 +187,14 @@ struct sctp_chunk *sctp_inq_pop(struct sctp_inq *queue)
+ 	skb_pull(chunk->skb, sizeof(sctp_chunkhdr_t));
+ 	chunk->subh.v = NULL; /* Subheader is no longer valid.  */
  
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -907,7 +901,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
+-	if (chunk->chunk_end < skb_tail_pointer(chunk->skb)) {
++	if (chunk->chunk_end + sizeof(sctp_chunkhdr_t) <
++	    skb_tail_pointer(chunk->skb)) {
+ 		/* This is not a singleton */
+ 		chunk->singleton = 0;
+ 	} else if (chunk->chunk_end > skb_tail_pointer(chunk->skb)) {
+-		/* RFC 2960, Section 6.10  Bundling
+-		 *
+-		 * Partial chunks MUST NOT be placed in an SCTP packet.
+-		 * If the receiver detects a partial chunk, it MUST drop
+-		 * the chunk.
+-		 *
+-		 * Since the end of the chunk is past the end of our buffer
+-		 * (which contains the whole packet, we can freely discard
+-		 * the whole packet.
+-		 */
+-		sctp_chunk_free(chunk);
+-		chunk = queue->in_progress = NULL;
+-
+-		return NULL;
++		/* Discard inside state machine. */
++		chunk->pdiscard = 1;
++		chunk->chunk_end = skb_tail_pointer(chunk->skb);
+ 	} else {
+ 		/* We are at the end of the packet, so mark the chunk
+ 		 * in case we need to send a SACK.
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index ac98a1e..d40ff4a 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -160,6 +160,9 @@ sctp_chunk_length_valid(struct sctp_chunk *chunk,
+ {
+ 	__u16 chunk_length = ntohs(chunk->chunk_hdr->length);
  
- 	.section .fixup,"ax"
-@@ -995,13 +989,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1560,7 +1549,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
-diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
-index 3f08f34..a1da673 100644
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
++	/* Previously already marked? */
++	if (unlikely(chunk->pdiscard))
++		return 0;
+ 	if (unlikely(chunk_length < required_length))
+ 		return 0;
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
