@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaLFE23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 23:28:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57377 "EHLO
+	id S1751989AbaLFE3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 23:29:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaLFE22 (ORCPT
+	with ESMTP id S1751172AbaLFE3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 23:28:28 -0500
-Date: Fri, 5 Dec 2014 20:28:26 -0800
+	Fri, 5 Dec 2014 23:29:06 -0500
+Date: Fri, 5 Dec 2014 20:29:05 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Tejun Heo <tj@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM / Kconfig: Replace PM_RUNTIME with PM in dependencies
-Message-ID: <20141206042826.GA3398@kroah.com>
-References: <1710744.OD8H2BOPgr@vostro.rjw.lan>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] tty / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Message-ID: <20141206042905.GB3398@kroah.com>
+References: <1863568.HuOkEcjIrB@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1710744.OD8H2BOPgr@vostro.rjw.lan>
+In-Reply-To: <1863568.HuOkEcjIrB@vostro.rjw.lan>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 03:54:35AM +0100, Rafael J. Wysocki wrote:
+On Sat, Dec 06, 2014 at 03:33:47AM +0100, Rafael J. Wysocki wrote:
 > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
 > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so Kconfig options
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
 > depending on CONFIG_PM_RUNTIME may now be changed to depend on
 > CONFIG_PM.
 > 
-> Replace PM_RUNTIME with PM in Kconfig dependencies throughout the
-> tree.
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+> drivers/tty/.
 > 
 > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > ---
