@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaLFAMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 19:12:09 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34997 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaLFAMH (ORCPT
+	id S1752396AbaLFAPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 19:15:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaLFAPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 19:12:07 -0500
-Message-ID: <548249D1.7000008@infradead.org>
-Date: Fri, 05 Dec 2014 16:12:01 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>, rusty@rustcorp.com.au
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+	Fri, 5 Dec 2014 19:15:49 -0500
+Date: Fri, 5 Dec 2014 16:15:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "George Spelvin" <linux@horizon.com>
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] VERIFY_OCTAL_PERMISSIONS needs <linux/bug.h>
-References: <20141206000759.14606.qmail@ns.horizon.com>
+Message-Id: <20141205161548.dfa3bc0648b2109ebed9b1ae@linux-foundation.org>
 In-Reply-To: <20141206000759.14606.qmail@ns.horizon.com>
-Content-Type: text/plain; charset=windows-1252
+References: <20141206000759.14606.qmail@ns.horizon.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/14 16:07, George Spelvin wrote:
+On 5 Dec 2014 19:07:59 -0500 "George Spelvin" <linux@horizon.com> wrote:
+
 > It is possible to include <linux/kernel.h> and try to use
 > VERIFY_OCTAL_PERMISSIONS, then puke because BUILD_BUG_ON_ZERO
 > isn't defined.
@@ -35,16 +36,7 @@ On 12/05/14 16:07, George Spelvin wrote:
 > 
 > IMHO, except in documented special cases, header files should
 > #include their own macros' dependencies.
-
-Yes.  Documentation/SubmitChecklist #1:
-
-1: If you use a facility then #include the file that defines/declares
-   that facility.  Don't depend on other header files pulling in ones
-   that you use.
-
-
-Thanks.
-
+> 
 > Signed-off-by: George Spelvin <linux@horizon.com>
 > ---
 >  include/linux/kernel.h | 1 +
@@ -68,9 +60,9 @@ Thanks.
 > +#include <linux/bug.h>
 >  #include <asm/byteorder.h>
 >  #include <uapi/linux/kernel.h>
->  
-> 
 
+Absolutely everything includes kernel.h so this might have measurable
+build-time impact.
 
--- 
-~Randy
+VERIFY_OCTAL_PERMISSIONS() sticks out like a sore thumb in kernel.h. 
+How about we move it into sysfs.h?
