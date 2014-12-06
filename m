@@ -1,250 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaLFIVV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 03:21:21 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60868 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbaLFIVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 03:21:20 -0500
-Date: Sat, 6 Dec 2014 13:51:12 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Willy Tarreau <w@1wt.eu>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: panel: Remove magic numbers in LCD commands
-Message-ID: <20141206082112.GB5320@sudip-PC>
-References: <1417814899-9622-1-git-send-email-marius.gorski@gmail.com>
+	id S1752066AbaLFI0i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 03:26:38 -0500
+Received: from sauhun.de ([89.238.76.85]:48916 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398AbaLFI0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 03:26:37 -0500
+Date: Sat, 6 Dec 2014 09:26:34 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.18
+Message-ID: <20141206082629.GA2311@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
 Content-Disposition: inline
-In-Reply-To: <1417814899-9622-1-git-send-email-marius.gorski@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:28:19PM +0100, Mariusz Gorski wrote:
-> Get rid of magic numbers in LCD commands and replace them with defined
-> values, so that it's more obvious that the commands are doing.
-> 
-> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> ---
-> v2: Found and got rid of two more magic number usages
-this one also not applying to next-20141205. is it on staging-testing?
 
-thanks
-sudip
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
->  drivers/staging/panel/panel.c | 96 +++++++++++++++++++++++++++++--------------
->  1 file changed, 66 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index b68a9c3..9c68ccf 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -130,6 +130,30 @@
->  #define LCD_FLAG_N		0x0040	/* 2-rows mode */
->  #define LCD_FLAG_L		0x0080	/* backlight enabled */
->  
-> +/* LCD commands */
-> +#define LCD_CMD_DISPLAY_CLEAR	0x01	/* Clear entire display */
-> +
-> +#define LCD_CMD_ENTRY_MODE	0x04	/* Set entry mode */
-> +#define LCD_CMD_CURSOR_INC	0x02	/* Increment cursor */
-> +
-> +#define LCD_CMD_DISPLAY_CTRL	0x08	/* Display control */
-> +#define LCD_CMD_DISPLAY_ON	0x04	/* Set display on */
-> +#define LCD_CMD_CURSOR_ON	0x02	/* Set cursor on */
-> +#define LCD_CMD_BLINK_ON	0x01	/* Set blink on */
-> +
-> +#define LCD_CMD_SHIFT		0x10	/* Shift cursor/display */
-> +#define LCD_CMD_DISPLAY_SHIFT	0x08	/* Shift display instead of cursor */
-> +#define LCD_CMD_SHIFT_RIGHT	0x04	/* Shift display/cursor to the right */
-> +
-> +#define LCD_CMD_FUNCTION_SET	0x20	/* Set function */
-> +#define LCD_CMD_DATA_LEN_8BITS	0x10	/* Set data length to 8 bits */
-> +#define LCD_CMD_TWO_LINES	0x08	/* Set to two display lines */
-> +#define LCD_CMD_FONT_5X10_DOTS	0x04	/* Set char font to 5x10 dots */
-> +
-> +#define LCD_CMD_SET_CGRAM_ADDR	0x40	/* Set char generator RAM address */
-> +
-> +#define LCD_CMD_SET_DDRAM_ADDR	0x80	/* Set display data RAM address */
-> +
->  #define LCD_ESCAPE_LEN		24	/* max chars for LCD escape command */
->  #define LCD_ESCAPE_CHAR	27	/* use char 27 for escape command */
->  
-> @@ -883,7 +907,7 @@ static void lcd_write_data_tilcd(int data)
->  
->  static void lcd_gotoxy(void)
->  {
-> -	lcd_write_cmd(0x80	/* set DDRAM address */
-> +	lcd_write_cmd(LCD_CMD_SET_DDRAM_ADDR
->  		      | (lcd.addr.y ? lcd.hwidth : 0)
->  		      /* we force the cursor to stay at the end of the
->  			 line if it wants to go farther */
-> @@ -991,7 +1015,7 @@ static void lcd_clear_fast_tilcd(void)
->  /* clears the display and resets X/Y */
->  static void lcd_clear_display(void)
->  {
-> -	lcd_write_cmd(0x01);	/* clear display */
-> +	lcd_write_cmd(LCD_CMD_DISPLAY_CLEAR);
->  	lcd.addr.x = 0;
->  	lcd.addr.y = 0;
->  	/* we must wait a few milliseconds (15) */
-> @@ -1005,26 +1029,29 @@ static void lcd_init_display(void)
->  
->  	long_sleep(20);		/* wait 20 ms after power-up for the paranoid */
->  
-> -	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
-> +	/* 8bits, 1 line, small fonts; let's do it 3 times */
-> +	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
->  	long_sleep(10);
-> -	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
-> +	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
->  	long_sleep(10);
-> -	lcd_write_cmd(0x30);	/* 8bits, 1 line, small fonts */
-> +	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS);
->  	long_sleep(10);
->  
-> -	lcd_write_cmd(0x30	/* set font height and lines number */
-> -		      | ((lcd.flags & LCD_FLAG_F) ? 4 : 0)
-> -		      | ((lcd.flags & LCD_FLAG_N) ? 8 : 0)
-> +	/* set font height and lines number */
-> +	lcd_write_cmd(LCD_CMD_FUNCTION_SET | LCD_CMD_DATA_LEN_8BITS
-> +		      | ((lcd.flags & LCD_FLAG_F) ? LCD_CMD_FONT_5X10_DOTS : 0)
-> +		      | ((lcd.flags & LCD_FLAG_N) ? LCD_CMD_TWO_LINES : 0)
->  	    );
->  	long_sleep(10);
->  
-> -	lcd_write_cmd(0x08);	/* display off, cursor off, blink off */
-> +	/* display off, cursor off, blink off */
-> +	lcd_write_cmd(LCD_CMD_DISPLAY_CTRL);
->  	long_sleep(10);
->  
-> -	lcd_write_cmd(0x08	/* set display mode */
-> -		      | ((lcd.flags & LCD_FLAG_D) ? 4 : 0)
-> -		      | ((lcd.flags & LCD_FLAG_C) ? 2 : 0)
-> -		      | ((lcd.flags & LCD_FLAG_B) ? 1 : 0)
-> +	lcd_write_cmd(LCD_CMD_DISPLAY_CTRL	/* set display mode */
-> +		      | ((lcd.flags & LCD_FLAG_D) ? LCD_CMD_DISPLAY_ON : 0)
-> +		      | ((lcd.flags & LCD_FLAG_C) ? LCD_CMD_CURSOR_ON : 0)
-> +		      | ((lcd.flags & LCD_FLAG_B) ? LCD_CMD_BLINK_ON : 0)
->  	    );
->  
->  	lcd_backlight((lcd.flags & LCD_FLAG_L) ? 1 : 0);
-> @@ -1032,7 +1059,7 @@ static void lcd_init_display(void)
->  	long_sleep(10);
->  
->  	/* entry mode set : increment, cursor shifting */
-> -	lcd_write_cmd(0x06);
-> +	lcd_write_cmd(LCD_CMD_ENTRY_MODE | LCD_CMD_CURSOR_INC);
->  
->  	lcd_clear_display();
->  }
-> @@ -1116,7 +1143,7 @@ static inline int handle_lcd_special_code(void)
->  		if (lcd.addr.x > 0) {
->  			/* back one char if not at end of line */
->  			if (lcd.addr.x < lcd.bwidth)
-> -				lcd_write_cmd(0x10);
-> +				lcd_write_cmd(LCD_CMD_SHIFT);
->  			lcd.addr.x--;
->  		}
->  		processed = 1;
-> @@ -1124,19 +1151,20 @@ static inline int handle_lcd_special_code(void)
->  	case 'r':	/* shift cursor right */
->  		if (lcd.addr.x < lcd.width) {
->  			/* allow the cursor to pass the end of the line */
-> -			if (lcd.addr.x <
-> -			    (lcd.bwidth - 1))
-> -				lcd_write_cmd(0x14);
-> +			if (lcd.addr.x < (lcd.bwidth - 1))
-> +				lcd_write_cmd(LCD_CMD_SHIFT |
-> +						LCD_CMD_SHIFT_RIGHT);
->  			lcd.addr.x++;
->  		}
->  		processed = 1;
->  		break;
->  	case 'L':	/* shift display left */
-> -		lcd_write_cmd(0x18);
-> +		lcd_write_cmd(LCD_CMD_SHIFT | LCD_CMD_DISPLAY_SHIFT);
->  		processed = 1;
->  		break;
->  	case 'R':	/* shift display right */
-> -		lcd_write_cmd(0x1C);
-> +		lcd_write_cmd(LCD_CMD_SHIFT | LCD_CMD_DISPLAY_SHIFT |
-> +				LCD_CMD_SHIFT_RIGHT);
->  		processed = 1;
->  		break;
->  	case 'k': {	/* kill end of line */
-> @@ -1205,7 +1233,7 @@ static inline int handle_lcd_special_code(void)
->  			esc++;
->  		}
->  
-> -		lcd_write_cmd(0x40 | (cgaddr * 8));
-> +		lcd_write_cmd(LCD_CMD_SET_CGRAM_ADDR | (cgaddr * 8));
->  		for (addr = 0; addr < cgoffset; addr++)
->  			lcd_write_data(cgbytes[addr]);
->  
-> @@ -1238,21 +1266,29 @@ static inline int handle_lcd_special_code(void)
->  		break;
->  	}
->  
-> +	/* TODO: This indent party here got ugly, clean it! */
->  	/* Check whether one flag was changed */
->  	if (oldflags != lcd.flags) {
->  		/* check whether one of B,C,D flags were changed */
->  		if ((oldflags ^ lcd.flags) &
->  		    (LCD_FLAG_B | LCD_FLAG_C | LCD_FLAG_D))
->  			/* set display mode */
-> -			lcd_write_cmd(0x08
-> -				      | ((lcd.flags & LCD_FLAG_D) ? 4 : 0)
-> -				      | ((lcd.flags & LCD_FLAG_C) ? 2 : 0)
-> -				      | ((lcd.flags & LCD_FLAG_B) ? 1 : 0));
-> +			lcd_write_cmd(LCD_CMD_DISPLAY_CTRL
-> +				      | ((lcd.flags & LCD_FLAG_D)
-> +						      ? LCD_CMD_DISPLAY_ON : 0)
-> +				      | ((lcd.flags & LCD_FLAG_C)
-> +						      ? LCD_CMD_CURSOR_ON : 0)
-> +				      | ((lcd.flags & LCD_FLAG_B)
-> +						      ? LCD_CMD_BLINK_ON : 0));
->  		/* check whether one of F,N flags was changed */
->  		else if ((oldflags ^ lcd.flags) & (LCD_FLAG_F | LCD_FLAG_N))
-> -			lcd_write_cmd(0x30
-> -				      | ((lcd.flags & LCD_FLAG_F) ? 4 : 0)
-> -				      | ((lcd.flags & LCD_FLAG_N) ? 8 : 0));
-> +			lcd_write_cmd(LCD_CMD_FUNCTION_SET
-> +				      | LCD_CMD_DATA_LEN_8BITS
-> +				      | ((lcd.flags & LCD_FLAG_F)
-> +						      ? LCD_CMD_TWO_LINES : 0)
-> +				      | ((lcd.flags & LCD_FLAG_N)
-> +						      ? LCD_CMD_FONT_5X10_DOTS
-> +								      : 0));
->  		/* check whether L flag was changed */
->  		else if ((oldflags ^ lcd.flags) & (LCD_FLAG_L)) {
->  			if (lcd.flags & (LCD_FLAG_L))
-> @@ -1291,13 +1327,13 @@ static void lcd_write_char(char c)
->  				   end of the line */
->  				if (lcd.addr.x < lcd.bwidth)
->  					/* back one char */
-> -					lcd_write_cmd(0x10);
-> +					lcd_write_cmd(LCD_CMD_SHIFT);
->  				lcd.addr.x--;
->  			}
->  			/* replace with a space */
->  			lcd_write_data(' ');
->  			/* back one char again */
-> -			lcd_write_cmd(0x10);
-> +			lcd_write_cmd(LCD_CMD_SHIFT);
->  			break;
->  		case '\014':
->  			/* quickly clear the display */
-> -- 
-> 2.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Linus,
+
+here are two more driver bugfixes for I2C which would be good to have in
+3.18. This branch is based on your tree from two days ago to make sure
+the fixes I sent previously were already included.
+
+Please pull and thanks,
+
+   Wolfram
+
+
+The following changes since commit 7cc78f8fa02c2485104b86434acbc1538a3bd807:
+
+  context_tracking: Restore previous state in schedule_user (2014-12-03 20:55:58 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to 681d15a0f527af7ab3a783e1037de86fbcb136ac:
+
+  i2c: cadence: Set the hardware time-out register to maximum value (2014-12-04 19:25:41 +0100)
+
+----------------------------------------------------------------
+Grygorii Strashko (1):
+      i2c: davinci: generate STP always when NACK is received
+
+Vishnu Motghare (1):
+      i2c: cadence: Set the hardware time-out register to maximum value
+
+ drivers/i2c/busses/i2c-cadence.c | 11 +++++++++++
+ drivers/i2c/busses/i2c-davinci.c |  8 +++-----
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUgr21AAoJEBQN5MwUoCm269UP/1MpLPr0TFk0PO1J+Ng6JqTP
+8CCnBQDMV5tGWOh0moQy1qUWc1nu4d1DM2F1jvyoqMKZZdc2E7hqe1IRMB28ybge
+1LgraiSXYTazWCQmvlVklQsGycRv19cv+7lw5PumN+OW6QBLM4japbhmVEHq/9QS
+SCmttNNyzdWyRBn8FgCUZdBshqpsnnIhLB7lOjcuZXdF04cdEm0ZtkU+fWGvaAt1
+doUtOVvw1VeOrbU7guFRkctmlI87F0MFqnWV0qW5brfyycmLFuyjY3iLR+fEuV92
+bzls5UFXC8ZZkVou1hU/4lc1G8IPxAC8Q6vrBkcq97PaooJapE5v+U1R5wJjE/XS
+MPijIfeFL8PpIOk3tnuy2GSX+4yaK3iQnRJBz9VwyF1fiRwUApGoLcRuOaMQ7Jg6
+EryM6teh2f7wli8Lrhfv+e0pkG5vn/YrLBq8efkv0sUFalJuXLEbQC3kNgOxUC91
+5wP7QrXmEVuGHQBzP7RAl+ODRAWyeVVPPEJm8ZTd6vt1i9EdZO/M4yhLt71B2JT3
+kaMI7KCpK11J/713TSxJE+CjlML7NGpZKnwAy0x0v+5Mr+SrtBdn/ssVlD83rSUf
+9OPnB62i+dONOYol1g/AVHb5lQGAYJQyklYIYRg8bMrXYOPPDHuXcTp90INotQZj
+BKif8Mk9TDVgd/XnsNRf
+=VSxG
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
