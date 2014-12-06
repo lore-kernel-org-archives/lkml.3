@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbaLFPIE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:08:04 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47648 "EHLO
+	id S1753794AbaLFPYx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:24:53 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47686 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751909AbaLFPIA (ORCPT
+	by vger.kernel.org with ESMTP id S1752047AbaLFPIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:08:00 -0500
+	Sat, 6 Dec 2014 10:08:02 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 02/66] Input: i8042 - add firmware_id support
-Date: Sat,  6 Dec 2014 16:06:54 +0100
-Message-Id: <9abcb95a72698fe08402c7204d2375af50a1e01d.1417878427.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 34/66] USB: ssu100: fix overrun-error reporting
+Date: Sat,  6 Dec 2014 16:07:26 +0100
+Message-Id: <6aac77da2f675a7b47ef4a48a0f58a3d3d2c0026.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -24,97 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a7c5868c3482127cb308c779b8a6460a3353c17f upstream.
+commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
 
-Fill in the new serio firmware_id sysfs attribute for pnp instantiated
-8042 serio ports.
+Fix reporting of overrun errors, which should only be reported once
+using the inserted null character.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Peter Hutterer <peter.hutterer@who-t.net>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 15 +++++++++++++++
- drivers/input/serio/i8042.c           |  6 ++++++
- 2 files changed, 21 insertions(+)
+ drivers/usb/serial/ssu100.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 2b888f1e6421..a4ac027637b9 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -746,6 +746,17 @@ static int i8042_pnp_aux_irq;
- static char i8042_pnp_kbd_name[32];
- static char i8042_pnp_aux_name[32];
- 
-+static void i8042_pnp_id_to_string(struct pnp_id *id, char *dst, int dst_size)
-+{
-+	strlcpy(dst, "PNP:", dst_size);
-+
-+	while (id) {
-+		strlcat(dst, " ", dst_size);
-+		strlcat(dst, id->id, dst_size);
-+		id = id->next;
-+	}
-+}
-+
- static int i8042_pnp_kbd_probe(struct pnp_dev *dev, const struct pnp_device_id *did)
- {
- 	if (pnp_port_valid(dev, 0) && pnp_port_len(dev, 0) == 1)
-@@ -762,6 +773,8 @@ static int i8042_pnp_kbd_probe(struct pnp_dev *dev, const struct pnp_device_id *
- 		strlcat(i8042_pnp_kbd_name, ":", sizeof(i8042_pnp_kbd_name));
- 		strlcat(i8042_pnp_kbd_name, pnp_dev_name(dev), sizeof(i8042_pnp_kbd_name));
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index e5750be49054..d667ff95ade4 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -495,10 +495,9 @@ static void ssu100_update_lsr(struct usb_serial_port *port, u8 lsr,
+ 			if (*tty_flag == TTY_NORMAL)
+ 				*tty_flag = TTY_FRAME;
+ 		}
+-		if (lsr & UART_LSR_OE){
++		if (lsr & UART_LSR_OE) {
+ 			port->icount.overrun++;
+-			if (*tty_flag == TTY_NORMAL)
+-				*tty_flag = TTY_OVERRUN;
++			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
+ 		}
  	}
-+	i8042_pnp_id_to_string(dev->id, i8042_kbd_firmware_id,
-+			       sizeof(i8042_kbd_firmware_id));
  
- 	/* Keyboard ports are always supposed to be wakeup-enabled */
- 	device_set_wakeup_enable(&dev->dev, true);
-@@ -786,6 +799,8 @@ static int i8042_pnp_aux_probe(struct pnp_dev *dev, const struct pnp_device_id *
- 		strlcat(i8042_pnp_aux_name, ":", sizeof(i8042_pnp_aux_name));
- 		strlcat(i8042_pnp_aux_name, pnp_dev_name(dev), sizeof(i8042_pnp_aux_name));
- 	}
-+	i8042_pnp_id_to_string(dev->id, i8042_aux_firmware_id,
-+			       sizeof(i8042_aux_firmware_id));
+@@ -516,12 +515,8 @@ static void ssu100_process_read_urb(struct urb *urb)
+ 	if ((len >= 4) &&
+ 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
+ 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
+-		if (packet[2] == 0x00) {
++		if (packet[2] == 0x00)
+ 			ssu100_update_lsr(port, packet[3], &flag);
+-			if (flag == TTY_OVERRUN)
+-				tty_insert_flip_char(&port->port, 0,
+-						TTY_OVERRUN);
+-		}
+ 		if (packet[2] == 0x01)
+ 			ssu100_update_msr(port, packet[3]);
  
- 	i8042_pnp_aux_devices++;
- 	return 0;
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index 52c9ebf94729..03ab163857dd 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -87,6 +87,8 @@ MODULE_PARM_DESC(debug, "Turn i8042 debugging mode on and off");
- #endif
- 
- static bool i8042_bypass_aux_irq_test;
-+static char i8042_kbd_firmware_id[128];
-+static char i8042_aux_firmware_id[128];
- 
- #include "i8042.h"
- 
-@@ -1218,6 +1220,8 @@ static int __init i8042_create_kbd_port(void)
- 	serio->dev.parent	= &i8042_platform_device->dev;
- 	strlcpy(serio->name, "i8042 KBD port", sizeof(serio->name));
- 	strlcpy(serio->phys, I8042_KBD_PHYS_DESC, sizeof(serio->phys));
-+	strlcpy(serio->firmware_id, i8042_kbd_firmware_id,
-+		sizeof(serio->firmware_id));
- 
- 	port->serio = serio;
- 	port->irq = I8042_KBD_IRQ;
-@@ -1244,6 +1248,8 @@ static int __init i8042_create_aux_port(int idx)
- 	if (idx < 0) {
- 		strlcpy(serio->name, "i8042 AUX port", sizeof(serio->name));
- 		strlcpy(serio->phys, I8042_AUX_PHYS_DESC, sizeof(serio->phys));
-+		strlcpy(serio->firmware_id, i8042_aux_firmware_id,
-+			sizeof(serio->firmware_id));
- 		serio->close = i8042_port_close;
- 	} else {
- 		snprintf(serio->name, sizeof(serio->name), "i8042 AUX%d port", idx);
 -- 
 2.1.3
 
