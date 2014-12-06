@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaLFPKj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:10:39 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47813 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752393AbaLFPIM (ORCPT
+	id S1752858AbaLFPKw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:10:52 -0500
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:3169 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752393AbaLFPKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:08:12 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jane Zhou <a17711@motorola.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Yiwei Zhao <gbjc64@motorola.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 60/66] net/ping: handle protocol mismatching scenario
-Date: Sat,  6 Dec 2014 16:07:52 +0100
-Message-Id: <29c881caca77550c4f0c97be09f5fc659c9955c5.1417878427.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
-References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
-In-Reply-To: <cover.1417878427.git.jslaby@suse.cz>
-References: <cover.1417878427.git.jslaby@suse.cz>
+	Sat, 6 Dec 2014 10:10:49 -0500
+Message-Id: <681c51$omkd8a@relay.skynet.be>
+Date: 06 Dec 2014 16:09:36 +0100
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvIUABMcg1RR9Aqz/2dsb2JhbABZgwZSWIIhtFcBj2GGEyhrFwEBAQEBfYRfIxgXUxgkE4gmAxYBCM5xDYV1jk6BSWSDA4E6BYRSA5MhgwuDEog+PIYRgUWCaTABgQKBQAECAw
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: [GIT PULL REQUEST] watchdog - v3.18-rc7 Fixes
+X-Antivirus: avast! (VPS 141206-0, 06/12/2014), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jane Zhou <a17711@motorola.com>
+Hi Linus,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Please pull from 'master' branch of
+        git://www.linux-watchdog.org/linux-watchdog.git
 
-===============
+It will fix the watchdog mask bit offset for Exynos7.
 
-commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
+This will update the following files:
 
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
+ s3c2410_wdt.c |    2 +-
+ 1 files changed, 1 insertion(+), 1 deletion(-)
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv4/ping.c | 2 ++
- 1 file changed, 2 insertions(+)
+with these Changes:
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index c211607b79b3..8bd51f49aa96 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -214,6 +214,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
- 
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
--- 
-2.1.3
+commit 5476b2b77dae50c88aa6a85f21abeac38dde590f
+Author: Abhilash Kesavan <a.kesavan@samsung.com>
+Date:   Fri Oct 17 21:42:53 2014 +0530
+
+    watchdog: s3c2410_wdt: Fix the mask bit offset for Exynos7
+
+    The watchdog mask bit offset listed for Exynos7 is incorrect.
+    Fix this.
+
+    Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+    Acked-by: Naveen Krishna Chatradhi <naveenkrishna.ch@gmail.com
+    Reviewd-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index 8532c3e..1626dc6 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -161,7 +161,7 @@ static const struct s3c2410_wdt_variant drv_data_exynos5420 = {
+ static const struct s3c2410_wdt_variant drv_data_exynos7 = {
+        .disable_reg = EXYNOS5_WDT_DISABLE_REG_OFFSET,
+        .mask_reset_reg = EXYNOS5_WDT_MASK_RESET_REG_OFFSET,
+-       .mask_bit = 0,
++       .mask_bit = 23,
+        .rst_stat_reg = EXYNOS5_RST_STAT_REG_OFFSET,
+        .rst_stat_bit = 23,     /* A57 WDTRESET */
+        .quirks = QUIRK_HAS_PMU_CONFIG | QUIRK_HAS_RST_STAT,
 
