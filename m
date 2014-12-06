@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaLFUJz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 15:09:55 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:43226 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbaLFUJy (ORCPT
+	id S1752497AbaLFUPW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 15:15:22 -0500
+Received: from cmexedge1.emulex.com ([138.239.224.99]:4422 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaLFUPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 15:09:54 -0500
+	Sat, 6 Dec 2014 15:15:20 -0500
+Message-ID: <548363B5.1040909@emulex.com>
+Date: Sat, 6 Dec 2014 15:14:45 -0500
+From: James Smart <james.smart@emulex.com>
+Reply-To: <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAFrnU35+_kPvOcBv0OWPzJF=X1SGP32gYogw2ZrH54z1Cu6bDg@mail.gmail.com>
-References: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-	<20141205184808.GA2753@redhat.com>
-	<20141206043719.66a1aec6@as>
-	<CAFrnU35+_kPvOcBv0OWPzJF=X1SGP32gYogw2ZrH54z1Cu6bDg@mail.gmail.com>
-Date: Sat, 6 Dec 2014 12:09:53 -0800
-X-Google-Sender-Auth: --oGNnJruZoZHbv90IzE4S3VFMo
-Message-ID: <CA+55aFz+WH+792=Rhec=X3t8h8jDqFrt-PSNLti6UsQPfMm6PA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Martin van Es <mrvanes@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Thorlton <athorlton@sgi.com>
+CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [BUG] kzalloc overflow in lpfc driver on 6k core system
+References: <20141202215810.GT4720@sgi.com> <94D0CD8314A33A4D9D801C0FE68B4029593EFC9E@G4W3202.americas.hpqcorp.net> <20141203160546.GA4720@sgi.com>
+In-Reply-To: <20141203160546.GA4720@sgi.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 6, 2014 at 8:22 AM, Martin van Es <mrvanes@gmail.com> wrote:
+Alex,
+
+Myself and several others here at Emulex maintain the code. The 
+recommendations look fine.   Feel free to post something if you beat us 
+to the work.
+
+-- james s
+
+
+On 12/3/2014 11:05 AM, Alex Thorlton wrote:
+> On Tue, Dec 02, 2014 at 10:39:40PM +0000, Elliott, Robert (Server Storage) wrote:
+>> In similar code, mpt3sas and lockless hpsa just call get_cpu_mask()
+>> inside the loop:
+>>          cpu = cpumask_first(cpu_online_mask);
+>>          for (i = 0; i < h->msix_vector; i++) {
+>>                  rc = irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
+>>                  cpu = cpumask_next(cpu, cpu_online_mask);
+>>          }
+>>
+>> get_cpu_mask() uses the global cpu_bit_bitmap array, which is declared
+>> in kernel/cpu.c:
+>> extern const unsigned long
+>>          cpu_bit_bitmap[BITS_PER_LONG+1][BITS_TO_LONGS(NR_CPUS)];
+>>
+>> That approach should work for lpfc.
+> Ok, good deal.  Thanks for the info, Robert.  Do you know who the
+> current maintainer is for this code?  Would that be you?  I included the
+> two authors that get_maintainer reported, but haven't heard from them.
 >
-> Hope this may help in finding the right direction for this bug?
+> I like this approach and don't mind implementing it myself, but I'd like
+> to confirm that whoever would be responsible for merging the code is ok
+> with the change before going forward.  Of course, if the code has been
+> orphaned, then I guess we just write away :)
+>
+> Thanks again for the help!
+>
+> - Alex
+>
+>
 
-If you can reproduce it with your spare J1900 system and could perhaps
-bisect it there, that would be a huge help.
-
-                            Linus
