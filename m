@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaLFR7E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:59:04 -0500
-Received: from 1wt.eu ([62.212.114.60]:40722 "EHLO 1wt.eu"
+	id S1753172AbaLFR7k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:59:40 -0500
+Received: from 1wt.eu ([62.212.114.60]:40716 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563AbaLFRzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:01 -0500
-Message-Id: <20141206174149.418344651@1wt.eu>
+	id S1752468AbaLFRy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:57 -0500
+Message-Id: <20141206174149.465456075@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:11 +0100
+Date: Sat, 06 Dec 2014 18:42:12 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>,
         Andy Whitcroft <apw@canonical.com>,
         Stefan Bader <stefan.bader@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 23/25] net: sctp: fix NULL pointer dereference in
- af->from_addr_param on malformed packet
+Subject: [ 24/25] mac80211: fix fragmentation code, particularly for
+ encryption
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -30,86 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a6e1af6f5e9e75095ae1b004f6f00082e5fc4d2d upstream
+commit a722a419815ed203b519151f9556859ff256638b upstream
 
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
+The "new" fragmentation code (since my rewrite almost 5 years ago)
+erroneously sets skb->len rather than using skb_trim() to adjust
+the length of the first fragment after copying out all the others.
+This leaves the skb tail pointer pointing to after where the data
+originally ended, and thus causes the encryption MIC to be written
+at that point, rather than where it belongs: immediately after the
+data.
 
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
+The impact of this is that if software encryption is done, then
+ a) encryption doesn't work for the first fragment, the connection
+    becomes unusable as the first fragment will never be properly
+    verified at the receiver, the MIC is practically guaranteed to
+    be wrong
+ b) we leak up to 8 bytes of plaintext (!) of the packet out into
+    the air
 
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
+This is only mitigated by the fact that many devices are capable
+of doing encryption in hardware, in which case this can't happen
+as the tail pointer is irrelevant in that case. Additionally,
+fragmentation is not used very frequently and would normally have
+to be configured manually.
 
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
+Fix this by using skb_trim() properly.
 
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-(cherry picked from commit e40607cbe270a9e8360907cb1e62ddf0736e4864)
-CVE-2014-7841
-BugLink: http://bugs.launchpad.net/bugs/1392820
+Cc: stable@vger.kernel.org
+Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+(backported from commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f)
+CVE-2014-8709
+BugLink: http://bugs.launchpad.net/bugs/1392013
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Acked-by: Andy Whitcroft <apw@canonical.com>
 Acked-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sctp/sm_make_chunk.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/mac80211/tx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index 5f2dc3f..9de3592 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2544,6 +2544,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index b1d7904..687fc8e 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -770,7 +770,7 @@ static int ieee80211_fragment(struct ieee80211_local *local,
+ 		pos += fraglen;
+ 	}
  
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
+-	skb->len = hdrlen + per_fragm;
++	skb_trim(skb, hdrlen + per_fragm);
+ 	return 0;
+ }
  
 -- 
 1.7.12.2.21.g234cd45.dirty
