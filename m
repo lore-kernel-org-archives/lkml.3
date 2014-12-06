@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaLFBHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 20:07:23 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:62152 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaLFBHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 20:07:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
-References: <1417809545-4540-1-git-send-email-vbabka@suse.cz>
-Date: Fri, 5 Dec 2014 17:07:20 -0800
-X-Google-Sender-Auth: fAv3Ofd_NuVHyI4EvBcIkaCbcsc
-Message-ID: <CA+55aFwvWk6twgBaevPrF5z_0Faetnh0L19ZokWLidiaAaUmQg@mail.gmail.com>
-Subject: Re: [RFC PATCH V2 0/4] Reducing parameters of alloc_pages* family of functions
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751624AbaLFBSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 20:18:05 -0500
+Received: from ns.horizon.com ([71.41.210.147]:47573 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751141AbaLFBSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Dec 2014 20:18:04 -0500
+Date: 5 Dec 2014 20:18:02 -0500
+Message-ID: <20141206011802.19570.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: akpm@linux-foundation.org
+Subject: [PATCH] [PATCH] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h> where it belongs
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        rusty@rustcorp.com.au
+In-Reply-To: <20141205161548.dfa3bc0648b2109ebed9b1ae@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 11:59 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
-> Hey all,
->
-> this is a V2 of attempting something that has been discussed when Minchan
-> proposed to expand the x86 kernel stack [1], namely the reduction of huge
-> number of parameters that the alloc_pages* family and get_page_from_freelist()
-> functions have.
+> VERIFY_OCTAL_PERMISSIONS() sticks out like a sore thumb in kernel.h. 
+> How about we move it into sysfs.h?
 
-So I generally like this, but looking at that "struct alloc_context",
-one member kind of stands out: the "order" parameter doesn't fit in
-with all the other members.
+Something like this, you mean?
 
-Most everything else is describing where or what kind of pages to work
-with. The "order" in contrast, really is separate.
+The <linux/types.h> in moduleparam.h is needed for one function
+prototype that passes s16 parameters.  My first reaction is
+to wonder if that can be gotten rid of, too.
 
-So conceptually, my reaction is that it looks like a good cleanup even
-aside from the code/stack size reduction, but that the alloc_context
-definition is a bit odd.
+-----
+It's the only user of <linux/bug.h> in kernel.h, so that reduces
+the compile-time cost of #include <linux/kernel.h>
 
-Quite frankly, I think the :"order" really fits much more closely with
-"alloc_flags", not with the alloc_context. Because like alloc_flags,.
-it really describes how we need to allocate things within the context,
-I'd argue.
+One necessary consequent change in <linux/moduleparam.h>.
 
-In fact, I think that the order could actually be packed with the
-alloc_flags in a single register, even on 32-bit (using a single-word
-structure, perhaps). If we really care about number of parameters.
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+ include/linux/kernel.h      | 10 ----------
+ include/linux/sysfs.h       | 11 +++++++++++
+ include/linux/moduleparam.h |  4 ++--
+ 3 files changed, 13 insertions(+), 12 deletions(-)
 
-I'd rather go for "makes conceptual sense" over "packs order in
-because it kind of works" and we don't modify it".
-
-Hmm?
-
-                       Linus
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f55..07080aa2 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -804,14 +804,4 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+ #endif
+ 
+-/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
+-#define VERIFY_OCTAL_PERMISSIONS(perms)					\
+-	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
+-	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
+-	 /* User perms >= group perms >= other perms */			\
+-	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
+-	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
+-	 /* Other writable?  Generally considered a bad idea. */	\
+-	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
+-	 (perms))
+ #endif
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index f97d0dbb..9f213542 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -70,6 +70,17 @@ struct attribute_group {
+  * for examples..
+  */
+ 
++/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
++#define VERIFY_OCTAL_PERMISSIONS(perms)					\
++	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
++	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
++	 /* User perms >= group perms >= other perms */			\
++	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
++	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
++	 /* Other writable?  Generally considered a bad idea. */	\
++	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
++	 (perms))
++
+ #define __ATTR(_name, _mode, _show, _store) {				\
+ 	.attr = {.name = __stringify(_name),				\
+ 		 .mode = VERIFY_OCTAL_PERMISSIONS(_mode) },		\
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index 1c9effa2..974097df 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -1,9 +1,9 @@
+ #ifndef _LINUX_MODULE_PARAMS_H
+ #define _LINUX_MODULE_PARAMS_H
+ /* (C) Copyright 2001, 2002 Rusty Russell IBM Corporation */
+-#include <linux/init.h>
+ #include <linux/stringify.h>
+-#include <linux/kernel.h>
++#include <linux/sysfs.h>
++#include <linux/types.h>
+ 
+ /* You can override this manually, but generally this should match the
+    module name. */
+-- 
+2.1.3
