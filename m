@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaLFMnV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 07:43:21 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47964 "EHLO
+	id S1752480AbaLFMrN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 07:47:13 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48445 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385AbaLFMnN (ORCPT
+	with ESMTP id S1751761AbaLFMrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 07:43:13 -0500
-Date: Sat, 6 Dec 2014 13:43:11 +0100
+	Sat, 6 Dec 2014 07:47:10 -0500
+Date: Sat, 6 Dec 2014 13:47:08 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
- Flash class extension
-Message-ID: <20141206124310.GB3411@amd>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
- <20141129125832.GA315@amd>
- <547C539A.4010500@samsung.com>
- <20141201130437.GB24737@amd>
- <547C7420.4080801@samsung.com>
- <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: Disable input device
+Message-ID: <20141206124708.GA17289@amd>
+References: <201411291824.03996@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201411291824.03996@pali>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > The format of a sysfs attribute should be concise.
-> > The error codes are generic and map directly to the V4L2 Flash
-> > error codes.
-> >
+On Sat 2014-11-29 18:24:03, Pali Rohár wrote:
+> Hello,
 > 
-> Actually I'd like to see those flash fault code defined in LED
-> subsystem. And V4L2 will just include LED flash header file to use it.
-> Because flash fault code is not for V4L2 specific but it's a feature
-> of LED flash devices.
+> there is request to introduce some option (via sysfs) to disable 
+> one input device. Originally it was for tsc2005 touchscreen found 
+> on Nokia N900 cellphone. Use case is to completely disable 
+> touchscreen when phone is in pocket or when screen is locked via 
+> slide switch (to prevent random clicks).
 > 
-> For clearing error code of flash devices, I think it depends on the
-> hardware. If most of our LED flash is using reading to clear error
-> code, we probably can make it simple as this now. But what if some
-> other LED flash devices are using writing to clear error code? we
-> should provide a API to that?
+> But it would be better to have disable option for all input 
+> devices. Sometimes input device is not use and only consume 
+> power. Another case is when input device (e.g. keyboard or 
+> touchpad) is integrated into machine (e.g. on laptops) and user 
+> does not want to use it (so make sure that kernel does not send 
+> events to userspace).
+> 
+> I would like to ask, how to solve it?
+> 
+> What do you think about adding new sysfs file "disable" (accept 
+> values 1 or 0) for every input device? With "1" it cause that 
+> kernel will drop all events from specific input device and if 
+> driver provide some function is can be called (e.g. for power 
+> management or disabling device at hardware level).
 
-Actually, we should provide API that makes sense, and that is easy to
-use by userspace.
+That makes sense to me. Dmitry, would such interface be acceptable?
 
-I believe "read" is called read because it does not change anything,
-and it should stay that way in /sysfs. You may want to talk to sysfs
-maintainers if you plan on doing another semantics.
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
