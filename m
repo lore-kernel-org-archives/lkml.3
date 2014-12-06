@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaLFPJh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:09:37 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47689 "EHLO
+	id S1752715AbaLFPJg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:09:36 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47664 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752367AbaLFPIO (ORCPT
+	by vger.kernel.org with ESMTP id S1752187AbaLFPIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:08:14 -0500
+	Sat, 6 Dec 2014 10:08:16 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 35/66] USB: keyspan: fix overrun-error reporting
-Date: Sat,  6 Dec 2014 16:07:27 +0100
-Message-Id: <7f293483b05b6f3472942b9c733daaf05ec2115e.1417878427.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 39/66] usb-quirks: Add reset-resume quirk for MS Wireless Laser Mouse 6000
+Date: Sat,  6 Dec 2014 16:07:31 +0100
+Message-Id: <4a6c782d1e4663edf05448267dc0a7afb5855c49.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -23,66 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 855515a6d3731242d85850a206f2ec084c917338 upstream.
+commit 263e80b43559a6103e178a9176938ce171b23872 upstream.
 
-Fix reporting of overrun errors, which are not associated with a
-character. Instead insert a null character and report only once.
+This wireless mouse receiver needs a reset-resume quirk to properly come
+out of reset.
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1165206
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/keyspan.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index d6960aebe246..7053e0a9bb05 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -312,12 +312,13 @@ static void	usa26_indat_callback(struct urb *urb)
- 		if ((data[0] & 0x80) == 0) {
- 			/* no errors on individual bytes, only
- 			   possible overrun err */
--			if (data[0] & RXERROR_OVERRUN)
--				err = TTY_OVERRUN;
--			else
--				err = 0;
-+			if (data[0] & RXERROR_OVERRUN) {
-+				tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+			}
- 			for (i = 1; i < urb->actual_length ; ++i)
--				tty_insert_flip_char(&port->port, data[i], err);
-+				tty_insert_flip_char(&port->port, data[i],
-+								TTY_NORMAL);
- 		} else {
- 			/* some bytes had errors, every byte has status */
- 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
-@@ -791,13 +792,13 @@ static void usa90_indat_callback(struct urb *urb)
- 			if ((data[0] & 0x80) == 0) {
- 				/* no errors on individual bytes, only
- 				   possible overrun err*/
--				if (data[0] & RXERROR_OVERRUN)
--					err = TTY_OVERRUN;
--				else
--					err = 0;
-+				if (data[0] & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(&port->port, 0,
-+								TTY_OVERRUN);
-+				}
- 				for (i = 1; i < urb->actual_length ; ++i)
- 					tty_insert_flip_char(&port->port,
--							data[i], err);
-+							data[i], TTY_NORMAL);
- 			}  else {
- 			/* some bytes had errors, every byte has status */
- 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 0d088e9d4ded..aa7759583c73 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -43,6 +43,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Creative SB Audigy 2 NX */
+ 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Microsoft Wireless Laser Mouse 6000 Receiver */
++	{ USB_DEVICE(0x045e, 0x00e1), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Microsoft LifeCam-VX700 v2.0 */
+ 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 -- 
 2.1.3
 
