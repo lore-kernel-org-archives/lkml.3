@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaLFRyy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:54:54 -0500
-Received: from 1wt.eu ([62.212.114.60]:40692 "EHLO 1wt.eu"
+	id S1753182AbaLFSAG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 13:00:06 -0500
+Received: from 1wt.eu ([62.212.114.60]:40713 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169AbaLFRyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:50 -0500
-Message-Id: <20141206174148.502715555@1wt.eu>
+	id S1752458AbaLFRy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:56 -0500
+Message-Id: <20141206174149.105395374@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:41:50 +0100
+Date: Sat, 06 Dec 2014 18:42:04 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Brian Gerst <brgerst@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <jbeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 02/25] x86, 64-bit: Move K8 B step iret fixup to fault entry
- asm
+Cc: Sasha Levin <sasha.levin@oracle.com>, James Chapman <jchapman@katalix.com>,
+        David Miller <davem@davemloft.net>,
+        Phil Turnbull <phil.turnbull@oracle.com>,
+        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/25] net/l2tp: dont fall back on UDP [get|set]sockopt
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -28,103 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Gerst <brgerst@gmail.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-Move the handling of truncated %rip from an iret fault to the fault
-entry path.
+(commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream)
 
-This allows x86-64 to use the standard search_extable() function.
+The l2tp [get|set]sockopt() code has fallen back to the UDP functions
+for socket option levels != SOL_PPPOL2TP since day one, but that has
+never actually worked, since the l2tp socket isn't an inet socket.
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-LKML-Reference: <1255357103-5418-1-git-send-email-brgerst@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-(cherry picked from commit ae24ffe5ecec17c956ac25371d7c2e12b4b36e53)
-[wt: only merged to fix patch context and ease merging of next patches]
+As David Miller points out:
+
+  "If we wanted this to work, it'd have to look up the tunnel and then
+   use tunnel->sk, but I wonder how useful that would be"
+
+Since this can never have worked so nobody could possibly have depended
+on that functionality, just remove the broken code and return -EINVAL.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: James Chapman <jchapman@katalix.com>
+Acked-by: David Miller <davem@davemloft.net>
+Cc: Phil Turnbull <phil.turnbull@oracle.com>
+Cc: Vegard Nossum <vegard.nossum@oracle.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+[geissert: adjust file paths and context for 2.6.32]
+[wt: fixes CVE-2014-4943]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/uaccess.h |  1 -
- arch/x86/kernel/entry_64.S     | 11 ++++++++---
- arch/x86/mm/extable.c          | 31 -------------------------------
- 3 files changed, 8 insertions(+), 35 deletions(-)
+ drivers/net/pppol2tp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 61c5874..99f0ad7 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -570,7 +570,6 @@ extern struct movsl_mask {
- #ifdef CONFIG_X86_32
- # include "uaccess_32.h"
- #else
--# define ARCH_HAS_SEARCH_EXTABLE
- # include "uaccess_64.h"
- #endif
+diff --git a/drivers/net/pppol2tp.c b/drivers/net/pppol2tp.c
+index 4cdc1cf..4c8f019 100644
+--- a/drivers/net/pppol2tp.c
++++ b/drivers/net/pppol2tp.c
+@@ -2190,7 +2190,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
+ 	int err;
  
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 34a56a9..4f577eb 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1491,12 +1491,17 @@ error_kernelspace:
- 	leaq irq_return(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
--	movl %ecx,%ecx	/* zero extend */
--	cmpq %rcx,RIP+8(%rsp)
--	je error_swapgs
-+	movl %ecx,%eax	/* zero extend */
-+	cmpq %rax,RIP+8(%rsp)
-+	je bstep_iret
- 	cmpq $gs_change,RIP+8(%rsp)
- 	je error_swapgs
- 	jmp error_sti
-+
-+bstep_iret:
-+	/* Fix truncated RIP */
-+	movq %rcx,RIP+8(%rsp)
-+	je error_swapgs
- END(error_entry)
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
  
+ 	if (optlen < sizeof(int))
+ 		return -EINVAL;
+@@ -2314,7 +2314,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level,
+ 	int err;
  
-diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
-index 61b41ca..d0474ad 100644
---- a/arch/x86/mm/extable.c
-+++ b/arch/x86/mm/extable.c
-@@ -35,34 +35,3 @@ int fixup_exception(struct pt_regs *regs)
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
  
- 	return 0;
- }
--
--#ifdef CONFIG_X86_64
--/*
-- * Need to defined our own search_extable on X86_64 to work around
-- * a B stepping K8 bug.
-- */
--const struct exception_table_entry *
--search_extable(const struct exception_table_entry *first,
--	       const struct exception_table_entry *last,
--	       unsigned long value)
--{
--	/* B stepping K8 bug */
--	if ((value >> 32) == 0)
--		value |= 0xffffffffUL << 32;
--
--	while (first <= last) {
--		const struct exception_table_entry *mid;
--		long diff;
--
--		mid = (last - first) / 2 + first;
--		diff = mid->insn - value;
--		if (diff == 0)
--			return mid;
--		else if (diff < 0)
--			first = mid+1;
--		else
--			last = mid-1;
--	}
--	return NULL;
--}
--#endif
+ 	if (get_user(len, (int __user *) optlen))
+ 		return -EFAULT;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
