@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaLFFOh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 00:14:37 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:57721 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaLFFOg (ORCPT
+	id S1751839AbaLFFUI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 00:20:08 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60217 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaLFFUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 00:14:36 -0500
-Message-ID: <548290B2.1040707@roeck-us.net>
-Date: Fri, 05 Dec 2014 21:14:26 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 000/122] 3.17.5-stable review
-References: <20141205223305.514276242@linuxfoundation.org> <54827868.4040100@roeck-us.net> <20141206034425.GA3350@kroah.com>
-In-Reply-To: <20141206034425.GA3350@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Sat, 6 Dec 2014 00:20:05 -0500
+Date: Fri, 05 Dec 2014 21:24:33 -0800 (PST)
+Message-Id: <20141205.212433.750912400773154348.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: zlim.lnx@gmail.com, edumazet@google.com, dborkman@redhat.com,
+        hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net] bpf: x86: fix epilogue generation for eBPF
+ programs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
+References: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.548290BF.0173,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Dec 2014 21:20:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 07:44 PM, Greg Kroah-Hartman wrote:
-> On Fri, Dec 05, 2014 at 07:30:48PM -0800, Guenter Roeck wrote:
->> On 12/05/2014 02:42 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.17.5 release.
->>> There are 122 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sun Dec  7 22:32:17 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->>
->> Build results:
->> 	total: 133 pass: 132 fail: 1
->> Failed builds:
->> 	avr32:atngw100mkii_evklcd101_defconfig
->
-> Bah, it looks like no one cares about avr32 anymore :(
->
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Sat, 29 Nov 2014 14:46:13 -0800
 
-Hard to imagine that anyone working on a new design would select an atmel chip
-with avr32 core instead of one with arm core. So that isn't really surprising.
+> classic BPF has a restriction that last insn is always BPF_RET.
+> eBPF doesn't have BPF_RET instruction and this restriction.
+> It has BPF_EXIT insn which can appear anywhere in the program
+> one or more times and it doesn't have to be last insn.
+> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
+> and all other BPF_EXIT instructions will be emitted as jump.
+> 
+> Since jump offset to epilogue is computed as:
+> jmp_offset = ctx->cleanup_addr - addrs[i]
+> we need to change type of cleanup_addr to signed to compute the offset as:
+> (long long) ((int)20 - (int)30)
+> instead of:
+> (long long) ((unsigned int)20 - (int)30)
+> 
+> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-Guenter
-
+Applied, thanks.
