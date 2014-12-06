@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaLFPUU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:20:20 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47653 "EHLO
+	id S1753479AbaLFPUW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:20:22 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47716 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752118AbaLFPII (ORCPT
+	by vger.kernel.org with ESMTP id S1752137AbaLFPII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:08 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 03/66] Input: Add INPUT_PROP_TOPBUTTONPAD device property
-Date: Sat,  6 Dec 2014 16:06:55 +0100
-Message-Id: <a4e2b94ab9353230fe45187ee0c15a2fc9195fc3.1417878427.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 52/66] iser-target: Handle DEVICE_REMOVAL event on network portal listener correctly
+Date: Sat,  6 Dec 2014 16:07:44 +0100
+Message-Id: <0a915349e2da9a0d2a9467934234c97ce855f733.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -24,46 +24,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f37c013409bb78ebb958821aa10d069e707cabac upstream.
+commit 3b726ae2de02a406cc91903f80132daee37b6f1b upstream.
 
-On some newer laptops with a trackpoint the physical buttons for the
-trackpoint have been removed to allow for a larger touchpad. On these
-laptops the buttonpad has clearly marked areas on the top which are to be
-used as trackpad buttons.
+In this case the cm_id->context is the isert_np, and the cm_id->qp
+is NULL, so use that to distinct the cases.
 
-Users of the event device-node need to know about this, so that they can
-properly interpret BTN_LEFT events as being a left / right / middle click
-depending on where on the button pad the clicking finger is.
+Since we don't expect any other events on this cm_id we can
+just return -1 for explicit termination of the cm_id by the
+cma layer.
 
-This commits adds a INPUT_PROP_TOPBUTTONPAD device property which drivers
-for such buttonpads will use to signal to the user that this buttonpad not
-only has the normal bottom button area, but also a top button area.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/uapi/linux/input.h | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/infiniband/ulp/isert/ib_isert.c | 29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-index a3726275876d..f30db096455f 100644
---- a/include/uapi/linux/input.h
-+++ b/include/uapi/linux/input.h
-@@ -164,6 +164,7 @@ struct input_keymap_entry {
- #define INPUT_PROP_DIRECT		0x01	/* direct input devices */
- #define INPUT_PROP_BUTTONPAD		0x02	/* has button(s) under pad */
- #define INPUT_PROP_SEMI_MT		0x03	/* touch rectangle only */
-+#define INPUT_PROP_TOPBUTTONPAD		0x04	/* softbuttons at top of pad */
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 2c14232447e4..7fb89a46d864 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -708,14 +708,25 @@ wake_up:
+ 	complete(&isert_conn->conn_wait);
+ }
  
- #define INPUT_PROP_MAX			0x1f
- #define INPUT_PROP_CNT			(INPUT_PROP_MAX + 1)
+-static void
++static int
+ isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
+ {
+-	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++	struct isert_conn *isert_conn;
++
++	if (!cma_id->qp) {
++		struct isert_np *isert_np = cma_id->context;
++
++		isert_np->np_cm_id = NULL;
++		return -1;
++	}
++
++	isert_conn = (struct isert_conn *)cma_id->context;
+ 
+ 	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
++
++	return 0;
+ }
+ 
+ static int
+@@ -730,6 +741,9 @@ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	switch (event->event) {
+ 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+ 		ret = isert_connect_request(cma_id, event);
++		if (ret)
++			pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
++				event->event, ret);
+ 		break;
+ 	case RDMA_CM_EVENT_ESTABLISHED:
+ 		isert_connected_handler(cma_id);
+@@ -739,7 +753,7 @@ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+ 		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id, disconnect);
+ 		break;
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
+ 	default:
+@@ -747,12 +761,6 @@ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 		break;
+ 	}
+ 
+-	if (ret != 0) {
+-		pr_err("isert_cma_handler failed RDMA_CM_EVENT: 0x%08x %d\n",
+-		       event->event, ret);
+-		dump_stack();
+-	}
+-
+ 	return ret;
+ }
+ 
+@@ -2683,7 +2691,8 @@ isert_free_np(struct iscsi_np *np)
+ {
+ 	struct isert_np *isert_np = (struct isert_np *)np->np_context;
+ 
+-	rdma_destroy_id(isert_np->np_cm_id);
++	if (isert_np->np_cm_id)
++		rdma_destroy_id(isert_np->np_cm_id);
+ 
+ 	np->np_context = NULL;
+ 	kfree(isert_np);
 -- 
 2.1.3
 
