@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaLFPUa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:20:30 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47713 "EHLO
+	id S1753562AbaLFPU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:20:28 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47654 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752091AbaLFPIG (ORCPT
+	by vger.kernel.org with ESMTP id S1752111AbaLFPIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 10:08:06 -0500
+	Sat, 6 Dec 2014 10:08:07 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jurgen Kramer <gtmkramer@xs4all.nl>,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 43/66] ALSA: usb-audio: Add ctrl message delay quirk for Marantz/Denon devices
-Date: Sat,  6 Dec 2014 16:07:35 +0100
-Message-Id: <38446d657f98f5bc266ec46eaaa87f2bd9880768.1417878427.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 04/66] Input: synaptics - report INPUT_PROP_TOPBUTTONPAD property
+Date: Sat,  6 Dec 2014 16:06:56 +0100
+Message-Id: <8f878acdf87a288172225f91418bae8e74f3ec58.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -23,61 +24,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jurgen Kramer <gtmkramer@xs4all.nl>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6e84a8d7ac3ba246ef44e313e92bc16a1da1b04a upstream.
+commit 43e19888b1fe2a3e8a5543030c5b286cde38b3f5 upstream.
 
-This patch adds a USB control message delay quirk for a few specific Marantz/Denon
-devices. Without the delay the DACs will not work properly and produces the
-following type of messages:
+Check PNP ID of the PS/2 AUX port and report INPUT_PROP_TOPBUTTONPAD
+property for for touchpads with top button areas.
 
-Nov 15 10:09:21 orwell kernel: [   91.342880] usb 3-13: clock source 41 is not valid, cannot use
-Nov 15 10:09:21 orwell kernel: [   91.343775] usb 3-13: clock source 41 is not valid, cannot use
-
-There are likely other Marantz/Denon devices using the same USB module which exhibit the
-same problems. But as this cannot be verified I limited the patch to the devices
-I could test.
-
-The following two devices are covered by this path:
-- Marantz SA-14S1
-- Marantz HD-DAC1
-
-Signed-off-by: Jurgen Kramer <gtmkramer@xs4all.nl>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/quirks.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/input/mouse/synaptics.c | 55 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 53 insertions(+), 2 deletions(-)
 
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index 0df9ede99dfd..3fbb4553ba40 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -1127,6 +1127,20 @@ void snd_usb_ctl_msg_quirk(struct usb_device *dev, unsigned int pipe,
- 	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x23ba) &&
- 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
- 		mdelay(20);
-+
-+	/* Marantz/Denon devices with USB DAC functionality need a delay
-+	 * after each class compliant request
-+	 */
-+	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x154e) &&
-+	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS) {
-+
-+		switch (le16_to_cpu(dev->descriptor.idProduct)) {
-+		case 0x3005: /* Marantz HD-DAC1 */
-+		case 0x3006: /* Marantz SA-14S1 */
-+			mdelay(20);
-+			break;
-+		}
-+	}
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 4b7996ebd150..f4a5adc17d73 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -117,6 +117,44 @@ void synaptics_reset(struct psmouse *psmouse)
  }
  
- /*
+ #ifdef CONFIG_MOUSE_PS2_SYNAPTICS
++/* This list has been kindly provided by Synaptics. */
++static const char * const topbuttonpad_pnp_ids[] = {
++	"LEN0017",
++	"LEN0018",
++	"LEN0019",
++	"LEN0023",
++	"LEN002A",
++	"LEN002B",
++	"LEN002C",
++	"LEN002D",
++	"LEN002E",
++	"LEN0033", /* Helix */
++	"LEN0034", /* T431s, T540, X1 Carbon 2nd */
++	"LEN0035", /* X240 */
++	"LEN0036", /* T440 */
++	"LEN0037",
++	"LEN0038",
++	"LEN0041",
++	"LEN0042", /* Yoga */
++	"LEN0045",
++	"LEN0046",
++	"LEN0047",
++	"LEN0048",
++	"LEN0049",
++	"LEN2000",
++	"LEN2001",
++	"LEN2002",
++	"LEN2003",
++	"LEN2004", /* L440 */
++	"LEN2005",
++	"LEN2006",
++	"LEN2007",
++	"LEN2008",
++	"LEN2009",
++	"LEN200A",
++	"LEN200B",
++	NULL
++};
+ 
+ /*****************************************************************************
+  *	Synaptics communications functions
+@@ -1291,8 +1329,10 @@ static void set_abs_position_params(struct input_dev *dev,
+ 	input_abs_set_res(dev, y_code, priv->y_res);
+ }
+ 
+-static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
++static void set_input_params(struct psmouse *psmouse,
++			     struct synaptics_data *priv)
+ {
++	struct input_dev *dev = psmouse->dev;
+ 	int i;
+ 
+ 	/* Things that apply to both modes */
+@@ -1361,6 +1401,17 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 
+ 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
++		/* See if this buttonpad has a top button area */
++		if (!strncmp(psmouse->ps2dev.serio->firmware_id, "PNP:", 4)) {
++			for (i = 0; topbuttonpad_pnp_ids[i]; i++) {
++				if (strstr(psmouse->ps2dev.serio->firmware_id,
++					   topbuttonpad_pnp_ids[i])) {
++					__set_bit(INPUT_PROP_TOPBUTTONPAD,
++						  dev->propbit);
++					break;
++				}
++			}
++		}
+ 		/* Clickpads report only left button */
+ 		__clear_bit(BTN_RIGHT, dev->keybit);
+ 		__clear_bit(BTN_MIDDLE, dev->keybit);
+@@ -1687,7 +1738,7 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+ 		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c,
+ 		     priv->board_id, priv->firmware_id);
+ 
+-	set_input_params(psmouse->dev, priv);
++	set_input_params(psmouse, priv);
+ 
+ 	/*
+ 	 * Encode touchpad model so that it can be used to set
 -- 
 2.1.3
 
