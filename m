@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaLFWHr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 17:07:47 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23397 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227AbaLFWHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 17:07:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,530,1413270000"; 
-   d="scan'208";a="643575775"
-Date: Sun, 7 Dec 2014 06:06:47 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: kbuild-all@01.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-xtensa@linux-xtensa.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: fix platform_no_drv_owner.cocci warnings
-Message-ID: <20141206220647.GA12086@waimea>
-References: <201412070634.hwbnurjX%fengguang.wu@intel.com>
+	id S1752452AbaLFWPG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 17:15:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39108 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaLFWPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 17:15:04 -0500
+Date: Sat, 6 Dec 2014 23:14:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?ISO-8859-15?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141206043719.66a1aec6@as>
+Message-ID: <alpine.DEB.2.11.1412062300270.16275@nanos>
+References: <547ccf74.a5198c0a.25de.26d9@mx.google.com> <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com> <20141201230339.GA20487@ret.masoncoding.com> <1417529606.3924.26.camel@maggy.simpson.net> <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+ <1417540493.21136.3@mail.thefacebook.com> <20141203184111.GA32005@redhat.com> <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com> <20141205171501.GA1320@redhat.com> <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+ <20141205184808.GA2753@redhat.com> <20141206043719.66a1aec6@as>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201412070634.hwbnurjX%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sound/soc/xtensa/xtfpga-i2s.c:666:3-8: No need to set .owner here. The core will do it.
+On Sat, 6 Dec 2014, Chuck Ebbert wrote:
+> On Fri, 5 Dec 2014 13:48:08 -0500
+> Dave Jones <davej@redhat.com> wrote:
+> 
+> > [ 1611.749570]  [<ffffffff81007948>] do_nmi+0xb8/0xf0
+> > [ 1611.750438]  [<ffffffff8179dd2a>] end_repeat_nmi+0x1e/0x2e
+> > [ 1611.751312]  [<ffffffff810a12c8>] ? preempt_count_add+0x18/0xb0
+> > [ 1611.752177]  [<ffffffff810a12c8>] ? preempt_count_add+0x18/0xb0
+> > [ 1611.753025]  [<ffffffff810a12c8>] ? preempt_count_add+0x18/0xb0
+> > [ 1611.753861]  <<EOE>>  [<ffffffff810fee07>] is_module_text_address+0x17/0x50
+> > [ 1611.754734]  [<ffffffff81092ab8>] __kernel_text_address+0x58/0x80
+> > [ 1611.755575]  [<ffffffff81006b5f>] print_context_stack+0x8f/0x100
+> > [ 1611.756410]  [<ffffffff81005540>] dump_trace+0x140/0x370
+> > [ 1611.757242]  [<ffffffff811e797f>] ? getname_flags+0x4f/0x1a0
+> > [ 1611.758072]  [<ffffffff811e797f>] ? getname_flags+0x4f/0x1a0
+> > [ 1611.758895]  [<ffffffff810137cb>] save_stack_trace+0x2b/0x50
+> > [ 1611.759720]  [<ffffffff811c29a0>] set_track+0x70/0x140
+> > [ 1611.760541]  [<ffffffff8178d993>] alloc_debug_processing+0x92/0x118
+> > [ 1611.761366]  [<ffffffff8178e5d6>] __slab_alloc+0x45f/0x56f
+> > [ 1611.762195]  [<ffffffff811e797f>] ? getname_flags+0x4f/0x1a0
+> > [ 1611.763024]  [<ffffffff8178dd57>] ? __slab_free+0x114/0x309
+> > [ 1611.763853]  [<ffffffff8137187e>] ? debug_check_no_obj_freed+0x17e/0x270
+> > [ 1611.764712]  [<ffffffff811e797f>] ? getname_flags+0x4f/0x1a0
+> > [ 1611.765539]  [<ffffffff811c6b26>] kmem_cache_alloc+0x1f6/0x270
+> 
+> So, every time there is a slab allocation the entire stack trace gets
+> saved as human readable text. And for each line in the trace,
 
- Remove .owner field if calls are used which set it automatically
+Wrong. It gets saved as address. No conversion to text at all.
 
-Generated by: scripts/coccinelle/api/platform_no_drv_owner.cocci
+> is_module_text_address() can be called, which has huge overhead
+> walking the entire list of loaded modules. No wonder there are
+> timeouts...
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
+You would have to have a gazillion of modules to make that overhead
+big enough to trigger a multi seconds watchdog.
 
- xtfpga-i2s.c |    1 -
- 1 file changed, 1 deletion(-)
+Thanks,
 
---- a/sound/soc/xtensa/xtfpga-i2s.c
-+++ b/sound/soc/xtensa/xtfpga-i2s.c
-@@ -663,7 +663,6 @@ static struct platform_driver xtfpga_i2s
- 	.remove  = xtfpga_i2s_remove,
- 	.driver  = {
- 		.name = "xtfpga-i2s",
--		.owner = THIS_MODULE,
- 		.of_match_table = of_match_ptr(xtfpga_i2s_of_match),
- 		.pm = &xtfpga_i2s_pm_ops,
- 	},
+	tglx
+
+
+
+
