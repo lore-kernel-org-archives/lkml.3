@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaLFRzV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:55:21 -0500
-Received: from 1wt.eu ([62.212.114.60]:40761 "EHLO 1wt.eu"
+	id S1752973AbaLFR4l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:56:41 -0500
+Received: from 1wt.eu ([62.212.114.60]:40766 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730AbaLFRzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:55:17 -0500
-Message-Id: <20141206174148.982073196@1wt.eu>
+	id S1752740AbaLFRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:55:19 -0500
+Message-Id: <20141206174148.719193237@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:01 +0100
+Date: Sat, 06 Dec 2014 18:41:55 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 13/25] x86_64, traps: Stop using IST for #SS
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 07/25] x86, espfix: Move espfix definitions into a separate
+ header file
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -27,132 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-On a 32-bit kernel, this has no effect, since there are no IST stacks.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-On a 64-bit kernel, #SS can only happen in user code, on a failed iret
-to user space, a canonical violation on access via RSP or RBP, or a
-genuine stack segment violation in 32-bit kernel code.  The first two
-cases don't need IST, and the latter two cases are unlikely fatal bugs,
-and promoting them to double faults would be fine.
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-This fixes a bug in which the espfix64 code mishandles a stack segment
-violation.
-
-This saves 4k of memory per CPU and a tiny bit of code.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-(cherry picked from commit 6f442be2fb22be02cafa606f1769fa1e6f894441)
-[wt: no CONFIG_TRACING on 2.6.32, Fixes CVE-2014-9090]
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from 3.2 commit 62358ee6bb9d3d9dd4761d39ac0e1ede9ba70b0e)
+[wt: using DECLARE_PER_CPU instead of DECLARE_PER_CPU_READ_MOSTLY]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/include/asm/page_32_types.h |  1 -
- arch/x86/include/asm/page_64_types.h | 11 +++++------
- arch/x86/kernel/dumpstack_64.c       |  1 -
- arch/x86/kernel/entry_64.S           |  2 +-
- arch/x86/kernel/traps.c              | 14 +-------------
- 5 files changed, 7 insertions(+), 22 deletions(-)
+ arch/x86/include/asm/espfix.h | 16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |  2 ++
+ arch/x86/kernel/espfix_64.c   |  1 +
+ 3 files changed, 19 insertions(+)
+ create mode 100644 arch/x86/include/asm/espfix.h
 
-diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
-index 6f1b733..775c92f 100644
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -22,7 +22,6 @@
- #endif
- #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
+diff --git a/arch/x86/include/asm/espfix.h b/arch/x86/include/asm/espfix.h
+new file mode 100644
+index 0000000..e2fb446
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
++
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU(unsigned long, espfix_stack);
++DECLARE_PER_CPU(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 18e496c..ac45d3b 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -57,6 +57,8 @@ static inline void x86_mrst_early_setup(void) { }
  
--#define STACKFAULT_STACK 0
- #define DOUBLEFAULT_STACK 1
- #define NMI_STACK 0
- #define DEBUG_STACK 0
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 7639dbf..a9e9937 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -14,12 +14,11 @@
- #define IRQ_STACK_ORDER 2
- #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ #ifndef _SETUP
  
--#define STACKFAULT_STACK 1
--#define DOUBLEFAULT_STACK 2
--#define NMI_STACK 3
--#define DEBUG_STACK 4
--#define MCE_STACK 5
--#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-+#define DOUBLEFAULT_STACK 1
-+#define NMI_STACK 2
-+#define DEBUG_STACK 3
-+#define MCE_STACK 4
-+#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
++#include <asm/espfix.h>
++
+ /*
+  * This is set up by the setup-routine at boot-time
+  */
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+index ae10040..24bd342 100644
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
  
- #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
- #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index a071e6b..5dc0882 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -23,7 +23,6 @@ static char x86_stack_ids[][8] = {
- 		[DEBUG_STACK - 1] = "#DB",
- 		[NMI_STACK - 1] = "NMI",
- 		[DOUBLEFAULT_STACK - 1] = "#DF",
--		[STACKFAULT_STACK - 1] = "#SS",
- 		[MCE_STACK - 1] = "#MC",
- #if DEBUG_STKSZ > EXCEPTION_STKSZ
- 		[N_EXCEPTION_STACKS ...
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 4313d48..8e2f14a 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1434,7 +1434,7 @@ END(xen_failsafe_callback)
- 
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
--paranoiderrorentry stack_segment do_stack_segment
-+errorentry stack_segment do_stack_segment
- #ifdef CONFIG_XEN
- zeroentry xen_debug do_debug
- zeroentry xen_int3 do_int3
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 7e37dce..c4cc05a 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -220,23 +220,11 @@ DO_ERROR_INFO(6, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN, regs->ip)
- DO_ERROR(9, SIGFPE, "coprocessor segment overrun", coprocessor_segment_overrun)
- DO_ERROR(10, SIGSEGV, "invalid TSS", invalid_TSS)
- DO_ERROR(11, SIGBUS, "segment not present", segment_not_present)
--#ifdef CONFIG_X86_32
- DO_ERROR(12, SIGBUS, "stack segment", stack_segment)
--#endif
- DO_ERROR_INFO(17, SIGBUS, "alignment check", alignment_check, BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
--dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
--{
--	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--			12, SIGBUS) == NOTIFY_STOP)
--		return;
--	preempt_conditional_sti(regs);
--	do_trap(12, SIGBUS, "stack segment", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
--}
--
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- {
- 	static const char str[] = "double fault";
-@@ -927,7 +915,7 @@ void __init trap_init(void)
- 	set_intr_gate(9, &coprocessor_segment_overrun);
- 	set_intr_gate(10, &invalid_TSS);
- 	set_intr_gate(11, &segment_not_present);
--	set_intr_gate_ist(12, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(12, &stack_segment);
- 	set_intr_gate(13, &general_protection);
- 	set_intr_gate(14, &page_fault);
- 	set_intr_gate(15, &spurious_interrupt_bug);
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 -- 
 1.7.12.2.21.g234cd45.dirty
 
