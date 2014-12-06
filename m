@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaLFPUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:20:25 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47646 "EHLO
+	id S1753104AbaLFPUU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:20:20 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47653 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752120AbaLFPII (ORCPT
+	by vger.kernel.org with ESMTP id S1752118AbaLFPII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:08 -0500
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,9 +12,9 @@ To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 05/66] Input: synaptics - add a matches_pnp_id helper function
-Date: Sat,  6 Dec 2014 16:06:57 +0100
-Message-Id: <ea70c325e0ec1e393ee7caf5c1b2496ee743cb71.1417878427.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 03/66] Input: Add INPUT_PROP_TOPBUTTONPAD device property
+Date: Sat,  6 Dec 2014 16:06:55 +0100
+Message-Id: <a4e2b94ab9353230fe45187ee0c15a2fc9195fc3.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
@@ -30,61 +30,40 @@ From: Hans de Goede <hdegoede@redhat.com>
 
 ===============
 
-commit e2f611029b370bb7a04236215ad4b36aa8cb98cd upstream.
+commit f37c013409bb78ebb958821aa10d069e707cabac upstream.
 
-This is a preparation patch for simplifying the min/max quirk table.
+On some newer laptops with a trackpoint the physical buttons for the
+trackpoint have been removed to allow for a larger touchpad. On these
+laptops the buttonpad has clearly marked areas on the top which are to be
+used as trackpad buttons.
 
-Cc: stable@vger.kernel.org
+Users of the event device-node need to know about this, so that they can
+properly interpret BTN_LEFT events as being a left / right / middle click
+depending on where on the button pad the clicking finger is.
+
+This commits adds a INPUT_PROP_TOPBUTTONPAD device property which drivers
+for such buttonpads will use to signal to the user that this buttonpad not
+only has the normal bottom button area, but also a top button area.
+
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/input/mouse/synaptics.c | 25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ include/uapi/linux/input.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index f4a5adc17d73..069c4fd1d0bb 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -156,6 +156,18 @@ static const char * const topbuttonpad_pnp_ids[] = {
- 	NULL
- };
+diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
+index a3726275876d..f30db096455f 100644
+--- a/include/uapi/linux/input.h
++++ b/include/uapi/linux/input.h
+@@ -164,6 +164,7 @@ struct input_keymap_entry {
+ #define INPUT_PROP_DIRECT		0x01	/* direct input devices */
+ #define INPUT_PROP_BUTTONPAD		0x02	/* has button(s) under pad */
+ #define INPUT_PROP_SEMI_MT		0x03	/* touch rectangle only */
++#define INPUT_PROP_TOPBUTTONPAD		0x04	/* softbuttons at top of pad */
  
-+static bool matches_pnp_id(struct psmouse *psmouse, const char * const ids[])
-+{
-+	int i;
-+
-+	if (!strncmp(psmouse->ps2dev.serio->firmware_id, "PNP:", 4))
-+		for (i = 0; ids[i]; i++)
-+			if (strstr(psmouse->ps2dev.serio->firmware_id, ids[i]))
-+				return true;
-+
-+	return false;
-+}
-+
- /*****************************************************************************
-  *	Synaptics communications functions
-  ****************************************************************************/
-@@ -1401,17 +1413,8 @@ static void set_input_params(struct psmouse *psmouse,
- 
- 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
--		/* See if this buttonpad has a top button area */
--		if (!strncmp(psmouse->ps2dev.serio->firmware_id, "PNP:", 4)) {
--			for (i = 0; topbuttonpad_pnp_ids[i]; i++) {
--				if (strstr(psmouse->ps2dev.serio->firmware_id,
--					   topbuttonpad_pnp_ids[i])) {
--					__set_bit(INPUT_PROP_TOPBUTTONPAD,
--						  dev->propbit);
--					break;
--				}
--			}
--		}
-+		if (matches_pnp_id(psmouse, topbuttonpad_pnp_ids))
-+			__set_bit(INPUT_PROP_TOPBUTTONPAD, dev->propbit);
- 		/* Clickpads report only left button */
- 		__clear_bit(BTN_RIGHT, dev->keybit);
- 		__clear_bit(BTN_MIDDLE, dev->keybit);
+ #define INPUT_PROP_MAX			0x1f
+ #define INPUT_PROP_CNT			(INPUT_PROP_MAX + 1)
 -- 
 2.1.3
 
