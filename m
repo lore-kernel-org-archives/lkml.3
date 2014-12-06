@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaLGRnb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 12:43:31 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39875 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447AbaLGRnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752940AbaLGRnY (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 7 Dec 2014 12:43:24 -0500
-Message-ID: <54831873.3050809@kernel.org>
-Date: Sat, 06 Dec 2014 14:53:39 +0000
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39863 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaLGRnW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 12:43:22 -0500
+Message-ID: <548312D9.3070104@kernel.org>
+Date: Sat, 06 Dec 2014 14:29:45 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
@@ -16,11 +16,15 @@ To: Karol Wrona <k.wrona@samsung.com>, linux-iio@vger.kernel.org,
         Hartmut Knaack <knaack.h@gmx.de>, linux-kernel@vger.kernel.org
 CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [PATCH v3 5/5] iio: common: ssp_sensors: Add sensorhub gyroscope
- sensor
-References: <1417809290-9662-1-git-send-email-k.wrona@samsung.com> <1417809290-9662-6-git-send-email-k.wrona@samsung.com>
-In-Reply-To: <1417809290-9662-6-git-send-email-k.wrona@samsung.com>
+        Karol Wrona <wrona.vy@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 2/5] iio: sensorhub: Add sensorhub bindings
+References: <1417809290-9662-1-git-send-email-k.wrona@samsung.com> <1417809290-9662-3-git-send-email-k.wrona@samsung.com>
+In-Reply-To: <1417809290-9662-3-git-send-email-k.wrona@samsung.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,240 +32,81 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/12/14 19:54, Karol Wrona wrote:
-> This patch adds gyroscope iio driver which uses sensorhub as data
-> provider.
+> Add sensorhub bindings for sensorhub on Galaxy Gear 2.
 > 
-> Change-Id: Ia16bc92159d062a29957de8e62ea3fefdcd7985a
+> Change-Id: I4ee25aef33c21a4662de230841de9a8684f2c26b
 > Signed-off-by: Karol Wrona <k.wrona@samsung.com>
 > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-hmm.  This is obviously very similar to the accelerometer driver so same
-comments (I haven't read it ;)
+Looks good to me.  Comments inline.  Note I either need a device tree
+ack or a long delay before I can take this though.  Unlikely to get the
+device tree ack as you haven't cc'd the maintainers or list ;)
+
+I've added the cc's. Please make sure future versions have them or you'll
+just be slowing the process down (particularly if no one notices they 
+are missing!)
+
 > ---
->  drivers/iio/gyro/Makefile          |    2 +
->  drivers/iio/gyro/ssp_gyro_sensor.c |  202 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 204 insertions(+)
->  create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+>  .../devicetree/bindings/iio/sensorhub.txt          |   46 ++++++++++++++++++++
+>  1 file changed, 46 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/sensorhub.txt
 > 
-> diff --git a/drivers/iio/gyro/Makefile b/drivers/iio/gyro/Makefile
-> index 36a3877..68f1437 100644
-> --- a/drivers/iio/gyro/Makefile
-> +++ b/drivers/iio/gyro/Makefile
-> @@ -16,6 +16,8 @@ itg3200-y               := itg3200_core.o
->  itg3200-$(CONFIG_IIO_BUFFER) += itg3200_buffer.o
->  obj-$(CONFIG_ITG3200)   += itg3200.o
->  
-> +obj-$(CONFIG_IIO_SSP_SENSOR) += ssp_gyro_sensor.o
-> +
->  obj-$(CONFIG_IIO_ST_GYRO_3AXIS) += st_gyro.o
->  st_gyro-y := st_gyro_core.o
->  st_gyro-$(CONFIG_IIO_BUFFER) += st_gyro_buffer.o
-> diff --git a/drivers/iio/gyro/ssp_gyro_sensor.c b/drivers/iio/gyro/ssp_gyro_sensor.c
+> diff --git a/Documentation/devicetree/bindings/iio/sensorhub.txt b/Documentation/devicetree/bindings/iio/sensorhub.txt
 > new file mode 100644
-> index 0000000..5820a43
+> index 0000000..2aca0c3
 > --- /dev/null
-> +++ b/drivers/iio/gyro/ssp_gyro_sensor.c
-> @@ -0,0 +1,202 @@
-> +/*
-> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
+> +++ b/Documentation/devicetree/bindings/iio/sensorhub.txt
+> @@ -0,0 +1,46 @@
+> +Samsung Sensorhub driver
 > +
-> +#include <linux/iio/common/ssp_sensors.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/kfifo_buf.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include "../common/ssp_sensors/ssp_iio_sensor.h"
+> +Sensorhub is a MCU which manages several sensors and also plays the role
+> +of a virtual sensor device.
 > +
-> +#define SSP_CHANNEL_COUNT 3
+> +Required properties:
+> +- compatible: "samsung,sensorhub-rinato" or "samsung,sensorhub-thermostat"
+> +- spi-max-frequency: max SPI clock frequency
+> +- interrupt-parent: interrupt parent
+> +- interrupts: communication interrupt
+> +- ap-mcu-gpio: [out] ap to sensorhub line - used during communication
+> +- mcu-ap-gpio: [in] sensorhub to ap - used during communication
+> +- mcu-reset: [out] sensorhub reset
+as commented in previous patch, why do the first two have -gpio and the
+third not?
 > +
-> +#define SSP_GYROSCOPE_NAME "ssp-gyroscope"
-> +static const char ssp_gyro_name[] = SSP_GYROSCOPE_NAME;
+> +Optional properties:
+> +- sensor's nodes:
+> +  compatible = "samsung,mpu6500-accel"
+> +  compatible = "samsung,mpu6500-gyro"
+> +  compatible = "samsung,adpd142"
 > +
-> +enum ssp_gyro_3d_channel {
-> +	SSP_CHANNEL_SCAN_INDEX_X,
-> +	SSP_CHANNEL_SCAN_INDEX_Y,
-> +	SSP_CHANNEL_SCAN_INDEX_Z,
-> +	SSP_CHANNEL_SCAN_INDEX_TIME,
-> +	GYRO_3D_CHANNEL_MAX,
-> +};
+> +Sensor compatibles are used to match proper sensor driver to real sensor on
+> +the board. The firmware does not give such information, so it helps to specify
+> +some sensors properties. Sensors have "samsung" prefixes because frequently
+> +they will not have much in common with sensors used without sensorhub because
+> +it can do some data processing.
+We'll keep that under review.  Might make sense, sometimes, to unify the
+drivers.  The different compatible will probably still be needed, but if
+these devices proliferate I don't want two drivers for everything that
+gets stuck behind them.
 > +
-> +static int ssp_gyro_read_raw(struct iio_dev *indio_dev,
-> +			     struct iio_chan_spec const *chan, int *val,
-> +			     int *val2, long mask)
-> +{
-> +	u32 t;
-> +	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
+> +Example:
 > +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_SAMP_FREQ:
-> +		t = ssp_get_sensor_delay(data, SSP_GYROSCOPE_SENSOR);
-> +		ssp_convert_to_freq(t, val, val2);
-> +		return IIO_VAL_INT_PLUS_MICRO;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static int ssp_gyro_write_raw(struct iio_dev *indio_dev,
-> +			      struct iio_chan_spec const *chan, int val,
-> +			      int val2, long mask)
-> +{
-> +	int ret;
-> +	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_SAMP_FREQ:
-> +		ret = ssp_convert_to_time(val, val2);
-> +		ret = ssp_change_delay(data, SSP_GYROSCOPE_SENSOR, ret);
-> +		if (ret < 0)
-> +			dev_err(&indio_dev->dev, "gyro sensor enable fail\n");
-> +
-> +		return ret;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static struct iio_info ssp_gyro_iio_info = {
-> +	.read_raw = &ssp_gyro_read_raw,
-> +	.write_raw = &ssp_gyro_write_raw,
-> +};
-> +
-> +static const struct iio_chan_spec ssp_gyro_channels[] = {
-> +	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_X, SSP_CHANNEL_SCAN_INDEX_X),
-> +	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Y, SSP_CHANNEL_SCAN_INDEX_Y),
-> +	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Z, SSP_CHANNEL_SCAN_INDEX_Z),
-> +	IIO_CHAN_SOFT_TIMESTAMP(SSP_CHANNEL_SCAN_INDEX_TIME),
-> +};
-> +
-> +static int ssp_process_gyro_data(struct iio_dev *indio_dev, void *buf,
-> +				 int64_t timestamp)
-> +{
-> +	__le32 time;
-> +	const int len = SSP_GYROSCOPE_SIZE;
-> +	int64_t calculated_time;
-> +	char *data;
-> +	int ret;
-> +
-> +	if (indio_dev->scan_bytes == 0)
-> +		return 0;
-> +
-> +	data = kmalloc(indio_dev->scan_bytes, GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	memcpy(data, buf, len);
-> +
-> +	if (indio_dev->scan_timestamp) {
-> +		memcpy(&time, &((char *)buf)[len], SSP_TIME_SIZE);
-> +		calculated_time =
-> +			timestamp + (int64_t)le32_to_cpu(time) * 1000000;
-> +	}
-> +
-> +	ret = iio_push_to_buffers_with_timestamp(indio_dev, data,
-> +						 calculated_time);
-> +
-> +	kfree(data);
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct iio_buffer_setup_ops ssp_gyro_buffer_ops = {
-> +	.postenable = &ssp_common_buffer_postenable,
-> +	.predisable = &ssp_common_buffer_predisable,
-> +};
-> +
-> +static int ssp_gyro_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct iio_dev *indio_dev;
-> +	struct ssp_sensor_data *spd;
-> +
-> +	indio_dev = iio_device_alloc(sizeof(*spd));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	spd = iio_priv(indio_dev);
-> +
-> +	spd->process_data = ssp_process_gyro_data;
-> +	spd->type = SSP_GYROSCOPE_SENSOR;
-> +
-> +	indio_dev->name = ssp_gyro_name;
-> +	indio_dev->dev.parent = &pdev->dev;
-> +	indio_dev->info = &ssp_gyro_iio_info;
-> +	indio_dev->modes = INDIO_BUFFER_HARDWARE;
-> +	indio_dev->channels = ssp_gyro_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(ssp_gyro_channels);
-> +
-> +	ret = ssp_common_setup_buffer(indio_dev, &ssp_gyro_buffer_ops);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Buffer setup fail\n");
-> +		return ret;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, indio_dev);
-> +
-> +	ret = iio_device_register(indio_dev);
-> +	if (ret < 0) {
-> +		iio_buffer_unregister(indio_dev);
-> +		iio_kfifo_free(indio_dev->buffer);
-> +		return ret;
+> +	shub_spi: shub {
+> +		compatible = "samsung,sensorhub-rinato";
+> +		spi-max-frequency = <5000000>;
+> +		interrupt-parent = <&gpx0>;
+> +		interrupts = <2 0>;
+> +		ap-mcu-gpio = <&gpx0 0 0>;
+> +		mcu-ap-gpio = <&gpx0 4 0>;
+> +		mcu-reset = <&gpx0 5 0>;
+> +		sensor@0 {
+> +			compatible = "samsung,mpu6500-accel";
+> +		};
+> +		sensor@1 {
+> +			compatible = "samsung,mpu6500-gyro";
+> +		};
+> +		sensor@2 {
+> +			compatible = "samsung,adpd142";
+> +		};
 > +	};
-> +
-> +	/* similar to accel */
-> +	ssp_register_consumer(indio_dev, SSP_GYROSCOPE_SENSOR);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ssp_gyro_remove(struct platform_device *pdev)
-> +{
-> +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-> +
-> +	iio_device_unregister(indio_dev);
-> +	iio_buffer_unregister(indio_dev);
-> +	iio_kfifo_free(indio_dev->buffer);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id ssp_gyro_id_table[] = {
-> +	{
-> +		.compatible = "samsung,mpu6500-gyro",
-> +	},
-> +	{},
-> +};
-> +
-> +static struct platform_driver ssp_gyro_driver = {
-> +	.driver = {
-> +		.owner = THIS_MODULE,
-> +		.name = SSP_GYROSCOPE_NAME,
-> +		.of_match_table = ssp_gyro_id_table,
-> +	},
-> +	.probe = ssp_gyro_probe,
-> +	.remove = ssp_gyro_remove,
-> +};
-> +
-> +module_platform_driver(ssp_gyro_driver);
-> +
-> +MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
-> +MODULE_DESCRIPTION("Samsung sensorhub gyroscopes driver");
-> +MODULE_LICENSE("GPL");
 > 
 
