@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaLFR7k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 12:59:40 -0500
-Received: from 1wt.eu ([62.212.114.60]:40716 "EHLO 1wt.eu"
+	id S1752540AbaLFRy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 12:54:58 -0500
+Received: from 1wt.eu ([62.212.114.60]:40706 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468AbaLFRy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 12:54:57 -0500
-Message-Id: <20141206174149.465456075@1wt.eu>
+	id S1752356AbaLFRyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Dec 2014 12:54:55 -0500
+Message-Id: <20141206174148.631937314@1wt.eu>
 User-Agent: quilt/0.63-1
-Date: Sat, 06 Dec 2014 18:42:12 +0100
+Date: Sat, 06 Dec 2014 18:41:53 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        Stefan Bader <stefan.bader@canonical.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 24/25] mac80211: fix fragmentation code, particularly for
- encryption
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Willy Tarreau <w@1wt.eu>
+Subject: [ 05/25] x86-32, espfix: Remove filter for espfix32 due to race
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 In-Reply-To: <2a26e912d2438674771c36169c190830@local>
@@ -28,63 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit a722a419815ed203b519151f9556859ff256638b upstream
+commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
 
-The "new" fragmentation code (since my rewrite almost 5 years ago)
-erroneously sets skb->len rather than using skb_trim() to adjust
-the length of the first fragment after copying out all the others.
-This leaves the skb tail pointer pointing to after where the data
-originally ended, and thus causes the encryption MIC to be written
-at that point, rather than where it belongs: immediately after the
-data.
+It is not safe to use LAR to filter when to go down the espfix path,
+because the LDT is per-process (rather than per-thread) and another
+thread might change the descriptors behind our back.  Fortunately it
+is always *safe* (if a bit slow) to go down the espfix path, and a
+32-bit LDT stack segment is extremely rare.
 
-The impact of this is that if software encryption is done, then
- a) encryption doesn't work for the first fragment, the connection
-    becomes unusable as the first fragment will never be properly
-    verified at the receiver, the MIC is practically guaranteed to
-    be wrong
- b) we leak up to 8 bytes of plaintext (!) of the packet out into
-    the air
-
-This is only mitigated by the fact that many devices are capable
-of doing encryption in hardware, in which case this can't happen
-as the tail pointer is irrelevant in that case. Additionally,
-fragmentation is not used very frequently and would normally have
-to be configured manually.
-
-Fix this by using skb_trim() properly.
-
-Cc: stable@vger.kernel.org
-Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-(backported from commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f)
-CVE-2014-8709
-BugLink: http://bugs.launchpad.net/bugs/1392013
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Andy Whitcroft <apw@canonical.com>
-Acked-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+(cherry picked from 3.2 commit 6806fa8b6795aba9be8742a8f598f60eed26f875)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/mac80211/tx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index b1d7904..687fc8e 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -770,7 +770,7 @@ static int ieee80211_fragment(struct ieee80211_local *local,
- 		pos += fraglen;
- 	}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 8b5370c..db7dbe7 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -571,11 +571,6 @@ ENTRY(iret_exc)
  
--	skb->len = hdrlen + per_fragm;
-+	skb_trim(skb, hdrlen + per_fragm);
- 	return 0;
- }
- 
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+-	larl PT_OLDSS(%esp), %eax
+-	jnz restore_nocheck
+-	testl $0x00400000, %eax		# returning to 32bit stack?
+-	jnz restore_nocheck		# allright, normal return
+-
+ #ifdef CONFIG_PARAVIRT
+ 	/*
+ 	 * The kernel can't run on a non-flat stack if paravirt mode
 -- 
 1.7.12.2.21.g234cd45.dirty
 
