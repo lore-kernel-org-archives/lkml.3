@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaLFJvE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 04:51:04 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:48340 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaLFJvA (ORCPT
+	id S1752169AbaLFKJp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 05:09:45 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33519 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaLFKJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 04:51:00 -0500
-Date: Sat, 6 Dec 2014 01:50:46 -0800
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Paul Handrigan <Paul.Handrigan@cirrus.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Timur Tabi <timur@tabi.org>, Xiubo Li <Li.Xiubo@freescale.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] sound / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Message-ID: <20141206095045.GA2624@Asurada>
-References: <2064254.7lXiTpmK64@vostro.rjw.lan>
+	Sat, 6 Dec 2014 05:09:43 -0500
+Date: Sat, 6 Dec 2014 15:39:33 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Mariusz Gorski <marius.gorski@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: staging: panel: suggestions needed
+Message-ID: <20141206100933.GA7141@sudip-PC>
+References: <20141202080214.GA4762@sudip-PC>
+ <20141206084108.GA3404@1wt.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2064254.7lXiTpmK64@vostro.rjw.lan>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141206084108.GA3404@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 03:46:27AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sat, Dec 06, 2014 at 09:41:08AM +0100, Willy Tarreau wrote:
+> Hi Sudip,
 > 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
+> [ CCing Mariusz who's currently cleaning up the driver ]
 > 
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under sound/.
+> On Tue, Dec 02, 2014 at 01:32:14PM +0530, Sudip Mukherjee wrote:
+> > Hi,
+> > I have been looking at your panel driver, and am attaching a 20x4 alphanueric
+> > lcd to it. Will start testing it in a few days as and when I get time. Looks
+> > like, it is receiving mostly checkpatch and sparse cleanups.
 > 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
+> yes mostly.
 > 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
+> > Just wanted your opinion on few things I was thinking:
+> > 	1) Number of lines you have fixed to 2 and 40 char per line. since I am
+> > 	going to connect 20x4 , i need to remember that after displaying 20
+> > 	character in 1st line, next char will come to 3rd line. instead why
+> > 	don't we make the option of number of line to 4 ?
 > 
-> Please let me know if it is OK to take this one into linux-pm.
+> Feel free to do so. I never had the luck to own a 4-line LCD so this
+> was never even planned. And yes, I remember something about 4-line LCDs
+> using tricks such as 2x40 addressing being split into 4x20.
+well, i work in a company which is in embedded training, so i have access to few hardware, and for this i can have 16x2 and 20x4 lcd, but no serial lcd ... :(
 > 
-> ---
->  sound/pci/hda/hda_controller.c |    2 +-
->  sound/pci/hda/hda_intel.c      |    5 +----
->  sound/soc/codecs/cs35l32.c     |    2 +-
->  sound/soc/codecs/cs42xx8.c     |    2 +-
->  sound/soc/codecs/max98090.c    |    2 +-
->  sound/soc/codecs/pcm512x.c     |    2 +-
->  sound/soc/codecs/tas2552.c     |    4 ++--
->  sound/soc/codecs/wm2200.c      |    2 +-
->  sound/soc/codecs/wm5100.c      |    2 +-
->  sound/soc/codecs/wm8962.c      |    2 +-
->  sound/soc/fsl/fsl_asrc.c       |    4 ++--
->  sound/soc/samsung/i2s.c        |    4 ++--
->  12 files changed, 15 insertions(+), 18 deletions(-)
+> > 	2) The lcd commands you are writing to the lcd in an escape sequence
+> > 	while writing to the lcd. Instead of that why don't we use ioctl for
+> > 	lcd commands, and writing to the device will involve only sending data
+> > 	to lcd ?
+> 
+> Because you cannot send that from a script. It's just as if you had to use
+> an ioctl to clear your terminal, inverse its video or to move its cursor,
+> it would not be very convenient.
+yes, ioctl will not be possible from script. but here in India, we will usually use c code for embedded systems, on very rare occassion we will use scripts. and we will be using open(), read(), write(), ioctl() and close() system calls from our projects.
+here, we can have both methods in the code. if someone is using escape sequence - that will work, and we can also have the ioctl for the same purpose.
+> 
+> > 	3) You have given fixed minor number in your code. Any problem if we
+> > 	make it dynamic ?
+> 
+> No objection, but I think we should keep a config option to bind to the
+> old minor. The rationale behind this is that this driver is mostly used
+> in embedded systems with a fixed /dev.
+ok. but one doubt: won't misc_register create the /dev entry automatically ?
 
-For cs42xx8.c and fsl_asrc.c
-
-Acked-by: Nicolin Chen <nicoleotsuka@gmail.com>
-
-Thank you
-Nic
+thanks
+sudip
+> 
+> > 	4) For now I am only attaching a LCD, but I also want to attach a
+> > 	keypad to it. Can you please let me know about the schematic of the
+<snip>
+> init -> 
+> select_in ->
+> 
+> And here's the module load command I used to run :
+> insmod /tmp/panel-0.8.0.o parport=0 lcd_enabled=2 keypad_enabled=1 lcd_width=16 lcd_hwidth=16 lcd_height=2
+> 
+> Hoping this helps,
+> Willy
+> 
