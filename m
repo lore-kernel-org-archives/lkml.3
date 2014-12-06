@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaLFPKg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 10:10:36 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47684 "EHLO
+	id S1752793AbaLFPKf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 10:10:35 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47796 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752430AbaLFPIM (ORCPT
+	by vger.kernel.org with ESMTP id S1752356AbaLFPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Dec 2014 10:08:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Christian=20S=C3=BCnkenberg?= 
-	<christian.suenkenberg@hfg-karlsruhe.de>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 55/66] scsi: add Intel Multi-Flex to scsi scan blacklist
-Date: Sat,  6 Dec 2014 16:07:47 +0100
-Message-Id: <57c63d276bc4984cb67f8642401b55aaa3e45af6.1417878427.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Vrabel <david.vrabel@citrix.com>, Wang Nan <wangnan0@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 17/66] x86, mm: Set NX across entire PMD at boot
+Date: Sat,  6 Dec 2014 16:07:09 +0100
+Message-Id: <868b19cb0314da9725ec108ec6abb082965cd0c2.1417878427.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 References: <d278ba6471641f99eda3b3c76f8414339c9dbed0.1417878427.git.jslaby@suse.cz>
 In-Reply-To: <cover.1417878427.git.jslaby@suse.cz>
 References: <cover.1417878427.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Sünkenberg <christian.suenkenberg@hfg-karlsruhe.de>
+From: Kees Cook <keescook@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1899045510ff109980d9cc34e330fd8ca3631871 upstream.
+commit 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 upstream.
 
-Intel Multi-Flex LUNs choke on REPORT SUPPORTED OPERATION CODES
-resulting in sd_mod hanging for several minutes on startup.
-The issue was introduced with WRITE SAME discovery heuristics.
+When setting up permissions on kernel memory at boot, the end of the
+PMD that was split from bss remained executable. It should be NX like
+the rest. This performs a PMD alignment instead of a PAGE alignment to
+get the correct span of memory.
 
-Fixes: 5db44863b6eb ("[SCSI] sd: Implement support for WRITE SAME")
-Signed-off-by: Christian Sünkenberg <christian.suenkenberg@hfg-karlsruhe.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Before:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82c00000    10M     RW   PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82df5000  2004K     RW       GLB NX pte
+0xffffffff82df5000-0xffffffff82e00000    44K     RW       GLB x  pte
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+
+After:
+---[ High Kernel Mapping ]---
+...
+0xffffffff8202d000-0xffffffff82200000  1868K     RW       GLB NX pte
+0xffffffff82200000-0xffffffff82e00000    12M     RW   PSE GLB NX pmd
+0xffffffff82e00000-0xffffffffc0000000   978M                     pmd
+
+[ tglx: Changed it to roundup(_brk_end, PMD_SIZE) and added a comment.
+        We really should unmap the reminder along with the holes
+        caused by init,initdata etc. but thats a different issue ]
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Wang Nan <wangnan0@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/20141114194737.GA3091@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/scsi_devinfo.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/mm/init_64.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index 49014a143c6a..c1d04d4d3c6c 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -202,6 +202,7 @@ static struct {
- 	{"IOMEGA", "Io20S         *F", NULL, BLIST_KEY},
- 	{"INSITE", "Floptical   F*8I", NULL, BLIST_KEY},
- 	{"INSITE", "I325VM", NULL, BLIST_KEY},
-+	{"Intel", "Multi-Flex", NULL, BLIST_NO_RSOC},
- 	{"iRiver", "iFP Mass Driver", NULL, BLIST_NOT_LOCKABLE | BLIST_INQUIRY_36},
- 	{"LASOUND", "CDX7405", "3.10", BLIST_MAX5LUN | BLIST_SINGLELUN},
- 	{"MATSHITA", "PD-1", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 104d56a9245f..b599241aea81 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1110,7 +1110,7 @@ void mark_rodata_ro(void)
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
+ 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+ 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
+-	unsigned long all_end = PFN_ALIGN(&_end);
++	unsigned long all_end;
+ 
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -1121,7 +1121,16 @@ void mark_rodata_ro(void)
+ 	/*
+ 	 * The rodata/data/bss/brk section (but not the kernel text!)
+ 	 * should also be not-executable.
++	 *
++	 * We align all_end to PMD_SIZE because the existing mapping
++	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
++	 * split the PMD and the reminder between _brk_end and the end
++	 * of the PMD will remain mapped executable.
++	 *
++	 * Any PMD which was setup after the one which covers _brk_end
++	 * has been zapped already via cleanup_highmem().
+ 	 */
++	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
+ 	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
 -- 
 2.1.3
 
