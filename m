@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaLFCRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Dec 2014 21:17:39 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62842 "HELO
+	id S1752110AbaLFCT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Dec 2014 21:19:26 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56474 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751051AbaLFCRi (ORCPT
+	with SMTP id S1751482AbaLFCTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Dec 2014 21:17:38 -0500
+	Fri, 5 Dec 2014 21:19:25 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@kernel.org>
-Subject: [PATCH] phy / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Sat, 06 Dec 2014 03:39:05 +0100
-Message-ID: <2122955.8tCSpWHocD@vostro.rjw.lan>
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] tracing / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Sat, 06 Dec 2014 03:40:52 +0100
+Message-ID: <1729515.GUkTny2h5Y@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
@@ -26,12 +26,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
 After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+selected) PM_RUNTIME is always set if PM is set, so files that are
+build conditionally if CONFIG_PM_RUNTIME is set may now be build
+if CONFIG_PM is set.
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-drivers/phy/.
+Replace CONFIG_PM_RUNTIME with CONFIG_PM in kernel/trace/Makefile
+for this reason.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
@@ -43,34 +43,20 @@ linux-pm tree).
 Please let me know if it is OK to take this one into linux-pm.
 
 ---
- drivers/phy/phy-omap-usb2.c |    2 +-
- drivers/phy/phy-ti-pipe3.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-pm/drivers/phy/phy-omap-usb2.c
+Index: linux-pm/kernel/trace/Makefile
 ===================================================================
---- linux-pm.orig/drivers/phy/phy-omap-usb2.c
-+++ linux-pm/drivers/phy/phy-omap-usb2.c
-@@ -322,7 +322,7 @@ static int omap_usb2_remove(struct platf
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 
- static int omap_usb2_runtime_suspend(struct device *dev)
- {
-Index: linux-pm/drivers/phy/phy-ti-pipe3.c
-===================================================================
---- linux-pm.orig/drivers/phy/phy-ti-pipe3.c
-+++ linux-pm/drivers/phy/phy-ti-pipe3.c
-@@ -423,7 +423,7 @@ static int ti_pipe3_remove(struct platfo
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 
- static int ti_pipe3_runtime_suspend(struct device *dev)
- {
+--- linux-pm.orig/kernel/trace/Makefile
++++ linux-pm/kernel/trace/Makefile
+@@ -55,7 +55,7 @@ obj-$(CONFIG_EVENT_TRACING) += trace_eve
+ obj-$(CONFIG_EVENT_TRACING) += trace_events_trigger.o
+ obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+ obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+-ifeq ($(CONFIG_PM_RUNTIME),y)
++ifeq ($(CONFIG_PM),y)
+ obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+ endif
+ ifeq ($(CONFIG_TRACING),y)
 
