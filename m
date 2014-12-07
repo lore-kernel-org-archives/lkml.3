@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaLGUyn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:54:43 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60502 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaLGUyk (ORCPT
+	id S1753558AbaLGU45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:56:57 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:49342 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658AbaLGU44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:54:40 -0500
-Date: Sun, 7 Dec 2014 12:54:37 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/20] TTY: fix misspelling of current function in string
-Message-ID: <20141207205437.GD5360@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Julia Lawall <Julia.Lawall@lip6.fr>,
-	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
- <1417980062-25151-20-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417980062-25151-20-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 7 Dec 2014 15:56:56 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: frv: mm: extable.c:  Remove unused function
+Date: Sun,  7 Dec 2014 21:59:34 +0100
+Message-Id: <1417985974-16729-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia,
+Remove the function search_one_table() that is not used anywhere.
 
-On Sun, Dec 07, 2014 at 08:21:01PM +0100, Julia Lawall wrote:
-> Replace a misspelled function name by %s and then __func__.
-> 
-> This was done using Coccinelle, including the use of Levenshtein distance,
-> as proposed by Rasmus Villemoes.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> The semantic patch is difficult to summarize, but is available in the cover
-[...]
-> @@ -1458,7 +1458,7 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
->  
->  	orig_jiffies = jiffies;
->  #ifdef ROCKET_DEBUG_WAIT_UNTIL_SENT
-> -	printk(KERN_INFO "In RP_wait_until_sent(%d) (jiff=%lu)...\n", timeout,
-> +	printk(KERN_INFO "In %s(%d) (jiff=%lu)...\n", __func__, timeout,
->  	       jiffies);
->  	printk(KERN_INFO "cps=%d...\n", info->cps);
->  #endif
-> 
-More printk, pr_info, I'm sure you get the idea :-)
+This was partially found by using a static code analysis program called cppcheck.
 
-I would probably change the printk directly below it too, since it is
-right there, but it is up to you.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/frv/mm/extable.c |   23 -----------------------
+ 1 file changed, 23 deletions(-)
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/arch/frv/mm/extable.c b/arch/frv/mm/extable.c
+index 2fb9b3a..8863d6c 100644
+--- a/arch/frv/mm/extable.c
++++ b/arch/frv/mm/extable.c
+@@ -10,29 +10,6 @@ extern const void __memset_end, __memset_user_error_lr, __memset_user_error_hand
+ extern const void __memcpy_end, __memcpy_user_error_lr, __memcpy_user_error_handler;
+ extern spinlock_t modlist_lock;
+ 
+-/*****************************************************************************/
+-/*
+- *
+- */
+-static inline unsigned long search_one_table(const struct exception_table_entry *first,
+-					     const struct exception_table_entry *last,
+-					     unsigned long value)
+-{
+-        while (first <= last) {
+-		const struct exception_table_entry __attribute__((aligned(8))) *mid;
+-		long diff;
+-
+-		mid = (last - first) / 2 + first;
+-		diff = mid->insn - value;
+-                if (diff == 0)
+-                        return mid->fixup;
+-                else if (diff < 0)
+-                        first = mid + 1;
+-                else
+-                        last = mid - 1;
+-        }
+-        return 0;
+-} /* end search_one_table() */
+ 
+ /*****************************************************************************/
+ /*
 -- 
-- Jeremiah Mahler
+1.7.10.4
+
