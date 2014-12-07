@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaLGKdO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 05:33:14 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:49664 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaLGKdN (ORCPT
+	id S1753098AbaLGKou (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 05:44:50 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25746 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752855AbaLGKoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 05:33:13 -0500
-Date: Sun, 7 Dec 2014 11:33:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: hannes@cmpxchg.org, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: memcontrol: Skip test_mem_cgroup_node_reclaimable()
- when no MAX_NUMNODES or not more than 1
-Message-ID: <20141207103310.GJ15892@dhcp22.suse.cz>
-References: <5482316D.607@gmail.com>
+	Sun, 7 Dec 2014 05:44:46 -0500
+X-IronPort-AV: E=Sophos;i="5.07,533,1413237600"; 
+   d="scan'208";a="111907127"
+Date: Sun, 7 Dec 2014 11:44:42 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
+ pr_warn() in mppe_rekey()
+In-Reply-To: <1417765287.2721.39.camel@perches.com>
+Message-ID: <alpine.DEB.2.02.1412071140290.2044@localhost6.localdomain6>
+References: <1417731809.2721.17.camel@perches.com>  <alpine.DEB.2.02.1412050820290.2059@localhost6.localdomain6> <1417765287.2721.39.camel@perches.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5482316D.607@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-this has been fixed last week already
-http://marc.info/?l=linux-mm&m=141751847710864&w=2
+> A negative to that approach is inlined functions would
+> take the function name of the parent not keep the
+> inlined function name.
 
-On Sat 06-12-14 06:27:57, Chen Gang wrote:
-> test_mem_cgroup_node_reclaimable() is only used when "MAX_NUMNODES > 1",
-> so move it into related quote.
-> 
-> The related warning (with allmodconfig under parisc):
-> 
->     CC      mm/memcontrol.o
->   mm/memcontrol.c:1629:13: warning: 'test_mem_cgroup_node_reclaimable' defined but not used [-Wunused-function]
->    static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
->                ^
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  mm/memcontrol.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c6ac50e..d538b08 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1616,6 +1616,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  			 NULL, "Memory cgroup out of memory");
->  }
->  
-> +#if MAX_NUMNODES > 1
->  /**
->   * test_mem_cgroup_node_reclaimable
->   * @memcg: the target memcg
-> @@ -1638,7 +1639,6 @@ static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
->  	return false;
->  
->  }
-> -#if MAX_NUMNODES > 1
->  
->  /*
->   * Always updating the nodemask is not very good - even if we have an empty
-> -- 
-> 1.9.3
+I tried the following:
 
--- 
-Michal Hocko
-SUSE Labs
+#include <stdio.h>
+
+inline int foo() {
+  printf("%s %x\n",__func__,0x12345);
+}
+
+int main () {
+  foo();
+}
+
+The assembly code generated for main is:
+
+0000000000400470 <main>:
+  400470:       b9 45 23 01 00          mov    $0x12345,%ecx
+  400475:       ba 4b 06 40 00          mov    $0x40064b,%edx
+  40047a:       be 44 06 40 00          mov    $0x400644,%esi
+  40047f:       bf 01 00 00 00          mov    $0x1,%edi
+  400484:       31 c0                   xor    %eax,%eax
+  400486:       e9 d5 ff ff ff          jmpq   400460 <__printf_chk@plt>
+
+That is, the call to foo seems tom be inlined.
+
+But the output is:
+
+foo 12345
+
+So it seems that __func__ is determined before inlining.
+
+julia
