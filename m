@@ -1,102 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaLGN6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 08:58:39 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:39550 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaLGN6g (ORCPT
+	id S1753311AbaLGN6u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 08:58:50 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:40207 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155AbaLGN6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 08:58:36 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: asihpi: hpifunc.c:  Remove some unused functions
-Date: Sun,  7 Dec 2014 15:01:15 +0100
-Message-Id: <1417960875-11753-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 08:58:46 -0500
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: Re: next-20141204 crashing on ext4_fill_super()
+Date: Sun, 07 Dec 2014 11:58:40 -0200
+Message-ID: <2207531.PyHK0LI72j@laptop>
+User-Agent: KMail/4.13.3 (Linux/3.18.0-rc7-next-20141205-panda-00001-gf008c8b; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20141206221621.GB27484@thunk.org>
+References: <2144577.XOl86X9GoH@laptop> <20141206221621.GB27484@thunk.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-hpi_subsys_get_version_ex() hpi_instream_wait_start()
+On Saturday, December 06, 2014 05:16:21 PM Theodore Ts'o wrote:
+> Please revert fdfe07398761 and that should the crashes; this will be
+> fixed in the next linux-next release.  My apologies for the inconvenience.
+> 
+>       	     	  	     	       	  	    - Ted
+Hello, Ted.
 
-This was partially found by using a static code analysis program called cppcheck.
+Reverting that commit worked.  No need to apologize.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/pci/asihpi/hpi.h     |    4 ----
- sound/pci/asihpi/hpifunc.c |   27 ---------------------------
- 2 files changed, 31 deletions(-)
+Thanks a lot for the quick reply.
 
-diff --git a/sound/pci/asihpi/hpi.h b/sound/pci/asihpi/hpi.h
-index 2088724..8338b6e 100644
---- a/sound/pci/asihpi/hpi.h
-+++ b/sound/pci/asihpi/hpi.h
-@@ -1164,8 +1164,6 @@ u16 hpi_stream_estimate_buffer_size(struct hpi_format *pF,
- /* SubSystem */
- /*************/
- 
--u16 hpi_subsys_get_version_ex(u32 *pversion_ex);
--
- u16 hpi_subsys_get_num_adapters(int *pn_num_adapters);
- 
- u16 hpi_subsys_get_adapter(int iterator, u32 *padapter_index,
-@@ -1289,8 +1287,6 @@ u16 hpi_instream_read_buf(u32 h_instream, u8 *pb_read_buf, u32 bytes_to_read);
- 
- u16 hpi_instream_start(u32 h_instream);
- 
--u16 hpi_instream_wait_start(u32 h_instream);
--
- u16 hpi_instream_stop(u32 h_instream);
- 
- u16 hpi_instream_reset(u32 h_instream);
-diff --git a/sound/pci/asihpi/hpifunc.c b/sound/pci/asihpi/hpifunc.c
-index 510e56c..8fd02dd 100644
---- a/sound/pci/asihpi/hpifunc.c
-+++ b/sound/pci/asihpi/hpifunc.c
-@@ -93,18 +93,6 @@ static inline void hpi_send_recvV1(struct hpi_message_header *m,
- 	hpi_send_recv((struct hpi_message *)m, (struct hpi_response *)r);
- }
- 
--u16 hpi_subsys_get_version_ex(u32 *pversion_ex)
--{
--	struct hpi_message hm;
--	struct hpi_response hr;
--
--	hpi_init_message_response(&hm, &hr, HPI_OBJ_SUBSYSTEM,
--		HPI_SUBSYS_GET_VERSION);
--	hpi_send_recv(&hm, &hr);
--	*pversion_ex = hr.u.s.data;
--	return hr.error;
--}
--
- u16 hpi_subsys_get_num_adapters(int *pn_num_adapters)
- {
- 	struct hpi_message hm;
-@@ -950,21 +938,6 @@ u16 hpi_instream_start(u32 h_instream)
- 	return hr.error;
- }
- 
--u16 hpi_instream_wait_start(u32 h_instream)
--{
--	struct hpi_message hm;
--	struct hpi_response hr;
--
--	hpi_init_message_response(&hm, &hr, HPI_OBJ_ISTREAM,
--		HPI_ISTREAM_WAIT_START);
--	if (hpi_handle_indexes(h_instream, &hm.adapter_index, &hm.obj_index))
--		return HPI_ERROR_INVALID_HANDLE;
--
--	hpi_send_recv(&hm, &hr);
--
--	return hr.error;
--}
--
- u16 hpi_instream_stop(u32 h_instream)
- {
- 	struct hpi_message hm;
 -- 
-1.7.10.4
-
+Murilo
