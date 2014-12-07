@@ -1,44 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaLGXPN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 18:15:13 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224AbaLGXPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 18:15:12 -0500
-Message-ID: <5484DF7C.7060600@nod.at>
-Date: Mon, 08 Dec 2014 00:15:08 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753532AbaLGX3D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 18:29:03 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27126 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaLGX3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 18:29:00 -0500
+Message-ID: <5484E2AB.1070503@oracle.com>
+Date: Sun, 07 Dec 2014 18:28:43 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: powerpc: kernel: signal_32.c: Remove unused function
-References: <1417990021-18696-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <5484D240.30506@nod.at> <CAFo99gYvkzCTi6FZXfPOCqafNYn6y4H4hx62KqJjex60KV70_A@mail.gmail.com>
-In-Reply-To: <CAFo99gYvkzCTi6FZXfPOCqafNYn6y4H4hx62KqJjex60KV70_A@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+To: paulmck@linux.vnet.ibm.com
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        =?windows-1252?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com> <20141201230339.GA20487@ret.masoncoding.com> <20141202193252.GB17595@redhat.com> <547E4C14.6040509@oracle.com> <54813C03.8040009@oracle.com> <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com> <5481C92E.6020805@oracle.com> <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com> <54846B06.8050906@oracle.com> <20141207182420.GG25340@linux.vnet.ibm.com> <20141207194304.GA17810@linux.vnet.ibm.com>
+In-Reply-To: <20141207194304.GA17810@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.12.2014 um 00:11 schrieb Rickard Strandqvist:
-> Hi
-> 
-> Ok, sorry :-(
-> 
-> But I really do not. I've hacked together a script that will scan all
-> the code for the function, and test builds with some different config
-> options turned on.
+On 12/07/2014 02:43 PM, Paul E. McKenney wrote:
+> On Sun, Dec 07, 2014 at 10:24:20AM -0800, Paul E. McKenney wrote:
+>> On Sun, Dec 07, 2014 at 09:58:14AM -0500, Sasha Levin wrote:
+>>> On 12/05/2014 01:15 PM, Linus Torvalds wrote:
+>>>> On Fri, Dec 5, 2014 at 7:03 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>>>
+>>>>> Yes, it's going to a serial line, but it's only about 100 lines/second on
+>>>>> average. I wouldn't expect it to cause anything to hang!
+>>>>
+>>>> A regular 16650 serial chip? Running at 115kbps, I assume? So that's
+>>>> about 11kB/s.
+>>>>
+>>>> And the serial console is polling, since it can't sleep or depend on interrupts.
+>>>>
+>>>> At a average line length of what, 40 characters? At less than 300
+>>>> lines/s, you'd be using up 100% of one CPU. And since the printouts
+>>>> are serialized, that would be all other CPU's too..
+>>>>
+>>>> 100 lines/s _average_ means that I can easily see it be 300lines/s for a while.
+>>>>
+>>>> So yeah. The serial console is simply not designed to handle
+>>>> continuous output. It's for the "occasional" stuff.
+>>>>
+>>>> The fact that your rcu lockups go away when you make the fault
+>>>> injection be quiet makes me really suspect this is related.
+>>>
+>>> The lockups themselves "go away", but looking closer at the log
+>>> without those extra prints, I'm seeing:
+>>>
+>>> [ 1458.700070] INFO: rcu_preempt detected stalls on CPUs/tasks:
+>>> [ 1458.700133]  (detected by 19, t=30502 jiffies, g=12293, c=12292, q=0)
+>>> [ 1458.702764] INFO: Stall ended before state dump start
+>>>
+>>> Quite often.
+>>>
+>>> Maybe the extra prints were just a catalyst?
+>>
+>> Is anything else being printed about the time that these message show
+>> up?  Or is this the only output for the 40,000 jiffies preceding this
+>> message?
 
-Looks like you did not build a powerpc32 kernel. :-)
+There's actually nothing going on (beyond fuzzing noise) before/after:
 
-FWIW, this is the reference to the function:
-arch/powerpc/include/asm/systbl.h:OLDSYS(debug_setcontext)
+[  756.618342] kexec-bzImage64: Not a bzImage
+[  762.381734] kexec-bzImage64: Not a bzImage
+[  765.129612] Unable to find swap-space signature
+[  771.022304] Unable to find swap-space signature
+[  793.434417] kexec-bzImage64: Not a bzImage
+[  797.978210] => alloc_cpumask_var: failed!
+[  800.253116] kexec-bzImage64: Not a bzImage
+[  818.280056] INFO: rcu_sched detected stalls on CPUs/tasks:
+[  818.280056]  (detected by 11, t=30503 jiffies, g=-295, c=-296, q=0)
+[  818.283400] INFO: Stall ended before state dump start
+[  829.523992] audit: type=1326 audit(39.680:47): auid=4294967295 uid=2385760256 gid=2214330370 ses=4294967295 pid=13307 comm="trinity-c353" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
+[  830.890841] audit: type=1326 audit(41.010:48): auid=4294967295 uid=310902784 gid=201841673 ses=4294967295 pid=13294 comm="trinity-c350" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
+
+> And could you please build with CONFIG_RCU_CPU_STALL_INFO=y and try
+> this again?
+
+I already have it set:
+
+$ grep STALL_INFO .config
+CONFIG_RCU_CPU_STALL_INFO=y
+
 
 Thanks,
-//richard
+Sasha
