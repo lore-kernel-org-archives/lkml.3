@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206AbaLGLeg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 06:34:36 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1753182AbaLGLsO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 06:48:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12705 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960AbaLGLef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 06:34:35 -0500
-Message-ID: <54843B48.6020701@nod.at>
-Date: Sun, 07 Dec 2014 12:34:32 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753040AbaLGLsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 06:48:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="494977402"
+Date: Sun, 7 Dec 2014 17:18:29 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <james.hartley@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
+        Damien Horsley <Damien.Horsley@imgtec.com>,
+        Arnd Bergmann <arnd@arndb.de>, dmaengine@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] dmaengine: Add driver for IMG MDC
+Message-ID: <20141207114829.GX3411@intel.com>
+References: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
+ <1416002384-3525-3-git-send-email-abrestic@chromium.org>
+ <20141205173553.GS3411@intel.com>
+ <CAL1qeaE+7L2p=HxPBasQYLVPD0H2qBAd439Fn_z3Fza9Y3+0eA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] UBI: Fastmap: Fix memory leaks while closing the
- WL sub-system
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-2-git-send-email-richard@nod.at> <54840C44.4090406@codeaurora.org> <548423E3.8010106@nod.at> <54843AE2.6070608@codeaurora.org>
-In-Reply-To: <54843AE2.6070608@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1qeaE+7L2p=HxPBasQYLVPD0H2qBAd439Fn_z3Fza9Y3+0eA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.12.2014 um 12:32 schrieb Tanya Brokhman:
-> On 12/7/2014 11:54 AM, Richard Weinberger wrote:
->> Am 07.12.2014 um 09:13 schrieb Tanya Brokhman:
->>> On 11/30/2014 1:35 PM, Richard Weinberger wrote:
->>>> Add a ubi_fastmap_close() to free all resources used by fastmap
->>>> at WL shutdown.
->>>>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>> ---
->>>>    drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
->>>>    1 file changed, 18 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>>> index c2822f7..47b215f 100644
->>>> --- a/drivers/mtd/ubi/wl.c
->>>> +++ b/drivers/mtd/ubi/wl.c
->>>> @@ -2064,6 +2064,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->>>>        }
->>>>    }
->>>>
->>>> +static void ubi_fastmap_close(struct ubi_device *ubi)
->>>> +{
->>>> +#ifdef CONFIG_MTD_UBI_FASTMAP
->>>> +    int i;
->>>> +
->>>> +    flush_work(&ubi->fm_work);
->>>> +    return_unused_pool_pebs(ubi, &ubi->fm_pool);
->>>> +    return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
->>>> +
->>>> +    if (ubi->fm) {
->>>> +        for (i = 0; i < ubi->fm->used_blocks; i++)
->>>> +            kfree(ubi->fm->e[i]);
->>>> +    }
->>>> +    kfree(ubi->fm);
->>>
->>> kfree(ubi->fm_buf)?
->>
->> No this is not a typo, I kfree() here ubi->fm by design.
->> What am I missing? :)
-> 
-> I think you missed freeing ubi->fm_buf, before (not instead) you free ubi->fm :)
+On Fri, Dec 05, 2014 at 10:30:53AM -0800, Andrew Bresticker wrote:
+> After adding a macro for setting the WIDTH_{R,W} fields it seems fine
+> to me.  Is there something else you had in mind?
+I think whole of this might be a macro :)
 
-No. fm_buf is vfree()d upon detach time.
 
-Thanks,
-//richard
+> > and this depends on dma_slave_config being set, which shouldn't be the case
+> > for memcpy
+okay looking back yes it depends on bus_width. But how is bus_width set, i
+thought the dma_slave_config will set that?
+
+-- 
+~Vinod
+
