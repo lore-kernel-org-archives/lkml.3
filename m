@@ -1,116 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaLGVd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 16:33:58 -0500
-Received: from ns.horizon.com ([71.41.210.147]:62979 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751521AbaLGVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 16:33:57 -0500
-Date: 7 Dec 2014 16:33:54 -0500
-Message-ID: <20141207213354.20910.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: hannes@stressinduktion.org, linux@horizon.com
-Subject: Re: Where exactly will arch_fast_hash be used
-Cc: davem@davemloft.net, dborkman@redhat.com, herbert@gondor.apana.org.au,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
-        tytso@mit.edu
-In-Reply-To: <1417961203.17658.52.camel@localhost>
+	id S1752658AbaLGVq5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 16:46:57 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:51065 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaLGVqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 16:46:55 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: arm: mach-omap2: clkt2xxx_apll.c:  Remove some unused functions
+Date: Sun,  7 Dec 2014 22:49:34 +0100
+Message-Id: <1417988974-17688-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-12-07 at 15:06 +0100, Hannes Frederic Sowa wrote:
-> In case of openvswitch it shows a performance improvment. The seed
-> parameter could be used as an initial biasing of the crc32 function, but
-> in case of openvswitch it is only set to 0.
+Removes some functions that are not used anywhere:
+omap2_clk_apll54_disable() omap2_clk_apll96_disable()
+omap2_clk_apll54_enable() omap2_clk_apll96_enable() omap2xxx_get_apll_clkin()
+omap2_clk_apll96_recalc() omap2_clk_apll54_recalc()
 
-NACK.
+This was partially found by using a static code analysis program called cppcheck.
 
-This is the Fatal Error in thinking that Herbert was warning about.
-The seed parameter doesn't affect CRC32 collisions *at all* if the inputs
-are the same size.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/arm/mach-omap2/clkt2xxx_apll.c |   52 -----------------------------------
+ arch/arm/mach-omap2/clock2xxx.h     |    9 ------
+ 2 files changed, 61 deletions(-)
 
-For fixed-size inputs, a non-zero seed is equivalent to XORing a
-constant into the output of the CRC computation.
+diff --git a/arch/arm/mach-omap2/clkt2xxx_apll.c b/arch/arm/mach-omap2/clkt2xxx_apll.c
+index c78e893..65880e7 100644
+--- a/arch/arm/mach-omap2/clkt2xxx_apll.c
++++ b/arch/arm/mach-omap2/clkt2xxx_apll.c
+@@ -57,16 +57,6 @@ static bool omap2xxx_clk_apll_locked(struct clk_hw *hw)
+ 	return ((r & apll_mask) == apll_mask) ? true : false;
+ }
+ 
+-int omap2_clk_apll96_enable(struct clk_hw *hw)
+-{
+-	return omap2xxx_cm_apll96_enable();
+-}
+-
+-int omap2_clk_apll54_enable(struct clk_hw *hw)
+-{
+-	return omap2xxx_cm_apll54_enable();
+-}
+-
+ static void _apll96_allow_idle(struct clk_hw_omap *clk)
+ {
+ 	omap2xxx_cm_set_apll96_auto_low_power_stop();
+@@ -87,28 +77,6 @@ static void _apll54_deny_idle(struct clk_hw_omap *clk)
+ 	omap2xxx_cm_set_apll54_disable_autoidle();
+ }
+ 
+-void omap2_clk_apll96_disable(struct clk_hw *hw)
+-{
+-	omap2xxx_cm_apll96_disable();
+-}
+-
+-void omap2_clk_apll54_disable(struct clk_hw *hw)
+-{
+-	omap2xxx_cm_apll54_disable();
+-}
+-
+-unsigned long omap2_clk_apll54_recalc(struct clk_hw *hw,
+-				      unsigned long parent_rate)
+-{
+-	return (omap2xxx_clk_apll_locked(hw)) ? 54000000 : 0;
+-}
+-
+-unsigned long omap2_clk_apll96_recalc(struct clk_hw *hw,
+-				      unsigned long parent_rate)
+-{
+-	return (omap2xxx_clk_apll_locked(hw)) ? 96000000 : 0;
+-}
+-
+ /* Public data */
+ const struct clk_hw_omap_ops clkhwops_apll54 = {
+ 	.allow_idle	= _apll54_allow_idle,
+@@ -120,23 +88,3 @@ const struct clk_hw_omap_ops clkhwops_apll96 = {
+ 	.deny_idle	= _apll96_deny_idle,
+ };
+ 
+-/* Public functions */
+-
+-u32 omap2xxx_get_apll_clkin(void)
+-{
+-	u32 aplls, srate = 0;
+-
+-	aplls = omap2xxx_cm_get_pll_config();
+-	aplls &= OMAP24XX_APLLS_CLKIN_MASK;
+-	aplls >>= OMAP24XX_APLLS_CLKIN_SHIFT;
+-
+-	if (aplls == APLLS_CLKIN_19_2MHZ)
+-		srate = 19200000;
+-	else if (aplls == APLLS_CLKIN_13MHZ)
+-		srate = 13000000;
+-	else if (aplls == APLLS_CLKIN_12MHZ)
+-		srate = 12000000;
+-
+-	return srate;
+-}
+-
+diff --git a/arch/arm/mach-omap2/clock2xxx.h b/arch/arm/mach-omap2/clock2xxx.h
+index a090225..364a4cc 100644
+--- a/arch/arm/mach-omap2/clock2xxx.h
++++ b/arch/arm/mach-omap2/clock2xxx.h
+@@ -22,12 +22,7 @@ unsigned long omap2xxx_sys_clk_recalc(struct clk_hw *clk,
+ unsigned long omap2_osc_clk_recalc(struct clk_hw *clk,
+ 				   unsigned long parent_rate);
+ void omap2xxx_clkt_dpllcore_init(struct clk_hw *hw);
+-unsigned long omap2_clk_apll54_recalc(struct clk_hw *hw,
+-				      unsigned long parent_rate);
+-unsigned long omap2_clk_apll96_recalc(struct clk_hw *hw,
+-				      unsigned long parent_rate);
+ unsigned long omap2xxx_clk_get_core_rate(void);
+-u32 omap2xxx_get_apll_clkin(void);
+ u32 omap2xxx_get_sysclkdiv(void);
+ void omap2xxx_clk_prepare_for_reboot(void);
+ void omap2xxx_clkt_vps_check_bootloader_rates(void);
+@@ -48,9 +43,5 @@ int omap2430_clk_init(void);
+ extern struct clk_hw *dclk_hw;
+ int omap2_enable_osc_ck(struct clk_hw *hw);
+ void omap2_disable_osc_ck(struct clk_hw *hw);
+-int omap2_clk_apll96_enable(struct clk_hw *hw);
+-int omap2_clk_apll54_enable(struct clk_hw *hw);
+-void omap2_clk_apll96_disable(struct clk_hw *hw);
+-void omap2_clk_apll54_disable(struct clk_hw *hw);
+ 
+ #endif
+-- 
+1.7.10.4
 
-
-for *different* sized inputs, a non-zero seed detects zero-padding
-better than a zero one, but *which* non-zero value is also irrelevant;
-all-ones is the traditional choice because it's simplest in hardware.
-
-
-A CRC is inherently linear.  CRC(a^b) = CRC(a) ^ CRC(b).  This makes
-them easy to analyze mathematically and gives them a number of nice
-properties for detecting hardware corruption.
-
-But that same simplicity makes it *ridiculously* easy to generate
-collisions if you try.
-
-
-One way of looking at a CRC is to say that each bit in the input
-has a CRC.  The CRC of a message string is just the XOR of the CRCs
-of the individual bits that are set in the message.
-
-Now, a CRC polynomial is chosen so that all of the bits of a
-message have different CRCs.  Obviously, there's a limit: when the
-message is 2^n bits long, it's not possible for all the bits to
-have different, non-zero n-bit CRCs.
-
-But a CRC is a really efficient way of assigning different bit patterns
-to different input bits up to that limit.
-
-(Something like CRC32c is also chosen so that, for messages up to a
-reasonable length, no 3-bit, 4-bit, etc. combinations have CRCs that
-XOR to zero.)
-
-
-But, and this might be what Herbert was trying to say and I was
-misunderstanding, if you then *truncate* that CRC, the CRCs of the
-message bits lose that uniqueness guarantee.  They're just pseudorandom
-numbers, and a CRC loses its special collision-resistance properties.
-
-It's just an ordinary random hash, and thanks to the birthday paradox,
-you're likely to find two bits whose CRCs agree in any particular 8 bits
-within roughly sqrt(2*256) or 22 bits.
-
-Here are a few such collisions for the least significant 8 bits of CRC32c:
-
-Msg1	CRC32c		Msg2	CRC32c		Match
-1<<11	3fc5f181	1<<30	bf672381	81
-1<<12	9d14c3b8	1<<31	dd45aab8	b8
-1<<5	c79a971f	1<<44	6006181f	1f
-1<<15	13a29877	1<<45	b2f53777	77
-
-There's nothing special about the lsbits of the CRC.
-Within 64 bits, the most significant 8 bits have it worse:
-
-1<<5	c79a971f	1<<17	c76580d9	c7
-1<<6	e13b70f7	1<<18	e144fb14	e1
-1<<19	70a27d8a	1<<38	7022df58	70
-1<<20	38513ec5	1<<39	38116fac	38
-1<<13	4e8a61dc	1<<52	4e2dfd53	4e
-1<<23	a541927e	1<<53	a5e0c5d1	a5
-
-
-Now, I'd like to stress that this collision rate is no worse than any
-*other* hash function.  A truncated CRC loses its special resistance to
-the birthday paradox (you'd have been much smarter to use 8-bit CRC),
-but it doesn't become especially bad.  A truncated SHA-1 will have
-coillisions just as often.
-
-The concern with a CRC is that, once you've found one collision, you've
-found a huge number of them.  Just XOR the bit pattern of your choice
-into both of the colliding messages, and you have a new collision.
-
-
-For another example, if you consider the CRC32c of all possible 1-byte
-messages *and then take only the low byte*, there are only 128 possible
-values.
-
-It turns out that the byte 0x5d has a CRC32c of 0xee0d9600.  This ends
-in 00, so if I XOR 0x5d into anything, the low 8 bits of the CRC
-don't change.
-
-Likewise, the message "23 00" has a CRC32c of 0x00ee0d96.  So you can
-XOR 0x23 into the second-last byte of anything, and the high 8 bits of
-the CRC don't change.
