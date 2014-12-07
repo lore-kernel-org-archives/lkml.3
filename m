@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaLGKWb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 05:22:31 -0500
-Received: from mout.web.de ([212.227.17.11]:63088 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944AbaLGKW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 05:22:29 -0500
-Message-ID: <54842A61.5080006@web.de>
-Date: Sun, 07 Dec 2014 11:22:25 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753132AbaLGKYf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 05:24:35 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34498 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855AbaLGKYd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 05:24:33 -0500
+Date: Sun, 7 Dec 2014 11:24:30 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH -v2 2/5] OOM: thaw the OOM victim if it is frozen
+Message-ID: <20141207102430.GF15892@dhcp22.suse.cz>
+References: <20141110163055.GC18373@dhcp22.suse.cz>
+ <1417797707-31699-1-git-send-email-mhocko@suse.cz>
+ <1417797707-31699-3-git-send-email-mhocko@suse.cz>
+ <20141206130657.GC18711@htj.dyndns.org>
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Disable unrestricted mode if ept=0
-References: <jpg388s95zb.fsf@redhat.com>
-In-Reply-To: <jpg388s95zb.fsf@redhat.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="tnAe4I37OQdXeLG2SXP1FP80s71tudeI8"
-X-Provags-ID: V03:K0:toXXxz26rxj406tbv+xmSJfuSKQkd6mthHZo7nqmkiNVHeFTKMY
- rSVVVeo1nXQbRU/bKrm8m3no0B27POlxjKutl8OPPsh7VhqGQMS96Z0SWyTqBaba8DbI5Eb
- HBXY2F0Eeqs7MHxTt9M5uArvTl5wU2Ks5MOcPEXInjik08DAkWr46Rt9EZy4cw1aT/MwThT
- 7gvrY9N+4oSDOwLJOSTjA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141206130657.GC18711@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tnAe4I37OQdXeLG2SXP1FP80s71tudeI8
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Sat 06-12-14 08:06:57, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Dec 05, 2014 at 05:41:44PM +0100, Michal Hocko wrote:
+> > oom_kill_process only sets TIF_MEMDIE flag and sends a signal to the
+> > victim. This is basically noop when the task is frozen though because
+> > the task sleeps in uninterruptible sleep. The victim is eventually
+> > thawed later when oom_scan_process_thread meets the task again in a
+> > later OOM invocation so the OOM killer doesn't live lock. But this is
+> > less than optimal. Let's add the frozen check and thaw the task right
+> > before we send SIGKILL to the victim.
+> > 
+> > The check and thawing in oom_scan_process_thread has to stay because the
+> > task might got access to memory reserves even without an explicit
+> > SIGKILL from oom_kill_process (e.g. it already has fatal signal pending
+> > or it is exiting already).
+> 
+> How else would a task get TIF_MEMDIE?  If there are other paths which
+> set TIF_MEMDIE, the right thing to do is creating a function which
+> thaws / wakes up the target task and use it there too.  Please
+> interlock these things properly from the get-go instead of scattering
+> these things around.
 
-On 2014-12-06 16:02, Bandan Das wrote:
->=20
-> If L0 has disabled EPT, don't advertise unrestricted
-> mode at all since it depends on EPT to run real mode code.
->=20
-> Signed-off-by: Bandan Das <bsd@redhat.com>
-> ---
->  arch/x86/kvm/vmx.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 3e556c6..ed70394 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -2377,12 +2377,12 @@ static __init void nested_vmx_setup_ctls_msrs(v=
-oid)
->  	nested_vmx_secondary_ctls_low =3D 0;
->  	nested_vmx_secondary_ctls_high &=3D
->  		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
-> -		SECONDARY_EXEC_UNRESTRICTED_GUEST |
->  		SECONDARY_EXEC_WBINVD_EXITING;
-> =20
->  	if (enable_ept) {
->  		/* nested EPT: emulate EPT also to L1 */
-> -		nested_vmx_secondary_ctls_high |=3D SECONDARY_EXEC_ENABLE_EPT;
-> +		nested_vmx_secondary_ctls_high |=3D SECONDARY_EXEC_ENABLE_EPT |
-> +			SECONDARY_EXEC_UNRESTRICTED_GUEST;
->  		nested_vmx_ept_caps =3D VMX_EPT_PAGE_WALK_4_BIT |
->  			 VMX_EPTP_WB_BIT | VMX_EPT_2MB_PAGE_BIT |
->  			 VMX_EPT_INVEPT_BIT;
->=20
+See __out_of_memory which sets TIF_MEMDIE on current when it is exiting
+or has fatal signals pending. This task cannot be frozen obviously.
 
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+> > @@ -545,6 +545,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> >  	rcu_read_unlock();
+> >  
+> >  	mark_tsk_oom_victim(victim);
+> > +	if (frozen(victim))
+> > +		__thaw_task(victim);
+> 
+> The frozen() test here is racy.  Always calling __thaw_task() wouldn't
+> be.  You can argue that being racy here is okay because the later
+> scanning would find it but why complicate things like that?  Just
+> properly interlock each instance and be done with it.
 
-Jan
-
-
-
---tnAe4I37OQdXeLG2SXP1FP80s71tudeI8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlSEKmEACgkQitSsb3rl5xQehwCg6QOqwmMo6IoO55OMLRNh0pyg
-UmMAoMUoPtMqYUuauAs7bHu+mrAF4286
-=+v5/
------END PGP SIGNATURE-----
-
---tnAe4I37OQdXeLG2SXP1FP80s71tudeI8--
+OK, changed. I didn't realize that __thaw_task does the check already
+and was following what we have in oom_scan_process_thread. Removed the
+check from that one as well.
+-- 
+Michal Hocko
+SUSE Labs
