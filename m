@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaLGVsR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 16:48:17 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:56487 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671AbaLGVsQ (ORCPT
+	id S1752665AbaLGV4a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 16:56:30 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54511 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaLGV43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 16:48:16 -0500
+	Sun, 7 Dec 2014 16:56:29 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        navin patidar <navin.patidar@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: drm: i915: intel_dsi_cmd.c:  Remove unused function
-Date: Sun,  7 Dec 2014 22:50:55 +0100
-Message-Id: <1417989055-17859-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8188eu: os_dep: usb_ops_linux.c:  Remove unused function
+Date: Sun,  7 Dec 2014 22:59:07 +0100
+Message-Id: <1417989547-18140-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function dsi_hs_mode_enable() that is not used anywhere.
+Remove the function usb_writeN() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/gpu/drm/i915/intel_dsi_cmd.c |   21 ---------------------
- drivers/gpu/drm/i915/intel_dsi_cmd.h |    2 --
- 2 files changed, 23 deletions(-)
+ drivers/staging/rtl8188eu/include/usb_ops_linux.h |    1 -
+ drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c  |   27 ---------------------
+ 2 files changed, 28 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_dsi_cmd.c b/drivers/gpu/drm/i915/intel_dsi_cmd.c
-index f4767fd..71addcc 100644
---- a/drivers/gpu/drm/i915/intel_dsi_cmd.c
-+++ b/drivers/gpu/drm/i915/intel_dsi_cmd.c
-@@ -103,27 +103,6 @@ enum dsi_type {
- 	DSI_GENERIC,
- };
+diff --git a/drivers/staging/rtl8188eu/include/usb_ops_linux.h b/drivers/staging/rtl8188eu/include/usb_ops_linux.h
+index 01b3810..4fdc536 100644
+--- a/drivers/staging/rtl8188eu/include/usb_ops_linux.h
++++ b/drivers/staging/rtl8188eu/include/usb_ops_linux.h
+@@ -79,7 +79,6 @@ void usb_read_port_cancel(struct adapter *adapter);
+ int usb_write8(struct adapter *adapter, u32 addr, u8 val);
+ int usb_write16(struct adapter *adapter, u32 addr, u16 val);
+ int usb_write32(struct adapter *adapter, u32 addr, u32 val);
+-int usb_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata);
  
--/* enable or disable command mode hs transmissions */
--void dsi_hs_mode_enable(struct intel_dsi *intel_dsi, bool enable)
+ u32 usb_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
+ void usb_write_port_cancel(struct adapter *adapter);
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
+index ba1e178..b46061c 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
+@@ -615,33 +615,6 @@ int usb_write32(struct adapter *adapter, u32 addr, u32 val)
+ 	return ret;
+ }
+ 
+-int usb_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata)
 -{
--	struct drm_encoder *encoder = &intel_dsi->base.base;
--	struct drm_device *dev = encoder->dev;
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	struct intel_crtc *intel_crtc = to_intel_crtc(encoder->crtc);
--	enum pipe pipe = intel_crtc->pipe;
--	u32 temp;
--	u32 mask = DBI_FIFO_EMPTY;
+-	u8 request;
+-	u8 requesttype;
+-	u16 wvalue;
+-	u16 index;
+-	u16 len;
+-	u8 buf[VENDOR_CMD_MAX_DATA_LEN] = {0};
+-	int ret;
 -
--	if (wait_for((I915_READ(MIPI_GEN_FIFO_STAT(pipe)) & mask) == mask, 50))
--		DRM_ERROR("Timeout waiting for DBI FIFO empty\n");
 -
--	temp = I915_READ(MIPI_HS_LP_DBI_ENABLE(pipe));
--	temp &= DBI_HS_LP_MODE_MASK;
--	I915_WRITE(MIPI_HS_LP_DBI_ENABLE(pipe), enable ? DBI_HS_MODE : DBI_LP_MODE);
+-	request = 0x05;
+-	requesttype = 0x00;/* write_out */
+-	index = 0;/* n/a */
 -
--	intel_dsi->hs = enable;
+-	wvalue = (u16)(addr&0x0000ffff);
+-	len = length;
+-	 memcpy(buf, pdata, len);
+-
+-	ret = usbctrl_vendorreq(adapter, request, wvalue, index, buf, len, requesttype);
+-
+-
+-	return RTW_STATUS_CODE(ret);
 -}
 -
- static int dsi_vc_send_short(struct intel_dsi *intel_dsi, int channel,
- 			     u8 data_type, u16 data)
- {
-diff --git a/drivers/gpu/drm/i915/intel_dsi_cmd.h b/drivers/gpu/drm/i915/intel_dsi_cmd.h
-index 46aa1ac..7ad54c0 100644
---- a/drivers/gpu/drm/i915/intel_dsi_cmd.h
-+++ b/drivers/gpu/drm/i915/intel_dsi_cmd.h
-@@ -36,8 +36,6 @@
- #define DPI_LP_MODE_EN	false
- #define DPI_HS_MODE_EN	true
- 
--void dsi_hs_mode_enable(struct intel_dsi *intel_dsi, bool enable);
 -
- int dsi_vc_dcs_write(struct intel_dsi *intel_dsi, int channel,
- 		     const u8 *data, int len);
- 
+-
+ static void usb_write_port_complete(struct urb *purb, struct pt_regs *regs)
+ {
+ 	struct xmit_buf *pxmitbuf = (struct xmit_buf *)purb->context;
 -- 
 1.7.10.4
 
