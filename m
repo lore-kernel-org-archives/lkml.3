@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaLGUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:48:16 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:44279 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195AbaLGUsK (ORCPT
+	id S1753830AbaLGUs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:48:26 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:65529 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790AbaLGUsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:48:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417980062-25151-11-git-send-email-Julia.Lawall@lip6.fr>
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1417980062-25151-11-git-send-email-Julia.Lawall@lip6.fr>
-Date: Sun, 7 Dec 2014 12:48:09 -0800
-Message-ID: <CAP6odjh4Gnc0uAcPTsUMFPTRj7=NYZvMgmL=Rre_kCNah+YcNg@mail.gmail.com>
-Subject: Re: [PATCH 10/20] uli526x: fix misspelling of current function in string
-From: Grant Grundler <grantgrundler@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Grant Grundler <grundler@parisc-linux.org>,
-        kernel-janitors@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>, joe@perches.com,
-        "open list:TULIP NETWORK DRI..." <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 7 Dec 2014 15:48:20 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: testing: selftests: powerpc: pmu: ebb: ebb.c:  Remove unused function
+Date: Sun,  7 Dec 2014 21:50:59 +0100
+Message-Id: <1417985459-16501-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 7, 2014 at 11:20 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> Replace a misspelled function name by %s and then __func__.
+Remove the function event_bhrb_init() that is not used anywhere.
 
-Patch is correct but this commit message is not. Please correct and
-add my Ack-by.
+This was partially found by using a static code analysis program called cppcheck.
 
-cheers,
-grant
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ tools/testing/selftests/powerpc/pmu/ebb/ebb.c |    5 -----
+ tools/testing/selftests/powerpc/pmu/ebb/ebb.h |    1 -
+ 2 files changed, 6 deletions(-)
 
-> This was done using Coccinelle, including the use of Levenshtein distance,
-> as proposed by Rasmus Villemoes.
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
-> The semantic patch is difficult to summarize, but is available in the cover
-> letter of this patch series.
->
->  drivers/net/ethernet/dec/tulip/uli526x.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ethernet/dec/tulip/uli526x.c b/drivers/net/ethernet/dec/tulip/uli526x.c
-> index 4061f9b..1c5916b 100644
-> --- a/drivers/net/ethernet/dec/tulip/uli526x.c
-> +++ b/drivers/net/ethernet/dec/tulip/uli526x.c
-> @@ -1837,7 +1837,7 @@ static int __init uli526x_init_module(void)
->
->  static void __exit uli526x_cleanup_module(void)
->  {
-> -       ULI526X_DBUG(0, "uli526x_clean_module() ", debug);
-> +       ULI526X_DBUG(0, "uli526x_cleanup_module() ", debug);
->         pci_unregister_driver(&uli526x_driver);
->  }
->
->
+diff --git a/tools/testing/selftests/powerpc/pmu/ebb/ebb.c b/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
+index d7a72ce..75af212 100644
+--- a/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
++++ b/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
+@@ -324,11 +324,6 @@ void event_ebb_init(struct event *e)
+ 	e->attr.config |= (1ull << 63);
+ }
+ 
+-void event_bhrb_init(struct event *e, unsigned ifm)
+-{
+-	e->attr.config |= (1ull << 62) | ((u64)ifm << 60);
+-}
+-
+ void event_leader_ebb_init(struct event *e)
+ {
+ 	event_ebb_init(e);
+diff --git a/tools/testing/selftests/powerpc/pmu/ebb/ebb.h b/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
+index e44eee5..a71596a 100644
+--- a/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
++++ b/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
+@@ -46,7 +46,6 @@ static inline void ebb_enable_pmc_counting(int pmc)
+ bool ebb_check_count(int pmc, u64 sample_period, int fudge);
+ void event_leader_ebb_init(struct event *e);
+ void event_ebb_init(struct event *e);
+-void event_bhrb_init(struct event *e, unsigned ifm);
+ void setup_ebb_handler(void (*callee)(void));
+ void standard_ebb_callee(void);
+ int ebb_event_enable(struct event *e);
+-- 
+1.7.10.4
+
