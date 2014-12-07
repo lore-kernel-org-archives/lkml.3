@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaLGWhC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:37:02 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54971 "EHLO mail.eperm.de"
+	id S1753800AbaLGWhM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:37:12 -0500
+Received: from mail.eperm.de ([89.247.134.16]:55001 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753387AbaLGWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:36:57 -0500
+	id S1753634AbaLGWhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:37:03 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -13,12 +13,10 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v5 5/8] crypto: AF_ALG: add user space interface for RNG
-Date: Sun, 07 Dec 2014 23:23:48 +0100
-Message-ID: <3380968.kTQNpvjKFa@tachyon.chronox.de>
+Subject: [PATCH v5 0/8] crypto: AF_ALG: add AEAD and RNG support
+Date: Sun, 07 Dec 2014 23:20:22 +0100
+Message-ID: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
-References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -26,112 +24,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow user space to seed / reset the RNG via a setsockopt.
+Hi,
 
-This patch reuses alg_setkey to copy data into the kernel. The
-alg_setkey is now used for two mechanisms: setkey and seeding.
-The function is extended by the providing the function pointer
-to the function handling the copied data.
+This patch set adds AEAD and RNG support to the AF_ALG interface
+exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
+support, all cipher types the kernel crypto API allows access to are
+now accessible from userspace.
 
-As the alg_setkey is now usable for more than just setkey, it is renamed
-to alg_setop.
+Both, AEAD and RNG implementations are stand-alone and do not depend
+other AF_ALG interfaces (like hash or skcipher).
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/af_alg.c             | 29 +++++++++++++++++++----------
- include/crypto/if_alg.h     |  1 +
- include/uapi/linux/if_alg.h |  1 +
- 3 files changed, 21 insertions(+), 10 deletions(-)
+The AEAD implementation uses the same approach as provided with
+skcipher by offering the following interfaces:
 
-diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index 547c369..d1eb1e9 100644
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -169,26 +169,27 @@ static int alg_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 	return 0;
- }
- 
--static int alg_setkey(struct sock *sk, char __user *ukey,
--		      unsigned int keylen)
-+static int alg_setop(struct sock *sk, char __user *udata,
-+		      unsigned int datalen,
-+		      int (*handler)(void *private, const u8 *data,
-+				     unsigned int datalen))
- {
- 	struct alg_sock *ask = alg_sk(sk);
--	const struct af_alg_type *type = ask->type;
--	u8 *key;
-+	u8 *data;
- 	int err;
- 
--	key = sock_kmalloc(sk, keylen, GFP_KERNEL);
--	if (!key)
-+	data = sock_kmalloc(sk, datalen, GFP_KERNEL);
-+	if (!data)
- 		return -ENOMEM;
- 
- 	err = -EFAULT;
--	if (copy_from_user(key, ukey, keylen))
-+	if (copy_from_user(data, udata, datalen))
- 		goto out;
- 
--	err = type->setkey(ask->private, key, keylen);
-+	err = handler(ask->private, data, datalen);
- 
- out:
--	sock_kfree_s(sk, key, keylen);
-+	sock_kfree_s(sk, data, datalen);
- 
- 	return err;
- }
-@@ -214,7 +215,7 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
- 		if (!type->setkey)
- 			goto unlock;
- 
--		err = alg_setkey(sk, optval, optlen);
-+		err = alg_setop(sk, optval, optlen, type->setkey);
- 		break;
- 	case ALG_SET_AEAD_AUTHSIZE:
- 		if (sock->state == SS_CONNECTED)
-@@ -222,6 +223,14 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
- 		if (!type->setauthsize)
- 			goto unlock;
- 		err = type->setauthsize(ask->private, optlen);
-+		break;
-+	case ALG_SET_RNG_SEED:
-+		if (sock->state == SS_CONNECTED)
-+			goto unlock;
-+		if (!type->setseed)
-+			goto unlock;
-+
-+		err = alg_setop(sk, optval, optlen, type->setseed);
- 	}
- 
- unlock:
-diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
-index 5c7b6c5..0808ed1 100644
---- a/include/crypto/if_alg.h
-+++ b/include/crypto/if_alg.h
-@@ -51,6 +51,7 @@ struct af_alg_type {
- 	int (*setkey)(void *private, const u8 *key, unsigned int keylen);
- 	int (*accept)(void *private, struct sock *sk);
- 	int (*setauthsize)(void *private, unsigned int authsize);
-+	int (*setseed)(void *private, const u8 *seed, unsigned int seedlen);
- 
- 	struct proto_ops *ops;
- 	struct module *owner;
-diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
-index f2acd2f..973dcca 100644
---- a/include/uapi/linux/if_alg.h
-+++ b/include/uapi/linux/if_alg.h
-@@ -34,6 +34,7 @@ struct af_alg_iv {
- #define ALG_SET_OP			3
- #define ALG_SET_AEAD_ASSOCLEN		4
- #define ALG_SET_AEAD_AUTHSIZE		5
-+#define ALG_SET_RNG_SEED		6
- 
- /* Operations */
- #define ALG_OP_DECRYPT			0
+	* sendmsg and recvmsg interfaces allowing multiple
+	  invocations supporting a threaded user space. To support
+	  multi-threaded user space, kernel-side buffering
+	  is implemented similarly to skcipher.
+
+	* splice / vmsplice interfaces allowing a zero-copy
+	  invocation
+
+The RNG interface only implements the recvmsg interface as
+zero-copy is not applicable.
+
+The new AEAD and RNG interfaces are fully tested with the test application
+provided at [1]. That test application exercises all newly added user space
+interfaces. The testing covers:
+
+	* use of the sendmsg/recvmsg interface
+
+	* use of the splice / vmsplice interface
+
+	* invocation of all AF_ALG types (aead, rng, skcipher, hash)
+
+	* using all types of operation (encryption, decryption, keyed MD,
+	  MD, random numbers, AEAD decryption with positive and negative
+	  authentication verification)
+
+	* stress testing by running all tests for 30 minutes in an
+	  endless loop
+
+	* test execution on 64 bit and 32 bit
+
+[1] http://www.chronox.de/libkcapi.html
+
+Changes v2:
+* rebase to current cryptodev-2.6 tree
+* use memzero_explicit to zeroize AEAD associated data
+* use sizeof for determining length of AEAD associated data
+* update algif_rng.c covering all suggestions from Daniel Borkmann
+  <dborkman@redhat.com>
+* addition of patch 9: add digestsize interface for hashes
+* addition of patch to update documentation covering the userspace interface
+* change numbers of getsockopt options: separate them from sendmsg interface
+  definitions
+
+Changes v3:
+* remove getsockopt interface
+* AEAD: associated data is set prepended to the plain/ciphertext
+* AEAD: allowing arbitrary associated data lengths
+* remove setkey patch as protection was already in the existing code
+
+Changes v4:
+* stand-alone implementation of AEAD
+* testing of all interfaces offered by AEAD
+* stress testing of AEAD and RNG
+
+Changes v5:
+* AEAD: add outer while(size) loop in aead_sendmsg to ensure all data is
+  copied into the kernel (reporter Herbert Xu)
+* AEAD: aead_sendmsg bug fix: change size -= len; to size -= plen;
+* AF_ALG / AEAD: add aead_setauthsize and associated extension to
+  struct af_alg_type as well as alg_setsockopt (reporter Herbert Xu)
+* RNG: rng_recvmsg: use 128 byte stack variable for output of RNG instead
+  of ctx->result (reporter Herbert Xu)
+* RNG / AF_ALG: allow user space to seed RNG via setsockopt
+* RNG: rng_recvmsg bug fix: use genlen as result variable for
+  crypto_rng_get_bytes as previously no negative errors were obtained 
+* AF_ALG: alg_setop: zeroize buffer before free
+
+
+Stephan Mueller (8):
+  crypto: AF_ALG: add user space interface for AEAD
+  crypto: AF_ALG: add setsockopt for auth tag size
+  crypto: AF_ALG: add AEAD support
+  crypto: AF_ALG: enable AEAD interface compilation
+  crypto: AF_ALG: add user space interface for RNG
+  crypto: AF_ALG: zeroize key / seed data
+  crypto: AF_ALG: add random number generator support
+  crypto: AF_ALG: enable RNG interface compilation
+
+ crypto/Kconfig              |  18 ++
+ crypto/Makefile             |   2 +
+ crypto/af_alg.c             |  42 ++-
+ crypto/algif_aead.c         | 650 ++++++++++++++++++++++++++++++++++++++++++++
+ crypto/algif_rng.c          | 192 +++++++++++++
+ include/crypto/if_alg.h     |   3 +
+ include/uapi/linux/if_alg.h |   3 +
+ 7 files changed, 900 insertions(+), 10 deletions(-)
+ create mode 100644 crypto/algif_aead.c
+ create mode 100644 crypto/algif_rng.c
+
 -- 
 2.1.0
 
