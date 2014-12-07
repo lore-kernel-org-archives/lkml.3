@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaLGW2r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:28:47 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56587 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaLGW2q (ORCPT
+	id S1753761AbaLGW3G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:29:06 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:52258 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaLGW3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:28:46 -0500
-Message-ID: <5484D631.4010606@gmail.com>
-Date: Mon, 08 Dec 2014 06:35:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: John David Anglin <dave.anglin@bell.net>
-CC: "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        Joel Brobecker <brobecker@adacore.com>
-Subject: Re: [PATCH] arch: uapi: asm: mman.h: Let MADV_FREE have same value
- for all architectures
-References: <5480E715.3020900@gmail.com> <20141205065417.GA3358@bbox> <54822B19.2070804@gmail.com> <54832761.1050700@gmail.com> <BLU436-SMTP2290D2D7C148D22663FD75E97670@phx.gbl>
-In-Reply-To: <BLU436-SMTP2290D2D7C148D22663FD75E97670@phx.gbl>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Dec 2014 17:29:03 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Alistair Popple <alistair@popple.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walter <dwalter@google.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] arch: powerpc: kernel: vio.c:  Remove unused function
+Date: Sun,  7 Dec 2014 23:31:42 +0100
+Message-Id: <1417991502-20223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove the function cmo_high_show() that is not used anywhere.
 
-On 12/8/14 00:14, John David Anglin wrote:
-> On 6-Dec-14, at 10:57 AM, Chen Gang wrote:
-> 
->> And I also want to consult about parisc assembly instructions, I can not
->> find the related reference documents, could you help to have a check (or
->> provide some related information for it)? related contents are below:
-> 
-> https://parisc.wiki.kernel.org/index.php/Technical_Documentation
+This was partially found by using a static code analysis program called cppcheck.
 
-OK, thank you very much!!
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/powerpc/kernel/vio.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-For me, these information is enough, I checked the related sub link, it
-has a full description for all related instruction (stb/h, stw, std).
-
-  https://parisc.wiki.kernel.org/images-parisc/7/73/Parisc2.0.pdf
-
-For me, my original comments need be improved: need mention about STH,
-and maybe also need consider about additional related instructions of
-parisc 2.0 (STDA, STWA, STBY, STDBY).
-
-
-Thanks.
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 5bfdab9..11657d2 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1032,11 +1032,6 @@ viobus_cmo_pool_rd_attr(reserve, size);
+ viobus_cmo_pool_rd_attr(excess, size);
+ viobus_cmo_pool_rd_attr(excess, free);
+ 
+-static ssize_t cmo_high_show(struct bus_type *bt, char *buf)
+-{
+-	return sprintf(buf, "%lu\n", vio_cmo.high);
+-}
+-
+ static ssize_t cmo_high_store(struct bus_type *bt, const char *buf,
+ 			      size_t count)
+ {
 -- 
-Chen Gang
+1.7.10.4
 
-Open, share, and attitude like air, water, and life which God blessed
