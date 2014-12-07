@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaLGHze (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 02:55:34 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:42335 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347AbaLGHzc (ORCPT
+	id S1752758AbaLGIEo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 03:04:44 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:64312 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaLGIEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 02:55:32 -0500
-Message-ID: <548407F0.90209@codeaurora.org>
-Date: Sun, 07 Dec 2014 09:55:28 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 7 Dec 2014 03:04:41 -0500
+Date: Sun, 7 Dec 2014 08:04:34 +0000
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH 3/3] Drivers: hv: hv_balloon: Don't post pressure status
+ from interrupt context
+Message-ID: <20141207080433.GA4531@sucs.org>
+References: <1417559331-13691-1-git-send-email-kys@microsoft.com>
+ <1417559355-13730-1-git-send-email-kys@microsoft.com>
+ <1417559355-13730-3-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] UBI: Fastmap: Make ubi_refill_pools() fair
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-7-git-send-email-richard@nod.at> <5481F1A1.50609@codeaurora.org> <54821BF6.8010000@nod.at>
-In-Reply-To: <54821BF6.8010000@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417559355-13730-3-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard
+On Tue, Dec 02, 2014 at 02:29:15PM -0800, K. Y. Srinivasan wrote:
+> We currently release memory (balloon down) in the interrupt context and we also
+> post memory status while releasing memory. Rather than posting the status
+> in the interrupt context, wakeup the status posting thread to post the status.
+> This will address the inconsistent lock state that Sitsofe Wheeler <sitsofe@gmail.com>
+> reported:
 
-On 12/5/2014 10:56 PM, Richard Weinberger wrote:
->>> -/**
->>> - * refill_wl_user_pool - refills all the fastmap pool used by ubi_wl_get_peb.
->>> - * @ubi: UBI device description object
->>> - */
->>> -static void refill_wl_user_pool(struct ubi_device *ubi)
->>> -{
->>> -    struct ubi_fm_pool *pool = &ubi->fm_pool;
->>> +            pool->pebs[pool->size] = e->pnum;
->>> +            pool->size++;
->>> +        } else
->>> +            enough++;
->>>
->>> -    return_unused_pool_pebs(ubi, pool);
->>> +        if (wl_pool->size < wl_pool->max_size) {
->>> +            if (!ubi->free.rb_node ||
->>> +               (ubi->free_count - ubi->beb_rsvd_pebs < 5))
->>> +                break;
->>>
->>> -    for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
->>> -        pool->pebs[pool->size] = __wl_get_peb(ubi);
->>> -        if (pool->pebs[pool->size] < 0)
->>> +            e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
->>> +            self_check_in_wl_tree(ubi, e, &ubi->free);
->>> +            rb_erase(&e->u.rb, &ubi->free);
->>> +            ubi->free_count--;
->>
->> why don't you use wl_get_peb() here?
->
-> Because wl_get_peb() is not equivalent to the above code.
-> We want a PEB to be used for wear-leveling not for "end users" like UBIFS.
+Sorry I didn't follow up on this. Things looked better after the patch
+but I was seeing a strange issue where the memory was being reduced to
+some minimum and the balloon would never shrink so the available memory
+was seemingly locked from then on. I ran out of time to investigate this
+later behaviour and didn't have the time to check if it had always been
+the case but I think I see other patches saying you nailed it and other
+issues. Do you have a published git tree with all these pieces in or
+have they already been mainlined?
 
-sorry, my mistake. I meant wl_get_wle() (the new function). the only 
-diff between wl_get_wle() and the above is that you use find_wl_entry() 
-and wl_get_wle() uses find_mean_wl_entry() and takes the anchor into 
-consideration. So I;m trying to understand why wl_get_wle() isn't good here?
-
->
-> Thanks,
-> //richard
->
-
-
-Thanks,
-Tanya Brokhman
 -- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Sitsofe | http://sucs.org/~sits/
