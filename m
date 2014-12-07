@@ -1,148 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaLGNuC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 08:50:02 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47332 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaLGNuA (ORCPT
+	id S1753168AbaLGNwh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 08:52:37 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54205 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750728AbaLGNwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 08:50:00 -0500
-Message-ID: <54845B03.6080706@codeaurora.org>
-Date: Sun, 07 Dec 2014 15:49:55 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-3-git-send-email-richard@nod.at>
-In-Reply-To: <1417347340-6872-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Sun, 7 Dec 2014 08:52:34 -0500
+X-Sasl-enc: bbNR6nQO+CIVILw3qdp1EuDKELT60AseblIjyWX9IOSi 1417960353
+Message-ID: <1417960351.17658.43.camel@localhost>
+Subject: Re: Where exactly will arch_fast_hash be used
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: George Spelvin <linux@horizon.com>
+Cc: dborkman@redhat.com, herbert@gondor.apana.org.au,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch
+Date: Sun, 07 Dec 2014 14:52:31 +0100
+In-Reply-To: <1417959696.17658.37.camel@localhost>
+References: <20141207133056.25209.qmail@ns.horizon.com>
+	 <1417959696.17658.37.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 1:35 PM, Richard Weinberger wrote:
-> There is no need to allocate new ones every time, we can reuse
-> the existing ones.
-> This makes the code cleaner and more easy to follow.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+On So, 2014-12-07 at 14:41 +0100, Hannes Frederic Sowa wrote:
+> On So, 2014-12-07 at 08:30 -0500, George Spelvin wrote:
+> > Thanks for the encouragement!
+> > 
+> > > Please consider xfs, too.
+> > > AFAIK xfs doesn't seed their hashing so far and the hashing function is
+> > > pretty weak. One example:
+> > > http://marc.info/?l=linux-xfs&m=139590613002926&w=2
+> > 
+> > Is that something that *can* be changed without breaking the
+> > disk format?  SipHash is explicitly *not* designed to be secure as
+> > an unkeyed hash in the way that SHA-type algorithms are.
+> 
+> I did some research and it looked like it would need a change to the
+> disk format but it should be doable by incrementing the super block
+> version, so at least newly created filesystem would benefit from it.
+> 
+> > What it's designed to do is provide second preimage resistance
+> > of its output, or a function (like modular reduction) of its output,
+> > against an attacker who doesn't know the secret seed.
+> > 
+> > > Ack. If we want to use it in the networking stack we should be able to
+> > > use it without a dependency to the crypto framework.
+> > 
+> > Already understood.  My big question is whether a single function call
+> > is okay or we need something inlinable.
+> 
+> Like md5_transfrom, I think a non-inline function would be just fine.
+> Otherwise kernel code size would increase. Most hash users in the
+> network stack mostly deal with less bytes of input than one round needs.
 
-Reviewed-by: Tanya Brokhman <tlinder@codeaurora.org>
+Of course, if it looks feasable (from a performance PoV, but I doubt
+that) to migrate the current jhash users to siphash, it might be worth
+dealing with larger input sizes and maybe also doing it inline. But that
+very much depends on the code size it would add. Currently we use jhash
+as the non-linear "secure" hashing functions at most places.
 
-> ---
->   drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
->   drivers/mtd/ubi/wl.c      | 11 +++++++----
->   2 files changed, 12 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-> index db3defd..9507702 100644
-> --- a/drivers/mtd/ubi/fastmap.c
-> +++ b/drivers/mtd/ubi/fastmap.c
-> @@ -1446,19 +1446,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->   	}
->
->   	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
-> -
-> -	for (i = 0; i < new_fm->used_blocks; i++) {
-> -		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
-> -		if (!new_fm->e[i]) {
-> -			while (i--)
-> -				kfree(new_fm->e[i]);
-> -
-> -			kfree(new_fm);
-> -			mutex_unlock(&ubi->fm_mutex);
-> -			return -ENOMEM;
-> -		}
-> -	}
-> -
->   	old_fm = ubi->fm;
->   	ubi->fm = NULL;
->
-> @@ -1494,12 +1481,9 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->   				ubi_err(ubi, "could not erase old fastmap PEB");
->   				goto err;
->   			}
-> -
-> -			new_fm->e[i]->pnum = old_fm->e[i]->pnum;
-> -			new_fm->e[i]->ec = old_fm->e[i]->ec;
-> +			new_fm->e[i] = old_fm->e[i];
->   		} else {
-> -			new_fm->e[i]->pnum = tmp_e->pnum;
-> -			new_fm->e[i]->ec = tmp_e->ec;
-> +			new_fm->e[i] = tmp_e;
->
->   			if (old_fm)
->   				ubi_wl_put_fm_peb(ubi, old_fm->e[i], i,
-> @@ -1524,16 +1508,13 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->   							  i, 0);
->   				goto err;
->   			}
-> -
-> -			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
-> +			new_fm->e[0] = old_fm->e[0];
->   			new_fm->e[0]->ec = ret;
->   		} else {
->   			/* we've got a new anchor PEB, return the old one */
->   			ubi_wl_put_fm_peb(ubi, old_fm->e[0], 0,
->   					  old_fm->to_be_tortured[0]);
-> -
-> -			new_fm->e[0]->pnum = tmp_e->pnum;
-> -			new_fm->e[0]->ec = tmp_e->ec;
-> +			new_fm->e[0] = tmp_e;
->   		}
->   	} else {
->   		if (!tmp_e) {
-> @@ -1546,9 +1527,7 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->   			ret = -ENOSPC;
->   			goto err;
->   		}
-> -
-> -		new_fm->e[0]->pnum = tmp_e->pnum;
-> -		new_fm->e[0]->ec = tmp_e->ec;
-> +		new_fm->e[0] = tmp_e;
->   	}
->
->   	down_write(&ubi->work_sem);
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index 47b215f..523d8a4 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -1014,9 +1014,6 @@ int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *fm_e,
->   		e = fm_e;
->   		ubi_assert(e->ec >= 0);
->   		ubi->lookuptbl[pnum] = e;
-> -	} else {
-> -		e->ec = fm_e->ec;
-> -		kfree(fm_e);
->   	}
->
->   	spin_unlock(&ubi->wl_lock);
-> @@ -2008,9 +2005,15 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
->
->   	dbg_wl("found %i PEBs", found_pebs);
->
-> -	if (ubi->fm)
-> +	if (ubi->fm) {
->   		ubi_assert(ubi->good_peb_count == \
->   			   found_pebs + ubi->fm->used_blocks);
-> +
-> +		for (i = 0; i < ubi->fm->used_blocks; i++) {
-> +			e = ubi->fm->e[i];
-> +			ubi->lookuptbl[e->pnum] = e;
-> +		}
-> +	}
->   	else
->   		ubi_assert(ubi->good_peb_count == found_pebs);
->
->
+Also rhashtable takes a pointer to the hasing function, thus causing gcc
+to generate a function in each compilation unit if it would be static
+inline.
 
 
-Thanks,
-Tanya Brokhman
--- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
