@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaLGWiI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:38:08 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54995 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579AbaLGWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:37:00 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: [PATCH v5 1/8] crypto: AF_ALG: add user space interface for AEAD
-Date: Sun, 07 Dec 2014 23:21:09 +0100
-Message-ID: <2166020.BKWmrnVj2j@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
-References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752411AbaLGWiH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:38:07 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41554 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850AbaLGWiE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:38:04 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: testing: selftests: powerpc: pmu: ebb: trace.c:  Remove some unused functions
+Date: Sun,  7 Dec 2014 23:40:42 +0100
+Message-Id: <1417992042-20553-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AEAD requires the caller to specify the following information separate
-from the data stream. This information allows the AEAD interface handler
-to identify the AAD, ciphertext/plaintext and the authentication tag:
+Removes some functions that are not used anywhere:
+trace_log_outdent() trace_log_indent()
 
-        * Associated authentication data of arbitrary length and
-          length
+This was partially found by using a static code analysis program called cppcheck.
 
-        * Length of authentication tag for encryption
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- crypto/af_alg.c             | 6 ++++++
- include/crypto/if_alg.h     | 1 +
- include/uapi/linux/if_alg.h | 2 ++
- 3 files changed, 9 insertions(+)
+ tools/testing/selftests/powerpc/pmu/ebb/trace.c |   26 -----------------------
+ tools/testing/selftests/powerpc/pmu/ebb/trace.h |    2 --
+ 2 files changed, 28 deletions(-)
 
-diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index 6a3ad80..68ff113 100644
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -421,6 +421,12 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
- 			con->op = *(u32 *)CMSG_DATA(cmsg);
- 			break;
+diff --git a/tools/testing/selftests/powerpc/pmu/ebb/trace.c b/tools/testing/selftests/powerpc/pmu/ebb/trace.c
+index 251e66a..2b18b22 100644
+--- a/tools/testing/selftests/powerpc/pmu/ebb/trace.c
++++ b/tools/testing/selftests/powerpc/pmu/ebb/trace.c
+@@ -139,32 +139,6 @@ int trace_log_string(struct trace_buffer *tb, char *str)
+ 	return 0;
+ }
  
-+		case ALG_SET_AEAD_ASSOCLEN:
-+			if (cmsg->cmsg_len < CMSG_LEN(sizeof(u32)))
-+				return -EINVAL;
-+			con->aead_assoclen = *(u32 *)CMSG_DATA(cmsg);
-+			break;
-+
- 		default:
- 			return -EINVAL;
- 		}
-diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
-index d61c111..cd62bf4 100644
---- a/include/crypto/if_alg.h
-+++ b/include/crypto/if_alg.h
-@@ -42,6 +42,7 @@ struct af_alg_completion {
- struct af_alg_control {
- 	struct af_alg_iv *iv;
- 	int op;
-+	unsigned int aead_assoclen;
- };
+-int trace_log_indent(struct trace_buffer *tb)
+-{
+-	struct trace_entry *e;
+-
+-	e = trace_alloc_entry(tb, 0);
+-	if (!e)
+-		return -ENOSPC;
+-
+-	e->type = TRACE_TYPE_INDENT;
+-
+-	return 0;
+-}
+-
+-int trace_log_outdent(struct trace_buffer *tb)
+-{
+-	struct trace_entry *e;
+-
+-	e = trace_alloc_entry(tb, 0);
+-	if (!e)
+-		return -ENOSPC;
+-
+-	e->type = TRACE_TYPE_OUTDENT;
+-
+-	return 0;
+-}
+-
+ static void trace_print_header(int seq, int prefix)
+ {
+ 	printf("%*s[%d]: ", prefix, "", seq);
+diff --git a/tools/testing/selftests/powerpc/pmu/ebb/trace.h b/tools/testing/selftests/powerpc/pmu/ebb/trace.h
+index 926458e..6c436d7 100644
+--- a/tools/testing/selftests/powerpc/pmu/ebb/trace.h
++++ b/tools/testing/selftests/powerpc/pmu/ebb/trace.h
+@@ -33,8 +33,6 @@ struct trace_buffer *trace_buffer_allocate(u64 size);
+ int trace_log_reg(struct trace_buffer *tb, u64 reg, u64 value);
+ int trace_log_counter(struct trace_buffer *tb, u64 value);
+ int trace_log_string(struct trace_buffer *tb, char *str);
+-int trace_log_indent(struct trace_buffer *tb);
+-int trace_log_outdent(struct trace_buffer *tb);
+ void trace_buffer_print(struct trace_buffer *tb);
+ void trace_print_location(struct trace_buffer *tb);
  
- struct af_alg_type {
-diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
-index 0f9acce..f2acd2f 100644
---- a/include/uapi/linux/if_alg.h
-+++ b/include/uapi/linux/if_alg.h
-@@ -32,6 +32,8 @@ struct af_alg_iv {
- #define ALG_SET_KEY			1
- #define ALG_SET_IV			2
- #define ALG_SET_OP			3
-+#define ALG_SET_AEAD_ASSOCLEN		4
-+#define ALG_SET_AEAD_AUTHSIZE		5
- 
- /* Operations */
- #define ALG_OP_DECRYPT			0
 -- 
-2.1.0
-
+1.7.10.4
 
