@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbaLGMkb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 07:40:31 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:47526 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaLGMka (ORCPT
+	id S1753278AbaLGMmR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 07:42:17 -0500
+Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:36290 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752648AbaLGMmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 07:40:30 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Dave Chinner <david@fromorbit.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] mm: vmscan: shrink_zones: assure class zone is populated
-Date: Sun, 7 Dec 2014 15:40:21 +0300
-Message-ID: <1417956021-27298-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
+	Sun, 7 Dec 2014 07:42:14 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6261:7901:10004:10400:10848:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: salt12_132d16e4c5d10
+X-Filterd-Recvd-Size: 1618
+Message-ID: <1417956130.31745.27.camel@perches.com>
+Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
+ pr_warn() in mppe_rekey()
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Date: Sun, 07 Dec 2014 04:42:10 -0800
+In-Reply-To: <alpine.DEB.2.02.1412071335140.2030@localhost6.localdomain6>
+References: <1417731809.2721.17.camel@perches.com>
+	 <alpine.DEB.2.02.1412050820290.2059@localhost6.localdomain6>
+	 <1417765287.2721.39.camel@perches.com>
+	 <alpine.DEB.2.02.1412071140290.2044@localhost6.localdomain6>
+	 <1417955413.31745.25.camel@perches.com>
+	 <alpine.DEB.2.02.1412071335140.2030@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 5df87d36a45e ("mm: vmscan: invoke slab shrinkers from
-shrink_zone()") slab shrinkers are invoked from shrink_zone. Since slab
-shrinkers lack the notion of memory zones, we only call slab shrinkers
-after scanning the highest zone suitable for allocation (class zone).
-However, class zone can be empty. E.g. if an x86_64 host has less than
-4G of RAM, it will have only ZONE_DMA and ZONE_DMA32 populated while the
-class zone for most allocations, ZONE_NORMAL, will be empty. As a
-result, slab caches will not be scanned at all from the direct reclaim
-path, which may result in premature OOM killer invocations.
+On Sun, 2014-12-07 at 13:36 +0100, Julia Lawall wrote:
+> the semantic patch is only using __func__ and only in cases where 
+> the string wanted is similar to the name of the current function, so I 
+> think it should be OK?
 
-Let's take the highest *populated* zone suitable for allocation for the
-class zone to fix this issue.
+Yes, it'd be a good thing.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/vmscan.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9130cf67bac1..5e8772b2b9ef 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2454,8 +2454,16 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					requested_highidx, sc->nodemask) {
-+		enum zone_type classzone_idx;
-+
- 		if (!populated_zone(zone))
- 			continue;
-+
-+		classzone_idx = requested_highidx;
-+		while (!populated_zone(zone->zone_pgdat->node_zones +
-+							classzone_idx))
-+			classzone_idx--;
-+
- 		/*
- 		 * Take care memory controller reclaiming has small influence
- 		 * to global LRU.
-@@ -2503,7 +2511,7 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 			/* need some check for avoid more shrink_zone() */
- 		}
- 
--		if (shrink_zone(zone, sc, zone_idx(zone) == requested_highidx))
-+		if (shrink_zone(zone, sc, zone_idx(zone) == classzone_idx))
- 			reclaimable = true;
- 
- 		if (global_reclaim(sc) &&
--- 
-1.7.10.4
 
