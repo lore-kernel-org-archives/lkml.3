@@ -1,79 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaLGNx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 08:53:58 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:50244 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaLGNx4 (ORCPT
+	id S1753233AbaLGNzx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 08:55:53 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34644 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430AbaLGNzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 08:53:56 -0500
-Date: Sun, 07 Dec 2014 21:53:47 +0800
-Subject: Re: [PATCH] mm: memcontrol: Skip test_mem_cgroup_node_reclaimable()
- when no MAX_NUMNODES or not more than 1
-Message-ID: <51ggckac0utecg6rqx48nkmc.1417960383505@email.android.com>
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: hannes@cmpxchg.org, cgroups@vger.kernel.org,
-        " linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Sun, 7 Dec 2014 08:55:49 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: arm: mach-omap2: powerdomain.c:  Remove some unused functions
+Date: Sun,  7 Dec 2014 14:58:27 +0100
+Message-Id: <1417960707-11569-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB7Ds5VV020846
 
-OK, thanks. I shall try to send another patch to upstream kernel
-within this month.
+Removes some functions that are not used anywhere:
+pwrdm_get_voltdm() pwrdm_for_each_clkdm() pwrdm_del_clkdm()
 
-Send from Lenovo A788t.
+This was partially found by using a static code analysis program called cppcheck.
 
-Michal Hocko <mhocko@suse.cz> wrote:
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/arm/mach-omap2/powerdomain.c |   81 -------------------------------------
+ arch/arm/mach-omap2/powerdomain.h |    5 ---
+ 2 files changed, 86 deletions(-)
 
->Hi,
->this has been fixed last week already
->http://marc.info/?l=linux-mm&m=141751847710864&w=2
->
->On Sat 06-12-14 06:27:57, Chen Gang wrote:
->> test_mem_cgroup_node_reclaimable() is only used when "MAX_NUMNODES > 1",
->> so move it into related quote.
->> 
->> The related warning (with allmodconfig under parisc):
->> 
->>     CC      mm/memcontrol.o
->>   mm/memcontrol.c:1629:13: warning: 'test_mem_cgroup_node_reclaimable' defined but not used [-Wunused-function]
->>    static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
->>                ^
->> 
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  mm/memcontrol.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index c6ac50e..d538b08 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1616,6 +1616,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->>  			 NULL, "Memory cgroup out of memory");
->>  }
->>  
->> +#if MAX_NUMNODES > 1
->>  /**
->>   * test_mem_cgroup_node_reclaimable
->>   * @memcg: the target memcg
->> @@ -1638,7 +1639,6 @@ static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
->>  	return false;
->>  
->>  }
->> -#if MAX_NUMNODES > 1
->>  
->>  /*
->>   * Always updating the nodemask is not very good - even if we have an empty
->> -- 
->> 1.9.3
->
->-- 
->Michal Hocko
->SUSE Labs
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/arm/mach-omap2/powerdomain.c b/arch/arm/mach-omap2/powerdomain.c
+index 7fb033e..6bd6025 100644
+--- a/arch/arm/mach-omap2/powerdomain.c
++++ b/arch/arm/mach-omap2/powerdomain.c
+@@ -484,87 +484,6 @@ pac_exit:
+ }
+ 
+ /**
+- * pwrdm_del_clkdm - remove a clockdomain from a powerdomain
+- * @pwrdm: struct powerdomain * to add the clockdomain to
+- * @clkdm: struct clockdomain * to associate with a powerdomain
+- *
+- * Dissociate the clockdomain @clkdm from the powerdomain
+- * @pwrdm. Returns -EINVAL if presented with invalid pointers; -ENOENT
+- * if @clkdm was not associated with the powerdomain, or 0 upon
+- * success.
+- */
+-int pwrdm_del_clkdm(struct powerdomain *pwrdm, struct clockdomain *clkdm)
+-{
+-	int ret = -EINVAL;
+-	int i;
+-
+-	if (!pwrdm || !clkdm)
+-		return -EINVAL;
+-
+-	pr_debug("powerdomain: %s: dissociating clockdomain %s\n",
+-		 pwrdm->name, clkdm->name);
+-
+-	for (i = 0; i < PWRDM_MAX_CLKDMS; i++)
+-		if (pwrdm->pwrdm_clkdms[i] == clkdm)
+-			break;
+-
+-	if (i == PWRDM_MAX_CLKDMS) {
+-		pr_debug("powerdomain: %s: clkdm %s not associated?!\n",
+-			 pwrdm->name, clkdm->name);
+-		ret = -ENOENT;
+-		goto pdc_exit;
+-	}
+-
+-	pwrdm->pwrdm_clkdms[i] = NULL;
+-
+-	ret = 0;
+-
+-pdc_exit:
+-	return ret;
+-}
+-
+-/**
+- * pwrdm_for_each_clkdm - call function on each clkdm in a pwrdm
+- * @pwrdm: struct powerdomain * to iterate over
+- * @fn: callback function *
+- *
+- * Call the supplied function @fn for each clockdomain in the powerdomain
+- * @pwrdm.  The callback function can return anything but 0 to bail
+- * out early from the iterator.  Returns -EINVAL if presented with
+- * invalid pointers; or passes along the last return value of the
+- * callback function, which should be 0 for success or anything else
+- * to indicate failure.
+- */
+-int pwrdm_for_each_clkdm(struct powerdomain *pwrdm,
+-			 int (*fn)(struct powerdomain *pwrdm,
+-				   struct clockdomain *clkdm))
+-{
+-	int ret = 0;
+-	int i;
+-
+-	if (!fn)
+-		return -EINVAL;
+-
+-	for (i = 0; i < PWRDM_MAX_CLKDMS && !ret; i++)
+-		if (pwrdm->pwrdm_clkdms[i])
+-			ret = (*fn)(pwrdm, pwrdm->pwrdm_clkdms[i]);
+-
+-	return ret;
+-}
+-
+-/**
+- * pwrdm_get_voltdm - return a ptr to the voltdm that this pwrdm resides in
+- * @pwrdm: struct powerdomain *
+- *
+- * Return a pointer to the struct voltageomain that the specified powerdomain
+- * @pwrdm exists in.
+- */
+-struct voltagedomain *pwrdm_get_voltdm(struct powerdomain *pwrdm)
+-{
+-	return pwrdm->voltdm.ptr;
+-}
+-
+-/**
+  * pwrdm_get_mem_bank_count - get number of memory banks in this powerdomain
+  * @pwrdm: struct powerdomain *
+  *
+diff --git a/arch/arm/mach-omap2/powerdomain.h b/arch/arm/mach-omap2/powerdomain.h
+index 11bd4dd..28a796c 100644
+--- a/arch/arm/mach-omap2/powerdomain.h
++++ b/arch/arm/mach-omap2/powerdomain.h
+@@ -212,11 +212,6 @@ int pwrdm_for_each_nolock(int (*fn)(struct powerdomain *pwrdm, void *user),
+ 			void *user);
+ 
+ int pwrdm_add_clkdm(struct powerdomain *pwrdm, struct clockdomain *clkdm);
+-int pwrdm_del_clkdm(struct powerdomain *pwrdm, struct clockdomain *clkdm);
+-int pwrdm_for_each_clkdm(struct powerdomain *pwrdm,
+-			 int (*fn)(struct powerdomain *pwrdm,
+-				   struct clockdomain *clkdm));
+-struct voltagedomain *pwrdm_get_voltdm(struct powerdomain *pwrdm);
+ 
+ int pwrdm_get_mem_bank_count(struct powerdomain *pwrdm);
+ 
+-- 
+1.7.10.4
+
