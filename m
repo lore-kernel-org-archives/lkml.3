@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaLGMgO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 07:36:14 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:47546 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752334AbaLGMgL (ORCPT
+	id S1752952AbaLGMkb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 07:40:31 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:47526 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaLGMka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 07:36:11 -0500
-X-IronPort-AV: E=Sophos;i="5.07,533,1413237600"; 
-   d="scan'208";a="111913555"
-Date: Sun, 7 Dec 2014 13:36:08 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2 1/6] net-PPP: Replacement of a printk() call by
- pr_warn() in mppe_rekey()
-In-Reply-To: <1417955413.31745.25.camel@perches.com>
-Message-ID: <alpine.DEB.2.02.1412071335140.2030@localhost6.localdomain6>
-References: <1417731809.2721.17.camel@perches.com>  <alpine.DEB.2.02.1412050820290.2059@localhost6.localdomain6>  <1417765287.2721.39.camel@perches.com>  <alpine.DEB.2.02.1412071140290.2044@localhost6.localdomain6> <1417955413.31745.25.camel@perches.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 7 Dec 2014 07:40:30 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Dave Chinner <david@fromorbit.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm] mm: vmscan: shrink_zones: assure class zone is populated
+Date: Sun, 7 Dec 2014 15:40:21 +0300
+Message-ID: <1417956021-27298-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since commit 5df87d36a45e ("mm: vmscan: invoke slab shrinkers from
+shrink_zone()") slab shrinkers are invoked from shrink_zone. Since slab
+shrinkers lack the notion of memory zones, we only call slab shrinkers
+after scanning the highest zone suitable for allocation (class zone).
+However, class zone can be empty. E.g. if an x86_64 host has less than
+4G of RAM, it will have only ZONE_DMA and ZONE_DMA32 populated while the
+class zone for most allocations, ZONE_NORMAL, will be empty. As a
+result, slab caches will not be scanned at all from the direct reclaim
+path, which may result in premature OOM killer invocations.
 
+Let's take the highest *populated* zone suitable for allocation for the
+class zone to fix this issue.
 
-On Sun, 7 Dec 2014, Joe Perches wrote:
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/vmscan.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-> On Sun, 2014-12-07 at 11:44 +0100, Julia Lawall wrote:
-> > > A negative to that approach is inlined functions would
-> > > take the function name of the parent not keep the
-> > > inlined function name.
-> > 
-> > I tried the following:
-> > 
-> > #include <stdio.h>
-> > 
-> > inline int foo() {
-> >   printf("%s %x\n",__func__,0x12345);
-> > }
-> > 
-> > int main () {
-> >   foo();
-> > }
-> > 
-> > The assembly code generated for main is:
-> > 
-> > 0000000000400470 <main>:
-> >   400470:       b9 45 23 01 00          mov    $0x12345,%ecx
-> >   400475:       ba 4b 06 40 00          mov    $0x40064b,%edx
-> >   40047a:       be 44 06 40 00          mov    $0x400644,%esi
-> >   40047f:       bf 01 00 00 00          mov    $0x1,%edi
-> >   400484:       31 c0                   xor    %eax,%eax
-> >   400486:       e9 d5 ff ff ff          jmpq   400460 <__printf_chk@plt>
-> > 
-> > That is, the call to foo seems tom be inlined.
-> > 
-> > But the output is:
-> > 
-> > foo 12345
-> > 
-> > So it seems that __func__ is determined before inlining.
-> 
-> True, and that's what I intended to describe.
-> 
-> If you did that with a kernel module and replaced
-> "%s, __func__" with "%pf, __builtin_return_address(0)"
-> when built with kallsyms you should get:
-> 
-> "modname 12345" when most would expect "foo 12345"
-> 
-> when built without kallsyms, that output should be
-> "<address> 12345"
-> 
-> but the object code should be smaller.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9130cf67bac1..5e8772b2b9ef 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2454,8 +2454,16 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					requested_highidx, sc->nodemask) {
++		enum zone_type classzone_idx;
++
+ 		if (!populated_zone(zone))
+ 			continue;
++
++		classzone_idx = requested_highidx;
++		while (!populated_zone(zone->zone_pgdat->node_zones +
++							classzone_idx))
++			classzone_idx--;
++
+ 		/*
+ 		 * Take care memory controller reclaiming has small influence
+ 		 * to global LRU.
+@@ -2503,7 +2511,7 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 			/* need some check for avoid more shrink_zone() */
+ 		}
+ 
+-		if (shrink_zone(zone, sc, zone_idx(zone) == requested_highidx))
++		if (shrink_zone(zone, sc, zone_idx(zone) == classzone_idx))
+ 			reclaimable = true;
+ 
+ 		if (global_reclaim(sc) &&
+-- 
+1.7.10.4
 
-OK.  But the semantic patch is only using __func__ and only in cases where 
-the string wanted is similar to the name of the current function, so I 
-think it should be OK?
-
-julia
