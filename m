@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaLGU45 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:56:57 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:49342 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaLGU44 (ORCPT
+	id S1753612AbaLGU54 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:57:56 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:51497 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658AbaLGU5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:56:56 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: frv: mm: extable.c:  Remove unused function
-Date: Sun,  7 Dec 2014 21:59:34 +0100
-Message-Id: <1417985974-16729-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 15:57:53 -0500
+Message-ID: <5484BF4D.1020809@de.ibm.com>
+Date: Sun, 07 Dec 2014 21:57:49 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the access_once tree
+References: <20141205213224.2dcc20e9@canb.auug.org.au>
+In-Reply-To: <20141205213224.2dcc20e9@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120720-0029-0000-0000-0000020F1D9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function search_one_table() that is not used anywhere.
+Am 05.12.2014 um 11:32 schrieb Stephen Rothwell:
+> Hi Christian,
+> 
+> After merging the access_once tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> In file included from include/linux/compiler.h:189:0,
+>                  from include/uapi/linux/stddef.h:1,
+>                  from include/linux/stddef.h:4,
+>                  from include/uapi/linux/posix_types.h:4,
+>                  from include/linux/fdtable.h:8,
+>                  from security/apparmor/domain.c:16:
+> include/linux/types.h:14:9: error: unknown type name '__kernel_fd_set'
+>  typedef __kernel_fd_set  fd_set;
+>          ^
+> 
+> And many more :-(
+> 
+> Presumably caused by commit b06f66134856 ("kernel: Provide READ_ONCE
+> and ASSIGN_ONCE") which added types.h into compiler.h, but I am not
+> sure.  It could be an interaction with something else in linux-next, of
+> course.
+> 
+> I have dropped the access_once tree for today, sorry.
+> 
 
-This was partially found by using a static code analysis program called cppcheck.
+Interesting, I double checked with defconfig and cross compilation. But yes, using allmodconfig fails.
+I have changed that to uapi/linux/types.h and __u<xx>. This seems to fix it as it only adds a small set of types.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/frv/mm/extable.c |   23 -----------------------
- 1 file changed, 23 deletions(-)
+Can you re-add?
 
-diff --git a/arch/frv/mm/extable.c b/arch/frv/mm/extable.c
-index 2fb9b3a..8863d6c 100644
---- a/arch/frv/mm/extable.c
-+++ b/arch/frv/mm/extable.c
-@@ -10,29 +10,6 @@ extern const void __memset_end, __memset_user_error_lr, __memset_user_error_hand
- extern const void __memcpy_end, __memcpy_user_error_lr, __memcpy_user_error_handler;
- extern spinlock_t modlist_lock;
- 
--/*****************************************************************************/
--/*
-- *
-- */
--static inline unsigned long search_one_table(const struct exception_table_entry *first,
--					     const struct exception_table_entry *last,
--					     unsigned long value)
--{
--        while (first <= last) {
--		const struct exception_table_entry __attribute__((aligned(8))) *mid;
--		long diff;
--
--		mid = (last - first) / 2 + first;
--		diff = mid->insn - value;
--                if (diff == 0)
--                        return mid->fixup;
--                else if (diff < 0)
--                        first = mid + 1;
--                else
--                        last = mid - 1;
--        }
--        return 0;
--} /* end search_one_table() */
- 
- /*****************************************************************************/
- /*
--- 
-1.7.10.4
+Christian
 
