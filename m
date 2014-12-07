@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaLGJys (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 04:54:48 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752844AbaLGJyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 04:54:45 -0500
-Message-ID: <548423E3.8010106@nod.at>
-Date: Sun, 07 Dec 2014 10:54:43 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753030AbaLGJze (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 04:55:34 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40538 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928AbaLGJzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 04:55:32 -0500
+Date: Sun, 7 Dec 2014 10:55:29 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Alex Dubov <alex.dubov@gmail.com>, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, corbet@lwn.net, richardcochran@gmail.com
+Subject: Re: syscall: introduce sendfd() syscall (v.2)
+Message-ID: <20141207095529.GA18733@amd>
+References: <1417597255-32530-1-git-send-email-oakad@yahoo.com>
+ <20141205132250.6f2f9ec1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] UBI: Fastmap: Fix memory leaks while closing the
- WL sub-system
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-2-git-send-email-richard@nod.at> <54840C44.4090406@codeaurora.org>
-In-Reply-To: <54840C44.4090406@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141205132250.6f2f9ec1@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.12.2014 um 09:13 schrieb Tanya Brokhman:
-> On 11/30/2014 1:35 PM, Richard Weinberger wrote:
->> Add a ubi_fastmap_close() to free all resources used by fastmap
->> at WL shutdown.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>   drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
->>   1 file changed, 18 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->> index c2822f7..47b215f 100644
->> --- a/drivers/mtd/ubi/wl.c
->> +++ b/drivers/mtd/ubi/wl.c
->> @@ -2064,6 +2064,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->>       }
->>   }
->>
->> +static void ubi_fastmap_close(struct ubi_device *ubi)
->> +{
->> +#ifdef CONFIG_MTD_UBI_FASTMAP
->> +    int i;
->> +
->> +    flush_work(&ubi->fm_work);
->> +    return_unused_pool_pebs(ubi, &ubi->fm_pool);
->> +    return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
->> +
->> +    if (ubi->fm) {
->> +        for (i = 0; i < ubi->fm->used_blocks; i++)
->> +            kfree(ubi->fm->e[i]);
->> +    }
->> +    kfree(ubi->fm);
+On Fri 2014-12-05 13:22:50, One Thousand Gnomes wrote:
 > 
-> kfree(ubi->fm_buf)?
+> > 2.a. If task A has sufficient capabilities to send signals to task B, then
+> > task A is already in position to do anything it wants with task B, including
+> > killing it outright.
+> 
+> Not entirely true.
+> 
+> - We have securirty models like SELinux
+> - We have namespaces and being able to send an fd between namespaces is
+>   not quite as flexible as you would make it
+> 
+> I suspect therefore it needs security hooks but otherwise looks more sane
+> than the current AF_UNIX approach.
 
-No this is not a typo, I kfree() here ubi->fm by design.
-What am I missing? :)
-
-Thanks,
-//richard
+The right test for "can do anything" is "can_ptrace()"...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
