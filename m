@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaLGWjZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:39:25 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54960 "EHLO mail.eperm.de"
+	id S1753952AbaLGWjY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:39:24 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54964 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590AbaLGWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752606AbaLGWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Dec 2014 17:36:54 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
@@ -13,9 +13,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v5 6/8] crypto: AF_ALG: zeroize key / seed data
-Date: Sun, 07 Dec 2014 23:24:36 +0100
-Message-ID: <2737258.UUWqeH5oOM@tachyon.chronox.de>
+Subject: [PATCH v5 7/8] crypto: AF_ALG: add random number generator support
+Date: Sun, 07 Dec 2014 23:25:15 +0100
+Message-ID: <6029236.MissoShaxk@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
@@ -26,26 +26,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alg_setop shall zeroize the sensitive data after use.
+This patch adds the random number generator support for AF_ALG.
+
+A random number generator's purpose is to generate data without
+requiring the caller to provide any data. Therefore, the AF_ALG
+interface handler for RNGs only implements a callback handler for
+recvmsg.
+
+The following parameters provided with a recvmsg are processed by the
+RNG callback handler:
+
+        * sock - to resolve the RNG context data structure accessing the
+          RNG instance private to the socket
+
+        * len - this parameter allows userspace callers to specify how
+          many random bytes the RNG shall produce and return. As the
+          kernel context for the RNG allocates a buffer of 128 bytes to
+          store random numbers before copying them to userspace, the len
+          parameter is checked that it is not larger than 128. If a
+          caller wants more random numbers, a new request for recvmsg
+          shall be made.
+
+The size of 128 bytes is chose because of the following considerations:
+
+        * to increase the memory footprint of the kernel too much (note,
+          that would be 128 bytes per open socket)
+
+        * 128 is divisible by any typical cryptographic block size an
+          RNG may have
+
+        * A request for random numbers typically only shall supply small
+          amount of data like for keys or IVs that should only require
+          one invocation of the recvmsg function.
+
+Note, during instantiation of the RNG, the code checks whether the RNG
+implementation requires seeding. If so, the RNG is seeded with output
+from get_random_bytes.
+
+A fully working example using all aspects of the RNG interface is
+provided at http://www.chronox.de/libkcapi.html
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- crypto/af_alg.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/algif_rng.c | 192 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 192 insertions(+)
+ create mode 100644 crypto/algif_rng.c
 
-diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index d1eb1e9..836fa4a 100644
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -189,7 +189,7 @@ static int alg_setop(struct sock *sk, char __user *udata,
- 	err = handler(ask->private, data, datalen);
- 
- out:
--	sock_kfree_s(sk, data, datalen);
-+	sock_kzfree_s(sk, data, datalen);
- 
- 	return err;
- }
+diff --git a/crypto/algif_rng.c b/crypto/algif_rng.c
+new file mode 100644
+index 0000000..78856f8
+--- /dev/null
++++ b/crypto/algif_rng.c
+@@ -0,0 +1,192 @@
++/*
++ * algif_rng: User-space interface for random number generators
++ *
++ * This file provides the user-space API for random number generators.
++ *
++ * Copyright (C) 2014, Stephan Mueller <smueller@chronox.de>
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, and the entire permission notice in its entirety,
++ *    including the disclaimer of warranties.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. The name of the author may not be used to endorse or promote
++ *    products derived from this software without specific prior
++ *    written permission.
++ *
++ * ALTERNATIVELY, this product may be distributed under the terms of
++ * the GNU General Public License, in which case the provisions of the GPL2
++ * are required INSTEAD OF the above restrictions.  (This clause is
++ * necessary due to a potential bad interaction between the GPL and
++ * the restrictions contained in a BSD-style copyright.)
++ *
++ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
++ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
++ * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
++ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
++ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
++ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++ * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
++ * DAMAGE.
++ */
++
++#include <linux/module.h>
++#include <crypto/rng.h>
++#include <linux/random.h>
++#include <crypto/if_alg.h>
++#include <linux/net.h>
++#include <net/sock.h>
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Stephan Mueller <smueller@chronox.de>");
++MODULE_DESCRIPTION("User-space interface for random number generators");
++
++struct rng_ctx {
++#define MAXSIZE 128
++	unsigned int len;
++	struct crypto_rng *drng;
++};
++
++static int rng_recvmsg(struct kiocb *unused, struct socket *sock,
++		       struct msghdr *msg, size_t len, int flags)
++{
++	struct sock *sk = sock->sk;
++	struct alg_sock *ask = alg_sk(sk);
++	struct rng_ctx *ctx = ask->private;
++	int err = -EFAULT;
++	int genlen = 0;
++	u8 result[MAXSIZE];
++
++	if (len == 0)
++		return 0;
++	if (len > MAXSIZE)
++		len = MAXSIZE;
++
++	/*
++	 * although not strictly needed, this is a precaution against coding
++	 * errors
++	 */
++	memset(result, 0, len);
++
++	/*
++	 * The enforcement of a proper seeding of an RNG is done within an
++	 * RNG implementation. Some RNGs (DRBG, krng) do not need specific
++	 * seeding as they automatically seed. The X9.31 DRNG will return
++	 * an error if it was not seeded properly.
++	 */
++	genlen = crypto_rng_get_bytes(ctx->drng, result, len);
++	if (genlen < 0)
++		return genlen;
++
++	err = memcpy_toiovec(msg->msg_iov, result, len);
++	memzero_explicit(result, genlen);
++
++	return err ? err : len;
++}
++
++static struct proto_ops algif_rng_ops = {
++	.family		=	PF_ALG,
++
++	.connect	=	sock_no_connect,
++	.socketpair	=	sock_no_socketpair,
++	.getname	=	sock_no_getname,
++	.ioctl		=	sock_no_ioctl,
++	.listen		=	sock_no_listen,
++	.shutdown	=	sock_no_shutdown,
++	.getsockopt	=	sock_no_getsockopt,
++	.mmap		=	sock_no_mmap,
++	.bind		=	sock_no_bind,
++	.accept		=	sock_no_accept,
++	.setsockopt	=	sock_no_setsockopt,
++	.poll		=	sock_no_poll,
++	.sendmsg	=	sock_no_sendmsg,
++	.sendpage	=	sock_no_sendpage,
++
++	.release	=	af_alg_release,
++	.recvmsg	=	rng_recvmsg,
++};
++
++static void *rng_bind(const char *name, u32 type, u32 mask)
++{
++	return crypto_alloc_rng(name, type, mask);
++}
++
++static void rng_release(void *private)
++{
++	crypto_free_rng(private);
++}
++
++static void rng_sock_destruct(struct sock *sk)
++{
++	struct alg_sock *ask = alg_sk(sk);
++	struct rng_ctx *ctx = ask->private;
++
++	sock_kfree_s(sk, ctx, ctx->len);
++	af_alg_release_parent(sk);
++}
++
++static int rng_accept_parent(void *private, struct sock *sk)
++{
++	struct rng_ctx *ctx;
++	struct alg_sock *ask = alg_sk(sk);
++	unsigned int len = sizeof(*ctx);
++
++	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
++	if (!ctx)
++		return -ENOMEM;
++
++	ctx->len = len;
++
++	/*
++	 * No seeding done at that point -- if multiple accepts are
++	 * done on one RNG instance, each resulting FD points to the same
++	 * state of the RNG.
++	 */
++
++	ctx->drng = private;
++	ask->private = ctx;
++	sk->sk_destruct = rng_sock_destruct;
++
++	return 0;
++}
++
++static int rng_setseed(void *private, const u8 *seed, unsigned int seedlen)
++{
++	/*
++	 * Check whether seedlen is of sufficient size is done in RNG
++	 * implementations.
++	 */
++	return crypto_rng_reset(private, (u8 *)seed, seedlen);
++}
++
++static const struct af_alg_type algif_type_rng = {
++	.bind		=	rng_bind,
++	.release	=	rng_release,
++	.accept		=	rng_accept_parent,
++	.setseed	=	rng_setseed,
++	.ops		=	&algif_rng_ops,
++	.name		=	"rng",
++	.owner		=	THIS_MODULE
++};
++
++static int __init rng_init(void)
++{
++	return af_alg_register_type(&algif_type_rng);
++}
++
++void __exit rng_exit(void)
++{
++	int err = af_alg_unregister_type(&algif_type_rng);
++	BUG_ON(err);
++}
++
++module_init(rng_init);
++module_exit(rng_exit);
 -- 
 2.1.0
 
