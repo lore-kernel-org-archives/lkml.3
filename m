@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbaLGUIj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:08:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39757 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaLGUIh (ORCPT
+	id S1753502AbaLGUJA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:09:00 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59465 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753222AbaLGUI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:08:37 -0500
-Date: Sun, 7 Dec 2014 12:08:34 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [PATCH] staging: writeboost: Add dm-writeboost
-Message-ID: <20141207200834.GA2322@kroah.com>
-References: <5484498E.4000202@gmail.com>
+	Sun, 7 Dec 2014 15:08:59 -0500
+X-Sasl-enc: kOnO2DAC5z7eyuWa1A1+0YwSI924XgnJFX3VMzy9X+9l 1417982938
+Date: Sun, 7 Dec 2014 12:08:57 -0800
+From: Greg KH <greg@kroah.com>
+To: Jindrich Makovicka <makovick@gmail.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.17 000/122] 3.17.5-stable review
+Message-ID: <20141207200857.GB2322@kroah.com>
+References: <20141205223305.514276242@linuxfoundation.org>
+ <m6200o$b13$1@ger.gmane.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5484498E.4000202@gmail.com>
+In-Reply-To: <m6200o$b13$1@ger.gmane.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 09:35:26PM +0900, Akira Hayakawa wrote:
-> --- /dev/null
-> +++ b/drivers/staging/writeboost/TODO
-> @@ -0,0 +1,47 @@
-> +TODO:
-> +
-> +- Expose bugs and fix them.
-> +- Clean up the interfaces. Some input values should be limited in case user may choose too big values.
-> +- Wait for proper review by Mike Snitzer.
-> +- Fix up documents.
-> +
-> +-------------------------------------------------------------------------
-> +
-> +Project Ideas:
-> +
-> +1. Add read caching feature
-> +Device-Mapper maintainer Mike Snitzer said that
-> +a single target should provide caching for both reads and writes.
-> +(cf. http://www.redhat.com/archives/dm-devel/2014-January/msg00078.html)
-> +
-> +To follow Mike's guide, I will implement read-caching for Writeboost.
-> +The great idea is, at least conceptually,
-> +sending back the read data to the write entrance.
-> +I didn't notice this simple idea at that time of previous discussion.
-> +
-> +This should be done background and
-> +some threshold to determine
-> +which sequence of data should be staged.
-> +
-> +This feature will be implemented step-by-step.
-> +I don't think this feature will change then interface drastically.
-> +
-> +2. Improve initialization time
-> +Some user complains that the initialization is too slow.
-> +
-> +Any ideas?
-> +
-> +3. Reduce metadata footprint
-> +Writeboost has a hash table in RAM for cache management.
-> +This isn't cheap.
-> +
-> +Any ideas?
-> +
-> +-------------------------------------------------------------------------
-> +
-> +Please send any patches
-> +To:
-> +Akira Hayakawa <ruby.wktk@gmail.com>
-> +Cc:
-> +Greg Kroah-Hartman <greg@kroah.com>
+On Sun, Dec 07, 2014 at 04:42:00PM +0000, Jindrich Makovicka wrote:
+> Hi,
+> 
+> On Fri, 05 Dec 2014 14:42:54 -0800, Greg Kroah-Hartman wrote:
+> 
+> > This is the start of the stable review cycle for the 3.17.5 release.
+> > There are 122 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> 
+> I had to revert "netfilter: conntrack: fix race in __nf_conntrack_confirm 
+> against get_next_corpse" to be able to boot, getting a kernel panic 
+> otherwise:
+> 
+> http://goo.gl/q86SWy
+> 
+> It happens in various stages, but seems to be pretty consistently 
+> reproducible. This is a desktop running shorewall, with some nfqueue-
+> based IP filtering added.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> please, and also the
-driverdevel mailing list, which is where the rest of the staging patches
-go.
+Yes, sorry, I messed up and included a patch I shouldn't have.
 
-And, I'll need an ack from the dm maintainers before I can accept this
-as something they think is ok and will get merged to the "real" part of
-the kernel someday.
-
-thanks,
+thanks for letting me know.
 
 greg k-h
