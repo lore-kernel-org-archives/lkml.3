@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaLGN7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 08:59:48 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:57082 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaLGN7o (ORCPT
+	id S1753337AbaLGN7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 08:59:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47565 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310AbaLGN7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 08:59:44 -0500
-Date: Sun, 7 Dec 2014 08:59:40 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH -v2 2/5] OOM: thaw the OOM victim if it is frozen
-Message-ID: <20141207135940.GB19034@htj.dyndns.org>
-References: <20141110163055.GC18373@dhcp22.suse.cz>
- <1417797707-31699-1-git-send-email-mhocko@suse.cz>
- <1417797707-31699-3-git-send-email-mhocko@suse.cz>
- <20141206130657.GC18711@htj.dyndns.org>
- <20141207102430.GF15892@dhcp22.suse.cz>
- <20141207104539.GK15892@dhcp22.suse.cz>
+	Sun, 7 Dec 2014 08:59:51 -0500
+Message-ID: <54845D53.1070903@codeaurora.org>
+Date: Sun, 07 Dec 2014 15:59:47 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141207104539.GK15892@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Notify user in case of an ubi_update_fastmap()
+ failure
+References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-4-git-send-email-richard@nod.at>
+In-Reply-To: <1417347340-6872-4-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 11:45:39AM +0100, Michal Hocko wrote:
-....
->  void mark_tsk_oom_victim(struct task_struct *tsk)
->  {
->  	set_tsk_thread_flag(tsk, TIF_MEMDIE);
-> +	__thaw_task(tsk);
+Hi Richard,
 
-Yeah, this is a lot better.  Maybe we can add a comment at least
-pointing readers to where to look at to understand what's going on?
-This stems from the fact that OOM killer which essentially is a memory
-reclaim operation overrides freezing.  It'd be nice if that is
-documented somehow.
+On 11/30/2014 1:35 PM, Richard Weinberger wrote:
+> If ubi_update_fastmap() fails notify the user.
+> This is not a hard error as ubi_update_fastmap() makes sure that upon failure
+> the current on-flash fastmap will no be used upon next UBI attach.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/mtd/ubi/wl.c | 6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 523d8a4..7821342 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -657,7 +657,11 @@ again:
+>   	 * refill the WL pool synchronous. */
+>   	if (pool->used == pool->size || wl_pool->used == wl_pool->size) {
+>   		spin_unlock(&ubi->wl_lock);
+> -		ubi_update_fastmap(ubi);
+> +		ret = ubi_update_fastmap(ubi);
+> +		if (ret) {
+> +			ubi_msg(ubi, "Unable to write a new fastmap: %i", ret);
+> +			return -ENOSPC;
 
-Thanks.
+Why do you fail the whole function (ubi_wl_get_peb) if fastmap update 
+failed? Its possible that the fm_pools were refilled correctly, and the 
+actual fastmap_write failed, so there is nothing preventing the user to 
+get peb allocated and continue working. You invalidate the fastmap, so 
+if powercut occurs a full scan will be performed. So its possible to 
+allocate from fm_pools (although fastmap is not valid on disc) and try 
+writing fastmap again when the pools filled up.
+I'm for the ubi_msg but against "return -ENOSPC;"
 
+> +		}
+>   		spin_lock(&ubi->wl_lock);
+>   	}
+>
+>
+
+
+Thanks,
+Tanya Brokhman
 -- 
-tejun
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
+Forum, a Linux Foundation Collaborative Project
