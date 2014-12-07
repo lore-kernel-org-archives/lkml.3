@@ -1,148 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaLGVdd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 16:33:33 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56672 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519AbaLGVdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 16:33:32 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: drm: i915: intel_dp.c:  Remove unused function
-Date: Sun,  7 Dec 2014 22:36:10 +0100
-Message-Id: <1417988170-17451-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753241AbaLGVd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 16:33:58 -0500
+Received: from ns.horizon.com ([71.41.210.147]:62979 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751521AbaLGVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 16:33:57 -0500
+Date: 7 Dec 2014 16:33:54 -0500
+Message-ID: <20141207213354.20910.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hannes@stressinduktion.org, linux@horizon.com
+Subject: Re: Where exactly will arch_fast_hash be used
+Cc: davem@davemloft.net, dborkman@redhat.com, herbert@gondor.apana.org.au,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
+        tytso@mit.edu
+In-Reply-To: <1417961203.17658.52.camel@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function intel_dp_set_drrs_state() that is not used anywhere.
+On Sun, 2014-12-07 at 15:06 +0100, Hannes Frederic Sowa wrote:
+> In case of openvswitch it shows a performance improvment. The seed
+> parameter could be used as an initial biasing of the crc32 function, but
+> in case of openvswitch it is only set to 0.
 
-This was partially found by using a static code analysis program called cppcheck.
+NACK.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/gpu/drm/i915/intel_dp.c  |   89 --------------------------------------
- drivers/gpu/drm/i915/intel_drv.h |    1 -
- 2 files changed, 90 deletions(-)
+This is the Fatal Error in thinking that Herbert was warning about.
+The seed parameter doesn't affect CRC32 collisions *at all* if the inputs
+are the same size.
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 5ad45bf..6df948b 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -4810,95 +4810,6 @@ intel_dp_init_panel_power_sequencer_registers(struct drm_device *dev,
- 		      I915_READ(pp_div_reg));
- }
- 
--void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	struct intel_encoder *encoder;
--	struct intel_dp *intel_dp = NULL;
--	struct intel_crtc_config *config = NULL;
--	struct intel_crtc *intel_crtc = NULL;
--	struct intel_connector *intel_connector = dev_priv->drrs.connector;
--	u32 reg, val;
--	enum edp_drrs_refresh_rate_type index = DRRS_HIGH_RR;
--
--	if (refresh_rate <= 0) {
--		DRM_DEBUG_KMS("Refresh rate should be positive non-zero.\n");
--		return;
--	}
--
--	if (intel_connector == NULL) {
--		DRM_DEBUG_KMS("DRRS supported for eDP only.\n");
--		return;
--	}
--
--	/*
--	 * FIXME: This needs proper synchronization with psr state. But really
--	 * hard to tell without seeing the user of this function of this code.
--	 * Check locking and ordering once that lands.
--	 */
--	if (INTEL_INFO(dev)->gen < 8 && intel_edp_is_psr_enabled(dev)) {
--		DRM_DEBUG_KMS("DRRS is disabled as PSR is enabled\n");
--		return;
--	}
--
--	encoder = intel_attached_encoder(&intel_connector->base);
--	intel_dp = enc_to_intel_dp(&encoder->base);
--	intel_crtc = encoder->new_crtc;
--
--	if (!intel_crtc) {
--		DRM_DEBUG_KMS("DRRS: intel_crtc not initialized\n");
--		return;
--	}
--
--	config = &intel_crtc->config;
--
--	if (intel_dp->drrs_state.type < SEAMLESS_DRRS_SUPPORT) {
--		DRM_DEBUG_KMS("Only Seamless DRRS supported.\n");
--		return;
--	}
--
--	if (intel_connector->panel.downclock_mode->vrefresh == refresh_rate)
--		index = DRRS_LOW_RR;
--
--	if (index == intel_dp->drrs_state.refresh_rate_type) {
--		DRM_DEBUG_KMS(
--			"DRRS requested for previously set RR...ignoring\n");
--		return;
--	}
--
--	if (!intel_crtc->active) {
--		DRM_DEBUG_KMS("eDP encoder disabled. CRTC not Active\n");
--		return;
--	}
--
--	if (INTEL_INFO(dev)->gen > 6 && INTEL_INFO(dev)->gen < 8) {
--		reg = PIPECONF(intel_crtc->config.cpu_transcoder);
--		val = I915_READ(reg);
--		if (index > DRRS_HIGH_RR) {
--			val |= PIPECONF_EDP_RR_MODE_SWITCH;
--			intel_dp_set_m_n(intel_crtc);
--		} else {
--			val &= ~PIPECONF_EDP_RR_MODE_SWITCH;
--		}
--		I915_WRITE(reg, val);
--	}
--
--	/*
--	 * mutex taken to ensure that there is no race between differnt
--	 * drrs calls trying to update refresh rate. This scenario may occur
--	 * in future when idleness detection based DRRS in kernel and
--	 * possible calls from user space to set differnt RR are made.
--	 */
--
--	mutex_lock(&intel_dp->drrs_state.mutex);
--
--	intel_dp->drrs_state.refresh_rate_type = index;
--
--	mutex_unlock(&intel_dp->drrs_state.mutex);
--
--	DRM_DEBUG_KMS("eDP Refresh Rate set to : %dHz\n", refresh_rate);
--}
--
- static struct drm_display_mode *
- intel_dp_drrs_init(struct intel_digital_port *intel_dig_port,
- 			struct intel_connector *intel_connector,
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index ba71522..6ad239d 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -941,7 +941,6 @@ void intel_edp_panel_on(struct intel_dp *intel_dp);
- void intel_edp_panel_off(struct intel_dp *intel_dp);
- void intel_edp_psr_enable(struct intel_dp *intel_dp);
- void intel_edp_psr_disable(struct intel_dp *intel_dp);
--void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate);
- void intel_edp_psr_invalidate(struct drm_device *dev,
- 			      unsigned frontbuffer_bits);
- void intel_edp_psr_flush(struct drm_device *dev,
--- 
-1.7.10.4
+For fixed-size inputs, a non-zero seed is equivalent to XORing a
+constant into the output of the CRC computation.
 
+
+for *different* sized inputs, a non-zero seed detects zero-padding
+better than a zero one, but *which* non-zero value is also irrelevant;
+all-ones is the traditional choice because it's simplest in hardware.
+
+
+A CRC is inherently linear.  CRC(a^b) = CRC(a) ^ CRC(b).  This makes
+them easy to analyze mathematically and gives them a number of nice
+properties for detecting hardware corruption.
+
+But that same simplicity makes it *ridiculously* easy to generate
+collisions if you try.
+
+
+One way of looking at a CRC is to say that each bit in the input
+has a CRC.  The CRC of a message string is just the XOR of the CRCs
+of the individual bits that are set in the message.
+
+Now, a CRC polynomial is chosen so that all of the bits of a
+message have different CRCs.  Obviously, there's a limit: when the
+message is 2^n bits long, it's not possible for all the bits to
+have different, non-zero n-bit CRCs.
+
+But a CRC is a really efficient way of assigning different bit patterns
+to different input bits up to that limit.
+
+(Something like CRC32c is also chosen so that, for messages up to a
+reasonable length, no 3-bit, 4-bit, etc. combinations have CRCs that
+XOR to zero.)
+
+
+But, and this might be what Herbert was trying to say and I was
+misunderstanding, if you then *truncate* that CRC, the CRCs of the
+message bits lose that uniqueness guarantee.  They're just pseudorandom
+numbers, and a CRC loses its special collision-resistance properties.
+
+It's just an ordinary random hash, and thanks to the birthday paradox,
+you're likely to find two bits whose CRCs agree in any particular 8 bits
+within roughly sqrt(2*256) or 22 bits.
+
+Here are a few such collisions for the least significant 8 bits of CRC32c:
+
+Msg1	CRC32c		Msg2	CRC32c		Match
+1<<11	3fc5f181	1<<30	bf672381	81
+1<<12	9d14c3b8	1<<31	dd45aab8	b8
+1<<5	c79a971f	1<<44	6006181f	1f
+1<<15	13a29877	1<<45	b2f53777	77
+
+There's nothing special about the lsbits of the CRC.
+Within 64 bits, the most significant 8 bits have it worse:
+
+1<<5	c79a971f	1<<17	c76580d9	c7
+1<<6	e13b70f7	1<<18	e144fb14	e1
+1<<19	70a27d8a	1<<38	7022df58	70
+1<<20	38513ec5	1<<39	38116fac	38
+1<<13	4e8a61dc	1<<52	4e2dfd53	4e
+1<<23	a541927e	1<<53	a5e0c5d1	a5
+
+
+Now, I'd like to stress that this collision rate is no worse than any
+*other* hash function.  A truncated CRC loses its special resistance to
+the birthday paradox (you'd have been much smarter to use 8-bit CRC),
+but it doesn't become especially bad.  A truncated SHA-1 will have
+coillisions just as often.
+
+The concern with a CRC is that, once you've found one collision, you've
+found a huge number of them.  Just XOR the bit pattern of your choice
+into both of the colliding messages, and you have a new collision.
+
+
+For another example, if you consider the CRC32c of all possible 1-byte
+messages *and then take only the low byte*, there are only 128 possible
+values.
+
+It turns out that the byte 0x5d has a CRC32c of 0xee0d9600.  This ends
+in 00, so if I XOR 0x5d into anything, the low 8 bits of the CRC
+don't change.
+
+Likewise, the message "23 00" has a CRC32c of 0x00ee0d96.  So you can
+XOR 0x23 into the second-last byte of anything, and the high 8 bits of
+the CRC don't change.
