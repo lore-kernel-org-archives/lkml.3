@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaLGK3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 05:29:22 -0500
-Received: from nm38-vm9.bullet.mail.bf1.yahoo.com ([72.30.239.25]:41349 "EHLO
-	nm38-vm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752944AbaLGK3T (ORCPT
+	id S1753190AbaLGKbM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 05:31:12 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47090 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaLGKbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 05:29:19 -0500
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Dec 2014 05:29:19 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.com;
-	b=sfU3SQvqeVumAyw+ZEslEOW8VPSP09TtLYr13Ow00G937jewkCq7Ej72IrGSe3GyY6IXCvmU2G9Q4OxEdFGQMwBs85GvxxbHNrWju/M81XZNhQbGfxEjrzoSI1QGg2g4CUd1BYDvy9dtgVDs2JETqsSJt0R8M5FqdFOO3A8nvtqH06FGfjcRDoj289ojWx3MYKBGtROvXWwkInen37CEVC9MONXxABQ9CZzGFQ9CwQSwk9viPaq3rBwAdKOvjeImKZXVuSYVnnRB/CeI33GjB5XtaFLgN31Wd9dLFdpW3TUYkum7RWd4Dtk2qByZW6cgUe0EyJ1u/2z798QTXNO/Ag==;
-X-Yahoo-Newman-Id: 114892.15828.bm@smtp202.mail.bf1.yahoo.com
-Message-ID: <114892.15828.bm@smtp202.mail.bf1.yahoo.com>
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OOjhpXsVM1nb3GJ9tj8NONoMjhYt.7LUQmV_Fai1ehgHeDY
- q.SEBu7sTD.dtYJ2V4ggf_k8IKaNuk2leZeXslMCV24fug9uZmZGuz9lCcdQ
- ILoXnC6cvc9W1ZyxT5jYeO9ta3UgMfJhcY0LbRGU7BHKx9Nrc3m7ubk8cyiC
- ay_LGnDmHdZAnefZbCaTxb4ZUcV.cpYqkypBCDjI.dncDjGqua8UdImStFOP
- MoOTUS0jv84obEh40G3DEEJc70ILNuS1.RE7ySmFyWZWD6.cMZPRWOF9aOGy
- URa6QNodozW314M8i6cIsSCPYHHazC5shlFsF76G_FsSF_mV8b7xvmH5Wq1t
- xv.Yp1d44PXbvRqpWi_26JlrFqveh6l3qodLsQXhJjsvxZVONo5xSb4gds5W
- emTx_vNdrxGooYMpZ8N2xCHblTRZk0_bEvHhTJmk8JxYyP0XtT7q.ShEMQ.r
- DrGPL77z8IHoOjglaN46fYSXKE8UsX0iKTD_K0OKUrw._QpvzuJ7XiJpjLjb
- THKwwvElllsxmCR6fzBmwtfPnk.IQFiK.w1wr1IFxYQcnbWX7_tKwvBIV0xY
- C8is3pfRJPMGt3FAw_Ru0ITXZlWQspyI5FSVt6QtFVqt0CGU-
-X-Yahoo-SMTP: F6LZ8FeswBB9C4iFMtZ22bErIW8HokLrmBPvvkR3AGAY0ad8KPs-
-Reply-To: <karid@inbox.lv>
-From: "Abraham Karid" <abkafdd@outlook.com>
-Subject: GET BACK TO ME 
-Date: Sun, 7 Dec 2014 02:23:15 -0800
+	Sun, 7 Dec 2014 05:31:09 -0500
+Date: Sun, 7 Dec 2014 11:31:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: memcontrol.c:  Cleaning up function that are not
+ used anywhere
+Message-ID: <20141207103105.GI15892@dhcp22.suse.cz>
+References: <1417884356-3086-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 141206-1, 12/06/2014), Outbound message
-X-Antivirus-Status: Clean
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417884356-3086-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My name is Abraham Karid from Egypt, i am a journalist , you can know more about me on facebook with this id abkarid@outlook.com , I have a good business for you and your family
-Get back to me  on this email id abkarid@outlook.com  so that i will give you more details about it.
-Thanks
-Abraham Karid
+On Sat 06-12-14 17:45:56, Rickard Strandqvist wrote:
+> Remove function mem_cgroup_lru_names_not_uptodate() that is not used anywhere.
+> And move BUILD_BUG_ON() to the beginning of memcg_stat_show() instead.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c |    7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d6ac0e3..5e2f0f3 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4379,17 +4379,14 @@ static int memcg_numa_stat_show(struct seq_file *m, void *v)
+>  }
+>  #endif /* CONFIG_NUMA */
+>  
+> -static inline void mem_cgroup_lru_names_not_uptodate(void)
+> -{
+> -	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+> -}
+> -
+>  static int memcg_stat_show(struct seq_file *m, void *v)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
+>  	struct mem_cgroup *mi;
+>  	unsigned int i;
+>  
+> +	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+> +
+>  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+>  		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+>  			continue;
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
