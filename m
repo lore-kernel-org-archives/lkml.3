@@ -1,216 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaLGT0r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 14:26:47 -0500
+	id S1753553AbaLGT06 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 14:26:58 -0500
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:3211 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753377AbaLGT0n (ORCPT
+	by vger.kernel.org with ESMTP id S1753465AbaLGT0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 14:26:43 -0500
+	Sun, 7 Dec 2014 14:26:49 -0500
 X-IronPort-AV: E=Sophos;i="5.07,534,1413237600"; 
-   d="scan'208";a="111932926"
+   d="scan'208";a="111932937"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-wireless@vger.kernel.org
+To: Martyn Welch <martyn.welch@ge.com>
 Cc: kernel-janitors@vger.kernel.org, linux@rasmusvillemoes.dk, joe@perches.com,
-        devel@driverdev.osuosl.org, linux-scsi@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        linux-mtd@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 0/20] fix misspelling of current function in string
-Date: Sun,  7 Dec 2014 20:20:42 +0100
-Message-Id: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+        Manohar Vanga <manohar.vanga@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 11/20] vme: fix misspelling of current function in string
+Date: Sun,  7 Dec 2014 20:20:53 +0100
+Message-Id: <1417980062-25151-12-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches replace what appears to be a reference to the name of the
-current function but is misspelled in some way by either the name of the
-function itself, or by %s and then __func__ in an argument list.
+Replace a misspelled function name by %s and then __func__.
 
-// <smpl>
-// sudo apt-get install python-pip
-// sudo pip install python-Levenshtein
-// spatch requires the argument --in-place
+This is the get function, not the set function, as was indicated by the
+string.
 
-virtual after_start
+This was done using Coccinelle, including the use of Levenshtein distance,
+as proposed by Rasmus Villemoes.
 
-@initialize:ocaml@
-@@
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-let extensible_functions = ref ([] : string list)
-let restarted = ref false
+---
+The semantic patch is difficult to summarize, but is available in the cover
+letter of this patch series.
 
-let restart _ =
-  restarted := true;
-  let it = new iteration() in
-  it#add_virtual_rule After_start;
-  Printf.eprintf "restarting\n";
-  it#register()
+ drivers/vme/vme.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-@initialize:python@
-@@
-import re
-from Levenshtein import distance
-mindist = 1 // 1 to find only misspellings
-maxdist = 2
-ignore_leading = True
-
-// ---------------------------------------------------------------------
-
-@r0@
-constant char [] c;
-identifier f;
-@@
-
-f(...,c,...)
-
-@script:ocaml@
-c << r0.c;
-f << r0.f;
-@@
-
-(if not !restarted then restart());
-match Str.split_delim (Str.regexp "%") c with
-  _::_::_ ->
-    if not (List.mem f !extensible_functions)
-    then extensible_functions := f :: !extensible_functions
-| _ -> ()
-
-// ---------------------------------------------------------------------
-
-@r depends on after_start@
-constant char [] c;
-position p;
-identifier f;
-@@
-
-f(...,c@p,...)
-
-@script:python flt@
-c << r.c;
-p << r.p;
-matched;
-@@
-
-func = p[0].current_element
-wpattern = "[a-zA-Z_][a-zA-Z0-9_]*"
-if ignore_leading:
-   func = func.strip("_")
-   wpattern = "[a-zA-Z][a-zA-Z0-9_]*"
-lf = len(func)
-cocci.include_match(False)
-// ignore extremely short function names
-if lf > 3:
-   words = [w for w in re.findall(wpattern, c) if abs(len(w) - lf) <= maxdist]
-   for w in words:
-       d = distance(w, func) 
-       if mindist <= d and d <= maxdist:
-          coccinelle.matched = w
-          cocci.include_match(True)
-     	  //print "%s:%d:%s():%d: %s" % (p[0].file, int(p[0].line), func, d, c)
-	  break
-
-@script:ocaml r2@
-c << r.c;
-f << r.f;
-matched << flt.matched;
-fixed;
-@@
-
-let pieces = Str.split_delim (Str.regexp_string matched) c in
-match pieces with
-  [before;after] ->
-    let preceeding =
-      List.length(Str.split (Str.regexp_string "%") before) > 1 in
-    if preceeding
-    then Coccilib.include_match false
-    else
-      if List.mem f !extensible_functions
-      then fixed := before ^ "%s" ^ after
-      else Coccilib.include_match false
-| _ -> Coccilib.include_match false
-
-@changed1@
-constant char [] r.c;
-identifier r2.fixed;
-position r.p;
-identifier r.f;
-@@
-
-f(...,
--c@p
-+fixed,__func__
- ,...)
-
-// -------------------------------------------------------------------
-
-@s depends on after_start@
-constant char [] c;
-position p;
-identifier f;
-@@
-
-f(...,c@p,...)
-
-@script:python flt2@
-c << s.c;
-p << s.p;
-matched;
-@@
-
-func = p[0].current_element
-wpattern = "[a-zA-Z_][a-zA-Z0-9_]*"
-if ignore_leading:
-   func = func.strip("_")
-   wpattern = "[a-zA-Z][a-zA-Z0-9_]*"
-lf = len(func)
-cocci.include_match(False)
-// ignore extremely short function names
-if lf > 3:
-   words = [w for w in re.findall(wpattern, c) if abs(len(w) - lf) <= maxdist]
-   for w in words:
-       d = distance(w, func) 
-       if mindist <= d and d <= maxdist:
-          coccinelle.matched = w
-          cocci.include_match(True)
-     	  //print "%s:%d:%s():%d: %s" % (p[0].file, int(p[0].line), func, d, c)
-	  break
-
-@script:ocaml s2@
-c << s.c;
-f << s.f;
-p << s.p;
-matched << flt2.matched;
-fixed;
-@@
-
-let ce = (List.hd p).current_element in
-let pieces = Str.split_delim (Str.regexp_string matched) c in
-match pieces with
-  [before;after] ->
-    let preceeding =
-      List.length(Str.split (Str.regexp_string "%") before) > 1 in
-    if preceeding
-    then Coccilib.include_match false
-    else
-      if List.mem f !extensible_functions
-      then Coccilib.include_match false
-      else fixed := before ^ ce ^ after
-| _ -> Coccilib.include_match false
-
-@changed2@
-constant char [] s.c;
-identifier s2.fixed;
-position s.p;
-identifier s.f;
-@@
-
-f(...,
--c@p
-+fixed
- ,...)
-// </smpl>
+diff --git a/drivers/vme/vme.c b/drivers/vme/vme.c
+index 7516030..d95fb84 100644
+--- a/drivers/vme/vme.c
++++ b/drivers/vme/vme.c
+@@ -502,7 +502,7 @@ int vme_master_get(struct vme_resource *resource, int *enabled,
+ 	image = list_entry(resource->entry, struct vme_master_resource, list);
+ 
+ 	if (bridge->master_get == NULL) {
+-		printk(KERN_WARNING "vme_master_set not supported\n");
++		printk(KERN_WARNING "%s not supported\n", __func__);
+ 		return -EINVAL;
+ 	}
+ 
 
