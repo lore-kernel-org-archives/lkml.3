@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaLGMwL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 07:52:11 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:33372 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaLGMwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 07:52:09 -0500
-Date: Sun, 7 Dec 2014 20:51:57 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: George Spelvin <linux@horizon.com>
-Cc: dborkman@redhat.com, hannes@stressinduktion.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
-        "David S. Miller" <davem@davemloft.net>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: Where exactly will arch_fast_hash be used
-Message-ID: <20141207125157.GA9745@gondor.apana.org.au>
-References: <20141207092828.GA8623@gondor.apana.org.au>
- <20141207100252.6707.qmail@ns.horizon.com>
+	id S1753070AbaLGM41 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 07:56:27 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54941 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752365AbaLGM4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 07:56:25 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] crypto: AF_ALG: add AEAD support
+Date: Sun, 07 Dec 2014 13:56:18 +0100
+Message-ID: <7942347.xfhvIblSTf@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141205154606.GA30180@gondor.apana.org.au>
+References: <2105559.EmODblLYuY@tachyon.chronox.de> <4875720.jRoMDtjHB4@tachyon.chronox.de> <20141205154606.GA30180@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141207100252.6707.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 05:02:52AM -0500, George Spelvin wrote:
->
-> How does this implicate the low bits specifically?
+Am Freitag, 5. Dezember 2014, 23:46:06 schrieb Herbert Xu:
 
-If you can easily deduce the pre-images that make the last bit
-of the hash even or odd, then you've just cut your search space
-for collisions by half.  The real killer is that you can do this
-without knowing what the secret is.
+Hi Herbert,
 
-Our entire scheme is dependent on using the secret to defeat
-would-be attackers.  If CRC does not make effective use of the
-secret, then we're essentially naked against attackers.
+> > +static struct proto_ops algif_aead_ops = {
+> > +	.family		=	PF_ALG,
+> > +
+> > +	.connect	=	sock_no_connect,
+> > +	.socketpair	=	sock_no_socketpair,
+> > +	.getname	=	sock_no_getname,
+> > +	.ioctl		=	sock_no_ioctl,
+> > +	.listen		=	sock_no_listen,
+> > +	.shutdown	=	sock_no_shutdown,
+> > +	.getsockopt	=	sock_no_getsockopt,
+> > +	.mmap		=	sock_no_mmap,
+> > +	.bind		=	sock_no_bind,
+> > +	.accept		=	sock_no_accept,
+> > +
+> > +	.release	=	af_alg_release,
+> > +	.sendmsg	=	aead_sendmsg,
+> > +	.sendpage	=	aead_sendpage,
+> > +	.recvmsg	=	aead_recvmsg,
+> > +	.poll		=	aead_poll,
+> > +	.setsockopt	=	aead_setsockopt,
+> 
+> No it should go into the parent setsockopt.  Perhaps add a setsockopt
+> to af_alg_type in order to keep this out of the generic code.
 
-Cheers,
+What about adding a setauthsize to af_alg_type that is called from the parent 
+setsockopt? I would like to keep all user space interfaces as close together 
+as possible. With a new setsockopt callback, I fear that user space interface 
+handling may be scattered around.
+
+Currently I am simply thinking about the following:
+
+partent setsockopt:
+
+        case ALG_SET_AEAD_AUTHSIZE:
+                if (sock->state == SS_CONNECTED)
+                        goto unlock;
+                if (!type->setauthsize)
+                        goto unlock;
+                err = type->setauthsize(ask->private, optlen);
+
+af_alg_type:
+
+int (*setauthsize)(void *private, unsigned int authsize);
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Ciao
+Stephan
