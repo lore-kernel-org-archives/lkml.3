@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761AbaLGW3G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:29:06 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:52258 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaLGW3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:29:03 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Alistair Popple <alistair@popple.id.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walter <dwalter@google.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] arch: powerpc: kernel: vio.c:  Remove unused function
-Date: Sun,  7 Dec 2014 23:31:42 +0100
-Message-Id: <1417991502-20223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753491AbaLGWg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:36:56 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54959 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752411AbaLGWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:36:54 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH v5 8/8] crypto: AF_ALG: enable RNG interface compilation
+Date: Sun, 07 Dec 2014 23:25:46 +0100
+Message-ID: <5331628.CHFtYQ1joT@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
+References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function cmo_high_show() that is not used anywhere.
+Enable compilation of the RNG AF_ALG support and provide a Kconfig
+option to compile the RNG AF_ALG support.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- arch/powerpc/kernel/vio.c |    5 -----
- 1 file changed, 5 deletions(-)
+ crypto/Kconfig  | 9 +++++++++
+ crypto/Makefile | 1 +
+ 2 files changed, 10 insertions(+)
 
-diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
-index 5bfdab9..11657d2 100644
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -1032,11 +1032,6 @@ viobus_cmo_pool_rd_attr(reserve, size);
- viobus_cmo_pool_rd_attr(excess, size);
- viobus_cmo_pool_rd_attr(excess, free);
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 0b2affc..8e968dc 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1514,6 +1514,15 @@ config CRYPTO_USER_API_AEAD
+ 	  This option enables the user-spaces interface for AEAD
+ 	  cipher algorithms.
  
--static ssize_t cmo_high_show(struct bus_type *bt, char *buf)
--{
--	return sprintf(buf, "%lu\n", vio_cmo.high);
--}
--
- static ssize_t cmo_high_store(struct bus_type *bt, const char *buf,
- 			      size_t count)
- {
++config CRYPTO_USER_API_RNG
++	tristate "User-space interface for random number generator algorithms"
++	depends on NET
++	select CRYPTO_RNG
++	select CRYPTO_USER_API
++	help
++	  This option enables the user-spaces interface for random
++	  number generator algorithms.
++
+ config CRYPTO_HASH_INFO
+ 	bool
+ 
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 593fd3c..c109df5 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -100,6 +100,7 @@ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
+ obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
+ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
+ obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
++obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
+ 
+ #
+ # generic algorithms and the async_tx api
 -- 
-1.7.10.4
+2.1.0
+
 
