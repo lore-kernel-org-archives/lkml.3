@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaLGVq5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 16:46:57 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51065 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519AbaLGVqz (ORCPT
+	id S1753032AbaLGVsR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 16:48:17 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:56487 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671AbaLGVsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 16:46:55 -0500
+	Sun, 7 Dec 2014 16:48:16 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+To: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: arm: mach-omap2: clkt2xxx_apll.c:  Remove some unused functions
-Date: Sun,  7 Dec 2014 22:49:34 +0100
-Message-Id: <1417988974-17688-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpu: drm: i915: intel_dsi_cmd.c:  Remove unused function
+Date: Sun,  7 Dec 2014 22:50:55 +0100
+Message-Id: <1417989055-17859-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-omap2_clk_apll54_disable() omap2_clk_apll96_disable()
-omap2_clk_apll54_enable() omap2_clk_apll96_enable() omap2xxx_get_apll_clkin()
-omap2_clk_apll96_recalc() omap2_clk_apll54_recalc()
+Remove the function dsi_hs_mode_enable() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/arm/mach-omap2/clkt2xxx_apll.c |   52 -----------------------------------
- arch/arm/mach-omap2/clock2xxx.h     |    9 ------
- 2 files changed, 61 deletions(-)
+ drivers/gpu/drm/i915/intel_dsi_cmd.c |   21 ---------------------
+ drivers/gpu/drm/i915/intel_dsi_cmd.h |    2 --
+ 2 files changed, 23 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/clkt2xxx_apll.c b/arch/arm/mach-omap2/clkt2xxx_apll.c
-index c78e893..65880e7 100644
---- a/arch/arm/mach-omap2/clkt2xxx_apll.c
-+++ b/arch/arm/mach-omap2/clkt2xxx_apll.c
-@@ -57,16 +57,6 @@ static bool omap2xxx_clk_apll_locked(struct clk_hw *hw)
- 	return ((r & apll_mask) == apll_mask) ? true : false;
- }
- 
--int omap2_clk_apll96_enable(struct clk_hw *hw)
--{
--	return omap2xxx_cm_apll96_enable();
--}
--
--int omap2_clk_apll54_enable(struct clk_hw *hw)
--{
--	return omap2xxx_cm_apll54_enable();
--}
--
- static void _apll96_allow_idle(struct clk_hw_omap *clk)
- {
- 	omap2xxx_cm_set_apll96_auto_low_power_stop();
-@@ -87,28 +77,6 @@ static void _apll54_deny_idle(struct clk_hw_omap *clk)
- 	omap2xxx_cm_set_apll54_disable_autoidle();
- }
- 
--void omap2_clk_apll96_disable(struct clk_hw *hw)
--{
--	omap2xxx_cm_apll96_disable();
--}
--
--void omap2_clk_apll54_disable(struct clk_hw *hw)
--{
--	omap2xxx_cm_apll54_disable();
--}
--
--unsigned long omap2_clk_apll54_recalc(struct clk_hw *hw,
--				      unsigned long parent_rate)
--{
--	return (omap2xxx_clk_apll_locked(hw)) ? 54000000 : 0;
--}
--
--unsigned long omap2_clk_apll96_recalc(struct clk_hw *hw,
--				      unsigned long parent_rate)
--{
--	return (omap2xxx_clk_apll_locked(hw)) ? 96000000 : 0;
--}
--
- /* Public data */
- const struct clk_hw_omap_ops clkhwops_apll54 = {
- 	.allow_idle	= _apll54_allow_idle,
-@@ -120,23 +88,3 @@ const struct clk_hw_omap_ops clkhwops_apll96 = {
- 	.deny_idle	= _apll96_deny_idle,
+diff --git a/drivers/gpu/drm/i915/intel_dsi_cmd.c b/drivers/gpu/drm/i915/intel_dsi_cmd.c
+index f4767fd..71addcc 100644
+--- a/drivers/gpu/drm/i915/intel_dsi_cmd.c
++++ b/drivers/gpu/drm/i915/intel_dsi_cmd.c
+@@ -103,27 +103,6 @@ enum dsi_type {
+ 	DSI_GENERIC,
  };
  
--/* Public functions */
--
--u32 omap2xxx_get_apll_clkin(void)
+-/* enable or disable command mode hs transmissions */
+-void dsi_hs_mode_enable(struct intel_dsi *intel_dsi, bool enable)
 -{
--	u32 aplls, srate = 0;
+-	struct drm_encoder *encoder = &intel_dsi->base.base;
+-	struct drm_device *dev = encoder->dev;
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	struct intel_crtc *intel_crtc = to_intel_crtc(encoder->crtc);
+-	enum pipe pipe = intel_crtc->pipe;
+-	u32 temp;
+-	u32 mask = DBI_FIFO_EMPTY;
 -
--	aplls = omap2xxx_cm_get_pll_config();
--	aplls &= OMAP24XX_APLLS_CLKIN_MASK;
--	aplls >>= OMAP24XX_APLLS_CLKIN_SHIFT;
+-	if (wait_for((I915_READ(MIPI_GEN_FIFO_STAT(pipe)) & mask) == mask, 50))
+-		DRM_ERROR("Timeout waiting for DBI FIFO empty\n");
 -
--	if (aplls == APLLS_CLKIN_19_2MHZ)
--		srate = 19200000;
--	else if (aplls == APLLS_CLKIN_13MHZ)
--		srate = 13000000;
--	else if (aplls == APLLS_CLKIN_12MHZ)
--		srate = 12000000;
+-	temp = I915_READ(MIPI_HS_LP_DBI_ENABLE(pipe));
+-	temp &= DBI_HS_LP_MODE_MASK;
+-	I915_WRITE(MIPI_HS_LP_DBI_ENABLE(pipe), enable ? DBI_HS_MODE : DBI_LP_MODE);
 -
--	return srate;
+-	intel_dsi->hs = enable;
 -}
 -
-diff --git a/arch/arm/mach-omap2/clock2xxx.h b/arch/arm/mach-omap2/clock2xxx.h
-index a090225..364a4cc 100644
---- a/arch/arm/mach-omap2/clock2xxx.h
-+++ b/arch/arm/mach-omap2/clock2xxx.h
-@@ -22,12 +22,7 @@ unsigned long omap2xxx_sys_clk_recalc(struct clk_hw *clk,
- unsigned long omap2_osc_clk_recalc(struct clk_hw *clk,
- 				   unsigned long parent_rate);
- void omap2xxx_clkt_dpllcore_init(struct clk_hw *hw);
--unsigned long omap2_clk_apll54_recalc(struct clk_hw *hw,
--				      unsigned long parent_rate);
--unsigned long omap2_clk_apll96_recalc(struct clk_hw *hw,
--				      unsigned long parent_rate);
- unsigned long omap2xxx_clk_get_core_rate(void);
--u32 omap2xxx_get_apll_clkin(void);
- u32 omap2xxx_get_sysclkdiv(void);
- void omap2xxx_clk_prepare_for_reboot(void);
- void omap2xxx_clkt_vps_check_bootloader_rates(void);
-@@ -48,9 +43,5 @@ int omap2430_clk_init(void);
- extern struct clk_hw *dclk_hw;
- int omap2_enable_osc_ck(struct clk_hw *hw);
- void omap2_disable_osc_ck(struct clk_hw *hw);
--int omap2_clk_apll96_enable(struct clk_hw *hw);
--int omap2_clk_apll54_enable(struct clk_hw *hw);
--void omap2_clk_apll96_disable(struct clk_hw *hw);
--void omap2_clk_apll54_disable(struct clk_hw *hw);
+ static int dsi_vc_send_short(struct intel_dsi *intel_dsi, int channel,
+ 			     u8 data_type, u16 data)
+ {
+diff --git a/drivers/gpu/drm/i915/intel_dsi_cmd.h b/drivers/gpu/drm/i915/intel_dsi_cmd.h
+index 46aa1ac..7ad54c0 100644
+--- a/drivers/gpu/drm/i915/intel_dsi_cmd.h
++++ b/drivers/gpu/drm/i915/intel_dsi_cmd.h
+@@ -36,8 +36,6 @@
+ #define DPI_LP_MODE_EN	false
+ #define DPI_HS_MODE_EN	true
  
- #endif
+-void dsi_hs_mode_enable(struct intel_dsi *intel_dsi, bool enable);
+-
+ int dsi_vc_dcs_write(struct intel_dsi *intel_dsi, int channel,
+ 		     const u8 *data, int len);
+ 
 -- 
 1.7.10.4
 
