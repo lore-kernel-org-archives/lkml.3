@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaLGUs0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:48:26 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:65529 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790AbaLGUsU (ORCPT
+	id S1753857AbaLGUsn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:48:43 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61674 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbaLGUsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:48:20 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Shuah Khan <shuahkh@osg.samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] tools: testing: selftests: powerpc: pmu: ebb: ebb.c:  Remove unused function
-Date: Sun,  7 Dec 2014 21:50:59 +0100
-Message-Id: <1417985459-16501-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 15:48:14 -0500
+Date: Sun, 7 Dec 2014 12:48:11 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/20] USB: isp1760: fix misspelling of current function
+ in string
+Message-ID: <20141207204811.GC5360@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1417980062-25151-9-git-send-email-Julia.Lawall@lip6.fr>
+ <20141207204138.GA5360@hudson.localdomain>
+ <alpine.DEB.2.02.1412072143460.2235@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1412072143460.2235@localhost6.localdomain6>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function event_bhrb_init() that is not used anywhere.
+Julia,
 
-This was partially found by using a static code analysis program called cppcheck.
+On Sun, Dec 07, 2014 at 09:45:15PM +0100, Julia Lawall wrote:
+> 
+> 
+> On Sun, 7 Dec 2014, Jeremiah Mahler wrote:
+> 
+> > Julia,
+> > 
+> > On Sun, Dec 07, 2014 at 08:20:50PM +0100, Julia Lawall wrote:
+> > > Replace a misspelled function name by %s and then __func__.
+[...]
+> > >  
+> > >  static void isp1761_pci_shutdown(struct pci_dev *dev)
+> > >  {
+> > > -	printk(KERN_ERR "ips1761_pci_shutdown\n");
+> > > +	printk(KERN_ERR "%s\n", __func__);
+> > >  }
+> > >  
+> > You can also switch from printk to pr_err and that would fix thte
+> > checkpatch warning for this patch.
+> 
+> Yeah, I didn't want to do too much at once, since tha could be done all at 
+> once in a lot of other places too.  But I will fix up this one.
+> 
+> julia
+> 
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- tools/testing/selftests/powerpc/pmu/ebb/ebb.c |    5 -----
- tools/testing/selftests/powerpc/pmu/ebb/ebb.h |    1 -
- 2 files changed, 6 deletions(-)
+I agree, doing too much at once is usually bad.  But these are pretty
+small and it is good if your patch doesn't have any checkpatch issues.
 
-diff --git a/tools/testing/selftests/powerpc/pmu/ebb/ebb.c b/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
-index d7a72ce..75af212 100644
---- a/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
-+++ b/tools/testing/selftests/powerpc/pmu/ebb/ebb.c
-@@ -324,11 +324,6 @@ void event_ebb_init(struct event *e)
- 	e->attr.config |= (1ull << 63);
- }
- 
--void event_bhrb_init(struct event *e, unsigned ifm)
--{
--	e->attr.config |= (1ull << 62) | ((u64)ifm << 60);
--}
--
- void event_leader_ebb_init(struct event *e)
- {
- 	event_ebb_init(e);
-diff --git a/tools/testing/selftests/powerpc/pmu/ebb/ebb.h b/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
-index e44eee5..a71596a 100644
---- a/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
-+++ b/tools/testing/selftests/powerpc/pmu/ebb/ebb.h
-@@ -46,7 +46,6 @@ static inline void ebb_enable_pmc_counting(int pmc)
- bool ebb_check_count(int pmc, u64 sample_period, int fudge);
- void event_leader_ebb_init(struct event *e);
- void event_ebb_init(struct event *e);
--void event_bhrb_init(struct event *e, unsigned ifm);
- void setup_ebb_handler(void (*callee)(void));
- void standard_ebb_callee(void);
- int ebb_event_enable(struct event *e);
+> > >  static const struct pci_device_id isp1760_plx [] = {
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > -- 
+> > - Jeremiah Mahler
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+
 -- 
-1.7.10.4
-
+- Jeremiah Mahler
