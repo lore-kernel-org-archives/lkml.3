@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaLGU2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:28:17 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:57397 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaLGU2P (ORCPT
+	id S1753444AbaLGUe7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:34:59 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:39191 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaLGUe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:28:15 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: openrisc: kernel: traps.c:  Remove unused function
-Date: Sun,  7 Dec 2014 21:30:53 +0100
-Message-Id: <1417984253-15964-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 15:34:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417980062-25151-5-git-send-email-Julia.Lawall@lip6.fr>
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1417980062-25151-5-git-send-email-Julia.Lawall@lip6.fr>
+Date: Sun, 7 Dec 2014 12:34:55 -0800
+Message-ID: <CAP6odjj817U+etx-BLCOT9DFQDKS8Mhu=e3hmqR4-N-XHatXvw@mail.gmail.com>
+Subject: Re: [PATCH 4/20] dmfe: fix misspelling of current function in string
+From: Grant Grundler <grantgrundler@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Grant Grundler <grundler@parisc-linux.org>,
+        kernel-janitors@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>, joe@perches.com,
+        "open list:TULIP NETWORK DRI..." <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function show_trace_task() that is not used anywhere.
+On Sun, Dec 7, 2014 at 11:20 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> The function name contains cleanup, not clean.
+>
+> This was done using Coccinelle, including the use of Levenshtein distance,
+> as proposed by Rasmus Villemoes.
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-This was partially found by using a static code analysis program called cppcheck.
+Thanks - seems like a obvious mistake.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/openrisc/kernel/traps.c |    7 -------
- 1 file changed, 7 deletions(-)
+Acked-by: Grant Grundler <grundler@parisc-linux.org>
 
-diff --git a/arch/openrisc/kernel/traps.c b/arch/openrisc/kernel/traps.c
-index 3d3f606..cc09827 100644
---- a/arch/openrisc/kernel/traps.c
-+++ b/arch/openrisc/kernel/traps.c
-@@ -98,13 +98,6 @@ void show_stack(struct task_struct *task, unsigned long *esp)
- 	return;
- }
- 
--void show_trace_task(struct task_struct *tsk)
--{
--	/*
--	 * TODO: SysRq-T trace dump...
--	 */
--}
--
- void show_registers(struct pt_regs *regs)
- {
- 	int i;
--- 
-1.7.10.4
-
+>
+> ---
+> The semantic patch is difficult to summarize, but is available in the cover
+> letter of this patch series.
+>
+>  drivers/net/ethernet/dec/tulip/dmfe.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/dec/tulip/dmfe.c b/drivers/net/ethernet/dec/tulip/dmfe.c
+> index c820560..50a0077 100644
+> --- a/drivers/net/ethernet/dec/tulip/dmfe.c
+> +++ b/drivers/net/ethernet/dec/tulip/dmfe.c
+> @@ -2265,7 +2265,7 @@ static int __init dmfe_init_module(void)
+>
+>  static void __exit dmfe_cleanup_module(void)
+>  {
+> -       DMFE_DBUG(0, "dmfe_clean_module() ", debug);
+> +       DMFE_DBUG(0, "dmfe_cleanup_module() ", debug);
+>         pci_unregister_driver(&dmfe_driver);
+>  }
+>
+>
