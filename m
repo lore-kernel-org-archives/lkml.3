@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaLGQmR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 11:42:17 -0500
-Received: from plane.gmane.org ([80.91.229.3]:49294 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052AbaLGQmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 11:42:15 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Jindrich Makovicka <makovick@gmail.com>
-Subject: Re: [PATCH 3.17 000/122] 3.17.5-stable review
-Date: Sun, 7 Dec 2014 16:42:00 +0000 (UTC)
-Message-ID: <m6200o$b13$1@ger.gmane.org>
-References: <20141205223305.514276242@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip-62-245-126-51.net.upcbroadband.cz
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: stable@vger.kernel.org
+	id S1752907AbaLGRSL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 12:18:11 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:42519 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051AbaLGRSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 12:18:08 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@kernel.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: powerpc: kvm: book3s_32_mmu.c:  Remove unused function
+Date: Sun,  7 Dec 2014 18:20:46 +0100
+Message-Id: <1417972846-12776-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove the function sr_nx() that is not used anywhere.
 
-On Fri, 05 Dec 2014 14:42:54 -0800, Greg Kroah-Hartman wrote:
+This was partially found by using a static code analysis program called cppcheck.
 
-> This is the start of the stable review cycle for the 3.17.5 release.
-> There are 122 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/powerpc/kvm/book3s_32_mmu.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-I had to revert "netfilter: conntrack: fix race in __nf_conntrack_confirm 
-against get_next_corpse" to be able to boot, getting a kernel panic 
-otherwise:
-
-http://goo.gl/q86SWy
-
-It happens in various stages, but seems to be pretty consistently 
-reproducible. This is a desktop running shorewall, with some nfqueue-
-based IP filtering added.
-
-Regards,
+diff --git a/arch/powerpc/kvm/book3s_32_mmu.c b/arch/powerpc/kvm/book3s_32_mmu.c
+index cd0b073..a2eb6d3 100644
+--- a/arch/powerpc/kvm/book3s_32_mmu.c
++++ b/arch/powerpc/kvm/book3s_32_mmu.c
+@@ -78,11 +78,6 @@ static inline bool sr_kp(u32 sr_raw)
+ 	return (sr_raw & 0x20000000) ? true: false;
+ }
+ 
+-static inline bool sr_nx(u32 sr_raw)
+-{
+-	return (sr_raw & 0x10000000) ? true: false;
+-}
+-
+ static int kvmppc_mmu_book3s_32_xlate_bat(struct kvm_vcpu *vcpu, gva_t eaddr,
+ 					  struct kvmppc_pte *pte, bool data,
+ 					  bool iswrite);
 -- 
-Jindrich Makovicka
+1.7.10.4
 
