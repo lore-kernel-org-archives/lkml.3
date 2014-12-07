@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaLGWhK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:37:10 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54977 "EHLO mail.eperm.de"
+	id S1753898AbaLGWiI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:38:08 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54995 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753512AbaLGWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:36:57 -0500
+	id S1753579AbaLGWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:37:00 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -13,9 +13,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v5 4/8] crypto: AF_ALG: enable AEAD interface compilation
-Date: Sun, 07 Dec 2014 23:23:12 +0100
-Message-ID: <1457467.fu1hpsxGxj@tachyon.chronox.de>
+Subject: [PATCH v5 1/8] crypto: AF_ALG: add user space interface for AEAD
+Date: Sun, 07 Dec 2014 23:21:09 +0100
+Message-ID: <2166020.BKWmrnVj2j@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
@@ -26,47 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable compilation of the AEAD AF_ALG support and provide a Kconfig
-option to compile the AEAD AF_ALG support.
+AEAD requires the caller to specify the following information separate
+from the data stream. This information allows the AEAD interface handler
+to identify the AAD, ciphertext/plaintext and the authentication tag:
+
+        * Associated authentication data of arbitrary length and
+          length
+
+        * Length of authentication tag for encryption
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- crypto/Kconfig  | 9 +++++++++
- crypto/Makefile | 1 +
- 2 files changed, 10 insertions(+)
+ crypto/af_alg.c             | 6 ++++++
+ include/crypto/if_alg.h     | 1 +
+ include/uapi/linux/if_alg.h | 2 ++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 87bbc9c..0b2affc 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1505,6 +1505,15 @@ config CRYPTO_USER_API_SKCIPHER
- 	  This option enables the user-spaces interface for symmetric
- 	  key cipher algorithms.
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index 6a3ad80..68ff113 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -421,6 +421,12 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
+ 			con->op = *(u32 *)CMSG_DATA(cmsg);
+ 			break;
  
-+config CRYPTO_USER_API_AEAD
-+	tristate "User-space interface for AEAD cipher algorithms"
-+	depends on NET
-+	select CRYPTO_AEAD
-+	select CRYPTO_USER_API
-+	help
-+	  This option enables the user-spaces interface for AEAD
-+	  cipher algorithms.
++		case ALG_SET_AEAD_ASSOCLEN:
++			if (cmsg->cmsg_len < CMSG_LEN(sizeof(u32)))
++				return -EINVAL;
++			con->aead_assoclen = *(u32 *)CMSG_DATA(cmsg);
++			break;
 +
- config CRYPTO_HASH_INFO
- 	bool
+ 		default:
+ 			return -EINVAL;
+ 		}
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index d61c111..cd62bf4 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -42,6 +42,7 @@ struct af_alg_completion {
+ struct af_alg_control {
+ 	struct af_alg_iv *iv;
+ 	int op;
++	unsigned int aead_assoclen;
+ };
  
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 1445b91..593fd3c 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -99,6 +99,7 @@ obj-$(CONFIG_CRYPTO_GHASH) += ghash-generic.o
- obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
- obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
- obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
-+obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
+ struct af_alg_type {
+diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
+index 0f9acce..f2acd2f 100644
+--- a/include/uapi/linux/if_alg.h
++++ b/include/uapi/linux/if_alg.h
+@@ -32,6 +32,8 @@ struct af_alg_iv {
+ #define ALG_SET_KEY			1
+ #define ALG_SET_IV			2
+ #define ALG_SET_OP			3
++#define ALG_SET_AEAD_ASSOCLEN		4
++#define ALG_SET_AEAD_AUTHSIZE		5
  
- #
- # generic algorithms and the async_tx api
+ /* Operations */
+ #define ALG_OP_DECRYPT			0
 -- 
 2.1.0
 
