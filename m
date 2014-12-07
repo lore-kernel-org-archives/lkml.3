@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaLGWg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:36:56 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54959 "EHLO mail.eperm.de"
+	id S1753667AbaLGWhC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:37:02 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54971 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaLGWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:36:54 -0500
+	id S1753387AbaLGWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:36:57 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -13,9 +13,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v5 8/8] crypto: AF_ALG: enable RNG interface compilation
-Date: Sun, 07 Dec 2014 23:25:46 +0100
-Message-ID: <5331628.CHFtYQ1joT@tachyon.chronox.de>
+Subject: [PATCH v5 5/8] crypto: AF_ALG: add user space interface for RNG
+Date: Sun, 07 Dec 2014 23:23:48 +0100
+Message-ID: <3380968.kTQNpvjKFa@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
@@ -26,47 +26,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable compilation of the RNG AF_ALG support and provide a Kconfig
-option to compile the RNG AF_ALG support.
+Allow user space to seed / reset the RNG via a setsockopt.
+
+This patch reuses alg_setkey to copy data into the kernel. The
+alg_setkey is now used for two mechanisms: setkey and seeding.
+The function is extended by the providing the function pointer
+to the function handling the copied data.
+
+As the alg_setkey is now usable for more than just setkey, it is renamed
+to alg_setop.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- crypto/Kconfig  | 9 +++++++++
- crypto/Makefile | 1 +
- 2 files changed, 10 insertions(+)
+ crypto/af_alg.c             | 29 +++++++++++++++++++----------
+ include/crypto/if_alg.h     |  1 +
+ include/uapi/linux/if_alg.h |  1 +
+ 3 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 0b2affc..8e968dc 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1514,6 +1514,15 @@ config CRYPTO_USER_API_AEAD
- 	  This option enables the user-spaces interface for AEAD
- 	  cipher algorithms.
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index 547c369..d1eb1e9 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -169,26 +169,27 @@ static int alg_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	return 0;
+ }
  
-+config CRYPTO_USER_API_RNG
-+	tristate "User-space interface for random number generator algorithms"
-+	depends on NET
-+	select CRYPTO_RNG
-+	select CRYPTO_USER_API
-+	help
-+	  This option enables the user-spaces interface for random
-+	  number generator algorithms.
+-static int alg_setkey(struct sock *sk, char __user *ukey,
+-		      unsigned int keylen)
++static int alg_setop(struct sock *sk, char __user *udata,
++		      unsigned int datalen,
++		      int (*handler)(void *private, const u8 *data,
++				     unsigned int datalen))
+ {
+ 	struct alg_sock *ask = alg_sk(sk);
+-	const struct af_alg_type *type = ask->type;
+-	u8 *key;
++	u8 *data;
+ 	int err;
+ 
+-	key = sock_kmalloc(sk, keylen, GFP_KERNEL);
+-	if (!key)
++	data = sock_kmalloc(sk, datalen, GFP_KERNEL);
++	if (!data)
+ 		return -ENOMEM;
+ 
+ 	err = -EFAULT;
+-	if (copy_from_user(key, ukey, keylen))
++	if (copy_from_user(data, udata, datalen))
+ 		goto out;
+ 
+-	err = type->setkey(ask->private, key, keylen);
++	err = handler(ask->private, data, datalen);
+ 
+ out:
+-	sock_kfree_s(sk, key, keylen);
++	sock_kfree_s(sk, data, datalen);
+ 
+ 	return err;
+ }
+@@ -214,7 +215,7 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
+ 		if (!type->setkey)
+ 			goto unlock;
+ 
+-		err = alg_setkey(sk, optval, optlen);
++		err = alg_setop(sk, optval, optlen, type->setkey);
+ 		break;
+ 	case ALG_SET_AEAD_AUTHSIZE:
+ 		if (sock->state == SS_CONNECTED)
+@@ -222,6 +223,14 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
+ 		if (!type->setauthsize)
+ 			goto unlock;
+ 		err = type->setauthsize(ask->private, optlen);
++		break;
++	case ALG_SET_RNG_SEED:
++		if (sock->state == SS_CONNECTED)
++			goto unlock;
++		if (!type->setseed)
++			goto unlock;
 +
- config CRYPTO_HASH_INFO
- 	bool
++		err = alg_setop(sk, optval, optlen, type->setseed);
+ 	}
  
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 593fd3c..c109df5 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -100,6 +100,7 @@ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
- obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
- obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
- obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
-+obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
+ unlock:
+diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+index 5c7b6c5..0808ed1 100644
+--- a/include/crypto/if_alg.h
++++ b/include/crypto/if_alg.h
+@@ -51,6 +51,7 @@ struct af_alg_type {
+ 	int (*setkey)(void *private, const u8 *key, unsigned int keylen);
+ 	int (*accept)(void *private, struct sock *sk);
+ 	int (*setauthsize)(void *private, unsigned int authsize);
++	int (*setseed)(void *private, const u8 *seed, unsigned int seedlen);
  
- #
- # generic algorithms and the async_tx api
+ 	struct proto_ops *ops;
+ 	struct module *owner;
+diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
+index f2acd2f..973dcca 100644
+--- a/include/uapi/linux/if_alg.h
++++ b/include/uapi/linux/if_alg.h
+@@ -34,6 +34,7 @@ struct af_alg_iv {
+ #define ALG_SET_OP			3
+ #define ALG_SET_AEAD_ASSOCLEN		4
+ #define ALG_SET_AEAD_AUTHSIZE		5
++#define ALG_SET_RNG_SEED		6
+ 
+ /* Operations */
+ #define ALG_OP_DECRYPT			0
 -- 
 2.1.0
 
