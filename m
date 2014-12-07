@@ -1,82 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaLGScD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 13:32:03 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:56895 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaLGSb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 13:31:59 -0500
-Date: Sun, 7 Dec 2014 10:24:20 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141207182420.GG25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
- <20141201230339.GA20487@ret.masoncoding.com>
- <20141202193252.GB17595@redhat.com>
- <547E4C14.6040509@oracle.com>
- <54813C03.8040009@oracle.com>
- <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
- <5481C92E.6020805@oracle.com>
- <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com>
- <54846B06.8050906@oracle.com>
+	id S1753373AbaLGSfu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 13:35:50 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:37262 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752051AbaLGSfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 13:35:47 -0500
+Date: Sun, 7 Dec 2014 20:27:33 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
+Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
+In-Reply-To: <5481B944.2000002@smart-weblications.de>
+Message-ID: <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg>
+References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg>
+ <5481B944.2000002@smart-weblications.de>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54846B06.8050906@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120718-0017-0000-0000-000006E6AD2D
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811672-124321293-1417976855=:1885"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 09:58:14AM -0500, Sasha Levin wrote:
-> On 12/05/2014 01:15 PM, Linus Torvalds wrote:
-> > On Fri, Dec 5, 2014 at 7:03 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> >>
-> >> Yes, it's going to a serial line, but it's only about 100 lines/second on
-> >> average. I wouldn't expect it to cause anything to hang!
-> > 
-> > A regular 16650 serial chip? Running at 115kbps, I assume? So that's
-> > about 11kB/s.
-> > 
-> > And the serial console is polling, since it can't sleep or depend on interrupts.
-> > 
-> > At a average line length of what, 40 characters? At less than 300
-> > lines/s, you'd be using up 100% of one CPU. And since the printouts
-> > are serialized, that would be all other CPU's too..
-> > 
-> > 100 lines/s _average_ means that I can easily see it be 300lines/s for a while.
-> > 
-> > So yeah. The serial console is simply not designed to handle
-> > continuous output. It's for the "occasional" stuff.
-> > 
-> > The fact that your rcu lockups go away when you make the fault
-> > injection be quiet makes me really suspect this is related.
-> 
-> The lockups themselves "go away", but looking closer at the log
-> without those extra prints, I'm seeing:
-> 
-> [ 1458.700070] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 1458.700133]  (detected by 19, t=30502 jiffies, g=12293, c=12292, q=0)
-> [ 1458.702764] INFO: Stall ended before state dump start
-> 
-> Quite often.
-> 
-> Maybe the extra prints were just a catalyst?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Is anything else being printed about the time that these message show
-up?  Or is this the only output for the 40,000 jiffies preceding this
-message?
+---1463811672-124321293-1417976855=:1885
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 
-							Thanx, Paul
 
+	Hello,
+
+On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+
+> thank you for the fast responses! I would like to test any patch for 3.12.
+
+	I'm attaching a patch that avoids rerouting in
+IPVS for LOCAL_IN. Please test it in your setup. My tests
+were with NAT on today's net tree. I checked that it
+compiles for 3.12.33. You can use the default snat_reroute=1.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
+---1463811672-124321293-1417976855=:1885
+Content-Type: TEXT/plain; name=0001-ipvs-rerouting-to-local-clients-is-not-needed-anymore.txt
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LFD.2.11.1412072027330.1885@ja.home.ssi.bg>
+Content-Description: patch
+Content-Disposition: attachment; filename=0001-ipvs-rerouting-to-local-clients-is-not-needed-anymore.txt
+
+RnJvbSA0ZmM0OTNmOGYxZWQ5NjdiMWUzZGQ2ZDMzMGEyNWJhZDc2MjUxNmQ3
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogSnVsaWFuIEFuYXN0
+YXNvdiA8amFAc3NpLmJnPg0KRGF0ZTogU3VuLCA3IERlYyAyMDE0IDE4OjEz
+OjI0ICswMjAwDQpTdWJqZWN0OiBbUEFUQ0ggbmV0XSBpcHZzOiByZXJvdXRp
+bmcgdG8gbG9jYWwgY2xpZW50cyBpcyBub3QgbmVlZGVkIGFueW1vcmUNCg0K
+Y29tbWl0IGY1YTQxODQ3YWNjNSAoImlwdnM6IG1vdmUgaXBfcm91dGVfbWVf
+aGFyZGVyIGZvciBJQ01QIikNCmZyb20gMi42LjM3IGludHJvZHVjZWQgaXBf
+cm91dGVfbWVfaGFyZGVyKCkgY2FsbCBmb3IgcmVzcG9uc2VzIHRvDQpsb2Nh
+bCBjbGllbnRzLCBzbyB0aGF0IHdlIGNhbiBwcm92aWRlIHZhbGlkIHJ0X3Ny
+YyBhZnRlciBTTkFULg0KSXQgd2FzIHVzZWQgYnkgVENQIHRvIHByb3ZpZGUg
+dmFsaWQgZGFkZHIgZm9yIGlwX3NlbmRfcmVwbHkoKS4NCkFmdGVyIGNvbW1p
+dCAwYTVlYmI4MDAwYzUgKCJpcHY0OiBQYXNzIGV4cGxpY2l0IGRhZGRyIGFy
+ZyB0bw0KaXBfc2VuZF9yZXBseSgpLiIgZnJvbSAzLjAgdGhpcyByZXJvdXRp
+bmcgaXMgbm90IG5lZWRlZCBhbnltb3JlDQphbmQgc2hvdWxkIGJlIGF2b2lk
+ZWQsIGVzcGVjaWFsbHkgaW4gTE9DQUxfSU4uDQoNClNpZ25lZC1vZmYtYnk6
+IEp1bGlhbiBBbmFzdGFzb3YgPGphQHNzaS5iZz4NCi0tLQ0KIG5ldC9uZXRm
+aWx0ZXIvaXB2cy9pcF92c19jb3JlLmMgfCAzMyArKysrKysrKysrKysrKysr
+KysrKysrLS0tLS0tLS0tLS0NCiAxIGZpbGUgY2hhbmdlZCwgMjIgaW5zZXJ0
+aW9ucygrKSwgMTEgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9uZXQv
+bmV0ZmlsdGVyL2lwdnMvaXBfdnNfY29yZS5jIGIvbmV0L25ldGZpbHRlci9p
+cHZzL2lwX3ZzX2NvcmUuYw0KaW5kZXggOTkwZGVjYi4uYjg3Y2EzMiAxMDA2
+NDQNCi0tLSBhL25ldC9uZXRmaWx0ZXIvaXB2cy9pcF92c19jb3JlLmMNCisr
+KyBiL25ldC9uZXRmaWx0ZXIvaXB2cy9pcF92c19jb3JlLmMNCkBAIC02NTks
+MTYgKzY1OSwyNCBAQCBzdGF0aWMgaW5saW5lIGludCBpcF92c19nYXRoZXJf
+ZnJhZ3Moc3RydWN0IHNrX2J1ZmYgKnNrYiwgdV9pbnQzMl90IHVzZXIpDQog
+CXJldHVybiBlcnI7DQogfQ0KIA0KLXN0YXRpYyBpbnQgaXBfdnNfcm91dGVf
+bWVfaGFyZGVyKGludCBhZiwgc3RydWN0IHNrX2J1ZmYgKnNrYikNCitzdGF0
+aWMgaW50IGlwX3ZzX3JvdXRlX21lX2hhcmRlcihpbnQgYWYsIHN0cnVjdCBz
+a19idWZmICpza2IsDQorCQkJCSB1bnNpZ25lZCBpbnQgaG9va251bSkNCiB7
+DQorCWlmICghc3lzY3RsX3NuYXRfcmVyb3V0ZShza2IpKQ0KKwkJcmV0dXJu
+IDA7DQorCS8qIFJlcm91dGUgcmVwbGllcyBvbmx5IHRvIHJlbW90ZSBjbGll
+bnRzIChGT1JXQVJEIGFuZCBMT0NBTF9PVVQpICovDQorCWlmIChORl9JTkVU
+X0xPQ0FMX0lOID09IGhvb2tudW0pDQorCQlyZXR1cm4gMDsNCiAjaWZkZWYg
+Q09ORklHX0lQX1ZTX0lQVjYNCiAJaWYgKGFmID09IEFGX0lORVQ2KSB7DQot
+CQlpZiAoc3lzY3RsX3NuYXRfcmVyb3V0ZShza2IpICYmIGlwNl9yb3V0ZV9t
+ZV9oYXJkZXIoc2tiKSAhPSAwKQ0KKwkJc3RydWN0IGRzdF9lbnRyeSAqZHN0
+ID0gc2tiX2RzdChza2IpOw0KKw0KKwkJaWYgKGRzdC0+ZGV2ICYmICEoZHN0
+LT5kZXYtPmZsYWdzICYgSUZGX0xPT1BCQUNLKSAmJg0KKwkJICAgIGlwNl9y
+b3V0ZV9tZV9oYXJkZXIoc2tiKSAhPSAwKQ0KIAkJCXJldHVybiAxOw0KIAl9
+IGVsc2UNCiAjZW5kaWYNCi0JCWlmICgoc3lzY3RsX3NuYXRfcmVyb3V0ZShz
+a2IpIHx8DQotCQkgICAgIHNrYl9ydGFibGUoc2tiKS0+cnRfZmxhZ3MgJiBS
+VENGX0xPQ0FMKSAmJg0KKwkJaWYgKCEoc2tiX3J0YWJsZShza2IpLT5ydF9m
+bGFncyAmIFJUQ0ZfTE9DQUwpICYmDQogCQkgICAgaXBfcm91dGVfbWVfaGFy
+ZGVyKHNrYiwgUlROX0xPQ0FMKSAhPSAwKQ0KIAkJCXJldHVybiAxOw0KIA0K
+QEAgLTc5MSw3ICs3OTksOCBAQCBzdGF0aWMgaW50IGhhbmRsZV9yZXNwb25z
+ZV9pY21wKGludCBhZiwgc3RydWN0IHNrX2J1ZmYgKnNrYiwNCiAJCQkJdW5p
+b24gbmZfaW5ldF9hZGRyICpzbmV0LA0KIAkJCQlfX3U4IHByb3RvY29sLCBz
+dHJ1Y3QgaXBfdnNfY29ubiAqY3AsDQogCQkJCXN0cnVjdCBpcF92c19wcm90
+b2NvbCAqcHAsDQotCQkJCXVuc2lnbmVkIGludCBvZmZzZXQsIHVuc2lnbmVk
+IGludCBpaGwpDQorCQkJCXVuc2lnbmVkIGludCBvZmZzZXQsIHVuc2lnbmVk
+IGludCBpaGwsDQorCQkJCXVuc2lnbmVkIGludCBob29rbnVtKQ0KIHsNCiAJ
+dW5zaWduZWQgaW50IHZlcmRpY3QgPSBORl9EUk9QOw0KIA0KQEAgLTgyMSw3
+ICs4MzAsNyBAQCBzdGF0aWMgaW50IGhhbmRsZV9yZXNwb25zZV9pY21wKGlu
+dCBhZiwgc3RydWN0IHNrX2J1ZmYgKnNrYiwNCiAjZW5kaWYNCiAJCWlwX3Zz
+X25hdF9pY21wKHNrYiwgcHAsIGNwLCAxKTsNCiANCi0JaWYgKGlwX3ZzX3Jv
+dXRlX21lX2hhcmRlcihhZiwgc2tiKSkNCisJaWYgKGlwX3ZzX3JvdXRlX21l
+X2hhcmRlcihhZiwgc2tiLCBob29rbnVtKSkNCiAJCWdvdG8gb3V0Ow0KIA0K
+IAkvKiBkbyB0aGUgc3RhdGlzdGljcyBhbmQgcHV0IGl0IGJhY2sgKi8NCkBA
+IC05MTYsNyArOTI1LDcgQEAgc3RhdGljIGludCBpcF92c19vdXRfaWNtcChz
+dHJ1Y3Qgc2tfYnVmZiAqc2tiLCBpbnQgKnJlbGF0ZWQsDQogDQogCXNuZXQu
+aXAgPSBpcGgtPnNhZGRyOw0KIAlyZXR1cm4gaGFuZGxlX3Jlc3BvbnNlX2lj
+bXAoQUZfSU5FVCwgc2tiLCAmc25ldCwgY2loLT5wcm90b2NvbCwgY3AsDQot
+CQkJCSAgICBwcCwgY2lwaC5sZW4sIGlobCk7DQorCQkJCSAgICBwcCwgY2lw
+aC5sZW4sIGlobCwgaG9va251bSk7DQogfQ0KIA0KICNpZmRlZiBDT05GSUdf
+SVBfVlNfSVBWNg0KQEAgLTk4MSw3ICs5OTAsOCBAQCBzdGF0aWMgaW50IGlw
+X3ZzX291dF9pY21wX3Y2KHN0cnVjdCBza19idWZmICpza2IsIGludCAqcmVs
+YXRlZCwNCiAJc25ldC5pbjYgPSBjaXBoLnNhZGRyLmluNjsNCiAJd3JpdGFi
+bGUgPSBjaXBoLmxlbjsNCiAJcmV0dXJuIGhhbmRsZV9yZXNwb25zZV9pY21w
+KEFGX0lORVQ2LCBza2IsICZzbmV0LCBjaXBoLnByb3RvY29sLCBjcCwNCi0J
+CQkJICAgIHBwLCB3cml0YWJsZSwgc2l6ZW9mKHN0cnVjdCBpcHY2aGRyKSk7
+DQorCQkJCSAgICBwcCwgd3JpdGFibGUsIHNpemVvZihzdHJ1Y3QgaXB2Nmhk
+ciksDQorCQkJCSAgICBob29rbnVtKTsNCiB9DQogI2VuZGlmDQogDQpAQCAt
+MTA0MCw3ICsxMDUwLDggQEAgc3RhdGljIGlubGluZSBib29sIGlzX25ld19j
+b25uKGNvbnN0IHN0cnVjdCBza19idWZmICpza2IsDQogICovDQogc3RhdGlj
+IHVuc2lnbmVkIGludA0KIGhhbmRsZV9yZXNwb25zZShpbnQgYWYsIHN0cnVj
+dCBza19idWZmICpza2IsIHN0cnVjdCBpcF92c19wcm90b19kYXRhICpwZCwN
+Ci0JCXN0cnVjdCBpcF92c19jb25uICpjcCwgc3RydWN0IGlwX3ZzX2lwaGRy
+ICppcGgpDQorCQlzdHJ1Y3QgaXBfdnNfY29ubiAqY3AsIHN0cnVjdCBpcF92
+c19pcGhkciAqaXBoLA0KKwkJdW5zaWduZWQgaW50IGhvb2tudW0pDQogew0K
+IAlzdHJ1Y3QgaXBfdnNfcHJvdG9jb2wgKnBwID0gcGQtPnBwOw0KIA0KQEAg
+LTEwNzgsNyArMTA4OSw3IEBAIGhhbmRsZV9yZXNwb25zZShpbnQgYWYsIHN0
+cnVjdCBza19idWZmICpza2IsIHN0cnVjdCBpcF92c19wcm90b19kYXRhICpw
+ZCwNCiAJICogaWYgaXQgY2FtZSBmcm9tIHRoaXMgbWFjaGluZSBpdHNlbGYu
+ICBTbyByZS1jb21wdXRlDQogCSAqIHRoZSByb3V0aW5nIGluZm9ybWF0aW9u
+Lg0KIAkgKi8NCi0JaWYgKGlwX3ZzX3JvdXRlX21lX2hhcmRlcihhZiwgc2ti
+KSkNCisJaWYgKGlwX3ZzX3JvdXRlX21lX2hhcmRlcihhZiwgc2tiLCBob29r
+bnVtKSkNCiAJCWdvdG8gZHJvcDsNCiANCiAJSVBfVlNfREJHX1BLVCgxMCwg
+YWYsIHBwLCBza2IsIDAsICJBZnRlciBTTkFUIik7DQpAQCAtMTE4MSw3ICsx
+MTkyLDcgQEAgaXBfdnNfb3V0KHVuc2lnbmVkIGludCBob29rbnVtLCBzdHJ1
+Y3Qgc2tfYnVmZiAqc2tiLCBpbnQgYWYpDQogCWNwID0gcHAtPmNvbm5fb3V0
+X2dldChhZiwgc2tiLCAmaXBoLCAwKTsNCiANCiAJaWYgKGxpa2VseShjcCkp
+DQotCQlyZXR1cm4gaGFuZGxlX3Jlc3BvbnNlKGFmLCBza2IsIHBkLCBjcCwg
+JmlwaCk7DQorCQlyZXR1cm4gaGFuZGxlX3Jlc3BvbnNlKGFmLCBza2IsIHBk
+LCBjcCwgJmlwaCwgaG9va251bSk7DQogCWlmIChzeXNjdGxfbmF0X2ljbXBf
+c2VuZChuZXQpICYmDQogCSAgICAocHAtPnByb3RvY29sID09IElQUFJPVE9f
+VENQIHx8DQogCSAgICAgcHAtPnByb3RvY29sID09IElQUFJPVE9fVURQIHx8
+DQotLSANCjEuOS4zDQoNCg==
+
+---1463811672-124321293-1417976855=:1885--
