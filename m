@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaLGBOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Dec 2014 20:14:09 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45803 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaLGBOG (ORCPT
+	id S1752825AbaLGBQt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Dec 2014 20:16:49 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:65083 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbaLGBQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Dec 2014 20:14:06 -0500
+	Sat, 6 Dec 2014 20:16:48 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: arm: mach-msm: vreg.c:  Remove unused function
-Date: Sun,  7 Dec 2014 02:16:44 +0100
-Message-Id: <1417915004-8574-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] arch: arm: mach-mxs: mach-mxs.c:  Remove unused function
+Date: Sun,  7 Dec 2014 02:19:27 +0100
+Message-Id: <1417915167-8750-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function vreg_put() that is not used anywhere.
+Remove the function __mxs_togl() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/arm/mach-msm/include/mach/vreg.h |    1 -
- arch/arm/mach-msm/vreg.c              |    4 ----
- 2 files changed, 5 deletions(-)
+ arch/arm/mach-mxs/mach-mxs.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/arch/arm/mach-msm/include/mach/vreg.h b/arch/arm/mach-msm/include/mach/vreg.h
-index 6626e78..28351ff 100644
---- a/arch/arm/mach-msm/include/mach/vreg.h
-+++ b/arch/arm/mach-msm/include/mach/vreg.h
-@@ -20,7 +20,6 @@
- struct vreg;
- 
- struct vreg *vreg_get(struct device *dev, const char *id);
--void vreg_put(struct vreg *vreg);
- 
- int vreg_enable(struct vreg *vreg);
- int vreg_disable(struct vreg *vreg);
-diff --git a/arch/arm/mach-msm/vreg.c b/arch/arm/mach-msm/vreg.c
-index bd66ed0..0bf891d 100644
---- a/arch/arm/mach-msm/vreg.c
-+++ b/arch/arm/mach-msm/vreg.c
-@@ -96,10 +96,6 @@ struct vreg *vreg_get(struct device *dev, const char *id)
- 	return ERR_PTR(-ENOENT);
+diff --git a/arch/arm/mach-mxs/mach-mxs.c b/arch/arm/mach-mxs/mach-mxs.c
+index 2e7cec8..3362f48 100644
+--- a/arch/arm/mach-mxs/mach-mxs.c
++++ b/arch/arm/mach-mxs/mach-mxs.c
+@@ -72,11 +72,6 @@ static inline void __mxs_clrl(u32 mask, void __iomem *reg)
+ 	__raw_writel(mask, reg + MXS_CLR_ADDR);
  }
  
--void vreg_put(struct vreg *vreg)
+-static inline void __mxs_togl(u32 mask, void __iomem *reg)
 -{
+-	__raw_writel(mask, reg + MXS_TOG_ADDR);
 -}
 -
- int vreg_enable(struct vreg *vreg)
- {
- 	unsigned id = vreg->id;
+ #define OCOTP_WORD_OFFSET		0x20
+ #define OCOTP_WORD_COUNT		0x20
+ 
 -- 
 1.7.10.4
 
