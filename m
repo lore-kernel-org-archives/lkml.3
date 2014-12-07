@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaLGW1g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:27:36 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54548 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550AbaLGW1f (ORCPT
+	id S1753702AbaLGW2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:28:47 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:56587 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaLGW2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:27:35 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: arm: mach-omap2: dpll44xx.c:  Remove unused function
-Date: Sun,  7 Dec 2014 23:30:13 +0100
-Message-Id: <1417991413-20077-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 17:28:46 -0500
+Message-ID: <5484D631.4010606@gmail.com>
+Date: Mon, 08 Dec 2014 06:35:29 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: John David Anglin <dave.anglin@bell.net>
+CC: "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        Joel Brobecker <brobecker@adacore.com>
+Subject: Re: [PATCH] arch: uapi: asm: mman.h: Let MADV_FREE have same value
+ for all architectures
+References: <5480E715.3020900@gmail.com> <20141205065417.GA3358@bbox> <54822B19.2070804@gmail.com> <54832761.1050700@gmail.com> <BLU436-SMTP2290D2D7C148D22663FD75E97670@phx.gbl>
+In-Reply-To: <BLU436-SMTP2290D2D7C148D22663FD75E97670@phx.gbl>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function omap4_dpllmx_gatectrl_read() that is not used anywhere.
 
-This was partially found by using a static code analysis program called cppcheck.
+On 12/8/14 00:14, John David Anglin wrote:
+> On 6-Dec-14, at 10:57 AM, Chen Gang wrote:
+> 
+>> And I also want to consult about parisc assembly instructions, I can not
+>> find the related reference documents, could you help to have a check (or
+>> provide some related information for it)? related contents are below:
+> 
+> https://parisc.wiki.kernel.org/index.php/Technical_Documentation
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/arm/mach-omap2/clock.h    |    1 -
- arch/arm/mach-omap2/dpll44xx.c |   20 --------------------
- 2 files changed, 21 deletions(-)
+OK, thank you very much!!
 
-diff --git a/arch/arm/mach-omap2/clock.h b/arch/arm/mach-omap2/clock.h
-index 4592a27..88cc816 100644
---- a/arch/arm/mach-omap2/clock.h
-+++ b/arch/arm/mach-omap2/clock.h
-@@ -177,7 +177,6 @@ struct clksel {
- u32 omap3_dpll_autoidle_read(struct clk_hw_omap *clk);
- void omap3_dpll_allow_idle(struct clk_hw_omap *clk);
- void omap3_dpll_deny_idle(struct clk_hw_omap *clk);
--int omap4_dpllmx_gatectrl_read(struct clk_hw_omap *clk);
- void omap4_dpllmx_allow_gatectrl(struct clk_hw_omap *clk);
- void omap4_dpllmx_deny_gatectrl(struct clk_hw_omap *clk);
- 
-diff --git a/arch/arm/mach-omap2/dpll44xx.c b/arch/arm/mach-omap2/dpll44xx.c
-index 4613f1e..6b6db49 100644
---- a/arch/arm/mach-omap2/dpll44xx.c
-+++ b/arch/arm/mach-omap2/dpll44xx.c
-@@ -36,26 +36,6 @@
- /* Static rate multiplier for OMAP4 REGM4XEN clocks */
- #define OMAP4430_REGM4XEN_MULT				4
- 
--/* Supported only on OMAP4 */
--int omap4_dpllmx_gatectrl_read(struct clk_hw_omap *clk)
--{
--	u32 v;
--	u32 mask;
--
--	if (!clk || !clk->clksel_reg)
--		return -EINVAL;
--
--	mask = clk->flags & CLOCK_CLKOUTX2 ?
--			OMAP4430_DPLL_CLKOUTX2_GATE_CTRL_MASK :
--			OMAP4430_DPLL_CLKOUT_GATE_CTRL_MASK;
--
--	v = omap2_clk_readl(clk, clk->clksel_reg);
--	v &= mask;
--	v >>= __ffs(mask);
--
--	return v;
--}
--
- void omap4_dpllmx_allow_gatectrl(struct clk_hw_omap *clk)
- {
- 	u32 v;
+For me, these information is enough, I checked the related sub link, it
+has a full description for all related instruction (stb/h, stw, std).
+
+  https://parisc.wiki.kernel.org/images-parisc/7/73/Parisc2.0.pdf
+
+For me, my original comments need be improved: need mention about STH,
+and maybe also need consider about additional related instructions of
+parisc 2.0 (STDA, STWA, STBY, STDBY).
+
+
+Thanks.
 -- 
-1.7.10.4
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
