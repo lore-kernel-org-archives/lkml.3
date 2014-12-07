@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaLGOFW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 09:05:22 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47622 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaLGOFP (ORCPT
+	id S1753173AbaLGOGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 09:06:50 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48031 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752620AbaLGOGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 09:05:15 -0500
-Message-ID: <54845E96.1020900@codeaurora.org>
-Date: Sun, 07 Dec 2014 16:05:10 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] UBI: Fastmap: Wrap fastmap specific function in a
- ifdef
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-5-git-send-email-richard@nod.at>
-In-Reply-To: <1417347340-6872-5-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Sun, 7 Dec 2014 09:06:46 -0500
+X-Sasl-enc: ZqZoYYfKjbWXVO7cz3kTKjwuU9/5V26AkUZOAK7Kp7x3 1417961205
+Message-ID: <1417961203.17658.52.camel@localhost>
+Subject: Re: Where exactly will arch_fast_hash be used
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: George Spelvin <linux@horizon.com>
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net, dborkman@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
+        tytso@mit.edu
+Date: Sun, 07 Dec 2014 15:06:43 +0100
+In-Reply-To: <20141207132305.24691.qmail@ns.horizon.com>
+References: <20141207132305.24691.qmail@ns.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 1:35 PM, Richard Weinberger wrote:
-> ...such that we can implement NOP variants of some functions.
-> This will help to reduce fastmap specific ifdefs in other c files.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+On So, 2014-12-07 at 08:23 -0500, George Spelvin wrote:
+> So there are plenty of hash tables in Linux that you don't dare use this
+> with.  In fact, so many that, as you rightly point out, it's not clear
+> if it's worth providing this special optimization for the few remaining.
 
-Reviewed-by: Tanya Brokhman <tlinder@codeaurora.org>
+In case of openvswitch it shows a performance improvment. The seed
+parameter could be used as an initial biasing of the crc32 function, but
+in case of openvswitch it is only set to 0.
 
-> ---
->   drivers/mtd/ubi/ubi.h | 4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-> index d672412..6fadf34 100644
-> --- a/drivers/mtd/ubi/ubi.h
-> +++ b/drivers/mtd/ubi/ubi.h
-> @@ -864,10 +864,14 @@ int ubi_compare_lebs(struct ubi_device *ubi, const struct ubi_ainf_peb *aeb,
->   		      int pnum, const struct ubi_vid_hdr *vid_hdr);
->
->   /* fastmap.c */
-> +#ifdef CONFIG_MTD_UBI_FASTMAP
->   size_t ubi_calc_fm_size(struct ubi_device *ubi);
->   int ubi_update_fastmap(struct ubi_device *ubi);
->   int ubi_scan_fastmap(struct ubi_device *ubi, struct ubi_attach_info *ai,
->   		     int fm_anchor);
-> +#else
-> +static inline int ubi_update_fastmap(struct ubi_device *ubi) { return 0; }
-> +#endif
->
->   /* block.c */
->   #ifdef CONFIG_MTD_UBI_BLOCK
->
+Bye,
+Hannes
 
 
-Thanks,
-Tanya Brokhman
--- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
