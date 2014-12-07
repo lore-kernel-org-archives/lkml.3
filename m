@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaLGWik (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 17:38:40 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54989 "EHLO mail.eperm.de"
+	id S1753973AbaLGWjZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 17:39:25 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54960 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535AbaLGWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 17:37:00 -0500
+	id S1752590AbaLGWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 17:36:54 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
@@ -13,9 +13,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v5 2/8] crypto: AF_ALG: add setsockopt for auth tag size
-Date: Sun, 07 Dec 2014 23:21:42 +0100
-Message-ID: <5195949.2IIqD2tWoo@tachyon.chronox.de>
+Subject: [PATCH v5 6/8] crypto: AF_ALG: zeroize key / seed data
+Date: Sun, 07 Dec 2014 23:24:36 +0100
+Message-ID: <2737258.UUWqeH5oOM@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 In-Reply-To: <56740432.V2v4gLHrzS@tachyon.chronox.de>
 References: <56740432.V2v4gLHrzS@tachyon.chronox.de>
@@ -26,49 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use setsockopt on the tfm FD to provide the authentication tag size for
-an AEAD cipher. This is achieved by adding a callback function which is
-intended to be used by the AEAD AF_ALG implementation.
-
-The optlen argument of the setsockopt specifies the authentication tag
-size to be used with the AEAD tfm.
+alg_setop shall zeroize the sensitive data after use.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- crypto/af_alg.c         | 7 +++++++
- include/crypto/if_alg.h | 1 +
- 2 files changed, 8 insertions(+)
+ crypto/af_alg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-index 68ff113..547c369 100644
+index d1eb1e9..836fa4a 100644
 --- a/crypto/af_alg.c
 +++ b/crypto/af_alg.c
-@@ -215,6 +215,13 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
- 			goto unlock;
+@@ -189,7 +189,7 @@ static int alg_setop(struct sock *sk, char __user *udata,
+ 	err = handler(ask->private, data, datalen);
  
- 		err = alg_setkey(sk, optval, optlen);
-+		break;
-+	case ALG_SET_AEAD_AUTHSIZE:
-+		if (sock->state == SS_CONNECTED)
-+			goto unlock;
-+		if (!type->setauthsize)
-+			goto unlock;
-+		err = type->setauthsize(ask->private, optlen);
- 	}
+ out:
+-	sock_kfree_s(sk, data, datalen);
++	sock_kzfree_s(sk, data, datalen);
  
- unlock:
-diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
-index cd62bf4..5c7b6c5 100644
---- a/include/crypto/if_alg.h
-+++ b/include/crypto/if_alg.h
-@@ -50,6 +50,7 @@ struct af_alg_type {
- 	void (*release)(void *private);
- 	int (*setkey)(void *private, const u8 *key, unsigned int keylen);
- 	int (*accept)(void *private, struct sock *sk);
-+	int (*setauthsize)(void *private, unsigned int authsize);
- 
- 	struct proto_ops *ops;
- 	struct module *owner;
+ 	return err;
+ }
 -- 
 2.1.0
 
