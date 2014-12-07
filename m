@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaLGQIz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 11:08:55 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54471 "EHLO
+	id S1752848AbaLGQLv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 11:11:51 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54855 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaLGQIy (ORCPT
+	with ESMTP id S1751472AbaLGQLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 11:08:54 -0500
-Date: Sun, 7 Dec 2014 17:08:51 +0100
+	Sun, 7 Dec 2014 11:11:49 -0500
+Date: Sun, 7 Dec 2014 17:11:47 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Trivial patch monkey <trivial@kernel.org>, rjw@rjwysocki.net,
-        corbet@lwn.net, geert+renesas@glider.be, broonie@linaro.org,
-        linux-pm@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation/power/regulators/ ... cleanup ranges
-Message-ID: <20141207160851.GA18371@amd>
+To: tony@atomide.com, bcousson@baylibre.com, robh+dt@kernel.org,
+        trivial@kernel.org, kernel list <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] dts: omap3-n900: cleanup english
+Message-ID: <20141207161147.GA18588@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,36 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-overview.txt uses '->' to indicate ranges, which is a bit
-non-traditional. I changed it to '..' to make it clear.
+This fixes english in comments and removes extra empty newline.
 
 Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-diff --git a/Documentation/power/regulator/overview.txt b/Documentation/power/regulator/overview.txt
-index 40ca2d6..4dd5dbb 100644
---- a/Documentation/power/regulator/overview.txt
-+++ b/Documentation/power/regulator/overview.txt
-@@ -90,7 +90,7 @@ Some terms used in this document:-
-                    operating parameters and is specified in the regulator
-                    datasheet. i.e.
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 11d8afd..9e0e5a2 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -287,7 +287,7 @@
+ 	regulator-name = "V28";
+ 	regulator-min-microvolt = <2800000>;
+ 	regulator-max-microvolt = <2800000>;
+-	regulator-always-on; /* due battery cover sensor */
++	regulator-always-on; /* due to battery cover sensor */
+ };
  
--                     - voltage output is in the range 800mV -> 3500mV.
-+                     - voltage output is in the range 800mV .. 3500mV.
-                      - regulator current output limit is 20mA @ 5V but is
-                        10mA @ 10V.
+ &vaux2 {
+@@ -345,7 +345,6 @@
+ 	regulator-name = "VIO";
+ 	regulator-min-microvolt = <1800000>;
+ 	regulator-max-microvolt = <1800000>;
+-
+ };
  
-@@ -99,8 +99,8 @@ Some terms used in this document:-
-                    power domain to a particular power range. i.e.
- 
-                      - Domain-1 voltage is 3300mV
--                     - Domain-2 voltage is 1400mV -> 1600mV
--                     - Domain-3 current limit is 0mA -> 20mA.
-+                     - Domain-2 voltage is 1400mV .. 1600mV
-+                     - Domain-3 current limit is 0mA .. 20mA.
- 
-                    Consumer Level: This is defined by consumer drivers
-                    dynamically setting voltage or current limit levels.
+ &vintana1 {
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
