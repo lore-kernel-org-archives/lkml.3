@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaLGIEo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 03:04:44 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:64312 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaLGIEl (ORCPT
+	id S1752765AbaLGIOF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 03:14:05 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42494 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaLGIOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 03:04:41 -0500
-Date: Sun, 7 Dec 2014 08:04:34 +0000
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH 3/3] Drivers: hv: hv_balloon: Don't post pressure status
- from interrupt context
-Message-ID: <20141207080433.GA4531@sucs.org>
-References: <1417559331-13691-1-git-send-email-kys@microsoft.com>
- <1417559355-13730-1-git-send-email-kys@microsoft.com>
- <1417559355-13730-3-git-send-email-kys@microsoft.com>
+	Sun, 7 Dec 2014 03:14:00 -0500
+Message-ID: <54840C44.4090406@codeaurora.org>
+Date: Sun, 07 Dec 2014 10:13:56 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417559355-13730-3-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] UBI: Fastmap: Fix memory leaks while closing the
+ WL sub-system
+References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-2-git-send-email-richard@nod.at>
+In-Reply-To: <1417347340-6872-2-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 02:29:15PM -0800, K. Y. Srinivasan wrote:
-> We currently release memory (balloon down) in the interrupt context and we also
-> post memory status while releasing memory. Rather than posting the status
-> in the interrupt context, wakeup the status posting thread to post the status.
-> This will address the inconsistent lock state that Sitsofe Wheeler <sitsofe@gmail.com>
-> reported:
+On 11/30/2014 1:35 PM, Richard Weinberger wrote:
+> Add a ubi_fastmap_close() to free all resources used by fastmap
+> at WL shutdown.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
+>   1 file changed, 18 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index c2822f7..47b215f 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -2064,6 +2064,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>   	}
+>   }
+>
+> +static void ubi_fastmap_close(struct ubi_device *ubi)
+> +{
+> +#ifdef CONFIG_MTD_UBI_FASTMAP
+> +	int i;
+> +
+> +	flush_work(&ubi->fm_work);
+> +	return_unused_pool_pebs(ubi, &ubi->fm_pool);
+> +	return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
+> +
+> +	if (ubi->fm) {
+> +		for (i = 0; i < ubi->fm->used_blocks; i++)
+> +			kfree(ubi->fm->e[i]);
+> +	}
+> +	kfree(ubi->fm);
 
-Sorry I didn't follow up on this. Things looked better after the patch
-but I was seeing a strange issue where the memory was being reduced to
-some minimum and the balloon would never shrink so the available memory
-was seemingly locked from then on. I ran out of time to investigate this
-later behaviour and didn't have the time to check if it had always been
-the case but I think I see other patches saying you nailed it and other
-issues. Do you have a published git tree with all these pieces in or
-have they already been mainlined?
+kfree(ubi->fm_buf)?
 
+> +#endif
+> +}
+> +
+>   /**
+>    * ubi_wl_close - close the wear-leveling sub-system.
+>    * @ubi: UBI device description object
+> @@ -2071,9 +2088,7 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>   void ubi_wl_close(struct ubi_device *ubi)
+>   {
+>   	dbg_wl("close the WL sub-system");
+> -#ifdef CONFIG_MTD_UBI_FASTMAP
+> -	flush_work(&ubi->fm_work);
+> -#endif
+> +	ubi_fastmap_close(ubi);
+>   	shutdown_work(ubi);
+>   	protection_queue_destroy(ubi);
+>   	tree_destroy(&ubi->used);
+>
+
+
+Thanks,
+Tanya Brokhman
 -- 
-Sitsofe | http://sucs.org/~sits/
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
