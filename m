@@ -1,68 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaLGRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 12:23:27 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54217 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaLGRXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 12:23:23 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: bfa: bfa_fcpim.c:  Remove unused function
-Date: Sun,  7 Dec 2014 18:26:02 +0100
-Message-Id: <1417973162-13148-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753345AbaLGRYN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 12:24:13 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:54464 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753309AbaLGRYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 12:24:10 -0500
+Date: Sun, 7 Dec 2014 11:23:26 -0600
+From: Nishanth Menon <nm@ti.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@kernel.org>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] ARM / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Message-ID: <20141207172326.GB12811@kahuna>
+References: <2407638.dfZGaT4vm1@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <2407638.dfZGaT4vm1@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function bfa_tskim_iodone() that is not used anywhere.
+On 03:50-20141206, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere in the code under
+> arch/arm/ (the defconfig files will be modified later).
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+> 
+> Please let me know if it is OK to take this one into linux-pm.
+> 
+> ---
+>  arch/arm/kernel/perf_event.c       |    2 +-
+>  arch/arm/mach-davinci/pm_domain.c  |    2 +-
+>  arch/arm/mach-keystone/pm_domain.c |    2 +-
+>  arch/arm/mach-omap1/pm_bus.c       |    4 ++--
+>  arch/arm/mach-omap2/io.c           |    2 +-
+>  arch/arm/mach-omap2/omap_device.c  |    2 +-
+>  6 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> Index: linux-pm/arch/arm/kernel/perf_event.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/kernel/perf_event.c
+> +++ linux-pm/arch/arm/kernel/perf_event.c
+> @@ -481,7 +481,7 @@ static void armpmu_disable(struct pmu *p
+>  	armpmu->stop(armpmu);
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int armpmu_runtime_resume(struct device *dev)
+>  {
+>  	struct arm_pmu_platdata *plat = dev_get_platdata(dev);
+> Index: linux-pm/arch/arm/mach-davinci/pm_domain.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/mach-davinci/pm_domain.c
+> +++ linux-pm/arch/arm/mach-davinci/pm_domain.c
+> @@ -14,7 +14,7 @@
+>  #include <linux/pm_clock.h>
+>  #include <linux/platform_device.h>
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int davinci_pm_runtime_suspend(struct device *dev)
+>  {
+>  	int ret;
+> Index: linux-pm/arch/arm/mach-keystone/pm_domain.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/mach-keystone/pm_domain.c
+> +++ linux-pm/arch/arm/mach-keystone/pm_domain.c
+> @@ -19,7 +19,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/of.h>
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int keystone_pm_runtime_suspend(struct device *dev)
+>  {
+>  	int ret;
+> Index: linux-pm/arch/arm/mach-omap1/pm_bus.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/mach-omap1/pm_bus.c
+> +++ linux-pm/arch/arm/mach-omap1/pm_bus.c
+> @@ -21,7 +21,7 @@
+>  
+>  #include "soc.h"
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int omap1_pm_runtime_suspend(struct device *dev)
+>  {
+>  	int ret;
+> @@ -59,7 +59,7 @@ static struct dev_pm_domain default_pm_d
+>  #define OMAP1_PM_DOMAIN (&default_pm_domain)
+>  #else
+>  #define OMAP1_PM_DOMAIN NULL
+> -#endif /* CONFIG_PM_RUNTIME */
+> +#endif /* CONFIG_PM */
+>  
+>  static struct pm_clk_notifier_block platform_bus_notifier = {
+>  	.pm_domain = OMAP1_PM_DOMAIN,
+> Index: linux-pm/arch/arm/mach-omap2/io.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/mach-omap2/io.c
+> +++ linux-pm/arch/arm/mach-omap2/io.c
+> @@ -359,7 +359,7 @@ static void __init omap_hwmod_init_posts
+>  	u8 postsetup_state;
+>  
+>  	/* Set the default postsetup state for all hwmods */
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  	postsetup_state = _HWMOD_STATE_IDLE;
+>  #else
+>  	postsetup_state = _HWMOD_STATE_ENABLED;
+> Index: linux-pm/arch/arm/mach-omap2/omap_device.c
+> ===================================================================
+> --- linux-pm.orig/arch/arm/mach-omap2/omap_device.c
+> +++ linux-pm/arch/arm/mach-omap2/omap_device.c
+> @@ -588,7 +588,7 @@ odbs_exit:
+>  	return ERR_PTR(ret);
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int _od_runtime_suspend(struct device *dev)
+>  {
+>  	struct platform_device *pdev = to_platform_device(dev);
+> 
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/bfa/bfa_fcpim.c |    9 ---------
- drivers/scsi/bfa/bfa_fcpim.h |    1 -
- 2 files changed, 10 deletions(-)
-
-diff --git a/drivers/scsi/bfa/bfa_fcpim.c b/drivers/scsi/bfa/bfa_fcpim.c
-index d7385d1..ceb18ef 100644
---- a/drivers/scsi/bfa/bfa_fcpim.c
-+++ b/drivers/scsi/bfa/bfa_fcpim.c
-@@ -3477,15 +3477,6 @@ bfa_tskim_iocdisable_ios(struct bfa_tskim_s *tskim)
- }
- 
- /*
-- * Notification on completions from related ioim.
-- */
--void
--bfa_tskim_iodone(struct bfa_tskim_s *tskim)
--{
--	bfa_wc_down(&tskim->wc);
--}
--
--/*
-  * Handle IOC h/w failure notification from itnim.
-  */
- void
-diff --git a/drivers/scsi/bfa/bfa_fcpim.h b/drivers/scsi/bfa/bfa_fcpim.h
-index e693af6..8ab548f 100644
---- a/drivers/scsi/bfa/bfa_fcpim.h
-+++ b/drivers/scsi/bfa/bfa_fcpim.h
-@@ -286,7 +286,6 @@ void	bfa_ioim_tov(struct bfa_ioim_s *ioim);
- 
- void	bfa_tskim_attach(struct bfa_fcpim_s *fcpim);
- void	bfa_tskim_isr(struct bfa_s *bfa, struct bfi_msg_s *msg);
--void	bfa_tskim_iodone(struct bfa_tskim_s *tskim);
- void	bfa_tskim_iocdisable(struct bfa_tskim_s *tskim);
- void	bfa_tskim_cleanup(struct bfa_tskim_s *tskim);
- void	bfa_tskim_res_recfg(struct bfa_s *bfa, u16 num_tskim_fw);
+For the OMAP pieces:
+Acked-by: Nishanth Menon <nm@ti.com>
 -- 
-1.7.10.4
-
+Regards,
+Nishanth Menon
