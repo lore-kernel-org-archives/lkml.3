@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaLGUEl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 15:04:41 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:50265 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaLGUEk (ORCPT
+	id S1753451AbaLGUIj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 15:08:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39757 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaLGUIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 15:04:40 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Anton Blanchard <anton@samba.org>, Christoph Lameter <cl@linux.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: powerpc: kernel: traps.c:  Remove unused function
-Date: Sun,  7 Dec 2014 21:07:18 +0100
-Message-Id: <1417982838-15588-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Dec 2014 15:08:37 -0500
+Date: Sun, 7 Dec 2014 12:08:34 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: [PATCH] staging: writeboost: Add dm-writeboost
+Message-ID: <20141207200834.GA2322@kroah.com>
+References: <5484498E.4000202@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5484498E.4000202@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function vsx_assist_exception() that is not used anywhere.
+On Sun, Dec 07, 2014 at 09:35:26PM +0900, Akira Hayakawa wrote:
+> --- /dev/null
+> +++ b/drivers/staging/writeboost/TODO
+> @@ -0,0 +1,47 @@
+> +TODO:
+> +
+> +- Expose bugs and fix them.
+> +- Clean up the interfaces. Some input values should be limited in case user may choose too big values.
+> +- Wait for proper review by Mike Snitzer.
+> +- Fix up documents.
+> +
+> +-------------------------------------------------------------------------
+> +
+> +Project Ideas:
+> +
+> +1. Add read caching feature
+> +Device-Mapper maintainer Mike Snitzer said that
+> +a single target should provide caching for both reads and writes.
+> +(cf. http://www.redhat.com/archives/dm-devel/2014-January/msg00078.html)
+> +
+> +To follow Mike's guide, I will implement read-caching for Writeboost.
+> +The great idea is, at least conceptually,
+> +sending back the read data to the write entrance.
+> +I didn't notice this simple idea at that time of previous discussion.
+> +
+> +This should be done background and
+> +some threshold to determine
+> +which sequence of data should be staged.
+> +
+> +This feature will be implemented step-by-step.
+> +I don't think this feature will change then interface drastically.
+> +
+> +2. Improve initialization time
+> +Some user complains that the initialization is too slow.
+> +
+> +Any ideas?
+> +
+> +3. Reduce metadata footprint
+> +Writeboost has a hash table in RAM for cache management.
+> +This isn't cheap.
+> +
+> +Any ideas?
+> +
+> +-------------------------------------------------------------------------
+> +
+> +Please send any patches
+> +To:
+> +Akira Hayakawa <ruby.wktk@gmail.com>
+> +Cc:
+> +Greg Kroah-Hartman <greg@kroah.com>
 
-This was partially found by using a static code analysis program called cppcheck.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> please, and also the
+driverdevel mailing list, which is where the rest of the staging patches
+go.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/powerpc/kernel/traps.c |   15 ---------------
- 1 file changed, 15 deletions(-)
+And, I'll need an ack from the dm maintainers before I can accept this
+as something they think is ok and will get merged to the "real" part of
+the kernel someday.
 
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index 0dc43f9..857e5f7 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1707,21 +1707,6 @@ void altivec_assist_exception(struct pt_regs *regs)
- }
- #endif /* CONFIG_ALTIVEC */
- 
--#ifdef CONFIG_VSX
--void vsx_assist_exception(struct pt_regs *regs)
--{
--	if (!user_mode(regs)) {
--		printk(KERN_EMERG "VSX assist exception in kernel mode"
--		       " at %lx\n", regs->nip);
--		die("Kernel VSX assist exception", regs, SIGILL);
--	}
--
--	flush_vsx_to_thread(current);
--	printk(KERN_INFO "VSX assist not supported at %lx\n", regs->nip);
--	_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
--}
--#endif /* CONFIG_VSX */
--
- #ifdef CONFIG_FSL_BOOKE
- void CacheLockingException(struct pt_regs *regs, unsigned long address,
- 			   unsigned long error_code)
--- 
-1.7.10.4
+thanks,
 
+greg k-h
