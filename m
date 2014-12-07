@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaLGTcz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 14:32:55 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:5006 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753378AbaLGT0m (ORCPT
+	id S1753523AbaLGTfi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 14:35:38 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:53743 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaLGTff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 14:26:42 -0500
-X-IronPort-AV: E=Sophos;i="5.07,534,1413237600"; 
-   d="scan'208";a="111932928"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: kernel-janitors@vger.kernel.org, linux@rasmusvillemoes.dk, joe@perches.com,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/20] PCI: keystone: fix misspelling of current function in string
-Date: Sun,  7 Dec 2014 20:20:44 +0100
-Message-Id: <1417980062-25151-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 7 Dec 2014 14:35:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: robert.ward114@googlemail.com
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] /dev/mem as optional device + associated tidy up
+Date: Sun, 07 Dec 2014 20:35:31 +0100
+Message-ID: <8719187.RB9WVc9E5S@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1417966835-14012-1-git-send-email-robert.ward114@googlemail.com>
+References: <1417966835-14012-1-git-send-email-robert.ward114@googlemail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:icxB9ZoNKNw2j6f4G3TU8jTUNd+dYpex2bpChV7qlCbqEgBAJf7
+ jIgsO1I/5Ho7wiqzoF7leaHgibSv4Q6nf0EiLCop+yZd9zSDKMcOywky1S39nFoHPMr+vST
+ yzWIKy8j/WK9ofOsD6emUCw2CzQnjMn5PuhB7+nzZATsl1I+rUQe98d+mFK7h/QKt9hOxxX
+ /S4OzsjSg1uCfeGeLZgDw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a misspelled function name by %s and then __func__.
+On Sunday 07 December 2014 15:40:32 robert.ward114@googlemail.com wrote:
+> From: Rob Ward <robert.ward114@googlemail.com>
+> 
+> Makes the /dev/mem device optional using the CONFIG_DEVMEM option.
+> 
+> This brings /dev/mem in line with /dev/kmem so it can de disabled. 
+> Disabling /dev/mem is preferable on devices that do not require
+> direct access to memory in order to improve security. This is especially
+> true on platforms where no restiction is placed on the areas of memory
+> that can be accessed(for example mips) without custom modifcations to
+> the kernel source.
+> 
+> The implementation of this functionality declares the mem_fops structure
+> as __maybe_unused to eliminate the need for #ifdefs throughout the
+> file.
+> 
+> Follow up changes are present to change CONFIG_DEVKMEM and CONFIG_DEVPORT
+> to use __maybe_unused. This simplifies the code and make the
+> implementations consistent.
+> 
 
-The function name contains pcie, not pci as in the string.
-
-This was done using Coccinelle, including the use of Levenshtein distance,
-as proposed by Rasmus Villemoes.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-The semantic patch is difficult to summarize, but is available in the cover
-letter of this patch series.
-
- drivers/pci/host/pci-keystone.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-index 78f79e3..e2f600e 100644
---- a/drivers/pci/host/pci-keystone.c
-+++ b/drivers/pci/host/pci-keystone.c
-@@ -119,7 +119,7 @@ static void ks_pcie_msi_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	struct pcie_port *pp = &ks_pcie->pp;
- 	struct irq_chip *chip = irq_desc_get_chip(desc);
- 
--	dev_dbg(pp->dev, "ks_pci_msi_irq_handler, irq %d\n", irq);
-+	dev_dbg(pp->dev, "%s, irq %d\n", __func__, irq);
- 
- 	/*
- 	 * The chained irq handler installation would have replaced normal
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
