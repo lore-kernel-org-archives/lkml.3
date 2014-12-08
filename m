@@ -1,130 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807AbaLHX5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 18:57:11 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:55082 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaLHX5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 18:57:09 -0500
-Date: Mon, 8 Dec 2014 13:22:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some cases
- - deadlock
-Message-ID: <20141208212236.GU25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
+	id S1756031AbaLHX6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 18:58:23 -0500
+Received: from ozlabs.org ([103.22.144.67]:59509 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755469AbaLHX6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 18:58:22 -0500
+Date: Tue, 9 Dec 2014 10:58:19 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, tj@kernel.org, fengguang.wu@intel.com,
+        rafael.j.wysocki@intel.com, yuyang.du@intel.com, lkp@01.org,
+        yuanhan.liu@linux.intel.com, pjt@google.com, bsegall@google.com,
+        daniel@numascale.com, subbaram@codeaurora.org,
+        computersforpeace@gmail.com, sp@datera.io,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        benh@kernel.crashing.org, paulus@samba.org, mpe@ellerman.id.au
+Subject: [PATCH] powerpc: secondary CPUs signal to master before setting
+ active and online (fixes kernel BUG at kernel/smpboot.c:134!)
+Message-ID: <20141209105819.0e847b4b@kryten>
+In-Reply-To: <20141208211859.6e81ec81@kryten>
+References: <1418009221-12719-1-git-send-email-anton@samba.org>
+	<20141208083408.GA8023@gmail.com>
+	<20141208211859.6e81ec81@kryten>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120823-0005-0000-0000-000006F961BE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 09:21:22PM +0100, David Hildenbrand wrote:
-> Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-> grace periods") introduced another problem that can easily be reproduced by
-> starting/stopping cpus in a loop.
-> 
-> E.g.:
->   for i in `seq 5000`; do
->       echo 1 > /sys/devices/system/cpu/cpu1/online
->       echo 0 > /sys/devices/system/cpu/cpu1/online
->   done
-> 
-> Will result in:
->   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
->   Call Trace:
->   ([<00000000006a028e>] __schedule+0x406/0x91c)
->    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
->    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
->    [<0000000000131232>] cpu_up+0xb6/0xd4
->    [<00000000004a5720>] device_online+0x80/0xc0
->    [<00000000004a57f0>] online_store+0x90/0xb0
->   ...
-> 
-> And a deadlock.
-> 
-> Problem is that if the last ref in put_online_cpus() can't get the
-> cpu_hotplug.lock the puts_pending count is incremented, but a sleeping active_writer
-> might never be woken up, therefore never exiting the loop in cpu_hotplug_begin().
-> 
-> This quick fix wakes up the active_writer proactively. The writer already
-> goes back to sleep if the ref count isn't already down to 0, so this should be
-> fine. Also move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
-> check, so we won't lose any wakeups when racing with put_online_cpus().
-> 
-> Can't reproduce it with this fix.
-> 
-> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> ---
->  kernel/cpu.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 90a3d01..1f50c06 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -113,10 +113,16 @@ EXPORT_SYMBOL_GPL(try_get_online_cpus);
-> 
->  void put_online_cpus(void)
->  {
-> +	struct task_struct *active_writer;
-> +
->  	if (cpu_hotplug.active_writer == current)
->  		return;
->  	if (!mutex_trylock(&cpu_hotplug.lock)) {
->  		atomic_inc(&cpu_hotplug.puts_pending);
-> +		/* we might be the last one */
-> +		active_writer = cpu_hotplug.active_writer;
+Hi Ingo,
 
-The compiler is within its rights to optimize the active_writer local
-variable out of existence, thus re-introducing the possible race with
-the writer that can pass a NULL pointer to wake_up_process().  So you
-really need the ACCESS_ONCE() on the read from cpu_hotplug.active_writer.
-Please see http://lwn.net/Articles/508991/ for more information why
-this is absolutely required.
+> At that point I thought the previous task_cpu() was somewhat ingrained
+> in the scheduler and came up with the patch. If not, we could go on a
+> hunt to see what else needs fixing.
 
-> +		if (unlikely(active_writer))
-> +			wake_up_process(active_writer);
->  		cpuhp_lock_release();
->  		return;
->  	}
-> @@ -161,15 +167,17 @@ void cpu_hotplug_begin(void)
->  	cpuhp_lock_acquire();
->  	for (;;) {
->  		mutex_lock(&cpu_hotplug.lock);
-> +		__set_current_state(TASK_UNINTERRUPTIBLE);
+I had another look. The scheduled does indeed make assumptions about the
+previous task_cpu, but we have a hammer to fix it up called
+select_fallback_rq.
 
-You lost me on this one.  How does this help?
+I annotated select_fallback_rq, and did hit a case where the CPU was
+not active. ppc64 patch below.
 
-							Thanx, Paul
+I think x86 have a similar (although harder to hit) issue. While it
+does wait for the cpu_online bit to be set:
 
->  		if (atomic_read(&cpu_hotplug.puts_pending)) {
->  			int delta;
-> 
->  			delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
->  			cpu_hotplug.refcount -= delta;
->  		}
-> -		if (likely(!cpu_hotplug.refcount))
-> +		if (likely(!cpu_hotplug.refcount)) {
-> +			__set_current_state(TASK_RUNNING);
->  			break;
-> -		__set_current_state(TASK_UNINTERRUPTIBLE);
-> +		}
->  		mutex_unlock(&cpu_hotplug.lock);
->  		schedule();
->  	}
-> -- 
-> 1.8.5.5
-> 
+        while (!cpu_online(cpu)) {
+                cpu_relax();
+                touch_nmi_watchdog();
+        }
+
+The cpu_active bit is set after the cpu_online bit:
+
+void set_cpu_online(unsigned int cpu, bool online)
+{
+        if (online) {
+                cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+                cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
+
+If the CPU got delayed between the two stores (eg a KVM guest had the CPU
+scheduled out), then we'd end up with cpu_active unset and hit the same
+issue in select_fallback_rq.
+
+Anton
+--
+
+I have a busy ppc64le KVM box where guests sometimes hit the infamous
+"kernel BUG at kernel/smpboot.c:134!" issue during boot:
+
+BUG_ON(td->cpu != smp_processor_id());
+
+Basically a per CPU hotplug thread scheduled on the wrong CPU. The oops
+output confirms it:
+
+CPU: 0
+Comm: watchdog/130
+
+The problem is that we aren't ensuring the CPU active and online bits are set
+before allowing the master to continue on. The master unparks the secondary
+CPUs kthreads and the scheduler looks for a CPU to run on. It calls
+select_task_rq and realises the suggested CPU is not in the cpus_allowed
+mask. It then ends up in select_fallback_rq, and since the active and
+online bits aren't set we choose some other CPU to run on.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+ arch/powerpc/kernel/smp.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 71e186d..d40e46e 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -700,7 +700,6 @@ void start_secondary(void *unused)
+ 	smp_store_cpu_info(cpu);
+ 	set_dec(tb_ticks_per_jiffy);
+ 	preempt_disable();
+-	cpu_callin_map[cpu] = 1;
+ 
+ 	if (smp_ops->setup_cpu)
+ 		smp_ops->setup_cpu(cpu);
+@@ -739,6 +738,14 @@ void start_secondary(void *unused)
+ 	notify_cpu_starting(cpu);
+ 	set_cpu_online(cpu, true);
+ 
++	/*
++	 * CPU must be marked active and online before we signal back to the
++	 * master, because the scheduler needs to see the cpu_online and
++	 * cpu_active bits set.
++	 */
++	smp_wmb();
++	cpu_callin_map[cpu] = 1;
++
+ 	local_irq_enable();
+ 
+ 	cpu_startup_entry(CPUHP_ONLINE);
+-- 
+2.1.0
 
