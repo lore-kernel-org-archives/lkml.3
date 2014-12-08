@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaLHMOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:14:11 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51994 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151AbaLHMOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:14:09 -0500
-Date: Mon, 8 Dec 2014 12:13:42 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Message-ID: <20141208121342.GW11764@sirena.org.uk>
-References: <20141208230517.13ebfe4f@canb.auug.org.au>
+	id S1755282AbaLHMO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:14:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54614 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755203AbaLHMO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 07:14:28 -0500
+Message-ID: <54859620.7030304@suse.cz>
+Date: Mon, 08 Dec 2014 13:14:24 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8R/sMIKPJVD0CT2D"
-Content-Disposition: inline
-In-Reply-To: <20141208230517.13ebfe4f@canb.auug.org.au>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the spi tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: j.glisse@gmail.com, linux-kernel@vger.kernel.org
+CC: =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH] scripts/package: binrpm-pkg do not build source tar file
+ v4
+References: <1417708393-14318-1-git-send-email-j.glisse@gmail.com>
+In-Reply-To: <1417708393-14318-1-git-send-email-j.glisse@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dne 4.12.2014 v 16:53 j.glisse@gmail.com napsal(a):
+> From: Jérôme Glisse <jglisse@redhat.com>
+> 
+> When doing make binrpm-pkg we only want to build the binary and header
+> package as the documentation of binrpm-pkg target claims. Hence this
+> patch avoid building the source and devel package. This makes binrpm-pkg
+> target lot faster and way more usefull.
+> 
+> Changed since v3 :
+>   - Avoid creating /usr/src/kernels directory.
+>   - Avoid useless pre clean step of source and devel package.
+> 
+> Changed since v2 :
+>   - Avoid symlinks in /usr/src/kernel.
+>   - Update subject line and changelog.
+> 
+> Changed since v1 :
+>   - Avoid building the devel package too.
+> 
+> Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
 
---8R/sMIKPJVD0CT2D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks, applied to kbuild.git#misc. I just used the subject line from
+v3, since it seems you accidentally reverted to that from v2.
 
-On Mon, Dec 08, 2014 at 11:05:17PM +1100, Stephen Rothwell wrote:
+Michal
 
-> Caused by commit cf9e9c98fa8c ("spi: Add new driver for
-> STMicroelectronics' SPI Controller").
-
-> To me COMPILE_TEST means "this builds everywhere, make sure it doesn't
-> break" ... not "lets set this and see if Stephen finds anything" :-)
-
-> I reverted both commits for today.
-
-I've dropped both from my tree too.
-
---8R/sMIKPJVD0CT2D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUhZX1AAoJECTWi3JdVIfQkQEH/3+wucZbumeo+0/XaofRSaTP
-TH35VFxE5thQf77CnXJrib93MxZyBHYawnBSAiwDGGB8cF1sffwhaOmOvRjcYttR
-A7eORNk/L4eK9vUT2evbKsFZCCp67ZrVE6yB1E5qitjTlxJ2WI3jwPRKtOvDhmyY
-mr7tqbyhK7OLwZzb/gyzNThWy4xcQgpF7CFYK7kLQfia6Ga1QF+z2gkKQzfsUhh0
-ulRj0h3fzsruxXFgVtF1ODoguAlydc9loiLJezIPjLpboq3fRU41dA1OQ9uS8/so
-fhg2X/wN76fUvBGa0pZZWAUkRF8bcASpljRCJ+tPXp5wkLkucrOwwCXiE8yEk4M=
-=QBWY
------END PGP SIGNATURE-----
-
---8R/sMIKPJVD0CT2D--
