@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbaLHNSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:18:18 -0500
-Received: from relay04.alfahosting-server.de ([109.237.142.240]:58980 "EHLO
-	relay04.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752885AbaLHNSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:18:14 -0500
-X-Spam-DCC: : 
-Date: Mon, 8 Dec 2014 14:18:37 +0100
-From: Richard Leitner <dev@g0hl1n.net>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] misc: ioc4: fix variable may be used uninitialized
- warning
-Message-ID: <20141208141837.752a9968@frodo>
-In-Reply-To: <4066664.BgJJnCmQ3h@wuerfel>
-References: <20141208132720.16356743@frodo>
-	<4066664.BgJJnCmQ3h@wuerfel>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1755398AbaLHNU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:20:26 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbaLHNUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:20:25 -0500
+Message-ID: <5485A596.3020304@nod.at>
+Date: Mon, 08 Dec 2014 14:20:22 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Notify user in case of an ubi_update_fastmap()
+ failure
+References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-4-git-send-email-richard@nod.at> <54845D53.1070903@codeaurora.org> <548462A8.2010107@nod.at> <54854C28.4050107@codeaurora.org> <54856B54.7020306@nod.at> <5485A0E8.4050901@codeaurora.org>
+In-Reply-To: <5485A0E8.4050901@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19749/Mon Dec  8 12:41:14 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Dec 2014 13:42:47 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
-
-> On Monday 08 December 2014 13:27:20 Richard Leitner wrote:
-> > 
-> > As far as I can tell 'start' cannot really be used uninitialized
-> > here, but for the sanity of gcc output explicitly initialize it.
-> > Same goes for the 'end' variable.
+Am 08.12.2014 um 14:00 schrieb Tanya Brokhman:
+>>>>> Why do you fail the whole function (ubi_wl_get_peb) if fastmap update failed? Its possible that the fm_pools were refilled correctly, and the actual fastmap_write failed, so
+>>>>> there
+>>>>> is nothing preventing the user to get peb allocated and continue working. You invalidate the fastmap, so if powercut occurs a full scan will be performed. So its possible to
+>>>>> allocate from fm_pools (although fastmap is not valid on disc) and try writing fastmap again when the pools filled up.
+>>>>> I'm for the ubi_msg but against "return -ENOSPC;"
+>>>>
+>>>> Maybe the case you've described is powercut safe, but there can be other unsafe cases.
+>>>> Let's stay on the safe side and be paranoid, it does not hurt.
+>>>> If fastmap has proven stable we can start with tricky optimizations.
+>>>
+>>> I'm sorry that I'm being petty here but the commit msg states that you "notify the user in case of update fastamap failure". It says nothing about you failing ubi_wl_get_peb as
+>>> well. And this is a major change. At least divide this into 2 patches (so I can disagree to the function failing and agree to the msg to user :) )
+>>
+>> With user I meant users of that function.
 > 
-> Prabhakar Lad also sent a patch for this already, which was lacking
-> a good patch description. Your patch does this slightly better but
-> still fails to explain how you concluded it was safe and you don't
-> really explain why you initialize the 'end' variable that we don't
-> even get a warning about.
+> I still don't like it.
+> Leaving this one for Artem... sorry
 
-Oops, I'm sorry, I haven't seen the patch and the answers to it.
+BTW: With my latest patch applied "[PATCH] UBI: Fastmap: Fix possible fastmap inconsistency" your assumption that we
+can have the pools refilled in case if an ubi_update_fastmap() error is no longer correct.
+Before my patch ubi_update_fastmap() the pools have been refilled much too early, this is an bug and got fixed.
 
-According to the comments by Andrew a simplification of this code
-section would be nice. I think it should be possible to do this in a
-way that the initialize-to-zero won't be needed anymore.
-
-Prabhakar Lad, are you working on this already?
-If not I'll take a look at it.
-
-regards,
-richard
-
+Thanks,
+//richard
