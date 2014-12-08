@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbaLHGwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:52:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34835 "EHLO
+	id S1754624AbaLHGw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:52:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34863 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaLHGwk (ORCPT
+	with ESMTP id S1754030AbaLHGwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:52:40 -0500
-Date: Sun, 7 Dec 2014 22:52:20 -0800
+	Mon, 8 Dec 2014 01:52:55 -0500
+Date: Sun, 7 Dec 2014 22:52:36 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-a5a7fd76b55a6e6916ff22e5c8fdb39a8381be2c@git.kernel.org>
-Cc: jolsa@kernel.org, eranian@google.com, acme@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, paulus@samba.org, matt.fleming@intel.com,
-        cjashfor@linux.vnet.ibm.com, dsahern@gmail.com, ak@linux.intel.com,
-        fweisbec@gmail.com, hpa@zytor.com, namhyung@kernel.org,
-        mingo@kernel.org
-Reply-To: mingo@kernel.org, namhyung@kernel.org, hpa@zytor.com,
-        fweisbec@gmail.com, ak@linux.intel.com, dsahern@gmail.com,
-        cjashfor@linux.vnet.ibm.com, matt.fleming@intel.com,
-        linux-kernel@vger.kernel.org, paulus@samba.org, tglx@linutronix.de,
-        a.p.zijlstra@chello.nl, eranian@google.com, acme@redhat.com,
-        jolsa@kernel.org
-In-Reply-To: <1416562275-12404-8-git-send-email-jolsa@kernel.org>
-References: <1416562275-12404-8-git-send-email-jolsa@kernel.org>
+Message-ID: <tip-779d0b997e0787fc5f80110159b6c18ae0fae395@git.kernel.org>
+Cc: namhyung@kernel.org, eranian@google.com, tglx@linutronix.de,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        mingo@kernel.org, dsahern@gmail.com, hpa@zytor.com,
+        matt.fleming@intel.com, jolsa@kernel.org, acme@redhat.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Reply-To: dsahern@gmail.com, matt.fleming@intel.com, hpa@zytor.com,
+        jolsa@kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com, namhyung@kernel.org,
+        paulus@samba.org, tglx@linutronix.de, eranian@google.com,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, mingo@kernel.org
+In-Reply-To: <1416562275-12404-11-git-send-email-jolsa@kernel.org>
+References: <1416562275-12404-11-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove perf_evsel__read interface
-Git-Commit-ID: a5a7fd76b55a6e6916ff22e5c8fdb39a8381be2c
+Subject: [tip:perf/core] perf stat: Add support for per-pkg counters
+Git-Commit-ID: 779d0b997e0787fc5f80110159b6c18ae0fae395
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,17 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a5a7fd76b55a6e6916ff22e5c8fdb39a8381be2c
-Gitweb:     http://git.kernel.org/tip/a5a7fd76b55a6e6916ff22e5c8fdb39a8381be2c
+Commit-ID:  779d0b997e0787fc5f80110159b6c18ae0fae395
+Gitweb:     http://git.kernel.org/tip/779d0b997e0787fc5f80110159b6c18ae0fae395
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 21 Nov 2014 10:31:11 +0100
+AuthorDate: Fri, 21 Nov 2014 10:31:14 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 1 Dec 2014 20:00:30 -0300
 
-perf tools: Remove perf_evsel__read interface
+perf stat: Add support for per-pkg counters
 
-Removing the perf_evsel__read interfaces because we replaced the only
-user in the stat command code.
+The .per-pkg file indicates that all but one value per socket should be
+discarded. Adding the logic of skipping the rest of the socket once
+first value was read.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Andi Kleen <ak@linux.intel.com>
@@ -62,95 +62,93 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1416562275-12404-8-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1416562275-12404-11-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 34 ----------------------------------
- tools/perf/util/evsel.h | 29 -----------------------------
- 2 files changed, 63 deletions(-)
+ tools/perf/builtin-stat.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h   |  1 +
+ 2 files changed, 50 insertions(+)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 2d26b7a..1e90c85 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -954,40 +954,6 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 	return 0;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index b24a7a0..860e8ad 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -388,10 +388,56 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_itlb_cache_stats[0], count[0]);
  }
  
--int __perf_evsel__read(struct perf_evsel *evsel,
--		       int ncpus, int nthreads, bool scale)
--{
--	size_t nv = scale ? 3 : 1;
--	int cpu, thread;
--	struct perf_counts_values *aggr = &evsel->counts->aggr, count;
--
--	if (evsel->system_wide)
--		nthreads = 1;
--
--	aggr->val = aggr->ena = aggr->run = 0;
--
--	for (cpu = 0; cpu < ncpus; cpu++) {
--		for (thread = 0; thread < nthreads; thread++) {
--			if (FD(evsel, cpu, thread) < 0)
--				continue;
--
--			if (readn(FD(evsel, cpu, thread),
--				  &count, nv * sizeof(u64)) < 0)
--				return -errno;
--
--			aggr->val += count.val;
--			if (scale) {
--				aggr->ena += count.ena;
--				aggr->run += count.run;
--			}
--		}
--	}
--
--	perf_evsel__compute_deltas(evsel, -1, aggr);
--	perf_counts_values__scale(aggr, scale, &evsel->counts->scaled);
--	return 0;
--}
--
- static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
++static void zero_per_pkg(struct perf_evsel *counter)
++{
++	if (counter->per_pkg_mask)
++		memset(counter->per_pkg_mask, 0, MAX_NR_CPUS);
++}
++
++static int check_per_pkg(struct perf_evsel *counter, int cpu, bool *skip)
++{
++	unsigned long *mask = counter->per_pkg_mask;
++	struct cpu_map *cpus = perf_evsel__cpus(counter);
++	int s;
++
++	*skip = false;
++
++	if (!counter->per_pkg)
++		return 0;
++
++	if (cpu_map__empty(cpus))
++		return 0;
++
++	if (!mask) {
++		mask = zalloc(MAX_NR_CPUS);
++		if (!mask)
++			return -ENOMEM;
++
++		counter->per_pkg_mask = mask;
++	}
++
++	s = cpu_map__get_socket(cpus, cpu);
++	if (s < 0)
++		return -1;
++
++	*skip = test_and_set_bit(s, mask) == 1;
++	return 0;
++}
++
+ static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
+ 		   struct perf_counts_values *count)
  {
- 	struct perf_evsel *leader = evsel->leader;
+ 	struct perf_counts_values *aggr = &evsel->counts->aggr;
++	static struct perf_counts_values zero;
++	bool skip = false;
++
++	if (check_per_pkg(evsel, cpu, &skip)) {
++		pr_err("failed to read per-pkg counter\n");
++		return -1;
++	}
++
++	if (skip)
++		count = &zero;
+ 
+ 	switch (aggr_mode) {
+ 	case AGGR_CORE:
+@@ -465,6 +511,9 @@ static int read_counter(struct perf_evsel *counter)
+ 	if (counter->system_wide)
+ 		nthreads = 1;
+ 
++	if (counter->per_pkg)
++		zero_per_pkg(counter);
++
+ 	for (thread = 0; thread < nthreads; thread++) {
+ 		for (cpu = 0; cpu < ncpus; cpu++) {
+ 			if (perf_evsel__read_cb(counter, cpu, thread, read_cb))
 diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index b18d58d..3207f48 100644
+index 3207f48..3862274 100644
 --- a/tools/perf/util/evsel.h
 +++ b/tools/perf/util/evsel.h
-@@ -271,35 +271,6 @@ static inline int perf_evsel__read_on_cpu_scaled(struct perf_evsel *evsel,
- 	return __perf_evsel__read_on_cpu(evsel, cpu, thread, true);
- }
- 
--int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
--		       bool scale);
--
--/**
-- * perf_evsel__read - Read the aggregate results on all CPUs
-- *
-- * @evsel - event selector to read value
-- * @ncpus - Number of cpus affected, from zero
-- * @nthreads - Number of threads affected, from zero
-- */
--static inline int perf_evsel__read(struct perf_evsel *evsel,
--				    int ncpus, int nthreads)
--{
--	return __perf_evsel__read(evsel, ncpus, nthreads, false);
--}
--
--/**
-- * perf_evsel__read_scaled - Read the aggregate results on all CPUs, scaled
-- *
-- * @evsel - event selector to read value
-- * @ncpus - Number of cpus affected, from zero
-- * @nthreads - Number of threads affected, from zero
-- */
--static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
--					  int ncpus, int nthreads)
--{
--	return __perf_evsel__read(evsel, ncpus, nthreads, true);
--}
--
- int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 			     struct perf_sample *sample);
- 
+@@ -93,6 +93,7 @@ struct perf_evsel {
+ 	bool			system_wide;
+ 	bool			tracking;
+ 	bool			per_pkg;
++	unsigned long		*per_pkg_mask;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
+ 	int			nr_members;
