@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaLHB6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 20:58:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:20641 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674AbaLHB6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 20:58:45 -0500
-X-ExtLoop1: 1
+	id S1753893AbaLHCAC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 21:00:02 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:19488 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaLHCAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 21:00:00 -0500
 X-IronPort-AV: E=Sophos;i="5.07,535,1413270000"; 
-   d="scan'208";a="643972602"
-Message-ID: <548505D2.8030904@intel.com>
-Date: Mon, 08 Dec 2014 09:58:42 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+   d="scan'208";a="52326546"
+Message-ID: <5485061D.1060302@broadcom.com>
+Date: Sun, 7 Dec 2014 17:59:57 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        jaime.91@hotmail.es
-Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that provides
- 8+ output devices
-References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com> <52FC8C01.1040002@intel.com> <20140213100814.GM14909@nuc-i3427.alporthouse.com> <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com> <53045DD1.5010406@intel.com> <20140219073339.GA30685@srcf.ucam.org> <5304725A.3020909@intel.com> <20140304144504.GE17001@phenom.ffwll.local>
-In-Reply-To: <20140304144504.GE17001@phenom.ffwll.local>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Joe Perches <joe@perches.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/5] gpio: Cygnus: add GPIO driver
+References: <Ray Jui <rjui@broadcom.com>	 <1417826408-1600-1-git-send-email-rjui@broadcom.com>	 <1417826408-1600-3-git-send-email-rjui@broadcom.com> <1417829282.31745.3.camel@perches.com> <5482668F.1040907@broadcom.com>
+In-Reply-To: <5482668F.1040907@broadcom.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a new bug report that has the same problem:
-https://bugzilla.kernel.org/show_bug.cgi?id=88941
 
-The posted patch solves the problem. I know it's not perfect, but it
-doesn't seem it would do any harm to existing systems so should be safe.
 
-Better, if someone can shed some light on how this should be properly
-handled, that would be great.
-
-Thanks,
-Aaron
-
-On 03/04/2014 10:45 PM, Daniel Vetter wrote:
-> On Wed, Feb 19, 2014 at 04:59:06PM +0800, Aaron Lu wrote:
->> On 02/19/2014 03:33 PM, Matthew Garrett wrote:
->>> On Wed, Feb 19, 2014 at 03:31:29PM +0800, Aaron Lu wrote:
->>>
->>>> DID2 is in system memory region and has some assigned value like 0x400
->>>> when we read it. For this case it is easy since there is only one output
->>>> device that is of type LVDS so we can match it to connector of type eDP
->>>> or LVDS, suppose there is only one such connector. But for output
->>>> devices' whose _ADR has the value of 0x301, 0x302, etc. I have no idea
->>>> how to match them up to the connectors of that type as we can't be sure
->>>> the probe order we have used in i915 driver is the same as BIOS'.
->>>
->>> Non-standard _ADR values are assigend by the GPU vendor, so Intel should 
->>> be able to provide you with the correct interpretations.
+On 12/5/2014 6:14 PM, Ray Jui wrote:
+>>> +static struct irq_chip bcm_cygnus_gpio_irq_chip = {
+>>> +    .name = "bcm-cygnus-gpio",
+>>> +    .irq_ack = bcm_cygnus_gpio_irq_ack,
+>>> +    .irq_mask = bcm_cygnus_gpio_irq_mask,
+>>> +    .irq_unmask = bcm_cygnus_gpio_irq_unmask,
+>>> +    .irq_set_type = bcm_cygnus_gpio_irq_set_type,
+>>> +};
 >>
->> It doesn't seem the _ADR value has to be the format defined by _DOD, as
->> the example of the ACPI spec gives:
->> Method (_ADR, 0) {
->>     return(0x0100)
->> }
->> So that is not the problem here.
+>> const?
 >>
->> The problem is, we don't have any way of matching an ACPI output device
->> node to a drm connector of the same type when there are more than 1 of
->> those with the same type, i.e. we don't know how the index value are
->> assigned by BIOS.
-> 
-> I've thought the OpRegion spec has some additional fields in there
-> indicating the port number, which we could match up at least on modern
-> platforms (where there's only ever port A-E). But that's very hazy
-> recollection from a really old OpRegion spec, i.e. I have no bloody clue
-> at all ;-)
-> 
-> If I misremember this then we need to start on a begging tour again and
-> ask the windows guys how this is all supposed to work ...
-> -Daniel
-> 
+>
+>
+> Sure, will add const to bcm_cygnus_gpio_irq_chip
+>
+>>> +static struct irq_domain_ops bcm_cygnus_irq_ops = {
+>>> +    .map = bcm_cygnus_gpio_irq_map,
+>>> +    .unmap = bcm_cygnus_gpio_irq_unmap,
+>>> +    .xlate = irq_domain_xlate_twocell,
+>>> +};
+>>
+>> const here too?
+>>
+>
+> Yes, will make bcm_cygnus_irq_ops const.
+>
+Actually, I cannot make them const here. Note they are passed into other 
+APIs which can potentially modifies their values internally.
 
+drivers/gpio/gpio-bcm-cygnus.c: In function ‘bcm_cygnus_gpio_irq_map’:
+drivers/gpio/gpio-bcm-cygnus.c:430:4: warning: passing argument 2 of 
+‘irq_set_chip_and_handler’ discards ‘const’ qualifier from pointer 
+target type [enabled by default]
+     handle_simple_irq);
+     ^
+In file included from drivers/gpio/gpio-bcm-cygnus.c:17:0:
+include/linux/irq.h:461:20: note: expected ‘struct irq_chip *’ but 
+argument is of type ‘const struct irq_chip *’
+  static inline void irq_set_chip_and_handler(unsigned int irq, struct 
+irq_chip *chip,
+                     ^
+drivers/gpio/gpio-bcm-cygnus.c: In function ‘bcm_cygnus_gpio_probe’:
+drivers/gpio/gpio-bcm-cygnus.c:679:5: warning: passing argument 2 of 
+‘irq_set_chip_and_handler’ discards ‘const’ qualifier from pointer 
+target type [enabled by default]
+      handle_simple_irq);
+      ^
+In file included from drivers/gpio/gpio-bcm-cygnus.c:17:0:
+include/linux/irq.h:461:20: note: expected ‘struct irq_chip *’ but 
+argument is of type ‘const struct irq_chip *’
+  static inline void irq_set_chip_and_handler(unsigned int irq, struct 
+irq_chip *chip,
