@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648AbaLHPOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:14:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51005 "EHLO bear.ext.ti.com"
+	id S1755863AbaLHPQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:16:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38693 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880AbaLHPOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:14:33 -0500
-Message-ID: <5485C03D.1020309@ti.com>
-Date: Mon, 8 Dec 2014 10:14:05 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755839AbaLHPQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:16:44 -0500
+Date: Mon, 8 Dec 2014 17:16:38 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v2 02/10] virtio_pci: fix coding style for structs
+Message-ID: <1418051779-27748-3-git-send-email-mst@redhat.com>
+References: <1418051779-27748-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: <kernel-janitors@vger.kernel.org>, <linux@rasmusvillemoes.dk>,
-        <joe@perches.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/20] PCI: keystone: fix misspelling of current function
- in string
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr> <1417980062-25151-3-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1417980062-25151-3-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418051779-27748-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2014 02:20 PM, Julia Lawall wrote:
-> Replace a misspelled function name by %s and then __func__.
->
-> The function name contains pcie, not pci as in the string.
->
-> This was done using Coccinelle, including the use of Levenshtein distance,
-> as proposed by Rasmus Villemoes.
->
-> Signed-off-by: Julia Lawall<Julia.Lawall@lip6.fr>
->
-> ---
-> The semantic patch is difficult to summarize, but is available in the cover
-> letter of this patch series.
->
->   drivers/pci/host/pci-keystone.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-> index 78f79e3..e2f600e 100644
-> --- a/drivers/pci/host/pci-keystone.c
-> +++ b/drivers/pci/host/pci-keystone.c
-> @@ -119,7 +119,7 @@ static void ks_pcie_msi_irq_handler(unsigned int irq, struct irq_desc *desc)
->   	struct pcie_port *pp =&ks_pcie->pp;
->   	struct irq_chip *chip = irq_desc_get_chip(desc);
->
-> -	dev_dbg(pp->dev, "ks_pci_msi_irq_handler, irq %d\n", irq);
-> +	dev_dbg(pp->dev, "%s, irq %d\n", __func__, irq);
->
->   	/*
->   	 * The chained irq handler installation would have replaced normal
->
+should be
 
-Acked-By: Murali Karicheri <m-karicheri2@ti.com>
+struct foo {
+}
 
+not
+
+struct foo
+{
+}
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/virtio/virtio_pci.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index ee1b54c..6f3db1f 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -32,8 +32,7 @@ MODULE_LICENSE("GPL");
+ MODULE_VERSION("1");
+ 
+ /* Our device structure */
+-struct virtio_pci_device
+-{
++struct virtio_pci_device {
+ 	struct virtio_device vdev;
+ 	struct pci_dev *pci_dev;
+ 
+@@ -72,8 +71,7 @@ enum {
+ 	VP_MSIX_VQ_VECTOR = 1,
+ };
+ 
+-struct virtio_pci_vq_info
+-{
++struct virtio_pci_vq_info {
+ 	/* the actual virtqueue */
+ 	struct virtqueue *vq;
+ 
 -- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+MST
+
