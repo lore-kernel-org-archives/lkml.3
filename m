@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaLHCg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 21:36:27 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:11463 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567AbaLHCgY (ORCPT
+	id S1753919AbaLHCgk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 21:36:40 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:64092 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852AbaLHCg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 21:36:24 -0500
+	Sun, 7 Dec 2014 21:36:26 -0500
 X-IronPort-AV: E=Sophos;i="5.07,536,1413270000"; 
-   d="scan'208";a="52653935"
+   d="scan'208";a="52327984"
 From: Ray Jui <rjui@broadcom.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Mark Rutland" <mark.rutland@arm.com>,
@@ -24,9 +24,9 @@ CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
         <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
         "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH v2 4/5] ARM: dts: enable GPIO for Broadcom Cygnus
-Date: Sun, 7 Dec 2014 18:38:35 -0800
-Message-ID: <1418006316-324-5-git-send-email-rjui@broadcom.com>
+Subject: [PATCH v2 5/5] MAINTAINERS: Entry for Cygnus GPIO driver
+Date: Sun, 7 Dec 2014 18:38:36 -0800
+Message-ID: <1418006316-324-6-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418006316-324-1-git-send-email-rjui@broadcom.com>
 References: <Ray Jui <rjui@broadcom.com>
@@ -37,56 +37,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables all 3 GPIO controllers including the ASIU GPIO, the
-chipcommonG GPIO, and the ALWAYS-ON GPIO, for Broadcom Cygnus SoC
-
 Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/boot/dts/bcm-cygnus.dtsi |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ MAINTAINERS |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..c7587c1 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -54,6 +54,36 @@
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e6bff3a..8473422 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2202,6 +2202,13 @@ N:	bcm9583*
+ N:	bcm583*
+ N:	bcm113*
  
- 	/include/ "bcm-cygnus-clock.dtsi"
- 
-+	gpio_ccm: gpio@1800a000 {
-+		compatible = "brcm,cygnus-ccm-gpio";
-+		reg = <0x1800a000 0x50>,
-+			<0x0301d164 0x20>;
-+		ngpios = <24>;
-+		#gpio-cells = <2>;
-+		gpio-controller;
-+		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-controller;
-+	};
++BROADCOM CYGNUS GPIO DRIVER
++M:	Ray Jui <rjui@broadcom.com>
++L:	bcm-kernel-feedback-list@broadcom.com
++S:	Supported
++F:	drivers/gpio/gpio-bcm-cygnus.c
++F:	Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
 +
-+	gpio_asiu: gpio@180a5000 {
-+		compatible = "brcm,cygnus-asiu-gpio";
-+		reg = <0x180a5000 0x668>;
-+		ngpios = <122>;
-+		#gpio-cells = <2>;
-+		gpio-controller;
-+		interrupt-controller;
-+		interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
-+	};
-+
-+	gpio_crmu: gpio@03024800 {
-+		compatible = "brcm,cygnus-crmu-gpio";
-+		reg = <0x03024800 0x50>;
-+		ngpios = <6>;
-+		#gpio-cells = <2>;
-+		gpio-controller;
-+		no-interrupt;
-+	};
-+
- 	amba {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
+ BROADCOM KONA GPIO DRIVER
+ M:	Ray Jui <rjui@broadcom.com>
+ L:	bcm-kernel-feedback-list@broadcom.com
 -- 
 1.7.9.5
 
