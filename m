@@ -1,181 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaLHFG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 00:06:59 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:63325 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaLHFG4 (ORCPT
+	id S1753955AbaLHFJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 00:09:00 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:55405 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaLHFI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 00:06:56 -0500
-X-AuditID: cbfee68d-f79296d000004278-eb-548531ee7350
-Date: Mon, 08 Dec 2014 05:06:53 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [RFC 1/3] devfreq: dt-bindings: Document Exynos3250 devfreq driver
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20141208050125092@myungjoo.ham
-Msgkey: 20141208050125092@myungjoo.ham
-X-EPLocale: ko_KR.utf-8
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20141208050125092@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=utf-8
-MIME-version: 1.0
-Message-id: <1647680679.696101418015213383.JavaMail.weblogic@epmlwas04c>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsWyRsSkRPedYWuIwbM9rBaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSuj/ewupoI7qhXPb11mbmC8o9LFyMkhJKAusWjJSTYQW0LAROLg
-	1n5WCFtM4sK99UBxLqCapYwSj1+eZIEp2nB+KStEYg6jxPazH9hBEiwCKhKnN/5h6mLk4GAT
-	0JOY+TkZJCws4C8xo6OZEaReROARi8T7441gg5gFpjBKrPiRCXGFksSafa/A4rwCghInZz6B
-	WqYqMbn9LjtEXE1i1aoHUHFxiQtzL7FD2LwSM9qfQsXlJKZ9XcMMYUtLnJ+1gRHmm8XfH0PF
-	+SWO3d7BBGELSEw9cxCqRkvi79fD0JDgk1iz8C0LTP2uU8uZYXbd3zIXqldCYmvLE1aIXxQl
-	pnQ/ZAf5nVlAU2L9Ln10r/AKeEhc+XyDBRQOEgITOSQu/17OPoFRaRaSullIRs1CGIWsZAEj
-	yypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwMRw+t+z3h2Mtw9YH2IU4GBU4uFd8KAlRIg1
-	say4MvcQoykwliYyS4km5wPTT15JvKGxmZGFqYmpsZG5pZmSOK+i1M9gIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYzHpXPvy3FM+yr79ZXBrOMnNqa63y2O/KH7cNEtqyJrRoUnfVMXmxUo
-	nFJfzJUf4/EpZfKehQLchz80yKjN2i5kufdsY5Ns16+65dN2H9q9dtdcm6e/tcyEWv9EWyZ/
-	vmbisuBI25/7y/Q+/22b9f3AixfLp6me4v++4JHE/PuvjQXVzmVZnjjDq8RSnJFoqMVcVJwI
-	ADBqZiUHAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tft13hq0hBieELC7vmsPmwOjxeZNc
-	AGNUmk1GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0Ewl
-	hbLEnFKgUEBicbGSvp1NUX5pSapCRn5xia1StKG5kZ6RgZ6pkZ6hcayVoYGBkSlQTUJaRvvZ
-	XUwFd1Qrnt+6zNzAeEeli5GTQ0hAXWLRkpNsILaEgInEhvNLWSFsMYkL99YDxbmAauYwSmw/
-	+4EdJMEioCJxeuMfpi5GDg42AT2JmZ+TQcLCAv4SMzqaGUHqRQQesUi8P97IApJgFpjCKLHi
-	RybEMiWJNftegcV5BQQlTs58wgKxTFVicvtddoi4msSqVQ+g4uISF+ZeYoeweSVmtD+FistJ
-	TPu6hhnClpY4P2sDI8zRi78/horzSxy7vYMJwhaQmHrmIFSNlsTfr4ehHuaTWLPwLQtM/a5T
-	y5lhdt3fMheqV0Jia8sTVohfFCWmdD9kB/mdWUBTYv0ufXSv8Ap4SFz5fINlAqPsLCSpWUi6
-	ZyF0IytZwMiyilE0tSC5oDgpvcJIrzgxt7g0L10vOT93EyM4BT1btIPx33nrQ4wCHIxKPLwL
-	HrSECLEmlhVX5h5ilOBgVhLhXf4ZKMSbklhZlVqUH19UmpNafIjRFBhnE5mlRJPzgekxryTe
-	0NjYxMzE1NLEwsDUXEmc9/+53BAhgfTEktTs1NSC1CKYPiYOTqkGxpdmJSdXKCtkhthHbo6e
-	s7J2uQCD9fIZVSGyn5uOusnXTjkgd3DS14qDlz3fGhUI/7fkuzX/i/C7CbpluqvYolvMe9K0
-	d5c6XBE6w2Vx/bt+YqzEcdcwx4Vv6hbfF3rUuzQy9UTMQd4MS8YwXb8ZJrWHSrqubr13mD1i
-	1t6zkfsDpB/1xuU9VWIpzkg01GIuKk4EALWMKOtXAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Mon, 8 Dec 2014 00:08:59 -0500
+Message-ID: <54853268.6030701@gmail.com>
+Date: Sun, 07 Dec 2014 21:08:56 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Wenyou Yang <wenyou.yang@atmel.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nicolas.ferre@atmel.com, linux-arm-kernel-bounces@lists.infradead.org,
+        johan@kernel.org
+Subject: Re: [PATCH] net: phy: micrel: workaround to NAND_Tree# incorrectly
+ strapp-in during the reset period.
+References: <1418009740-27384-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1418009740-27384-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB857EPQ023186
 
->   
->  Add documentation for bindings used by Exynos3250 devfreq driver.
+Le 07/12/2014 19:35, Wenyou Yang a √©crit :
+> Appearance: On some boards, after power up, the Ethernet doesn't work.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Reason: On the SAMA5D4EK, the PIOE2 pin is connected to the NAND_Tree# of KSZ8081,
+> But it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
+> 
+> Workaround: In the .config_init(), add code to disable NAND_Tree#
+> by operating Operation Mode Strap Override(i.e. Register 16h).
+
+Your patch won't apply cleanly to the net-next tree where the PHY
+drivers development is happening, especially not after Johan's recent
+changes.
+
+Is not what you are looking for a phy_fixup() rather than clearing this
+bit for all Micrel PHYs?
+
+> 
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > ---
->  .../bindings/arm/samsung/exynos3250-devfreq.txt    | 66 ++++++++++++++++++++++
->  1 file changed, 66 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
+>  drivers/net/phy/micrel.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
-> new file mode 100644
-> index 000000000000..047955e9e371
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
-> @@ -0,0 +1,66 @@
-> +Samsung Exynos3250 devfreq driver
-> +=================================
+> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+> index 8c2a29a..11d72cb 100644
+> --- a/drivers/net/phy/micrel.c
+> +++ b/drivers/net/phy/micrel.c
+> @@ -31,6 +31,7 @@
+>  /* Operation Mode Strap Override */
+>  #define MII_KSZPHY_OMSO				0x16
+>  #define KSZPHY_OMSO_B_CAST_OFF			(1 << 9)
+> +#define KSZPHY_OMSO_NAND_TREE_OVERRIDE		(1 << 5)
+>  #define KSZPHY_OMSO_RMII_OVERRIDE		(1 << 1)
+>  #define KSZPHY_OMSO_MII_OVERRIDE		(1 << 0)
+>  
+> @@ -180,7 +181,12 @@ static int kszphy_setup_led(struct phy_device *phydev,
+>  
+>  static int kszphy_config_init(struct phy_device *phydev)
+>  {
+> -	return 0;
+> +	int rc;
 > +
-> +The driver support changing frequencies and voltage for:
-> + - memory controller and bus,
-> + - peripheral buses (left and right).
-> +
-> +Memory controller and bus
-> +=========================
-> +Required properties:
-> + - compatible : should be "samsung,exynos3250-busfreq-mif"
-> + - reg : two sets (offset and length of the register) for PPMU registers
-> +	used by this devfreq driver
-> + - clock-names : one clock of name "dmc" to manage frequency
-> + - clocks : phandle and specifier for clock listed in clock-names property
-> + - vdd_mif-supply : phandle to MIF voltage regulator
-> +
-> +Peripheral buses
-> +================
-> +Required properties:
-> + - compatible : should be "samsung,exynos3250-busfreq-int"
-> + - reg : two sets (offset and length of the register) for PPMU registers
-> +	used by this devfreq driver
-> + - clock-names : names for PPMU clocks and bus clocks to manage frequencies;
-> +	All following clock names (and corresponding phandles) must be
-> +	provided:
-> +	- "ppmu_left", "ppmu_right",
-> +	- "aclk_400", "aclk_266", "aclk_200", "aclk_160", "aclk_gdl", "aclk_gdr", "mfc";
-> + - clocks : phandles and specifiers for clocks listed in clock-names property
-> + - vdd_mif-supply : phandle to INT voltage regulator
-> +
-> +Example
-> +=======
-> +	busfreq_mif: busfreq@106A0000 {
-> +		compatible = "samsung,exynos3250-busfreq-mif";
-> +		reg = <0x106A0000 0x2000>, <0x106B0000 0x2000>;
-> +		clocks = <&cmu_dmc CLK_DIV_DMC>;
-> +		clock-names = "dmc";
-> +		vdd_mif-supply = <&buck1_reg>;
-> +		status = "okay";
-> +	};
-
-The hardware you are binding hereby is "Exynos PPMU".
-You may consider to bind PPMU (DMC PPMU or BUS PPMU whichever hardware
-you want to use) with DT and then let exynos bus devfreq driver use
-the already-bound devices if found, ... in principle.
-In other words or point of view, you may implement PPMU driver in
-devfreq class device driver so that you let it bind PPMU device with DT.
-It may be done similarly with the device below.
-
-
-Cheers,
-MyungJoo.
-
-
-> +
-> +	busfreq_int: busfreq@116A0000 {
-> +		compatible = "samsung,exynos3250-busfreq-int";
-> +		reg = <0x116A0000 0x2000>, <0x112A0000 0x2000>;
-> +		clocks = <&cmu CLK_PPMULEFT>,
-> +			<&cmu CLK_PPMURIGHT>,
-> +			<&cmu CLK_DIV_ACLK_400_MCUISP>,
-> +			<&cmu CLK_DIV_ACLK_266>,
-> +			<&cmu CLK_DIV_ACLK_200>,
-> +			<&cmu CLK_DIV_ACLK_160>,
-> +			<&cmu CLK_DIV_GDL>,
-> +			<&cmu CLK_DIV_GDR>,
-> +			<&cmu CLK_DIV_MFC>;
-> +		clock-names = "ppmuleft",
-> +			"ppmuright",
-> +			"aclk_400",
-> +			"aclk_266",
-> +			"aclk_200",
-> +			"aclk_160",
-> +			"aclk_gdl",
-> +			"aclk_gdr",
-> +			"mfc";
-> +		vdd_int-supply = <&buck3_reg>;
-> +		status = "okay";
-> +	};
-> -- 
-> 1.9.1
+> +	phy_write(phydev, MII_KSZPHY_OMSO, phy_read(phydev, MII_KSZPHY_OMSO)
+> +			& (~KSZPHY_OMSO_NAND_TREE_OVERRIDE));
+> +	rc = ksz_config_flags(phydev);
+> +	return rc < 0 ? rc : 0;
+>  }
+>  
+>  static int kszphy_config_init_led8041(struct phy_device *phydev)
 > 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
