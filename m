@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaLHPor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:44:47 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:44891 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaLHPop (ORCPT
+	id S1755805AbaLHPqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:46:37 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:57692 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLHPqg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:44:45 -0500
+	Mon, 8 Dec 2014 10:46:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Leitner <dev@g0hl1n.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] misc: ioc4: simplify wave period measurement in clock_calibrate
+Date: Mon, 08 Dec 2014 16:46:31 +0100
+Message-ID: <3564575.fggPKDmMEE@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141208162810.7b009382@frodo>
+References: <20141208132720.16356743@frodo> <CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com> <20141208162810.7b009382@frodo>
 MIME-Version: 1.0
-In-Reply-To: <1417980062-25151-21-git-send-email-Julia.Lawall@lip6.fr>
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1417980062-25151-21-git-send-email-Julia.Lawall@lip6.fr>
-Date: Mon, 8 Dec 2014 10:44:44 -0500
-Message-ID: <CADnq5_PW=xeQ=DxdoNxwvVxYjkav1qx1wL13OF92QwY6uX3gGg@mail.gmail.com>
-Subject: Re: [PATCH 20/20] drm/radeon: fix misspelling of current function in string
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Alex Deucher <alexander.deucher@amd.com>, kernel-janitors@vger.kernel.org,
-        linux@rasmusvillemoes.dk, LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Joe Perches <joe@perches.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:qOSFgD79+6r60huuRlGvxP4bFWrX/OlCWHQ4ocRSDsiVOutbPh2
+ blGAOQp0t3H4u3ffstsf+3KQwzK/7BxB7othTQMb9f2ipp7RnXgq3kvDXN+uC90t2xEuOXD
+ ElY1Mtw0n87ITLHVdoOcMNT+52VTu5DMb+gnR0L8kufO16YnTIA97E+oFgUCETD9opHbxYp
+ Fei2IfQCZfL/thUz1wHFA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 7, 2014 at 2:21 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> Replace a misspelled function name by %s and then __func__.
->
-> This was done using Coccinelle, including the use of Levenshtein distance,
-> as proposed by Rasmus Villemoes.
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+On Monday 08 December 2014 16:28:10 Richard Leitner wrote:
+> The loop for measuring the square wave periods over some cycles is
+> refactored to be more easily readable. This includes avoiding a
+> "by-hand-implemented" for loop with a "real" one and adding some
+> comments.
+> 
+> Furthermore the following compiler warning is avoided by this patch:
+> drivers/misc/ioc4.c: In function ‘ioc4_probe’:
+> drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
+> in this function [-Wmaybe-uninitialized]
+>   period = (end - start) /
+>                 ^
+> drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
+>   uint64_t start, end, period;
+>            ^
+> 
+> Signed-off-by: Richard Leitner <dev@g0hl1n.net>
 
-Looks fine to me.  For consistency, any chance you'd want to fix up
-the other places that use function names directly with this style
-patch?
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Alex
-
->
 > ---
-> The semantic patch is difficult to summarize, but is available in the cover
-> letter of this patch series.
->
->  drivers/gpu/drm/radeon/cik.c |   16 ++++++++++------
->  1 file changed, 10 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-> index 6dcde37..24d5e43 100644
-> --- a/drivers/gpu/drm/radeon/cik.c
-> +++ b/drivers/gpu/drm/radeon/cik.c
-> @@ -7367,34 +7367,38 @@ int cik_irq_set(struct radeon_device *rdev)
->         }
->         if (atomic_read(&rdev->irq.ring_int[CAYMAN_RING_TYPE_CP1_INDEX])) {
->                 struct radeon_ring *ring = &rdev->ring[CAYMAN_RING_TYPE_CP1_INDEX];
-> -               DRM_DEBUG("si_irq_set: sw int cp1\n");
-> +               DRM_DEBUG("%s: sw int cp1\n", __func__);
->                 if (ring->me == 1) {
->                         switch (ring->pipe) {
->                         case 0:
->                                 cp_m1p0 |= TIME_STAMP_INT_ENABLE;
->                                 break;
->                         default:
-> -                               DRM_DEBUG("si_irq_set: sw int cp1 invalid pipe %d\n", ring->pipe);
-> +                               DRM_DEBUG("%s: sw int cp1 invalid pipe %d\n",
-> +                                         __func__, ring->pipe);
->                                 break;
->                         }
->                 } else {
-> -                       DRM_DEBUG("si_irq_set: sw int cp1 invalid me %d\n", ring->me);
-> +                       DRM_DEBUG("%s: sw int cp1 invalid me %d\n", __func__,
-> +                                 ring->me);
->                 }
->         }
->         if (atomic_read(&rdev->irq.ring_int[CAYMAN_RING_TYPE_CP2_INDEX])) {
->                 struct radeon_ring *ring = &rdev->ring[CAYMAN_RING_TYPE_CP2_INDEX];
-> -               DRM_DEBUG("si_irq_set: sw int cp2\n");
-> +               DRM_DEBUG("%s: sw int cp2\n", __func__);
->                 if (ring->me == 1) {
->                         switch (ring->pipe) {
->                         case 0:
->                                 cp_m1p0 |= TIME_STAMP_INT_ENABLE;
->                                 break;
->                         default:
-> -                               DRM_DEBUG("si_irq_set: sw int cp2 invalid pipe %d\n", ring->pipe);
-> +                               DRM_DEBUG("%s: sw int cp2 invalid pipe %d\n",
-> +                                         __func__, ring->pipe);
->                                 break;
->                         }
->                 } else {
-> -                       DRM_DEBUG("si_irq_set: sw int cp2 invalid me %d\n", ring->me);
-> +                       DRM_DEBUG("%s: sw int cp2 invalid me %d\n", __func__,
-> +                                 ring->me);
->                 }
->         }
->
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> A simplification of this loop was suggested by Andrew Morton [1].
+> This is my first proposal of such a simplification.
+> 
+> Furthermore I'm not sure if the commit message is sufficient.
+> Please give me also some feedback on it.
+> 
+> If this simplification is not needed only initializing start to
+> ktime_get_ns() would fix the compiler warning too.
+
+With the changed loop, do you still get a warning if you
+remove the extra 'start = ktime_get_ns()' at the start of the loop?
+
+	Arnd
