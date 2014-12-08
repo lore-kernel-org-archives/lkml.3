@@ -1,226 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbaLHSFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:05:07 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:51781 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaLHSFF (ORCPT
+	id S1756182AbaLHSGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:06:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52983 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaLHSGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:05:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141208132827.GA13942@ulmo.nvidia.com>
-References: <1417815001-9883-1-git-send-email-hali@codeaurora.org>
-	<20141208132827.GA13942@ulmo.nvidia.com>
-Date: Mon, 8 Dec 2014 13:05:04 -0500
-Message-ID: <CAF6AEGtLS39vzFHaKTvSqFmZaGUC8hbGLT_yjD8b2gMVTfJOXg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drm/msm: Initial add eDP support in msm drm driver (V2)
-From: Rob Clark <robdclark@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Hai Li <hali@codeaurora.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Dec 2014 13:06:03 -0500
+Date: Mon, 8 Dec 2014 10:06:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH wq/for-3.19 3/3] workqueue: dump workqueues on sysrq-t
+Message-Id: <20141208100613.ecc66d89.akpm@linux-foundation.org>
+In-Reply-To: <20141208174733.GD12274@htj.dyndns.org>
+References: <20141208174326.GB12274@htj.dyndns.org>
+	<20141208174406.GC12274@htj.dyndns.org>
+	<20141208174733.GD12274@htj.dyndns.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 8:28 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Fri, Dec 05, 2014 at 04:30:00PM -0500, Hai Li wrote:
-> [...]
->
->> +     if (IS_ERR(edp))
->> +             return PTR_ERR(edp);
->> +     priv->edp = edp;
->> +
->> +     return 0;
->> +}
->> +
->> +static void edp_unbind(struct device *dev, struct device *master,
->> +             void *data)
->
-> We typically align parameters on subsequent lines with the first
-> parameter on the first line. But perhaps Rob doesn't care so much.
-
-no, I don't.. and aligned params is kinda annoying if function name or
-return type changes make it get out of alignment ;-)
-
-but either way is fine
-
-[snip]
-
->> +/* Second part of initialization, the drm/kms level modeset_init */
->> +int msm_edp_modeset_init(struct msm_edp *edp,
->> +             struct drm_device *dev, struct drm_encoder *encoder)
->> +{
->> +     struct platform_device *pdev = edp->pdev;
->> +     struct msm_drm_private *priv = dev->dev_private;
->> +     int ret;
->> +
->> +     edp->encoder = encoder;
->> +     edp->dev = dev;
->> +
->> +     edp->bridge = msm_edp_bridge_init(edp);
->> +     if (IS_ERR(edp->bridge)) {
->> +             ret = PTR_ERR(edp->bridge);
->> +             dev_err(dev->dev, "failed to create eDP bridge: %d\n", ret);
->> +             edp->bridge = NULL;
->> +             goto fail;
->> +     }
->> +
->> +     edp->connector = msm_edp_connector_init(edp);
->> +     if (IS_ERR(edp->connector)) {
->> +             ret = PTR_ERR(edp->connector);
->> +             dev_err(dev->dev, "failed to create eDP connector: %d\n", ret);
->> +             edp->connector = NULL;
->> +             goto fail;
->> +     }
->> +
->> +     edp->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
->
-> Why not use the more idiomatic platform_get_irq()?
-
-It may have been a quirk of the downstream 3.10 kernel that I also
-have to deal with for some devices, but I couldn't get
-platform_get_irq() to work and so used irq_of_parse_and_map() in the
-hdmi code.  I assume eDP would have the identical problem.
-
->> +     if (edp->irq < 0) {
->> +             ret = edp->irq;
->> +             dev_err(dev->dev, "failed to get irq: %d\n", ret);
->
-> s/irq/IRQ/
->
->> diff --git a/drivers/gpu/drm/msm/edp/edp.h b/drivers/gpu/drm/msm/edp/edp.h
-> [...]
->> +#ifndef __EDP_CONNECTOR_H__
->> +#define __EDP_CONNECTOR_H__
->> +
->> +#include <linux/clk.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/regulator/consumer.h>
->> +#include <linux/of_gpio.h>
->> +#include <linux/pwm.h>
->> +#include <linux/i2c.h>
->
-> These should be alphabetically sorted.
->
->> diff --git a/drivers/gpu/drm/msm/edp/edp_aux.c b/drivers/gpu/drm/msm/edp/edp_aux.c
-> [...]
->> +#define to_edp_aux(x) container_of(x, struct edp_aux, drm_aux)
->
-> Perhaps this should be a static inline function for better type safety.
->
-
-#define is at least consistent w/ rest of drm/msm code (and
-obj_to_xyz() in drm core)..  although if misused it probably gives a
-more confusing compile error compared to static inline fxn.
-
-I wouldn't reject a patch that converted them all to static inline
-fxns, but I think this is ok as-is
-
-[snip]
+On Mon, 8 Dec 2014 12:47:33 -0500 Tejun Heo <tj@kernel.org> wrote:
 
 >
->> +static int edp_sink_power_state(struct edp_ctrl *ctrl, u8 state)
->> +{
->> +     u8 s = state;
->> +
->> +     DBG("%d", s);
->> +
->> +     if (ctrl->dp_link.revision < 0x11)
->> +             return 0;
->> +
->> +     if (drm_dp_dpcd_write(ctrl->drm_aux, DP_SET_POWER, &s, 1) < 1) {
->> +             pr_err("%s: Set power state to panel failed\n", __func__);
->> +             return -ENOLINK;
->> +     }
->> +
->> +     return 0;
->> +}
+> ...
 >
-> This is essentially drm_dp_link_power_up()/drm_dp_link_power_down().
-> Please use common code where available. And if it's not available yet
-> the code is completely generic, please add a core function so that
-> other drivers can reuse it.
+> This patch implements show_workqueue_state() which dumps all busy
+> workqueues and pools and is called from the sysrq-t handler.  At the
+> end of sysrq-t dump, something like the following is printed.
 
-jfyi, I already have a patch that rips this back out and uses core
-functions, once drm_dp_link_power_down() is merged ;-)
+Seems sensible.
 
-[snip]
-
->> +irqreturn_t msm_edp_ctrl_irq(struct edp_ctrl *ctrl)
->> +{
-> [...]
->> +     if (isr1 & EDP_INTERRUPT_REG_1_HPD)
->> +             DBG("edp_hpd");
->
-> Don't you want to handle this?
->
->> +
->> +     if (isr2 & EDP_INTERRUPT_REG_2_READY_FOR_VIDEO)
->> +             DBG("edp_video_ready");
->> +
->> +     if (isr2 & EDP_INTERRUPT_REG_2_IDLE_PATTERNs_SENT) {
->
-> s/PATTERNs/PATTERNS/? I was going to make that comment to the definition
-> of this define, but I can't seem to find it. I suspect that it comes
-> from one of the generated headers, but I can't seem to find either the
-> generated header nor the XML.
-
-yes, it is generated..
-
-fyi: https://github.com/freedreno/envytools/tree/master/rnndb
+sysrq-t already produces thousands of lines of output.  Maybe create a
+new keycode for this?
 
 >
->> +             DBG("idle_patterns_sent");
->> +             complete(&ctrl->idle_comp);
->> +     }
->> +
->> +     msm_edp_aux_irq(ctrl->aux, isr1);
->> +
->> +     return IRQ_HANDLED;
->> +}
-> [...]
->> +bool msm_edp_ctrl_panel_connected(struct edp_ctrl *ctrl)
->> +{
->> +     bool ret;
+> ...
 >
-> This is unnecessary, the only place where this is used is to return the
-> value of ctrl->edp_connected. You can use that directly instead.
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4419,6 +4419,174 @@ void print_worker_info(const char *log_l
+>  	}
+>  }
+>  
+> +static void pr_cont_pool_info(struct worker_pool *pool)
+> +{
+> +	if (pool->cpu >= 0)
+> +		pr_cont(" cpu=%d", pool->cpu);
+> +	else if (pool->node != NUMA_NO_NODE)
+> +		pr_cont(" node=%d", pool->node);
+> +
+> +	if (pool->cpu < 0) {
+> +		static char cpus_buf[PAGE_SIZE];
+
+Ouch.  This could be [NR_CPUS + epsilon]?
+
+> +		cpumask_scnprintf(cpus_buf, sizeof(cpus_buf),
+> +				  pool->attrs->cpumask);
+> +		pr_cont(" cpumask=%s", cpus_buf);
+> +	}
+> +	pr_cont(" flags=0x%x nice=%d", pool->flags, pool->attrs->nice);
+> +}
+> +
+> +static void pr_cont_work(bool comma, struct work_struct *work)
+> +{
+> +	if (work->func == wq_barrier_func) {
+> +		struct wq_barrier *barr =
+> +			container_of(work, struct wq_barrier, work);
+
+Can avoid the 80-col contortions with
+
+		struct wq_barrier *barr;
+
+		barr = container_of(work, struct wq_barrier, work);
+
+> +		pr_cont("%s BAR(%d)", comma ? "," : "",
+> +			task_pid_nr(barr->task));
+> +	} else {
+> +		pr_cont("%s %pf", comma ? "," : "", work->func);
+> +	}
+> +}
+> +
+> +static void show_pwq(struct pool_workqueue *pwq)
+> +{
+> +	struct worker_pool *pool = pwq->pool;
+> +	struct work_struct *work;
+> +	struct worker *worker;
+> +	bool has_in_flight = false, has_pending = false;
+> +	int bkt;
+> +
+> +	printk("  pwq %d:", pool->id);
+> +	pr_cont_pool_info(pool);
+> +
+> +	pr_cont(" active=%d/%d%s\n", pwq->nr_active, pwq->max_active,
+> +		!list_empty(&pwq->mayday_node) ? " MAYDAY" : "");
+> +
+> +	hash_for_each(pool->busy_hash, bkt, worker, hentry) {
+> +		if (worker->current_pwq == pwq) {
+> +			has_in_flight = true;
+> +			break;
+> +		}
+> +	}
+> +	if (has_in_flight) {
+> +		bool comma = false;
+> +
+> +		printk("    in-flight:");
+
+pr_something?  show_state() uses KERN_INFO, which may or may not be
+appropriate.
+
+> +		hash_for_each(pool->busy_hash, bkt, worker, hentry) {
+> +			if (worker->current_pwq != pwq)
+> +				continue;
+> +
+> +			pr_cont("%s %d%s:%pf", comma ? "," : "",
+> +				task_pid_nr(worker->task),
+> +				worker == pwq->wq->rescuer ? "(RESCUER)" : "",
+> +				worker->current_func);
+> +			list_for_each_entry(work, &worker->scheduled, entry)
+> +				pr_cont_work(false, work);
+> +			comma = true;
+> +		}
+> +		pr_cont("\n");
+> +	}
+> +
+> +	list_for_each_entry(work, &pool->worklist, entry) {
+> +		if (get_work_pwq(work) == pwq) {
+> +			has_pending = true;
+> +			break;
+> +		}
+> +	}
+> +	if (has_pending) {
+> +		bool comma = false;
+> +
+> +		printk("    pending:");
+
+ditto
+
+> +		list_for_each_entry(work, &pool->worklist, entry) {
+> +			if (get_work_pwq(work) != pwq)
+> +				continue;
+> +
+> +			pr_cont_work(comma, work);
+> +			comma = !(*work_data_bits(work) & WORK_STRUCT_LINKED);
+> +		}
+> +		pr_cont("\n");
+> +	}
+> +
+> +	if (!list_empty(&pwq->delayed_works)) {
+> +		bool comma = false;
+> +
+> +		printk("    delayed:");
+
+ditto
+
+> +		list_for_each_entry(work, &pwq->delayed_works, entry) {
+> +			pr_cont_work(comma, work);
+> +			comma = !(*work_data_bits(work) & WORK_STRUCT_LINKED);
+> +		}
+> +		pr_cont("\n");
+> +	}
+> +}
+> +
 >
-> [...]
->> +     ret = ctrl->edp_connected;
->> +     mutex_unlock(&ctrl->dev_mutex);
->> +
->> +     return ret;
->> +}
->> +
->> +int msm_edp_ctrl_get_edid(struct edp_ctrl *ctrl,
->> +             struct drm_connector *connector, struct edid **edid)
->> +{
->> +     int ret = 0;
->> +
->> +     mutex_lock(&ctrl->dev_mutex);
->> +
->> +     if (ctrl->edid) {
->> +             if (edid) {
->> +                     DBG("Just return edid buffer");
->> +                     *edid = ctrl->edid;
->> +             }
->> +             goto unlock_ret;
->> +     }
->
-> Is there a way to invalidate an existing EDID?
-
-fwiw, the existing code looks to be enough for fixed eDP panels, but
-doesn't really handle unplug (so some of the stale-edid issues
-wouldn't crop up yet)..
-
-I am ok will adding full blown DP hot(un)plug as a later patch, but
-there are going to be a couple spots where we need to be careful about
-stale EDID, etc..
-
-
-BR,
--R
+> ...
