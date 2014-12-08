@@ -1,183 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693AbaLHNIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:08:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47107 "EHLO mx1.redhat.com"
+	id S1755506AbaLHNG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:06:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538AbaLHNGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:06:34 -0500
-Date: Mon, 8 Dec 2014 15:06:28 +0200
+	id S1752885AbaLHNGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:06:22 -0500
+Date: Mon, 8 Dec 2014 15:06:13 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+Cc: cornelia.huck@de.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 6/9] virtio_pci: setup vqs indirectly
-Message-ID: <1418043812-25753-7-git-send-email-mst@redhat.com>
-References: <1418043812-25753-1-git-send-email-mst@redhat.com>
+Subject: [PATCH 0/9] virtio_pci: split out legacy device support
+Message-ID: <1418043812-25753-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418043812-25753-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VQ setup is mostly version-specific, add another level of indirection to
-split the version-independent code out.
+virtio 1.0 support for virtio-pci isn't ready yet.
+Therefore, this patchset doesn't make any functional changes.
+Instead, this simply refactors virtio-pci, splitting legacy
+device support code out to a separate file: virtio_pci_legacy.c
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci.c | 69 ++++++++++++++++++++++++++++++---------------
- 1 file changed, 46 insertions(+), 23 deletions(-)
+For virtio 1.0, all that's left is to add virtio_pci_modern.c
+supporting
+	get_features
+	finalize_features
+	get (config)
+	set (config)
+	get_status
+	set_status
+	reset
+	setup_vq
+	del_vq
+	probe
+	remove
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 133978c..68023e5 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -82,6 +82,12 @@ struct virtio_pci_device {
- 	/* Whether we have vector per vq */
- 	bool per_vq_vectors;
- 
-+	struct virtqueue *(*setup_vq)(struct virtio_pci_device *vp_dev,
-+				      struct virtio_pci_vq_info *info,
-+				      unsigned idx,
-+				      void (*callback)(struct virtqueue *vq),
-+				      const char *name,
-+				      u16 msix_vec);
- 	void (*del_vq)(struct virtio_pci_vq_info *info);
- };
- 
-@@ -389,15 +395,15 @@ static int vp_request_intx(struct virtio_device *vdev)
- 	return err;
- }
- 
--static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
-+static struct virtqueue *setup_vq(struct virtio_pci_device *vp_dev,
-+				  struct virtio_pci_vq_info *info,
-+				  unsigned index,
- 				  void (*callback)(struct virtqueue *vq),
- 				  const char *name,
- 				  u16 msix_vec)
- {
--	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
--	struct virtio_pci_vq_info *info;
- 	struct virtqueue *vq;
--	unsigned long flags, size;
-+	unsigned long size;
- 	u16 num;
- 	int err;
- 
-@@ -409,28 +415,21 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 	if (!num || ioread32(vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN))
- 		return ERR_PTR(-ENOENT);
- 
--	/* allocate and fill out our structure the represents an active
--	 * queue */
--	info = kmalloc(sizeof(struct virtio_pci_vq_info), GFP_KERNEL);
--	if (!info)
--		return ERR_PTR(-ENOMEM);
--
- 	info->num = num;
- 	info->msix_vector = msix_vec;
- 
- 	size = PAGE_ALIGN(vring_size(num, VIRTIO_PCI_VRING_ALIGN));
- 	info->queue = alloc_pages_exact(size, GFP_KERNEL|__GFP_ZERO);
--	if (info->queue == NULL) {
--		err = -ENOMEM;
--		goto out_info;
--	}
-+	if (info->queue == NULL)
-+		return ERR_PTR(-ENOMEM);
- 
- 	/* activate the queue */
- 	iowrite32(virt_to_phys(info->queue) >> VIRTIO_PCI_QUEUE_ADDR_SHIFT,
- 		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN);
- 
- 	/* create the vring */
--	vq = vring_new_virtqueue(index, info->num, VIRTIO_PCI_VRING_ALIGN, vdev,
-+	vq = vring_new_virtqueue(index, info->num,
-+				 VIRTIO_PCI_VRING_ALIGN, &vp_dev->vdev,
- 				 true, info->queue, vp_notify, callback, name);
- 	if (!vq) {
- 		err = -ENOMEM;
-@@ -438,7 +437,6 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 	}
- 
- 	vq->priv = (void __force *)vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY;
--	info->vq = vq;
- 
- 	if (msix_vec != VIRTIO_MSI_NO_VECTOR) {
- 		iowrite16(msix_vec, vp_dev->ioaddr + VIRTIO_MSI_QUEUE_VECTOR);
-@@ -449,6 +447,35 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 		}
- 	}
- 
-+	return vq;
-+
-+out_assign:
-+	vring_del_virtqueue(vq);
-+out_activate_queue:
-+	iowrite32(0, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN);
-+	free_pages_exact(info->queue, size);
-+	return ERR_PTR(err);
-+}
-+
-+static struct virtqueue *vp_setup_vq(struct virtio_device *vdev, unsigned index,
-+				     void (*callback)(struct virtqueue *vq),
-+				     const char *name,
-+				     u16 msix_vec)
-+{
-+	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-+	struct virtio_pci_vq_info *info = kmalloc(sizeof *info, GFP_KERNEL);
-+	struct virtqueue *vq;
-+	unsigned long flags;
-+
-+	/* fill out our structure that represents an active queue */
-+	if (!info)
-+		return ERR_PTR(-ENOMEM);
-+
-+	vq = vp_dev->setup_vq(vp_dev, info, index, callback, name, msix_vec);
-+	if (IS_ERR(vq))
-+		goto out_info;
-+
-+	info->vq = vq;
- 	if (callback) {
- 		spin_lock_irqsave(&vp_dev->lock, flags);
- 		list_add(&info->node, &vp_dev->virtqueues);
-@@ -460,14 +487,9 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 	vp_dev->vqs[index] = info;
- 	return vq;
- 
--out_assign:
--	vring_del_virtqueue(vq);
--out_activate_queue:
--	iowrite32(0, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_PFN);
--	free_pages_exact(info->queue, size);
- out_info:
- 	kfree(info);
--	return ERR_PTR(err);
-+	return vq;
- }
- 
- static void del_vq(struct virtio_pci_vq_info *info)
-@@ -578,7 +600,7 @@ static int vp_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 			msix_vec = allocated_vectors++;
- 		else
- 			msix_vec = VP_MSIX_VQ_VECTOR;
--		vqs[i] = setup_vq(vdev, i, callbacks[i], names[i], msix_vec);
-+		vqs[i] = vp_setup_vq(vdev, i, callbacks[i], names[i], msix_vec);
- 		if (IS_ERR(vqs[i])) {
- 			err = PTR_ERR(vqs[i]);
- 			goto error_find;
-@@ -748,6 +770,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
- 	vp_dev->vdev.id.vendor = pci_dev->subsystem_vendor;
- 	vp_dev->vdev.id.device = pci_dev->subsystem_device;
- 
-+	vp_dev->setup_vq = setup_vq;
- 	vp_dev->del_vq = del_vq;
- 
- 	/* finally register the virtio device */
+Most notably, tricky MSI-X vector probing logic stays
+in common file: virtio_pci.c. version-specific only has
+to code setup/del functions for individual vqs.
+
+Note: this is on top of "virtio 1.0 enhancements"
+that I sent earlier.
+
+Michael S. Tsirkin (9):
+  virtio_pci: add isr field
+  virtio_pci: fix coding style for structs
+  virtio_pci: free up vq->priv
+  virtio_pci: use priv for vq notification
+  virtio_pci: delete vqs indirectly
+  virtio_pci: setup vqs indirectly
+  virtio_pci: setup config vector indirectly
+  virtio_pci: split out legacy device support
+  virtio_pci: update file descriptions and copyright
+
+ drivers/virtio/virtio_pci.h        | 136 ++++++++++++
+ drivers/virtio/virtio_pci.c        | 430 ++++---------------------------------
+ drivers/virtio/virtio_pci_legacy.c | 326 ++++++++++++++++++++++++++++
+ drivers/virtio/Makefile            |   2 +-
+ 4 files changed, 507 insertions(+), 387 deletions(-)
+ create mode 100644 drivers/virtio/virtio_pci.h
+ create mode 100644 drivers/virtio/virtio_pci_legacy.c
+
 -- 
 MST
 
