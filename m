@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaLHBvX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 20:51:23 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:8868 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751072AbaLHBvV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 20:51:21 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Kirill A. Shutemov'" <kirill@shutemov.name>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'akpm@linux-foundation.org'" <akpm@linux-foundation.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 8 Dec 2014 09:51:17 +0800
-Subject: [RFC V3] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
-Thread-Topic: [RFC V3] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
-Thread-Index: AdAQe4A0ueVIFWSNQfqYk7viUGNXUgCDcqFQ
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313F3@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E688B313F1@CNBJMBX05.corpusers.net>
- <20141205110532.GA8782@node.dhcp.inet.fi>
-In-Reply-To: <20141205110532.GA8782@node.dhcp.inet.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753599AbaLHB4Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 20:56:16 -0500
+Received: from smtprelay01.ispgateway.de ([80.67.31.35]:41157 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaLHB4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 20:56:15 -0500
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Dec 2014 20:56:14 EST
+From: Christoph Jaeger <cj@linux.com>
+To: yann.morin.1998@free.fr
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dborkman@redhat.com, Christoph Jaeger <cj@linux.com>
+Subject: [PATCH 0/3] remove undocumented type definition alias
+Date: Sun,  7 Dec 2014 20:49:17 -0500
+Message-Id: <cover.1418003065.git.cj@linux.com>
+X-Mailer: git-send-email 2.1.0
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add KPF_ZERO_PAGE flag for zero_page,
-so that userspace process can notice zero_page from
-/proc/kpageflags, and then do memory analysis more accurately.
+This patchset removes support for the undocumented type definition keyword
+'boolean', that is used in some config option definitions, in favor of the
+much more widely used 'bool'. Both are semantically equivalent.
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- fs/proc/page.c                         | 16 +++++++++++++---
- include/linux/huge_mm.h                | 12 ++++++++++++
- include/uapi/linux/kernel-page-flags.h |  1 +
- mm/huge_memory.c                       |  7 +------
- 4 files changed, 27 insertions(+), 9 deletions(-)
+% git grep -w bool -- '*Kconfig*' | wc -l
+7065
+% git grep -w boolean -- '*Kconfig*' | wc -l
+94
 
-diff --git a/fs/proc/page.c b/fs/proc/page.c
-index 1e3187d..7eee2d8 100644
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -5,6 +5,7 @@
- #include <linux/ksm.h>
- #include <linux/mm.h>
- #include <linux/mmzone.h>
-+#include <linux/huge_mm.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/hugetlb.h>
-@@ -121,9 +122,18 @@ u64 stable_page_flags(struct page *page)
- 	 * just checks PG_head/PG_tail, so we need to check PageLRU/PageAnon
- 	 * to make sure a given page is a thp, not a non-huge compound page.
- 	 */
--	else if (PageTransCompound(page) && (PageLRU(compound_head(page)) ||
--					     PageAnon(compound_head(page))))
--		u |= 1 << KPF_THP;
-+	else if (PageTransCompound(page)) {
-+		struct page *head = compound_head(page);
-+
-+		if (PageLRU(head) || PageAnon(head))
-+			u |= 1 << KPF_THP;
-+		else if (is_huge_zero_page(head)) {
-+			u |= 1 << KPF_ZERO_PAGE;
-+			u |= 1 << KPF_THP;
-+		}
-+	} else if (is_zero_pfn(page_to_pfn(page)))
-+		u |= 1 << KPF_ZERO_PAGE;
-+
- 
- 	/*
- 	 * Caveats on high order pages: page->_count will only be set
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ad9051b..f10b20f 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -157,6 +157,13 @@ static inline int hpage_nr_pages(struct page *page)
- extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
- 
-+extern struct page *huge_zero_page;
-+
-+static inline bool is_huge_zero_page(struct page *page)
-+{
-+	return ACCESS_ONCE(huge_zero_page) == page;
-+}
-+
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
- #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
-@@ -206,6 +213,11 @@ static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_str
- 	return 0;
- }
- 
-+static inline bool is_huge_zero_page(struct page *page)
-+{
-+	return false;
-+}
-+
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- #endif /* _LINUX_HUGE_MM_H */
-diff --git a/include/uapi/linux/kernel-page-flags.h b/include/uapi/linux/kernel-page-flags.h
-index 2f96d23..a6c4962 100644
---- a/include/uapi/linux/kernel-page-flags.h
-+++ b/include/uapi/linux/kernel-page-flags.h
-@@ -32,6 +32,7 @@
- #define KPF_KSM			21
- #define KPF_THP			22
- #define KPF_BALLOON		23
-+#define KPF_ZERO_PAGE		24
- 
- 
- #endif /* _UAPILINUX_KERNEL_PAGE_FLAGS_H */
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index de98415..d7bc7a5 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -171,12 +171,7 @@ static int start_khugepaged(void)
- }
- 
- static atomic_t huge_zero_refcount;
--static struct page *huge_zero_page __read_mostly;
--
--static inline bool is_huge_zero_page(struct page *page)
--{
--	return ACCESS_ONCE(huge_zero_page) == page;
--}
-+struct page *huge_zero_page __read_mostly;
- 
- static inline bool is_huge_zero_pmd(pmd_t pmd)
- {
+Having this alias is more confusing than helpful.
+
+This change was suggested by Daniel Borkmann <dborkman@redhat.com>.
+
+
+Patch 3/3 is purely cosmetic and therefore optional.
+
+Christoph Jaeger (3):
+  kconfig: regenerate parser
+  kconfig: remove undocumented type definition alias 'boolean'
+  kconfig: rename S_BOOLEAN to S_BOOL for consistency
+
+ arch/cris/arch-v32/drivers/Kconfig   |    2 +-
+ arch/mips/pmcs-msp71xx/Kconfig       |    6 +-
+ drivers/connector/Kconfig            |    2 +-
+ drivers/hwmon/Kconfig                |    2 +-
+ drivers/i2c/Kconfig                  |    4 +-
+ drivers/iio/Kconfig                  |    4 +-
+ drivers/isdn/hardware/mISDN/Kconfig  |    2 +-
+ drivers/md/Kconfig                   |    4 +-
+ drivers/md/persistent-data/Kconfig   |    2 +-
+ drivers/net/ethernet/ti/Kconfig      |    4 +-
+ drivers/net/usb/Kconfig              |   12 +-
+ drivers/net/wireless/rt2x00/Kconfig  |    6 +-
+ drivers/pci/pcie/aer/Kconfig         |    2 +-
+ drivers/rtc/Kconfig                  |    8 +-
+ drivers/spi/Kconfig                  |    6 +-
+ drivers/staging/board/Kconfig        |    2 +-
+ drivers/staging/emxx_udc/Kconfig     |    2 +-
+ drivers/staging/iio/Kconfig          |    4 +-
+ drivers/tty/serial/Kconfig           |    2 +-
+ drivers/usb/gadget/Kconfig           |   26 +-
+ drivers/usb/gadget/legacy/Kconfig    |    2 +-
+ drivers/usb/gadget/udc/Kconfig       |    4 +-
+ drivers/usb/phy/Kconfig              |    2 +-
+ init/Kconfig                         |    4 +-
+ lib/Kconfig                          |   30 +-
+ mm/Kconfig                           |   22 +-
+ net/Kconfig                          |   14 +-
+ net/sched/Kconfig                    |    2 +-
+ scripts/kconfig/confdata.c           |   22 +-
+ scripts/kconfig/expr.c               |   10 +-
+ scripts/kconfig/expr.h               |    2 +-
+ scripts/kconfig/gconf.c              |    4 +-
+ scripts/kconfig/mconf.c              |    6 +-
+ scripts/kconfig/menu.c               |   10 +-
+ scripts/kconfig/nconf.c              |    4 +-
+ scripts/kconfig/qconf.cc             |   10 +-
+ scripts/kconfig/symbol.c             |   34 +-
+ scripts/kconfig/zconf.gperf          |    5 +-
+ scripts/kconfig/zconf.hash.c_shipped |   53 +-
+ scripts/kconfig/zconf.tab.c_shipped  | 1248 +++++++++++++++-------------------
+ scripts/kconfig/zconf.y              |    6 +-
+ security/integrity/Kconfig           |    4 +-
+ security/integrity/evm/Kconfig       |    2 +-
+ 43 files changed, 737 insertions(+), 865 deletions(-)
+
 -- 
-2.1.3
+2.1.0
 
