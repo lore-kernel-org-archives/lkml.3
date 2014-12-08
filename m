@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaLHN4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:56:55 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42809 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150AbaLHN4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:56:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,538,1413270000"; 
-   d="scan'208";a="644232159"
-Date: Mon, 8 Dec 2014 14:56:15 +0100
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
-        josh.triplett@intel.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Will Arthur <will.c.arthur@intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v8 6/8] tpm: TPM 2.0 baseline support
-Message-ID: <20141208135615.GC30303@intel.com>
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1417559480-13757-7-git-send-email-jarkko.sakkinen@linux.intel.com>
- <547E7553.2050608@linux.vnet.ibm.com>
- <201412050013.19082.PeterHuewe@gmx.de>
+	id S1755596AbaLHN5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:57:23 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59230 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaLHN5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:57:21 -0500
+Date: Mon, 8 Dec 2014 13:57:16 +0000
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
+        kernel@stlinux.com
+Subject: Re: [STLinux Kernel] [PATCH v2 RESEND 02/11] mtd: st_spi_fsm: Obtain
+ and use EMI clock if provided
+Message-ID: <20141208135716.GC29220@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1417688512-7644-1-git-send-email-lee.jones@linaro.org>
+ <1417688512-7644-3-git-send-email-lee.jones@linaro.org>
+ <20141208135223.GB29220@griffinp-ThinkPad-X1-Carbon-2nd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412050013.19082.PeterHuewe@gmx.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141208135223.GB29220@griffinp-ThinkPad-X1-Carbon-2nd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 12:13:18AM +0100, Peter Hüwe wrote:
-> Am Mittwoch, 3. Dezember 2014, 03:28:35 schrieb Stefan Berger:
-> > On 12/02/2014 05:31 PM, Jarkko Sakkinen wrote:
-> > > +
-> > > +/**
-> > > + * tpm2_startup() - send startup command to the TPM chip
-> > > + * @chip:		TPM chip to use.
-> > > + * @startup_type	startup type. The value is either
-> > > + *			TPM_SU_CLEAR or TPM_SU_STATE.
-> > > + *
-> > > + * 0 is returned when the operation is successful. If a negative number
-> > > is + * returned it remarks a POSIX error code. If a positive number is
-> > > returned + * it remarks a TPM error.
-> > > + */
-> > > +int tpm2_startup(struct tpm_chip *chip, __be16 startup_type)
-> > > +{
-> > > +	struct tpm2_cmd cmd;
-> > > +
-> > > +	cmd.header.in = tpm2_startup_header;
-> > > +
-> > > +	cmd.params.startup_in.startup_type = startup_type;
-> > > +	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
-> > > +				"attempting to start the TPM");
-> > > +}
-> > 
-> > I suppose you need to send this command because your firmware does not
-> > do it ?Following TPM1.2 I guess the BIOS / UEFI should send this instead
-> > and sending it later would actually be wrong. Hm, I don't find from
-> > where you are calling this... do you need it ? Can you remove it?
-> > 
-> >     Stefan
+Hi Lee,
+
+> On Thu, 04 Dec 2014, Lee Jones wrote:
 > 
-> Hi,
+> > ST's Common Clk Framework is now available. This patch ensures the FSM
+> > makes use of it by obtaining and enabling the EMI clock if provided. If
+> > system fails to provide the EMI clock FSM uses its original default
+> > rate.
 > 
-> I think it would be good to send a TPM2_Startup if the TPM sends a 
-> TPM_RC_INITIALIZE (0x100) - so it becomes atleast usable.
-> Of course the BIOS/UEFI/Firmware should send the TPM2_Startup, but if there is 
-> no such thing, I would prefer Linux to do it, rather than nobody.
-> (analog: This was done for embedded platforms with TPM1.2).
+> <snip>
 > 
-> In the current situation (v9) it is not possible to use the TPM2 on a machine 
-> without bios integration. :( (so I cannot test here :( )
+> I'm not sure I understand this patch. Now that common clock framework
+> is available for STI platforms, why would the emi clock ever not be available?
+> 
+> If it is to maintain DT compatability then we are already breaking this with the
+> syscfg 'reg' DT changes which are coming up, and this was deemed OK as the platform
+> is WIP.
+> 
+> IMO keeping this legacy code which assumes the bootloader / JTAG has enabled and configured
+> the emi clock correctly is not worth it now that CCF is available for the platform.
 
-Should the place be if sending self-test fails? I think the type should
-be TPM2_SU_CLEAR. Do you agree?
+Also this legacy code will definately break when we we stop booting the kernel with
+"clk_ignore_unused" parameter.
 
-All other issues are now fixed except this and STS3 bit issue that I 
-look for next. In my github there is tpm2-v10 branch now with fixes
-on top. I squash the fixes right after these two remaining issues are
-fixed.
+regards,
 
-> Peter
-
-/Jarkko
+Peter.
