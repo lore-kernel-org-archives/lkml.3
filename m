@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaLHJLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:11:55 -0500
+	id S1753285AbaLHJOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:14:19 -0500
 Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151AbaLHJLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:11:53 -0500
-Message-ID: <54856B54.7020306@nod.at>
-Date: Mon, 08 Dec 2014 10:11:48 +0100
+	id S1752470AbaLHJOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:14:18 -0500
+Message-ID: <54856BE6.5090003@nod.at>
+Date: Mon, 08 Dec 2014 10:14:14 +0100
 From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
 To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
 CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Notify user in case of an ubi_update_fastmap()
- failure
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-4-git-send-email-richard@nod.at> <54845D53.1070903@codeaurora.org> <548462A8.2010107@nod.at> <54854C28.4050107@codeaurora.org>
-In-Reply-To: <54854C28.4050107@codeaurora.org>
+Subject: Re: [PATCH 2/6] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
+References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-3-git-send-email-richard@nod.at> <54856305.2070408@codeaurora.org>
+In-Reply-To: <54856305.2070408@codeaurora.org>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-Am 08.12.2014 um 07:58 schrieb Tanya Brokhman:
-> On 12/7/2014 4:22 PM, Richard Weinberger wrote:
->> Am 07.12.2014 um 14:59 schrieb Tanya Brokhman:
->>> Hi Richard,
->>>
->>> On 11/30/2014 1:35 PM, Richard Weinberger wrote:
->>>> If ubi_update_fastmap() fails notify the user.
->>>> This is not a hard error as ubi_update_fastmap() makes sure that upon failure
->>>> the current on-flash fastmap will no be used upon next UBI attach.
->>>>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>> ---
->>>>    drivers/mtd/ubi/wl.c | 6 +++++-
->>>>    1 file changed, 5 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>>> index 523d8a4..7821342 100644
->>>> --- a/drivers/mtd/ubi/wl.c
->>>> +++ b/drivers/mtd/ubi/wl.c
->>>> @@ -657,7 +657,11 @@ again:
->>>>         * refill the WL pool synchronous. */
->>>>        if (pool->used == pool->size || wl_pool->used == wl_pool->size) {
->>>>            spin_unlock(&ubi->wl_lock);
->>>> -        ubi_update_fastmap(ubi);
->>>> +        ret = ubi_update_fastmap(ubi);
->>>> +        if (ret) {
->>>> +            ubi_msg(ubi, "Unable to write a new fastmap: %i", ret);
->>>> +            return -ENOSPC;
->>>
->>> Why do you fail the whole function (ubi_wl_get_peb) if fastmap update failed? Its possible that the fm_pools were refilled correctly, and the actual fastmap_write failed, so there
->>> is nothing preventing the user to get peb allocated and continue working. You invalidate the fastmap, so if powercut occurs a full scan will be performed. So its possible to
->>> allocate from fm_pools (although fastmap is not valid on disc) and try writing fastmap again when the pools filled up.
->>> I'm for the ubi_msg but against "return -ENOSPC;"
+Am 08.12.2014 um 09:36 schrieb Tanya Brokhman:
+> On 11/30/2014 1:35 PM, Richard Weinberger wrote:
+>> There is no need to allocate new ones every time, we can reuse
+>> the existing ones.
+>> This makes the code cleaner and more easy to follow.
 >>
->> Maybe the case you've described is powercut safe, but there can be other unsafe cases.
->> Let's stay on the safe side and be paranoid, it does not hurt.
->> If fastmap has proven stable we can start with tricky optimizations.
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>   drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
+>>   drivers/mtd/ubi/wl.c      | 11 +++++++----
+>>   2 files changed, 12 insertions(+), 30 deletions(-)
+>>
+>> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+>> index db3defd..9507702 100644
+>> --- a/drivers/mtd/ubi/fastmap.c
+>> +++ b/drivers/mtd/ubi/fastmap.c
+>> @@ -1446,19 +1446,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+>>       }
+>>
+>>       new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
 > 
-> I'm sorry that I'm being petty here but the commit msg states that you "notify the user in case of update fastamap failure". It says nothing about you failing ubi_wl_get_peb as
-> well. And this is a major change. At least divide this into 2 patches (so I can disagree to the function failing and agree to the msg to user :) )
+> Not related to this patch, but looking at this function it got me thinking: why do we need to re-calculate new_fm->used_blocks (and check calculated value) each time? fm_size
+> doesn't changed at runtime. leb_size sure does not, so fm->used_blocks can be ubi device parameter and calculated & tested only once, and not each time we write fastmap. Correct?
 
-With user I meant users of that function.
+If you dig deeper into the patch set you'll notice that the fastmap size can change. :-)
 
 Thanks,
 //richard
