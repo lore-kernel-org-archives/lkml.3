@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaLHLFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:05:44 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:10917 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226AbaLHLE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:04:56 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-e5-548585d5568f
-Message-id: <548585C5.3000209@samsung.com>
-Date: Mon, 08 Dec 2014 12:04:37 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH v2 01/11] media: s3c-camif: use vb2_ops_wait_prepare/finish
- helper
-References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
- <1417041754-8714-2-git-send-email-prabhakar.csengg@gmail.com>
-In-reply-to: <1417041754-8714-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t/xq7rXWltDDNaVWiz5uYvJ4vKuOWwW
-	PRu2slq8vL+C2WLe551MDqweU35vZPXYOesuu8fnTXIBzFFuNhmpiSmpRQqpecn5KZl56bZK
-	oSFuuhZKCnmJuam2ShG6viFBSgpliTmlQJ6RARpwcA5wD1bSt0twy1hwdyZLwRGWils/D7I0
-	MD5i7mLk5JAQMJH4fW0rG4QtJnHh3nogm4tDSGApo8TGFZuZIZxPjBJ9k/exg1TxCmhJzDjz
-	D6yDRUBV4uicK6wgNpuAoUTv0T5GEFtUIELi5N09UPWCEj8m32MBsUUEwiVWfL0PtplZoEZi
-	6odmoDgHhzBQ/a+V8SBhIYFORomW+eUgNqeAl8Sb7jVsICXMAnoS9y9qQXTKS2xe85Z5AqPA
-	LCQLZiFUzUJStYCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSLx82cG4+JjVIUYBDkYl
-	Hl5zxdYQIdbEsuLK3EOMEhzMSiK8iXFAId6UxMqq1KL8+KLSnNTiQ4zJQO9PZJYSTc4HxnJe
-	SbyhiaG5paGRsYWFuZERacJK4rwVX1tChATSE0tSs1NTC1KLYLYwcXBKNTA63Mhau/LuE660
-	g03zudZx14fUieSqetlff/GYsfKvZHzAinL5p69SkvYVftygFHBqkuHdWj+bJgWluX/M5Q3F
-	3/DE97bVh5650qJqXK4459rPL1t4jqx9XjKN5ZrzitWPL0Z7FfL+9vTcuU968Z1lCUZRSu8j
-	d7B73FvKffTSI4uV10VZAq4osRRnJBpqMRcVJwIAQuMCpNsCAAA=
-X-MTR: 20000000000000000@CPGS
+	id S1755295AbaLHLHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:07:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53641 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726AbaLHLHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 06:07:20 -0500
+Date: Mon, 8 Dec 2014 11:07:14 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [RFC PATCH 1/3] mm: when stealing freepages, also take pages
+ created by splitting buddy page
+Message-ID: <20141208110714.GN6043@suse.de>
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
+ <1417713178-10256-2-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1417713178-10256-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/11/14 23:42, Lad, Prabhakar wrote:
-> This patch drops driver specific wait_prepare() and
-> wait_finish() callbacks from vb2_ops and instead uses
-> the the helpers vb2_ops_wait_prepare/finish() provided
-> by the vb2 core, the lock member of the queue needs
-> to be initalized to a mutex so that vb2 helpers
-> vb2_ops_wait_prepare/finish() can make use of it.
+On Thu, Dec 04, 2014 at 06:12:56PM +0100, Vlastimil Babka wrote:
+> When __rmqueue_fallback() is called to allocate a page of order X, it will
+> find a page of order Y >= X of a fallback migratetype, which is different from
+> the desired migratetype. With the help of try_to_steal_freepages(), it may
+> change the migratetype (to the desired one) also of:
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+> 1) all currently free pages in the pageblock containing the fallback page
+> 2) the fallback pageblock itself
+> 3) buddy pages created by splitting the fallback page (when Y > X)
+> 
+> These decisions take the order Y into account, as well as the desired
+> migratetype, with the goal of preventing multiple fallback allocations that
+> could e.g. distribute UNMOVABLE allocations among multiple pageblocks.
+> 
+> Originally, decision for 1) has implied the decision for 3). Commit
+> 47118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added") changed that
+> (probably unintentionally) so that the buddy pages in case 3) are always
+> changed to the desired migratetype, except for CMA pageblocks.
+> 
+> Commit fef903efcf0c ("mm/page_allo.c: restructure free-page stealing code and
+> fix a bug") did some refactoring and added a comment that the case of 3) is
+> intended. Commit 0cbef29a7821 ("mm: __rmqueue_fallback() should respect
+> pageblock type") removed the comment and tried to restore the original behavior
+> where 1) implies 3), but due to the previous refactoring, the result is instead
+> that only 2) implies 3) - and the conditions for 2) are less frequently met
+> than conditions for 1). This may increase fragmentation in situations where the
+> code decides to steal all free pages from the pageblock (case 1)), but then
+> gives back the buddy pages produced by splitting.
+> 
+> This patch restores the original intended logic where 1) implies 3). During
+> testing with stress-highalloc from mmtests, this has shown to decrease the
+> number of events where UNMOVABLE and RECLAIMABLE allocations steal from MOVABLE
+> pageblocks, which can lead to permanent fragmentation. It has increased the
+> number of events when MOVABLE allocations steal from UNMOVABLE or RECLAIMABLE
+> pageblocks, but these are fixable by sync compaction and thus less harmful.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
+Assuming the tracepoint issue Joonsoo pointed out gets corrected;
 
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+I'm kicking myself that I missed the effect of 47118af076f6 when I was
+reviewing it. I knew allocation success rates were worse than they used
+to be but had been blaming changes in aggression of reclaim and
+compaction.
 
 -- 
-Thanks,
-Sylwester
+Mel Gorman
+SUSE Labs
