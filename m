@@ -1,115 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044AbaLIASU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 19:18:20 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:65431 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755752AbaLIASQ (ORCPT
+	id S1756072AbaLIAUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 19:20:13 -0500
+Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:45513 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751103AbaLIAUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 19:18:16 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Mon, 08 Dec 2014 16:42:22 -0800
-Message-ID: <54863F7A.30609@synaptics.com>
-Date: Mon, 8 Dec 2014 16:16:58 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 8 Dec 2014 19:20:11 -0500
+X-Greylist: delayed 4590 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Dec 2014 19:20:10 EST
+Date: Tue, 9 Dec 2014 00:02:30 +0100
+From: Lukasz Majewski <l.majewski@majess.pl>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>,
+        navneet kumar <navneetk@nvidia.com>
+Subject: Re: [PATCH v3 1/5] thermal: of: Extend of-thermal.c to provide
+ number of trip points
+Message-ID: <20141209000230.09137628@jawa>
+In-Reply-To: <20141208195247.GA31126@developer>
+References: <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+	<1418058261-25251-1-git-send-email-l.majewski@samsung.com>
+	<1418058261-25251-2-git-send-email-l.majewski@samsung.com>
+	<20141208195247.GA31126@developer>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: [PATCH] HID: rmi: Add support for the touchpad in the Razer Blade
- 14 laptop
-References: <1416874819-9914-1-git-send-email-aduggan@synaptics.com>
-In-Reply-To: <1416874819-9914-1-git-send-email-aduggan@synaptics.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.4.10.98]
-X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/7zPJfoKwlFbyhNxm801e07S"; protocol="application/pgp-signature"
+X-Ovh-Tracer-Id: 3319997351533134586
+X-Ovh-Remote: 109.241.105.88 (109241105088.warszawa.vectranet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -200
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrfeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrfeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 04:20 PM, Andrew Duggan wrote:
-> The Razer Blade 14 has a Synaptic's TouchPad on one of the interfaces of
-> a composite USB device. This patch allows the hid-rmi driver to bind
-> to that interface. It also adds support for the external click buttons
-> on the Razer's touchpad. External buttons are reported using generic
-> mouse reports instead of through the F30 like it is on ClickPads.
->
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-> ---
-> This patch depends on the "HID: rmi: Scan the report descriptor to determine if the device is
-> suitable for the hid-rmi driver" I submitted earlier today to correctly bind to the touchpad HID
-> device in the composite USB device.
-Any comments on this patch?
+--Sig_/7zPJfoKwlFbyhNxm801e07S
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Andrew
->   drivers/hid/hid-core.c |  4 +++-
->   drivers/hid/hid-ids.h  |  3 +++
->   drivers/hid/hid-rmi.c  | 15 ++++++++++++++-
->   3 files changed, 20 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index ba9dc59..d69ea16 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -792,7 +792,9 @@ static int hid_scan_report(struct hid_device *hid)
->   	/*
->   	* Vendor specific handlings
->   	*/
-> -	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
-> +	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS
-> +	    || (hid->vendor == USB_VENDOR_ID_RAZER
-> +	    && hid->product == USB_DEVICE_ID_RAZER_BLADE_14)) &&
->   	    (hid->group == HID_GROUP_GENERIC)) {
->   		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
->   		    && (parser->scan_flags & HID_SCAN_FLAG_GENDESK_POINTER))
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 25cd674..c677aad 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -751,6 +751,9 @@
->   #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001		0x3001
->   #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
->   
-> +#define USB_VENDOR_ID_RAZER		0x1532
-> +#define USB_DEVICE_ID_RAZER_BLADE_14	0x011D
-> +
->   #define USB_VENDOR_ID_REALTEK		0x0bda
->   #define USB_DEVICE_ID_REALTEK_READER	0x0152
->   
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index 3cccff7..1f131df 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -453,7 +453,15 @@ static int rmi_raw_event(struct hid_device *hdev,
->   	case RMI_ATTN_REPORT_ID:
->   		return rmi_input_event(hdev, data, size);
->   	case RMI_MOUSE_REPORT_ID:
-> -		rmi_schedule_reset(hdev);
-> +		/*
-> +		 * touchpads with physical mouse buttons will report those
-> +		 * buttons in mouse reports even in RMI mode. Only reset
-> +		 * the device if we see reports which contain X or Y data.
-> +		 */
-> +		if (data[2] != 0 || data[3] != 0)
-> +			rmi_schedule_reset(hdev);
-> +		else
-> +			return 1;
->   		break;
->   	}
->   
-> @@ -871,6 +879,11 @@ static int rmi_input_mapping(struct hid_device *hdev,
->   		struct hid_input *hi, struct hid_field *field,
->   		struct hid_usage *usage, unsigned long **bit, int *max)
->   {
-> +	if (field->application == HID_GD_POINTER
-> +		&& (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
-> +		/* Pass mouse button reports to generic code for processing */
-> +		return 0;
-> +
->   	/* we want to make HID ignore the advertised HID collection */
->   	return -1;
->   }
+On Mon, 8 Dec 2014 15:52:49 -0400
+Eduardo Valentin <edubezval@gmail.com> wrote:
 
+Hi Eduardo,
+
+> On Mon, Dec 08, 2014 at 06:04:17PM +0100, Lukasz Majewski wrote:
+> > This patch extends the of-thermal.c to provide information about
+> > number of available trip points.
+> >=20
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > ---
+> > Changes for v3:
+> > - Exporting of_thermal_get_ntrips symbol as a GPL
+> > - Fix build error when CONFIG_THERMAL_OF is disabled
+> >=20
+> > Changes for v2:
+> > - Provide detailed (doxygen like) description of the
+> > of_thermal_get_ntrips() method
+> > - Check for data pointer not being NULL
+> > ---
+> >  drivers/thermal/of-thermal.c   | 21 +++++++++++++++++++++
+> >  drivers/thermal/thermal_core.h |  5 +++++
+> >  2 files changed, 26 insertions(+)
+> >=20
+> > diff --git a/drivers/thermal/of-thermal.c
+> > b/drivers/thermal/of-thermal.c index b7982f0..7facd23 100644
+> > --- a/drivers/thermal/of-thermal.c
+> > +++ b/drivers/thermal/of-thermal.c
+> > @@ -112,6 +112,27 @@ static int of_thermal_get_temp(struct
+> > thermal_zone_device *tz, return
+> > data->ops->get_temp(data->sensor_data, temp); }
+> > =20
+> > +/**
+> > + * of_thermal_get_ntrips - function to export number of available
+> > trip
+> > + *			   points.
+> > + * @tz: pointer to a thermal zone
+> > + *
+> > + * This function is a globally visible wrapper to get number of
+> > trip points
+> > + * stored in the local struct __thermal_zone
+> > + *
+> > + * Return: number of available trip points, -ENODEV when data not
+> > available
+> > + */
+> > +int of_thermal_get_ntrips(struct thermal_zone_device *tz)
+> > +{
+> > +	struct __thermal_zone *data =3D tz->devdata;
+> > +
+> > +	if (!data || IS_ERR(data))
+> > +		return -ENODEV;
+> > +
+> > +	return data->ntrips;
+> > +}
+> > +EXPORT_SYMBOL_GPL(of_thermal_get_ntrips);
+> > +
+> >  static int of_thermal_get_trend(struct thermal_zone_device *tz,
+> > int trip, enum thermal_trend *trend)
+> >  {
+> > diff --git a/drivers/thermal/thermal_core.h
+> > b/drivers/thermal/thermal_core.h index d15d243..1cc5041 100644
+> > --- a/drivers/thermal/thermal_core.h
+> > +++ b/drivers/thermal/thermal_core.h
+> > @@ -89,9 +89,14 @@ static inline void
+> > thermal_gov_user_space_unregister(void) {} #ifdef CONFIG_THERMAL_OF
+> >  int of_parse_thermal_zones(void);
+> >  void of_thermal_destroy_zones(void);
+> > +int of_thermal_get_ntrips(struct thermal_zone_device *);
+>=20
+> Lukasz,
+>=20
+> Here is a question that applies to all patches in this series adding
+> functions in this header.
+>=20
+> i suppose you intend to use these new functions in driver code, right?
+
+Yes, right.
+
+> Add them here, will limit their usage to code inside drivers/thermal.
+
+This is my intention - at least for now the use case is to configure the
+thermal driver (i.e. Exynos TMU). Other drivers (e.g. TI) can benefit
+from this code too.
+
+>=20
+> Shouldn't these new APIs be declared under include/linux/thermal.h?
+
+I'd prefer to leave this API in ./drivers/thermal and move them to
+./include/linux/thermal.h only when other parts of the kernel require
+it.
+
+>=20
+> This way, they can be be available to other parts of the kernel too.
+>=20
+>=20
+> >  #else
+> >  static inline int of_parse_thermal_zones(void) { return 0; }
+> >  static inline void of_thermal_destroy_zones(void) { }
+> > +static inline int of_thermal_get_ntrips(struct thermal_zone_device
+> > *tz) +{
+> > +	return 0;
+> > +}
+> >  #endif
+> > =20
+> >  #endif /* __THERMAL_CORE_H__ */
+> > --=20
+> > 2.0.0.rc2
+> >=20
+
+Best Regards,
+
+Lukasz Majewski
+
+--Sig_/7zPJfoKwlFbyhNxm801e07S
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iEYEARECAAYFAlSGLg0ACgkQf9/hG2YwgjHDwgCgxTg7KjcrOaNAdtjFpILBBb47
+318AoKOtgES5YxmeLzRLcBB9sKKKwWUJ
+=N+Nc
+-----END PGP SIGNATURE-----
+
+--Sig_/7zPJfoKwlFbyhNxm801e07S--
