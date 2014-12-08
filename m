@@ -1,153 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164AbaLHLEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:04:38 -0500
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:41961 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755050AbaLHLEg (ORCPT
+	id S1755247AbaLHLEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:04:48 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:36915 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178AbaLHLEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:04:36 -0500
-Message-ID: <1418036666.3647.33.camel@linaro.org>
-Subject: Re: [PATCH v14 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Mon, 08 Dec 2014 11:04:26 +0000
-In-Reply-To: <1418020131-69375-1-git-send-email-wangnan0@huawei.com>
-References: <1418020040-68977-1-git-send-email-wangnan0@huawei.com>
-	 <1418020131-69375-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
+	Mon, 8 Dec 2014 06:04:45 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: kishon@ti.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <56160941769389787db61a3f130bfd3e>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <548585B4.107@rock-chips.com>
+Date: Mon, 08 Dec 2014 19:04:20 +0800
+From: Yunzhi Li <lyz@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>, heiko@sntech.de,
+        dianders@chromium.org, romain.perier@gmail.com
+CC: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+References: <1418031988-2700-1-git-send-email-lyz@rock-chips.com> <1418031988-2700-2-git-send-email-lyz@rock-chips.com> <548575F0.4090909@ti.com>
+In-Reply-To: <548575F0.4090909@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-08 at 14:28 +0800, Wang Nan wrote:
-> This patch introduce kprobeopt for ARM 32.
-> 
-> Limitations:
->  - Currently only kernel compiled with ARM ISA is supported.
-> 
->  - Offset between probe point and optinsn slot must not larger than
->    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->    things complex. Futher patch can make such optimization.
-> 
-> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-> replace probed instruction by a 'b', branch to trampoline code and then
-> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-> to execute kprobe handler. It also emulate/simulate replaced instruction.
-> 
-> When unregistering kprobe, the deferred manner of unoptimizer may leave
-> branch instruction before optimizer is called. Different from x86_64,
-> which only copy the probed insn after optprobe_template_end and
-> reexecute them, this patch call singlestep to emulate/simulate the insn
-> directly. Futher patch can optimize this behavior.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
-[...]
-> v13 -> v14:
->   - Use stop_machine to wrap arch_optimize_kprobes to avoid a racing.
+Hi Kishon :
 
-Think we need to use stop_machine differently, see comments on code
-below.
+On 2014/12/8 17:57, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Monday 08 December 2014 03:16 PM, Yunzhi Li wrote:
+>> This patche to add a generic PHY driver for ROCKCHIP usb PHYs,
+> %s/patche/patch
+Sorry for this typo.
+>> +#include <linux/reset.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/mfd/syscon.h>
+>> +
+>> +#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
+>> +
+>> +#define SIDDQ_MSK		BIT(13 + 16)
+> This doesn't look correct. Won't this mask bit no:29?
+The higher 16-bit of this register is used for write-protect, only if 
+BIT(13 + 16)
+set to 1 the BIT(13) can be written. I will add some comments here in 
+the next
+version, to prevent others confused. ok ?
 
-> ---
->  arch/arm/Kconfig                        |   1 +
->  arch/arm/{kernel => include/asm}/insn.h |   0
->  arch/arm/include/asm/kprobes.h          |  29 +++
->  arch/arm/kernel/Makefile                |   2 +-
->  arch/arm/kernel/ftrace.c                |   3 +-
->  arch/arm/kernel/jump_label.c            |   3 +-
->  arch/arm/probes/kprobes/Makefile        |   1 +
->  arch/arm/probes/kprobes/opt-arm.c       | 322 ++++++++++++++++++++++++++++++++
->  samples/kprobes/kprobe_example.c        |   2 +-
+>> [...]
+>>
+>> +static int rockchip_usb_phy_probe(struct platform_device *pdev)
+>> +{
+>> +	struct device *dev = &pdev->dev;
+>> +	struct rockchip_usb_phy *rk_phy;
+>> +	struct rockchip_usb_phy *phy_array;
+>> +	struct phy_provider *phy_provider;
+>> +	struct regmap *grf;
+>> +	char clk_name[16];
+>> +	int i;
+>> +
+>> +	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
+>> +	if (IS_ERR(grf)) {
+>> +		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
+>> +		return PTR_ERR(grf);
+>> +	}
+>> +
+>> +	phy_array = devm_kzalloc(dev, RK3288_NUM_PHYS * sizeof(*rk_phy),
+>> +				 GFP_KERNEL);
+>> +	if (!phy_array)
+>> +		return -ENOMEM;
+>> +
+>> +	for (i = 0; i < RK3288_NUM_PHYS; i++) {
+> Don't hardcode NUM_PHYS. All this has to come from dt. Model each PHYs as
+> subnode of the phy provider node and use it here.
+I got it, it should be like this, model each PHYs as sub node and use 
+of_get_child_count() to get the number of phys.
 
-The change kprobe_example.c doesn't apply and I guess wasn't meant to be
-included in the patch?
 
-[...]
-> +/*
-> + * Similar to __arch_disarm_kprobe, operations which removing
-> + * breakpoints must be wrapped by stop_machine to avoid racing.
-> + */
-> +static __kprobes int __arch_optimize_kprobes(void *p)
-> +{
-> +	struct list_head *oplist = p;
-> +	struct optimized_kprobe *op, *tmp;
-> +
-> +	list_for_each_entry_safe(op, tmp, oplist, list) {
-> +		unsigned long insn;
-> +		WARN_ON(kprobe_disabled(&op->kp));
-> +
-> +		/*
-> +		 * Backup instructions which will be replaced
-> +		 * by jump address
-> +		 */
-> +		memcpy(op->optinsn.copied_insn, op->kp.addr,
-> +				RELATIVEJUMP_SIZE);
-> +
-> +		insn = arm_gen_branch((unsigned long)op->kp.addr,
-> +				(unsigned long)op->optinsn.insn);
-> +		BUG_ON(insn == 0);
-> +
-> +		/*
-> +		 * Make it a conditional branch if replaced insn
-> +		 * is consitional
-> +		 */
-> +		insn = (__mem_to_opcode_arm(
-> +			  op->optinsn.copied_insn[0]) & 0xf0000000) |
-> +			(insn & 0x0fffffff);
-> +
-> +		patch_text(op->kp.addr, insn);
 
-patch_text() itself may use stop_machine under certain circumstances,
-and if it were to do so, I believe that would cause the system to
-lock/panic. So, this should be __patch_text() instead, but we would also
-need to take care of the cache_ops_need_broadcast() case, where all
-CPU's need to invalidate their own caches and we can't rely on just one
-CPU executing the code patching whilst other CPUs spin and wait. Though
-to make life easier, we could just not optimise kprobes in the legacy
-cache_ops_need_broadcast() case.
-
-> +
-> +		list_del_init(&op->list);
-> +	}
-> +	return 0;
-> +}
-> +
-> +void arch_optimize_kprobes(struct list_head *oplist)
-> +{
-> +	stop_machine(__arch_optimize_kprobes, oplist, cpu_online_mask);
-> +}
-
-I believe passing cpu_online_mask above will cause
-__arch_optimize_kprobes to be executed on every CPU, is this safe? If it
-is, it's a serendipitous optimisation if each CPU can process different
-probes in the list. If it's not safe, this needs to be NULL instead so
-only one CPU executes the code.
-
-However, I wonder if optimising all probes under a single stop_machine
-call is the best thing to do because stop_machine does what it says and
-prevents everything else in the system from running, including interrupt
-handlers. Perhaps for system responsiveness this should be a single
-stop_machine per kprobe? Though of course that compounds the overhead of
-stop_machine use and puts another delay of one scheduler tick per probe.
-(stop_machine waits for the next tick to schedule the threads to perform
-the work which is why the test code takes so long to run).
- 
-What do people think?
-
--- 
-Tixy
 
