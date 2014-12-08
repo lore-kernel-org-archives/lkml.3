@@ -1,130 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbaLHFR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 00:17:57 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:62568 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaLHFR4 (ORCPT
+	id S1753982AbaLHFU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 00:20:57 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36270 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaLHFU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 00:17:56 -0500
+	Mon, 8 Dec 2014 00:20:56 -0500
+Date: Sun, 7 Dec 2014 21:20:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141208052048.GJ25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141202193252.GB17595@redhat.com>
+ <547E4C14.6040509@oracle.com>
+ <54813C03.8040009@oracle.com>
+ <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
+ <5481C92E.6020805@oracle.com>
+ <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com>
+ <54846B06.8050906@oracle.com>
+ <20141207182420.GG25340@linux.vnet.ibm.com>
+ <20141207194304.GA17810@linux.vnet.ibm.com>
+ <5484E2AB.1070503@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+RfmHbitDG0bMuAYjivFF54sjbocoYmvsvaAg=NcPha_vWYGw@mail.gmail.com>
-References: <1416993266-16514-1-git-send-email-kiran.kumar@linaro.org>
-	<CAMbhsRR0XzJ9ouYuoE2z+oCR9jRt8XBEfuVgd7sLJMg24bMKyQ@mail.gmail.com>
-	<5476F3C5.8020709@linaro.org>
-	<CA+RfmHbitDG0bMuAYjivFF54sjbocoYmvsvaAg=NcPha_vWYGw@mail.gmail.com>
-Date: Mon, 8 Dec 2014 10:47:54 +0530
-Message-ID: <CA+RfmHY1ngbVgS8xakK01dE0S=1e7Mq9rzRXvqNZoeOh4XfVVw@mail.gmail.com>
-Subject: Re: [RFC v3] debug: prevent entering debug mode on errors
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5484E2AB.1070503@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120805-0013-0000-0000-000006DBDF37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Sun, Dec 07, 2014 at 06:28:43PM -0500, Sasha Levin wrote:
+> On 12/07/2014 02:43 PM, Paul E. McKenney wrote:
+> > On Sun, Dec 07, 2014 at 10:24:20AM -0800, Paul E. McKenney wrote:
+> >> On Sun, Dec 07, 2014 at 09:58:14AM -0500, Sasha Levin wrote:
+> >>> On 12/05/2014 01:15 PM, Linus Torvalds wrote:
+> >>>> On Fri, Dec 5, 2014 at 7:03 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> >>>>>
+> >>>>> Yes, it's going to a serial line, but it's only about 100 lines/second on
+> >>>>> average. I wouldn't expect it to cause anything to hang!
+> >>>>
+> >>>> A regular 16650 serial chip? Running at 115kbps, I assume? So that's
+> >>>> about 11kB/s.
+> >>>>
+> >>>> And the serial console is polling, since it can't sleep or depend on interrupts.
+> >>>>
+> >>>> At a average line length of what, 40 characters? At less than 300
+> >>>> lines/s, you'd be using up 100% of one CPU. And since the printouts
+> >>>> are serialized, that would be all other CPU's too..
+> >>>>
+> >>>> 100 lines/s _average_ means that I can easily see it be 300lines/s for a while.
+> >>>>
+> >>>> So yeah. The serial console is simply not designed to handle
+> >>>> continuous output. It's for the "occasional" stuff.
+> >>>>
+> >>>> The fact that your rcu lockups go away when you make the fault
+> >>>> injection be quiet makes me really suspect this is related.
+> >>>
+> >>> The lockups themselves "go away", but looking closer at the log
+> >>> without those extra prints, I'm seeing:
+> >>>
+> >>> [ 1458.700070] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> >>> [ 1458.700133]  (detected by 19, t=30502 jiffies, g=12293, c=12292, q=0)
+> >>> [ 1458.702764] INFO: Stall ended before state dump start
+> >>>
+> >>> Quite often.
+> >>>
+> >>> Maybe the extra prints were just a catalyst?
+> >>
+> >> Is anything else being printed about the time that these message show
+> >> up?  Or is this the only output for the 40,000 jiffies preceding this
+> >> message?
+> 
+> There's actually nothing going on (beyond fuzzing noise) before/after:
+> 
+> [  756.618342] kexec-bzImage64: Not a bzImage
+> [  762.381734] kexec-bzImage64: Not a bzImage
+> [  765.129612] Unable to find swap-space signature
+> [  771.022304] Unable to find swap-space signature
+> [  793.434417] kexec-bzImage64: Not a bzImage
+> [  797.978210] => alloc_cpumask_var: failed!
+> [  800.253116] kexec-bzImage64: Not a bzImage
+> [  818.280056] INFO: rcu_sched detected stalls on CPUs/tasks:
+> [  818.280056]  (detected by 11, t=30503 jiffies, g=-295, c=-296, q=0)
+> [  818.283400] INFO: Stall ended before state dump start
+> [  829.523992] audit: type=1326 audit(39.680:47): auid=4294967295 uid=2385760256 gid=2214330370 ses=4294967295 pid=13307 comm="trinity-c353" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
+> [  830.890841] audit: type=1326 audit(41.010:48): auid=4294967295 uid=310902784 gid=201841673 ses=4294967295 pid=13294 comm="trinity-c350" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
 
-On 1 December 2014 at 11:32, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
-> Hi Jason,
->
-> On 27 November 2014 at 15:19, Daniel Thompson
-> <daniel.thompson@linaro.org> wrote:
->> On 26/11/14 17:45, Colin Cross wrote:
->>> On Wed, Nov 26, 2014 at 1:14 AM, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
->>>> From: Colin Cross <ccross@android.com>
->>>>
->>>> debug: prevent entering debug mode on errors
->>>>
->>>> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
->>>> device after a panic.
->>>>
->>>> In case of panics and exceptions, to honor CONFIG_PANIC_TIMEOUT, prevent
->>>> entering debug mode to avoid getting stuck waiting for the user to interact
->>>> with debugger.
->>>>
->>>> Cc: Jason Wessel <jason.wessel@windriver.com>
->>>> Cc: kgdb-bugreport@lists.sourceforge.net
->>>> Cc: linux-kernel@vger.kernel.org
->>>> Cc: Android Kernel Team <kernel-team@android.com>
->>>> Cc: John Stultz <john.stultz@linaro.org>
->>>> Cc: Sumit Semwal <sumit.semwal@linaro.org>
->>>> Signed-off-by: Colin Cross <ccross@android.com>
->>>> [Kiran: Added context to commit message.
->>>> panic_timeout is used instead of break_on_panic and
->>>> break_on_exception to honor CONFIG_PANIC_TIMEOUT]
->>>> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
->>>> ---
->>>>  kernel/debug/debug_core.c | 17 +++++++++++++++++
->>>>  1 file changed, 17 insertions(+)
->>>>
->>>> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
->>>> index 1adf62b..0012a1f 100644
->>>> --- a/kernel/debug/debug_core.c
->>>> +++ b/kernel/debug/debug_core.c
->>>> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->>>>
->>>>         if (arch_kgdb_ops.enable_nmi)
->>>>                 arch_kgdb_ops.enable_nmi(0);
->>>> +       /*
->>>> +        * Avoid entering the debugger if we were triggered due to an oops
->>>> +        * but panic_timeout indicates the system should automatically
->>>> +        * reboot on panic. We don't want to get stuck waiting for input
->>>> +        * on such systems, especially if its "just" an oops.
->>>> +        */
->>>> +       if (signo != SIGTRAP && panic_timeout)
->>>> +               return 1;
->>>>
->>>>         memset(ks, 0, sizeof(struct kgdb_state));
->>>>         ks->cpu                 = raw_smp_processor_id();
->>>> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
->>>>                             unsigned long val,
->>>>                             void *data)
->>>>  {
->>>> +       /*
->>>> +        * Avoid entering the debugger if we were triggered due to a panic
->>>> +        * We don't want to get stuck waiting for input from user in such case.
->>>> +        * panic_timeout indicates the system should automatically
->>>> +        * reboot on panic.
->>>> +        */
->>>> +       if (panic_timeout)
->>>> +               return NOTIFY_DONE;
->>>> +
->>>>         if (dbg_kdb_mode)
->>>>                 kdb_printf("PANIC: %s\n", (char *)data);
->>>>         kgdb_breakpoint();
->>>
->>> The original patch was more useful as it allowed re-enabling break on
->>> panic on specific devices where you were trying to debug a
->>> reproducible issue.  What about using a module_param similar to
->>> kgdbreboot, but setting the default based on CONFIG_PANIC_TIMEOUT to
->>> avoid extra configuration?
->>
->> This change was due to my review so perhaps I'd better answer this...
->>
->> panic_timeout is the value of the panic sysctl. In addition to the
->> normal sysctl tooling (which I don't think is available on most android
->> systems), its value can be set using panic=0 on the kernel command line
->> or via /proc/sys/kernel/panic at runtime.
->>
->> CONFIG_PANIC_TIMEOUT merely sets the default value of the sysctl. I
->> guess perhaps the patch description could be improved to make this clearer.
->>
->> Therefore, the only loss of function I expected versus the original is
->> that it would be hard to get as far as a reproducible panic if the
->> system also has a ton of reproducible oopses that we don't want to fix.
->> Is such a use-case important?
->
-> Could you please let me know if this patch is good to move from RFC to PATCH?
-Just a gentle reminder.
-Regards,
-Kiran
+I have seen this caused by lost IPIs, but you have to lose two of them,
+which seems less than fully likely.
 
-> Regards,
-> Kiran
+> > And could you please build with CONFIG_RCU_CPU_STALL_INFO=y and try
+> > this again?
+> 
+> I already have it set:
+> 
+> $ grep STALL_INFO .config
+> CONFIG_RCU_CPU_STALL_INFO=y
+
+Ah, apologies.  OK, time to make this the default, and later to remove
+the option...
+
+							Thanx, Paul
+
