@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaLHGvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:51:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34780 "EHLO
+	id S1754550AbaLHGwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:52:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34803 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133AbaLHGvu (ORCPT
+	with ESMTP id S1754084AbaLHGwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:51:50 -0500
-Date: Sun, 7 Dec 2014 22:51:31 -0800
+	Mon, 8 Dec 2014 01:52:07 -0500
+Date: Sun, 7 Dec 2014 22:51:47 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-060c4f9c8cc871a96dfacdc9306101e8b9195805@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, matt.fleming@intel.com,
-        dsahern@gmail.com, cjashfor@linux.vnet.ibm.com, hpa@zytor.com,
-        ak@linux.intel.com, paulus@samba.org, tglx@linutronix.de,
-        acme@redhat.com, eranian@google.com, jolsa@kernel.org,
-        namhyung@kernel.org, a.p.zijlstra@chello.nl, mingo@kernel.org
-Reply-To: mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        eranian@google.com, jolsa@kernel.org, acme@redhat.com,
-        paulus@samba.org, tglx@linutronix.de, ak@linux.intel.com,
-        hpa@zytor.com, cjashfor@linux.vnet.ibm.com, dsahern@gmail.com,
-        matt.fleming@intel.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1416562275-12404-5-git-send-email-jolsa@kernel.org>
-References: <1416562275-12404-5-git-send-email-jolsa@kernel.org>
+Message-ID: <tip-9bf1a52914c7e810091f7726790fc42242a2dafe@git.kernel.org>
+Cc: jolsa@kernel.org, acme@redhat.com, namhyung@kernel.org, hpa@zytor.com,
+        paulus@samba.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, matt.fleming@intel.com,
+        dsahern@gmail.com, fweisbec@gmail.com, eranian@google.com,
+        cjashfor@linux.vnet.ibm.com, mingo@kernel.org
+Reply-To: tglx@linutronix.de, a.p.zijlstra@chello.nl, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        namhyung@kernel.org, acme@redhat.com, jolsa@kernel.org,
+        mingo@kernel.org, cjashfor@linux.vnet.ibm.com, eranian@google.com,
+        fweisbec@gmail.com, dsahern@gmail.com, matt.fleming@intel.com
+In-Reply-To: <1416562275-12404-6-git-send-email-jolsa@kernel.org>
+References: <1416562275-12404-6-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf stat:
-  Use perf_evsel__read_cb in read_counter
-Git-Commit-ID: 060c4f9c8cc871a96dfacdc9306101e8b9195805
+  Make read_counter work over the thread dimension
+Git-Commit-ID: 9bf1a52914c7e810091f7726790fc42242a2dafe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,18 +38,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  060c4f9c8cc871a96dfacdc9306101e8b9195805
-Gitweb:     http://git.kernel.org/tip/060c4f9c8cc871a96dfacdc9306101e8b9195805
+Commit-ID:  9bf1a52914c7e810091f7726790fc42242a2dafe
+Gitweb:     http://git.kernel.org/tip/9bf1a52914c7e810091f7726790fc42242a2dafe
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 21 Nov 2014 10:31:08 +0100
+AuthorDate: Fri, 21 Nov 2014 10:31:09 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 1 Dec 2014 20:00:30 -0300
 
-perf stat: Use perf_evsel__read_cb in read_counter
+perf stat: Make read_counter work over the thread dimension
 
-Replacing __perf_evsel__read_on_cpu function with perf_evsel__read_cb
-function. The read_cb callback will be used later for global aggregation
-counter values as well.
+The read function will be used later for both aggr and cpu counters, so
+we need to make it work over threads as well.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Andi Kleen <ak@linux.intel.com>
@@ -63,58 +61,36 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1416562275-12404-5-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1416562275-12404-6-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c | 27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ tools/perf/builtin-stat.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 055ce92..9cc0db1 100644
+index 9cc0db1..2511d3a 100644
 --- a/tools/perf/builtin-stat.c
 +++ b/tools/perf/builtin-stat.c
-@@ -388,6 +388,26 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_itlb_cache_stats[0], count[0]);
- }
- 
-+static int read_cb(struct perf_evsel *evsel, int cpu, int thread __maybe_unused,
-+		   struct perf_counts_values *count)
-+{
-+	switch (aggr_mode) {
-+	case AGGR_CORE:
-+	case AGGR_SOCKET:
-+	case AGGR_NONE:
-+		perf_evsel__compute_deltas(evsel, cpu, count);
-+		perf_counts_values__scale(count, scale, NULL);
-+		evsel->counts->cpu[cpu] = *count;
-+		update_shadow_stats(evsel, count->values);
-+		break;
-+	case AGGR_GLOBAL:
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * Read out the results of a single counter:
-  * aggregate counts across CPUs in system-wide mode
-@@ -424,16 +444,11 @@ static int read_counter_aggr(struct perf_evsel *counter)
+@@ -444,11 +444,18 @@ static int read_counter_aggr(struct perf_evsel *counter)
   */
  static int read_counter(struct perf_evsel *counter)
  {
--	u64 *count;
- 	int cpu;
+-	int cpu;
++	int nthreads = thread_map__nr(evsel_list->threads);
++	int ncpus = perf_evsel__nr_cpus(counter);
++	int cpu, thread;
  
- 	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
--		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
-+		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
- 			return -1;
--
--		count = counter->counts->cpu[cpu].values;
--
--		update_shadow_stats(counter, count);
+-	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+-		if (perf_evsel__read_cb(counter, cpu, 0, read_cb))
+-			return -1;
++	if (counter->system_wide)
++		nthreads = 1;
++
++	for (thread = 0; thread < nthreads; thread++) {
++		for (cpu = 0; cpu < ncpus; cpu++) {
++			if (perf_evsel__read_cb(counter, cpu, thread, read_cb))
++				return -1;
++		}
  	}
  
  	return 0;
