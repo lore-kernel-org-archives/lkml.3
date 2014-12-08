@@ -1,66 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbaLHLRv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:17:51 -0500
-Received: from mail2.tiolive.com ([94.23.229.207]:35228 "EHLO
-	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151AbaLHLRu (ORCPT
+	id S1755227AbaLHLTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:19:42 -0500
+Received: from mail.smart-weblications.de ([188.65.144.61]:54442 "EHLO
+	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754675AbaLHLTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:17:50 -0500
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Dec 2014 06:17:50 EST
-From: Kirill Smelkov <kirr@nexedi.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Kirill Smelkov <kirr@nexedi.com>
-Subject: [PATCH] tools/liblockdep: Fix debug_check thinko in mutex destroy
-Date: Mon,  8 Dec 2014 14:07:59 +0300
-Message-Id: <1418036879-31944-1-git-send-email-kirr@nexedi.com>
-X-Mailer: git-send-email 2.2.0.309.gc3c329f
+	Mon, 8 Dec 2014 06:19:40 -0500
+Message-ID: <54858948.2060007@smart-weblications.de>
+Date: Mon, 08 Dec 2014 12:19:36 +0100
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Julian Anastasov <ja@ssi.bg>
+CC: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
+Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
+References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de> <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg>
+In-Reply-To: <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In mutex destroy code currently we pass to debug_check_no_locks_freed()
+Hi Julian,
 
-    [mem_from, mem_end)
+Am 07.12.2014 19:27, schrieb Julian Anastasov:>
+> 	Hello,
+>
+> On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+>
+>> thank you for the fast responses! I would like to test any patch for 3.12.
+>
+> 	I'm attaching a patch that avoids rerouting in
+> IPVS for LOCAL_IN. Please test it in your setup. My tests
+> were with NAT on today's net tree. I checked that it
+> compiles for 3.12.33. You can use the default snat_reroute=1.
+>
 
-address region. But debug_check_no_locks_freed() accepts
+I'm sorry to tell you that your patch does not fix the problem. The BUG happens
+as soon as the client sends PASV, the ftp server does not return "Entering
+Passive Mode":
 
-    mem_from, mem_*len*
+[   91.862502] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000014
+[   91.862735] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
+[   91.862889] PGD 0
+[   91.863026] Oops: 0000 [#1] SMP
+[   91.863235] Modules linked in: netconsole xt_nat xt_multiport ip_vs_rr veth
+iptable_mangle xt_mark nf_conntrack_netlink nfnetlink ipt_MASQUERADE iptable_nat
+nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_tcpudp iptable_filter
+ip_tables cpufreq_ondemand cpufreq_powersave cpufreq_conservative
+cpufreq_userspace ocfs2_stack_o2cb ocfs2_dlm bridge stp llc bonding fuse
+nf_conntrack_ftp 8021q openvswitch gre vxlan xt_conntrack x_tables ocfs2_dlmfs
+dlm sctp ocfs2 ocfs2_nodemanager ocfs2_stackglue configfs rbd kvm_intel kvm
+coretemp ip_vs_ftp ip_vs nf_nat nf_conntrack i2c_i801 psmouse serio_raw lpc_ich
+mfd_core evdev btrfs lzo_decompress lzo_compress
+[   91.866846] CPU: 1 PID: 18895 Comm: vsftpd Not tainted 3.12.33 #5
+[   91.866927] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 1.1a
+09/28/2011
+[   91.867023] task: ffff8807b9360540 ti: ffff8807afe90000 task.ti: ffff8807afe90000
+[   91.867116] RIP: 0010:[<ffffffffa013a470>]  [<ffffffffa013a470>]
+nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
+[   91.867268] RSP: 0018:ffff88083fc43988  EFLAGS: 00010206
+[   91.867346] RAX: 000000000000000c RBX: ffff88079aeb006c RCX: 0000000000000003
+[   91.867428] RDX: 000000000000002a RSI: 0000000000000003 RDI: ffff88079aeb006c
+[   91.867509] RBP: 00000000ce63f6dd R08: ffff8807b2eed780 R09: ffff88083fc43998
+[   91.867598] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+[   91.867679] R13: 0000000000000000 R14: 0000000000000003 R15: ffff880815d948bc
+[   91.867761] FS:  00007f1a8aad5700(0000) GS:ffff88083fc40000(0000)
+knlGS:0000000000000000
+[   91.867855] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   91.867926] CR2: 0000000000000014 CR3: 00000007a386a000 CR4: 00000000000407e0
+[   91.868008] Stack:
+[   91.868073]  ffff88081690d220 0000000000000012 0000000000000014 ffff88079aeb0068
+[   91.868383]  ffff880815d94801 ffffffffa014f681 0000000000000000 ffffffff00000045
+[   91.868694]  ffff880800000048 0000001b00000003 ffff88083fc43a60 ffff88081690d220
+[   91.869003] Call Trace:
+[   91.869077]  <IRQ>
+[   91.869136]  [<ffffffffa014f681>] ? __nf_nat_mangle_tcp_packet+0x109/0x120
+[nf_nat]
+[   91.869356]  [<ffffffffa017749e>] ? ip_vs_ftp_out.part.8+0x2b2/0x338 [ip_vs_ftp]
+[   91.869460]  [<ffffffffa015f884>] ? ip_vs_app_pkt_out+0x105/0x18b [ip_vs]
+[   91.869539]  [<ffffffffa0163028>] ? tcp_snat_handler+0x6b/0x320 [ip_vs]
+[   91.869622]  [<ffffffffa0155d3d>] ? ip_vs_conn_out_get_proto+0x1c/0x25 [ip_vs]
+[   91.869736]  [<ffffffffa015893c>] ? ip_vs_out+0x2a5/0x5f6 [ip_vs]
+[   91.869826]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
+[   91.869906]  [<ffffffff81508e1f>] ? nf_iterate+0x42/0x80
+[   91.869996]  [<ffffffff81508ec6>] ? nf_hook_slow+0x69/0xff
+[   91.870073]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
+[   91.870153]  [<ffffffff8150f8ae>] ? ip_forward+0x22d/0x2cf
+[   91.870230]  [<ffffffff814e57ce>] ? __netif_receive_skb_core+0x5f0/0x66c
+[   91.870311]  [<ffffffff814e59df>] ? process_backlog+0x13e/0x13e
+[   91.870389]  [<ffffffffa0455e09>] ? br_handle_frame_finish+0x382/0x382 [bridge]
+[   91.870482]  [<ffffffff814e5a2b>] ? netif_receive_skb+0x4c/0x7d
+[   91.870561]  [<ffffffffa0455d95>] ? br_handle_frame_finish+0x30e/0x382 [bridge]
+[   91.870652]  [<ffffffffa0455fda>] ? br_handle_frame+0x1d1/0x217 [bridge]
+[   91.870733]  [<ffffffff814e567d>] ? __netif_receive_skb_core+0x49f/0x66c
+[   91.870817]  [<ffffffff8104daa3>] ? call_timer_fn+0x4b/0xf6
+[   91.870893]  [<ffffffff814e592b>] ? process_backlog+0x8a/0x13e
+[   91.870972]  [<ffffffff814e5c31>] ? net_rx_action+0xa2/0x1c0
+[   91.871051]  [<ffffffff81047e2e>] ? __do_softirq+0xf6/0x24f
+[   91.871132]  [<ffffffff815ad7dc>] ? call_softirq+0x1c/0x30
+[   91.871203]  <EOI>
+[   91.871260]  [<ffffffff8100464d>] ? do_softirq+0x2c/0x5f
+[   91.871470]  [<ffffffff81047ca1>] ? local_bh_enable+0x67/0x85
+[   91.871545]  [<ffffffff81511689>] ? ip_finish_output+0x2c9/0x322
+[   91.871628]  [<ffffffff8151240a>] ? ip_queue_xmit+0x2b7/0x2f0
+[   91.871714]  [<ffffffff81524772>] ? tcp_transmit_skb+0x6ef/0x755
+[   91.871792]  [<ffffffff815250e8>] ? tcp_write_xmit+0x886/0x9cb
+[   91.871872]  [<ffffffff8152527a>] ? __tcp_push_pending_frames+0x24/0x7e
+[   91.871951]  [<ffffffff8151a33c>] ? tcp_sendmsg+0xa4c/0xbfc
+[   91.872036]  [<ffffffff814d3477>] ? sock_aio_write+0xe3/0xfd
+[   91.872129]  [<ffffffff81122f4d>] ? do_sync_write+0x59/0x79
+[   91.872215]  [<ffffffff811239e3>] ? vfs_write+0xc4/0x182
+[   91.872298]  [<ffffffff81123daf>] ? SyS_write+0x45/0x7c
+[   91.872382]  [<ffffffff815ac35b>] ? tracesys+0xdd/0xe2
+[   91.872461] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
+89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97 c0 48 6b c0 0c 4c 01 e8 <8b> 70 08
+39 70 04 74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
+[   91.876166] RIP  [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
+[   91.876327]  RSP <ffff88083fc43988>
+[   91.876400] CR2: 0000000000000014
+[   91.876497] ---[ end trace 2c6d9f405db2170c ]---
+[   91.876578] Kernel panic - not syncing: Fatal exception in interrupt
+[   91.876666] Rebooting in 10 seconds..
+[  101.935360] ACPI MEMORY or I/O RESET_REG.
 
-i.e. second parameter is region length, not end address. And it was
-always so, starting from 2006 (fbb9ce95 "lockdep: core").
 
-Fix it, or else on a mutex destroy we wrongly check
-much-wider-than-mutex region and can find not-yet-released other locks
-there and wrongly report BUGs on them.
 
-Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
----
- tools/lib/lockdep/preload.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+node01:/ocfs2/usr/src/linux-3.12.33/scripts# ./decodecode
+</tmp/node01-kernel-ipvs.log
+[ 91.872461] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
+89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97 c0 48 6b c0 0c 4c 01 e8 <8b> 70 08
+39 70 04 74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
+All code
+========
+   0:   68 14 4d 01 c5          pushq  $0xffffffffc5014d14
+   5:   45 85 e4                test   %r12d,%r12d
+   8:   74 46                   je     0x50
+   a:   f0 80 4f 78 40          lock orb $0x40,0x78(%rdi)
+   f:   48 8d 5f 04             lea    0x4(%rdi),%rbx
+  13:   48 89 df                mov    %rbx,%rdi
+  16:   e8 00 12 47 e1          callq  0xffffffffe147121b
+  1b:   31 c0                   xor    %eax,%eax
+  1d:   41 83 fe 02             cmp    $0x2,%r14d
+  21:   0f 97 c0                seta   %al
+  24:   48 6b c0 0c             imul   $0xc,%rax,%rax
+  28:   4c 01 e8                add    %r13,%rax
+  2b:*  8b 70 08                mov    0x8(%rax),%esi           <-- trapping
+instruction
+  2e:   39 70 04                cmp    %esi,0x4(%rax)
+  31:   74 08                   je     0x3b
+  33:   89 ea                   mov    %ebp,%edx
+  35:   0f ca                   bswap  %edx
+  37:   39 10                   cmp    %edx,(%rax)
+  39:   79 0d                   jns    0x48
+  3b:   89 70 04                mov    %esi,0x4(%rax)
+  3e:   44                      rex.R
+  3f:   01                      .byte 0x1
 
-diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
-index 6f80360..0b0112c 100644
---- a/tools/lib/lockdep/preload.c
-+++ b/tools/lib/lockdep/preload.c
-@@ -317,7 +317,7 @@ int pthread_mutex_destroy(pthread_mutex_t *mutex)
- 	 *
- 	 * TODO: Hook into free() and add that check there as well.
- 	 */
--	debug_check_no_locks_freed(mutex, mutex + sizeof(*mutex));
-+	debug_check_no_locks_freed(mutex, sizeof(*mutex));
- 	__del_lock(__get_lock(mutex));
- 	return ll_pthread_mutex_destroy(mutex);
- }
-@@ -341,7 +341,7 @@ int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
- {
- 	try_init_preload();
- 
--	debug_check_no_locks_freed(rwlock, rwlock + sizeof(*rwlock));
-+	debug_check_no_locks_freed(rwlock, sizeof(*rwlock));
- 	__del_lock(__get_lock(rwlock));
- 	return ll_pthread_rwlock_destroy(rwlock);
- }
+Code starting with the faulting instruction
+===========================================
+   0:   8b 70 08                mov    0x8(%rax),%esi
+   3:   39 70 04                cmp    %esi,0x4(%rax)
+   6:   74 08                   je     0x10
+   8:   89 ea                   mov    %ebp,%edx
+   a:   0f ca                   bswap  %edx
+   c:   39 10                   cmp    %edx,(%rax)
+   e:   79 0d                   jns    0x1d
+  10:   89 70 04                mov    %esi,0x4(%rax)
+  13:   44                      rex.R
+  14:   01                      .byte 0x1
+
+
+
 -- 
-2.2.0.309.gc3c329f
+
+Mit freundlichen Grüßen,
+
+Florian Wiessner
+
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
+
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
+
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
