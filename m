@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536AbaLHNGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:06:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42227 "EHLO mx1.redhat.com"
+	id S1755566AbaLHNGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:06:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514AbaLHNG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:06:29 -0500
-Date: Mon, 8 Dec 2014 15:06:23 +0200
+	id S1755535AbaLHNGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:06:36 -0500
+Date: Mon, 8 Dec 2014 15:06:30 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 4/9] virtio_pci: use priv for vq notification
-Message-ID: <1418043812-25753-5-git-send-email-mst@redhat.com>
+Subject: [PATCH 7/9] virtio_pci: setup config vector indirectly
+Message-ID: <1418043812-25753-8-git-send-email-mst@redhat.com>
 References: <1418043812-25753-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,39 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slightly reduce the amount of pointer chasing this needs to do.
-More importantly, this will easily generalize to virtio 1.0.
+config vector setup is version specific, do it indirectly.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/virtio/virtio_pci.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/virtio/virtio_pci.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 6a7b8bf..7b82eb5 100644
+index 68023e5..c8ca3f7 100644
 --- a/drivers/virtio/virtio_pci.c
 +++ b/drivers/virtio/virtio_pci.c
-@@ -204,11 +204,9 @@ static void vp_reset(struct virtio_device *vdev)
- /* the notify function used when creating a virt queue */
- static bool vp_notify(struct virtqueue *vq)
- {
--	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
--
- 	/* we write the queue's selector into the notification register to
- 	 * signal the other end */
--	iowrite16(vq->index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
-+	iowrite16(vq->index, (void __iomem *)vq->priv);
- 	return true;
+@@ -89,6 +89,7 @@ struct virtio_pci_device {
+ 				      const char *name,
+ 				      u16 msix_vec);
+ 	void (*del_vq)(struct virtio_pci_vq_info *info);
++	u16 (*config_vector)(struct virtio_pci_device *vp_dev, u16 vector);
+ };
+ 
+ /* Constants for MSI-X */
+@@ -271,6 +272,15 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
+ 	return vp_vring_interrupt(irq, opaque);
  }
  
-@@ -437,6 +435,7 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 		goto out_activate_queue;
- 	}
++u16 vp_config_vector(struct virtio_pci_device *vp_dev, u16 vector)
++{
++	/* Setup the vector used for configuration events */
++	iowrite16(vector, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++	/* Verify we had enough resources to assign the vector */
++	/* Will also flush the write out to device */
++	return ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++}
++
+ static void vp_free_vectors(struct virtio_device *vdev)
+ {
+ 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+@@ -290,10 +300,7 @@ static void vp_free_vectors(struct virtio_device *vdev)
  
-+	vq->priv = (void __force *)vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY;
- 	info->vq = vq;
+ 	if (vp_dev->msix_enabled) {
+ 		/* Disable the vector used for configuration */
+-		iowrite16(VIRTIO_MSI_NO_VECTOR,
+-			  vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
+-		/* Flush the write out to device */
+-		ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++		vp_dev->config_vector(vp_dev, VIRTIO_MSI_NO_VECTOR);
  
- 	if (msix_vec != VIRTIO_MSI_NO_VECTOR) {
+ 		pci_disable_msix(vp_dev->pci_dev);
+ 		vp_dev->msix_enabled = 0;
+@@ -357,9 +364,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
+ 		goto error;
+ 	++vp_dev->msix_used_vectors;
+ 
+-	iowrite16(v, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++	v = vp_dev->config_vector(vp_dev, v);
+ 	/* Verify we had enough resources to assign the vector */
+-	v = ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
+ 	if (v == VIRTIO_MSI_NO_VECTOR) {
+ 		err = -EBUSY;
+ 		goto error;
+@@ -770,6 +776,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
+ 	vp_dev->vdev.id.vendor = pci_dev->subsystem_vendor;
+ 	vp_dev->vdev.id.device = pci_dev->subsystem_device;
+ 
++	vp_dev->config_vector = vp_config_vector;
+ 	vp_dev->setup_vq = setup_vq;
+ 	vp_dev->del_vq = del_vq;
+ 
 -- 
 MST
 
