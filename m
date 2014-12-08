@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210AbaLHLfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:35:44 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53756 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291AbaLHLfm (ORCPT
+	id S1755334AbaLHLgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:36:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:16441 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256AbaLHLgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:35:42 -0500
-Message-ID: <54858D07.2030403@de.ibm.com>
-Date: Mon, 08 Dec 2014 12:35:35 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Michael Ellerman <mpe@ellerman.id.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the access_once tree
-References: <20141208222641.40a64946@canb.auug.org.au>
-In-Reply-To: <20141208222641.40a64946@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120811-0029-0000-0000-00000211B9B7
+	Mon, 8 Dec 2014 06:36:04 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-4a-54858d223a38
+Message-id: <54858D2B.3040809@samsung.com>
+Date: Mon, 08 Dec 2014 17:06:11 +0530
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
+        arnd@arndb.de, olof@lixom.net, catalin.marinas@arm.com,
+        will.deacon@arm.com, s.nawrocki@samsung.com, tomasz.figa@gmail.com,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, geunsik.lim@samsung.com,
+        sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/19] clk: samsung: exynos5433: Add clocks for CMU_G2D
+ domain
+References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
+ <1417510196-6714-6-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1417510196-6714-6-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=windows-1252; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsWyRsSkSleptzXEYN4bMYvHaxYzWfyddIzd
+	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtsenyN1eLy
+	rjlsFjPO7wPqv/OPzWLp9YtMFqeuf2azOPymndVixuSXbBardv1htHj58QSLg6jHmnlrGD1+
+	/5rE6LFz1l12j81L6j2unGhi9ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6M+Q9Pshec4qhY
+	PJmzgfEzWxcjJ4eEgInE3S8/2SFsMYkL99YDxbk4hASWMkrs2P+HFabo+PYfzBCJ6YwSXx6t
+	ZIRwWpkkDvy7ywhSxSugJfFzx3ewsSwCqhIP50wCG8smoCvx5P1cZhBbVCBC4sqaOVD1ghI/
+	Jt9jAbFFBLIlnr45DLaaWWAns8T57ilgCWGBEInjN94xgdhCAvUSfd8awU7iFHCVeDTjDVgN
+	s4CtxIL366BseYnNa96CnSohcIBDYt2Hn0wQFwlIfJt8CKiIAyghK7HpADPEa5ISB1fcYJnA
+	KDYLyU2zkIydhWTsAkbmVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBSeH0v2d9OxhvHrA+
+	xCjAwajEw7vgQUuIEGtiWXFl7iFGU6ArJjJLiSbnA1NPXkm8obGZkYWpiamxkbmlmZI4b4LU
+	z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjG2KTe0Mco0H94s8nsdyzj3mgNGs1gupf6OC
+	p95rL355rjpYh12pI6ZI+6yvUoDVo0Rex7/8W/QfXnl/026BzprF5l3BIW55f6+7+q6XPKSf
+	vunzMom/17nvS6i9ep/1WVOhtlfm8lrVU6mPHCK3RPSKJfHdVFuU1rw9Nm/S0UUzMy10r7wW
+	UWIpzkg01GIuKk4EANCWooIFAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jQV2l3tYQg13/uC0er1nMZPF30jF2
+	i/fLehgtLu/Xtrj+5Tmrxfwj51gt/kxoZbOYdH8Ci8WNX22sFr0LrrJZnG16w26x6fE1VovL
+	u+awWcw4vw+o/84/Noul1y8yWZy6/pnN4vCbdlaLGZNfslms2vWH0eLlxxMsDqIea+atYfT4
+	/WsSo8fOWXfZPTYvqfe4cqKJ1aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPj
+	neNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAvlJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih
+	6xsSBNdjZIAGEtYwZsx/eJK94BRHxeLJnA2Mn9m6GDk5JARMJI5v/8EMYYtJXLi3HijOxSEk
+	MJ1R4sujlYwQTiuTxIF/dxlBqngFtCR+7vgO1s0ioCrxcM4kdhCbTUBX4sn7uWCTRAUiJK6s
+	mQNVLyjxY/I9FhBbRCBb4umbw2AbmAV2Mkuc754ClhAWCJE4fuMdE4gtJFAv0fetkRXE5hRw
+	lXg04w1YDbOArcSC9+ugbHmJzWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yY
+	W1yal66XnJ+7iRGccp5J7WBc2WBxiFGAg1GJh3fBg5YQIdbEsuLK3EOMEhzMSiK8iXGtIUK8
+	KYmVValF+fFFpTmpxYcYTYFBMJFZSjQ5H5gO80riDY1NzE2NTS1NLEzMLJXEeW/czA0REkhP
+	LEnNTk0tSC2C6WPi4JRqYOz3Tr80ccqW9yobXoRnf97iwJs0ofx5WO6+CdLG0xomFu1M0jlW
+	sthHJOnrf8ZQRcmA/YstjH892L2MRfU8zxRJ5tc+m0r/rj7HwGmjcfpryKftNunP5h02YTZN
+	8DS4I79j3z27sPSW0GVCkb0bRBd8f7kq4eq0Z5sXX+02dJQ/yPL4g4337kYlluKMREMt5qLi
+	RAB8tSNbTwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.12.2014 um 12:26 schrieb Stephen Rothwell:
-> Hi Christian,
-> 
-> After merging the acess_once tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
-> 
-> arch/powerpc/mm/hugetlbpage.c: In function 'find_linux_pte_or_hugepte':
-> arch/powerpc/mm/hugetlbpage.c:981:3: error: invalid initializer
->    pud  = ACCESS_ONCE(*pudp);
->    ^
-> arch/powerpc/mm/hugetlbpage.c:993:4: error: invalid initializer
->     pmd  = ACCESS_ONCE(*pmdp);
->     ^
-> 
-> These are preexisting ...
-> 
-> mm/gup.c: In function 'gup_pmd_range':
-> mm/gup.c:929:3: error: invalid initializer
->    pmd_t pmd = ACCESS_ONCE(*pmdp);
->    ^
-> mm/gup.c:929:3: error: (near initialization for 'pmd')
-> 
-> This is from commit f30c59e921f1 ("mm: Update generic gup
-> implementation to handle hugepage directory") from the powerpc-mpe (and
-> powerpc) tree and so will require a merge fix patch (presumable
-> s/ACCESS_ONCE/READ_ONCE/).
-> 
-> I am not sure how many architectures you are trying to cover, but
-> powerpc is one I care about :-)
-> 
-> I have dropped the access_once tree again today, sorry (its too late at
-> night).
+Hi Chanwoo,
 
-Yes, we expect that tightening ACCESS_ONCE will trigger these bugs. I tried to cover everything in Linus master, but next is certainly a new game. It will be pretty hard for me to keep this running when hundreds of trees get merged during 3.19-rc. :-(
+On Tuesday 02 December 2014 02:19 PM, Chanwoo Choi wrote:
+> This patch adds ths mux/divider/gate clocksof CMU_G2D domain which includes
 
-Linus, I see two options:
+nit: %s/clocksof/clocks of
 
-a: Either we go a full round in linux-next and expect all trees to follow the new rules, so we can merge this for 3.20
-b: Only apply READ/ASSIGN_ONCE and the first fixups for 3.19 and put the ACCESS_ONCE change in next after rc1 so it will go in for 3.20 (or later) so that people can adopt. 
+> G2D/MDMA IPs. The CMU_G2D must need the clocks related to G2D by providing
+> CMU_TOP domain. So, this patch add several clocks for G2D from CMU_TOP domain.
+>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Inki Dae <inki.dae@samsung.com>
+> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
+> ---
+>   .../devicetree/bindings/clock/exynos5433-clock.txt |   8 ++
+>   drivers/clk/samsung/clk-exynos5433.c               | 144 +++++++++++++++++++++
+>   include/dt-bindings/clock/exynos5433.h             |  42 +++++-
+>   3 files changed, 193 insertions(+), 1 deletion(-)
+>
 
-Any opinions?
+Verified all changes in clock file against UM I have with me, all 
+changes are OK.
 
-Christian
+With small nit in commit message feel free to add:
 
+Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 
+Thanks,
+Pankaj Dubey
