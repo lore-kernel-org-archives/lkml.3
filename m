@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaLHJ4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:56:35 -0500
-Received: from sauhun.de ([89.238.76.85]:39724 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752927AbaLHJ4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:56:34 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH] MAINTAINERS: add I2C dt bindings also to I2C realm
-Date: Mon,  8 Dec 2014 10:56:26 +0100
-Message-Id: <1418032586-3778-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.1.3
+	id S1754821AbaLHJ4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:56:43 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:50154 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927AbaLHJ4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:56:41 -0500
+Date: Mon, 8 Dec 2014 01:56:37 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation of current lglocks implementation
+Message-ID: <20141208095637.GB2821@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Nicholas Mc Guire <der.herr@hofr.at>, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20141208083326.GA29895@opentech.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141208083326.GA29895@opentech.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So get_maintainer.pl will add us when something gets updated there.
+Nicholas,
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- MAINTAINERS | 1 +
- 1 file changed, 1 insertion(+)
+On Mon, Dec 08, 2014 at 09:33:26AM +0100, Nicholas Mc Guire wrote:
+> 
+> Documentation of current lglocks implementation
+> 
+> local/global locks are currently not documented anywhere other
+> than in an somewhat out-of-date LWN article - this is an attempt
+[...]
+> +Implementation:
+> +---------------
+> +
+> +The initial lglock implementation from Nick Piggin used some complex
+> +macros to generate the lglock/brlock in lglock.h - they were later
+> +turned into a set of functions by Andi Kleen [7]. The change to functions
+> +was motivated by the presence of multiple lock users and also by them
+> +being easier to maintain than the generating macros. This change to
+> +functions is also the basis to eliminated the restriction of not
+> +being initializeable in kernel modules (the remaining problem is that
+         ^^^^^^^^^^^^^^
+		 initializable
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ea4d0058fd1b..794a8f0a31f6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4561,6 +4561,7 @@ W:	https://i2c.wiki.kernel.org/
- Q:	https://patchwork.ozlabs.org/project/linux-i2c/list/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git
- S:	Maintained
-+F:	Documentation/devicetree/bindings/i2c/
- F:	Documentation/i2c/
- F:	drivers/i2c/
- F:	include/linux/i2c.h
+> +locks are not explicitly initialized - see lockdep-design.txt)
+> +
+> +Declaration and initialization:
+> +-------------------------------
+> +
+> +  #include <linux/lglock.h>
+[...]
+
 -- 
-2.1.3
-
+- Jeremiah Mahler
