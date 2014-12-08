@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaLHS6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:58:23 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51827 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223AbaLHS6W (ORCPT
+	id S1756009AbaLHTBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 14:01:45 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:57326 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLHTBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:58:22 -0500
-Date: Mon, 8 Dec 2014 19:58:14 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v1] CPU hotplug: active_reader not woken up in some
- cases - deadlock
-Message-ID: <20141208195814.663007dd@thinkpad-w530>
-In-Reply-To: <20141208183134.GQ25340@linux.vnet.ibm.com>
-References: <1418062383-39657-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141208183134.GQ25340@linux.vnet.ibm.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Mon, 8 Dec 2014 14:01:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120818-0041-0000-0000-000002673E1B
+In-Reply-To: <20141208185635.GA25867@node.dhcp.inet.fi>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
+	<20141208164650.GB29028@node.dhcp.inet.fi>
+	<20141208175805.GB22149@ZenIV.linux.org.uk>
+	<20141208185635.GA25867@node.dhcp.inet.fi>
+Date: Mon, 8 Dec 2014 11:01:41 -0800
+X-Google-Sender-Auth: Z6dZU5kvsf1ANshfJuwZhoVBHQ0
+Message-ID: <CA+55aFwow9hVqNVGp7gjnnu4=A+J8vw1i22W4e7+1r1-215cHg@mail.gmail.com>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Dec 08, 2014 at 07:13:03PM +0100, David Hildenbrand wrote:
-> > Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-> > grace periods") introduced another problem that can easily be reproduced by
-> > starting/stopping cpus in a loop.
-> > 
-> > E.g.:
-> >   for i in `seq 5000`; do
-> >       echo 1 > /sys/devices/system/cpu/cpu1/online
-> >       echo 0 > /sys/devices/system/cpu/cpu1/online
-> >   done
-> > 
-> > Will result in:
-> >   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-> >   Call Trace:
-> >   ([<00000000006a028e>] __schedule+0x406/0x91c)
-> >    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-> >    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-> >    [<0000000000131232>] cpu_up+0xb6/0xd4
-> >    [<00000000004a5720>] device_online+0x80/0xc0
-> >    [<00000000004a57f0>] online_store+0x90/0xb0
-> >   ...
-> > 
-> > And a deadlock.
-> > 
-> > Problem is that if the last ref in put_online_cpus() can't get the
-> > cpu_hotplug.lock the puts_pending count is incremented, but a sleeping active_writer
-> > might never be woken up, therefore never exiting the loop in cpu_hotplug_begin().
-> > 
-> > This quick fix wakes up the active_writer proactively. The writer already
-> > goes back to sleep if the ref count isn't already down to 0, so this should be
-> > fine.
-> > 
-> > Can't reproduce the error with this fix.
-> 
-> Good catch!
-> 
-> But don't we need to use exactly the same value for the NULL check
-> and for the wakeup?  Otherwise, wouldn't it be possible for
-> cpu_hotplug.active_writer to be non-NULL for the check but NULL
-> for the wake_up_process()?
-> 
-> 							Thanx, Paul
+On Mon, Dec 8, 2014 at 10:56 AM, Kirill A. Shutemov
+<kirill@shutemov.name> wrote:
+>
+> trinity triggers it for me in few minutes. I will try find out more once
+> get some time.
 
-active_writer is cleared while holding cpuhp_lock, so this should be safe,
-right?
+You run trinity as *root*?
 
-Thanks!
+You're a brave man. Stupid, but brave ;)
 
+I guess you're running it in a VM, but still.. Doing random system
+calls as root sounds like a bad bad idea.
+
+                      Linus
