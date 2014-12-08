@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaLHUTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:19:01 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49784 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaLHUS7 (ORCPT
+	id S1754551AbaLHUVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:21:05 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:60298 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998AbaLHUVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:18:59 -0500
-Date: Mon, 8 Dec 2014 21:18:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
- Flash class extension
-Message-ID: <20141208201855.GA16648@amd>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
- <20141129125832.GA315@amd>
- <547C539A.4010500@samsung.com>
- <20141201130437.GB24737@amd>
- <547C7420.4080801@samsung.com>
- <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
- <20141206124310.GB3411@amd>
- <5485D7F8.10807@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5485D7F8.10807@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 15:21:03 -0500
+Message-ID: <1418070059.2058.39.camel@x220>
+Subject: Re: [PATCH 0/3] remove undocumented type definition alias
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Jaeger <cj@linux.com>
+Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dborkman@redhat.com
+Date: Mon, 08 Dec 2014 21:20:59 +0100
+In-Reply-To: <cover.1418003065.git.cj@linux.com>
+References: <cover.1418003065.git.cj@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Dec 2014 20:20:59.0036 (UTC) FILETIME=[7A9945C0:01D01324]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-12-08 17:55:20, Jacek Anaszewski wrote:
-> On 12/06/2014 01:43 PM, Pavel Machek wrote:
-> >
-> >>>The format of a sysfs attribute should be concise.
-> >>>The error codes are generic and map directly to the V4L2 Flash
-> >>>error codes.
-> >>>
-> >>
-> >>Actually I'd like to see those flash fault code defined in LED
-> >>subsystem. And V4L2 will just include LED flash header file to use it.
-> >>Because flash fault code is not for V4L2 specific but it's a feature
-> >>of LED flash devices.
-> >>
-> >>For clearing error code of flash devices, I think it depends on the
-> >>hardware. If most of our LED flash is using reading to clear error
-> >>code, we probably can make it simple as this now. But what if some
-> >>other LED flash devices are using writing to clear error code? we
-> >>should provide a API to that?
-> >
-> >Actually, we should provide API that makes sense, and that is easy to
-> >use by userspace.
-> >
-> >I believe "read" is called read because it does not change anything,
-> >and it should stay that way in /sysfs. You may want to talk to sysfs
-> >maintainers if you plan on doing another semantics.
+On Sun, 2014-12-07 at 20:49 -0500, Christoph Jaeger wrote:
+> This patchset removes support for the undocumented type definition keyword
+> 'boolean', that is used in some config option definitions, in favor of the
+> much more widely used 'bool'. Both are semantically equivalent.
 > 
-> How would you proceed in case of devices which clear their fault
-> register upon I2C readout (e.g. AS3645)? In this case read does have
-> a side effect. For such devices attribute semantics would have to be
-> different than for the devices which don't clear faults on readout.
+> % git grep -w bool -- '*Kconfig*' | wc -l
+> 7065
+> % git grep -w boolean -- '*Kconfig*' | wc -l
+> 94
 
-No, semantics should be same for all devices.
+(Side note: I _always_ use: $SOME_GIT_GREP $(git ls-files "*Kconfig*").
+Have I been typing too much all those years?)
 
-If device clears fault register during I2C readout, kernel will simply
-gather faults in an variable, and clear them upon write to sysfs file.
+> Having this alias is more confusing than helpful.
 
-Best regards,
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Agree. (boolean is a better keyword than bool. Changing 7065 lines
+instead of 94 for that reason alone would be overdoing it.)
+
+> This change was suggested by Daniel Borkmann <dborkman@redhat.com>.
+> 
+> 
+> Patch 3/3 is purely cosmetic and therefore optional.
+> 
+> Christoph Jaeger (3):
+>   kconfig: regenerate parser
+>   kconfig: remove undocumented type definition alias 'boolean'
+>   kconfig: rename S_BOOLEAN to S_BOOL for consistency
+
+For the record. I tested these three patches, on top of next-20141208,
+with this bit of perl:
+
+use 5.016;
+use warnings;
+use autodie;
+
+exit main ( @ARGV );
+
+sub main {
+	my ($tree) = @ARGV;
+
+	open( my $git_ls_tree, "-|", "git", "ls-tree", "-r", $tree );
+	my $slurp = do { local $/ = undef; <$git_ls_tree> };
+	my @lines = split( /\n/, $slurp );
+	foreach my $line ( @lines ) {
+		my ( @tmp ) = split( /\s/, $line );
+		if ($tmp[3] =~ 'defconfig$' ) {
+			my $arch;
+			my $defconfig = $tmp[3];
+			($arch = $tmp[3]) =~ s/arch\/(\w+)\/.*/$1/;
+
+			`cp $defconfig .config`;
+			`yes "" | make ARCH=$arch oldconfig`;
+			my $out = `md5sum .config`;
+			my (@tmp) = split( /\s/, $out );
+			say( $tmp[0] );
+		}
+	}
+	close( $git_ls_tree );
+
+	0;
+}
+
+Note how I have trouble following my own whitespace rules. If someone
+spots a flaw in this approach I'm all ears.
+
+I'll add further feedback on the patches themselves.
+
+Thanks,
+
+
+Paul Bolle
+
