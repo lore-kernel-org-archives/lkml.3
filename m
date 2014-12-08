@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaLHWsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 17:48:16 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:34704 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698AbaLHWsN (ORCPT
+	id S1755859AbaLHWtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 17:49:20 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:64172 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405AbaLHWtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 17:48:13 -0500
+	Mon, 8 Dec 2014 17:49:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <874mt5ojfh.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87ppbtn4mv.fsf@x220.int.ebiederm.org>
 References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
  <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
  <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
@@ -16,17 +16,15 @@ References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacap
  <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
  <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
  <87388xodlj.fsf@x220.int.ebiederm.org> <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
- <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87bnndre2h.fsf_-_@x220.int.ebiederm.org>
- <5486237D.4060304@nod.at> <CALCETrXSG5QN8J3GtZjLdV6T7j_uaMG=fyTDt27vEK0NpGs9qg@mail.gmail.com>
- <548625E3.6020400@nod.at> <874mt5ojfh.fsf@x220.int.ebiederm.org>
+ <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com> <87ppbtn4mv.fsf@x220.int.ebiederm.org>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 8 Dec 2014 14:47:50 -0800
-Message-ID: <CALCETrWZzT19dzXJsnPMY5XE+=PBQ6kAtZ6K3bG7FQYGpCQq+A@mail.gmail.com>
-Subject: Re: [CFT][PATCH 2/7] userns: Don't allow setgroups until a gid
- mapping has been setablished
+Date: Mon, 8 Dec 2014 14:48:54 -0800
+Message-ID: <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
+Subject: Re: [CFT][PATCH 6/7] userns: Add a knob to disable setgroups on a per
+ user namespace basis
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Linux Containers <containers@lists.linux-foundation.org>,
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
         Josh Triplett <josh@joshtriplett.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>,
@@ -37,87 +35,76 @@ Cc: Richard Weinberger <richard@nod.at>,
         LSM <linux-security-module@vger.kernel.org>,
         Casey Schaufler <casey@schaufler-ca.com>,
         "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
         Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 2:39 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Richard Weinberger <richard@nod.at> writes:
+On Mon, Dec 8, 2014 at 2:44 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
->> Am 08.12.2014 um 23:25 schrieb Andy Lutomirski:
->>> On Mon, Dec 8, 2014 at 2:17 PM, Richard Weinberger <richard@nod.at> wrote:
->>>> Am 08.12.2014 um 23:07 schrieb Eric W. Biederman:
->>>>>
->>>>> setgroups is unique in not needing a valid mapping before it can be called,
->>>>> in the case of setgroups(0, NULL) which drops all supplemental groups.
->>>>>
->>>>> The design of the user namespace assumes that CAP_SETGID can not actually
->>>>> be used until a gid mapping is established.  Therefore add a helper function
->>>>> to see if the user namespace gid mapping has been established and call
->>>>> that function in the setgroups permission check.
->>>>>
->>>>> This is part of the fix for CVE-2014-8989, being able to drop groups
->>>>> without privilege using user namespaces.
->>>>>
->>>>> Cc: stable@vger.kernel.org
->>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->>>>> ---
->>>>>  include/linux/user_namespace.h | 9 +++++++++
->>>>>  kernel/groups.c                | 7 ++++++-
->>>>>  2 files changed, 15 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
->>>>> index e95372654f09..41cc26e5a350 100644
->>>>> --- a/include/linux/user_namespace.h
->>>>> +++ b/include/linux/user_namespace.h
->>>>> @@ -37,6 +37,15 @@ struct user_namespace {
->>>>>
->>>>>  extern struct user_namespace init_user_ns;
->>>>>
->>>>> +static inline bool userns_gid_mappings_established(const struct user_namespace *ns)
->>>>> +{
->>>>> +     bool established;
->>>>> +     smp_mb__before_atomic();
->>>>> +     established = ACCESS_ONCE(ns->gid_map.nr_extents) != 0;
->>>>> +     smp_mb__after_atomic();
->>>>> +     return established;
->>>>> +}
->>>>> +
->>>>
->>>> Maybe this is a stupid question, but why do we need all this magic
->>>> around established =  ... ?
->>>> The purpose of this code is to check whether ns->gid_map.nr_extents != 0
->>>> in a lock-free manner?
->>>>
+>> On Mon, Dec 8, 2014 at 2:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
 >>>
->>> See my other comment -- the ordering will matter at the end of the series.
+>>> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
+>>>
+>>>   A value of 0 means the setgroups system call is disabled in the
 >>
->> But ns->gid_map.nr_extents is not atomic, it is a plain u32.
->> This confuses me.
+>> "deny"
+>>
+>>>   current processes user namespace and can not be enabled in the
+>>>   future in this user namespace.
+>>>
+>>>   A value of 1 means the segtoups system call is enabled.
+>>>
+>>
+>> "allow"
+>>
+>>> - Descedent user namespaces inherit the value of setgroups from
+>>
+>> s/Descedent/Descendent/
 >
-> Read Documentation/atomic_ops.txt a plain u32 is atomic by definiton.
+> Bah.  I updated everything but the changelog comment.
+>
+>>> --- a/kernel/groups.c
+>>> +++ b/kernel/groups.c
+>>> @@ -222,6 +222,7 @@ bool may_setgroups(void)
+>>>          * the user namespace has been established.
+>>>          */
+>>>         return userns_gid_mappings_established(user_ns) &&
+>>> +               userns_setgroups_allowed(user_ns) &&
+>>>                 ns_capable(user_ns, CAP_SETGID);
+>>>  }
+>>
+>> Can you add a comment explaining the ordering?  For example:
+>
+> I need to think on what I can say to make it clear.
+> Perhaps: /* Careful the order of these checks is important. */
+>
+>> We need to check for a gid mapping before checking setgroups_allowed
+>> because an unprivileged user can create a userns with setgroups
+>> allowed, then disallow setgroups and add a mapping.  If we check in
+>> the opposite order, then we have a race: we could see that setgroups
+>> is allowed before the user clears the bit and then see that there is a
+>> gid mapping after the other thread is done.
 >
 
-I still don't understand why the helper changed to smp_mb__before_atomic.
+This text was actually my suggested comment text.
 
-> Which is a little bit convoluted.  However that is part of the of the
-> gid mapping path and I optimized that as far as I humanly could so that
-> calls like stat don't take a noticable slow donw.
->
-> On this path we don't particularly care except that I am using an the
-> existing data structure.
-
-As an example, arm64 defines both smp_mb__before_atomic and
-smp_mb__after_atomic as smp_mb(), which is heavier then smp_rmb(), and
-there are two of them.  So I still like the explicit smp_rmb() better.
+If you put smp_rmb() in this function with a comment like that, then I
+think it will all make sense and be obviously correct (even with most
+of the other barriers removed).
 
 --Andy
 
+> Since these are independent atomic variables yes that ordering issue
+> seems to be the case.
+>
+> For me it was the natural ordering of the checks so I didn't even bother
+> to think about what happens when you reorder them.
 >
 > Eric
->
 
 
 
