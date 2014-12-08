@@ -1,112 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbaLHHbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 02:31:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007AbaLHHbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 02:31:19 -0500
-Date: Mon, 8 Dec 2014 09:30:58 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC v2 3/4] virtio: allow finalize_features to fail
-Message-ID: <20141208073058.GG18208@redhat.com>
-References: <1417718645-25678-1-git-send-email-mst@redhat.com>
- <1417718645-25678-3-git-send-email-mst@redhat.com>
- <20141205105354.2cf1bfc9@thinkpad-w530>
+	id S1754354AbaLHHcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 02:32:54 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53573 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901AbaLHHcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 02:32:53 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 8 Dec 2014 16:36:37 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [RFC PATCH 3/3] mm: always steal split buddies in fallback
+ allocations
+Message-ID: <20141208073637.GA4757@js1304-P5Q-DELUXE>
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
+ <1417713178-10256-4-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141205105354.2cf1bfc9@thinkpad-w530>
+In-Reply-To: <1417713178-10256-4-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:53:54AM +0100, David Hildenbrand wrote:
-> > This will make it easy for transports to validate features and return
-> > failure.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/linux/virtio_config.h          | 3 ++-
-> >  drivers/lguest/lguest_device.c         | 4 +++-
-> >  drivers/misc/mic/card/mic_virtio.c     | 4 +++-
-> >  drivers/remoteproc/remoteproc_virtio.c | 4 +++-
-> >  drivers/s390/kvm/kvm_virtio.c          | 4 +++-
-> >  drivers/s390/kvm/virtio_ccw.c          | 6 ++++--
-> >  drivers/virtio/virtio.c                | 4 +++-
-> >  drivers/virtio/virtio_mmio.c           | 4 +++-
-> >  drivers/virtio/virtio_pci.c            | 4 +++-
-> >  9 files changed, 27 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-> > index 1fa5faa..7979f85 100644
-> > --- a/include/linux/virtio_config.h
-> > +++ b/include/linux/virtio_config.h
-> > @@ -47,6 +47,7 @@
-> >   *	vdev: the virtio_device
-> >   *	This gives the final feature bits for the device: it can change
-> >   *	the dev->feature bits if it wants.
-> > + *	Returns 0 on success or error status
+On Thu, Dec 04, 2014 at 06:12:58PM +0100, Vlastimil Babka wrote:
+> When allocation falls back to another migratetype, it will steal a page with
+> highest available order, and (depending on this order and desired migratetype),
+> it might also steal the rest of free pages from the same pageblock.
 > 
-> "Returns 0 on success, otherwise the error status."
+> Given the preference of highest available order, it is likely that it will be
+> higher than the desired order, and result in the stolen buddy page being split.
+> The remaining pages after split are currently stolen only when the rest of the
+> free pages are stolen. This can however lead to situations where for MOVABLE
+> allocations we split e.g. order-4 fallback UNMOVABLE page, but steal only
+> order-0 page. Then on the next MOVABLE allocation (which may be batched to
+> fill the pcplists) we split another order-3 or higher page, etc. By stealing
+> all pages that we have split, we can avoid further stealing.
+> 
+> This patch therefore adjust the page stealing so that buddy pages created by
+> split are always stolen. This has effect only on MOVABLE allocations, as
+> RECLAIMABLE and UNMOVABLE allocations already always do that in addition to
+> stealing the rest of free pages from the pageblock.
 
-It's what other functions say.
-I'm ok with changing this but let's do it in a separate patch.
+In fact, CMA also has same problem and this patch skips to fix it.
+If movable allocation steals the page on CMA reserved area, remained split
+freepages are always linked to original CMA buddy list. And then, next
+fallback allocation repeately selects most highorder freepage on CMA
+area and split it.
 
-> >   * @bus_name: return the bus name associated with the device
-> >   *	vdev: the virtio_device
-> >   *      This returns a pointer to the bus name a la pci_name from which
-> > @@ -68,7 +69,7 @@ struct virtio_config_ops {
-> >  			const char *names[]);
-> >  	void (*del_vqs)(struct virtio_device *);
-> >  	u64 (*get_features)(struct virtio_device *vdev);
-> > -	void (*finalize_features)(struct virtio_device *vdev);
-> > +	int (*finalize_features)(struct virtio_device *vdev);
-> >  	const char *(*bus_name)(struct virtio_device *vdev);
-> >  	int (*set_vq_affinity)(struct virtqueue *vq, int cpu);
-> >  };
+IMO, It'd be better to re-consider whole fragmentation avoidance logic.
+
+Thanks.
+
 > 
-> ...
+> Note that commit 7118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added")
+> has already performed this change (unintentinally), but was reverted by commit
+> 0cbef29a7821 ("mm: __rmqueue_fallback() should respect pageblock type").
+> Neither included evaluation. My evaluation with stress-highalloc from mmtests
+> shows about 2.5x reduction of page stealing events for MOVABLE allocations,
+> without affecting the page stealing events for other allocation migratetypes.
 > 
-> > 
-> >  static void virtio_ccw_get_config(struct virtio_device *vdev,
-> > diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> > index 6b4c1113..7ddebbc 100644
-> > --- a/drivers/virtio/virtio.c
-> > +++ b/drivers/virtio/virtio.c
-> > @@ -211,7 +211,9 @@ static int virtio_dev_probe(struct device *_d)
-> >  		if (device_features & (1ULL << i))
-> >  			__virtio_set_bit(dev, i);
-> > 
-> > -	dev->config->finalize_features(dev);
-> > +	err = dev->config->finalize_features(dev);
-> > +	if (err)
-> > +		goto err;
-> > 
-> >  	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
-> >  		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-> > diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> > index aec1dae..5219210 100644
-> > --- a/drivers/virtio/virtio_mmio.c
-> > +++ b/drivers/virtio/virtio_mmio.c
-> > @@ -152,7 +152,7 @@ static u64 vm_get_features(struct virtio_device *vdev)
-> >  	return readl(vm_dev->base + VIRTIO_MMIO_HOST_FEATURES);
-> >  }
-> > 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> ---
+>  mm/page_alloc.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> Do we have to take care of fails in virtio_device_restore()?
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index a14249c..82096a6 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1108,11 +1108,9 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+>  		if (pages >= (1 << (pageblock_order-1)) ||
+>  				page_group_by_mobility_disabled)
+>  			set_pageblock_migratetype(page, start_type);
+> -
+> -		return start_type;
+>  	}
+>  
+> -	return fallback_type;
+> +	return start_type;
+>  }
+>  
+>  /* Remove an element from the buddy allocator from the fallback list */
+> -- 
+> 2.1.2
 > 
-> Otherwise looks good to me.
-> 
-> David
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
