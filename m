@@ -1,93 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122AbaLHR4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:56:52 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:47736 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaLHR4t (ORCPT
+	id S1756198AbaLHR5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:57:40 -0500
+Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:37426 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756149AbaLHR5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:56:49 -0500
+	Mon, 8 Dec 2014 12:57:39 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:69:355:379:541:960:973:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3874:4321:4605:5007:6261:7903:8660:10004:10400:10848:11026:11658:11914:12043:12266:12291:12296:12438:12517:12519:12555:12679:12683:13148:13161:13229:13230:13870:14093:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: burn84_427762bfe1e37
+X-Filterd-Recvd-Size: 4270
+Date: Mon, 8 Dec 2014 12:57:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] ktest: Updates for 3.19
+Message-ID: <20141208125735.6126f8fb@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141208175050.92EDAC40D73@trevor.secretlab.ca>
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
- <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
- <20141024105200.GA20775@amd> <B914D894-E486-4EF1-8F84-169E939C58B4@konsulko.com>
- <alpine.DEB.2.02.1410240906340.23446@atx-linux-37> <CACxGe6tiLxbCThzjOqrQg44Ue3XJuuRgti5jZY=UrssSY8=xqg@mail.gmail.com>
- <20141206135533.GA19672@amd> <20141208175050.92EDAC40D73@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 8 Dec 2014 17:56:19 +0000
-X-Google-Sender-Auth: I2VEkM-babbhjiIoDAo8jQ6xHiY
-Message-ID: <CACxGe6s7b_nEzGp5f03h-w=uOi7mTcgTZiAiVE5cV6ToM1Ud6w@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-To: Pavel Machek <pavel@denx.de>
-Cc: atull <atull@opensource.altera.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, philip@balister.org,
-        rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        Yves Vandervennet <yvanderv@opensource.altera.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 5:50 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Sat, 6 Dec 2014 14:55:33 +0100
-> , Pavel Machek <pavel@denx.de>
->  wrote:
->> Hi!
->>
->> > > I am accustomed to doing 'echo -n' for most of sysfs anyway.  Once in a
->> > > while I am a bonehead and forget the '-n' and spend a few minutes
->> > > wondering why this thing that worked last week suddenly rejects all
->> > > commands.  I'm just trying to make my user interface a bit user-friendly.
->> > >
->> > > I will take out the '\n' stripping and update the documentation.  I didn't
->> > > realize this would be controversial.
->> >
->> > Don't. You're doing the right thing by scrubbing your input. Requiring
->> > 'echo -n' is just stupid when it is so easy to make work easily.
->>
->> 'foo\nbar\n' is unusual but valid filename in linux. It is bad idea to
->> echo filenames into files in the first place... and arbitrarily
->> disallowing certain filenames is not helping.
->
-> Meh. Just because it is a valid linux filename doesn't mean this
-> interface is forced to accept it. There should be tighter rules about
-> how the filename can be constructed. Allowing any arbitrary path for any
-> arbitrary valid linux filename makes for a large attack surface.
->
-> I would like to know, what is the purpose of the interface? Why is it
-> important to provide the firmware filename in this manor? Are there
-> going to be a lot of different FPGA bitstreams that may need to be
-> loaded? How does userspace choose between them, and is there a better
-> way to do the selection without passing the firmware filename through
-> the kernel? Is this merely intended to get udev to behave in a certain
-> way? If so, then maybe there is a better way to go about it.
->
-> We could for example use a UDEV 'PROGRAM=' rule to execute a userspace
-> app and have that program figure out which firmware file to provide to
-> the kernel.
 
-Correction, a 'RUN+=' rule is actually what I mean here. The PROGRAM=
-tag is for executing a program to determine if a device matches.
+Linus,
 
-g.
+The following ktest updates were done:
+
+ o Fix handling the make kernelrelease change
+ o Fix make_min_config that was broken by new bisect_config changes
+ o Allow tests to undefine default options (not just being able to override
+    them)
+ o Print name of test (if defined) to start of test output
+
+Please pull the latest ktest-v3.19 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-v3.19
+
+Tag SHA1: 388ee892c32a0b32fe52093b22e868edaad79b3d
+Head SHA1: 17150fef4ab1f48d838008657cdaa168453a9fa6
+
+
+Michal Marek (1):
+      ktest: Use make -s kernelrelease
+
+Steven Rostedt (Red Hat) (4):
+      ktest: Fix make_min_config to handle new assign_configs call
+      ktest: Allow tests to undefine default options
+      ktest: Add name to running title
+      ktest: Add back "tail -1" to kernelrelease make
+
+----
+ tools/testing/ktest/ktest.pl | 37 ++++++++++++++++++++++++++-----------
+ 1 file changed, 26 insertions(+), 11 deletions(-)
+---------------------------
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index bf1398180785..b9cd036f0442 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -684,11 +684,8 @@ sub set_value {
+ 	}
+ 	${$overrides}{$lvalue} = $prvalue;
+     }
+-    if ($rvalue =~ /^\s*$/) {
+-	delete $opt{$lvalue};
+-    } else {
+-	$opt{$lvalue} = $prvalue;
+-    }
++
++    $opt{$lvalue} = $prvalue;
+ }
+ 
+ sub set_eval {
+@@ -2005,7 +2002,7 @@ sub get_version {
+     # get the release name
+     return if ($have_version);
+     doprint "$make kernelrelease ... ";
+-    $version = `$make kernelrelease | tail -1`;
++    $version = `$make -s kernelrelease | tail -1`;
+     chomp($version);
+     doprint "$version\n";
+     $have_version = 1;
+@@ -3571,7 +3568,9 @@ sub test_this_config {
+     undef %configs;
+     assign_configs \%configs, $output_config;
+ 
+-    return $config if (!defined($configs{$config}));
++    if (!defined($configs{$config}) || $configs{$config} =~ /^#/) {
++	return $config;
++    }
+ 
+     doprint "disabling config $config did not change .config\n";
+ 
+@@ -3945,12 +3944,22 @@ for (my $i = 0, my $repeat = 1; $i <= $opt{"NUM_TESTS"}; $i += $repeat) {
+     }
+ }
+ 
++sub option_defined {
++    my ($option) = @_;
++
++    if (defined($opt{$option}) && $opt{$option} !~ /^\s*$/) {
++	return 1;
++    }
++
++    return 0;
++}
++
+ sub __set_test_option {
+     my ($name, $i) = @_;
+ 
+     my $option = "$name\[$i\]";
+ 
+-    if (defined($opt{$option})) {
++    if (option_defined($option)) {
+ 	return $opt{$option};
+     }
+ 
+@@ -3958,13 +3967,13 @@ sub __set_test_option {
+ 	if ($i >= $test &&
+ 	    $i < $test + $repeat_tests{$test}) {
+ 	    $option = "$name\[$test\]";
+-	    if (defined($opt{$option})) {
++	    if (option_defined($option)) {
+ 		return $opt{$option};
+ 	    }
+ 	}
+     }
+ 
+-    if (defined($opt{$name})) {
++    if (option_defined($name)) {
+ 	return $opt{$name};
+     }
+ 
+@@ -4077,8 +4086,14 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     my $installme = "";
+     $installme = " no_install" if ($no_install);
+ 
++    my $name = "";
++
++    if (defined($test_name)) {
++	$name = " ($test_name)";
++    }
++
+     doprint "\n\n";
+-    doprint "RUNNING TEST $i of $opt{NUM_TESTS} with option $test_type $run_type$installme\n\n";
++    doprint "RUNNING TEST $i of $opt{NUM_TESTS}$name with option $test_type $run_type$installme\n\n";
+ 
+     if (defined($pre_test)) {
+ 	run_command $pre_test;
