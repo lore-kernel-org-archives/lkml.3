@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaLHV6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:58:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9046 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075AbaLHV6e convert rfc822-to-8bit (ORCPT
+	id S1755253AbaLHWHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 17:07:00 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56668 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaLHWG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:58:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,540,1413270000"; 
-   d="scan'208";a="650530885"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH] ACPI, EINJ: Enhance error injection tolerance level
-Thread-Topic: [PATCH] ACPI, EINJ: Enhance error injection tolerance level
-Thread-Index: AQHQErYBvJljPJCVjkWnDEnz5isqXZyGO4+g
-Date: Mon, 8 Dec 2014 21:58:33 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F32961DDF@ORSMSX114.amr.corp.intel.com>
-References: <c5f50564109273ab7f1c5fab4490169ae573128d.1417641347.git.tony.luck@intel.com>
- <54854EAC.8090504@linaro.org>
-In-Reply-To: <54854EAC.8090504@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Dec 2014 17:06:58 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: nokia_h4p on 3.16+
+Date: Mon, 8 Dec 2014 23:06:55 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, balbi@ti.com,
+        Greg KH <greg@kroah.com>, marcel@holtmann.org
+References: <20141208204735.GA21599@amd>
+In-Reply-To: <20141208204735.GA21599@amd>
 MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2255361.614MoYcUqW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412082306.55505@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If it solves problem related to ACPI, you should not use in this file:
-> > +	if ((pci_probe & PCI_PROBE_MMCONF) == 0)
-> > +		return 0;
-> This is very x86 specific. We are making a lot of effort to make 
-> MMCONFIG platform independent now.
+--nextPart2255361.614MoYcUqW
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-So you'd like to see the changes in this patch spread out across more
-appropriate files?  pci_mmcfg_for_each_region() moving off into
-arch/x86/pci/mmconfig-shared.c, for example.
+On Monday 08 December 2014 21:47:35 Pavel Machek wrote:
+> Hi!
+>=20
+> It seems commit:
+>=20
+> commit bd5dc09f557547399cd44d0a1224df7ff64e4a6b
+> Author: Felipe Balbi <balbi@ti.com>
+> Date:   Wed Apr 23 09:58:28 2014 -0500
+>=20
+>     serial: fix UART_IIR_ID
+>=20
+>     UART IRQ Identification bitfield is 3
+>         bits long (bits 3:1) but current mask only
+> 	    masks 2 bits. Fix it.
+>=20
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> breaks bluetooth driver on n900. (drivers/staging/nokia_h4p).
+>=20
+> Pali, you may want to revert the patch.
+>=20
+> That is good news, because reverting it on 3.18-rcX brings h4p
+> back, too (and as machine boots on nfsroot, debugging should
+> be possible.)
+>=20
+> Best regards,
+> 									Pavel
 
-I'm not sure how to make that pretty in apei_resources_request()
-where essentially we need to add an extra scan for some arch
-specific addresses to ignore from the list of addresses.
+Reverted in linux-n900 git tree in v3.18-rc6-n900 branch.
 
--Tony
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2255361.614MoYcUqW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSGIP8ACgkQi/DJPQPkQ1Iw8wCgoHK1vdSpzrnc2e4suULVTH4w
++1EAnjlbycMzjGuih20SPIW6HwFLIzHd
+=qsgf
+-----END PGP SIGNATURE-----
+
+--nextPart2255361.614MoYcUqW--
