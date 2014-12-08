@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722AbaLHXCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 18:02:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21293 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbaLHXCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 18:02:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="426661515"
-From: Keith Busch <keith.busch@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Cc: linux-nvme@lists.infradead.org, Keith Busch <keith.busch@intel.com>
-Subject: [PATCH] misc: Increase available dyanmic minors
-Date: Mon,  8 Dec 2014 16:01:50 -0700
-Message-Id: <1418079710-30968-1-git-send-email-keith.busch@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755861AbaLHXDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 18:03:35 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:13375 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751520AbaLHXDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 18:03:31 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Mon, 08 Dec 2014 15:27:35 -0800
+From: Andrew Duggan <aduggan@synaptics.com>
+To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH] HID: rmi: The address of query8 must be calculated based on which query registers are present
+Date: Mon, 8 Dec 2014 15:02:00 -0800
+Message-ID: <1418079720-11766-2-git-send-email-aduggan@synaptics.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418079720-11766-1-git-send-email-aduggan@synaptics.com>
+References: <1418079720-11766-1-git-send-email-aduggan@synaptics.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.4.10.98]
+X-Brightmail-Tracker: AAAAAQAAAWE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This increases the number of available miscellaneous character device
-dynamic minors from 63 to the max minor, 1M.
+If a touchpad does not report relative data then query 6 will not be present and the address
+of query 8 will be one less. This patches calculates the location of query 8 instead of
+hardcoding the offset.
 
-Dynamic minor previously started at 63 and went down to zero. That's not
-enough in some situations, and also eventually creates a collision with
-'psaux' misc device. This patch starts minors at the last defined misc
-minor (255) and works up to the max possible.
-
-Signed-off-by: Keith Busch <keith.busch@intel.com>
+Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
 ---
- drivers/char/misc.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/hid/hid-rmi.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/char/misc.c b/drivers/char/misc.c
-index ffa97d2..229dba5 100644
---- a/drivers/char/misc.c
-+++ b/drivers/char/misc.c
-@@ -59,8 +59,7 @@ static DEFINE_MUTEX(misc_mtx);
- /*
-  * Assigned numbers, used for dynamic minors
-  */
--#define DYNAMIC_MINORS 64 /* like dynamic majors */
--static DECLARE_BITMAP(misc_minors, DYNAMIC_MINORS);
-+static DEFINE_IDA(misc_minors_ida);
+diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+index b069369..bc38c1e 100644
+--- a/drivers/hid/hid-rmi.c
++++ b/drivers/hid/hid-rmi.c
+@@ -640,17 +640,6 @@ static int rmi_populate_f11(struct hid_device *hdev)
+ 	has_rel = !!(buf[0] & BIT(3));
+ 	has_gestures = !!(buf[0] & BIT(5));
  
- #ifdef CONFIG_PROC_FS
- static void *misc_seq_start(struct seq_file *seq, loff_t *pos)
-@@ -183,15 +182,14 @@ int misc_register(struct miscdevice * misc)
- 	INIT_LIST_HEAD(&misc->list);
- 
- 	mutex_lock(&misc_mtx);
+-	if (has_gestures) {
+-		/* query 8 to find out if query 10 exists */
+-		ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
+-		if (ret) {
+-			hid_err(hdev, "can not read gesture information: %d.\n",
+-				ret);
+-			return ret;
+-		}
+-		has_query10 = !!(buf[0] & BIT(2));
+-	}
 -
- 	if (misc->minor == MISC_DYNAMIC_MINOR) {
--		int i = find_first_zero_bit(misc_minors, DYNAMIC_MINORS);
--		if (i >= DYNAMIC_MINORS) {
-+		int i = ida_simple_get(&misc_minors_ida, MISC_DYNAMIC_MINOR,
-+						MINORMASK, GFP_KERNEL);
-+		if (i < 0) {
- 			err = -EBUSY;
- 			goto out;
- 		}
--		misc->minor = DYNAMIC_MINORS - i - 1;
--		set_bit(i, misc_minors);
-+		misc->minor = i;
- 	} else {
- 		struct miscdevice *c;
+ 	/*
+ 	 * At least 4 queries are guaranteed to be present in F11
+ 	 * +1 for query 5 which is present since absolute events are
+@@ -661,8 +650,19 @@ static int rmi_populate_f11(struct hid_device *hdev)
+ 	if (has_rel)
+ 		++query_offset; /* query 6 is present */
  
-@@ -208,9 +206,8 @@ int misc_register(struct miscdevice * misc)
- 	misc->this_device = device_create(misc_class, misc->parent, dev,
- 					  misc, "%s", misc->name);
- 	if (IS_ERR(misc->this_device)) {
--		int i = DYNAMIC_MINORS - misc->minor - 1;
--		if (i < DYNAMIC_MINORS && i >= 0)
--			clear_bit(i, misc_minors);
-+		if (misc->minor >= MISC_DYNAMIC_MINOR)
-+			ida_simple_remove(&misc_minors_ida, misc->minor);
- 		err = PTR_ERR(misc->this_device);
- 		goto out;
- 	}
-@@ -237,16 +234,14 @@ int misc_register(struct miscdevice * misc)
+-	if (has_gestures)
++	if (has_gestures) {
++		/* query 8 to find out if query 10 exists */
++		ret = rmi_read(hdev,
++			data->f11.query_base_addr + query_offset + 1, buf);
++		if (ret) {
++			hid_err(hdev, "can not read gesture information: %d.\n",
++				ret);
++			return ret;
++		}
++		has_query10 = !!(buf[0] & BIT(2));
++
+ 		query_offset += 2; /* query 7 and 8 are present */
++	}
  
- int misc_deregister(struct miscdevice *misc)
- {
--	int i = DYNAMIC_MINORS - misc->minor - 1;
--
- 	if (WARN_ON(list_empty(&misc->list)))
- 		return -EINVAL;
- 
- 	mutex_lock(&misc_mtx);
- 	list_del(&misc->list);
- 	device_destroy(misc_class, MKDEV(MISC_MAJOR, misc->minor));
--	if (i < DYNAMIC_MINORS && i >= 0)
--		clear_bit(i, misc_minors);
-+	if (misc->minor >= MISC_DYNAMIC_MINOR)
-+		ida_simple_remove(&misc_minors_ida, misc->minor);
- 	mutex_unlock(&misc_mtx);
- 	return 0;
- }
+ 	if (has_query9)
+ 		++query_offset;
 -- 
-1.7.10.4
+2.1.0
 
