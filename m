@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaLHHTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 02:19:37 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:49178 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaLHHTf (ORCPT
+	id S1754193AbaLHHVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 02:21:32 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61206 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaLHHVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 02:19:35 -0500
-Date: Sun, 7 Dec 2014 23:19:30 -0800
+	Mon, 8 Dec 2014 02:21:30 -0500
+Date: Sun, 7 Dec 2014 23:21:24 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: linux-input@vger.kernel.org
 Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
@@ -16,152 +16,186 @@ Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         Alexander Shiyan <shc_work@mail.ru>,
         Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 1/2] Input: gpio_keys - allow separating gpio and irq in
- device tree
-Message-ID: <20141208071930.GA20802@dtor-ws>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Input: gpio_keys - replace timer and workqueue with
+ delayed workqueue
+Message-ID: <20141208072124.GA21031@dtor-ws>
+References: <20141208071930.GA20802@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141208071930.GA20802@dtor-ws>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change allows specify interrupt for buttons separately form gpio,
-potentially allowing to form several "clusters" of buttons on
-different interrupts.
+We do not need to roll our own implementation of delayed work now that we
+have proper implementation of mod_delayed_work.
 
-Button defined without both gpio and irq in device tree is a hared error
-instead of a warning now.
+For interrupt-only driven buttons we retain the timer, but we rename
+it to release_timer to better reflect its purpose.
 
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- .../devicetree/bindings/input/gpio-keys.txt        | 10 +++--
- drivers/input/keyboard/gpio_keys.c                 | 50 ++++++++++++----------
- 2 files changed, 34 insertions(+), 26 deletions(-)
+ drivers/input/keyboard/gpio_keys.c |   65 +++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 34 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/input/gpio-keys.txt b/Documentation/devicetree/bindings/input/gpio-keys.txt
-index a4a38fc..44b7057 100644
---- a/Documentation/devicetree/bindings/input/gpio-keys.txt
-+++ b/Documentation/devicetree/bindings/input/gpio-keys.txt
-@@ -10,12 +10,13 @@ Optional properties:
- Each button (key) is represented as a sub-node of "gpio-keys":
- Subnode properties:
- 
-+	- gpios: OF device-tree gpio specification.
-+	- interrupts: the interrupt line for that input.
- 	- label: Descriptive name of the key.
- 	- linux,code: Keycode to emit.
- 
--Required mutual exclusive subnode-properties:
--	- gpios: OF device-tree gpio specification.
--	- interrupts: the interrupt line for that input
-+Note that either "interrupts" or "gpios" properties can be omitted, but not
-+both at the same time. Specifying both properties is allowed.
- 
- Optional subnode-properties:
- 	- linux,input-type: Specify event type this button/key generates.
-@@ -23,6 +24,9 @@ Optional subnode-properties:
- 	- debounce-interval: Debouncing interval time in milliseconds.
- 	  If not specified defaults to 5.
- 	- gpio-key,wakeup: Boolean, button can wake-up the system.
-+	- linux,can-disable: Boolean, indicates that button is connected
-+	  to dedicated (not shared) interrupt which can be disabled to
-+	  suppress events from the button.
- 
- Example nodes:
- 
 diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index b8b4876..a5ece3f 100644
+index a5ece3f..eefd976 100644
 --- a/drivers/input/keyboard/gpio_keys.c
 +++ b/drivers/input/keyboard/gpio_keys.c
-@@ -470,15 +470,19 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+@@ -35,9 +35,13 @@
+ struct gpio_button_data {
+ 	const struct gpio_keys_button *button;
+ 	struct input_dev *input;
+-	struct timer_list timer;
+-	struct work_struct work;
+-	unsigned int timer_debounce;	/* in msecs */
++
++	struct timer_list release_timer;
++	unsigned int release_delay;	/* in msecs, for IRQ-only buttons */
++
++	struct delayed_work work;
++	unsigned int software_debounce;	/* in msecs, for GPIO-driven buttons */
++
+ 	unsigned int irq;
+ 	spinlock_t lock;
+ 	bool disabled;
+@@ -116,11 +120,14 @@ static void gpio_keys_disable_button(struct gpio_button_data *bdata)
+ {
+ 	if (!bdata->disabled) {
+ 		/*
+-		 * Disable IRQ and possible debouncing timer.
++		 * Disable IRQ and associated timer/work structure.
+ 		 */
+ 		disable_irq(bdata->irq);
+-		if (bdata->timer_debounce)
+-			del_timer_sync(&bdata->timer);
++
++		if (gpio_is_valid(bdata->button->gpio))
++			cancel_delayed_work_sync(&bdata->work);
++		else
++			del_timer_sync(&bdata->release_timer);
+ 
+ 		bdata->disabled = true;
+ 	}
+@@ -343,7 +350,7 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
+ static void gpio_keys_gpio_work_func(struct work_struct *work)
+ {
+ 	struct gpio_button_data *bdata =
+-		container_of(work, struct gpio_button_data, work);
++		container_of(work, struct gpio_button_data, work.work);
+ 
+ 	gpio_keys_gpio_report_event(bdata);
+ 
+@@ -351,13 +358,6 @@ static void gpio_keys_gpio_work_func(struct work_struct *work)
+ 		pm_relax(bdata->input->dev.parent);
+ }
+ 
+-static void gpio_keys_gpio_timer(unsigned long _data)
+-{
+-	struct gpio_button_data *bdata = (struct gpio_button_data *)_data;
+-
+-	schedule_work(&bdata->work);
+-}
+-
+ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
+ {
+ 	struct gpio_button_data *bdata = dev_id;
+@@ -366,11 +366,10 @@ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
+ 
+ 	if (bdata->button->wakeup)
+ 		pm_stay_awake(bdata->input->dev.parent);
+-	if (bdata->timer_debounce)
+-		mod_timer(&bdata->timer,
+-			jiffies + msecs_to_jiffies(bdata->timer_debounce));
+-	else
+-		schedule_work(&bdata->work);
++
++	mod_delayed_work(system_wq,
++			 &bdata->work,
++			 msecs_to_jiffies(bdata->software_debounce));
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -408,7 +407,7 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
+ 		input_event(input, EV_KEY, button->code, 1);
+ 		input_sync(input);
+ 
+-		if (!bdata->timer_debounce) {
++		if (!bdata->release_delay) {
+ 			input_event(input, EV_KEY, button->code, 0);
+ 			input_sync(input);
+ 			goto out;
+@@ -417,9 +416,9 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
+ 		bdata->key_pressed = true;
+ 	}
+ 
+-	if (bdata->timer_debounce)
+-		mod_timer(&bdata->timer,
+-			jiffies + msecs_to_jiffies(bdata->timer_debounce));
++	if (bdata->release_delay)
++		mod_timer(&bdata->release_timer,
++			jiffies + msecs_to_jiffies(bdata->release_delay));
+ out:
+ 	spin_unlock_irqrestore(&bdata->lock, flags);
+ 	return IRQ_HANDLED;
+@@ -429,10 +428,10 @@ static void gpio_keys_quiesce_key(void *data)
+ {
+ 	struct gpio_button_data *bdata = data;
+ 
+-	if (bdata->timer_debounce)
+-		del_timer_sync(&bdata->timer);
+-
+-	cancel_work_sync(&bdata->work);
++	if (gpio_is_valid(bdata->button->gpio))
++		cancel_delayed_work_sync(&bdata->work);
++	else
++		del_timer_sync(&bdata->release_timer);
+ }
+ 
+ static int gpio_keys_setup_key(struct platform_device *pdev,
+@@ -466,7 +465,7 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 					button->debounce_interval * 1000);
+ 			/* use timer if gpiolib doesn't provide debounce */
+ 			if (error < 0)
+-				bdata->timer_debounce =
++				bdata->software_debounce =
  						button->debounce_interval;
  		}
  
--		irq = gpio_to_irq(button->gpio);
--		if (irq < 0) {
--			error = irq;
--			dev_err(dev,
--				"Unable to get irq number for GPIO %d, error %d\n",
--				button->gpio, error);
--			return error;
-+		if (button->irq) {
-+			bdata->irq = button->irq;
-+		} else {
-+			irq = gpio_to_irq(button->gpio);
-+			if (irq < 0) {
-+				error = irq;
-+				dev_err(dev,
-+					"Unable to get irq number for GPIO %d, error %d\n",
-+					button->gpio, error);
-+				return error;
-+			}
-+			bdata->irq = irq;
- 		}
--		bdata->irq = irq;
- 
- 		INIT_WORK(&bdata->work, gpio_keys_gpio_work_func);
- 		setup_timer(&bdata->timer,
-@@ -618,32 +622,30 @@ gpio_keys_get_devtree_pdata(struct device *dev)
- 
- 	i = 0;
- 	for_each_child_of_node(node, pp) {
--		int gpio = -1;
- 		enum of_gpio_flags flags;
- 
--		if (!of_find_property(pp, "gpios", NULL)) {
--			button->irq = irq_of_parse_and_map(pp, 0);
--			if (button->irq == 0) {
--				pdata->nbuttons--;
--				dev_warn(dev, "Found button without gpios or irqs\n");
--				continue;
--			}
--		} else {
--			gpio = of_get_gpio_flags(pp, 0, &flags);
--			if (gpio < 0) {
--				error = gpio;
-+		button = &pdata->buttons[i++];
-+
-+		button->gpio = of_get_gpio_flags(pp, 0, &flags);
-+		if (button->gpio < 0) {
-+			error = button->gpio;
-+			if (error != -ENOENT) {
- 				if (error != -EPROBE_DEFER)
- 					dev_err(dev,
- 						"Failed to get gpio flags, error: %d\n",
- 						error);
- 				return ERR_PTR(error);
- 			}
-+		} else {
-+			button->active_low = flags & OF_GPIO_ACTIVE_LOW;
+@@ -484,9 +483,7 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 			bdata->irq = irq;
  		}
  
--		button = &pdata->buttons[i++];
-+		button->irq = irq_of_parse_and_map(pp, 0);
+-		INIT_WORK(&bdata->work, gpio_keys_gpio_work_func);
+-		setup_timer(&bdata->timer,
+-			    gpio_keys_gpio_timer, (unsigned long)bdata);
++		INIT_DELAYED_WORK(&bdata->work, gpio_keys_gpio_work_func);
  
--		button->gpio = gpio;
--		button->active_low = flags & OF_GPIO_ACTIVE_LOW;
-+		if (!gpio_is_valid(button->gpio) && !button->irq) {
-+			dev_err(dev, "Found button without gpios or irqs\n");
-+			return ERR_PTR(-EINVAL);
-+		}
+ 		isr = gpio_keys_gpio_isr;
+ 		irqflags = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING;
+@@ -503,8 +500,8 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 			return -EINVAL;
+ 		}
  
- 		if (of_property_read_u32(pp, "linux,code", &button->code)) {
- 			dev_err(dev, "Button without keycode: 0x%x\n",
-@@ -658,6 +660,8 @@ gpio_keys_get_devtree_pdata(struct device *dev)
+-		bdata->timer_debounce = button->debounce_interval;
+-		setup_timer(&bdata->timer,
++		bdata->release_delay = button->debounce_interval;
++		setup_timer(&bdata->release_timer,
+ 			    gpio_keys_irq_timer, (unsigned long)bdata);
  
- 		button->wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
+ 		isr = gpio_keys_irq_isr;
+@@ -514,7 +511,7 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 	input_set_capability(input, button->type ?: EV_KEY, button->code);
  
-+		button->can_disable = !!of_get_property(pp, "linux,can-disable", NULL);
-+
- 		if (of_property_read_u32(pp, "debounce-interval",
- 					 &button->debounce_interval))
- 			button->debounce_interval = 5;
--- 
-2.2.0.rc0.207.ga3a616c
-
+ 	/*
+-	 * Install custom action to cancel debounce timer and
++	 * Install custom action to cancel release timer and
+ 	 * workqueue item.
+ 	 */
+ 	error = devm_add_action(&pdev->dev, gpio_keys_quiesce_key, bdata);
 
 -- 
 Dmitry
