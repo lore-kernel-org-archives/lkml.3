@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbaLHQSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:18:34 -0500
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:60602 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031AbaLHQSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:18:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141208141750.GR20350@phenom.ffwll.local>
-References: <1417976957-15049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20141208084228.GI20350@phenom.ffwll.local>
-	<CA+gsUGSM43z6AXi0-evJni_fDX_=rjj6gBOCZmhLrqjyUhZeFg@mail.gmail.com>
-	<20141208141750.GR20350@phenom.ffwll.local>
-Date: Mon, 8 Dec 2014 14:18:30 -0200
-Message-ID: <CA+gsUGRHkU4zdZSGer=Qr5LXMs7QeaFrhU2-1O5TiO76koO0cw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] gpu: drm: i915: intel_display.c: Remove
- unused function
-From: Paulo Zanoni <przanoni@gmail.com>
-To: Paulo Zanoni <przanoni@gmail.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Damien Lespiau <damien.lespiau@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755793AbaLHQUD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:20:03 -0500
+Received: from ns.horizon.com ([71.41.210.147]:20393 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751041AbaLHQUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 11:20:00 -0500
+Date: 8 Dec 2014 11:19:59 -0500
+Message-ID: <20141208161959.8852.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hannes@stressinduktion.org, linux@horizon.com
+Subject: Re: Where exactly will arch_fast_hash be used
+Cc: davem@davemloft.net, dborkman@redhat.com, herbert@gondor.apana.org.au,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
+        tytso@mit.edu
+In-Reply-To: <1418037908.190744.200156353.5DD668E8@webmail.messagingengine.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-08 12:17 GMT-02:00 Daniel Vetter <daniel@ffwll.ch>:
-> On Mon, Dec 08, 2014 at 10:32:49AM -0200, Paulo Zanoni wrote:
->> 2014-12-08 6:42 GMT-02:00 Daniel Vetter <daniel@ffwll.ch>:
->> > On Sun, Dec 07, 2014 at 07:29:17PM +0100, Rickard Strandqvist wrote:
->> >> Remove the function intel_output_name() that is not used anywhere.
->> >>
->> >> This was partially found by using a static code analysis program called cppcheck.
->> >>
->> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> >
->> > Queued for 3.20, thanks for the patch.
->>
->> This function was created for the "DDI personality" patches. We merged
->> the function but never ended up merging the patch containing the
->> callers...
->
-> Oops, I've thought this is a renmant from the very first days of kms that
-> somehow stuck around. That's what I get for once not using git blame
-> excessively :( Want me to drop the patch again?
+>>> In case of openvswitch it shows a performance improvment. The seed
+>>> parameter could be used as an initial biasing of the crc32 function, but
+>>> in case of openvswitch it is only set to 0.
+ 
+>> NACK. [...]
 
-I am not opposed to the removal of an unused function: I understand
-the value in the removal, and I also understand the reasons to keep
-it. I was just pointing the reason of why we got here: we merged patch
-1/2 but ended up never merging patch 2/2 because we always spot some
-additional work required and it's a very low priority bug. If this
-function is removed, the next person to try to ressurrect the ddi
-personality patch can quickly resurrect it or even write a new
-implementation from scratch. It is your decision :)
+> Sorry for being unclear, I understood that and didn't bother patching
+> that '0' with a random seed exactly because of this.
+
+And I'm sorry for delivering a long lecture on a subject you already
+understood perfectly well.
+
+I'd just been thinking about it because of Herbert's comments, so it was
+conveniently at hand. :-)
+
+Out of curiousity, what *were* you referring to when you talked
+about biasing the crc32 function?  "Biasing" is a good term becuase
+it just applies an offset, but what do you gain from doing that?
 
 
-> -Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-
-
-
--- 
-Paulo Zanoni
+There are nifty things one can do with the CRC32 instruction, however.
+A lot of ciphers these days use an ARX (add, rotate, XOR) kernel.
+A crc32 instruction, although linear, does some very powerful rotate &
+xor operations, and could replace the XOR and rotate.
