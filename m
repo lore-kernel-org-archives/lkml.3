@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093AbaLHQtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:49:51 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:56696 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806AbaLHQtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:49:50 -0500
-Message-ID: <5485D6B0.3060901@kernel.dk>
-Date: Mon, 08 Dec 2014 09:49:52 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756104AbaLHQue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:50:34 -0500
+Received: from bar.sig21.net ([80.81.252.164]:46210 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaLHQuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 11:50:32 -0500
+Date: Mon, 8 Dec 2014 17:50:16 +0100
+From: Johannes Stezenbach <js@sig21.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141208165016.GA28471@sig21.net>
+References: <5481794E.4050406@broadcom.com>
+ <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
+ <20141205185303.GG31222@e104818-lin.cambridge.arm.com>
+ <20141208125538.GA26983@sig21.net>
+ <20141208155556.GL16185@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-mq: Avoid that I/O hangs in bt_get()
-References: <54328A97.3030201@acm.org> <5432D414.4060408@kernel.dk> <5432E524.90407@kernel.dk> <5433A85E.2070207@acm.org> <545B7A6D.8040208@acm.org> <5485BBD2.4040103@acm.org>
-In-Reply-To: <5485BBD2.4040103@acm.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141208155556.GL16185@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 07:55 AM, Bart Van Assche wrote:
-> On 11/06/14 14:41, Bart Van Assche wrote:
->> With kernel 3.18-rc3 and with can_queue=62 I can trigger a hang in
->> bt_get() easily.
->
-> (once more replying to my own e-mail)
->
-> Hello Jens,
->
-> Finally I found the time to look further into this. The patch below
-> seems to be sufficient to prevent this hang. However, I'm not a block
-> layer expert so it's not clear to me whether the patch below makes sense ?
->
-> Thanks,
->
-> Bart.
->
-> [PATCH] blk-mq: Fix bt_get() hang
->
-> Avoid that if there are fewer hardware queues than CPU threads that
-> bt_get() can hang. The symptoms of the hang were as follows:
-> * All tags allocated for a particular hardware queue.
-> * (nr_tags) pending commands for that hardware queue.
-> * No pending commands for the software queues associated with that
->    hardware queue.
-> ---
->   block/blk-mq-tag.c | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-> index 67ab88b..e88af88 100644
-> --- a/block/blk-mq-tag.c
-> +++ b/block/blk-mq-tag.c
-> @@ -256,6 +256,8 @@ static int bt_get(struct blk_mq_alloc_data *data,
->               break;
->           }
->
-> +        blk_mq_run_hw_queue(hctx, false);
-> +
->           blk_mq_put_ctx(data->ctx);
->
->           io_schedule();
+On Mon, Dec 08, 2014 at 03:55:57PM +0000, Catalin Marinas wrote:
+> On Mon, Dec 08, 2014 at 12:55:38PM +0000, Johannes Stezenbach wrote:
+> > On Fri, Dec 05, 2014 at 06:53:03PM +0000, Catalin Marinas wrote:
+> > > 
+> > > BTW, if you really have a PL310-like L2 cache, have a look at some
+> > > patches (I've seen similar symptoms) and make sure your configuration is
+> > > correct:
+> > > 
+> > > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6395/1
+> > > 
+> > > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6529/1
+> > > 
+> > > The first one is vexpress specific. The second one was eventually
+> > > discarded by Russell (I don't remember the reason, I guess it's because
+> > > SoC code is supposed to set the right bits in there anyway). In your
+> > > case, such bits may be set up by firmware, so Linux cannot fix anything
+> > > up.
+> > 
+> > How do you avoid the unpredictable behavior mentioned in the
+> > PL310 TRM when the Shared Attribute Invalidate Enable bit is set?
+> > http://infocenter.arm.com/help/topic/com.arm.doc.ddi0246h/Ceggcfcj.html
+> 
+> So you talk about "Shared Attribute _Invalidate_ Enable" (bit 13) while
+> I talk about "Shared Attribute _Override_ Enable" (bit 22).
+> 
+> In addition, Shared _Invalidate_ behaviour can only be enabled if Shared
+> Attribute _Override_ Enable bit is not set.
 
-Ah yes, that could be an issue for some cases, we do need to run the 
-queue there. For a tag map shared across hardware queues, we might need 
-to run more than just the current queue, however. For now we can safely 
-assume that we allocate fairly, so it should not be an issue.
+Yeah, I got confused, sorry for the noise.
 
-It might be worth experimenting with doing a __bt_get() after the queue 
-run before going to sleep, in case the queue run found completions as well.
-
--- 
-Jens Axboe
-
+Thanks,
+Johannes
