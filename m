@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaLHMgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:36:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54937 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbaLHMgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:36:51 -0500
-Date: Mon, 8 Dec 2014 13:36:48 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] EDAC queue for 3.19
-Message-ID: <20141208123648.GC20057@pd.tnic>
+	id S1755078AbaLHMmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:42:38 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:56462 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaLHMmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 07:42:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1503477.DVdkExccIe@wuerfel>
+References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
+ <2279061.naADrHDgyn@wuerfel> <CAPTm99WYNyxtY-NCVN8pB0HwNPn+EFx-7w7yEevaEK1z7-Zqxg@mail.gmail.com>
+ <1503477.DVdkExccIe@wuerfel>
+From: Ankit Jindal <ankit.jindal@linaro.org>
+Date: Mon, 8 Dec 2014 18:12:15 +0530
+Message-ID: <CAPTm99V1qP5dAgDV04i3m_yR1ri9h=b8fDXBDxmPfpZG_P268g@mail.gmail.com>
+Subject: Re: [PATCH v5 5/6] Documentation: dt-bindings: Add binding info for
+ X-Gene QMTM UIO driver
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anup Patel <anup@brainfault.org>, Guenter Roeck <linux@roeck-us.net>,
+        "patches@apm.com" <patches@apm.com>, Rob Herring <robh+dt@kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-please pull,
-thanks.
-
----
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_for_3.19
-
-for you to fetch changes up to 50872ccd8786dc72bc5a32c17695561e031fae4c:
-
-  EDAC, MCE, AMD: Correct formatting of decoded text (2014-11-25 13:09:49 +0100)
-
-----------------------------------------------------------------
-EDAC updates all over the place:
-
-* Enablement for AMD F15h models 0x60 CPUs. Most notably DDR4 RAM
-support. Out of tree stuff is
-
- arch/x86/kernel/amd_nb.c       |   2 +
- include/linux/pci_ids.h        |   2 +
-
-adding the required PCI IDs. From Aravind Gopalakrishnan.
-
-* Enable amd64_edac for 32-bit due to popular demand. From Tomasz Pala.
-
-* Convert the AMD MCE injection module to debugfs, where it belongs.
-
-* Misc EDAC cleanups
-
-----------------------------------------------------------------
-Andreas Ruprecht (1):
-      EDAC, pci_sysfs: remove unneccessary ifdef around entire file
-
-Aravind Gopalakrishnan (5):
-      pci_ids: Add PCI device IDs for F15h M60h
-      x86, amd_nb: Add device IDs to NB tables for F15h M60h
-      EDAC: Add DDR3 LRDIMM entries to edac_mem_types
-      amd64_edac: Add F15h M60h support
-      EDAC, MCE, AMD: Add decoding table for MC6 xec
-
-Borislav Petkov (6):
-      EDAC: Sync memory types and names
-      EDAC, mce_amd_inj: Convert mce_amd_inj module to debugfs
-      EDAC, mce_amd_inj: Enable direct writes to MCE MSRs
-      EDAC, mce_amd_inj: Add hw-injection attributes
-      EDAC, mce_amd_inj: Add an injector function
-      EDAC, MCE, AMD: Correct formatting of decoded text
-
-Dan Carpenter (1):
-      ghes_edac: Use snprintf() to silence a static checker warning
-
-Markus Elfring (1):
-      EDAC: Delete unnecessary check before calling pci_dev_put()
-
-Michael Opdenacker (1):
-      {mv64x60,ppc4xx}_edac,: Remove deprecated IRQF_DISABLED
-
-Tomasz Pala (1):
-      amd64_edac: Build module on x86-32
-
- arch/x86/kernel/amd_nb.c       |   2 +
- drivers/edac/Kconfig           |  16 +--
- drivers/edac/Makefile          |   2 +-
- drivers/edac/amd64_edac.c      | 260 +++++++++++++++++++++++++-----------
- drivers/edac/amd64_edac.h      |  15 ++-
- drivers/edac/edac_mc.c         |  40 +++---
- drivers/edac/edac_pci_sysfs.c  |   5 -
- drivers/edac/ghes_edac.c       |   4 +-
- drivers/edac/i3000_edac.c      |   3 +-
- drivers/edac/i3200_edac.c      |   3 +-
- drivers/edac/i82443bxgx_edac.c |   3 +-
- drivers/edac/mce_amd.c         |  47 ++-----
- drivers/edac/mce_amd_inj.c     | 293 +++++++++++++++++++++++++++--------------
- drivers/edac/mv64x60_edac.c    |   8 +-
- drivers/edac/ppc4xx_edac.c     |   4 +-
- drivers/edac/x38_edac.c        |   3 +-
- include/linux/edac.h           |   4 +-
- include/linux/pci_ids.h        |   2 +
- 18 files changed, 446 insertions(+), 268 deletions(-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+On 18 November 2014 at 18:40, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 18 November 2014 14:59:54 Ankit Jindal wrote:
+>> On 17 November 2014 16:47, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Monday 17 November 2014 16:06:11 Ankit Jindal wrote:
+>> >> +
+>> >> +       qmtm1_uio: qmtm_uio@1f200000 {
+>> >> +               compatible = "apm,xgene-qmtm";
+>> >> +               status = "disabled";
+>> >> +               reg = <0x0 0x1f200000 0x0 0x10000>,
+>> >> +                     <0x0 0x1b000000 0x0 0x400000>;
+>> >> +               reg-names = "csr", "fabric";
+>> >> +               qpool-memory = <&qmtm1_uio_qpool>;
+>> >> +               clocks = <&qmtm1clk 0>;
+>> >> +               num-queues = <0x400>;
+>> >> +               devid = <1>;
+>> >> +       };
+>> >> +
+>> >
+>> > To make my previous review comments clearer:
+>> >
+>> > NAK
+>> >
+>> > Do not create device nodes that are meant for a specific use case in
+>> > software and that are not usable for the common case. I don't think
+>> > it makes any sense to keep on submitting a UIO driver for this until
+>> > we have a proper network driver that uses this so we can make sure we
+>> > have a working binding.
+>>
+>> The dataplane frameworks like OpenDataPlane etc, need to have access
+>> to complete subsystem from the user space. Hence, we would like to
+>> have this driver and some other UIO drivers to be the part of kernel
+>> to have data plane frameworks working on our platform.
+>
+> Please work with the people that do the in-kernel QMTM driver to come
+> up with a common binding then.
+Thanks Arnd, I have synced with them, and in future our dt bindings
+for this device is going to be inline with the one mentioned in the
+patchset.
+>
+>         Arnd
+Thanks,
+Ankit
