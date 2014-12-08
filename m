@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757AbaLHPWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:22:31 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54956 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaLHPWa (ORCPT
+	id S1755994AbaLHPWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:22:53 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:59443 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898AbaLHPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:22:30 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Ming Lei <ming.lei@canonical.com>
-Subject: Re: wl1251: NVS firmware data
-Date: Mon, 8 Dec 2014 16:22:25 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <201411271506.20457@pali> <201412061402.21514@pali> <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
-In-Reply-To: <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
+	Mon, 8 Dec 2014 10:22:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Hante Meuleman <meuleman@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend Van Spriel <arend@broadcom.com>,
+        David Miller <davem@davemloft.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, hauke@hauke-m.de
+Subject: Re: using DMA-API on ARM
+Date: Mon, 08 Dec 2014 16:22:11 +0100
+Message-ID: <2335290.YorTSI1K36@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141208151733.GF11285@n2100.arm.linux.org.uk>
+References: <5481794E.4050406@broadcom.com> <2863746.4sUSEYqahB@wuerfel> <20141208151733.GF11285@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6013142.Y7C6ce8dYc";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412081622.25541@pali>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:AsaSWqNoShchQYxO9ArsYZ8zazMOxC0Kgfa8AoLJVffQKznBOTw
+ dy+nUk/8p1D6A3TBsNrDvJwwUQrEhLnLoiVlntszc8C2+LxfdlgPgXBsXWsDg0Z3GAcEq6q
+ cHN4Is2Y7Awox6ZDHw6EKhUbb6AzxJJSs9qG24ujFkWJmm7IrGd/dKFfaKGidTI6Ddrkx8D
+ UinfQDXtw+dmXuVF+gckA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6013142.Y7C6ce8dYc
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Monday 08 December 2014 15:17:33 Russell King - ARM Linux wrote:
+> On Mon, Dec 08, 2014 at 04:01:32PM +0100, Arnd Bergmann wrote:
+> > In your log, I see this message:
+> > 
+> > [    0.000000] PL310 OF: cache setting yield illegal associativity
+> > [    0.000000] PL310 OF: -1069781724 calculated, only 8 and 16 legal
+> > [    0.000000] L2C-310 enabling early BRESP for Cortex-A9
+> > [    0.000000] L2C-310 full line of zeros enabled for Cortex-A9
+> > [    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
+> > [    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
+> > [    0.000000] L2C-310: CACHE_ID 0x410000c8, AUX_CTRL 0x4e130001
+> > 
+> > Evidently the cache controller information in DT is incorrect and
+> > the setup may be wrong as a consequence, which may explain cache
+> > coherency problems.
+> 
+> No.  See d0b92845e54 (ARM: 8182/1: l2c: Make l2x0_cache_size_of_parse() return 'int')
+> which was merged in rc3, post-dating this kernel.  The original commit
+> was buggy, and produces those harmless "illegal associativity" messages.
+> They occur if DT *doesn't* specify the cache parameters, in which case
+> we use the hardware-set value (which /should/ be correct.)
+> 
+> We made these optional in DT as hardware really should set these
+> correctly in the first place.
 
-On Monday 08 December 2014 16:18:18 Ming Lei wrote:
-> On Sat, Dec 6, 2014 at 9:02 PM, Pali Roh=C3=A1r=20
-<pali.rohar@gmail.com> wrote:
-> > On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
-> >  /**
-> >=20
-> > + * request_firmware_prefer_user: - prefer usermode helper
-> > for loading firmware + * @firmware_p: pointer to firmware
-> > image
-> > + * @name: name of firmware file
-> > + * @device: device for which firmware is being loaded
-> > + *
-> > + * This function works pretty much like request_firmware(),
-> > but it prefer + * usermode helper. If usermode helper fails
-> > then it fallback to direct access. + * Usefull for dynamic
-> > or model specific firmware data. + **/
-> > +int request_firmware_prefer_user(const struct firmware
-> > **firmware_p, +                           const char *name,
-> > struct device *device) +{
-> > +       int ret;
-> > +       __module_get(THIS_MODULE);
-> > +       ret =3D _request_firmware(firmware_p, name, device,
-> > +                               FW_OPT_UEVENT |
-> > FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
-> > +       return ret;
-> > +}
-> > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
->=20
-> I'd like to introduce request_firmware_user() which only
-> requests firmware from user space, and this way is simpler
-> and more flexible since we have request_firmware_direct()
-> already.
->=20
-> Thanks,
-> Ming Lei
+Ok, good.
 
-Ming, for wl1251 NVS data we need to load use usermode helper and=20
-fallback to direct load. So I think it is better to handle this=20
-request in firmware code and not in driver.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart6013142.Y7C6ce8dYc
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSFwjEACgkQi/DJPQPkQ1LiOwCfYDvcaBsb2UkGRzsc6RY/9zSb
-K5cAnj47jXkv66tvdcHMuFCFs2a0Itc2
-=mV9Q
------END PGP SIGNATURE-----
-
---nextPart6013142.Y7C6ce8dYc--
+	Arnd
