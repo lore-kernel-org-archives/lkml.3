@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbaLHR7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:59:19 -0500
-Received: from sf1.bxl.stone.is ([87.238.167.36]:46980 "EHLO sf1.bxl.stone.is"
+	id S1756245AbaLHSAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:00:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54203 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000AbaLHR7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:59:17 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <5485E6EC.3030501@acm.org>
-Date: Mon, 08 Dec 2014 18:59:08 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-mq: Avoid that I/O hangs in bt_get()
-References: <54328A97.3030201@acm.org> <5432D414.4060408@kernel.dk> <5432E524.90407@kernel.dk> <5433A85E.2070207@acm.org> <545B7A6D.8040208@acm.org> <5485BBD2.4040103@acm.org> <5485D6B0.3060901@kernel.dk>
-In-Reply-To: <5485D6B0.3060901@kernel.dk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Filter-ID: s0sct1PQhAABKnZB5plbIYrcAt68paBzxGNV4bZScc8DDDH9IcRzs4ldqK5vEMwbuZt+PpRPW1h0
- yigPev+a+0IH1r+MXIsiQIovLy1C/Q9kR+vd8RcnMtIipX97qEvSTHVzM6LFZfR2MCqK4xRbWTJy
- 0TnZwXPOV+X+NrCvBfi3wL2Y4F0412ezGCyTUPanO2cvvJsPGAKsAtoK+MVPygs0dgixl+GnJcx/
- 9FDUoOnUlSqy5KMBlrW1d9fHnkNjCAVXc6LZSdPTNOfw38s0s1FfEoXm0/FPF8PR0w363lmHqMEy
- dAx7LKTGBzBGt6dfyGUvT6k9PPf/BbHQFSmtD2vvcf/z1qxv6F6PVXsOSYkvCsd+5e7BEVONeGno
- 7KkTy4RDa/CXWzeXNjWtT5qz4VSqeZhBqz8nR05j/2nHmzoDYjOnyexsJ2zOx1IDltOC67dyYJUv
- zBvt/v8maDfvp7qWaJB7Vag9M+StoOcFIS85DB1NnhVJVBYBFJ7Rf6wEDMWDwTd37F6kUiTf/gb0
- MKsA/k03B9kvx4+nrbrM1yp0Wiri3vMVSxza3+BtngT9Rta7pp1tbckhtJIUkl4lhlIxef5Osv7g
- WWQW3tnvs02Ay+i2XM7H4FgTQ34SsZEoGplHcpVCCoX989hgB8R+yFp9/qpHX/a9a7RQwySlNdia
- E5tc/GqyB3xXEI9+04dYTRaB0dlb9inm85LMKG/w6gNTXSMrSFHHlIYXUvutwWg=
-X-Report-Abuse-To: spam@sf1.bxl.stone.is
-X-Filter-Fingerprint: IFrWXGses7OKB5S5G8/dJR8Z5VD7FZiiT9tK6RAzQuhA3cTUQ1R++keuE7RDJ8Kg3RbMLUalw1oC
- mj99/u+PoqoVy8a3lsStJtAvpObFX0Wok1JBYnOLzfRIhlEHQynLUpndEJ0YoaLytXXo8BMTaX2p
- Mk7LBarWD9Fj4R3eIu5cOy/3Wm9qfF/CZNvP/2Kowv61T+KDYyYtREgszdyFwv8IxCB3p/oCKvxr
- eyISh3JGb7OS5oVgiO+kDxZrVPLz3MmEGC2PrUKqLq5WmHK+Nw==
-X-Originating-IP: 87.238.167.34
-X-SpamExperts-Domain: stone.is
-X-SpamExperts-Username: 87.238.167.34
-Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
-X-SpamExperts-Outgoing-Class: ham
-X-SpamExperts-Outgoing-Evidence: Combined (0.04)
-X-Recommended-Action: accept
+	id S1755000AbaLHSAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 13:00:18 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-api@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, sgrubb@redhat.com,
+        eparis@parisplace.org, pmoore@redhat.com, tonyj@suse.de,
+        mpe@ellerman.id.au, anton@samba.org
+Subject: [PATCH V3] powerpc: add little endian flag to syscall_get_arch()
+Date: Mon,  8 Dec 2014 12:59:32 -0500
+Message-Id: <c1adfab2633f57a745f3e2e1b13b5a8f283c888a.1418055157.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/14 17:49, Jens Axboe wrote:
-> On 12/08/2014 07:55 AM, Bart Van Assche wrote:
->> diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
->> index 67ab88b..e88af88 100644
->> --- a/block/blk-mq-tag.c
->> +++ b/block/blk-mq-tag.c
->> @@ -256,6 +256,8 @@ static int bt_get(struct blk_mq_alloc_data *data,
->>               break;
->>           }
->>
->> +        blk_mq_run_hw_queue(hctx, false);
->> +
->>           blk_mq_put_ctx(data->ctx);
->>
->>           io_schedule();
-> 
-> Ah yes, that could be an issue for some cases, we do need to run the 
-> queue there. For a tag map shared across hardware queues, we might need 
-> to run more than just the current queue, however. For now we can safely 
-> assume that we allocate fairly, so it should not be an issue.
-> 
-> It might be worth experimenting with doing a __bt_get() after the queue 
-> run before going to sleep, in case the queue run found completions as well.
+Since both ppc and ppc64 have LE variants which are now reported by uname, add
+that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add AUDIT_ARCH_PPC*LE
+variants.
 
-Unless anyone objects I will start testing the following patch:
+Without this,  perf trace and auditctl fail.
 
-[PATCH] blk-mq: Fix bt_get() hang
+Mainline kernel reports ppc64le (per a058801) but there is no matching
+AUDIT_ARCH_PPC64LE.
 
-Avoid that if there are fewer hardware queues than CPU threads that
-bt_get() can hang. The symptoms of the hang were as follows:
-* All tags allocated for a particular hardware queue.
-* (nr_tags) pending commands for that hardware queue.
-* No pending commands for the software queues associated with that
-  hardware queue.
+Since 32-bit PPC LE is not supported, throw a compiler error rather than return
+a bogus architecture to audit.
 
-The call stack that corresponds to the hang is as follows:
+See:
+	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
 
-io_schedule+0x9c/0x130
-bt_get+0xef/0x180
-blk_mq_get_tag+0x9f/0xd0
-__blk_mq_alloc_request+0x16/0x1f0
-blk_mq_map_request+0x123/0x130
-blk_mq_make_request+0x69/0x280
-generic_make_request+0xc0/0x110
-submit_bio+0x64/0x130
-do_blockdev_direct_IO+0x1dc8/0x2da0
-__blockdev_direct_IO+0x47/0x50
-blkdev_direct_IO+0x49/0x50
-generic_file_read_iter+0x546/0x610
-blkdev_read_iter+0x32/0x40
-aio_run_iocb+0x1f8/0x400
-do_io_submit+0x121/0x490
-SyS_io_submit+0xb/0x10
-system_call_fastpath+0x12/0x17
+v2 -> v3:
+	Throw a compiler error on 32-bit LE.
+
+v1 -> v2:
+	Added ";" at the end of the #ifdef-protected line so it actually compiles
+
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- block/blk-mq-tag.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/powerpc/include/asm/syscall.h |    7 +++++++
+ include/uapi/linux/audit.h         |    1 +
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index c22491e..14ab120 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -256,6 +256,12 @@ static int bt_get(struct blk_mq_alloc_data *data,
- 		if (tag != -1)
- 			break;
+diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
+index 6fa2708..cf7fcab 100644
+--- a/arch/powerpc/include/asm/syscall.h
++++ b/arch/powerpc/include/asm/syscall.h
+@@ -90,6 +90,13 @@ static inline void syscall_set_arguments(struct task_struct *task,
  
-+		blk_mq_run_hw_queue(hctx, false);
-+
-+		tag = __bt_get(hctx, bt, last_tag);
-+		if (tag != -1)
-+			break;
-+
- 		blk_mq_put_ctx(data->ctx);
- 
- 		io_schedule();
+ static inline int syscall_get_arch(void)
+ {
++#ifdef __LITTLE_ENDIAN__
++	return AUDIT_ARCH_PPC64LE;
++#ifndef CONFIG_64BIT
++#error PPC 32-bit Little Endian architecture not supported.
++#endif /* CONFIG_64BIT */
++#else /* __LITTLE_ENDIAN__ */
+ 	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
++#endif /* __LITTLE_ENDIAN__ */
+ }
+ #endif	/* _ASM_SYSCALL_H */
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 4d100c8..fa2a6af 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -365,6 +365,7 @@ enum {
+ #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+ #define AUDIT_ARCH_PPC		(EM_PPC)
+ #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
++#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+ #define AUDIT_ARCH_S390		(EM_S390)
+ #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
+ #define AUDIT_ARCH_SH		(EM_SH)
 -- 
-2.1.2
+1.7.1
 
