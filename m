@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaLHJt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:49:58 -0500
-Received: from mail-bl2on0103.outbound.protection.outlook.com ([65.55.169.103]:52288
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751969AbaLHJt4 convert rfc822-to-8bit (ORCPT
+	id S1754839AbaLHJuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:50:04 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58010 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492AbaLHJt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:49:56 -0500
-From: Zidan Wang <B50113@freescale.com>
-To: Mark Brown <broonie@kernel.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver
- manage its own MCLK
-Thread-Topic: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver
- manage its own MCLK
-Thread-Index: AQHQELJ7KekiT6rB20u7rIYT8SQqOZyFW1pA
-Date: Mon, 8 Dec 2014 09:49:51 +0000
-Message-ID: <BN3PR0301MB12511B448B1C0B9E8F0BB6C48D640@BN3PR0301MB1251.namprd03.prod.outlook.com>
-References: <1417696879-15402-1-git-send-email-b50113@freescale.com>
- <20141205170156.GB14516@opensource.wolfsonmicro.com>
- <20141205173932.GN11764@sirena.org.uk>
-In-Reply-To: <20141205173932.GN11764@sirena.org.uk>
+	Mon, 8 Dec 2014 04:49:59 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB89nSFQ024429, This message is accepted by code: ctloc85258
+From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "chris@printf.net" <chris@printf.net>,
+        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH v4 1/6] mfd: rtsx: add func to split u32 into register
+Thread-Topic: [PATCH v4 1/6] mfd: rtsx: add func to split u32 into register
+Thread-Index: AQHQEE+fRoR/oTBMgUiwD+7H/IHqKZyE4RSAgAAQtYA=
+Date: Mon, 8 Dec 2014 09:49:29 +0000
+Message-ID: <54857429.5060108@realsil.com.cn>
+References: <cover.1417758564.git.micky_ching@realsil.com.cn>
+ <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
+ <20141208084941.GC3951@x1>
+In-Reply-To: <20141208084941.GC3951@x1>
 Accept-Language: zh-CN, en-US
-Content-Language: en-US
+Content-Language: zh-CN
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0610;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0610;
-x-forefront-prvs: 041963B986
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(13464003)(189002)(377454003)(199003)(51704005)(122556002)(31966008)(21056001)(62966003)(77156002)(68736005)(120916001)(46102003)(4396001)(107046002)(102836002)(97736003)(54206007)(99396003)(74316001)(40100003)(19580405001)(19580395003)(101416001)(106356001)(33656002)(106116001)(99286002)(105586002)(66066001)(50986999)(20776003)(76176999)(54356999)(64706001)(2656002)(87936001)(76576001)(92566001)(54606007)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:BN3PR0301MB1251.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B729F5F28621554F831E05B742781600@realsil.com.cn>
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0705;
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB89oGVn024166
 
-So I should move mclk to wm8960_priv. 
-And doing wm8960_priv->mclk = devm_clk_get(&i2c->dev, "codec_mclk") in wm8960_i2c_probe.
 
-Best Regards,
-Zidan
+On 12/08/2014 04:49 PM, Lee Jones wrote:
+>> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+>> >index 74346d5..9234449 100644
+>> >--- a/include/linux/mfd/rtsx_pci.h
+>> >+++ b/include/linux/mfd/rtsx_pci.h
+>> >@@ -558,6 +558,7 @@
+>> >  #define SD_SAMPLE_POINT_CTL		0xFDA7
+>> >  #define SD_PUSH_POINT_CTL		0xFDA8
+>> >  #define SD_CMD0				0xFDA9
+>> >+#define   SD_CMD_START			0x40
+> This is a different format at the others in the group on two counts;
+> firstly you have 3 whitespace characters after the #define and
+> secondly all of the other hex digits in the set are 4 a breast.
+> Please add the leading zeros to conform to this format.
+>
+Hi lee,
 
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Saturday, December 06, 2014 1:40 AM
-To: Charles Keepax
-Cc: Wang Zidan-B50113; lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de; lars@metafoo.de; Xiubo Li-B47053; patches@opensource.wolfsonmicro.com; alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver manage its own MCLK
+This format is more readable, add 2 space means this value is
+in groups under register SD_CMD0, and each register value is u8 type,
+so use 2 hex digits is right.
 
-On Fri, Dec 05, 2014 at 05:01:56PM +0000, Charles Keepax wrote:
-> On Thu, Dec 04, 2014 at 08:41:19PM +0800, Zidan Wang wrote:
+The original file make register address and its related value separated,
+and group register together.
 
-> >  struct wm8960_data {
-> > +	struct clk *mclk;
+But I like to write register address and value together,
+add 2 space for value to indicate this value is related to above register.
 
-> Is this really pdata? Would the pdata entry to locate the clock not be 
-> a string holding the clock name that you call clk_get on, rather than 
-> a clk pointer itself? Probably this should go in wm8960_priv instead.
+If we add new address/value, I recommend write register define format as 
+below:
 
-There should be no platform data of any kind for the clock, the name should be fixed and defined in terms of the name of the clock on the device requesting it.  The code is actually doing the right thing here, it's just that it's put the variable into the platform data because currently the driver just uses the platform data as the driver data.
+#define REGISTER        addr
+#define   REG_VAL1      val1
+#define   REG_VAL2      val2
+
+regards.
+micky.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
