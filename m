@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaLHUYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:24:37 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54400 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaLHUYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:24:35 -0500
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux390@de.ibm.com (supporter:S390),
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        linux-s390@vger.kernel.org (open list:S390),
-        linux-kernel@vger.kernel.org (open list)
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] s390: Include kvm_host.h header only if KVM is enabled
-Date: Mon,  8 Dec 2014 15:24:35 -0500
-Message-Id: <1418070276-24378-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754217AbaLHU2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:28:10 -0500
+Received: from nm43-vm7.bullet.mail.bf1.yahoo.com ([216.109.114.238]:37979
+	"EHLO nm43-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119AbaLHU2I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 15:28:08 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.ca;
+	b=aDEITuaoJ8zH5hK4RIgKlfHjP+iUCRp5vY7eSffkdtKrdsRtQVOTiiwgrMKVhJUL9QBtc7WzL0mz+bnKuXYWxzaIrl1qvoxkDksFj3fZno+P79dibpyek2qRAFQj2E8AB8Wb19TEgSkMDTHbS7KfF8PLGd+7wKRqECTTID1fIifcl1Er/FYay7zvGeInm2E1tBkLjC/pvKA2w7QQ4WwU7a0xcD8/q4ZGln4Lx8lVKwdsyOrLpHHX+VpIV4ne6d0d6tyqBqTQKWLOsq4ApOQYZp+kj6jVW2X1ZFFYZJCYjr1a725IYdlkad5gemM6OlECzlE3/IjBadYJ7d4RUGryNQ==;
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 646512.13460.bm@omp1052.mail.bf1.yahoo.com
+X-YMail-OSG: Cy2Y_ZcVM1mNrncXfl5oDxFLoHSfyDhrKVHoXMdXP2FlCJE2yx3zGg9.Gn1.IQR
+ .i9qBfY3n7UUAnN_qBdCpAzcXXnvJFUx4vGhhmPJ8NOhXrc9DToWm9JUsYjFf_zYHCzKORDJBHfA
+ dMhShyaTm1Fr4ovBWuDVMMdBSahzTJVge2E55V4m_hcUNyA2j5Dy8quFrmqvgBH0cP913uy86gwy
+ JUWwF2M6.rvmzfCW79m0eRT49gT.q4rJGNLe7dsdNqbpciDG1KY9ONcxVL2RiuU_gOTRh9MU9wk3
+ ZhkvHURUjxQmFppE6P4604qsx_fLeBKi8jNE81PI6vNQ9cYWfG7naG751woahduBUYbMqyEnWRYV
+ vgXhbMztghUIMwMTiLaDspRzTtlYOGRGM0bk1SX7eZX_i1Joca_SQXlI1cDnCxVFhKYgjLZPaaPb
+ tyNalBBjb2_NOD68l.qr28Qkjpl_zhOB9.ddMh1wZwPawZV8gj9zg.R3HadKpp0H2FcOld7CzjC6
+ qgjwRgiEAuoyva0GZjBikhIM_CpX_T5BB7ur_CYd6WiZD
+Date: Mon, 8 Dec 2014 20:28:00 +0000 (UTC)
+From: Denis Du <dudenis2000@yahoo.ca>
+Reply-To: Denis Du <dudenis2000@yahoo.ca>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <694700710.6880446.1418070480521.JavaMail.yahoo@jws10627.mail.bf1.yahoo.com>
+Subject: [PATCH] TTY: missing a lock to access the ldisk buffer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM uses srcu structures because of which CONFIG_KVM selects CONFIG_SRCU. In
-asm-offsets.c, we are including kvm_host.h unconditionally even though
-CONFIG_KVM is not enabled because of which we get errors like follows:
+Hi, Guys:
+I found that the 3.12 kernel tty layer will lose or corrupt data when having a full-duplex communication, especcially in high baudrate, for example 230k for my OMAP5 uart. Eventually I found there is a lock missing between copy data to ldisc layer buffer and copy data from the same buffer to user space. I believe this issue have been existing since 3.8 kernel(since this kernel , it start to remove most of the spin-locks) and I didn't find any fix even through 3.17 kernel. This patch was tested to be works great with no any data loss again.
 
-    In file included from arch/s390/kernel/asm-offsets.c:10:0:
->> include/linux/kvm_host.h:363:21: error: field 'srcu' has incomplete type
-      struct srcu_struct srcu;
-                         ^
->> include/linux/kvm_host.h:364:21: error: field 'irq_srcu' has incomplete type
-      struct srcu_struct irq_srcu;
-                         ^
-    make[2]: *** [arch/s390/kernel/asm-offsets.s] Error 1
-    make[2]: Target '__build' not remade because of errors.
-    make[1]: *** [prepare0] Error 2
-    make[1]: Target 'prepare' not remade because of errors.
-    make: *** [sub-make] Error 2 
 
-This patch fixes these by including kvm_host.h conditionally on CONFIG_KVM.
+I did try to use the existed lock atomic_read_lock, but it doesn’t work. 
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+
+
+Signed-off-by: Hui Du <dudenis2000@yahoo.ca>
+
+
 ---
- arch/s390/kernel/asm-offsets.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
-index ef279a1..055334d 100644
---- a/arch/s390/kernel/asm-offsets.c
-+++ b/arch/s390/kernel/asm-offsets.c
-@@ -7,12 +7,15 @@
- #define ASM_OFFSETS_C
- 
- #include <linux/kbuild.h>
--#include <linux/kvm_host.h>
- #include <linux/sched.h>
- #include <asm/idle.h>
- #include <asm/vdso.h>
- #include <asm/pgtable.h>
- 
-+#ifdef CONFIG_KVM
-+#include <linux/kvm_host.h>
-+#endif
+--- drivers/tty/n_tty.c    2014-10-16 16:39:35.909350338 -0400
++++ drivers/tty/n_tty.c    2014-10-16 16:49:00.004930469 -0400
+@@ -124,6 +124,7 @@
+
+struct mutex atomic_read_lock;
+struct mutex output_lock;
++    struct mutex read_buf_lock;
+};
+
+static inline size_t read_cnt(struct n_tty_data *ldata)
+@@ -1686,9 +1687,11 @@
+char *fp, int count)
+{
+int room, n;
++    struct n_tty_data *ldata = tty->disc_data;
+
+down_read(&tty->termios_rwsem);
+
++    mutex_lock(&ldata->read_buf_lock);
+while (1) {
+room = receive_room(tty);
+n = min(count, room);
+@@ -1703,6 +1706,7 @@
+
+tty->receive_room = room;
+n_tty_check_throttle(tty);
++    mutex_unlock(&ldata->read_buf_lock);
+up_read(&tty->termios_rwsem);
+}
+
+@@ -1713,7 +1717,7 @@
+int room, n, rcvd = 0;
+
+down_read(&tty->termios_rwsem);
+-
++    mutex_lock(&ldata->read_buf_lock);
+while (1) {
+room = receive_room(tty);
+n = min(count, room);
+@@ -1732,6 +1736,7 @@
+
+tty->receive_room = room;
+n_tty_check_throttle(tty);
++    mutex_unlock(&ldata->read_buf_lock);
+up_read(&tty->termios_rwsem);
+
+return rcvd;
+@@ -1880,6 +1885,7 @@
+ldata->overrun_time = jiffies;
+mutex_init(&ldata->atomic_read_lock);
+mutex_init(&ldata->output_lock);
++    mutex_init(&ldata->read_buf_lock);
+
+tty->disc_data = ldata;
+reset_buffer_flags(tty->disc_data);
+@@ -1945,6 +1951,8 @@
+size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
+
+retval = 0;
 +
- /*
-  * Make sure that the compiler is new enough. We want a compiler that
-  * is known to work with the "Q" assembler constraint.
-@@ -182,8 +185,10 @@ int main(void)
- 	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
- 	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
- 	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
-+#ifdef CONFIG_KVM
- 	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
- 	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
-+#endif /* CONFIG_KVM */
- #endif /* CONFIG_32BIT */
- 	return 0;
- }
--- 
-1.9.1
++    mutex_lock(&ldata->read_buf_lock);
+n = min(read_cnt(ldata), N_TTY_BUF_SIZE - tail);
+n = min(*nr, n);
+if (n) {
+@@ -1960,6 +1968,7 @@
+*b += n;
+*nr -= n;
+}
++    mutex_unlock(&ldata->read_buf_lock);
+return retval;
+}
 
+@@ -1990,6 +1999,8 @@
+size_t tail;
+int ret, found = 0;
+bool eof_push = 0;
++ 
++    mutex_lock(&ldata->read_buf_lock);
+
+/* N.B. avoid overrun if nr == 0 */
+n = min(*nr, read_cnt(ldata));
+@@ -2049,6 +2060,8 @@
+ldata->line_start = ldata->read_tail;
+tty_audit_push(tty);
+}
++
++    mutex_unlock(&ldata->read_buf_lock);
+return eof_push ? -EAGAIN : 0;
+}
