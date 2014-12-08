@@ -1,87 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345AbaLHUxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:53:00 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:50356 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaLHUw5 (ORCPT
+	id S1754988AbaLHUzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:55:37 -0500
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:41757 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaLHUzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:52:57 -0500
-Message-ID: <54860FD3.6020502@landley.net>
-Date: Mon, 08 Dec 2014 14:53:39 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, Pavel Machek <pavel@denx.de>
-CC: atull <atull@opensource.altera.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+	Mon, 8 Dec 2014 15:55:35 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Yunzhi Li <lyz@rock-chips.com>, "heiko@sntech.de" <heiko@sntech.de>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "romain.perier@gmail.com" <romain.perier@gmail.com>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        "zyw@rock-chips.com" <zyw@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "linux-rockchip@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, philip@balister.org,
-        rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>,
-        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        Yves Vandervennet <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>	<1414007405-32186-3-git-send-email-atull@opensource.altera.com>	<20141024105200.GA20775@amd>	<B914D894-E486-4EF1-8F84-169E939C58B4@konsulko.com>	<alpine.DEB.2.02.1410240906340.23446@atx-linux-37>	<CACxGe6tiLxbCThzjOqrQg44Ue3XJuuRgti5jZY=UrssSY8=xqg@mail.gmail.com>	<20141206135533.GA19672@amd> <20141208175050.92EDAC40D73@trevor.secretlab.ca>
-In-Reply-To: <20141208175050.92EDAC40D73@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 3/5] usb: dwc2: add generic PHY framework support for
+ dwc2 usb controler platform driver.
+Thread-Topic: [PATCH v3 3/5] usb: dwc2: add generic PHY framework support
+ for dwc2 usb controler platform driver.
+Thread-Index: AQHQEsvvfvHuMjfBaU+xWBrKe0kq5pyGLF5Q
+Date: Mon, 8 Dec 2014 20:55:29 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304845002B7@US01WEMBX2.internal.synopsys.com>
+References: <1418031988-2700-1-git-send-email-lyz@rock-chips.com>
+ <1418031988-2700-4-git-send-email-lyz@rock-chips.com>
+In-Reply-To: <1418031988-2700-4-git-send-email-lyz@rock-chips.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/08/2014 11:50 AM, Grant Likely wrote:
-> On Sat, 6 Dec 2014 14:55:33 +0100
-> , Pavel Machek <pavel@denx.de>
->  wrote:
->> Hi!
->>
->>>> I am accustomed to doing 'echo -n' for most of sysfs anyway.  Once in a
->>>> while I am a bonehead and forget the '-n' and spend a few minutes
->>>> wondering why this thing that worked last week suddenly rejects all
->>>> commands.  I'm just trying to make my user interface a bit user-friendly.
->>>>
->>>> I will take out the '\n' stripping and update the documentation.  I didn't
->>>> realize this would be controversial.
->>>
->>> Don't. You're doing the right thing by scrubbing your input. Requiring
->>> 'echo -n' is just stupid when it is so easy to make work easily.
->>
->> 'foo\nbar\n' is unusual but valid filename in linux. It is bad idea to
->> echo filenames into files in the first place... and arbitrarily
->> disallowing certain filenames is not helping.
+> From: Yunzhi Li [mailto:lyz@rock-chips.com]
+> Sent: Monday, December 08, 2014 1:46 AM
 > 
-> Meh. Just because it is a valid linux filename doesn't mean this
-> interface is forced to accept it. There should be tighter rules about
-> how the filename can be constructed. Allowing any arbitrary path for any
-> arbitrary valid linux filename makes for a large attack surface.
+> Get PHY parameters from devicetree and power off usb PHY during
+> system suspend.
+> 
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+> 
+> ---
+> 
+> Changes in v3:
+> - Fix coding style: both branches of the if() which only one
+>   branch of the conditional statement is a single statement should
+>   have braces.
+> - No need to test dwc2->phy for NULL before calling generic phy
+>   APIs.
+> 
+>  drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
+>  drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
+>  2 files changed, 46 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+> index 200168e..2601c61 100644
+> --- a/drivers/usb/dwc2/gadget.c
+> +++ b/drivers/usb/dwc2/gadget.c
+> @@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+>  {
+>  	struct device *dev = hsotg->dev;
+>  	struct s3c_hsotg_plat *plat = dev->platform_data;
+> -	struct phy *phy;
+> -	struct usb_phy *uphy;
+>  	struct s3c_hsotg_ep *eps;
+>  	int epnum;
+>  	int ret;
+> @@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+>  	hsotg->phyif = GUSBCFG_PHYIF16;
+> 
+>  	/*
+> -	 * Attempt to find a generic PHY, then look for an old style
+> -	 * USB PHY, finally fall back to pdata
+> +	 * If platform probe couldn't find a generic PHY or an old style
+> +	 * USB PHY, fall back to pdata
+>  	 */
+> -	phy = devm_phy_get(dev, "usb2-phy");
+> -	if (IS_ERR(phy)) {
+> -		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> -		if (IS_ERR(uphy)) {
+> -			/* Fallback for pdata */
+> -			plat = dev_get_platdata(dev);
+> -			if (!plat) {
+> -				dev_err(dev,
+> -				"no platform data or transceiver defined\n");
+> -				return -EPROBE_DEFER;
+> -			}
+> -			hsotg->plat = plat;
+> -		} else
+> -			hsotg->uphy = uphy;
+> -	} else {
+> -		hsotg->phy = phy;
+> +	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
+> +		plat = dev_get_platdata(dev);
+> +		if (!plat) {
+> +			dev_err(dev,
+> +			"no platform data or transceiver defined\n");
+> +			return -EPROBE_DEFER;
+> +		}
+> +		hsotg->plat = plat;
+> +	} else if (hsotg->phy) {
+>  		/*
+>  		 * If using the generic PHY framework, check if the PHY bus
+>  		 * width is 8-bit and set the phyif appropriately.
+>  		 */
+> -		if (phy_get_bus_width(phy) == 8)
+> +		if (phy_get_bus_width(hsotg->phy) == 8)
+>  			hsotg->phyif = GUSBCFG_PHYIF8;
+>  	}
+> 
+> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+> index 6a795aa..ae095f0 100644
+> --- a/drivers/usb/dwc2/platform.c
+> +++ b/drivers/usb/dwc2/platform.c
+> @@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
+>  	struct dwc2_core_params defparams;
+>  	struct dwc2_hsotg *hsotg;
+>  	struct resource *res;
+> +	struct phy *phy;
+> +	struct usb_phy *uphy;
+>  	int retval;
+>  	int irq;
+> 
+> @@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
+> 
+>  	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+> 
+> +	/*
+> +	 * Attempt to find a generic PHY, then look for an old style
+> +	 * USB PHY
+> +	 */
+> +	phy = devm_phy_get(&dev->dev, "usb2-phy");
+> +	if (IS_ERR(phy)) {
+> +		hsotg->phy = NULL;
+> +		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
+> +		if (IS_ERR(uphy))
+> +			hsotg->uphy = NULL;
+> +		else
+> +			hsotg->uphy = uphy;
+> +	} else {
+> +		hsotg->phy = phy;
+> +		phy_power_on(hsotg->phy);
+> +		phy_init(hsotg->phy);
+> +	}
+> +
+>  	spin_lock_init(&hsotg->lock);
+>  	mutex_init(&hsotg->init_mutex);
+>  	retval = dwc2_gadget_init(hsotg, irq);
+> @@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
+>  	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+>  	int ret = 0;
+> 
+> -	if (dwc2_is_device_mode(dwc2))
+> +	if (dwc2_is_device_mode(dwc2)) {
+>  		ret = s3c_hsotg_suspend(dwc2);
+> +	} else {
+> +		if (dwc2->lx_state == DWC2_L0)
+> +			return 0;
+> +		phy_exit(dwc2->phy);
+> +		phy_power_off(dwc2->phy);
+> +
+> +	}
+>  	return ret;
+>  }
+> 
+> @@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
+>  	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+>  	int ret = 0;
+> 
+> -	if (dwc2_is_device_mode(dwc2))
+> +	if (dwc2_is_device_mode(dwc2)) {
+>  		ret = s3c_hsotg_resume(dwc2);
+> +	} else {
+> +		phy_power_on(dwc2->phy);
+> +		phy_init(dwc2->phy);
+> +
+> +	}
+>  	return ret;
+>  }
+> 
 
-"echo /bin/mdev > /proc/sys/kernel/hotplug" has worked fine, without the
--n, for most of a decade now. Requiring -n on echo would be weird.
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-I note that the filenames in /proc/mounts have an escape syntax for
-arbitrary embedded weirdness. (To see it in action, mount a path with a
-space in it.) If you really want to support that, there's presumably
-code that can be genericized and reappropriated so you can escape a
-newline you want to keep. But if your input has a normal unescaped
-trailing newline, it _should_ be ignored.
-
-Rob
