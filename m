@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaLHQUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:20:47 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:55070 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854AbaLHQUp (ORCPT
+	id S1756087AbaLHQVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:21:53 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46404 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaLHQVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:20:45 -0500
-Date: Mon, 8 Dec 2014 11:20:29 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:atm Remove two FIXMES in the function,
- top_off_fp for the file, firestream.c
-Message-ID: <20141208112029.2ca0c2bd@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1417923348-13807-1-git-send-email-xerofoify@gmail.com>
-References: <1417923348-13807-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Mon, 8 Dec 2014 11:21:52 -0500
+Date: Mon, 8 Dec 2014 16:21:40 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Eddie Huang =?utf-8?B?KOm7g+aZuuWCkSk=?= 
+	<eddie.huang@mediatek.com>
+Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+Message-ID: <20141208162140.GN16185@e104818-lin.cambridge.arm.com>
+References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+ <1417776064.14380.17.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=-0.001
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417776064.14380.17.camel@mtksdaap41>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't see any reason to promote qe_tmp to a u64.  I think you can
-just remove the comment.  Anyone trying to build this into a 64-bit
-kernel will see errors from the virt_to_bus()/bus_to_virt() usage.
-
-fp->n seems to only be manipulated in interrupt context (after driving
-initialization) so it doesn't need locking or to be atomic.
-
-On Sat,  6 Dec 2014 22:35:48 -0500
-Nicholas Krause <xerofoify@gmail.com> wrote:
-
-> Removes two FIXMES in the function.top_off_fp. The first being that of needing the variable, qe_tmp needing to be a
-> u64 type and not u32 as encoding will not work if using a 32 bit register rather then 64 bit as stated in the first
-> fix me comment. In addition the second being a no longer needed comment due to not needing to atomically increment
-> the variable, n as passed to the function by the pointer of fp, as part of a structure of type,freepool.
+On Fri, Dec 05, 2014 at 10:41:04AM +0000, Yingjoe Chen wrote:
+> On Sun, 2014-11-23 at 23:02 -0800, Sonny Rao wrote: 
+> > This is a bug fix for using physical arch timers when
+> > the arch_timer_use_virtual boolean is false.  It restores the
+> > arch_counter_get_cntpct() function after removal in
+> > 
+> > 0d651e4e "clocksource: arch_timer: use virtual counters"
+> > 
+> > We need this on certain ARMv7 systems which are architected like this:
+> > diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> > index f190971..b1fa4e6 100644
+> > --- a/arch/arm64/include/asm/arch_timer.h
+> > +++ b/arch/arm64/include/asm/arch_timer.h
+> > @@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+> >  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+> >  }
+> >  
+> > +static inline u64 arch_counter_get_cntpct(void)
+> > +{
+> > +	/*
+> > +	 * AArch64 kernel and user space mandate the use of CNTVCT.
+> > +	 */
+> > +	BUG();
+> > +	return 0;
+> > +}
+> > +
+> >  static inline u64 arch_counter_get_cntvct(void)
+> >  {
+> >  	u64 cval;
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/atm/firestream.c | 12 +++---------
->  1 file changed, 3 insertions(+), 9 deletions(-)
+> I tested this on an arm64 platform and system fail to boot when apply
+> this patch.
 > 
-> diff --git a/drivers/atm/firestream.c b/drivers/atm/firestream.c
-> index 82f2ae0..06c23f6 100644
-> --- a/drivers/atm/firestream.c
-> +++ b/drivers/atm/firestream.c
-> @@ -1477,7 +1477,7 @@ static void top_off_fp (struct fs_dev *dev, struct freepool *fp,
->  	struct FS_BPENTRY *qe, *ne;
->  	struct sk_buff *skb;
->  	int n = 0;
-> -	u32 qe_tmp;
-> +	u64  qe_tmp;
->  
->  	fs_dprintk (FS_DEBUG_QUEUE, "Topping off queue at %x (%d-%d/%d)\n", 
->  		    fp->offset, read_fs (dev, FP_CNT (fp->offset)), fp->n, 
-> @@ -1505,14 +1505,8 @@ static void top_off_fp (struct fs_dev *dev, struct freepool *fp,
->  		ne->skb = skb;
->  		ne->fp = fp;
->  
-> -		/*
-> -		 * FIXME: following code encodes and decodes
-> -		 * machine pointers (could be 64-bit) into a
-> -		 * 32-bit register.
-> -		 */
-> -
->  		qe_tmp = read_fs (dev, FP_EA(fp->offset));
-> -		fs_dprintk (FS_DEBUG_QUEUE, "link at %x\n", qe_tmp);
-> +		fs_dprintk(FS_DEBUG_QUEUE, "link at %llx\n", qe_tmp);
->  		if (qe_tmp) {
->  			qe = bus_to_virt ((long) qe_tmp);
->  			qe->next = virt_to_bus(ne);
-> @@ -1521,7 +1515,7 @@ static void top_off_fp (struct fs_dev *dev, struct freepool *fp,
->  			write_fs (dev, FP_SA(fp->offset), virt_to_bus(ne));
->  
->  		write_fs (dev, FP_EA(fp->offset), virt_to_bus (ne));
-> -		fp->n++;   /* XXX Atomic_inc? */
-> +		fp->n++;
->  		write_fs (dev, FP_CTU(fp->offset), 1);
->  	}
->  
+> The boot loader start kernel at EL2, so is_hyp_mode_available() will be
+> true and we will use physical timer. Without this patch,
+> arch_timer_read_counter set to arch_counter_get_cntvct even when we use
+> physical timer which is incorrect but at least system will boot.
 
+So on arm64 we want to use CNTVCT all the time, even if we start the
+kernel at EL2. This is the counter that gets exposed to user via vdso.
+When the kernel boots at EL2, we initialise CNTVOFF to 0, so we know
+that CNTVCT == CNTPCT. However, I would still prefer to use CNTVCT even
+in such case to spot possible firmware issues with not restoring CNTVOFF
+when coming out of suspend (one particular case of suspend which does
+not require a different kernel entry point).
+
+> I think we still need this function on arm64. We should add BUG() to
+> arch_timer_init instead, maybe something like this:
+> 
+> @@ -708,9 +708,12 @@ static void __init arch_timer_init(struct device_node *np)
+>  	 * If we cannot rely on firmware initializing the timer registers then
+>  	 * we should use the physical timers instead.
+>  	 */
+> -	if (IS_ENABLED(CONFIG_ARM) &&
+> -	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+> +	if (of_property_read_bool(np, "arm,cpu-registers-not-fw-configured")) {
+> +		if (IS_ENABLED(CONFIG_ARM64))
+> +			BUG();
+> +		else
+>  			arch_timer_use_virtual = false;
+> +	}
+
+We could be more tolerant (give people a chance to check their DT):
+
+	if (!WARN_ON(IS_ENABLED(CONFIG_ARM64)))
+		arch_timer_use_virtual = false;
+
+In addition, we can define arch_counter_get_cntpct to always read CNTVCT
+(not that nice but maybe it looks better with a comment):
+
+/*
+ * AArch64 kernel and user space mandate the use of CNTVCT.
+ */
+#define arch_counter_get_cntpct	arch_counter_get_cntvct
+
+(or any better suggestion to avoid reading CNTPCT on arm64)
+
+-- 
+Catalin
