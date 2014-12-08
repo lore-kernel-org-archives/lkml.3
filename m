@@ -1,238 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276AbaLHVyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:54:53 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57247 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaLHVyw (ORCPT
+	id S1755387AbaLHVz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:55:27 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:53520 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286AbaLHVzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:54:52 -0500
-Message-ID: <54861E1E.1000206@linux.vnet.ibm.com>
-Date: Tue, 09 Dec 2014 03:24:38 +0530
-From: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v3 4/4] powernv: powerpc: Add winkle support for offline
- cpus
-References: <1417678103-32571-1-git-send-email-shreyas@linux.vnet.ibm.com> <1417678103-32571-5-git-send-email-shreyas@linux.vnet.ibm.com> <20141208055217.GC4437@drongo>
-In-Reply-To: <20141208055217.GC4437@drongo>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120821-0025-0000-0000-000000ADF9A2
+	Mon, 8 Dec 2014 16:55:25 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
+Subject: [PATCH v2] x86_64, switch_to: Load TLS descriptors before switching DS and ES
+Date: Mon,  8 Dec 2014 13:55:20 -0800
+Message-Id: <509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Otherwise, if buggy user code points DS or ES into the TLS array,
+they would be corrupted after a context switch.
 
+This also significantly improves the comments and documents some
+gotchas in the code.
 
-On Monday 08 December 2014 11:22 AM, Paul Mackerras wrote:
-> On Thu, Dec 04, 2014 at 12:58:23PM +0530, Shreyas B. Prabhu wrote:
->> Winkle is a deep idle state supported in power8 chips. A core enters
->> winkle when all the threads of the core enter winkle. In this state
->> power supply to the entire chiplet i.e core, private L2 and private L3
->> is turned off. As a result it gives higher powersavings compared to
->> sleep.
->>
->> But entering winkle results in a total hypervisor state loss. Hence the
->> hypervisor context has to be preserved before entering winkle and
->> restored upon wake up.
->>
->> Power-on Reset Engine (PORE) is a dedicated engine which is responsible
->> for powering on the chiplet during wake up. It can be programmed to
->> restore the register contests of a few specific registers. This patch
->> uses PORE to restore register state wherever possible and uses stack to
->> save and restore rest of the necessary registers.
->>
->> With hypervisor state restore things fall under three categories-
->> per-core state, per-subcore state and per-thread state. To manage this,
->> extend the infrastructure introduced for sleep. Mainly we add a paca
->> variable subcore_sibling_mask. Using this and the core_idle_state we can
->> distingush first thread in core and subcore.
-> 
-> Comments below...
-> 
->> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
->> index 7637889..2b9b5fb 100644
->> --- a/arch/powerpc/kernel/exceptions-64s.S
->> +++ b/arch/powerpc/kernel/exceptions-64s.S
->> @@ -102,9 +102,7 @@ system_reset_pSeries:
->>  #ifdef CONFIG_PPC_P7_NAP
->>  BEGIN_FTR_SECTION
->>  	/* Running native on arch 2.06 or later, check if we are
->> -	 * waking up from nap. We only handle no state loss and
->> -	 * supervisor state loss. We do -not- handle hypervisor
->> -	 * state loss at this time.
->> +	 * waking up from nap/sleep/winkle.
->>  	 */
->>  	mfspr	r13,SPRN_SRR1
->>  	rlwinm.	r13,r13,47-31,30,31
->> @@ -112,7 +110,17 @@ BEGIN_FTR_SECTION
->>  
->>  	cmpwi	cr3,r13,2
->>  
->> -	GET_PACA(r13)
->> +	/* Check if last bit of HSPGR0 is set. This indicates whether we are
->> +	 * waking up from winkle */
->> +	li	r3,1
->> +	mfspr	r4,SPRN_HSPRG0
->> +	and	r5,r4,r3
->> +	cmpwi	cr4,r5,1	/* Store result in cr4 for later use */
->> +
->> +	andc	r4,r4,r3
->> +	mtspr	SPRN_HSPRG0,r4
->> +
->> +	mr	r13,r4
-> 
-> This seems unnecessarily convoluted.  How about:
-> 
-> 	GET_PACA(r13)
-> 	clrldi	r5,r13,63
-> 	clrrdi	r13,r13,1
-> 	cmpwi	cr4,r5,1
-> 	mtspr	SPRN_HSPRG0,r13
-> 
-Yes, makes more sense. I'll use this.
+Before this patch, the both tests below failed.  With this patch,
+the es test passes, although the gsbase test still fails.
 
->> diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
->> index 8c3a1f4..8102075 100644
->> --- a/arch/powerpc/kernel/idle_power7.S
->> +++ b/arch/powerpc/kernel/idle_power7.S
->> @@ -19,8 +19,24 @@
->>  #include <asm/kvm_book3s_asm.h>
->>  #include <asm/opal.h>
->>  #include <asm/cpuidle.h>
->> +#include <asm/mmu-hash64.h>
->>  
->>  #undef DEBUG
->> +/*
->> + * Use unused space in the interrupt stack to save and restore
->> + * registers for winkle support.
->> + */
->> +#define _SDR1	GPR3
->> +#define _RPR	GPR4
->> +#define _SPURR	GPR5
->> +#define _PURR	GPR6
->> +#define _TSCR	GPR7
->> +#define _DSCR	GPR8
->> +#define _AMOR	GPR9
->> +#define _PMC5	GPR10
->> +#define _PMC6	GPR11
-> 
-> Why only PMC5 and PMC6 out of all the PMU registers?  What about
-> PMC1-PMC4 and the MMCR registers?  I assume they're lost during winkle
-> state also, aren't they?  If we're not saving them, what's the point
-> of saving and restoring PMC5 and PMC6?
->
-Yes all PMC and MMCR contents are lost. Using __restore_cpu_power8, the
-MMCR registers are initialized to 0. The reasoning behind specifically
-restoring PMC5 and PMC6 was the fact that they are not programmable and
-count cycles/instructions by default. We suspected that there might be a
-userspace program which relied on PMC5/PMC6 always increasing.
-But now on closer look, since these counters are 32 bit and cycles/
-instruction counts are bound to exceed it, I doubt such userspace programs
-exist. I'll drop PMC5 and PMC6 in the next version.
+----- begin es test -----
+
+/*
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned short GDT3(int idx)
+{
+	return (idx << 3) | 3;
+}
+
+static int create_tls(int idx, unsigned int base)
+{
+	struct user_desc desc = {
+		.entry_number    = idx,
+		.base_addr       = base,
+		.limit           = 0xfffff,
+		.seg_32bit       = 1,
+		.contents        = 0, /* Data, grow-up */
+		.read_exec_only  = 0,
+		.limit_in_pages  = 1,
+		.seg_not_present = 0,
+		.useable         = 0,
+	};
+
+	if (syscall(SYS_set_thread_area, &desc) != 0)
+		err(1, "set_thread_area");
+
+	return desc.entry_number;
+}
+
+int main()
+{
+	int idx = create_tls(-1, 0);
+	printf("Allocated GDT index %d\n", idx);
+
+	unsigned short orig_es;
+	asm volatile ("mov %%es,%0" : "=rm" (orig_es));
+
+	int errors = 0;
+	int total = 1000;
+	for (int i = 0; i < total; i++) {
+		asm volatile ("mov %0,%%es" : : "rm" (GDT3(idx)));
+		usleep(100);
+
+		unsigned short es;
+		asm volatile ("mov %%es,%0" : "=rm" (es));
+		asm volatile ("mov %0,%%es" : : "rm" (orig_es));
+		if (es != GDT3(idx)) {
+			if (errors == 0)
+				printf("[FAIL]\tES changed from 0x%hx to 0x%hx\n",
+				       GDT3(idx), es);
+			errors++;
+		}
+	}
+
+	if (errors) {
+		printf("[FAIL]\tES was corrupted %d/%d times\n", errors, total);
+		return 1;
+	} else {
+		printf("[OK]\tES was preserved\n");
+		return 0;
+	}
+}
+
+----- end es test -----
+
+----- begin gsbase test -----
+
+/*
+ * gsbase.c, a gsbase test
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned char *testptr, *testptr2;
+
+static unsigned char read_gs_testvals(void)
+{
+	unsigned char ret;
+	asm volatile ("movb %%gs:%1, %0" : "=r" (ret) : "m" (*testptr));
+	return ret;
+}
+
+int main()
+{
+	int errors = 0;
+
+	testptr = mmap((void *)0x200000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr == MAP_FAILED)
+		err(1, "mmap");
+
+	testptr2 = mmap((void *)0x300000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr2 == MAP_FAILED)
+		err(1, "mmap");
+
+	*testptr = 0;
+	*testptr2 = 1;
+
+	if (syscall(SYS_arch_prctl, ARCH_SET_GS,
+		    (unsigned long)testptr2 - (unsigned long)testptr) != 0)
+		err(1, "ARCH_SET_GS");
+
+	usleep(100);
+
+	if (read_gs_testvals() == 1) {
+		printf("[OK]\tARCH_SET_GS worked\n");
+	} else {
+		printf("[FAIL]\tARCH_SET_GS failed\n");
+		errors++;
+	}
+
+	asm volatile ("mov %0,%%gs" : : "r" (0));
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tWriting 0 to gs worked\n");
+	} else {
+		printf("[FAIL]\tWriting 0 to gs failed\n");
+		errors++;
+	}
+
+	usleep(100);
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tgsbase is still zero\n");
+	} else {
+		printf("[FAIL]\tgsbase was corrupted\n");
+		errors++;
+	}
+
+	return errors == 0 ? 0 : 1;
+}
+
+----- end gsbase test -----
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+
+x86_64, switch_to: Fix an incorrect comment
+
+I have no idea why load_sp0 would have anything to do with the page
+table pointer (i.e. cr3).
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kernel/process_64.c | 101 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 73 insertions(+), 28 deletions(-)
+
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 3ed4a68d4013..5a2c02913af3 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -283,24 +283,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
  
->> +#define _WORT	GPR12
->> +#define _WORC	GPR13
->>  
->>  /* Idle state entry routines */
->>  
->> @@ -124,8 +140,8 @@ power7_enter_nap_mode:
->>  	stb	r4,HSTATE_HWTHREAD_STATE(r13)
->>  #endif
->>  	stb	r3,PACA_THREAD_IDLE_STATE(r13)
->> -	cmpwi	cr1,r3,PNV_THREAD_SLEEP
->> -	bge	cr1,2f
->> +	cmpwi	cr3,r3,PNV_THREAD_SLEEP
->> +	bge	cr3,2f
->>  	IDLE_STATE_ENTER_SEQ(PPC_NAP)
->>  	/* No return */
->>  2:
->> @@ -154,7 +170,8 @@ pnv_fastsleep_workaround_at_entry:
->>  	isync
->>  	bne-	lwarx_loop1
->>  
->> -common_enter: /* common code for all the threads entering sleep */
->> +common_enter: /* common code for all the threads entering sleep  or winkle */
->> +	bgt	cr3,enter_winkle
->>  	IDLE_STATE_ENTER_SEQ(PPC_SLEEP)
->>  
->>  fastsleep_workaround_at_entry:
->> @@ -175,6 +192,34 @@ fastsleep_workaround_at_entry:
->>  	stw	r0,0(r14)
->>  	b	common_enter
->>  
->> +enter_winkle:
->> +	/*
->> +	 * Note all register i.e per-core, per-subcore or per-thread is saved
->> +	 * here since any thread in the core might wake up first
->> +	 */
->> +	mfspr	r3,SPRN_SDR1
->> +	std	r3,_SDR1(r1)
->> +	mfspr	r3,SPRN_RPR
->> +	std	r3,_RPR(r1)
->> +	mfspr	r3,SPRN_SPURR
->> +	std	r3,_SPURR(r1)
->> +	mfspr	r3,SPRN_PURR
->> +	std	r3,_PURR(r1)
->> +	mfspr	r3,SPRN_TSCR
->> +	std	r3,_TSCR(r1)
->> +	mfspr	r3,SPRN_DSCR
->> +	std	r3,_DSCR(r1)
->> +	mfspr	r3,SPRN_AMOR
->> +	std	r3,_AMOR(r1)
->> +	mfspr	r3,SPRN_PMC5
->> +	std	r3,_PMC5(r1)
->> +	mfspr	r3,SPRN_PMC6
->> +	std	r3,_PMC6(r1)
->> +	mfspr	r3,SPRN_WORT
->> +	std	r3,_WORT(r1)
->> +	mfspr	r3,SPRN_WORC
->> +	std	r3,_WORC(r1)
->> +	IDLE_STATE_ENTER_SEQ(PPC_WINKLE)
->>  
->>  _GLOBAL(power7_idle)
->>  	/* Now check if user or arch enabled NAP mode */
->> @@ -197,6 +242,12 @@ _GLOBAL(power7_sleep)
->>  	b	power7_powersave_common
->>  	/* No return */
->>  
->> +_GLOBAL(power7_winkle)
->> +	li	r3,3
->> +	li	r4,1
->> +	b	power7_powersave_common
->> +	/* No return */
->> +
->>  #define CHECK_HMI_INTERRUPT						\
->>  	mfspr	r0,SPRN_SRR1;						\
->>  BEGIN_FTR_SECTION_NESTED(66);						\
->> @@ -238,11 +289,23 @@ lwarx_loop2:
->>  	bne	core_idle_lock_held
->>  
->>  	cmpwi	cr2,r15,0
->> +	lbz	r4,PACA_SUBCORE_SIBLING_MASK(r13)
->> +	and	r4,r4,r15
->> +	cmpwi	cr1,r4,0	/* Check if first in subcore */
->> +
->> +	/*
->> +	 * At this stage
->> +	 * cr1 - 10 if first thread to wakeup in subcore
->> +	 * cr2 - 10 if first thread to wakeup in core
->> +	 * cr3-  01 if waking up from sleep or winkle
->> +	 * cr4 - 10 if waking up from winkle
->> +	 */
-> 
-> What do "10" and "01" mean in this comment?  (If they were CR field
-> values in binary they would need to be 3 or 4 bits, not 2.)
-> 
-I'll fix this. 
-
-Thanks,
-Shreyas
+ 	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
+ 
+-	/*
+-	 * Reload esp0, LDT and the page table pointer:
+-	 */
++	/* Reload esp0 and ss1. */
+ 	load_sp0(tss, next);
+ 
+-	/*
+-	 * Switch DS and ES.
+-	 * This won't pick up thread selector changes, but I guess that is ok.
+-	 */
+-	savesegment(es, prev->es);
+-	if (unlikely(next->es | prev->es))
+-		loadsegment(es, next->es);
+-
+-	savesegment(ds, prev->ds);
+-	if (unlikely(next->ds | prev->ds))
+-		loadsegment(ds, next->ds);
+-
+-
+ 	/* We must save %fs and %gs before load_TLS() because
+ 	 * %fs and %gs may be cleared by load_TLS().
+ 	 *
+@@ -309,41 +294,101 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	savesegment(fs, fsindex);
+ 	savesegment(gs, gsindex);
+ 
++	/*
++	 * Load TLS before restoring any segments so that segment loads
++	 * reference the correct GDT entries.
++	 */
+ 	load_TLS(next, cpu);
+ 
+ 	/*
+-	 * Leave lazy mode, flushing any hypercalls made here.
+-	 * This must be done before restoring TLS segments so
+-	 * the GDT and LDT are properly updated, and must be
+-	 * done before math_state_restore, so the TS bit is up
+-	 * to date.
++	 * Leave lazy mode, flushing any hypercalls made here.  This
++	 * must be done after loading TLS entries in the GDT but before
++	 * loading segments that might reference them, and and it must
++	 * be done before math_state_restore, so the TS bit is up to
++	 * date.
+ 	 */
+ 	arch_end_context_switch(next_p);
+ 
++	/* Switch DS and ES.
++	 *
++	 * Reading them only returns the selectors, but writing them (if
++	 * nonzero) loads the full descriptor from the GDT or LDT.  The
++	 * LDT for next is loaded in switch_mm, and the GDT is loaded
++	 * above.
++	 *
++	 * We therefore need to write new values to the segment
++	 * registers on every context switch unless both the new and old
++	 * values are zero.
++	 *
++	 * Note that we don't need to do anything for CS and SS, as
++	 * those are saved and restored as part of pt_regs.
++	 */
++	savesegment(es, prev->es);
++	if (unlikely(next->es | prev->es))
++		loadsegment(es, next->es);
++
++	savesegment(ds, prev->ds);
++	if (unlikely(next->ds | prev->ds))
++		loadsegment(ds, next->ds);
++
+ 	/*
+ 	 * Switch FS and GS.
+ 	 *
+-	 * Segment register != 0 always requires a reload.  Also
+-	 * reload when it has changed.  When prev process used 64bit
+-	 * base always reload to avoid an information leak.
++	 * These are even more complicated than FS and GS: they have
++	 * 64-bit bases are that controlled by arch_prctl.  Those bases
++	 * only differ from the values in the GDT or LDT if the selector
++	 * is 0.
++	 *
++	 * Loading the segment register resets the hidden base part of
++	 * the register to 0 or the value from the GDT / LDT.  If the
++	 * next base address zero, writing 0 to the segment register is
++	 * much faster than using wrmsr to explicitly zero the base.
++	 *
++	 * The thread_struct.fs and thread_struct.gs values are 0
++	 * if the fs and gs bases respectively are not overridden
++	 * from the values implied by fsindex and gsindex.  They
++	 * are nonzero, and store the nonzero base addresses, if
++	 * the bases are overridden.
++	 *
++	 * (fs != 0 && fsindex != 0) || (gs != 0 && gsindex != 0) should
++	 * be impossible.
++	 *
++	 * Therefore we need to reload the segment registers if either
++	 * the old or new selector is nonzero, and we need to override
++	 * the base address if next thread expects it to be overridden.
++	 *
++	 * This code is unnecessarily slow in the case where the old and
++	 * new indexes are zero and the new base is nonzero -- it will
++	 * unnecessarily write 0 to the selector before writing the new
++	 * base address.
++	 *
++	 * Note: This all depends on arch_prctl being the only way that
++	 * user code can override the segment base.  Once wrfsbase and
++	 * wrgsbase are enabled, most of this code will need to change.
+ 	 */
+ 	if (unlikely(fsindex | next->fsindex | prev->fs)) {
+ 		loadsegment(fs, next->fsindex);
++
+ 		/*
+-		 * Check if the user used a selector != 0; if yes
+-		 *  clear 64bit base, since overloaded base is always
+-		 *  mapped to the Null selector
++		 * If user code wrote a nonzero value to FS, then it also
++		 * cleared the overridden base address.
++		 *
++		 * XXX: if user code wrote 0 to FS and cleared the base
++		 * address itself, we won't notice and we'll incorrectly
++		 * restore the prior base address next time we reschdule
++		 * the process.
+ 		 */
+ 		if (fsindex)
+ 			prev->fs = 0;
+ 	}
+-	/* when next process has a 64bit base use it */
+ 	if (next->fs)
+ 		wrmsrl(MSR_FS_BASE, next->fs);
+ 	prev->fsindex = fsindex;
+ 
+ 	if (unlikely(gsindex | next->gsindex | prev->gs)) {
+ 		load_gs_index(next->gsindex);
++
++		/* This works (and fails) the same way as fsindex above. */
+ 		if (gsindex)
+ 			prev->gs = 0;
+ 	}
+-- 
+1.9.3
 
