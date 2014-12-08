@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaLHItG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:49:06 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:35736 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaLHItE (ORCPT
+	id S1752938AbaLHItt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:49:49 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:44770 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaLHIts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:49:04 -0500
-Message-ID: <548565FC.1020908@suse.cz>
-Date: Mon, 08 Dec 2014 09:49:00 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 8 Dec 2014 03:49:48 -0500
+Date: Mon, 8 Dec 2014 08:49:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
+        dan.carpenter@oracle.com, rogerable@realtek.com,
+        wei_wang@realsil.com.cn
+Subject: Re: [PATCH v4 1/6] mfd: rtsx: add func to split u32 into register
+Message-ID: <20141208084941.GC3951@x1>
+References: <cover.1417758564.git.micky_ching@realsil.com.cn>
+ <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: kernel-janitors@vger.kernel.org, linux@rasmusvillemoes.dk, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/20] TTY: fix misspelling of current function in string
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr> <1417980062-25151-7-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1417980062-25151-7-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=iso-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2014, 08:20 PM, Julia Lawall wrote:
-> Replace the last argument of serial_paranoia_check by the actual function
-> name.
+On Fri, 05 Dec 2014, micky_ching@realsil.com.cn wrote:
+
+> From: Micky Ching <micky_ching@realsil.com.cn>
 > 
-> This was done using Coccinelle, including the use of Levenshtein distance,
-> as proposed by Rasmus Villemoes.
+> Add helper function to write u32 to registers, if we want to put u32
+> value to 4 continuous register, this can help us reduce tedious work.
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 > ---
-> The semantic patch is difficult to summarize, but is available in the cover
-> letter of this patch series.
+>  include/linux/mfd/rtsx_pci.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
->  drivers/tty/amiserial.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-> index d9f85f9..b2d7600 100644
-> --- a/drivers/tty/amiserial.c
-> +++ b/drivers/tty/amiserial.c
-> @@ -931,7 +931,7 @@ static void rs_send_xchar(struct tty_struct *tty, char ch)
->  	struct serial_state *info = tty->driver_data;
->          unsigned long flags;
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index 74346d5..9234449 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -558,6 +558,7 @@
+>  #define SD_SAMPLE_POINT_CTL		0xFDA7
+>  #define SD_PUSH_POINT_CTL		0xFDA8
+>  #define SD_CMD0				0xFDA9
+> +#define   SD_CMD_START			0x40
+
+This is a different format at the others in the group on two counts;
+firstly you have 3 whitespace characters after the #define and
+secondly all of the other hex digits in the set are 4 a breast.
+Please add the leading zeros to conform to this format.
+
+>  #define SD_CMD1				0xFDAA
+>  #define SD_CMD2				0xFDAB
+>  #define SD_CMD3				0xFDAC
+> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>  	return (u8 *)(pcr->host_cmds_ptr);
+>  }
 >  
-> -	if (serial_paranoia_check(info, tty->name, "rs_send_char"))
-> +	if (serial_paranoia_check(info, tty->name, "rs_send_xchar"))
+> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
+> +{
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
+> +}
+> +
+>  #endif
 
-I wonder, why not to use __func__ here too?
-
-thanks,
 -- 
-js
-suse labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
