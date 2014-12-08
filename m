@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbaLHQOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:14:24 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53760 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaLHQOV (ORCPT
+	id S1755983AbaLHQQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:16:12 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:65277 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaLHQQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:14:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141208105732.GA14346@localhost>
-References: <1417089434-11274-1-git-send-email-octavian.purdila@intel.com>
-	<20141205101741.GD11445@localhost>
-	<CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
-	<20141205120610.GG11445@localhost>
-	<CAE1zotKGAvd9oKz5_McihnPcpH-n4Rc4s0r=jm2wb26-dD8Dsg@mail.gmail.com>
-	<20141208105732.GA14346@localhost>
-Date: Mon, 8 Dec 2014 18:14:19 +0200
-Message-ID: <CAE1zotJPkTsvwqYEsfHHrdgdBW+03M20nqGzUL8bQXBfn70tBg@mail.gmail.com>
-Subject: Re: [PATCH] mfd: dln2: add suspend/resume functionality
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
+	Mon, 8 Dec 2014 11:16:08 -0500
+Date: Mon, 8 Dec 2014 17:16:02 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Johan Hovold <johan@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>
+Subject: Re: [PATCH v4 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
+ Bridge controller
+Message-ID: <20141208161602.GE14346@localhost>
+References: <1417241944-17799-1-git-send-email-muth@cypress.com>
+ <20141208153701.GD14346@localhost>
+ <BN1PR06MB069088C07483AEA527DD338CC640@BN1PR06MB069.namprd06.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BN1PR06MB069088C07483AEA527DD338CC640@BN1PR06MB069.namprd06.prod.outlook.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 12:57 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Fri, Dec 05, 2014 at 03:05:45PM +0200, Octavian Purdila wrote:
->> On Fri, Dec 5, 2014 at 2:06 PM, Johan Hovold <johan@kernel.org> wrote:
->> > On Fri, Dec 05, 2014 at 01:51:17PM +0200, Octavian Purdila wrote:
->> >> On Fri, Dec 5, 2014 at 12:17 PM, Johan Hovold <johan@kernel.org> wrote:
->
->> >> > And surely you need to resubmit the read urbs in resume, or you will
->> >> > never receive any more data.
->> >> >
->> >> > How did you test this patch?
->> >> >
->> >>
->> >> The resume cb is not called in my setup (kvm), only reset_resume.
->> >
->> > Please make sure to test your patches on proper hardware.
->>
->> It was tested with the proper hardware, I was just testing it in the
->> setup we use, which is kvm with USB pass through.
->
-> I was referring to your kvm setup.
->
+On Mon, Dec 08, 2014 at 04:00:13PM +0000, Muthu Mani wrote:
+> > On Sat, Nov 29, 2014 at 11:49:04AM +0530, Muthu Mani wrote:
+> > > Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
+> > > CYUSBS234 USB-Serial Bridge controller.
+> > >
+> > > Details about the device can be found at:
+> > > http://www.cypress.com/?rID=84126
+> > >
+> > > Signed-off-by: Muthu Mani <muth@cypress.com>
+> > > Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+> > > ---
+> >
+> > This patch as well as the other two patches in the series is white-space
+> > damaged. Please always make sure to run your patches through
+> > checkpatch.pl before submission (and/or fix your mailer).
+> >
+> > Also use git-send-email when submitting your series so that the individual
+> > patches get threaded properly.
+> 
+> Sorry about the inconvenience.
+> I ran checkpatch.pl for all the patches before I submitted them using
+> git-send-email.
+> checkpatch doesn't show any error.
 
-I see the same behavior (reset_resume called) when testing on bare
-bone hardware. BTW, KVM allows me to test more thoroughly, as I can
-use custom SSDT tables required by i2c devices to find their IRQs.
+Then the problem could be your mail server. All (leading) tabs have been
+converted to spaces.
+
+> I used the following command to submit patch. Please let me know if anything wrong.
+> $ git format-patch -s -n -v4 master..Driver_v4
+> $ git send-email --smtp-encryption=tls --smtp-server=<mail-server> --smtp-user=muth@cypress.com --smtp-server-port=<port#> --to="Samuel Ortiz <sameo@linux.intel.com>" --to="Lee Jones <lee.jones@linaro.org>" --to="Wolfram Sang <wsa@the-dreams.de>" --to="Linus Walleij <linus.walleij@linaro.org>" --to="Alexandre Courbot <gnurou@gmail.com>" --to="gregkh@linuxfoundation.org"  --to="Johan Hovold <johan@kernel.org>" --cc="linux-usb@vger.kernel.org"  --cc="linux-kernel@vger.kernel.org" --cc="linux-i2c@vger.kernel.org" --cc="linux-gpio@vger.kernel.org" v4-0001-mfd-add-support-for-Cypress-CYUSBS234-USB-Serial-.patch
+
+Have a look at git-send-email's --thread switch. Depending on your
+settings you may only need to specify all three patches to
+git-send-email at once to have them threaded properly.
+
+> > And always increase (or add a "resend" prefix) when resending. I got two
+> > v4 series in my inbox. No idea what's the difference, if any.
+> 
+> In the second v4 patch, I added Greg KH and usb group. There is no code changes.
+> I will take care when I resend again.
+> 
+> Thanks,
+> Muthu
+> 
+> >
+> > Thanks,
+> > Johan
+> 
+> This message and any attachments may contain Cypress (or its
+> subsidiaries) confidential information. If it has been received in
+> error, please advise the sender and immediately delete this message.
+
+Make sure not to include such disclaimers when posting to public mailing
+lists.
+
+Thanks,
+Johan
