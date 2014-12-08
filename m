@@ -1,120 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304AbaLHGuh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:50:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34688 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaLHGuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:50:35 -0500
-Date: Sun, 7 Dec 2014 22:50:15 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-857a94a226d7d345c3f492d5679e802e59f824a9@git.kernel.org>
-Cc: cjashfor@linux.vnet.ibm.com, acme@redhat.com, tglx@linutronix.de,
-        eranian@google.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        ak@linux.intel.com, hpa@zytor.com, matt.fleming@intel.com,
-        paulus@samba.org, jolsa@kernel.org, dsahern@gmail.com,
-        a.p.zijlstra@chello.nl, mingo@kernel.org, fweisbec@gmail.com
-Reply-To: jolsa@kernel.org, dsahern@gmail.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, matt.fleming@intel.com,
-        paulus@samba.org, eranian@google.com, namhyung@kernel.org,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com, hpa@zytor.com,
-        cjashfor@linux.vnet.ibm.com, tglx@linutronix.de, acme@redhat.com
-In-Reply-To: <1416562275-12404-2-git-send-email-jolsa@kernel.org>
-References: <1416562275-12404-2-git-send-email-jolsa@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Introduce perf_evsel__compute_deltas function
-Git-Commit-ID: 857a94a226d7d345c3f492d5679e802e59f824a9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754332AbaLHGun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:50:43 -0500
+Received: from mail.eperm.de ([89.247.134.16]:55006 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754094AbaLHGuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 01:50:40 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v5 1/8] crypto: AF_ALG: add user space interface for AEAD
+Date: Mon, 08 Dec 2014 07:50:36 +0100
+Message-ID: <26757433.nY9erqHdir@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.4-301.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <2166020.BKWmrnVj2j@tachyon.chronox.de>
+References: <56740432.V2v4gLHrzS@tachyon.chronox.de> <2166020.BKWmrnVj2j@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  857a94a226d7d345c3f492d5679e802e59f824a9
-Gitweb:     http://git.kernel.org/tip/857a94a226d7d345c3f492d5679e802e59f824a9
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 21 Nov 2014 10:31:05 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Nov 2014 18:03:49 -0300
+Am Sonntag, 7. Dezember 2014, 23:21:09 schrieb Stephan Mueller:
 
-perf evsel: Introduce perf_evsel__compute_deltas function
+Hi Herbert,
 
-Making compute_deltas functions global and renaming it to
-perf_evsel__compute_deltas.
+FYI: you mentioned that you applied that patch already. However, I do not see 
+it in the cryptodev-2.6 tree. Therefore I resent it. In case it was applied, 
+please disregard this patch.
 
-It will be used in stat command in later patch.
+> AEAD requires the caller to specify the following information separate
+> from the data stream. This information allows the AEAD interface handler
+> to identify the AAD, ciphertext/plaintext and the authentication tag:
+> 
+>         * Associated authentication data of arbitrary length and
+>           length
+> 
+>         * Length of authentication tag for encryption
+> 
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> ---
+>  crypto/af_alg.c             | 6 ++++++
+>  include/crypto/if_alg.h     | 1 +
+>  include/uapi/linux/if_alg.h | 2 ++
+>  3 files changed, 9 insertions(+)
+> 
+> diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+> index 6a3ad80..68ff113 100644
+> --- a/crypto/af_alg.c
+> +++ b/crypto/af_alg.c
+> @@ -421,6 +421,12 @@ int af_alg_cmsg_send(struct msghdr *msg, struct
+> af_alg_control *con) con->op = *(u32 *)CMSG_DATA(cmsg);
+>  			break;
+> 
+> +		case ALG_SET_AEAD_ASSOCLEN:
+> +			if (cmsg->cmsg_len < CMSG_LEN(sizeof(u32)))
+> +				return -EINVAL;
+> +			con->aead_assoclen = *(u32 *)CMSG_DATA(cmsg);
+> +			break;
+> +
+>  		default:
+>  			return -EINVAL;
+>  		}
+> diff --git a/include/crypto/if_alg.h b/include/crypto/if_alg.h
+> index d61c111..cd62bf4 100644
+> --- a/include/crypto/if_alg.h
+> +++ b/include/crypto/if_alg.h
+> @@ -42,6 +42,7 @@ struct af_alg_completion {
+>  struct af_alg_control {
+>  	struct af_alg_iv *iv;
+>  	int op;
+> +	unsigned int aead_assoclen;
+>  };
+> 
+>  struct af_alg_type {
+> diff --git a/include/uapi/linux/if_alg.h b/include/uapi/linux/if_alg.h
+> index 0f9acce..f2acd2f 100644
+> --- a/include/uapi/linux/if_alg.h
+> +++ b/include/uapi/linux/if_alg.h
+> @@ -32,6 +32,8 @@ struct af_alg_iv {
+>  #define ALG_SET_KEY			1
+>  #define ALG_SET_IV			2
+>  #define ALG_SET_OP			3
+> +#define ALG_SET_AEAD_ASSOCLEN		4
+> +#define ALG_SET_AEAD_AUTHSIZE		5
+> 
+>  /* Operations */
+>  #define ALG_OP_DECRYPT			0
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1416562275-12404-2-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c | 9 ++++-----
- tools/perf/util/evsel.h | 3 +++
- 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f2dc91f..1c73bc4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -876,9 +876,8 @@ void perf_evsel__delete(struct perf_evsel *evsel)
- 	free(evsel);
- }
- 
--static inline void compute_deltas(struct perf_evsel *evsel,
--				  int cpu,
--				  struct perf_counts_values *count)
-+void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
-+				struct perf_counts_values *count)
- {
- 	struct perf_counts_values tmp;
- 
-@@ -913,7 +912,7 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
- 		return -errno;
- 
--	compute_deltas(evsel, cpu, &count);
-+	perf_evsel__compute_deltas(evsel, cpu, &count);
- 
- 	if (scale) {
- 		if (count.run == 0)
-@@ -956,7 +955,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 		}
- 	}
- 
--	compute_deltas(evsel, -1, aggr);
-+	perf_evsel__compute_deltas(evsel, -1, aggr);
- 
- 	evsel->counts->scaled = 0;
- 	if (scale) {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 9797909..746b7ea 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -110,6 +110,9 @@ struct thread_map;
- struct perf_evlist;
- struct record_opts;
- 
-+void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
-+				struct perf_counts_values *count);
-+
- int perf_evsel__object_config(size_t object_size,
- 			      int (*init)(struct perf_evsel *evsel),
- 			      void (*fini)(struct perf_evsel *evsel));
+-- 
+Ciao
+Stephan
