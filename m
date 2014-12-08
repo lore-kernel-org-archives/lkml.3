@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063AbaLHQz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:55:28 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:39382 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926AbaLHQzY (ORCPT
+	id S1756008AbaLHQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:55:26 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:45983 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921AbaLHQzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:55:24 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a8-5485d7f91380
-Message-id: <5485D7F8.10807@samsung.com>
-Date: Mon, 08 Dec 2014 17:55:20 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
- Flash class extension
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
- <20141129125832.GA315@amd> <547C539A.4010500@samsung.com>
- <20141201130437.GB24737@amd> <547C7420.4080801@samsung.com>
- <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
- <20141206124310.GB3411@amd>
-In-reply-to: <20141206124310.GB3411@amd>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t/xa7o/r7eGGHz8om2xccZ6VoujOycy
-	WZxtesNucXnXHDaLrW/WMVr0bNjKanH31FE2i927nrJaHH7TzmpxZv9KNgcuj52z7rJ7HP66
-	kMVjz/wfrB59W1YxeqxY/Z3d4/MmuQC2KDebjNTElNQihdS85PyUzLx0W6XQEDddCyWFvMTc
-	VFulCF3fkCAlhbLEnFIgz8gADTg4B7gHK+nbJbhlPHq9i7XgKXfFjjdTmBoYl3N2MXJySAiY
-	SFz4/JgRwhaTuHBvPVsXIxeHkMBSRonGz28YIZyPjBL7j98Dq+IV0JD40NzI3sXIwcEioCpx
-	/p49SJhNwFDi54vXTCC2qECExJ/T+1ghygUlfky+xwJiiwjIS2ztW8EMMpNZoIFZ4uHyp2wg
-	CWGBVIk3b/6BzRcSeMYksfqKJYjNCbTr4MadYM3MAtYSKydtY4Sw5SU2r3nLPIFRYBaSHbOQ
-	lM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgcft3BuPSY1SFGAQ5GJR7eDeXN
-	IUKsiWXFlbmHGCU4mJVEeJfvbA0R4k1JrKxKLcqPLyrNSS0+xJgMDIGJzFKiyfnAFJFXEm9o
-	YmhuaWhkbGFhbmREmrCSOG/l15YQIYH0xJLU7NTUgtQimC1MHJxSDYypoWc1liddmfPmo/nj
-	s867tyUtLTuhXVHzcs5Nv5tbpO2qF23XT18k97ZyWal2xVrVnfllbbKPN4uoKE1+1sBiEdbq
-	5PNjTm+yVvbbOvmFhdu+dzdNXysnYBVvHPdMX6Xinquc+evsSP6lDPozVC3OVVgwFXl0tgqw
-	C3/8ztBitpW7JMzptRJLcUaioRZzUXEiAMTg9+YHAwAA
-X-MTR: 20000000000000000@CPGS
+	Mon, 8 Dec 2014 11:55:22 -0500
+X-IronPort-AV: E=Sophos;i="5.07,539,1413270000"; 
+   d="scan'208";a="52372409"
+Message-ID: <5485D7F8.6090305@broadcom.com>
+Date: Mon, 8 Dec 2014 08:55:20 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        "Scott Branden" <sbranden@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>, <bcm-kernel-feedback-list@broadcom.com>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/5] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+References: <1418006316-324-2-git-send-email-rjui@broadcom.com> <2594176.SCRFa6Sb3O@wuerfel>
+In-Reply-To: <2594176.SCRFa6Sb3O@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2014 01:43 PM, Pavel Machek wrote:
+
+
+On 12/8/2014 3:22 AM, Arnd Bergmann wrote:
+> On Sunday 07 December 2014 18:38:32 Ray Jui wrote:
+>> +Required properties:
+>> +
+>> +- compatible:
+>> +    Currently supported Cygnus GPIO controllers include:
+>> +    "brcm,cygnus-ccm-gpio": ChipcommonG GPIO controller
+>> +    "brcm,cygnus-asiu-gpio": ASIU GPIO controller
+>> +    "brcm,cygnus-crmu-gpio": CRMU GPIO controller
 >
->>> The format of a sysfs attribute should be concise.
->>> The error codes are generic and map directly to the V4L2 Flash
->>> error codes.
->>>
->>
->> Actually I'd like to see those flash fault code defined in LED
->> subsystem. And V4L2 will just include LED flash header file to use it.
->> Because flash fault code is not for V4L2 specific but it's a feature
->> of LED flash devices.
->>
->> For clearing error code of flash devices, I think it depends on the
->> hardware. If most of our LED flash is using reading to clear error
->> code, we probably can make it simple as this now. But what if some
->> other LED flash devices are using writing to clear error code? we
->> should provide a API to that?
+> How different are these? If they are almost the same, would it
+> be better to use the same compatible string for all of them and
+> describe the differences in extra properties?
 >
-> Actually, we should provide API that makes sense, and that is easy to
-> use by userspace.
+> If they are rather different, maybe you should have a separate
+> binding and driver for each?
 >
-> I believe "read" is called read because it does not change anything,
-> and it should stay that way in /sysfs. You may want to talk to sysfs
-> maintainers if you plan on doing another semantics.
+> 	Arnd
+>
+They are quite similar with the following minor differences:
+1) ChipcommonG GPIO controller uses a separate register block 
+(0x0301d164) to control drive stregnth
+2) Cannot control drive strength for the CMRU GPIO
+3) CRMU GPIO controller's interrupt is not connected to GIC of A9. 
+Currently that's taken care of by using a "no-interrupt" device tree 
+property
 
-How would you proceed in case of devices which clear their fault
-register upon I2C readout (e.g. AS3645)? In this case read does have
-a side effect. For such devices attribute semantics would have to be
-different than for the devices which don't clear faults on readout.
+I can change to use the common compatible string "brcm,cygnus-gpio". 
+With an introduction of property "no-drv-stregnth" which should be set 
+for CRMU GPIO controller. For ChipcommonG GPIO, it will have a second 
+register block defined, so we'll know to use that second register block 
+for drive strength configuration. For the rest, we assume normal drive 
+strength configuration (i.e., ASIU in our case).
 
-In case of devices which use writing to clear error code - I'd do that
-after reading flash_fault attribute, in the same callback.
-
-Best Regards,
-Jacek Anaszewski
-
+Looking at this again, it looks like the "no-interrupt" property is 
+really redundant. For GPIO controller without interrupt connected to A9, 
+we can simply leave its interrupt properties not defined. I'll get rid 
+of it along with the above changes.
