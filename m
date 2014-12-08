@@ -1,218 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaLHJ3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:29:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586AbaLHJ3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:29:46 -0500
-Message-ID: <54856F88.8090300@suse.cz>
-Date: Mon, 08 Dec 2014 10:29:44 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm/page_alloc: expands broken freepage to proper
- buddy list when steal
-References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com> <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753602AbaLHJaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:30:46 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:57327 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaLHJao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:30:44 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-b2-54856fc29ec5
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1417895739-15251-1-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1417895739-15251-1-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 1/5] f2fs: do retry operations with cond_resched
+Date: Mon, 08 Dec 2014 17:29:53 +0800
+Message-id: <002101d012c9$a1d85460$e588fd20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQLvW05wsiThI6k/gcI9n6vG0STI9JpG2cNg
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jQd1D+a0hBmdWi1g8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlXHqZitjwQ7+ipP3
+	/zA1MO7j6WLk4JAQMJG4vZmri5ETyBSTuHBvPVsXIxeHkMB0RoklDTcZIZwfjBLH1r1lAqli
+	E1CRWN7xH8wWEVCT6N03BcxmFsiUmND/gh3EFhJwkpi7ZQ4LiM0p4Cyx/9UEsBphAX+J/6ev
+	g9WwCKhKPJkxjQnkCF4BS4npF71BwrwCghI/Jt9jgRipJbF5WxMrhC0vsXnNW2aIQxUkdpx9
+	zQhxgpHE0UW72CBqxCU2HrnFMoFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfm
+	Fpfmpesl5+duYgSH/TPpHYyrGiwOMQpwMCrx8C580BIixJpYVlyZe4hRgoNZSYQ3Ma41RIg3
+	JbGyKrUoP76oNCe1+BCjNAeLkjjvjZu5IUIC6YklqdmpqQWpRTBZJg5OqQZG5r+LjlRby8fO
+	uhvTzCrqtvu5SGN4lnyMrublDzEfpm69rM/3NiWUTVR3KruEnqBBp1vVtNhvc7MbdZTc5tSf
+	kO28NGX5xcrl/Q2uz5h3JP0IV6nL+140/fG3sBRvp02Ppl9/os75ZPvKa7ZT/WVSnmgXNt9q
+	7tJ6L7Cs5fJM02d7LiaU9zopsRRnJBpqMRcVJwIACkyRzncCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
-> There is odd behaviour when we steal freepages from other migratetype
-> buddy list. In try_to_steal_freepages(), we move all freepages in
-> the pageblock that founded freepage is belong to to the request
-> migratetype in order to mitigate fragmentation. If the number of moved
-> pages are enough to change pageblock migratetype, there is no problem. If
-> not enough, we don't change pageblock migratetype and add broken freepages
-> to the original migratetype buddy list rather than request migratetype
-> one. For me, this is odd, because we already moved all freepages in this
-> pageblock to the request migratetype. This patch fixes this situation to
-> add broken freepages to the request migratetype buddy list in this case.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Sunday, December 07, 2014 3:56 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [f2fs-dev] [PATCH 1/5] f2fs: do retry operations with cond_resched
+> 
+> This patch revists retrial paths in f2fs.
+> The basic idea is to use cond_resched instead of retrying from the very early
+> stage.
+> 
+> Suggested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 
-I'd rather split the fix from the refactoring. And maybe my description 
-is longer, but easier to understand? (I guess somebody else should judge 
-this)
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
 
-> This patch introduce new function that can help to decide if we can
-> steal the page without resulting in fragmentation. It will be used in
-> following patch for compaction finish criteria.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 > ---
->   include/trace/events/kmem.h |    7 +++--
->   mm/page_alloc.c             |   72 +++++++++++++++++++++++++------------------
->   2 files changed, 46 insertions(+), 33 deletions(-)
->
-> diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
-> index aece134..4ad10ba 100644
-> --- a/include/trace/events/kmem.h
-> +++ b/include/trace/events/kmem.h
-> @@ -268,11 +268,11 @@ TRACE_EVENT(mm_page_alloc_extfrag,
->
->   	TP_PROTO(struct page *page,
->   		int alloc_order, int fallback_order,
-> -		int alloc_migratetype, int fallback_migratetype, int new_migratetype),
-> +		int alloc_migratetype, int fallback_migratetype),
->
->   	TP_ARGS(page,
->   		alloc_order, fallback_order,
-> -		alloc_migratetype, fallback_migratetype, new_migratetype),
-> +		alloc_migratetype, fallback_migratetype),
->
->   	TP_STRUCT__entry(
->   		__field(	struct page *,	page			)
-> @@ -289,7 +289,8 @@ TRACE_EVENT(mm_page_alloc_extfrag,
->   		__entry->fallback_order		= fallback_order;
->   		__entry->alloc_migratetype	= alloc_migratetype;
->   		__entry->fallback_migratetype	= fallback_migratetype;
-> -		__entry->change_ownership	= (new_migratetype == alloc_migratetype);
-> +		__entry->change_ownership	= (alloc_migratetype ==
-> +					get_pageblock_migratetype(page));
->   	),
->
->   	TP_printk("page=%p pfn=%lu alloc_order=%d fallback_order=%d pageblock_order=%d alloc_migratetype=%d fallback_migratetype=%d fragmenting=%d change_ownership=%d",
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 7c46d0f..7b4c9aa 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1139,44 +1139,50 @@ static void change_pageblock_range(struct page *pageblock_page,
->    * Returns the new migratetype of the pageblock (or the same old migratetype
->    * if it was unchanged).
->    */
-> -static int try_to_steal_freepages(struct zone *zone, struct page *page,
-> -				  int start_type, int fallback_type)
-> +static void try_to_steal_freepages(struct zone *zone, struct page *page,
-> +							int target_mt)
->   {
-> +	int pages;
->   	int current_order = page_order(page);
->
-> -	/*
-> -	 * When borrowing from MIGRATE_CMA, we need to release the excess
-> -	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
-> -	 * is set to CMA so it is returned to the correct freelist in case
-> -	 * the page ends up being not actually allocated from the pcp lists.
-> -	 */
-> -	if (is_migrate_cma(fallback_type))
-> -		return fallback_type;
-> -
->   	/* Take ownership for orders >= pageblock_order */
->   	if (current_order >= pageblock_order) {
-> -		change_pageblock_range(page, current_order, start_type);
-> -		return start_type;
-> +		change_pageblock_range(page, current_order, target_mt);
-> +		return;
-
-So here's a (current_order >= pageblock_order) check.
-
->   	}
->
-> -	if (current_order >= pageblock_order / 2 ||
-> -	    start_type == MIGRATE_RECLAIMABLE ||
-> -	    page_group_by_mobility_disabled) {
-> -		int pages;
-> +	pages = move_freepages_block(zone, page, target_mt);
->
-> -		pages = move_freepages_block(zone, page, start_type);
-> +	/* Claim the whole block if over half of it is free */
-> +	if (pages >= (1 << (pageblock_order-1)) ||
-> +			page_group_by_mobility_disabled) {
->
-> -		/* Claim the whole block if over half of it is free */
-> -		if (pages >= (1 << (pageblock_order-1)) ||
-> -				page_group_by_mobility_disabled) {
-> +		set_pageblock_migratetype(page, target_mt);
-> +	}
-> +}
->
-> -			set_pageblock_migratetype(page, start_type);
-> -			return start_type;
-> -		}
-> +static bool can_steal_freepages(unsigned int order,
-> +			int start_mt, int fallback_mt)
+>  fs/f2fs/f2fs.h    |  7 +++++++
+>  fs/f2fs/gc.c      |  5 ++---
+>  fs/f2fs/node.c    | 41 +++++++++--------------------------------
+>  fs/f2fs/segment.c |  5 ++---
+>  4 files changed, 20 insertions(+), 38 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index c873140..c787fe3 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1021,6 +1021,13 @@ retry:
+>  	return entry;
+>  }
+> 
+> +static inline void f2fs_radix_tree_insert(struct radix_tree_root *root,
+> +				unsigned long index, void *item)
 > +{
-> +	/*
-> +	 * When borrowing from MIGRATE_CMA, we need to release the excess
-> +	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
-> +	 * is set to CMA so it is returned to the correct freelist in case
-> +	 * the page ends up being not actually allocated from the pcp lists.
-> +	 */
-> +	if (is_migrate_cma(fallback_mt))
-> +		return false;
->
-> -	}
-> +	/* Can take ownership for orders >= pageblock_order */
-> +	if (order >= pageblock_order)
-> +		return true;
-
-And another check.
-
+> +	while (radix_tree_insert(root, index, item))
+> +		cond_resched();
+> +}
 > +
-> +	if (order >= pageblock_order / 2 ||
-> +		start_mt == MIGRATE_RECLAIMABLE ||
-> +		page_group_by_mobility_disabled)
-> +		return true;
->
-> -	return fallback_type;
-> +	return false;
->   }
->
->   /* Remove an element from the buddy allocator from the fallback list */
-> @@ -1187,6 +1193,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
->   	unsigned int current_order;
->   	struct page *page;
->   	int migratetype, new_type, i;
-> +	bool can_steal;
->
->   	/* Find the largest possible block of pages in the other list */
->   	for (current_order = MAX_ORDER-1;
-> @@ -1194,6 +1201,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
->   				--current_order) {
->   		for (i = 0;; i++) {
->   			migratetype = fallbacks[start_migratetype][i];
-> +			new_type = migratetype;
->
->   			/* MIGRATE_RESERVE handled later if necessary */
->   			if (migratetype == MIGRATE_RESERVE)
-> @@ -1207,9 +1215,13 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
->   					struct page, lru);
->   			area->nr_free--;
+>  #define RAW_IS_INODE(p)	((p)->footer.nid == (p)->footer.ino)
+> 
+>  static inline bool IS_INODE(struct page *page)
+> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+> index 2c58c58..eec0933 100644
+> --- a/fs/f2fs/gc.c
+> +++ b/fs/f2fs/gc.c
+> @@ -356,12 +356,11 @@ static void add_gc_inode(struct gc_inode_list *gc_list, struct inode
+> *inode)
+>  		iput(inode);
+>  		return;
+>  	}
+> -retry:
+>  	new_ie = f2fs_kmem_cache_alloc(winode_slab, GFP_NOFS);
+>  	new_ie->inode = inode;
+> -
+> +retry:
+>  	if (radix_tree_insert(&gc_list->iroot, inode->i_ino, new_ie)) {
+> -		kmem_cache_free(winode_slab, new_ie);
+> +		cond_resched();
+>  		goto retry;
+>  	}
 
-So wouldn't it be better to handle the "order >= pageblock_order" case 
-separately at this level? I think it would be better also for the 
-compaction case (I'll comment on the later patch why).
+use f2fs_radix_tree_insert instead?
 
-
-> -			new_type = try_to_steal_freepages(zone, page,
-> -							  start_migratetype,
-> -							  migratetype);
-> +			can_steal = can_steal_freepages(current_order,
-> +					start_migratetype, migratetype);
-> +			if (can_steal) {
-> +				new_type = start_migratetype;
-> +				try_to_steal_freepages(zone, page,
-> +							start_migratetype);
-> +			}
->
->   			/* Remove the page from the freelists */
->   			list_del(&page->lru);
-> @@ -1225,7 +1237,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
->   			set_freepage_migratetype(page, new_type);
->
->   			trace_mm_page_alloc_extfrag(page, order, current_order,
-> -				start_migratetype, migratetype, new_type);
-> +					start_migratetype, migratetype);
->
->   			return page;
->   		}
->
+Thanks,
+Yu
 
