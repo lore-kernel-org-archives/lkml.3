@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691AbaLHWze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 17:55:34 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:38653 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbaLHWzb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 17:55:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141007234224.GL16469@dtor-ws>
-References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1412644321-27683-2-git-send-email-bjorn.andersson@sonymobile.com>
-	<5433B843.5060200@smartplayin.com>
-	<20141007233045.GD31125@sonymobile.com>
-	<20141007234224.GL16469@dtor-ws>
-Date: Mon, 8 Dec 2014 14:55:30 -0800
-Message-ID: <CAJAp7OisbcELW0kUVLAhTbuCU4ksaHbNh_sZi7JzLnF+qiVQSg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] input: Add Qualcomm PM8941 power key driver
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Kiran Padwal <kiran.padwal@smartplayin.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonymobile.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755810AbaLHW4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 17:56:30 -0500
+Received: from gate.crashing.org ([63.228.1.57]:40019 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754066AbaLHW42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 17:56:28 -0500
+Message-ID: <1418079372.13358.9.camel@kernel.crashing.org>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Marek =?ISO-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        zermond@gmail.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Dec 2014 09:56:12 +1100
+In-Reply-To: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 4:42 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tue, Oct 07, 2014 at 04:30:46PM -0700, Bjorn Andersson wrote:
->> On Tue 07 Oct 02:54 PDT 2014, Kiran Padwal wrote:
->>
-[..]
->> > Shouldn't we unregister input device?
->> >
->>
->> It's allocated with devm_input_allocate_device() so I assumed that it goes away
->> upon the device being removed. Looking at input_register_device() seems to
->> confirm that.
->
-> Yes, devices allocated with devm_input_allocate_device() will be
-> unregistered and freed automatically.
->
-> Thanks.
->
+On Mon, 2014-12-08 at 13:52 -0800, Yinghai Lu wrote:
+> 2. or scan the children resource other than ROM to clear bridge MEM_64
+>    for mmio pref.
+> 
+> The patch is using second way so will keep child mmio pref into bridge
+> mmio pref range.
 
-Hi Dmitry,
+That means that having a single ROM BAR that is 32-bit and prefetchable
+will downgrade the entire window to 32-bit ? That's not going to work
+either.
 
-Will you pick this up? (couldn't find it in linux-next...)
-Or is there anything else you need from me?
+I have GPUs with 16G BARs for example... suddenly they don't fit
+anaymore because we downgraded the window to 32 bit because somewhere
+there's a 32-bit pref resource ?
 
-Regards,
-Bjorn
+That will break more than it fixes...
+
+Ben.
+
+
