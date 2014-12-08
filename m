@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaLHHLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 02:11:36 -0500
-Received: from 1wt.eu ([62.212.114.60]:48992 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969AbaLHHLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 02:11:35 -0500
-Date: Mon, 8 Dec 2014 08:11:25 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 10/25] x86, espfix: Make it possible to disable 16-bit support
-Message-ID: <20141208071125.GA27435@1wt.eu>
-References: <20141206174148.851443989@1wt.eu> <1418007534.11886.58.camel@decadent.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418007534.11886.58.camel@decadent.org.uk>
-User-Agent: Mutt/1.4.2.3i
+	id S1752008AbaLHHLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 02:11:53 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:42984 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751969AbaLHHLv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 02:11:51 -0500
+X-IronPort-AV: E=Sophos;i="5.07,536,1413237600"; 
+   d="scan'208";a="111973841"
+Date: Mon, 8 Dec 2014 08:11:48 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Richard Weinberger <richard.weinberger@gmail.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Kukjin Kim <kgene@kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        linux@rasmusvillemoes.dk, Joe Perches <joe@perches.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc@vger.kernel.org,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/20] mtd: s3c2410: fix misspelling of current function
+ in string
+In-Reply-To: <CAFLxGvyiqxQ6U6p-A-JW8Nv8OvXFGsna93afUu-Gek0EV3gATA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1412080809400.2100@localhost6.localdomain6>
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr> <1417980062-25151-2-git-send-email-Julia.Lawall@lip6.fr> <CAFLxGvyiqxQ6U6p-A-JW8Nv8OvXFGsna93afUu-Gek0EV3gATA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 02:58:54AM +0000, Ben Hutchings wrote:
-> On Sat, 2014-12-06 at 18:41 +0100, Willy Tarreau wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: "H. Peter Anvin" <hpa@zytor.com>
-> > 
-> > commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
-> > 
-> > Embedded systems, which may be very memory-size-sensitive, are
-> > extremely unlikely to ever encounter any 16-bit software, so make it
-> > a CONFIG_EXPERT option to turn off support for any 16-bit software
-> > whatsoever.
-> > 
-> > Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> > Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > (cherry picked from 3.2 commit 70d87cbbd92a3611655b39003176ee1033796bf7)
-> > [wt: backport notes for 2.6.32 :
-> >   - Fixed arch/x86/kernel/ldt.c (no IS_ENABLED on 2.6.32).
-> >   - No CONFIG_EXPERT condition in 2.6.32.
-> > /wt]
-> [...]
+> > diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
+> > index 35aef5e..0a9c41f 100644
+> > --- a/drivers/mtd/nand/s3c2410.c
+> > +++ b/drivers/mtd/nand/s3c2410.c
+> > @@ -948,7 +948,7 @@ static int s3c24xx_nand_probe(struct platform_device *pdev)
+> >
+> >         cpu_type = platform_get_device_id(pdev)->driver_data;
+> >
+> > -       pr_debug("s3c2410_nand_probe(%p)\n", pdev);
+> > +       pr_debug("%s(%p)\n", __func__, pdev);
 > 
-> It used to be called CONFIG_EMBEDDED, so you could s/EXPERT/EMBEDDED/,
-> but it doesn't matter much.
+> I think we can drop the line completely.
+> We have ftrace to trace function calls...
 
-I hesitated on this one and thought that EMBEDDED was currently not selected
-by most server configs and users would not necessarily think about enabling
-it to discover the new option, since it was made for a different purpose. In
-the end, presenting the new option to users is not a bad thing considering
-that the purpose is to help them improve their security.
+Should the "initialised ok" at the end of the function be remove as well?
 
-Regards,
-Willy
+Will it be confusing if this cleanup is done in this function, but not in 
+others where it may be useful?  Perhaps s3c2410_nand_update_chip, for 
+example?
 
+julia
