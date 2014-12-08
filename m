@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaLHKsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:48:39 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38121 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752144AbaLHKsi (ORCPT
+	id S1754784AbaLHKxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:53:42 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:55325 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaLHKxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:48:38 -0500
-Date: Mon, 8 Dec 2014 10:48:29 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "jingchang.lu@freescale.com" <jingchang.lu@freescale.com>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2] tick-broadcast: Register for hrtimer based broadcast
- as the fallback broadcast mode
-Message-ID: <20141208104828.GA21680@leverpostej>
-References: <20141208065513.3075.48721.stgit@preeti.in.ibm.com>
+	Mon, 8 Dec 2014 05:53:41 -0500
+Date: Mon, 8 Dec 2014 11:53:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, xiakaixu <xiakaixu@huawei.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jacob Shin <jacob.w.shin@gmail.com>
+Subject: Re: [GIT PULL][RESEND] hw_breakpoints: Support AMD range breakpoints
+Message-ID: <20141208105333.GC22066@gmail.com>
+References: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141208065513.3075.48721.stgit@preeti.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Preeti,
 
-On Mon, Dec 08, 2014 at 06:55:43AM +0000, Preeti U Murthy wrote:
-> Commit 5d1638acb9f6 ('tick: Introduce hrtimer based broadcast') added a
-> hrtimer based broadcast mode for those platforms in which local timers stop
-> when CPUs enter deep idle states. The commit expected the platforms to
-> register for this mode explicitly when they lacked a better external device
-> to wake up CPUs in deep idle. Given that more platforms are beginning to use
-> this mode, we can avoid the call to set it up on every platform that requires
-> it, by registering for the hrtimer based broadcast mode in the core code if
-> no better broadcast device is available.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Ingo,
 > 
-> This commit also helps detect cases where the platform fails to register for
-> a broadcast device but invokes the help of one when entering deep idle states.
-> Currently we do not handle this situation at all and call the broadcast clock
-> device without checking for its existence. This patch will handle such buggy
-> cases properly.
+> Please pull the perf/core-v3 branch that can be found at:
 > 
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	perf/core-v3
+> 
+> HEAD: 36748b9518a2437beffe861b47dff6d12b736b3f
+> 
+> It has been acked by Jiri and Oleg.
+> ---
+> Summary:
+> 
+> * Extend breakpoint tools and core to support address range through perf
+>   event with initial backend support for AMD extended breakpoints.
+>   Syntax is:
+> 
+>         perf record -e mem:addr/len:type
+> 
+>   For example set write breakpoint from 0x1000 to 0x1200 (0x1000 + 512)
+> 
+>         perf record -e mem:0x1000/512:w
+> 
+> * Clean up a bit breakpoint code validation
+> ---
+> 
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Jacob Shin (4):
+>       perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+>       perf tools: allow user to specify hardware breakpoint bp_len
+>       perf tools: add hardware breakpoint bp_len test cases
+>       perf/x86: Remove get_hbp_len and replace with bp_len
+> 
+> 
+>  arch/x86/include/asm/cpufeature.h        |  2 ++
+>  arch/x86/include/asm/debugreg.h          |  5 +++
+>  arch/x86/include/asm/hw_breakpoint.h     |  1 +
+>  arch/x86/include/uapi/asm/msr-index.h    |  4 +++
+>  arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
+>  arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++---------------
+>  tools/perf/Documentation/perf-record.txt |  7 ++--
+>  tools/perf/tests/parse-events.c          | 58 ++++++++++++++++++++++++++++++++
+>  tools/perf/util/parse-events.c           | 21 ++++++------
+>  tools/perf/util/parse-events.h           |  2 +-
+>  tools/perf/util/parse-events.l           |  1 +
+>  tools/perf/util/parse-events.y           | 26 ++++++++++++--
+>  12 files changed, 148 insertions(+), 43 deletions(-)
 
-I've just given this a go on an arm64 platform (Juno) without any
-system-wide clock_event_devices registered, and everything works well
-with CPUs entering and exiting idle states where the cpu-local timers
-lose state. So:
+Pulled into tip:perf/hw_breakpoints, thanks Frederic!
 
-Tested-by: Mark Rutland <mark.rutland@arm.com>
+It might not make it into v3.19, we'll see.
 
-One minor thing I noticed when testing was that
-/sys/devices/system/clockevents/broadcast/name contained "(null)",
-because we never set the name field on the clock_event_device. It's
-always been that way, but now might be a good time to change that to
-something like "broadcast_hrtimer".
+Thanks,
 
-[...]
-
-> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> index 2e4cb67..91754b0 100644
-> --- a/include/linux/clockchips.h
-> +++ b/include/linux/clockchips.h
-> @@ -187,11 +187,11 @@ extern int tick_receive_broadcast(void);
->  #endif
->  
->  #if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
-> -extern void tick_setup_hrtimer_broadcast(void);
-> +extern int __init tick_setup_hrtimer_broadcast(void);
->  extern int tick_check_broadcast_expired(void);
->  #else
->  static inline int tick_check_broadcast_expired(void) { return 0; }
-> -static inline void tick_setup_hrtimer_broadcast(void) {};
-> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
->  #endif
->  
->  #ifdef CONFIG_GENERIC_CLOCKEVENTS
-> @@ -207,7 +207,7 @@ static inline void clockevents_resume(void) {}
->  
->  static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
->  static inline int tick_check_broadcast_expired(void) { return 0; }
-> -static inline void tick_setup_hrtimer_broadcast(void) {};
-> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
-
-With the initcall moved to the driver we have no external users of
-tick_setup_hrtimer_broadcast, so I think we can remove the prototype
-entirely from clockchips.h...
-
->  #endif
->  
-> diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
-> index eb682d5..5c35995 100644
-> --- a/kernel/time/tick-broadcast-hrtimer.c
-> +++ b/kernel/time/tick-broadcast-hrtimer.c
-> @@ -98,9 +98,11 @@ static enum hrtimer_restart bc_handler(struct hrtimer *t)
->  	return HRTIMER_RESTART;
->  }
->  
-> -void tick_setup_hrtimer_broadcast(void)
-> +int __init tick_setup_hrtimer_broadcast(void)
-
-...and make it static here.
-
->  {
->  	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
->  	bctimer.function = bc_handler;
->  	clockevents_register_device(&ce_broadcast_hrtimer);
-> +	return 0;
->  }
-> +early_initcall(tick_setup_hrtimer_broadcast);
-
-Otherwise this looks good to me, thanks for putting this together!
-
-Mark.
+	Ingo
