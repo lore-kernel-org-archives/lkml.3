@@ -1,184 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868AbaLHKkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:40:42 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63438 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614AbaLHKkl (ORCPT
+	id S1755037AbaLHKlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:41:06 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:60853 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549AbaLHKlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:40:41 -0500
-Date: Mon, 8 Dec 2014 11:41:13 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] gpu: drm: i915: intel_dp.c:  Remove unused function
-Message-ID: <20141208104113.GP20350@phenom.ffwll.local>
-Mail-Followup-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <1417988170-17451-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Mon, 8 Dec 2014 05:41:04 -0500
+Date: Mon, 8 Dec 2014 10:41:00 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Joe Perches <joe@perches.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: include text files in SPACE_BEFORE_TAB test
+Message-ID: <20141208104100.GA6908@dm>
+References: <54829801.9000302@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417988170-17451-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54829801.9000302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 10:36:10PM +0100, Rickard Strandqvist wrote:
-> Remove the function intel_dp_set_drrs_state() that is not used anywhere.
+On Fri, Dec 05, 2014 at 09:45:37PM -0800, Frank Rowand wrote:
+> From: Frank Rowand <frank.rowand@sonymobile.com>
 > 
-> This was partially found by using a static code analysis program called cppcheck.
+> git-am whined about a patch that I submitted for the Documentation
+> subtree, (https://lkml.org/lkml/2014/11/24/636) but checkpatch does
+> not.  Make checkpatch just as whiney.
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-
-Ok I've merged one of these patches here for old stale code, but all the
-others are in areas where there's a lot of stuff going on and we'll likely
-use these functions again. So decided to drop those patches.
-
-If you want to keep working on drm stuff I'd highly appreciate it. We have
-a list of intro tasks which might be interesting:
-
-http://www.x.org/wiki/DRMJanitors/
-
-Nuking all the UMS checks might be a good one, we've already started with
-that. And #intel-gfx irc on freenode is always a good place to hang out
-and ask questions.
-
-Cheers, Daniel
+> This patch moves the SPACE_BEFORE_TAB test before the check that
+> excludes text files and also before the test that excludes
+> assembly files.  It seems to me that both CODE_INDENT and
+> SPACE_BEFORE_TAB are valid tests for assembly files, but I
+> added an if around the moved CODE_INDENT test to include only
+> source files, not including assembly files.  Thus this patch
+> does not change which files are subject to CODE_INDENT.
+> 
+> The CODE_INDENT test is moved along with the SPACE_BEFORE_TAB
+> test because the c76f4cb3d25e commit log says:
+> 
+>     This SPACE_BEFORE_TAB test is done after CODE_INDENT.
+>     
+>     If there are spaces used at the beginning of a line that should be
+>     converted to tabs, please make sure that the CODE_INDENT test and
+>     conversion is done before this SPACE_BEFORE_TAB test and conversion.
+> 
+> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
 > ---
->  drivers/gpu/drm/i915/intel_dp.c  |   89 --------------------------------------
->  drivers/gpu/drm/i915/intel_drv.h |    1 -
->  2 files changed, 90 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-> index 5ad45bf..6df948b 100644
-> --- a/drivers/gpu/drm/i915/intel_dp.c
-> +++ b/drivers/gpu/drm/i915/intel_dp.c
-> @@ -4810,95 +4810,6 @@ intel_dp_init_panel_power_sequencer_registers(struct drm_device *dev,
->  		      I915_READ(pp_div_reg));
->  }
->  
-> -void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate)
-> -{
-> -	struct drm_i915_private *dev_priv = dev->dev_private;
-> -	struct intel_encoder *encoder;
-> -	struct intel_dp *intel_dp = NULL;
-> -	struct intel_crtc_config *config = NULL;
-> -	struct intel_crtc *intel_crtc = NULL;
-> -	struct intel_connector *intel_connector = dev_priv->drrs.connector;
-> -	u32 reg, val;
-> -	enum edp_drrs_refresh_rate_type index = DRRS_HIGH_RR;
-> -
-> -	if (refresh_rate <= 0) {
-> -		DRM_DEBUG_KMS("Refresh rate should be positive non-zero.\n");
-> -		return;
-> -	}
-> -
-> -	if (intel_connector == NULL) {
-> -		DRM_DEBUG_KMS("DRRS supported for eDP only.\n");
-> -		return;
-> -	}
-> -
-> -	/*
-> -	 * FIXME: This needs proper synchronization with psr state. But really
-> -	 * hard to tell without seeing the user of this function of this code.
-> -	 * Check locking and ordering once that lands.
-> -	 */
-> -	if (INTEL_INFO(dev)->gen < 8 && intel_edp_is_psr_enabled(dev)) {
-> -		DRM_DEBUG_KMS("DRRS is disabled as PSR is enabled\n");
-> -		return;
-> -	}
-> -
-> -	encoder = intel_attached_encoder(&intel_connector->base);
-> -	intel_dp = enc_to_intel_dp(&encoder->base);
-> -	intel_crtc = encoder->new_crtc;
-> -
-> -	if (!intel_crtc) {
-> -		DRM_DEBUG_KMS("DRRS: intel_crtc not initialized\n");
-> -		return;
-> -	}
-> -
-> -	config = &intel_crtc->config;
-> -
-> -	if (intel_dp->drrs_state.type < SEAMLESS_DRRS_SUPPORT) {
-> -		DRM_DEBUG_KMS("Only Seamless DRRS supported.\n");
-> -		return;
-> -	}
-> -
-> -	if (intel_connector->panel.downclock_mode->vrefresh == refresh_rate)
-> -		index = DRRS_LOW_RR;
-> -
-> -	if (index == intel_dp->drrs_state.refresh_rate_type) {
-> -		DRM_DEBUG_KMS(
-> -			"DRRS requested for previously set RR...ignoring\n");
-> -		return;
-> -	}
-> -
-> -	if (!intel_crtc->active) {
-> -		DRM_DEBUG_KMS("eDP encoder disabled. CRTC not Active\n");
-> -		return;
-> -	}
-> -
-> -	if (INTEL_INFO(dev)->gen > 6 && INTEL_INFO(dev)->gen < 8) {
-> -		reg = PIPECONF(intel_crtc->config.cpu_transcoder);
-> -		val = I915_READ(reg);
-> -		if (index > DRRS_HIGH_RR) {
-> -			val |= PIPECONF_EDP_RR_MODE_SWITCH;
-> -			intel_dp_set_m_n(intel_crtc);
-> -		} else {
-> -			val &= ~PIPECONF_EDP_RR_MODE_SWITCH;
-> -		}
-> -		I915_WRITE(reg, val);
-> -	}
-> -
-> -	/*
-> -	 * mutex taken to ensure that there is no race between differnt
-> -	 * drrs calls trying to update refresh rate. This scenario may occur
-> -	 * in future when idleness detection based DRRS in kernel and
-> -	 * possible calls from user space to set differnt RR are made.
-> -	 */
-> -
-> -	mutex_lock(&intel_dp->drrs_state.mutex);
-> -
-> -	intel_dp->drrs_state.refresh_rate_type = index;
-> -
-> -	mutex_unlock(&intel_dp->drrs_state.mutex);
-> -
-> -	DRM_DEBUG_KMS("eDP Refresh Rate set to : %dHz\n", refresh_rate);
-> -}
-> -
->  static struct drm_display_mode *
->  intel_dp_drrs_init(struct intel_digital_port *intel_dig_port,
->  			struct intel_connector *intel_connector,
-> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-> index ba71522..6ad239d 100644
-> --- a/drivers/gpu/drm/i915/intel_drv.h
-> +++ b/drivers/gpu/drm/i915/intel_drv.h
-> @@ -941,7 +941,6 @@ void intel_edp_panel_on(struct intel_dp *intel_dp);
->  void intel_edp_panel_off(struct intel_dp *intel_dp);
->  void intel_edp_psr_enable(struct intel_dp *intel_dp);
->  void intel_edp_psr_disable(struct intel_dp *intel_dp);
-> -void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate);
->  void intel_edp_psr_invalidate(struct drm_device *dev,
->  			      unsigned frontbuffer_bits);
->  void intel_edp_psr_flush(struct drm_device *dev,
-> -- 
-> 1.7.10.4
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> Andy, Joe,
+> 
+> Assembly files are still excluded from the CODE_INDENT test -- do you
+> want to make another change to include them?
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+The format of assembly files is rather variable.  Tabs are not used in the
+same way as in the rest of the kernel.  It is not clear you can guarentee
+that the rules are appropriate there.  They are also vary rarely edited
+in the greater scheme of things.
+
+-apw
