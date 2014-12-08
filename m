@@ -1,125 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaLHD61 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 22:58:27 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:42653 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaLHD60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 22:58:26 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: paul.zimmerman@synopsys.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <7266e55511200cdda1d877c6257f5461>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <548521D1.2060509@rock-chips.com>
-Date: Mon, 08 Dec 2014 11:58:09 +0800
-From: Yunzhi Li <lyz@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "ulrich.prinz@googlemail.com" <ulrich.prinz@googlemail.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support for
- dwc2 usb controler platform driver.
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com> <1417783941-2418-4-git-send-email-lyz@rock-chips.com> <A2CA0424C0A6F04399FB9E1CD98E0304844FFB50@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844FFB50@US01WEMBX2.internal.synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753954AbaLHD6l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 22:58:41 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43462 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275AbaLHD6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 22:58:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,536,1413270000"; 
+   d="scan'208";a="634229803"
+Message-ID: <1418011115.19126.18.camel@rzhang1-toshiba>
+Subject: Re: [PATCH v2] thermal: Intel SoC DTS: Don't do thermal zone update
+ inside spin_lock
+From: Zhang Rui <rui.zhang@intel.com>
+To: Maurice Petallo <mauricex.r.petallo@intel.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 08 Dec 2014 11:58:35 +0800
+In-Reply-To: <1417140701-884-1-git-send-email-mauricex.r.petallo@intel.com>
+References: <1417140701-884-1-git-send-email-mauricex.r.petallo@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul:
+On Fri, 2014-11-28 at 10:11 +0800, Maurice Petallo wrote:
+> The driver calls spin_lock_irqsave during DTS interrupt. The interrupt
+> handle then calls thermal_zone_device_update which implicitly calls
+> a sleep function and produce the following bug:
+> 
+> BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
+> in_atomic(): 1, irqs_disabled(): 1, pid: 920, name: irq/86-soc_dts
+> CPU: 0 PID: 920 Comm: irq/86-soc_dts Tainted: G            E  3.17.0-rc2+ #1
+> Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS BYTICRB1.86C.0092.R31.1408290850 08/29/2014
+>  00000000 00000000 c25dbe74 c1818cfd f3cc488c c25dbe9c c1059305 c1b4063b
+>  00000001 00000001 00000398 f3cc488c f6817644 f6817644 f3ecc6c0 c25dbea8
+>  c18208f2 f6817400 c25dbebc c159b0bb c25dbedc f6817400 f32a2300 c25dbee8
+> Call Trace:
+>  [<c1818cfd>] dump_stack+0x48/0x60
+>  [<c1059305>] __might_sleep+0xec/0xf4
+>  [<c18208f2>] mutex_lock+0x1c/0x34
+>  [<c159b0bb>] thermal_zone_get_temp+0x34/0x59
+>  [<c159bde5>] thermal_zone_device_update+0x2d/0xcb
+>  [<f85da16a>] ? iosf_mbi_write+0x6c/0x74 [iosf_mbi]
+>  [<f7c7445d>] soc_irq_thread_fn+0x10c/0x163 [intel_soc_dts_thermal]
+>  [<c107b72b>] irq_thread_fn+0x18/0x2a
+>  [<c107bedb>] irq_thread+0x81/0x11f
+>  [<c107b713>] ? irq_finalize_oneshot+0x7c/0x7c
+>  [<c107bf79>] ? irq_thread+0x11f/0x11f
+>  [<c107be5a>] ? wake_threads_waitq+0x31/0x31
+>  [<c1054217>] kthread+0x87/0x8c
+>  [<c1821e41>] ret_from_kernel_thread+0x21/0x30
+>  [<c1054190>] ? __kthread_parkme+0x55/0x55
+> 
+> Signed-off-by: Maurice Petallo <mauricex.r.petallo@intel.com>
+> Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+> Acked-by: Eduardo Valentin <edubezval@gmail.com>
+> CC: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-Thank you for replying.
+applied.
 
-On 2014/12/6 3:04, Paul Zimmerman wrote:
->> From: Yunzhi Li [mailto:lyz@rock-chips.com]
->> Sent: Friday, December 05, 2014 4:52 AM
->>
->> Get PHY parameters from devicetree and power off usb PHY during
->> system suspend.
->>
->> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
->> ---
->>
->>   drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
->>   drivers/usb/dwc2/platform.c | 34 ++++++++++++++++++++++++++++++++++
->>   2 files changed, 46 insertions(+), 21 deletions(-)
->>
->> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
->> index 200168e..2601c61 100644
->> --- a/drivers/usb/dwc2/gadget.c
->> +++ b/drivers/usb/dwc2/gadget.c
->> [...]
->>
->>   	/*
->> -	 * Attempt to find a generic PHY, then look for an old style
->> -	 * USB PHY, finally fall back to pdata
->> +	 * If platform probe couldn't find a generic PHY or an old style
->> +	 * USB PHY, fall back to pdata
->>   	 */
->> -	phy = devm_phy_get(dev, "usb2-phy");
->> -	if (IS_ERR(phy)) {
->> -		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
->> -		if (IS_ERR(uphy)) {
->> -			/* Fallback for pdata */
->> -			plat = dev_get_platdata(dev);
->> -			if (!plat) {
->> -				dev_err(dev,
->> -				"no platform data or transceiver defined\n");
->> -				return -EPROBE_DEFER;
->> -			}
->> -			hsotg->plat = plat;
->> -		} else
->> -			hsotg->uphy = uphy;
->> -	} else {
->> -		hsotg->phy = phy;
->> +	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
->> +		plat = dev_get_platdata(dev);
->> +		if (!plat) {
->> +			dev_err(dev,
->> +			"no platform data or transceiver defined\n");
->> +			return -EPROBE_DEFER;
->> +		}
->> +		hsotg->plat = plat;
->> +	} else if (hsotg->phy) {
-> You have changed the behavior here. Previously, the driver would work
-> even if there were no phys or pdata defined. Now it will return
-> -EPROBE_DEFER instead. Are you sure that won't break any existing
-> platforms?
->
-I don't really catch your meaning. Could you please point out where is 
-the difference? Thanks .
-
-In previous version, if there were no phy or usb_phy defined, 
-devm_phy_get() and devm_usb_get_phy() both failed, then driver falls 
-back to find pdata, if no pdata defined dev_get_platdata() returns NULL, 
-then dwc2_gadget_init returns -EPROBE_DEFER and the dwc2_driver_probe 
-fail. So I think, for the dwc2 driver without my patch, when 
-CONFIG_USB_DWC2_PERIPHERAL or CONFIG_USB_DWC2_DUAL_ROLE selected, if 
-there were no phys or pdata defined, the driver probe will also return 
--EPROBE_DEFER. And when only CONFIG_USB_DWC2_HOST selected, the previous 
-version driver didn't care any thing about phy, in my patch it will try 
-to find a phy when platform driver probe, but do not fail probe if there 
-isn't a phy node.
+thanks,
+rui
+> ---
+> Changelog v2:
+> * Change subject to emphasize that this patch affects only Intel SoC DTS
+>   (intel_soc_dts_thermal.c)
+> 
+>  drivers/thermal/intel_soc_dts_thermal.c |   12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/thermal/intel_soc_dts_thermal.c b/drivers/thermal/intel_soc_dts_thermal.c
+> index a6a0a18..5580f5b 100644
+> --- a/drivers/thermal/intel_soc_dts_thermal.c
+> +++ b/drivers/thermal/intel_soc_dts_thermal.c
+> @@ -360,6 +360,9 @@ static void proc_thermal_interrupt(void)
+>  	u32 sticky_out;
+>  	int status;
+>  	u32 ptmc_out;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&intr_notify_lock, flags);
+>  
+>  	/* Clear APIC interrupt */
+>  	status = iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_READ,
+> @@ -378,21 +381,20 @@ static void proc_thermal_interrupt(void)
+>  		/* reset sticky bit */
+>  		status = iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_WRITE,
+>  					SOC_DTS_OFFSET_PTTSS, sticky_out);
+> +		spin_unlock_irqrestore(&intr_notify_lock, flags);
+> +
+>  		for (i = 0; i < SOC_MAX_DTS_SENSORS; ++i) {
+>  			pr_debug("TZD update for zone %d\n", i);
+>  			thermal_zone_device_update(soc_dts[i]->tzone);
+>  		}
+> -	}
+> +	} else
+> +		spin_unlock_irqrestore(&intr_notify_lock, flags);
+>  
+>  }
+>  
+>  static irqreturn_t soc_irq_thread_fn(int irq, void *dev_data)
+>  {
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&intr_notify_lock, flags);
+>  	proc_thermal_interrupt();
+> -	spin_unlock_irqrestore(&intr_notify_lock, flags);
+>  	pr_debug("proc_thermal_interrupt\n");
+>  
+>  	return IRQ_HANDLED;
 
 
