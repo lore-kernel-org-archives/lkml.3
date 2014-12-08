@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaLHUj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:39:57 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:16939 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798AbaLHUjw (ORCPT
+	id S1755205AbaLHUkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:40:10 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:4165 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990AbaLHUj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:39:52 -0500
+	Mon, 8 Dec 2014 15:39:57 -0500
 X-IronPort-AV: E=Sophos;i="5.07,540,1413270000"; 
-   d="scan'208";a="52717562"
+   d="scan'208";a="52393751"
 From: Ray Jui <rjui@broadcom.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Mark Rutland" <mark.rutland@arm.com>,
@@ -25,9 +25,9 @@ CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
         <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
         "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH v4 3/5] ARM: mach-bcm: Enable GPIO support for Cygnus
-Date: Mon, 8 Dec 2014 12:41:57 -0800
-Message-ID: <1418071319-11779-4-git-send-email-rjui@broadcom.com>
+Subject: [PATCH v4 5/5] MAINTAINERS: Entry for Cygnus GPIO driver
+Date: Mon, 8 Dec 2014 12:41:59 -0800
+Message-ID: <1418071319-11779-6-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418071319-11779-1-git-send-email-rjui@broadcom.com>
 References: <Ray Jui <rjui@broadcom.com>
@@ -38,26 +38,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable GPIO driver for Broadcom Cygnus SoC by selecting GPIO_BCM_CYGNUS
-
 Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/mach-bcm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ MAINTAINERS |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index aaeec78..5066d5d 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -29,6 +29,7 @@ config ARCH_BCM_IPROC
- config ARCH_BCM_CYGNUS
- 	bool "Broadcom Cygnus Support" if ARCH_MULTI_V7
- 	select ARCH_BCM_IPROC
-+	select GPIO_BCM_CYGNUS
- 	help
- 	  Enable support for the Cygnus family,
- 	  which includes the following variants:
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e6bff3a..8473422 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2202,6 +2202,13 @@ N:	bcm9583*
+ N:	bcm583*
+ N:	bcm113*
+ 
++BROADCOM CYGNUS GPIO DRIVER
++M:	Ray Jui <rjui@broadcom.com>
++L:	bcm-kernel-feedback-list@broadcom.com
++S:	Supported
++F:	drivers/gpio/gpio-bcm-cygnus.c
++F:	Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
++
+ BROADCOM KONA GPIO DRIVER
+ M:	Ray Jui <rjui@broadcom.com>
+ L:	bcm-kernel-feedback-list@broadcom.com
 -- 
 1.7.9.5
 
