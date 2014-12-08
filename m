@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaLHNSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:18:08 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:55674 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbaLHNSF (ORCPT
+	id S1755559AbaLHNSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:18:18 -0500
+Received: from relay04.alfahosting-server.de ([109.237.142.240]:58980 "EHLO
+	relay04.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752885AbaLHNSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:18:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Mark Brown <broonie@kernel.org>,
-        linux@arm.linux.org.uk, nsekhar@ti.com, khilman@deeprootsystems.com,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, ulf.hansson@linaro.org, chris@printf.net,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: edma: Split up header file to platform_data and API file
-Date: Mon, 08 Dec 2014 14:16:59 +0100
-Message-ID: <5296454.gCL6SxI1xr@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141208124917.GI16827@intel.com>
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com> <20141208124917.GI16827@intel.com>
+	Mon, 8 Dec 2014 08:18:14 -0500
+X-Spam-DCC: : 
+Date: Mon, 8 Dec 2014 14:18:37 +0100
+From: Richard Leitner <dev@g0hl1n.net>
+To: Arnd Bergmann <arnd@arndb.de>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: ioc4: fix variable may be used uninitialized
+ warning
+Message-ID: <20141208141837.752a9968@frodo>
+In-Reply-To: <4066664.BgJJnCmQ3h@wuerfel>
+References: <20141208132720.16356743@frodo>
+	<4066664.BgJJnCmQ3h@wuerfel>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:qOoBWplELj48yikdIRXjlEiQ7cAHHx3Sw6afNNTo2zzbCw90PZp
- 98o7J39sHUIroTzKlu1pwQWlBPoUQ9lQ2vSv9BCDhXRrCaiEzMz5fhWHQSmfVKngI8XYs9E
- ZVQsjuUuJVXJT7mV7hGqlH4W02wGADp1yqWY6Izwt4BADujNd4vmCuzCikaYHk9OK78TfrY
- +d4tbmU6qNl1IIBCvAUoA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19749/Mon Dec  8 12:41:14 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 18:19:17 Vinod Koul wrote:
-> On Thu, Nov 27, 2014 at 12:41:31PM +0200, Peter Ujfalusi wrote:
-> > include/linux/platform_data/ is not a correct place to keep the API
-> > definitions for edma, it is meant to be only for the pdata for the device.
-> > Clean up this by moving the API to include/linux/edma.h
+On Mon, 08 Dec 2014 13:42:47 +0100
+Arnd Bergmann <arnd@arndb.de> wrote:
+
+> On Monday 08 December 2014 13:27:20 Richard Leitner wrote:
 > > 
-> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > ---
-> >  arch/arm/common/edma.c                     |   3 +-
-> >  arch/arm/mach-davinci/devices.c            |   1 +
-> >  arch/arm/mach-davinci/include/mach/da8xx.h |   1 +
-> >  drivers/dma/edma.c                         |   2 +-
-> >  include/linux/edma.h                       | 153 +++++++++++++++++++++++++++++
-> >  include/linux/platform_data/edma.h         | 148 ++--------------------------
-> >  sound/soc/davinci/davinci-pcm.h            |   1 +
-> >  7 files changed, 165 insertions(+), 144 deletions(-)
-> >  create mode 100644 include/linux/edma.h
-> I was hoping that this will have delete for platform_data/edma.h, do we
-> still need that and why shouldn't we get rid of this 
+> > As far as I can tell 'start' cannot really be used uninitialized
+> > here, but for the sanity of gcc output explicitly initialize it.
+> > Same goes for the 'end' variable.
+> 
+> Prabhakar Lad also sent a patch for this already, which was lacking
+> a good patch description. Your patch does this slightly better but
+> still fails to explain how you concluded it was safe and you don't
+> really explain why you initialize the 'end' variable that we don't
+> even get a warning about.
 
-I think the platform_data/edma.h file is needed for as long as we have
-mach-davinci systems that are not converted to boot using DT. At the current
-pace of development in that area, I would expect that to take a few more
-years at least: da850 support is slowly proceeding (since 2012), da830 should
-be fairly straightforward to add once da850 is done, but I haven't seen
-anybody start working on the dm* socs for DT.
+Oops, I'm sorry, I haven't seen the patch and the answers to it.
 
-	Arnd
+According to the comments by Andrew a simplification of this code
+section would be nice. I think it should be possible to do this in a
+way that the initialize-to-zero won't be needed anymore.
+
+Prabhakar Lad, are you working on this already?
+If not I'll take a look at it.
+
+regards,
+richard
+
