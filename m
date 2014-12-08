@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaLHNiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:38:55 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:26138 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750908AbaLHNiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:38:52 -0500
-Date: Mon, 8 Dec 2014 21:35:51 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [RFC] usb: dwc3: add DWC3_SKIP_USB3PHY and DWC3_SKIP_USB2_PHY
- quirks
-Message-ID: <20141208213551.38860f81@xhacker>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1752227AbaLHNrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:47:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56260 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562AbaLHNrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:47:12 -0500
+Date: Mon, 8 Dec 2014 14:47:09 +0100 (CET)
+From: Michael Matz <matz@suse.de>
+To: Alexander Graf <agraf@suse.de>
+cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH] arm64: Enable CONFIG_COMPAT also for 64k page size
+In-Reply-To: <5480F057.9010203@suse.de>
+Message-ID: <alpine.LNX.2.00.1412081440340.405@wotan.suse.de>
+References: <1417707993-82290-1-git-send-email-agraf@suse.de> <20141204182049.GB7749@arm.com> <5480F057.9010203@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-08_01:2014-12-08,2014-12-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=1 spamscore=1 suspectscore=1
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1412080135
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+Hi,
 
-On platforms which has native usb hosts/phys and pci-dwc3 controller, the dwc3
-core may get the wrong usb2_phy and usb3_phy by devm_usb_get_phy(). It depends
-on which usb phy driver is initialized firstly, the usb_phy_generic or the
-native/real usb phy driver.
+On Fri, 5 Dec 2014, Alexander Graf wrote:
 
-Before all old USB phy library usage removed, the solution I can have is to
-add DWC3_SKIP_USB3PHY and DWC3_SKIP_USB2_PHY quirks and set them in dwc3-pci.
-Could such modification can be accepted? If not, could you please give alternative
-suggestions?
+> I don't have a full distribution for you yet, but we'll start to switch 
+> to the 2.25 branch soon.
+> 
+> Michael, what are you plans on when a first armv7 Factory build based on 
+> 2.25 would be available?
 
-Thanks,
-Jisheng
+2.25 isn't released yet, but I just submitted the pre-release version to 
+Factory, so the answer would be "as soon as it's checked in" :)
+
+
+Ciao,
+Michael.
