@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289AbaLHVnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:43:32 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63967 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaLHVnb (ORCPT
+	id S1754292AbaLHVuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:50:09 -0500
+Received: from smtp-out-161.synserver.de ([212.40.185.161]:1219 "EHLO
+	smtp-out-158.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753040AbaLHVuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:43:31 -0500
-From: Olof Johansson <olof@lixom.net>
-To: arm@kernel.org
-Cc: f.fainelli@gmail.com, mporter@linaro.org,
-        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] ARM: bcm: fix __iomem annotation on kona_smc
-Date: Mon,  8 Dec 2014 13:45:48 -0800
-Message-Id: <1418075148-8752-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 8 Dec 2014 16:50:06 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3253
+Message-ID: <54861D04.8000102@metafoo.de>
+Date: Mon, 08 Dec 2014 22:49:56 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>
+CC: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?windows-1252?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com> <20141208061746.GD16827@intel.com> <20141208141807.GC8739@lukather> <20141208162843.GP16827@intel.com> <20141208183853.GG8739@lukather>
+In-Reply-To: <20141208183853.GG8739@lukather>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following sparse warning:
-arch/arm/mach-bcm/bcm_kona_smc.c:145:21: warning: incorrect type in initializer (different address spaces)
-arch/arm/mach-bcm/bcm_kona_smc.c:145:21:    expected unsigned int [usertype] *args
-arch/arm/mach-bcm/bcm_kona_smc.c:145:21:    got void [noderef] <asn:2>*static [toplevel] [assigned] bcm_smc_buffer
-arch/arm/mach-bcm/bcm_kona_smc.c:151:9: warning: incorrect type in argument 2 (different address spaces)
-arch/arm/mach-bcm/bcm_kona_smc.c:151:9:    expected void volatile [noderef] <asn:2>*addr
-arch/arm/mach-bcm/bcm_kona_smc.c:151:9:    got unsigned int [usertype] *
-[+ 2 more instances]
+On 12/08/2014 07:38 PM, Maxime Ripard wrote:
+[...]
+>> And lastly noone blamed you for being late, if things were rosy they
+>> would have been merged over the weekend and been in today's next,
+>> but...
+>
+> I totally understand your point. And I actually am a bit uncomfortable
+> merging this so late too, and I'd actually prefer to have it merged
+> for 3.20. But this is a huge patchset, and I'd really like to avoid
+> rebasing it forever.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+We don't have to pull in the whole series at once. I think everybody agrees 
+that the approach is the right one, so the first couple of patches that work 
+on the framework should be good to go in. Same goes for the drivers that 
+have been acked and tested.
 
-Florian, should we just apply this directly on arm-soc?
-
-
--Olof
-
- arch/arm/mach-bcm/bcm_kona_smc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
-index a55a7ec..d506d17 100644
---- a/arch/arm/mach-bcm/bcm_kona_smc.c
-+++ b/arch/arm/mach-bcm/bcm_kona_smc.c
-@@ -142,7 +142,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
- static void __bcm_kona_smc(void *info)
- {
- 	struct bcm_kona_smc_data *data = info;
--	u32 *args = bcm_smc_buffer;
-+	u32 __iomem *args = bcm_smc_buffer;
- 
- 	BUG_ON(smp_processor_id() != 0);
- 	BUG_ON(!args);
--- 
-1.7.10.4
-
+- Lars
