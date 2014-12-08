@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaLHPqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:46:37 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:57692 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaLHPqg convert rfc822-to-8bit (ORCPT
+	id S1755850AbaLHPtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:49:22 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47723 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080AbaLHPtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:46:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Leitner <dev@g0hl1n.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] misc: ioc4: simplify wave period measurement in clock_calibrate
-Date: Mon, 08 Dec 2014 16:46:31 +0100
-Message-ID: <3564575.fggPKDmMEE@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141208162810.7b009382@frodo>
-References: <20141208132720.16356743@frodo> <CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com> <20141208162810.7b009382@frodo>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:qOSFgD79+6r60huuRlGvxP4bFWrX/OlCWHQ4ocRSDsiVOutbPh2
- blGAOQp0t3H4u3ffstsf+3KQwzK/7BxB7othTQMb9f2ipp7RnXgq3kvDXN+uC90t2xEuOXD
- ElY1Mtw0n87ITLHVdoOcMNT+52VTu5DMb+gnR0L8kufO16YnTIA97E+oFgUCETD9opHbxYp
- Fei2IfQCZfL/thUz1wHFA==
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 8 Dec 2014 10:49:20 -0500
+From: Stephane Viau <sviau@codeaurora.org>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com, gbeeresh@codeaurora.org,
+        Stephane Viau <sviau@codeaurora.org>
+Subject: [PATCH 0/4] drm/msm: YUV suppport addition for MDP4 & MDP5
+Date: Mon,  8 Dec 2014 10:48:55 -0500
+Message-Id: <1418053739-9386-1-git-send-email-sviau@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 16:28:10 Richard Leitner wrote:
-> The loop for measuring the square wave periods over some cycles is
-> refactored to be more easily readable. This includes avoiding a
-> "by-hand-implemented" for loop with a "real" one and adding some
-> comments.
-> 
-> Furthermore the following compiler warning is avoided by this patch:
-> drivers/misc/ioc4.c: In function ‘ioc4_probe’:
-> drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
-> in this function [-Wmaybe-uninitialized]
->   period = (end - start) /
->                 ^
-> drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
->   uint64_t start, end, period;
->            ^
-> 
-> Signed-off-by: Richard Leitner <dev@g0hl1n.net>
+Hi,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+So this set of patches adds YUV support for MDP4 and MDP5. This only concerns
+the public planes (using ViG pipes).
 
-> ---
-> A simplification of this loop was suggested by Andrew Morton [1].
-> This is my first proposal of such a simplification.
-> 
-> Furthermore I'm not sure if the commit message is sufficient.
-> Please give me also some feedback on it.
-> 
-> If this simplification is not needed only initializing start to
-> ktime_get_ns() would fix the compiler warning too.
+The fun part was to rebase things on top of atomic but things worked out fine.
+I was able to test this for MDP5 on a 8084 target. I cannot say the same for
+MDP4 for which I don't have a build based on atomic yet. The change is pretty
+similar to MDP5 though.
 
-With the changed loop, do you still get a warning if you
-remove the extra 'start = ktime_get_ns()' at the start of the loop?
+Rgds,
+Stephane.
 
-	Arnd
+
+Beeresh Gopal (1):
+  drm/msm/mdp4: add YUV format support
+
+Stephane Viau (3):
+  drm/msm/mdp: add register description for YUV support
+  drm/msm/mdp: add common YUV information for MDP4/MDP5
+  drm/msm/mdp5: add NV12 support for MDP5
+
+ drivers/gpu/drm/msm/hdmi/hdmi.c           | 149 ++++++++++++++-------
+ drivers/gpu/drm/msm/hdmi/hdmi.h           |   8 +-
+ drivers/gpu/drm/msm/hdmi/hdmi_connector.c |   1 -
+ drivers/gpu/drm/msm/mdp/mdp4/mdp4.xml.h   |  44 ++++++
+ drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h   |  19 ++-
+ drivers/gpu/drm/msm/mdp/mdp4/mdp4_plane.c | 104 +++++++++++++--
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5.xml.h   | 153 +++++++++++++++++++--
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h   |  19 ++-
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c | 215 +++++++++++++++++++++++++++---
+ drivers/gpu/drm/msm/mdp/mdp_common.xml.h  |  30 +++--
+ drivers/gpu/drm/msm/mdp/mdp_format.c      | 108 +++++++++++++--
+ drivers/gpu/drm/msm/mdp/mdp_kms.h         |  24 +++-
+ drivers/gpu/drm/msm/msm_fb.c              |   4 +-
+ drivers/gpu/drm/msm/msm_kms.h             |   2 +
+ 14 files changed, 754 insertions(+), 126 deletions(-)
+
+-- 
+Qualcomm Innovation Center, Inc.
+
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
+
