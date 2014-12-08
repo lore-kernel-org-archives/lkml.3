@@ -1,145 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaLHI6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:58:03 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:36603 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaLHI6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:58:01 -0500
+	id S1753016AbaLHI7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:59:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094AbaLHI7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:59:07 -0500
+Date: Mon, 8 Dec 2014 10:58:50 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com
+Subject: Re: [PATCH v8 00/50] linux: towards virtio-1 guest support
+Message-ID: <20141208085850.GA19418@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1555621726.710701418024675477.JavaMail.weblogic@epmlwas04c>
-References: <1555621726.710701418024675477.JavaMail.weblogic@epmlwas04c>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Mon, 8 Dec 2014 09:57:39 +0100
-X-Google-Sender-Auth: cdtKmg8anKSNZKSp2dzQy0s50ks
-Message-ID: <CAAObsKDmWDez5tRNa=zGuCDhM+FNgeXOUCygpjeQ-eyK=4Kq9g@mail.gmail.com>
-Subject: Re: [RFC RESEND 0/3] Add watermark support to devfreq
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Arto Merilainen <amerilainen@nvidia.com>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "srasal@nvidia.com" <srasal@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 December 2014 at 08:44, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
->> (Sorry for the spam. I am resending the series because I noted that
->> some of the email addresses were mistyped)
->>
->> Currently main mechanism to implement scaling using devfreq is
->> polling and the device profile is free to set polling interval.
->> However, in many cases this approach is not optimal; We may
->> unnecessarily use CPU time to determine load on engine that
->> is idle most of time - or we may simply read load when we
->> already know that the device is busy.
->>
->> In some cases a device itself has counters to track its activity
->> and possibility to raise interrupts when load goes above or below
->> certain threshold.
->>
->> This series adds support for watermark events to devfreq and
->> introduces two example governors. The first patch adds two
->> callbacks to the device profile (for setting watermark) and
->> adds a new function call to devfreq that informs of crossed
->> watermark.
->>
->> The added governors demonstrate usage of the new API. The first
->> governor (watermark simple) sets device to trigger low watermark
->> event when load goes below 10% and high watermark interrupt when
->> the load goes above 60%. Watermark active tries to keep load at
->> certain level and it actively sets thresholds based on the
->> frequency table in order get interrupts only when the load value
->> would affect to the current frequency in re-estimation.
->
-> Hi Arto,
->
->
-> Please let me start with somewhat naive high-level question:
->   What do you mean by watermark in this context?
-> Is it a product name of yours (interrupt-based PMU, I presume)?
-> Or does watermark have another semantics that I am not aware of?
-> Or do you really mean something like
->   http://en.wikipedia.org/wiki/Digital_watermarking
+On Mon, Dec 01, 2014 at 06:02:42PM +0200, Michael S. Tsirkin wrote:
+> David, assuming patches are acceptable, I'd like them all to be merged through
+> virtio or vhost trees to avoid dependency headaches.  Could you please ack
+> doing that for net related patches, especially these:
+> 	  tun: move internal flag defines out of uapi
+> 	  tun: drop most type defines
+> 	  tun: add VNET_LE flag
+> 	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+> 	  macvtap: TUN_VNET_HDR support
+> 	  vhost/scsi: partial virtio 1.0 support
+> 	  af_packet: virtio 1.0 stubs
+> Alternatively, I can prepare a tree with virtio changes and merge
+> that into your net-next - if Rusty approves, or keeps
+> silence :)
 
-The watermark term is borrowed here from queues. The high and low
-watermarks define the boundaries within the load has to be contained.
-If the load is above or below the watermarks, a more suitable
-frequency has to be found.
+David, Rusty - ping.
+Are both of you ok withmerging this through the vhost tree?
 
-Regards,
-
-Tomeu
-
-> Other itching points include:
-> - devfreq_watermark_event() was declared but has never been used.
->     Who is supposed to call this function?
-> - Is enum watermark_type supposed to be used out of /drivers/devfreq/* ?
->     Otherwise, please move it inside /drivers/devfreq/governor.h
->     (I guess it is to be used inside corresponding governors only)
-> - Could you please watermark-specific interfaces (set_high/low_wmark) into
->     its own public header file? (e.g., /include/linux/devfreq/governor_wmark.h)
->   I think we can create another (governor_simpleondemand.h) in there as well
->     in order to have threshold values configured by device drivers.
->   Adding governor-specific configurations into devfreq.h seems not
->     appropriate especially when we expect that we may need many different
->     governors.
->
->   OR..
->
->   This seems that you can keep set_h/l_wmark functions exposed to
->     drivers/devfreq/* only. Therefore, having /drivers/devfreq/governor_wmark.h
->     should be sufficient as well, which should be more neat than the above.
->   The callbacks are to be defined by the devfreq drivers, aren't they?
->
-> - The event name, "DEVFREQ_GOV_WMARK", defined in governor.h, seems to be
->     more appropriate if it is named "DEVFREQ_GOV_INTERNAL" as we won't need
->     to define event names for each govornor's internal needs.
->
->   OR.. for more generality,
->     we may define a macro like:
->
-> #define DEVFREQ_GOV_INTERNAL(value)     ((0x1 << 31) | (value))
-> #define GET_DEVFREQ_GOV_INTERNAL(event) ((event) & ~(0x1 << 31))
->
-> - In general, I would love to see governors with minimal intervention on
->     the framework core/main code, especially when it is not beneficial to
->     other governors. Unlike cpufreq, we may contain many different types of
->     devices in devfreq, which has the potential to accompany many different
->     governors.
->
->
-> Cheers,
-> MyungJoo.
->
->>
->> Arto Merilainen (1):
->>   PM / devfreq: Add watermark active governor
->>
->> Shridhar Rasal (2):
->>   PM / devfreq: Add watermark events
->>   PM / devfreq: Add watermark simple governor
->>
->>  drivers/devfreq/Kconfig                 |  18 +++
->>  drivers/devfreq/Makefile                |   2 +
->>  drivers/devfreq/devfreq.c               |  19 +++
->>  drivers/devfreq/governor.h              |   1 +
->>  drivers/devfreq/governor_wmark_active.c | 276 ++++++++++++++++++++++++++++++++
->>  drivers/devfreq/governor_wmark_simple.c | 245 ++++++++++++++++++++++++++++
->>  include/linux/devfreq.h                 |  26 +++
->>  7 files changed, 587 insertions(+)
->>  create mode 100644 drivers/devfreq/governor_wmark_active.c
->>  create mode 100644 drivers/devfreq/governor_wmark_simple.c
->>
->> --
->> 1.8.1.5
->>
+> 
+> Could you comment on this please?
+> 
+> Up to half a hundred patches now. This is getting ridiculous.
+> 
+> Based on patches by Cornelia and others, but with an API that should allow
+> better static checking of code, slightly more concervative changes in vring and
+> drivers, and compatibility for existing drivers so that this series can be
+> applied gradually.
+> At the end of series, all drivers are converted, and compatibility flags are
+> dropped.
+> 
+> All drivers have been converted now, with the exception
+> of the balloon driver which we plan to rewrite
+> rather than convert.
+> All drivers now pass sparse without warnings.
+> 
+> net and blk patches have been tested on s390.
+> Other patches pass sparse so they are most likely
+> ok too, but haven't been through testing yet -
+> they can be dropped from patchset if necessary.
+> 
+> Please review, and consider for 3.19
+> 
+> changes since v7:
+> 	all drivers have been converted now.
+> 	new patches:
+> 	  virtio_console: virtio 1.0 support
+> 	  virtio_balloon: add legacy_only flag
+> 	  virtio: make VIRTIO_F_VERSION_1 a transport bit
+> 	  virtio: drop VIRTIO_F_VERSION_1 from drivers
+> 	vhost: make features 64 bit
+> 		fix bug noted by Sergei Shtylyov,
+> 		bugfix suggested by Ben Hutchings
+> 	virtio_net: disable mac write for virtio 1.0
+> 		moved earlier in the series
+> 	vhost/net: force len for TX to host endian
+> 		commit log reworded
+> 	vhost: virtio 1.0 endian-ness support
+> 		simplify error printing code sligthly
+> 	vhost/net: suppress compiler warning
+> 		smashed into code introducing the warning,
+> 		added a comment
+> 
+> 
+> changes since v6:
+> 	tun: move internal flag defines out of uapi
+> 		document reasons for patch split
+> 	macvtap: TUN_VNET_LE support
+> 		fix patch subject
+> 	virtio: add low-level APIs for feature bits
+> 		fix comment in code s/set/clear/
+> 		document reasons for names selected
+> 	KVM: s390: enable virtio-ccw revision 1
+> 		fix up comment
+> 	virtio: use u32, not bitmap for features
+> 		fix whitespace
+> 	virtio_ccw: add support for 64 bit features
+> 		tweak comment in code
+> 
+> 	included reviewed-by tags by Cornelia David and Jason
+> 
+> Changes since v5:
+> 	rewritten feature bit handling, based on suggestion by David:
+> 	changes are now smaller and easier to review.
+> 	new patch:
+> 	  virtio: add low-level APIs for feature bits
+> 	rewritten patches:
+> 	  virtio: use u32, not bitmap for features
+> 	  virtio: add support for 64 bit features.
+> 	
+> Changes since v4:
+> 	I have dropped 64 bit feature negotiation from
+> 	most transports (except ccw).
+> 	For symmetry, I split out ccw bits:
+> 		  virtio: add support for 64 bit features.
+> 			adds core and device support for 64 bit features
+> 		  virtio_ccw: add support for 64 bit features.
+> 			actually enables 64 bit features in ccw.
+> 	detail below.
+> 
+> 	this is still really a cosmetic change: just reordering/splitting
+> 	patches, and dropping code changes that aren't needed.
+> 
+> 	new patches:
+> 	  mic_virtio: robust feature array size calculation
+> 	  virtio: assert 32 bit features in transports
+> 
+> 	addressed comments by Cornelia:
+> 		      virtio: disable virtio 1.0 in transports:
+> 			patch dropped
+> 		      virtio: memory access APIs
+> 			tweaked comments as suggested by Cornelia
+> 		      virtio_config: endian conversion for v1.0
+> 			dropped reviewed-by tags -
+> 				they applied to a very old version of patch
+> 		      virtio: set FEATURES_OK
+> 			replaced printk by dev_err
+> 		      virtio: add legacy feature table support
+> 			comment changes suggested by Cornelia
+> 		      virtio_blk: v1.0 support
+> 			dropped reviewed-by tags -
+> 				they applied to a very old version of patch
+> 		      virtio_net: enable v1.0 support
+> 			only write mac for legacy devices
+> 		      vhost: add memory access wrappers
+> 			move chunk to vhost: make features 64 bit
+> 			better patch description
+> 		      vhost: make features 64 bit
+> 			moved this patch earlier in series
+> 		      vhost/net: force len for TX to host endian
+> 			better patch description
+> 		      virtio_scsi: v1.0 support
+> 			fix bug: use high level, not low level wrappers
+> 			
+> 
+> 	included reviewed-by tags for patches:
+> 		KVM: s390 allow virtio_ccw status writes to fail
+> 				added reviewed-by tag by Cornelia
+> 		virtio_scsi: v1.0 support
+> 		virtio_scsi: move to uapi
+> 		virtio_scsi: export to userspace
+> 		vhost/scsi: partial virtio 1.0 support
+> 				added reviewed-by tag by Paolo
+> 
+> Changes since v3:
+> 	- move virtio 1.0 feature bit out of transport bits:
+> 	  for now it's managed by drivers
+> 	- disable virtio 1.0 feature bit explicitly - for transports
+> 	  that don't support it
+> 
+> Cornelia Huck (3):
+>   virtio: allow transports to get avail/used addresses
+>   KVM: s390: virtio-ccw revision 1 SET_VQ
+>   KVM: s390: enable virtio-ccw revision 1
+> 
+> Michael S. Tsirkin (46):
+>   virtio: add low-level APIs for feature bits
+>   virtio: use u32, not bitmap for features
+>   mic_virtio: robust feature array size calculation
+>   virtio: add support for 64 bit features.
+>   virtio: assert 32 bit features in transports
+>   virtio_ccw: add support for 64 bit features.
+>   virtio: add virtio 1.0 feature bit
+>   virtio: memory access APIs
+>   virtio_ring: switch to new memory access APIs
+>   virtio_config: endian conversion for v1.0
+>   virtio: set FEATURES_OK
+>   virtio: simplify feature bit handling
+>   virtio: add legacy feature table support
+>   virtio_net: v1.0 endianness
+>   virtio_blk: v1.0 support
+>   KVM: s390 allow virtio_ccw status writes to fail
+>   virtio_blk: make serial attribute static
+>   virtio_blk: fix race at module removal
+>   virtio_net: pass vi around
+>   virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
+>   virtio_net: stricter short buffer length checks
+>   virtio_net: bigger header when VERSION_1 is set
+>   virtio_net: disable mac write for virtio 1.0
+>   virtio_net: enable v1.0 support
+>   vhost: make features 64 bit
+>   vhost: add memory access wrappers
+>   vhost/net: force len for TX to host endian
+>   vhost: switch to __get/__put_user exclusively
+>   vhost: virtio 1.0 endian-ness support
+>   vhost/net: virtio 1.0 byte swap
+>   vhost/net: larger header for virtio 1.0
+>   vhost/net: enable virtio 1.0
+>   tun: move internal flag defines out of uapi
+>   tun: drop most type defines
+>   tun: add VNET_LE flag
+>   tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+>   macvtap: TUN_VNET_LE support
+>   virtio_scsi: v1.0 support
+>   virtio_scsi: move to uapi
+>   virtio_scsi: export to userspace
+>   vhost/scsi: partial virtio 1.0 support
+>   af_packet: virtio 1.0 stubs
+>   virtio_console: virtio 1.0 support
+>   virtio_balloon: add legacy_only flag
+>   virtio: make VIRTIO_F_VERSION_1 a transport bit
+>   virtio: drop VIRTIO_F_VERSION_1 from drivers
+> 
+> Thomas Huth (1):
+>   KVM: s390: Set virtio-ccw transport revision
+> 
+>  drivers/vhost/vhost.h                  |  37 ++++++-
+>  include/linux/virtio.h                 |  12 ++-
+>  include/linux/virtio_byteorder.h       |  59 +++++++++++
+>  include/linux/virtio_config.h          | 100 +++++++++++++++++--
+>  include/uapi/linux/if_tun.h            |  17 +---
+>  include/uapi/linux/virtio_blk.h        |  15 +--
+>  include/uapi/linux/virtio_config.h     |   9 +-
+>  include/uapi/linux/virtio_console.h    |   7 +-
+>  include/uapi/linux/virtio_net.h        |  15 +--
+>  include/uapi/linux/virtio_ring.h       |  45 ++++-----
+>  include/{ => uapi}/linux/virtio_scsi.h | 106 ++++++++++----------
+>  include/uapi/linux/virtio_types.h      |  46 +++++++++
+>  tools/virtio/linux/virtio.h            |  22 +----
+>  tools/virtio/linux/virtio_config.h     |   2 +-
+>  drivers/block/virtio_blk.c             |  74 ++++++++------
+>  drivers/char/virtio_console.c          |  30 +++---
+>  drivers/lguest/lguest_device.c         |  13 ++-
+>  drivers/misc/mic/card/mic_virtio.c     |  10 +-
+>  drivers/net/macvtap.c                  |  68 ++++++++-----
+>  drivers/net/tun.c                      | 168 ++++++++++++++------------------
+>  drivers/net/virtio_net.c               | 161 +++++++++++++++---------------
+>  drivers/remoteproc/remoteproc_virtio.c |   7 +-
+>  drivers/s390/kvm/kvm_virtio.c          |   7 +-
+>  drivers/s390/kvm/virtio_ccw.c          | 172 +++++++++++++++++++++++++++------
+>  drivers/scsi/virtio_scsi.c             |  50 ++++++----
+>  drivers/vhost/net.c                    |  31 +++---
+>  drivers/vhost/scsi.c                   |  22 +++--
+>  drivers/vhost/vhost.c                  |  93 +++++++++++-------
+>  drivers/virtio/virtio.c                |  78 +++++++++++----
+>  drivers/virtio/virtio_balloon.c        |   1 +
+>  drivers/virtio/virtio_mmio.c           |  13 ++-
+>  drivers/virtio/virtio_pci.c            |   8 +-
+>  drivers/virtio/virtio_ring.c           | 109 ++++++++++++---------
+>  net/packet/af_packet.c                 |  35 ++++---
+>  tools/virtio/virtio_test.c             |   5 +-
+>  tools/virtio/vringh_test.c             |  16 +--
+>  include/uapi/linux/Kbuild              |   2 +
+>  37 files changed, 1061 insertions(+), 604 deletions(-)
+>  create mode 100644 include/linux/virtio_byteorder.h
+>  rename include/{ => uapi}/linux/virtio_scsi.h (73%)
+>  create mode 100644 include/uapi/linux/virtio_types.h
+> 
+> -- 
+> MST
+> 
