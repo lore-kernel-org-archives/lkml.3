@@ -1,53 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaLHGOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:14:10 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:64255 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaLHGOH (ORCPT
+	id S1754050AbaLHGPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:15:33 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:56085 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaLHGPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:14:07 -0500
+	Mon, 8 Dec 2014 01:15:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141207114829.GX3411@intel.com>
-References: <1416002384-3525-1-git-send-email-abrestic@chromium.org>
-	<1416002384-3525-3-git-send-email-abrestic@chromium.org>
-	<20141205173553.GS3411@intel.com>
-	<CAL1qeaE+7L2p=HxPBasQYLVPD0H2qBAd439Fn_z3Fza9Y3+0eA@mail.gmail.com>
-	<20141207114829.GX3411@intel.com>
-Date: Sun, 7 Dec 2014 22:14:05 -0800
-X-Google-Sender-Auth: sa5E8bHdaZlzRjEJEUAaVuaGokw
-Message-ID: <CAL1qeaFDZV2FiuHqRAzsaYUmoV72Kaq8o0di7CueUrN6qzrT+w@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] dmaengine: Add driver for IMG MDC
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        James Hartley <james.hartley@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        Damien Horsley <Damien.Horsley@imgtec.com>,
-        Arnd Bergmann <arnd@arndb.de>, dmaengine@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: rajatxjain@gmail.com
+In-Reply-To: <546E7120.5080505@gmail.com>
+References: <546E7120.5080505@gmail.com>
+Date: Sun, 7 Dec 2014 22:15:31 -0800
+Message-ID: <CAA93t1pXvbeDnbdEf2PeUe6nKBHp9qQ+6Sf57F08d_78SzSjtQ@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
+ during removal
+From: Rajat Jain <rajatxjain@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Cc: Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
+        Rajat Jain <rajatxjain@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 7, 2014 at 3:48 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Fri, Dec 05, 2014 at 10:30:53AM -0800, Andrew Bresticker wrote:
->> After adding a macro for setting the WIDTH_{R,W} fields it seems fine
->> to me.  Is there something else you had in mind?
-> I think whole of this might be a macro :)
->
->
->> > and this depends on dma_slave_config being set, which shouldn't be the case
->> > for memcpy
+Hello Bjorn,
 
-> okay looking back yes it depends on bus_width. But how is bus_width set, i
-> thought the dma_slave_config will set that?
+Just checking if you got a chance to look at this.
 
-The MDC's memory bus width is read from a HW register and set in probe().
+Thanks,
+
+Rajat
+
+
+On Thu, Nov 20, 2014 at 2:54 PM, Rajat Jain <rajatxjain@gmail.com> wrote:
+> While removing a card, we can't assume the presence to mean that the
+> access to card is OK. That is because the cause of removal may be a
+> link down event, and the card may still be physically present. Thus,
+> instead of presence, use the link state to decide whether or not it is
+> OK to access the card devices.
+>
+> Here are the problem symptoms:
+> During the removal of a card due to link down, sometimes the following
+> error is seen (because pciehp_unconfigure_device() reads 0xFF from
+> bridge control register as the link is down, which cause it to assume
+> that the VGA bit is set):
+>
+> pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+> pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+> pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
+> pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
+> pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
+> pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
+>
+> Ofcourse, when the link comes back up, the device addition fails too:
+>
+> pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+> pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+> pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+> pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
+> pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
+> pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+> pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
+> pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
+> pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
+>
+> The problem is not seen with this patch applied. The device removal and
+> insertion works as expected.
+>
+> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> ---
+> v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
+>
+>  drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+> index 9e69403..911f85b 100644
+> --- a/drivers/pci/hotplug/pciehp_pci.c
+> +++ b/drivers/pci/hotplug/pciehp_pci.c
+> @@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+>  {
+>         int rc = 0;
+>         u8 bctl = 0;
+> -       u8 presence = 0;
+> +       bool link_active = false;
+>         struct pci_dev *dev, *temp;
+>         struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
+>         u16 command;
+> @@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+>
+>         ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
+>                  __func__, pci_domain_nr(parent), parent->number);
+> -       pciehp_get_adapter_status(p_slot, &presence);
+> +       link_active = pciehp_check_link_active(ctrl);
+>
+>         pci_lock_rescan_remove();
+>
+> @@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+>         list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
+>                                          bus_list) {
+>                 pci_dev_get(dev);
+> -               if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
+> +               if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
+>                         pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
+>                         if (bctl & PCI_BRIDGE_CTL_VGA) {
+>                                 ctrl_err(ctrl,
+> @@ -114,7 +114,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+>                  * Ensure that no new Requests will be generated from
+>                  * the device.
+>                  */
+> -               if (presence) {
+> +               if (link_active) {
+>                         pci_read_config_word(dev, PCI_COMMAND, &command);
+>                         command &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_SERR);
+>                         command |= PCI_COMMAND_INTX_DISABLE;
+> --
+> 1.7.9.5
+>
