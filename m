@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098AbaLHRje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:39:34 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:39345 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaLHRjc convert rfc822-to-8bit (ORCPT
+	id S932168AbaLHRk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:40:58 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:63643 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLHRk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:39:32 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: =?ISO-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor allocation failure
-Date: Mon, 08 Dec 2014 19:40:15 +0200
-Message-ID: <2395334.C7dbfKWGeP@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141208171923.GS16827@intel.com>
-References: <1416924617-15939-1-git-send-email-j@bitron.ch> <1418057426.5069.6.camel@bitron.ch> <20141208171923.GS16827@intel.com>
+	Mon, 8 Dec 2014 12:40:57 -0500
+Date: Mon, 8 Dec 2014 12:40:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dongsu Park <dongsu.park@profitbricks.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH workqueue/for-3.18-fixes 2/2] workqueue: allow rescuer
+ thread to do more work
+Message-ID: <20141208174052.GA12274@htj.dyndns.org>
+References: <20141110162848.6f2246bb@notabene.brown>
+ <20141110085250.GB15948@quack.suse.cz>
+ <20141111090402.35fa0700@notabene.brown>
+ <20141118152754.60b0c75e@notabene.brown>
+ <20141202204304.GR10918@htj.dyndns.org>
+ <20141203114011.5d02dc43@notabene.brown>
+ <20141203172010.GC5013@htj.dyndns.org>
+ <20141203180241.GD5013@htj.dyndns.org>
+ <20141204151104.GD15219@htj.dyndns.org>
+ <20141204151223.GE15219@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141204151223.GE15219@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
-
-On Monday 08 December 2014 22:49:24 Vinod Koul wrote:
-> On Mon, Dec 08, 2014 at 05:50:26PM +0100, Jürg Billeter wrote:
-> > Hi Vinod,
-> > 
-> > On Mon, 2014-12-08 at 17:06 +0530, Vinod Koul wrote:
-> > > Can you please rebase this on my next, this fails to apply for me
-> > 
-> > This is a patch for Laurent's new rcar-dmac driver, which doesn't appear
-> > to be in your next yet. Laurent has already merged my patch into his
-> > dma/next branch and included it in his pull request from November 27.
-> > 
-> > [GIT PULL FOR v3.19] R-Car DMA engine driver
-> > http://www.spinics.net/lists/linux-sh/msg37764.html
+On Thu, Dec 04, 2014 at 10:12:23AM -0500, Tejun Heo wrote:
+> From: NeilBrown <neilb@suse.de>
 > 
-> And I dont seem to have this request in my Inbox :(
-> Yes I do see it in archieves, so not sure how this is not present, not sure
-> if the servers mangeled it!!
-
-I haven't CC'ed you, I'll make sure to do so next time. The mail should still 
-have reached you through the mailing list though (I assume you're subscribed 
-to dmaengine@vger.kernel.org ;-)).
-
-> I will pull this tomorrow...
-
-Thank you.
-
-> > Please let me know if there is still a rebase required from my side.
+> When there is serious memory pressure, all workers in a pool could be
+> blocked, and a new thread cannot be created because it requires memory
+> allocation.
 > 
-> Nope
+> In this situation a WQ_MEM_RECLAIM workqueue will wake up the
+> rescuer thread to do some work.
+> 
+> The rescuer will only handle requests that are already on ->worklist.
+> If max_requests is 1, that means it will handle a single request.
+> 
+> The rescuer will be woken again in 100ms to handle another max_requests
+> requests.
+> 
+> I've seen a machine (running a 3.0 based "enterprise" kernel) with
+> thousands of requests queued for xfslogd, which has a max_requests of
+> 1, and is needed for retiring all 'xfs' write requests.  When one of
+> the worker pools gets into this state, it progresses extremely slowly
+> and possibly never recovers (only waited an hour or two).
+> 
+> With this patch we leave a pool_workqueue on mayday list
+> until it is clearly no longer in need of assistance.  This allows
+> all requests to be handled in a timely fashion.
+> 
+> We keep each pool_workqueue on the mayday list until
+> need_to_create_worker() is false, and no work for this workqueue is
+> found in the pool.
+> 
+> I have tested this in combination with a (hackish) patch which forces
+> all work items to be handled by the rescuer thread.  In that context
+> it significantly improves performance.  A similar patch for a 3.0
+> kernel significantly improved performance on a heavy work load.
+> 
+> Thanks to Jan Kara for some design ideas, and to Dongsu Park for
+> some comments and testing.
+> 
+> tj: Inverted the lock order between wq_mayday_lock and pool->lock with
+>     a preceding patch and simplified this patch.  Added comment and
+>     updated changelog accordingly.  Dongsu spotted missing get_pwq()
+>     in the simplified code.
+> 
+> Cc: Dongsu Park <dongsu.park@profitbricks.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+
+Too late for for-3.18-fixes.  Applied the two patches to wq/for-3.19.
+
+Thanks.
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+tejun
