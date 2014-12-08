@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaLHJwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:52:07 -0500
-Received: from sauhun.de ([89.238.76.85]:39663 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765AbaLHJwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:52:05 -0500
-Date: Mon, 8 Dec 2014 10:51:39 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Addy Ke <addy.ke@rock-chips.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: designware: Fix falling time bindings doc
-Message-ID: <20141208095139.GA1088@katana>
-References: <1417805379-8999-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <1417805379-8999-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754929AbaLHJwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:52:34 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:40011 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047AbaLHJwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:52:32 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [git pull] m68k updates for 3.19
+Date: Mon,  8 Dec 2014 10:52:17 +0100
+Message-Id: <1418032337-15218-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	Hi Linus,
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
 
-On Fri, Dec 05, 2014 at 10:49:39AM -0800, Doug Anderson wrote:
-> In (6468276 i2c: designware: make SCL and SDA falling time
-> configurable) new device tree properties were added for setting the
-> falling time of SDA and SCL.  The device tree bindings doc had a typo
-> in it: it forgot the "-ns" suffix for both properies in the prose of
-> the bindings.
->=20
-> I assume this is a typo because:
-> * The source code includes the "-ns"
-> * The example in the bindings includes the "-ns".
->=20
-> Fix the typo.
->=20
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Fixes: 6468276b2206 ("i2c: designware: make SCL and SDA falling time conf=
-igurable")
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
 
-Applied to for-next and added stable, thanks!
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+for you to fetch changes up to f0b99a643e9613beb28af43333bbfa90d4bf85cc:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+  m68k/mm: Eliminate memset after alloc_bootmem_pages (2014-11-10 09:56:44 +0100)
 
-iQIcBAEBAgAGBQJUhXSrAAoJEBQN5MwUoCm20HQP/jcWHm32P7hLUIadcCH0pSaO
-HrVbgasKdBAYsyQW55xKV2xQc/01keMXWaNZWti/uBRdoTBVjvkuSyykN+gQBGHu
-5HOFE1QvA3h72gF5pMSFiG5YxCd5S4gL+W7cej1w/FD2T3D9AJjEl6uNHuwwJxgC
-SGyBx2rohKF8InMHOn6RVCXRjr5IjTTpjhZpdkFIZfwKvJtOAFnuYn9bfoHcu5QT
-lM2jW56aaW9qfPp8+59/Ln5VcwaR29/chZ/3e0uRKY1m5QaST2fUaRC5zo0+Ijh1
-WvVkpJS8y41E/Hy9/qXqJFfdioZP0sYFG6UTlKIpG4KQidBUjixvH3xkjW0rskWo
-eraLquoZfUc7gBlkRvW0gMRULdlEXqM/7BfomIT+eXJMTbIJuxywZB1QhUlYz756
-BaapgNJ+VFSK4+eednS/9O+EqI7XqmjyFzQhhqNasSBOk2NEaGP0hPvW8vaMAfTR
-ZmlWpHpSIUgAk8A2uOeniNWV/x7CQjj7+AgByvOrOkNTe22z0XJFT/B3H3Nu9bj4
-mWRT4gODbUigZ6fuwOOAL2Kka9PamNLd1Vmbud1DRBdREpuvuljnoLqr1DxO86gZ
-4J6/Z2P73ZDpMhk2a2mJ46PsZo0J6XKepDhRKkOxI64fEIXkk4PUqvrhK9x1U8uY
-Ss4MbKo6QrnWDyv1s1A9
-=SrVj
------END PGP SIGNATURE-----
+----------------------------------------------------------------
+Geert Uytterhoeven (1):
+      nubus: Remove superfluous interrupt disable/restore
 
---G4iJoqBmSsgzjUCe--
+Himangi Saraogi (1):
+      m68k/mm: Eliminate memset after alloc_bootmem_pages
+
+ arch/m68k/mm/init.c   | 1 -
+ drivers/nubus/nubus.c | 4 ----
+ 2 files changed, 5 deletions(-)
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
