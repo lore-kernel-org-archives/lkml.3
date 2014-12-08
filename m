@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaLHTrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 14:47:05 -0500
-Received: from smtprelay.synopsys.com ([198.182.60.111]:33866 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519AbaLHTrD convert rfc822-to-8bit (ORCPT
+	id S1754386AbaLHTsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 14:48:55 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:54536 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbaLHTsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 14:47:03 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Yunzhi Li <lyz@rock-chips.com>, "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "ulrich.prinz@googlemail.com" <ulrich.prinz@googlemail.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support for
- dwc2 usb controler platform driver.
-Thread-Topic: [PATCH v2 3/5] usb: dwc2: Add generic PHY framework support
- for dwc2 usb controler platform driver.
-Thread-Index: AQHQEIqcG5EhzbPG0kaiAXphivO/SpyBV0kAgAREGYCAAHzuoA==
-Date: Mon, 8 Dec 2014 19:46:51 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484500279@US01WEMBX2.internal.synopsys.com>
-References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>
- <1417783941-2418-4-git-send-email-lyz@rock-chips.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844FFB50@US01WEMBX2.internal.synopsys.com>
- <548521D1.2060509@rock-chips.com>
-In-Reply-To: <548521D1.2060509@rock-chips.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Dec 2014 14:48:53 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141208192816.GH22149@ZenIV.linux.org.uk>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
+	<20141208164650.GB29028@node.dhcp.inet.fi>
+	<20141208175805.GB22149@ZenIV.linux.org.uk>
+	<20141208180824.GC22149@ZenIV.linux.org.uk>
+	<CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
+	<20141208182012.GE22149@ZenIV.linux.org.uk>
+	<CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
+	<20141208184632.GG22149@ZenIV.linux.org.uk>
+	<CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
+	<20141208192816.GH22149@ZenIV.linux.org.uk>
+Date: Mon, 8 Dec 2014 11:48:52 -0800
+X-Google-Sender-Auth: 2P-LHZG6a1V_t9oi4cVrt5Y-KsU
+Message-ID: <CA+55aFxSYbDN23MHBRL=neOXJkM4h_GU3qniyYTWwCm_EcGpsQ@mail.gmail.com>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Yunzhi Li [mailto:lyz@rock-chips.com]
-> Sent: Sunday, December 07, 2014 7:58 PM
-> 
-> On 2014/12/6 3:04, Paul Zimmerman wrote:
-> >> From: Yunzhi Li [mailto:lyz@rock-chips.com]
-> >> Sent: Friday, December 05, 2014 4:52 AM
-> >>
-> >> Get PHY parameters from devicetree and power off usb PHY during
-> >> system suspend.
-> >>
-> >> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
-> >> ---
-> >>
-> >>   drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
-> >>   drivers/usb/dwc2/platform.c | 34 ++++++++++++++++++++++++++++++++++
-> >>   2 files changed, 46 insertions(+), 21 deletions(-)
-> >>
-> >> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> >> index 200168e..2601c61 100644
-> >> --- a/drivers/usb/dwc2/gadget.c
-> >> +++ b/drivers/usb/dwc2/gadget.c
-> >> [...]
-> >>
-> >>   	/*
-> >> -	 * Attempt to find a generic PHY, then look for an old style
-> >> -	 * USB PHY, finally fall back to pdata
-> >> +	 * If platform probe couldn't find a generic PHY or an old style
-> >> +	 * USB PHY, fall back to pdata
-> >>   	 */
-> >> -	phy = devm_phy_get(dev, "usb2-phy");
-> >> -	if (IS_ERR(phy)) {
-> >> -		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> >> -		if (IS_ERR(uphy)) {
-> >> -			/* Fallback for pdata */
-> >> -			plat = dev_get_platdata(dev);
-> >> -			if (!plat) {
-> >> -				dev_err(dev,
-> >> -				"no platform data or transceiver defined\n");
-> >> -				return -EPROBE_DEFER;
-> >> -			}
-> >> -			hsotg->plat = plat;
-> >> -		} else
-> >> -			hsotg->uphy = uphy;
-> >> -	} else {
-> >> -		hsotg->phy = phy;
-> >> +	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-> >> +		plat = dev_get_platdata(dev);
-> >> +		if (!plat) {
-> >> +			dev_err(dev,
-> >> +			"no platform data or transceiver defined\n");
-> >> +			return -EPROBE_DEFER;
-> >> +		}
-> >> +		hsotg->plat = plat;
-> >> +	} else if (hsotg->phy) {
-> > You have changed the behavior here. Previously, the driver would work
-> > even if there were no phys or pdata defined. Now it will return
-> > -EPROBE_DEFER instead. Are you sure that won't break any existing
-> > platforms?
-> >
-> I don't really catch your meaning. Could you please point out where is
-> the difference? Thanks .
+On Mon, Dec 8, 2014 at 11:28 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> On x86 it does, but I don't see anything obvious in generic version in
+> mm/gup.c, so the old code might still have a problem on some architectures.
+> What am I missing here?
 
-Yeah, sorry, I misread the patch. I think your new version is fine.
+Hmm. You may be right. The "access_ok()" is supposed to protect
+things, but for cases like finit_module() that has explicitly said
+"kernel addresses are ok", that check doesn't work.
 
--- 
-Paul
+Maybe  something like this..
 
+    diff --git a/mm/gup.c b/mm/gup.c
+    index cd62c8c90d4a..6234b1e6ced9 100644
+    --- a/mm/gup.c
+    +++ b/mm/gup.c
+    @@ -951,6 +951,9 @@ int __get_user_pages_fast(unsigned long start,
+int nr_pages, int write,
+            len = (unsigned long) nr_pages << PAGE_SHIFT;
+            end = start + len;
+
+    +       if (unlikely(segment_eq(get_fs(), KERNEL_DS)))
+    +               return 0;
+    +
+            if (unlikely(!access_ok(write ? VERIFY_WRITE : VERIFY_READ,
+                                            start, len)))
+                    return 0;
+
+Completely untested, obviously. That code isn't even compiled on x86.
+Adding linux-arch for more comments.
+
+(Background: the generic non-x86 "get_user_pages_fast()" function
+cannot check that the page tables are actually *user* page tables,
+so..)
+
+                      Linus
