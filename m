@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaLHQu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:50:56 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46424 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaLHQux (ORCPT
+	id S932172AbaLHQvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:51:37 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:42567 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348AbaLHQve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:50:53 -0500
-Date: Mon, 8 Dec 2014 16:50:43 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "hauke@hauke-m.de" <hauke@hauke-m.de>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141208165042.GO16185@e104818-lin.cambridge.arm.com>
-References: <5481794E.4050406@broadcom.com>
- <2863746.4sUSEYqahB@wuerfel>
- <5485D054.7090109@broadcom.com>
- <2048819.2EPzBi8E3T@wuerfel>
+	Mon, 8 Dec 2014 11:51:34 -0500
+Date: Mon, 8 Dec 2014 16:51:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>,
+        Matthias Klein <matthias.klein@linux.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc
+ tree
+Message-ID: <20141208165127.GP3951@x1>
+References: <20141208120619.68287b54@canb.auug.org.au>
+ <2406890.FlzRjyvuXd@wuerfel>
+ <20141208130009.GL3951@x1>
+ <3348703.0b5FTH9Sa3@wuerfel>
+ <20141208134903.GN3951@x1>
+ <5485CD02.7010903@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <2048819.2EPzBi8E3T@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5485CD02.7010903@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 04:38:57PM +0000, Arnd Bergmann wrote:
-> On Monday 08 December 2014 17:22:44 Arend van Spriel wrote:
-> > >> The log: first the ring allocation info is printed. Starting at
-> > >> 16.124847, ring 2, 3 and 4 are rings used for device to host. In this
-> > >> log the failure is on a read of ring 3. Ring 3 is 1024 entries of each
-> > >> 16 bytes. The next thing printed is the kernel page tables. Then some
-> > >> OpenWRT info and the logging of part of the connection setup. Then at
-> > >> 1780.130752 the logging of the failure starts. The sequence number is
-> > >> modulo 253 with ring size of 1024 matches an "old" entry (read 40,
-> > >> expected 52). Then the different pointers are printed followed by
-> > >> the kernel page table. The code does then a cache invalidate on the
-> > >> dma_handle and the next read the sequence number is correct.
-> > >
-> > > How do you invalidate the cache? A dma_handle is of type dma_addr_t
-> > > and we don't define an operation for that, nor does it make sense
-> > > on an allocation from dma_alloc_coherent(). What happens if you
-> > > take out the invalidate?
-> > 
-> > dma_sync_single_for_cpu(, DMA_FROM_DEVICE) which ends up invalidating 
-> > the cache (or that is our suspicion).
+On Mon, 08 Dec 2014, Stephen Warren wrote:
+> On 12/08/2014 06:49 AM, Lee Jones wrote:
+> >On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+> >
+> >>On Monday 08 December 2014 13:00:09 Lee Jones wrote:
+> >>>On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+> >>>
+> >>>>On Monday 08 December 2014 12:06:19 Stephen Rothwell wrote:
+> >>>>>Hi Stephen,
+> >>>>>
+> >>>>>Today's linux-next merge of the bcm2835 tree got a conflict in
+> >>>>>arch/arm/boot/dts/Makefile between commit 302a5ef29d49 ("ARM: BCM5301X:
+> >>>>>Add DT for Netgear R6300 V2") from the arm-soc tree and commit
+> >>>>>6298ed17a404 ("ARM: bcm2835: Add device tree for Raspberry Pi model
+> >>>>>B+") from the bcm2835 tree.
+> >>>>>
+> >>>>>I fixed it up (the bcm2835 tree patch is also in the arm-soc tree as
+> >>>>>commit ba2a1d6959ac ("ARM: bcm2835: Add device tree for Raspberry Pi
+> >>>>>model B+"), so I just used the arm-soc version) and can carry the fix
+> >>>>>as necessary (no action is required).
+> >>>>
+> >>>>Thanks a lot for the notification!
+> >>>>
+> >>>>Lee, do you know what is going on? Did you accidentally rebase a commit
+> >>>>that you already sent for inclusion in arm-soc?
+> >>>
+> >>>Nope.  The branch hasn't changed at all.
+> >>>
+> >>>OOI why would a re-base affect anything?  I sent you it in patch form.
+> >>
+> >>Ah, I looked at the wrong branch and didn't see that I applied a patch
+> >>instead of a pull request. It's all fine then, as long as you never
+> >>intend to send any pull requests based on top of your current branch.
+> >>
+> >>You can possibly make Stephen's life a tiny bit simpler if you just
+> >>drop all patches from your for-next branch as soon as we've picked
+> >>them up into arm-soc.
+> >
+> >That is something I thought about, but I believe we have users of that
+> >branch.  I guess we could always point them to ARM-SoC, or reset the
+> >branch to the aforementioned.
 > 
-> I'm not sure about that:
-> 
-> static void arm_dma_sync_single_for_cpu(struct device *dev,
->                 dma_addr_t handle, size_t size, enum dma_data_direction dir)
-> {
->         unsigned int offset = handle & (PAGE_SIZE - 1);
->         struct page *page = pfn_to_page(dma_to_pfn(dev, handle-offset));
->         __dma_page_dev_to_cpu(page, offset, size, dir);
-> }
-> 
-> Assuming a noncoherent linear (no IOMMU, no swiotlb, no dmabounce) mapping,
-> dma_to_pfn will return the correct pfn here, but pfn_to_page will return a
-> page pointer into the kernel linear mapping,
+> The primary purpose of the kernel.org linux-rpi.git repo is for
+> staging patches into arm-soc/linux-next. As such, just like any
+> other similar repo, users should expect at least the for-xxx (e.g.
+> for-next) branches to get reset as kernel versions tick over, in
+> order to contain the content for the next kernel. Anyone using those
+> branches for anything else (e.g. local development) simply has to be
+> prepared to do a rebase themselves when that happens.
 
-Or a highmem page, both should be handled by dma_cache_maint_page().
+I agree with this.
 
-> which is not the same
-> as the pointer you get from __alloc_remap_buffer(). The pointer that
-> was returned from dma_alloc_coherent is a) non-cachable, and b) not the
-> same that you flush here.
+> Equally, and patches that get sent to arm-soc should probably never
+> be applied to linux-rpi.git; anything that gets applied to
+> linux-rpi.git should get sent to arm-soc as a pull request. That
+> avoids duplicate commits.
 
-Correct. But apart from the fact that you don't need to flush buffers
-allocated with dma_alloc_coherent(), the above sync_single would work on
-ARMv7 where the D-cache is PIPT, so the virtual address doesn't matter
-much as long as it maps the same physical address.
+I'm okay to follow this rule if my perception of the tree is changed.
+The current view is that this repo can be used by engineers/hobbyists
+as a single resource to pick up RPi patches which are yet to complete
+their full transition into Mainline.
+
+Arnd and I had a discussion where I flagged my concerns about these
+kinds of conflicts.  The outcome was that as long as the patches were
+simple enough, then no conflict should arise.  Unfortunately this
+turned out not to be quite true.
+
+So I'm happy with whatever.  Stephen, the repo is your concept.  I'll
+play it however you want me to play it.  As the merge-window is now
+open I'm going to eradicate rpi/for-next in any case.
 
 -- 
-Catalin
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
