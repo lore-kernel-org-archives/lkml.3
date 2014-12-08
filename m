@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaLHIUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:20:25 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40531 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaLHISr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:18:47 -0500
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: mpe <mpe@ellerman.id.au>
-Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
-        benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
-        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
-        imunsie <imunsie@au1.ibm.com>,
-        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 5/7] CXL: Disable AFU debug flag
-Date: Mon,  8 Dec 2014 19:17:59 +1100
-Message-Id: <1418026681-14787-5-git-send-email-imunsie@au.ibm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418026681-14787-1-git-send-email-imunsie@au.ibm.com>
-References: <1418026681-14787-1-git-send-email-imunsie@au.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120808-0033-0000-0000-000000B0504D
+	id S1754401AbaLHIcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:32:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50158 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753901AbaLHIcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:32:23 -0500
+Message-ID: <54856213.9070909@suse.cz>
+Date: Mon, 08 Dec 2014 09:32:19 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC PATCH V2 0/4] Reducing parameters of alloc_pages* family
+ of functions
+References: <1417809545-4540-1-git-send-email-vbabka@suse.cz> <CA+55aFwvWk6twgBaevPrF5z_0Faetnh0L19ZokWLidiaAaUmQg@mail.gmail.com>
+In-Reply-To: <CA+55aFwvWk6twgBaevPrF5z_0Faetnh0L19ZokWLidiaAaUmQg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+On 12/06/2014 02:07 AM, Linus Torvalds wrote:
+> On Fri, Dec 5, 2014 at 11:59 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>> Hey all,
+>>
+>> this is a V2 of attempting something that has been discussed when Minchan
+>> proposed to expand the x86 kernel stack [1], namely the reduction of huge
+>> number of parameters that the alloc_pages* family and get_page_from_freelist()
+>> functions have.
+>
+> So I generally like this, but looking at that "struct alloc_context",
+> one member kind of stands out: the "order" parameter doesn't fit in
+> with all the other members.
+>
+> Most everything else is describing where or what kind of pages to work
+> with. The "order" in contrast, really is separate.
+>
+> So conceptually, my reaction is that it looks like a good cleanup even
+> aside from the code/stack size reduction, but that the alloc_context
+> definition is a bit odd.
+>
+> Quite frankly, I think the :"order" really fits much more closely with
+> "alloc_flags", not with the alloc_context. Because like alloc_flags,.
+> it really describes how we need to allocate things within the context,
+> I'd argue.
+>
+> In fact, I think that the order could actually be packed with the
+> alloc_flags in a single register, even on 32-bit (using a single-word
+> structure, perhaps). If we really care about number of parameters.
+>
+> I'd rather go for "makes conceptual sense" over "packs order in
+> because it kind of works" and we don't modify it".
+>
+> Hmm?
 
-Upon inspection of the implementation specific registers, it was
-discovered that the high bit of the implementation specific RXCTL
-register was enabled, which enables the DEADB00F debug feature.
+Thanks for the suggestions, order indeed stands out. I'll check if it 
+makes more sense to have it separately, or pack as you suggest. Packing
+could perhaps bring more complexity than the benefit of less parameters. 
+But the suggestion made me realize that migratetype could be also packed 
+into alloc_flags and it would be more straightforward for that than order.
 
-The debug feature causes MMIO reads to a disabled AFU to respond with
-0xDEADB00F instead of all Fs. In general this should not be visible as
-the kernel will only allow MMIO access to enabled AFUs, but there may be
-some circumstances where an AFU may become disabled while it is use.
-One such case would be an AFU designed to only be used in the dedicated
-process mode and to disable itself after it has completed it's work
-(however even in that case the effects of this debug flag would be
-limited as the userspace application must have completed any required
-MMIO accesses before the AFU disables itself with or without the flag).
+With order and migratetype out, everything left in alloc_context would 
+be about nodes and zones, which is also good I guess. Maybe a different 
+name for the structure then?
 
-This patch removes the debug flag and replaces the magic value
-programmed into this register with a preprocessor define so it is
-clearer what the rest of this initialisation does.
+Vlastimil
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
- drivers/misc/cxl/cxl.h | 7 +++++++
- drivers/misc/cxl/pci.c | 2 +-
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/misc/cxl/cxl.h b/drivers/misc/cxl/cxl.h
-index 7c05239..c1f8aa6 100644
---- a/drivers/misc/cxl/cxl.h
-+++ b/drivers/misc/cxl/cxl.h
-@@ -287,6 +287,13 @@ static const cxl_p2n_reg_t CXL_PSL_WED_An     = {0x0A0};
- #define CXL_PE_SOFTWARE_STATE_S (1ul << (31 - 30)) /* Suspend */
- #define CXL_PE_SOFTWARE_STATE_T (1ul << (31 - 31)) /* Terminate */
- 
-+/****** CXL_PSL_RXCTL_An (Implementation Specific) **************************
-+ * Controls AFU Hang Pulse, which sets the timeout for the AFU to respond to
-+ * the PSL for any response (except MMIO). Timeouts will occur between 1x to 2x
-+ * of the hang pulse frequency.
-+ */
-+#define CXL_PSL_RXCTL_AFUHP_4S      0x7000000000000000ULL
-+
- /* SPA->sw_command_status */
- #define CXL_SPA_SW_CMD_MASK         0xffff000000000000ULL
- #define CXL_SPA_SW_CMD_TERMINATE    0x0001000000000000ULL
-diff --git a/drivers/misc/cxl/pci.c b/drivers/misc/cxl/pci.c
-index 0f2cc9f..2ccd0a9 100644
---- a/drivers/misc/cxl/pci.c
-+++ b/drivers/misc/cxl/pci.c
-@@ -348,7 +348,7 @@ static int init_implementation_afu_regs(struct cxl_afu *afu)
- 	cxl_p1n_write(afu, CXL_PSL_COALLOC_A, 0xFF000000FEFEFEFEULL);
- 	/* for debugging with trace arrays */
- 	cxl_p1n_write(afu, CXL_PSL_SLICE_TRACE, 0x0000FFFF00000000ULL);
--	cxl_p1n_write(afu, CXL_PSL_RXCTL_A, 0xF000000000000000ULL);
-+	cxl_p1n_write(afu, CXL_PSL_RXCTL_A, CXL_PSL_RXCTL_AFUHP_4S);
- 
- 	return 0;
- }
--- 
-2.1.3
+>
+>                         Linus
+>
 
