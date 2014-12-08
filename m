@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaLHW6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 17:58:24 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34698 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaLHW6V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 17:58:21 -0500
-Date: Mon, 8 Dec 2014 22:55:19 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Pavel Machek <pavel@denx.de>, atull@opensource.altera.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, philip@balister.org,
-        rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
-        Nicolas Pitre <nico@linaro.org>, "Balbi, Felipe" <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        Yves Vandervennet <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-Message-ID: <20141208225519.64501d2d@lxorguk.ukuu.org.uk>
-In-Reply-To: <CACxGe6sa=ysJAjx5TQZH5sKoas1PkoUUR4zT=Z35+uF6rrk-vw@mail.gmail.com>
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
-	<1414007405-32186-3-git-send-email-atull@opensource.altera.com>
-	<20141024105200.GA20775@amd>
-	<CACxGe6sa=ysJAjx5TQZH5sKoas1PkoUUR4zT=Z35+uF6rrk-vw@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755677AbaLHXAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 18:00:20 -0500
+Received: from gate.crashing.org ([63.228.1.57]:35200 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838AbaLHXAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 18:00:17 -0500
+Message-ID: <1418079603.13358.12.camel@kernel.crashing.org>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Marek =?ISO-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        zermond@gmail.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Dec 2014 10:00:03 +1100
+In-Reply-To: <1418079372.13358.9.camel@kernel.crashing.org>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+	 <1418079372.13358.9.camel@kernel.crashing.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Dec 2014 13:00:17 +0000
-Grant Likely <grant.likely@linaro.org> wrote:
-
-> On Fri, Oct 24, 2014 at 11:52 AM, Pavel Machek <pavel@denx.de> wrote:
-> > Hi!
-> >
-> >> * /sys/class/fpga_manager/<fpga>/firmware
-> >>   Name of FPGA image file to load using firmware class.
-> >>   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
-> >
-> > I .. still don't think this is good idea. What about namespaces?
-> > The path corresponds to path in which namespace?
+On Tue, 2014-12-09 at 09:56 +1100, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-12-08 at 13:52 -0800, Yinghai Lu wrote:
+> > 2. or scan the children resource other than ROM to clear bridge MEM_64
+> >    for mmio pref.
+> > 
+> > The patch is using second way so will keep child mmio pref into bridge
+> > mmio pref range.
 > 
-> I don't understand your concern here. This allows userspace to name
-> the FPGA bitstream that the kernel will use during request_firmware(),
-> and it will show up as the $FIRMWARE value in the uevent file, but it
-> is still the responsibility of userspace to choose what to load, and
-> it can freely ignore the setting of $FIRMWARE if it needs to.
+> That means that having a single ROM BAR that is 32-bit and prefetchable
+> will downgrade the entire window to 32-bit ? That's not going to work
+> either.
+> 
+> I have GPUs with 16G BARs for example... suddenly they don't fit
+> anaymore because we downgraded the window to 32 bit because somewhere
+> there's a 32-bit pref resource ?
+> 
+> That will break more than it fixes...
 
-I think the entire model here is basically pedicated on a bogus
-assumption that an FPGA is a one shot device. It's not. It's a fast
-reloadable reusable device. A lot of work being done with FPGAs in
-operating systems already involves basically task switching and
-scheduling FPGAs as a shared resource pool. Trying to nail something
-together with request_firmware is several years behind the curve.
+I think an option would be to keep track of whether the PCI host bridge
+can do 64-bit pref above 4G.
 
->From userspace it needs to be a open, load, use, close type model, not a
-static or semi-static pile of mappings.
+If it can't then we know 64-bit pref is always fair game for 32-bit
+resources and we can thus downgrade all the bridges 64-pref to 32-perf.
 
-Alan
+If it can, then we probably do need to leave it there do real 64-bit
+pref, and shoot anything that is 32-bit only down the non-pref windows.
+
+We *could* try to be smart and scan first to check if anything under the
+bridge actually has large/64-bit BARs but that's going to be a heuristic
+at best and isn't going to do any good with hotplug.
+
+I tend to think that treating anything 32-bit pref as non-pref is in
+fact the best solution unless we know that the platform doesn't do
+>32-bit pref anyway in which case we leave them alone.
+
+Ben.
+
+
