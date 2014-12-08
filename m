@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038AbaLHPR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:17:56 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45377 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755976AbaLHPRy (ORCPT
+	id S932156AbaLHPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:18:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52961 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716AbaLHPSW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:17:54 -0500
-Date: Mon, 8 Dec 2014 15:17:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Hante Meuleman <meuleman@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arend Van Spriel <arend@broadcom.com>,
-        David Miller <davem@davemloft.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, hauke@hauke-m.de
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141208151733.GF11285@n2100.arm.linux.org.uk>
-References: <5481794E.4050406@broadcom.com>
- <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com>
- <F51492713EF10846800D8C0ED37A7DCE01902076@SJEXCHMB15.corp.ad.broadcom.com>
- <2863746.4sUSEYqahB@wuerfel>
+	Mon, 8 Dec 2014 10:18:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2863746.4sUSEYqahB@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <201412061402.21514@pali>
+References: <201411271506.20457@pali>
+	<20141127155840.GC24149@kroah.com>
+	<20141206124954.GB17289@amd>
+	<201412061402.21514@pali>
+Date: Mon, 8 Dec 2014 23:18:18 +0800
+Message-ID: <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
+Subject: Re: wl1251: NVS firmware data
+From: Ming Lei <ming.lei@canonical.com>
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 04:01:32PM +0100, Arnd Bergmann wrote:
-> In your log, I see this message:
-> 
-> [    0.000000] PL310 OF: cache setting yield illegal associativity
-> [    0.000000] PL310 OF: -1069781724 calculated, only 8 and 16 legal
-> [    0.000000] L2C-310 enabling early BRESP for Cortex-A9
-> [    0.000000] L2C-310 full line of zeros enabled for Cortex-A9
-> [    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
-> [    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
-> [    0.000000] L2C-310: CACHE_ID 0x410000c8, AUX_CTRL 0x4e130001
-> 
-> Evidently the cache controller information in DT is incorrect and
-> the setup may be wrong as a consequence, which may explain cache
-> coherency problems.
+On Sat, Dec 6, 2014 at 9:02 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
 
-No.  See d0b92845e54 (ARM: 8182/1: l2c: Make l2x0_cache_size_of_parse() return 'int')
-which was merged in rc3, post-dating this kernel.  The original commit
-was buggy, and produces those harmless "illegal associativity" messages.
-They occur if DT *doesn't* specify the cache parameters, in which case
-we use the hardware-set value (which /should/ be correct.)
+>
+>  /**
+> + * request_firmware_prefer_user: - prefer usermode helper for loading firmware
+> + * @firmware_p: pointer to firmware image
+> + * @name: name of firmware file
+> + * @device: device for which firmware is being loaded
+> + *
+> + * This function works pretty much like request_firmware(), but it prefer
+> + * usermode helper. If usermode helper fails then it fallback to direct access.
+> + * Usefull for dynamic or model specific firmware data.
+> + **/
+> +int request_firmware_prefer_user(const struct firmware **firmware_p,
+> +                           const char *name, struct device *device)
+> +{
+> +       int ret;
+> +       __module_get(THIS_MODULE);
+> +       ret = _request_firmware(firmware_p, name, device,
+> +                               FW_OPT_UEVENT | FW_OPT_PREFER_USER);
+> +       module_put(THIS_MODULE);
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
 
-We made these optional in DT as hardware really should set these
-correctly in the first place.
+I'd like to introduce request_firmware_user() which only requests
+firmware from user space, and this way is simpler and more flexible
+since we have request_firmware_direct() already.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+Ming Lei
