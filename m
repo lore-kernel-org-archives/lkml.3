@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbaLHKYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:24:44 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:61702 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410AbaLHKYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:24:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gnurou@gmail.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Thierry Reding <treding@nvidia.com>
-Subject: Re: [PATCH] ARM: DMA: Fix kzalloc flags in __iommu_alloc_buffer()
-Date: Mon, 08 Dec 2014 11:24 +0100
-Message-ID: <10532762.PXKTQM8KjH@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418027967-12923-1-git-send-email-acourbot@nvidia.com>
-References: <1418027967-12923-1-git-send-email-acourbot@nvidia.com>
+	id S1754914AbaLHKYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:24:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17850 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410AbaLHKYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 05:24:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="426421404"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Cc: kernel-janitors@vger.kernel.org, linux@rasmusvillemoes.dk, joe@perches.com,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/20] drm/i915: fix misspelling of current function in string
+In-Reply-To: <1417980062-25151-8-git-send-email-Julia.Lawall@lip6.fr>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr> <1417980062-25151-8-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 08 Dec 2014 12:24:27 +0200
+Message-ID: <87fvcqo2w4.fsf@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:RTzG/5oXrfBQg2SxeE2/+javOtYU6h8mkuRwyDcksVHQsDdEk1w
- Mxp3ex3HN94YNrdk1KFdNFEo4Nakk9HzLdtmq+xAKN5fF1ppoadBX7fDT4wfSkpbWM9ytu7
- ygld7hJKLCf1QFG9i75BVVME1cWQuBKM6VigG2q6r3n3dSjPFjOzYwSXEAPHN0jeTCqhrg9
- RygEOO+hkXWCNkbTe2cgA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 17:39:27 Alexandre Courbot wrote:
-> There doesn't seem to be any valid reason to allocate the pages array
-> with the same flags as the buffer itself. Doing so can eventually lead
-> to the following safeguard in mm/slab.c to be hit:
-> 
-> BUG_ON(flags & GFP_SLAB_BUG_MASK);
-> 
-> This happens when buffers are allocated with __GFP_DMA32 or
-> __GFP_HIGHMEM.
-> 
-> Fix this by allocating the pages array with GFP_KERNEL to follow what is
-> done elsewhere in this file. Using GFP_KERNEL in __iommu_alloc_buffer()
-> is safe because atomic allocations are handled by __iommu_alloc_atomic().
-> 
+On Sun, 07 Dec 2014, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> Replace a misspelled function name by %s and then __func__.
+>
+> This was done using Coccinelle, including the use of Levenshtein distance,
+> as proposed by Rasmus Villemoes.
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
+> The semantic patch is difficult to summarize, but is available in the cover
+> letter of this patch series.
+>
+> The message is sort of ambiguous, but I assume that it is intended to refer
+> to the function in which the problem is detected.
 
-I think you need to carry over the GFP_ATOMIC flag if that is set by the
-caller, but not the GFP_HIGHMEM or GFP_DMA32. Not sure if it's better
-to mask out flags from the caller mask, or to start with GFP_KERNEL
-and adding in extra bits.
+Hmm, DRM_DEBUG prints __func__ too.
 
-	Arnd
+Jani.
+
+>
+>  drivers/gpu/drm/i915/i915_gem.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index d2ba315..fa21d1c 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -4335,7 +4335,7 @@ i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
+>  	}
+>  
+>  	if (obj->pin_filp != file) {
+> -		DRM_DEBUG("Not pinned by caller in i915_gem_pin_ioctl(): %d\n",
+> +		DRM_DEBUG("Not pinned by caller in %s(): %d\n", __func__,
+>  			  args->handle);
+>  		ret = -EINVAL;
+>  		goto out;
+>
+
+-- 
+Jani Nikula, Intel Open Source Technology Center
