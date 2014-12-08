@@ -1,169 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaLHQWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:22:50 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:13263 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaLHQWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:22:49 -0500
-X-IronPort-AV: E=Sophos;i="5.07,539,1413270000"; 
-   d="dts'?dtsi'?bz2'66?scan'66,208,49,66";a="52694296"
-Message-ID: <5485D054.7090109@broadcom.com>
-Date: Mon, 8 Dec 2014 17:22:44 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1755480AbaLHQ3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:29:13 -0500
+Received: from mga03.intel.com ([134.134.136.65]:24915 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119AbaLHQ3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 11:29:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="asc'?scan'208";a="495510884"
+Date: Mon, 8 Dec 2014 21:58:43 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141208162843.GP16827@intel.com>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+ <20141208141807.GC8739@lukather>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, <hauke@hauke-m.de>
-Subject: Re: using DMA-API on ARM
-References: <5481794E.4050406@broadcom.com> <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com> <F51492713EF10846800D8C0ED37A7DCE01902076@SJEXCHMB15.corp.ad.broadcom.com> <2863746.4sUSEYqahB@wuerfel>
-In-Reply-To: <2863746.4sUSEYqahB@wuerfel>
-Content-Type: multipart/mixed;
-	boundary="------------050708010200090209040603"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
+Content-Disposition: inline
+In-Reply-To: <20141208141807.GC8739@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------050708010200090209040603
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 
-On 12/08/14 16:01, Arnd Bergmann wrote:
-> On Monday 08 December 2014 13:47:38 Hante Meuleman wrote:
->> Still using outlook, but will limit the line length, I hope that works for the
->> moment. Attached is a log with the requested information, it is a little
->> bit non-standard though. The dump code from the mm was copied in
->> the driver and called from there, mapping the prints back to our local
->> printf, but it should produce the same. I did this because I didn't realize
->> the table is static.
->>
->> Some background on the test setup: I'm using a Broadcom reference
->> design AP platform with an BRCM 4708 host SOC.
->
-> I think you are using the wrong dtb file, the log says this is
-> a "Buffalo WZR-1750DHP", not the reference design.
+--GRPZ8SYKNexpdSJ7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That router is close enough to the reference design.
+On Mon, Dec 08, 2014 at 03:18:07PM +0100, Maxime Ripard wrote:
+> On Mon, Dec 08, 2014 at 11:47:46AM +0530, Vinod Koul wrote:
+> > On Mon, Nov 17, 2014 at 02:41:54PM +0100, Maxime Ripard wrote:
+> > > Hi,
+> > >=20
+> > > As we discussed a couple of weeks ago, this is the third attempt at
+> > > creating a generic behaviour for slave capabilities retrieval so that
+> > > generic layers using dmaengine can actually rely on that.
+> > >=20
+> > > That has been done mostly through two steps: by moving out the
+> > > sub-commands of the device_control callback, so that the dmaengine
+> > > core can then infer from that wether a sub-command is implemented, and
+> > > then by moving the slave properties, such as the supported buswidth,
+> > > to the structure dma_device itself.
+> >=20
+> > Okay managed to get this done. Apart from the two issues identified did=
+n't
+> > find anything so applied and pushed to a branch
+> > "topic/slave_caps_device_control_fix"
+> >=20
+> > Today did some compile tests and found few warnings, were trivial but I
+> > am worried about the testing of this code. Has anyone tested this, if so
+> > which platforms are covered Since I pushed base branch last night, Feng=
+'s
+> > bot covered it and all was OK. Looks like Feng's bot doesn't have wide
+> > coverage of arm platforms, wasn't there one run by arm guys which tries=
+ to
+> > test and boot, if so can we get this tested there please.
+> >=20
+> > So bit sceptical for merging now. I will send the patches which I have
+> > applied on top of this
+>=20
+> Which is why I wanted to merge this at the *beginning* of the
+> development cycle in the first place....
+>=20
+> These patches have been sent more than 2 weeks ago, and were exactly
+> the same as the ones send at the end of October, rebased and updated
+> to take into account the drivers that were merged in between.
+>=20
+> In short, these patches have been hanging around since 6 weeks. I
+> relied probably too much on the intel's build bot. This is not a
+> mistake I'll repeat. But blaming it on me because they came too late
+> is *very* unfair.
+as a first step one is expected to compile the patches we send. That is very
+basic stuff which should not be avoided. given that we had build failures on
+v5 rev of the series and serious failures flagged off by compilers doesn't
+inspire a lot of confidence. And lastly noone blamed you for being late, if
+things were rosy they would have been merged over the weekend and been in
+today's next, but...
 
->> For the AP router
->> platform the opensource packet OpenWRT was used. Some small
->> modifications were made to get it to work on our HW. Only one core
->> is enabled for the moment (no time to figure out how to enable the
->> other one). Openwrt was configured to use kernel 3.18-rc2 and
->> the brcmfmac of the compat-wireless code was updated with our
->> latest code (minor patches, which have been submitted already).
->> The device used is 43602 pcie device. Some modifications to the build
->> system were made to enable PCIE. The test is to connect with a
->> client to the AP and run iperf (TCP). The test can run for many hours
->> without a problem, but sometimes fails very quickly.
->
-> The bcm4708 platform is maintained by Hauke Mehrtens, adding him to Cc.
+--=20
+~Vinod
 
-Thanks. While going through the DTS files I intended to add him as well ;-)
+--GRPZ8SYKNexpdSJ7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> In your log, I see this message:
->
-> [    0.000000] PL310 OF: cache setting yield illegal associativity
-> [    0.000000] PL310 OF: -1069781724 calculated, only 8 and 16 legal
-> [    0.000000] L2C-310 enabling early BRESP for Cortex-A9
-> [    0.000000] L2C-310 full line of zeros enabled for Cortex-A9
-> [    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
-> [    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
-> [    0.000000] L2C-310: CACHE_ID 0x410000c8, AUX_CTRL 0x4e130001
->
-> Evidently the cache controller information in DT is incorrect and
-> the setup may be wrong as a consequence, which may explain cache
-> coherency problems.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-While staring at the DTS files I suspect there are some parts still 
-missing. I have attached them for reference. Catalin pointed us to a 
-patch in the l2 cache [1]. We have not tried that yet.
+iQIcBAEBAgAGBQJUhdG7AAoJEHwUBw8lI4NHeGUQAKgQ/mtIYvo6qMkHmEh+KFTu
+Ab1xc+3aIOHLHXpaOdtzKmiqf5jEFt9lDItZiRwpQNJcOC4NHFXSkHiN8cuX2VpS
+rsKP6TEXp7CfXtVN/RPK7OobsynlNNCOylUjYazHe3Y5i/IXbEMhJ/+S1MSLXWmA
+8WybN1FrNVBTMfWDR/a5momYK3sIyIeYs9BrOCGrmJkNifcm7/lhJJOUMFHtTaSx
+sKz5u1SzWAdIViUNPrrvwrE4KBFLMM54lQzTR7C62q1Yk3M0LLCMH66PoUj9nNoO
+0yXvI+Qp6S0n45upJdrL3eoo3egNuiF26Xi2hyCcuynBnw+2Rr5dRcCDvZaiTBvl
+/rZVM8DQLTY93BuGRqehTbltLBRfrTkYULjGtdrktFdA0u+G7VXJXL3AKk6o9TaQ
+rejnhR42kJQDlexV1qnqA9DaVHVw3P3qyXZpZko3ZHRixEjVc7RRHH3mlOJRJNxq
+DcIaR6e2VJORQpQoDXJfTv5yNzWk1gdxJetiRIxzokibTlYb3TWOoLuvwy7G4wqi
+c4JJZKdq35ttLaX5HylkuaFSLmCL2gB89PQQj1P2JQCllQUVI2KD640P7zhekMjw
+z/aqiHvDjz1izXXMwYCGLOUVpeeq9XuAKIAIZghS21NvkL4F2JFLSK/li0YMfXfL
+HlzhCq8vLqPWV52XDKek
+=o4CN
+-----END PGP SIGNATURE-----
 
-> Can you verify that the AUX_CTRL value is the same one you see
-> in a working kernel?
->
->> The log: first the ring allocation info is printed. Starting at
->> 16.124847, ring 2, 3 and 4 are rings used for device to host. In this
->> log the failure is on a read of ring 3. Ring 3 is 1024 entries of each
->> 16 bytes. The next thing printed is the kernel page tables. Then some
->> OpenWRT info and the logging of part of the connection setup. Then at
->> 1780.130752 the logging of the failure starts. The sequence number is
->> modulo 253 with ring size of 1024 matches an "old" entry (read 40,
->> expected 52). Then the different pointers are printed followed by
->> the kernel page table. The code does then a cache invalidate on the
->> dma_handle and the next read the sequence number is correct.
->
-> How do you invalidate the cache? A dma_handle is of type dma_addr_t
-> and we don't define an operation for that, nor does it make sense
-> on an allocation from dma_alloc_coherent(). What happens if you
-> take out the invalidate?
-
-dma_sync_single_for_cpu(, DMA_FROM_DEVICE) which ends up invalidating 
-the cache (or that is our suspicion).
-
-> Can you post the patch that you use (both platform and driver) relative
-> to the snapshot of the the mainline kernel you are basing on?
->
-> 	Arnd
->
-
-Regards,
-Arend
-
-[1] http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6529/1
-
---------------050708010200090209040603
-Content-Type: application/x-bzip2; name="bcm-dt-files.tar.bz2"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="bcm-dt-files.tar.bz2"
-
-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
---------------050708010200090209040603--
+--GRPZ8SYKNexpdSJ7--
