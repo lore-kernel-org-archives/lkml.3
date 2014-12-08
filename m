@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaLHJ5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:57:54 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:44295 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812AbaLHJ5w (ORCPT
+	id S1754896AbaLHJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:58:23 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:4073 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752840AbaLHJ6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:57:52 -0500
-Date: Mon, 8 Dec 2014 09:57:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        dan.carpenter@oracle.com, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH v4 1/6] mfd: rtsx: add func to split u32 into register
-Message-ID: <20141208095746.GG3951@x1>
-References: <cover.1417758564.git.micky_ching@realsil.com.cn>
- <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
+	Mon, 8 Dec 2014 04:58:22 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Hillf Danton'" <hillf.zj@alibaba-inc.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 8 Dec 2014 17:58:14 +0800
+Subject: [PATCH V2] mm:add VM_BUG_ON() for page_mapcount()
+Thread-Topic: [PATCH V2] mm:add VM_BUG_ON() for page_mapcount()
+Thread-Index: AdASyaRYNK5Lt1HlQ1KFwSk6V3BFwAAA8Bmw
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313F9@CNBJMBX05.corpusers.net>
+References: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
+In-Reply-To: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB89wUWf024238
 
-On Fri, 05 Dec 2014, micky_ching@realsil.com.cn wrote:
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Add helper function to write u32 to registers, if we want to put u32
-> value to 4 continuous register, this can help us reduce tedious work.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/linux/mfd/rtsx_pci.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
+This patch add VM_BUG_ON_PAGE() for slab page,
+because _mapcount is an union with slab struct in struct page,
+avoid access _mapcount if this page is a slab page.
+Also remove the unneeded bracket.
 
-Applied, thanks.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ include/linux/mm.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..9234449 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -558,6 +558,7 @@
->  #define SD_SAMPLE_POINT_CTL		0xFDA7
->  #define SD_PUSH_POINT_CTL		0xFDA8
->  #define SD_CMD0				0xFDA9
-> +#define   SD_CMD_START			0x40
->  #define SD_CMD1				0xFDAA
->  #define SD_CMD2				0xFDAB
->  #define SD_CMD3				0xFDAC
-> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
->  
-> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
-> +{
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
-> +}
-> +
->  #endif
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b464611..a117527 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -449,7 +449,8 @@ static inline void page_mapcount_reset(struct page *page)
+ 
+ static inline int page_mapcount(struct page *page)
+ {
+-	return atomic_read(&(page)->_mapcount) + 1;
++	VM_BUG_ON_PAGE(PageSlab(page), page);
++	return atomic_read(&page->_mapcount) + 1;
+ }
+ 
+ static inline int page_count(struct page *page)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.3
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
