@@ -1,173 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182AbaLHSGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:06:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52983 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaLHSGD (ORCPT
+	id S1756210AbaLHSIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:08:00 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:42434 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811AbaLHSH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:06:03 -0500
-Date: Mon, 8 Dec 2014 10:06:13 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH wq/for-3.19 3/3] workqueue: dump workqueues on sysrq-t
-Message-Id: <20141208100613.ecc66d89.akpm@linux-foundation.org>
-In-Reply-To: <20141208174733.GD12274@htj.dyndns.org>
-References: <20141208174326.GB12274@htj.dyndns.org>
-	<20141208174406.GC12274@htj.dyndns.org>
-	<20141208174733.GD12274@htj.dyndns.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Dec 2014 13:07:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141208164650.GB29028@node.dhcp.inet.fi>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
+	<20141208164650.GB29028@node.dhcp.inet.fi>
+Date: Mon, 8 Dec 2014 10:07:55 -0800
+X-Google-Sender-Auth: UcjrfmwkVeNpcvKgpq712cD8nKo
+Message-ID: <CA+55aFz6izpVGxkziynRXg7zbHzteQyPJH1Kg91ZO3fzqn3LaQ@mail.gmail.com>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Dec 2014 12:47:33 -0500 Tejun Heo <tj@kernel.org> wrote:
-
+On Mon, Dec 8, 2014 at 8:46 AM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
 >
-> ...
->
-> This patch implements show_workqueue_state() which dumps all busy
-> workqueues and pools and is called from the sysrq-t handler.  At the
-> end of sysrq-t dump, something like the following is printed.
+> I guess this crash is related to the patchset.
 
-Seems sensible.
+Sounds likely.
 
-sysrq-t already produces thousands of lines of output.  Maybe create a
-new keycode for this?
+> [  102.338270] kernel BUG at /home/kas/git/public/linux-next/arch/x86/mm/physaddr.c:26!
 
->
-> ...
->
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4419,6 +4419,174 @@ void print_worker_info(const char *log_l
->  	}
->  }
->  
-> +static void pr_cont_pool_info(struct worker_pool *pool)
-> +{
-> +	if (pool->cpu >= 0)
-> +		pr_cont(" cpu=%d", pool->cpu);
-> +	else if (pool->node != NUMA_NO_NODE)
-> +		pr_cont(" node=%d", pool->node);
-> +
-> +	if (pool->cpu < 0) {
-> +		static char cpus_buf[PAGE_SIZE];
+So that's
 
-Ouch.  This could be [NR_CPUS + epsilon]?
+                VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
 
-> +		cpumask_scnprintf(cpus_buf, sizeof(cpus_buf),
-> +				  pool->attrs->cpumask);
-> +		pr_cont(" cpumask=%s", cpus_buf);
-> +	}
-> +	pr_cont(" flags=0x%x nice=%d", pool->flags, pool->attrs->nice);
-> +}
-> +
-> +static void pr_cont_work(bool comma, struct work_struct *work)
-> +{
-> +	if (work->func == wq_barrier_func) {
-> +		struct wq_barrier *barr =
-> +			container_of(work, struct wq_barrier, work);
+and the code disassembles to:
 
-Can avoid the 80-col contortions with
+   0: 48 01 f8             add    %rdi,%rax
+   3: 48 39 c2             cmp    %rax,%rdx
+   6: 72 1b                 jb     0x23
+   8: 0f b6 0d 9d 7a ec 00 movzbl 0xec7a9d(%rip),%ecx        # 0xec7aac
+   f: 48 89 c2             mov    %rax,%rdx
+  12: 48 d3 ea             shr    %cl,%rdx
+  15: 48 85 d2             test   %rdx,%rdx
+  18: 75 09                 jne    0x23
+  1a: 5d                   pop    %rbp
+  1b: c3                   retq
+  1c: 0f 1f 80 00 00 00 00 nopl   0x0(%rax)
+  23:* 0f 0b                 ud2     <-- trapping instruction
 
-		struct wq_barrier *barr;
+with thre relevant registers being
 
-		barr = container_of(work, struct wq_barrier, work);
+> [  102.340011] RAX: 00004100174b4000 RBX: ffff880049c73b08 RCX: 0000000000000028
+> [  102.340011] RDX: 0000000000000041 RSI: ffff88015dc980a8 RDI: ffffc900174b4000
 
-> +		pr_cont("%s BAR(%d)", comma ? "," : "",
-> +			task_pid_nr(barr->task));
-> +	} else {
-> +		pr_cont("%s %pf", comma ? "," : "", work->func);
-> +	}
-> +}
-> +
-> +static void show_pwq(struct pool_workqueue *pwq)
-> +{
-> +	struct worker_pool *pool = pwq->pool;
-> +	struct work_struct *work;
-> +	struct worker *worker;
-> +	bool has_in_flight = false, has_pending = false;
-> +	int bkt;
-> +
-> +	printk("  pwq %d:", pool->id);
-> +	pr_cont_pool_info(pool);
-> +
-> +	pr_cont(" active=%d/%d%s\n", pwq->nr_active, pwq->max_active,
-> +		!list_empty(&pwq->mayday_node) ? " MAYDAY" : "");
-> +
-> +	hash_for_each(pool->busy_hash, bkt, worker, hentry) {
-> +		if (worker->current_pwq == pwq) {
-> +			has_in_flight = true;
-> +			break;
-> +		}
-> +	}
-> +	if (has_in_flight) {
-> +		bool comma = false;
-> +
-> +		printk("    in-flight:");
+so we've taken the second case (the %rcx value is
+"boot_cpu_data.x86_phys_bits", which is that "movzbl", and the %rdx
+value is the shifted value of %rax).
 
-pr_something?  show_state() uses KERN_INFO, which may or may not be
-appropriate.
+So %rax seems to contain 'x' at that point, which means that 'y' should be
 
-> +		hash_for_each(pool->busy_hash, bkt, worker, hentry) {
-> +			if (worker->current_pwq != pwq)
-> +				continue;
-> +
-> +			pr_cont("%s %d%s:%pf", comma ? "," : "",
-> +				task_pid_nr(worker->task),
-> +				worker == pwq->wq->rescuer ? "(RESCUER)" : "",
-> +				worker->current_func);
-> +			list_for_each_entry(work, &worker->scheduled, entry)
-> +				pr_cont_work(false, work);
-> +			comma = true;
-> +		}
-> +		pr_cont("\n");
-> +	}
-> +
-> +	list_for_each_entry(work, &pool->worklist, entry) {
-> +		if (get_work_pwq(work) == pwq) {
-> +			has_pending = true;
-> +			break;
-> +		}
-> +	}
-> +	if (has_pending) {
-> +		bool comma = false;
-> +
-> +		printk("    pending:");
+   x - (__START_KERNEL_map - PAGE_OFFSET)
 
-ditto
+which means that the _original_ address should be that plus
+__START_KERNEL_map, ie just x + PAGE_OFFSET.
 
-> +		list_for_each_entry(work, &pool->worklist, entry) {
-> +			if (get_work_pwq(work) != pwq)
-> +				continue;
-> +
-> +			pr_cont_work(comma, work);
-> +			comma = !(*work_data_bits(work) & WORK_STRUCT_LINKED);
-> +		}
-> +		pr_cont("\n");
-> +	}
-> +
-> +	if (!list_empty(&pwq->delayed_works)) {
-> +		bool comma = false;
-> +
-> +		printk("    delayed:");
+So it smells like the original virtual address was that
+ffffc900174b4000 that we still find in %rdi.
 
-ditto
+Which is in the vmalloc address space. So somebody used a vmalloc'ed
+address and tried to convert it to a physical address in order to look
+up the page.
 
-> +		list_for_each_entry(work, &pwq->delayed_works, entry) {
-> +			pr_cont_work(comma, work);
-> +			comma = !(*work_data_bits(work) & WORK_STRUCT_LINKED);
-> +		}
-> +		pr_cont("\n");
-> +	}
-> +}
-> +
->
-> ...
+Which is not a valid operation, and the BUG_ON() is definitely proper.
+
+Now *why* something tried to do a virt_to_page() on a vmalloc'ed
+address, that I leave to others.
+
+                        Linus
