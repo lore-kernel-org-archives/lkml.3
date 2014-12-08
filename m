@@ -1,202 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaLHLTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:19:42 -0500
-Received: from mail.smart-weblications.de ([188.65.144.61]:54442 "EHLO
-	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754675AbaLHLTk (ORCPT
+	id S1755255AbaLHLUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:20:00 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:42744 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811AbaLHLT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:19:40 -0500
-Message-ID: <54858948.2060007@smart-weblications.de>
-Date: Mon, 08 Dec 2014 12:19:36 +0100
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 8 Dec 2014 06:19:57 -0500
 MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>
-CC: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de> <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg>
-In-Reply-To: <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Date: Mon, 8 Dec 2014 12:19:55 +0100
+Message-ID: <CAPDyKFqoBmqDz5qvAZaZ-O7vhxtTnyeN_90Ngd4YodwnEBoTeg@mail.gmail.com>
+Subject: [GIT PULL] MMC for v.3.19
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Linus <torvalds@linux-foundation.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julian,
+Hi Linus,
 
-Am 07.12.2014 19:27, schrieb Julian Anastasov:>
-> 	Hello,
->
-> On Fri, 5 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
->
->> thank you for the fast responses! I would like to test any patch for 3.12.
->
-> 	I'm attaching a patch that avoids rerouting in
-> IPVS for LOCAL_IN. Please test it in your setup. My tests
-> were with NAT on today's net tree. I checked that it
-> compiles for 3.12.33. You can use the default snat_reroute=1.
->
+Here are the PR for MMC for v3.19.
 
-I'm sorry to tell you that your patch does not fix the problem. The BUG happens
-as soon as the client sends PASV, the ftp server does not return "Entering
-Passive Mode":
+Stephen Rothwell has reported about a conflict in
+arch/arm/mach-omap2/board-n8x0.c between commit "ARM: OMAP2+: Prepare
+to move GPMC to drivers by platform data header" from the arm-soc tree
+and commit "ARM: OMAP2: MMC: include mmc-omap platform header
+directly" from my mmc tree. It should be trivial to resolve, but I am
+happy to help if needed.
 
-[   91.862502] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000014
-[   91.862735] IP: [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
-[   91.862889] PGD 0
-[   91.863026] Oops: 0000 [#1] SMP
-[   91.863235] Modules linked in: netconsole xt_nat xt_multiport ip_vs_rr veth
-iptable_mangle xt_mark nf_conntrack_netlink nfnetlink ipt_MASQUERADE iptable_nat
-nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_tcpudp iptable_filter
-ip_tables cpufreq_ondemand cpufreq_powersave cpufreq_conservative
-cpufreq_userspace ocfs2_stack_o2cb ocfs2_dlm bridge stp llc bonding fuse
-nf_conntrack_ftp 8021q openvswitch gre vxlan xt_conntrack x_tables ocfs2_dlmfs
-dlm sctp ocfs2 ocfs2_nodemanager ocfs2_stackglue configfs rbd kvm_intel kvm
-coretemp ip_vs_ftp ip_vs nf_nat nf_conntrack i2c_i801 psmouse serio_raw lpc_ich
-mfd_core evdev btrfs lzo_decompress lzo_compress
-[   91.866846] CPU: 1 PID: 18895 Comm: vsftpd Not tainted 3.12.33 #5
-[   91.866927] Hardware name: Supermicro X9SCI/X9SCA/X9SCI/X9SCA, BIOS 1.1a
-09/28/2011
-[   91.867023] task: ffff8807b9360540 ti: ffff8807afe90000 task.ti: ffff8807afe90000
-[   91.867116] RIP: 0010:[<ffffffffa013a470>]  [<ffffffffa013a470>]
-nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
-[   91.867268] RSP: 0018:ffff88083fc43988  EFLAGS: 00010206
-[   91.867346] RAX: 000000000000000c RBX: ffff88079aeb006c RCX: 0000000000000003
-[   91.867428] RDX: 000000000000002a RSI: 0000000000000003 RDI: ffff88079aeb006c
-[   91.867509] RBP: 00000000ce63f6dd R08: ffff8807b2eed780 R09: ffff88083fc43998
-[   91.867598] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
-[   91.867679] R13: 0000000000000000 R14: 0000000000000003 R15: ffff880815d948bc
-[   91.867761] FS:  00007f1a8aad5700(0000) GS:ffff88083fc40000(0000)
-knlGS:0000000000000000
-[   91.867855] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   91.867926] CR2: 0000000000000014 CR3: 00000007a386a000 CR4: 00000000000407e0
-[   91.868008] Stack:
-[   91.868073]  ffff88081690d220 0000000000000012 0000000000000014 ffff88079aeb0068
-[   91.868383]  ffff880815d94801 ffffffffa014f681 0000000000000000 ffffffff00000045
-[   91.868694]  ffff880800000048 0000001b00000003 ffff88083fc43a60 ffff88081690d220
-[   91.869003] Call Trace:
-[   91.869077]  <IRQ>
-[   91.869136]  [<ffffffffa014f681>] ? __nf_nat_mangle_tcp_packet+0x109/0x120
-[nf_nat]
-[   91.869356]  [<ffffffffa017749e>] ? ip_vs_ftp_out.part.8+0x2b2/0x338 [ip_vs_ftp]
-[   91.869460]  [<ffffffffa015f884>] ? ip_vs_app_pkt_out+0x105/0x18b [ip_vs]
-[   91.869539]  [<ffffffffa0163028>] ? tcp_snat_handler+0x6b/0x320 [ip_vs]
-[   91.869622]  [<ffffffffa0155d3d>] ? ip_vs_conn_out_get_proto+0x1c/0x25 [ip_vs]
-[   91.869736]  [<ffffffffa015893c>] ? ip_vs_out+0x2a5/0x5f6 [ip_vs]
-[   91.869826]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
-[   91.869906]  [<ffffffff81508e1f>] ? nf_iterate+0x42/0x80
-[   91.869996]  [<ffffffff81508ec6>] ? nf_hook_slow+0x69/0xff
-[   91.870073]  [<ffffffff8150f544>] ? ip_frag_mem+0x2a/0x2a
-[   91.870153]  [<ffffffff8150f8ae>] ? ip_forward+0x22d/0x2cf
-[   91.870230]  [<ffffffff814e57ce>] ? __netif_receive_skb_core+0x5f0/0x66c
-[   91.870311]  [<ffffffff814e59df>] ? process_backlog+0x13e/0x13e
-[   91.870389]  [<ffffffffa0455e09>] ? br_handle_frame_finish+0x382/0x382 [bridge]
-[   91.870482]  [<ffffffff814e5a2b>] ? netif_receive_skb+0x4c/0x7d
-[   91.870561]  [<ffffffffa0455d95>] ? br_handle_frame_finish+0x30e/0x382 [bridge]
-[   91.870652]  [<ffffffffa0455fda>] ? br_handle_frame+0x1d1/0x217 [bridge]
-[   91.870733]  [<ffffffff814e567d>] ? __netif_receive_skb_core+0x49f/0x66c
-[   91.870817]  [<ffffffff8104daa3>] ? call_timer_fn+0x4b/0xf6
-[   91.870893]  [<ffffffff814e592b>] ? process_backlog+0x8a/0x13e
-[   91.870972]  [<ffffffff814e5c31>] ? net_rx_action+0xa2/0x1c0
-[   91.871051]  [<ffffffff81047e2e>] ? __do_softirq+0xf6/0x24f
-[   91.871132]  [<ffffffff815ad7dc>] ? call_softirq+0x1c/0x30
-[   91.871203]  <EOI>
-[   91.871260]  [<ffffffff8100464d>] ? do_softirq+0x2c/0x5f
-[   91.871470]  [<ffffffff81047ca1>] ? local_bh_enable+0x67/0x85
-[   91.871545]  [<ffffffff81511689>] ? ip_finish_output+0x2c9/0x322
-[   91.871628]  [<ffffffff8151240a>] ? ip_queue_xmit+0x2b7/0x2f0
-[   91.871714]  [<ffffffff81524772>] ? tcp_transmit_skb+0x6ef/0x755
-[   91.871792]  [<ffffffff815250e8>] ? tcp_write_xmit+0x886/0x9cb
-[   91.871872]  [<ffffffff8152527a>] ? __tcp_push_pending_frames+0x24/0x7e
-[   91.871951]  [<ffffffff8151a33c>] ? tcp_sendmsg+0xa4c/0xbfc
-[   91.872036]  [<ffffffff814d3477>] ? sock_aio_write+0xe3/0xfd
-[   91.872129]  [<ffffffff81122f4d>] ? do_sync_write+0x59/0x79
-[   91.872215]  [<ffffffff811239e3>] ? vfs_write+0xc4/0x182
-[   91.872298]  [<ffffffff81123daf>] ? SyS_write+0x45/0x7c
-[   91.872382]  [<ffffffff815ac35b>] ? tracesys+0xdd/0xe2
-[   91.872461] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
-89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97 c0 48 6b c0 0c 4c 01 e8 <8b> 70 08
-39 70 04 74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
-[   91.876166] RIP  [<ffffffffa013a470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
-[   91.876327]  RSP <ffff88083fc43988>
-[   91.876400] CR2: 0000000000000014
-[   91.876497] ---[ end trace 2c6d9f405db2170c ]---
-[   91.876578] Kernel panic - not syncing: Fatal exception in interrupt
-[   91.876666] Rebooting in 10 seconds..
-[  101.935360] ACPI MEMORY or I/O RESET_REG.
+Details about the MMC highlights are found in the signed tag. Please
+pull this in!
+
+Kind regards
+Ulf Hansson
 
 
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
 
-node01:/ocfs2/usr/src/linux-3.12.33/scripts# ./decodecode
-</tmp/node01-kernel-ipvs.log
-[ 91.872461] Code: 68 14 4d 01 c5 45 85 e4 74 46 f0 80 4f 78 40 48 8d 5f 04 48
-89 df e8 00 12 47 e1 31 c0 41 83 fe 02 0f 97 c0 48 6b c0 0c 4c 01 e8 <8b> 70 08
-39 70 04 74 08 89 ea 0f ca 39 10 79 0d 89 70 04 44 01
-All code
-========
-   0:   68 14 4d 01 c5          pushq  $0xffffffffc5014d14
-   5:   45 85 e4                test   %r12d,%r12d
-   8:   74 46                   je     0x50
-   a:   f0 80 4f 78 40          lock orb $0x40,0x78(%rdi)
-   f:   48 8d 5f 04             lea    0x4(%rdi),%rbx
-  13:   48 89 df                mov    %rbx,%rdi
-  16:   e8 00 12 47 e1          callq  0xffffffffe147121b
-  1b:   31 c0                   xor    %eax,%eax
-  1d:   41 83 fe 02             cmp    $0x2,%r14d
-  21:   0f 97 c0                seta   %al
-  24:   48 6b c0 0c             imul   $0xc,%rax,%rax
-  28:   4c 01 e8                add    %r13,%rax
-  2b:*  8b 70 08                mov    0x8(%rax),%esi           <-- trapping
-instruction
-  2e:   39 70 04                cmp    %esi,0x4(%rax)
-  31:   74 08                   je     0x3b
-  33:   89 ea                   mov    %ebp,%edx
-  35:   0f ca                   bswap  %edx
-  37:   39 10                   cmp    %edx,(%rax)
-  39:   79 0d                   jns    0x48
-  3b:   89 70 04                mov    %esi,0x4(%rax)
-  3e:   44                      rex.R
-  3f:   01                      .byte 0x1
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
 
-Code starting with the faulting instruction
-===========================================
-   0:   8b 70 08                mov    0x8(%rax),%esi
-   3:   39 70 04                cmp    %esi,0x4(%rax)
-   6:   74 08                   je     0x10
-   8:   89 ea                   mov    %ebp,%edx
-   a:   0f ca                   bswap  %edx
-   c:   39 10                   cmp    %edx,(%rax)
-   e:   79 0d                   jns    0x1d
-  10:   89 70 04                mov    %esi,0x4(%rax)
-  13:   44                      rex.R
-  14:   01                      .byte 0x1
+are available in the git repository at:
 
+  git://git.linaro.org/people/ulf.hansson/mmc.git tags/mmc-v3.19-1
 
+for you to fetch changes up to 33d73935e4abb2c75f263dd31a314db09ccf41be:
 
--- 
+  mmc: sdhci-msm: Convert to mmc_send_tuning() (2014-12-08 09:21:06 +0100)
 
-Mit freundlichen Grüßen,
+----------------------------------------------------------------
+MMC core:
+- Consolidation and cleanups.
+- Some improvements regarding error handling.
+- Increase maximum amount of block devices.
+- Use correct OCR mask for SDIO when restoring power.
+- Fix prepared requests while doing BKOPS.
+- Convert to modern PM ops.
+- Add mmc_send_tuning() API and convert some hosts to use it.
 
-Florian Wiessner
+MMC host:
+- toshsd: New Toshiba PCI SD controller driver.
+- sdhci: 64-bit ADMA support.
+- sdhci: Some regulator fixes.
+- sdhci: HS400 support.
+- sdhci: Various fixes cleanups.
+- atmel-mci: Modernization and cleanups.
+- atmel-mci: Runtime PM support.
+- omap_hsmmc: Modernization and cleanups.
+- omap_hsmmc: Fix UHS card with DDR50 support.
+- dw_mmc: Support for ARM64 and Exynos 7 variant.
+- dw_mmc: Add support for IMG Pistachio variant.
+- dw_mmc: Various fixes and cleanups.
+- mvsdio: DMA fixes.
+- mxs-mmc: Modernization and cleanups.
+- mxcmmc: Various fixes.
 
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
+----------------------------------------------------------------
+Abhilash Kesavan (1):
+      mmc: dw_mmc: exynos: Add support for exynos7
 
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
+Addy Ke (1):
+      mmc: dw_mmc: add support for the other bit of sdio interrupt
 
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
+Adrian Hunter (23):
+      mmc: sdhci: Fix incorrect ADMA2 descriptor table size
+      mmc: sdhci: Fix ADMA page boundary warnings
+      mmc: sdhci: Fix ADMA table size warning
+      mmc: sdhci: Rename two ADMA-related functions for consistency
+      mmc: sdhci: Rename adma_desc to adma_table
+      mmc: sdhci: Add sdhci_adma_mark_end()
+      mmc: sdhci: Use 'void *' for not 'u8 *' for ADMA data
+      mmc: sdhci: Parameterize ADMA sizes and alignment
+      mmc: sdhci: Define maximum segments
+      mmc: sdhci: Define ADMA constants
+      mmc: sdhci: Define ADMA descriptor structure
+      mmc: sdhci: Add 64-bit ADMA support
+      mmc: sdhci-acpi: Add 64-bit DMA support
+      mmc: sdhci-pci: Add 64-bit DMA support
+      mmc: mmc_test: Extend "Badly aligned" tests for 8-byte alignment
+      mmc: sdhci: Remove unused SDHCI_CTRL_HS_SDR200
+      mmc: sdhci: Fix vqmmc error setting
+      mmc: sdhci: Clear also HS400 1.2V capability if 1.2V is not supported
+      mmc: sdhci: Add HS400 support to SDHCI driver
+      mmc: sdhci-pci: Add SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC to BYT
+      mmc: sdhci-acpi: Add SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC
+      mmc: sdhci-pci: Add two host capabilities for BYT
+      mmc: sdhci-acpi: Add two host capabilities for Intel
+
+Alexandre Belloni (3):
+      mmc: atmel-mci: move mach header to platform_data
+      ARM: at91: remove mach/atmel-mci.h
+      avr32: remove mach/atmel-mci.h
+
+Alim Akhtar (1):
+      mmc: dw_mmc: add support for ARM64
+
+Andreas Fenkart (10):
+      ARM: OMAP2: MMC: include mmc-omap platform header directly
+      ARM: OMAP1/2+: MMC: separate platform data for mmc and mmc hs driver
+      mmc: omap_hsmmc: remove unused fields in platform_data
+      mmc: omap_hsmmc: remove un-initialized callbacks from platform data
+      mmc: omap_hsmmc: remove never read power_saving field in omap2_hsmmc_info
+      mmc: omap_hsmmc: remove unused get_context_loss_count callback
+      mmc: omap_hsmmc: remove unnecessary omap_hsmmc_slot_data indirection
+      mmc: omap_hsmmc: pass mmc_priv struct to gpio init / free
+      mmc: omap_hsmmc: Remove unnecessary callbacks from platform data
+      mmc: omap_hsmmc: remove unused slot_id parameter
+
+Andrew Bresticker (1):
+      mmc: dw_mmc: Add support for IMG Pistachio
+
+Andrew Gabbasov (5):
+      mmc: sdhci: Balance vmmc regulator_disable()
+      mmc: sdhci: fix error conditions for controller reset
+      mmc: core: Initialize SET_BLOCK_COUNT request fields
+      mmc: core: Add debug message for SET_BLOCK_COUNT result
+      mmc: core: Fix error paths and messages in mmc_init_card
+
+Andrew Lunn (1):
+      mmc: mvsdio: Work around broken TX DMA
+
+Baruch Siach (1):
+      mmc: block: add newline to sysfs display of force_ro
+
+Ben Hutchings (1):
+      mmc: block: Increase max_devices
+
+Bhuvanesh Surachari (1):
+      mmc: queue: Improve error handling during allocation of bounce buffers
+
+Dan Carpenter (2):
+      mmc: core: silence a shift wrapping warning
+      mmc: toshsd: move dereference below check for NULL
+
+Dirk Behme (1):
+      mmc: sdhci-esdhc-imx: don't exit in case of no pinctrl states
+
+Doug Anderson (3):
+      mmc: dw_mmc: Change signal voltage error to dev_dbg()
+      mmc: dw_mmc: rockchip: Don't recalc the clock when it goes off
+      mmc: dw_mmc: Remove old card detect infrastructure
+
+Fabio Estevam (5):
+      mmc: mxs-mmc: Register the irq with the device name
+      mmc: mxs-mmc: Simplify PM hooks
+      mmc: mxs-mmc: No need to do NULL check on 'iores'
+      mmc: mxs-mmc: Propagate the real error
+      mmc: mxs-mmc: Check for clk_prepare_enable() error
+
+Gwendal Grignou (1):
+      mmc: core: Report firmware version for eMMC 5.0 devices.
+
+James Hogan (1):
+      mmc: dw_mmc: avoid write to CDTHRCTL on older versions
+
+Johan Rudholm (2):
+      mmc: core: use mmc_send_status to check hw_reset
+      mmc: core: consistent handling of initial values
+
+Mark Brown (1):
+      mmc: sdhci-s3c: Check if clk_set_rate() succeeds
+
+Matteo Facchinetti (2):
+      mmc: mxcmmc: fix race condition when dma finish a data transfer
+      mmc: mxcmmc: fix the default value for available voltages into
+mxcmci_probe
+
+Mike Looijmans (2):
+      mmc: sdhci-of-arasan: Use signed formatting in error messages
+      mmc: sdhci-of-arasan: Omit superfluous error messages
+
+Minda Chen (1):
+      mmc: core: add core-level function for sending tuning commands
+
+NeilBrown (2):
+      mmc: core: use card->ocr when negotiating voltage setting in
+mmc_sdio_power_restore
+      mmc: core: reset sdio card properly on resume.
+
+Ondrej Zary (1):
+      mmc: add Toshiba PCI SD controller driver
+
+Peter Guo (1):
+      mmc: sdhci-pci-o2micro: Fix Dell E5440 issue
+
+Prabu Thangamuthu (1):
+      mmc: dw_mmc: Add IDMAC 64-bit address mode support
+
+Sebastian Hesselbarth (9):
+      mmc: sdhci-pxav2: Drop unused struct sdhci_pxa
+      mmc: sdhci-pxav3: Respect MMC_DDR52 timing on uhs signaling
+      mmc: sdhci-pxav3: Move private driver data to driver source
+      mmc: sdhci-pxav3: Remove unused clk_enable from sdhci_pxa
+      mmc: sdhci-pxav3: Remove checks for mandatory host clock
+      mmc: sdhci-pxav3: Move I/O clock to private data
+      mmc: sdhci-pxav3: Try to get named I/O clock first
+      mmc: sdhci-pxav3: Get optional core clock
+      mmc: sdhci-pxav3: Document clocks and additional clock-names property
+
+Sonny Rao (1):
+      mmc: dw_mmc: Reset DMA before enabling IDMAC
+
+Srinivas Kandagatla (2):
+      mmc: core: fix prepared requests while doing bkops
+      mmc: mmci: fix mmci_post_request
+
+Timo Kokkonen (1):
+      mmc: host: atmel-mci: Add support for non-removable slots
+
+Tomeu Vizoso (1):
+      mmc: sunxi: Remove unused includes of linux/clk-private.h
+
+Ulf Hansson (26):
+      mmc: core: Remove superfluous ifdefs for SDIO bus' PM callbacks
+      mmc: core: Don't export the to_sdio_driver macro
+      mmc: core: Convert the mmc_driver to use the modern PM ops
+      mmc: core: Convert mmc_driver to device_driver
+      mmc: msm_sdcc: Use platform_set|get_drvdata
+      mmc: block: Use dev_set|get_drvdata()
+      mmc: core: Remove unused mmc_list_to_card() macro
+      mmc: core: Remove mmc_free_ext_csd()
+      mmc: core: Remove duplicated definition of mmc_send_ext_csd()
+      mmc: core: Remove redundant check while selecting powerclass
+      mmc: core: Remove redundant check of max_dtr while selecting timings
+      mmc: core: Remove unnecessary 'out of memory' message
+      mmc: core: Add helper function for EXT_CSD support
+      mmc: core: Fetch and decode EXT_CSD from mmc_read_ext_csd()
+      mmc: core: Let's callers of from mmc_get_ext_csd() do error handling
+      mmc: core: Don't panic when fetching EXT_CSD
+      mmc: core: Export mmc_get_ext_csd()
+      mmc: block: Use mmc_get_ext_csd() instead of mmc_send_ext_csd()
+      mmc: core: Use mmc_get_ext_csd() instead of mmc_send_ext_csd()
+      mmc: core: Remove the redundant mmc_send_ext_csd() API
+      mmc: core: Don't handle buffers on stack while fetching CXD registers
+      mmc: core: Convert to use kzalloc() for CXD register buffers
+      mmc: omap_hsmmc: Fix UHS card with DDR50 support
+      mmc: core: Let mmc_send_tuning() to take struct mmc_host* as parameter
+      mmc: sdhci-esdhc-imx: Convert to mmc_send_tuning()
+      mmc: sdhci-msm: Convert to mmc_send_tuning()
+
+Vincent Wan (3):
+      mmc: sdhci: Add a quirk for AMD SDHC transfer mode register need
+to be cleared for cmd without data
+      mmc: sdhci-pci: enable the clear transfer mode register quirk
+for AMD sdhci
+      mmc: sdhci-pci: enable sdhci doesn't support hs200 quirk for AMD sdhci
+
+Vincent Yang (1):
+      mmc: core: hold SD Clock before CMD11 during Signal
+
+Wenyou Yang (2):
+      mmc: atmel-mci: add runtime pm support
+      mmc: atmel-mci: adopt pinctrl support
+
+ludovic.desroches@atmel.com (5):
+      mmc: atmel-mci: remove compat for non DT board when requesting dma chan
+      mmc: atmel-mci: remove useless DMA stuff for non-dt devices
+      mmc: atmel-mci: remove __init/__exit attributes
+      mmc: atmel-mci: stop using specific initcall
+      mmc: atmel-mci: use probe deferring if dma controller is not ready yet
+
+ .../devicetree/bindings/mmc/exynos-dw-mshc.txt     |   4 +
+ .../devicetree/bindings/mmc/img-dw-mshc.txt        |  29 +
+ .../devicetree/bindings/mmc/sdhci-pxa.txt          |   7 +
+ arch/arm/mach-at91/at91sam9g45_devices.c           |   2 +-
+ arch/arm/mach-omap2/board-n8x0.c                   |   2 +
+ arch/arm/mach-omap2/board-rx51-peripherals.c       |   4 +-
+ arch/arm/mach-omap2/hsmmc.c                        | 158 ++---
+ arch/arm/mach-omap2/hsmmc.h                        |   9 +-
+ arch/arm/mach-omap2/mmc.h                          |  10 -
+ arch/arm/mach-omap2/omap4-common.c                 |   1 -
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c         |   4 +-
+ .../mach-omap2/omap_hwmod_33xx_43xx_ipblock_data.c |   8 +-
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c         |   1 -
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   8 +-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |   4 +-
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c         |   4 +-
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |   4 +-
+ arch/avr32/mach-at32ap/at32ap700x.c                |   2 +-
+ arch/avr32/mach-at32ap/include/mach/atmel-mci.h    |  17 -
+ drivers/mmc/card/block.c                           |  83 ++-
+ drivers/mmc/card/mmc_test.c                        |  28 +-
+ drivers/mmc/card/queue.c                           |  16 +-
+ drivers/mmc/core/bus.c                             |  55 +-
+ drivers/mmc/core/core.c                            | 111 ++--
+ drivers/mmc/core/core.h                            |   1 +
+ drivers/mmc/core/debugfs.c                         |   9 +-
+ drivers/mmc/core/mmc.c                             | 184 +++---
+ drivers/mmc/core/mmc_ops.c                         | 130 +++-
+ drivers/mmc/core/mmc_ops.h                         |   2 +-
+ drivers/mmc/core/sdio.c                            |  10 +-
+ drivers/mmc/core/sdio_bus.c                        |  16 +-
+ drivers/mmc/host/Kconfig                           |   7 +-
+ drivers/mmc/host/Makefile                          |   1 +
+ drivers/mmc/host/atmel-mci.c                       | 207 +++---
+ drivers/mmc/host/dw_mmc-exynos.c                   |  91 ++-
+ drivers/mmc/host/dw_mmc-pltfm.c                    |   6 +
+ drivers/mmc/host/dw_mmc-rockchip.c                 |  13 +
+ drivers/mmc/host/dw_mmc.c                          | 346 +++++-----
+ drivers/mmc/host/dw_mmc.h                          |  15 +-
+ drivers/mmc/host/mmci.c                            |   7 +
+ drivers/mmc/host/msm_sdcc.c                        |   6 +-
+ drivers/mmc/host/mvsdio.c                          |   7 +-
+ drivers/mmc/host/mxcmmc.c                          |  25 +-
+ drivers/mmc/host/mxs-mmc.c                         |  26 +-
+ drivers/mmc/host/omap_hsmmc.c                      | 286 ++++----
+ drivers/mmc/host/sdhci-acpi.c                      |  52 +-
+ drivers/mmc/host/sdhci-esdhc-imx.c                 |  78 +--
+ drivers/mmc/host/sdhci-msm.c                       |  50 +-
+ drivers/mmc/host/sdhci-of-arasan.c                 |   5 +-
+ drivers/mmc/host/sdhci-pci-o2micro.c               |   2 -
+ drivers/mmc/host/sdhci-pci.c                       |  56 +-
+ drivers/mmc/host/sdhci-pxav2.c                     |  15 +-
+ drivers/mmc/host/sdhci-pxav3.c                     |  60 +-
+ drivers/mmc/host/sdhci-s3c.c                       |   8 +-
+ drivers/mmc/host/sdhci.c                           | 273 +++++---
+ drivers/mmc/host/sdhci.h                           |  45 +-
+ drivers/mmc/host/sunxi-mmc.c                       |   1 -
+ drivers/mmc/host/toshsd.c                          | 717 +++++++++++++++++++++
+ drivers/mmc/host/toshsd.h                          | 176 +++++
+ include/linux/atmel-mci.h                          |   2 +
+ include/linux/mmc/card.h                           |  23 +-
+ include/linux/mmc/core.h                           |   3 +-
+ include/linux/mmc/dw_mmc.h                         |   7 +-
+ include/linux/mmc/host.h                           |   1 +
+ include/linux/mmc/mmc.h                            |   3 +
+ include/linux/mmc/sdhci.h                          |  18 +-
+ include/linux/mmc/sdio_func.h                      |   2 -
+ include/linux/platform_data/hsmmc-omap.h           |  90 +++
+ .../linux/platform_data/mmc-atmel-mci.h            |  13 +-
+ include/linux/platform_data/mmc-omap.h             |  27 -
+ include/linux/platform_data/pxa_sdhci.h            |   5 -
+ 71 files changed, 2459 insertions(+), 1239 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mmc/img-dw-mshc.txt
+ delete mode 100644 arch/avr32/mach-at32ap/include/mach/atmel-mci.h
+ create mode 100644 drivers/mmc/host/toshsd.c
+ create mode 100644 drivers/mmc/host/toshsd.h
+ create mode 100644 include/linux/platform_data/hsmmc-omap.h
+ rename arch/arm/mach-at91/include/mach/atmel-mci.h =>
+include/linux/platform_data/mmc-atmel-mci.h (52%)
