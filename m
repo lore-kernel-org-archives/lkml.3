@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaLHQzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:55:08 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45548 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751482AbaLHQzG (ORCPT
+	id S1756063AbaLHQz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:55:28 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:39382 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926AbaLHQzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:55:06 -0500
-Date: Mon, 8 Dec 2014 16:54:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Arend van Spriel <arend@broadcom.com>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "hauke@hauke-m.de" <hauke@hauke-m.de>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141208165451.GH11285@n2100.arm.linux.org.uk>
-References: <5481794E.4050406@broadcom.com>
- <2863746.4sUSEYqahB@wuerfel>
- <5485D054.7090109@broadcom.com>
- <2048819.2EPzBi8E3T@wuerfel>
- <20141208165042.GO16185@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141208165042.GO16185@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 11:55:24 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-a8-5485d7f91380
+Message-id: <5485D7F8.10807@samsung.com>
+Date: Mon, 08 Dec 2014 17:55:20 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
+ Flash class extension
+References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
+ <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
+ <20141129125832.GA315@amd> <547C539A.4010500@samsung.com>
+ <20141201130437.GB24737@amd> <547C7420.4080801@samsung.com>
+ <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
+ <20141206124310.GB3411@amd>
+In-reply-to: <20141206124310.GB3411@amd>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t/xa7o/r7eGGHz8om2xccZ6VoujOycy
+	WZxtesNucXnXHDaLrW/WMVr0bNjKanH31FE2i927nrJaHH7TzmpxZv9KNgcuj52z7rJ7HP66
+	kMVjz/wfrB59W1YxeqxY/Z3d4/MmuQC2KDebjNTElNQihdS85PyUzLx0W6XQEDddCyWFvMTc
+	VFulCF3fkCAlhbLEnFIgz8gADTg4B7gHK+nbJbhlPHq9i7XgKXfFjjdTmBoYl3N2MXJySAiY
+	SFz4/JgRwhaTuHBvPVsXIxeHkMBSRonGz28YIZyPjBL7j98Dq+IV0JD40NzI3sXIwcEioCpx
+	/p49SJhNwFDi54vXTCC2qECExJ/T+1ghygUlfky+xwJiiwjIS2ztW8EMMpNZoIFZ4uHyp2wg
+	CWGBVIk3b/6BzRcSeMYksfqKJYjNCbTr4MadYM3MAtYSKydtY4Sw5SU2r3nLPIFRYBaSHbOQ
+	lM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgcft3BuPSY1SFGAQ5GJR7eDeXN
+	IUKsiWXFlbmHGCU4mJVEeJfvbA0R4k1JrKxKLcqPLyrNSS0+xJgMDIGJzFKiyfnAFJFXEm9o
+	YmhuaWhkbGFhbmREmrCSOG/l15YQIYH0xJLU7NTUgtQimC1MHJxSDYypoWc1liddmfPmo/nj
+	s867tyUtLTuhXVHzcs5Nv5tbpO2qF23XT18k97ZyWal2xVrVnfllbbKPN4uoKE1+1sBiEdbq
+	5PNjTm+yVvbbOvmFhdu+dzdNXysnYBVvHPdMX6Xinquc+evsSP6lDPozVC3OVVgwFXl0tgqw
+	C3/8ztBitpW7JMzptRJLcUaioRZzUXEiAMTg9+YHAwAA
+X-MTR: 20000000000000000@CPGS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 04:50:43PM +0000, Catalin Marinas wrote:
-> On Mon, Dec 08, 2014 at 04:38:57PM +0000, Arnd Bergmann wrote:
-> > On Monday 08 December 2014 17:22:44 Arend van Spriel wrote:
-> > > >> The log: first the ring allocation info is printed. Starting at
-> > > >> 16.124847, ring 2, 3 and 4 are rings used for device to host. In this
-> > > >> log the failure is on a read of ring 3. Ring 3 is 1024 entries of each
-> > > >> 16 bytes. The next thing printed is the kernel page tables. Then some
-> > > >> OpenWRT info and the logging of part of the connection setup. Then at
-> > > >> 1780.130752 the logging of the failure starts. The sequence number is
-> > > >> modulo 253 with ring size of 1024 matches an "old" entry (read 40,
-> > > >> expected 52). Then the different pointers are printed followed by
-> > > >> the kernel page table. The code does then a cache invalidate on the
-> > > >> dma_handle and the next read the sequence number is correct.
-> > > >
-> > > > How do you invalidate the cache? A dma_handle is of type dma_addr_t
-> > > > and we don't define an operation for that, nor does it make sense
-> > > > on an allocation from dma_alloc_coherent(). What happens if you
-> > > > take out the invalidate?
-> > > 
-> > > dma_sync_single_for_cpu(, DMA_FROM_DEVICE) which ends up invalidating 
-> > > the cache (or that is our suspicion).
-> > 
-> > I'm not sure about that:
-> > 
-> > static void arm_dma_sync_single_for_cpu(struct device *dev,
-> >                 dma_addr_t handle, size_t size, enum dma_data_direction dir)
-> > {
-> >         unsigned int offset = handle & (PAGE_SIZE - 1);
-> >         struct page *page = pfn_to_page(dma_to_pfn(dev, handle-offset));
-> >         __dma_page_dev_to_cpu(page, offset, size, dir);
-> > }
-> > 
-> > Assuming a noncoherent linear (no IOMMU, no swiotlb, no dmabounce) mapping,
-> > dma_to_pfn will return the correct pfn here, but pfn_to_page will return a
-> > page pointer into the kernel linear mapping,
-> 
-> Or a highmem page, both should be handled by dma_cache_maint_page().
+On 12/06/2014 01:43 PM, Pavel Machek wrote:
+>
+>>> The format of a sysfs attribute should be concise.
+>>> The error codes are generic and map directly to the V4L2 Flash
+>>> error codes.
+>>>
+>>
+>> Actually I'd like to see those flash fault code defined in LED
+>> subsystem. And V4L2 will just include LED flash header file to use it.
+>> Because flash fault code is not for V4L2 specific but it's a feature
+>> of LED flash devices.
+>>
+>> For clearing error code of flash devices, I think it depends on the
+>> hardware. If most of our LED flash is using reading to clear error
+>> code, we probably can make it simple as this now. But what if some
+>> other LED flash devices are using writing to clear error code? we
+>> should provide a API to that?
+>
+> Actually, we should provide API that makes sense, and that is easy to
+> use by userspace.
+>
+> I believe "read" is called read because it does not change anything,
+> and it should stay that way in /sysfs. You may want to talk to sysfs
+> maintainers if you plan on doing another semantics.
 
-A valid point, but one which is irrelevant to this thread, because we're
-talking about a platform with only 128MB, and a PAGE_OFFSET of 2GB (hence
-no highmem):
+How would you proceed in case of devices which clear their fault
+register upon I2C readout (e.g. AS3645)? In this case read does have
+a side effect. For such devices attribute semantics would have to be
+different than for the devices which don't clear faults on readout.
 
-Memory: 125936K/131072K available (2682K kernel code, 103K rwdata,
- 744K rodata, 164K init, 188K bss, 5136K reserved)
+In case of devices which use writing to clear error code - I'd do that
+after reading flash_fault attribute, in the same callback.
 
-Can we stay on-point to getting this problem solved, rather than drifting
-off topic please?
+Best Regards,
+Jacek Anaszewski
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
