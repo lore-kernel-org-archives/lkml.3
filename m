@@ -1,81 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097AbaLHK4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:56:47 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:41965 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaLHK4q (ORCPT
+	id S1755175AbaLHK52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:57:28 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:15170 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761AbaLHK51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:56:46 -0500
-Date: Mon, 8 Dec 2014 11:56:40 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Drake <drake@endlessm.com>, Minchan Kim <minchan@kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [regression] Boot crash with: f7426b983a6a ("mm: cma: adjust
- address limit to avoid hitting low/high memory boundary")
-Message-ID: <20141208105640.GA29431@gmail.com>
-References: <20141117163903.GA17801@gmail.com>
- <20141127130556.GA4074@gmail.com>
- <20141128070220.GA11802@js1304-P5Q-DELUXE>
+	Mon, 8 Dec 2014 05:57:27 -0500
+X-IronPort-AV: E=Sophos;i="5.07,537,1413244800"; 
+   d="scan'208";a="201736067"
+Message-ID: <54858415.80408@citrix.com>
+Date: Mon, 8 Dec 2014 10:57:25 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141128070220.GA11802@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen: annotate xen_set_identity_and_remap_chunk()
+ with __init
+References: <1418016739-19305-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1418016739-19305-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/12/14 05:32, Juergen Gross wrote:
+> Commit 5b8e7d80542487ff1bf17b4cf2922a01dee13d3a removed the __init
+> annotation from xen_set_identity_and_remap_chunk(). Add it again.
 
-* Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+Applied, thanks.
 
-> On Thu, Nov 27, 2014 at 02:05:56PM +0100, Ingo Molnar wrote:
-> > 
-> > Any replies to this regression after 10 days, or should I send a 
-> > revert patch?
-> 
-> Hello, Ingo.
-> 
-> I can reproduce your problem and find root cause.
-> If CONFIG_DEBUG_VIRTUAL is enabled, __pa() checks whether virtual
-> address is valid or not. Because high_memory is not direct mapped
-> address, error occurs. IMO, physical address of high_memory is
-> useful to check phycal address of highmem boundary so do following
-> workaround to avoid validation is reasonable. But, if there is
-> a better solution, please let me know. I think that Marek will be
-> better than me in this area.
-> 
-> Please check following change to fix your problem.
-> If you agree following change, I will send it to Andrew with
-> proper description.
-> 
-> Thanks.
-> 
-> ------->8-------------
-> diff --git a/mm/cma.c b/mm/cma.c
-> index ee3c3e0..45cd0a6 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -227,7 +227,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
->  			bool fixed, struct cma **res_cma)
->  {
->  	phys_addr_t memblock_end = memblock_end_of_DRAM();
-> -	phys_addr_t highmem_start = __pa(high_memory);
-> +	phys_addr_t highmem_start = __pa_nodebug(high_memory);
->  	int ret = 0;
->  
->  	pr_debug("%s(size %pa, base %pa, limit %pa alignment %pa)\n",
-
-Looks like this patch solves my boot crash problem:
-
-  Tested-by: Ingo Molnar <mingo@kernel.org>
-
-I'll let you know if there's any problem left as I test it some 
-more. Consider the bug fixed!
-
-Thanks,
-
-	Ingo
+David
