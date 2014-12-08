@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaLHGxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:53:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34914 "EHLO
+	id S1754768AbaLHGzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:55:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34659 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaLHGxx (ORCPT
+	with ESMTP id S1754147AbaLHGuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:53:53 -0500
-Date: Sun, 7 Dec 2014 22:53:42 -0800
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-09a6a1b07e5a579ef770d9728f5b158408c73c23@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, ak@linux.intel.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com
-Reply-To: linux-kernel@vger.kernel.org, acme@redhat.com, ak@linux.intel.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com
-In-Reply-To: <1416275935-20971-1-git-send-email-andi@firstfloor.org>
-References: <1416275935-20971-1-git-send-email-andi@firstfloor.org>
+	Mon, 8 Dec 2014 01:50:05 -0500
+Date: Sun, 7 Dec 2014 22:49:15 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-6wzjpe2fy9xtgchshulixlzw@git.kernel.org>
+Cc: adrian.hunter@intel.com, mingo@kernel.org, jolsa@redhat.com,
+        peterz@infradead.org, eranian@google.com, tglx@linutronix.de,
+        bp@suse.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        fweisbec@gmail.com, dzickus@redhat.com, namhyung@kernel.org,
+        dsahern@gmail.com, ak@linux.intel.com, efault@gmx.de, acme@redhat.com
+Reply-To: eranian@google.com, tglx@linutronix.de, bp@suse.de,
+        adrian.hunter@intel.com, peterz@infradead.org, mingo@kernel.org,
+        jolsa@redhat.com, efault@gmx.de, ak@linux.intel.com, acme@redhat.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        namhyung@kernel.org, dzickus@redhat.com, dsahern@gmail.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  In branch stack mode use address history sorting
-Git-Commit-ID: 09a6a1b07e5a579ef770d9728f5b158408c73c23
+Subject: [tip:perf/core] perf symbols:
+  Move bfd_demangle stubbing to its only user
+Git-Commit-ID: aaba4e12a99cc56fc8614a3f2a3ec6db4fcde76e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,35 +36,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  09a6a1b07e5a579ef770d9728f5b158408c73c23
-Gitweb:     http://git.kernel.org/tip/09a6a1b07e5a579ef770d9728f5b158408c73c23
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 17 Nov 2014 17:58:54 -0800
+Commit-ID:  aaba4e12a99cc56fc8614a3f2a3ec6db4fcde76e
+Gitweb:     http://git.kernel.org/tip/aaba4e12a99cc56fc8614a3f2a3ec6db4fcde76e
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 24 Nov 2014 17:10:52 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 1 Dec 2014 20:00:31 -0300
+CommitDate: Mon, 24 Nov 2014 18:03:47 -0300
 
-perf report: In branch stack mode use address history sorting
+perf symbols: Move bfd_demangle stubbing to its only user
 
-Enable CCKEY_ADDRESS address history sorting with --branch-history.
-This makes get_srcline display the source lines correctly, otherwise all
-history entries for a function a hunked into one.
+We need to define bfd_demangle() to either a wrapper for
+cplus_demangle() or to a stub when NO_DEMANGLE is defined.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1416275935-20971-1-git-send-email-andi@firstfloor.org
+That is at odds with using bfd.h for some other reason, as it defines
+bfd_demangle() and then if code that wants to use symbol.h, where the
+above stubbing/wrapping is done, and bfd.h for other reasons, we end up
+with a build error where bfd_demangle() is found to be redefined.
+
+Avoid that by moving the stubbing/wrapping to symbol-elf.c, that is the
+only user of such function. If we ever get to a point where there are
+more valid users, we can then introduce a header for that.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6wzjpe2fy9xtgchshulixlzw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/symbol-elf.c | 21 +++++++++++++++++++++
+ tools/perf/util/symbol.h     | 21 ---------------------
+ 2 files changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index fb272ff..3936760 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -761,6 +761,7 @@ repeat:
- 		symbol_conf.cumulate_callchain = false;
- 	}
- 	if (branch_call_mode) {
-+		callchain_param.key = CCKEY_ADDRESS;
- 		callchain_param.branch_callstack = 1;
- 		symbol_conf.use_callchain = true;
- 		callchain_register_param(&callchain_param);
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index efc7eb6..06fcd1b 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -11,6 +11,27 @@
+ #include <symbol/kallsyms.h>
+ #include "debug.h"
+ 
++#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
++extern char *cplus_demangle(const char *, int);
++
++static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
++{
++	return cplus_demangle(c, i);
++}
++#else
++#ifdef NO_DEMANGLE
++static inline char *bfd_demangle(void __maybe_unused *v,
++				 const char __maybe_unused *c,
++				 int __maybe_unused i)
++{
++	return NULL;
++}
++#else
++#define PACKAGE 'perf'
++#include <bfd.h>
++#endif
++#endif
++
+ #ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
+ static int elf_getphdrnum(Elf *elf, size_t *dst)
+ {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ded3ca7..e0b297c 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -23,27 +23,6 @@
+ 
+ #include "dso.h"
+ 
+-#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+-extern char *cplus_demangle(const char *, int);
+-
+-static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+-{
+-	return cplus_demangle(c, i);
+-}
+-#else
+-#ifdef NO_DEMANGLE
+-static inline char *bfd_demangle(void __maybe_unused *v,
+-				 const char __maybe_unused *c,
+-				 int __maybe_unused i)
+-{
+-	return NULL;
+-}
+-#else
+-#define PACKAGE 'perf'
+-#include <bfd.h>
+-#endif
+-#endif
+-
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+  * for newer versions we can use mmap to reduce memory usage:
