@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbaLHNGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:06:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46960 "EHLO mx1.redhat.com"
+	id S1755422AbaLHNGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:06:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57491 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514AbaLHNGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:06:06 -0500
-Date: Mon, 8 Dec 2014 15:05:54 +0200
+	id S1752514AbaLHNGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:06:11 -0500
+Date: Mon, 8 Dec 2014 15:05:48 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: dahi@linux.vnet.ibm.com, cornelia.huck@de.ibm.com, rusty@rustcorp.com.au,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH v3 2/6] virtio_ccw: legacy: don't negotiate rev 1/features
-Message-ID: <1418042769-25539-3-git-send-email-mst@redhat.com>
-References: <1418042769-25539-1-git-send-email-mst@redhat.com>
+Cc: dahi@linux.vnet.ibm.com, cornelia.huck@de.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v3 0/6] virtio 1.0 enhancements
+Message-ID: <1418042769-25539-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418042769-25539-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Legacy balloon device doesn't pretend to support revision 1 or 64 bit
-features.
+These are minor robustness enhancements on top of v8 of the patchset
+	[PATCH v8 00/50] linux: towards virtio-1 guest support
+http://mid.gmane.org/1417449619-24896-1-git-send-email-mst@redhat.com
 
-But just in case someone implements a broken one that does, let's not
-even try to drive legacy only devices using revision 1, and let's not
-give them a chance to say they support VIRTIO_F_VERSION_1 by not reading
-high feature bits.
+As that one seems stable and actually seems to work well for people,
+I'm not respinning it anymore.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/s390/kvm/virtio_ccw.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+The main motivation is to prevent us accidentally supporting
+bad configurations, such as legacy balloon on top of
+virtio 1.0 transport.
+The point is that if we happen to support them mistakenly, we'll have trouble
+backing out in future.  This will also help make sure hypervisors don't do
+silly things.
 
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 4a3e6e5..c792b5f 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -733,6 +733,9 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- 
- 	rc = le32_to_cpu(features->features);
- 
-+	if (vcdev->revision == 0)
-+		goto out_free;
-+
- 	/* Read second half of the feature bits from the host. */
- 	features->index = 1;
- 	ccw->cmd_code = CCW_CMD_READ_FEAT;
-@@ -775,6 +778,9 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- 	ccw->cda = (__u32)(unsigned long)features;
- 	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_FEAT);
- 
-+	if (vcdev->revision == 0)
-+		goto out_free;
-+
- 	features->index = 1;
- 	features->features = cpu_to_le32(vdev->features >> 32);
- 	/* Write the second half of the feature bits to the host. */
-@@ -1182,9 +1188,13 @@ static int virtio_ccw_online(struct ccw_device *cdev)
- 	vcdev->vdev.id.vendor = cdev->id.cu_type;
- 	vcdev->vdev.id.device = cdev->id.cu_model;
- 
--	ret = virtio_ccw_set_transport_rev(vcdev);
--	if (ret)
--		goto out_free;
-+	if (virtio_device_is_legacy_only(vcdev->vdev.id)) {
-+		vcdev->revision = 0;
-+	} else {
-+		ret = virtio_ccw_set_transport_rev(vcdev);
-+		if (ret)
-+			goto out_free;
-+	}
- 
- 	ret = register_virtio_device(&vcdev->vdev);
- 	if (ret) {
+Changes from v2:
+	Check finalize_features return status on resume.
+		This shouldn't normally fail, but checking can't hurt.
+
+Michael S. Tsirkin (6):
+  virtio: add API to detect legacy devices
+  virtio_ccw: legacy: don't negotiate rev 1/features
+  virtio: allow finalize_features to fail
+  virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
+  virtio_balloon: drop legacy_only driver flag
+  virtio: drop legacy_only driver flag
+
+ include/linux/virtio.h                 |  4 ++--
+ include/linux/virtio_config.h          |  3 ++-
+ drivers/lguest/lguest_device.c         |  4 +++-
+ drivers/misc/mic/card/mic_virtio.c     |  4 +++-
+ drivers/remoteproc/remoteproc_virtio.c |  4 +++-
+ drivers/s390/kvm/kvm_virtio.c          |  4 +++-
+ drivers/s390/kvm/virtio_ccw.c          | 29 ++++++++++++++++++++++++-----
+ drivers/virtio/virtio.c                | 32 +++++++++++++++++++++-----------
+ drivers/virtio/virtio_balloon.c        |  1 -
+ drivers/virtio/virtio_mmio.c           |  4 +++-
+ drivers/virtio/virtio_pci.c            |  4 +++-
+ 11 files changed, 67 insertions(+), 26 deletions(-)
+
 -- 
 MST
 
