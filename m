@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaLHNZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:25:04 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:39496 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLHNZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:25:02 -0500
-Date: Mon, 8 Dec 2014 14:24:51 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mst@redhat.com,
-        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
-        hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v1 1/5] uaccess: add pagefault_count to thread_info
-Message-ID: <20141208142451.2d9c6cb9@thinkpad-w530>
-In-Reply-To: <5485A3D2.3020404@de.ibm.com>
-References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<1417778289-51567-2-git-send-email-dahi@linux.vnet.ibm.com>
-	<5485A3D2.3020404@de.ibm.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1752951AbaLHNZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:25:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6195 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380AbaLHNZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:25:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="495421117"
+Message-ID: <5485A624.1060903@intel.com>
+Date: Mon, 08 Dec 2014 21:22:44 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Zhang Rui <rui.zhang@intel.com>
+CC: Eduardo Valentin <edubezval@gmail.com>, Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] Thermal: introduce INT3406 thermal driver
+References: <CA+r1ZhhoskOXaRSmcrnbdgapi-FsaKf+dnPHTXGkDvkYbvwQ8Q@mail.gmail.com>	<543F88BE.4090307@intel.com>	<20141017070620.GA1538@aaronlu.sh.intel.com>	<20141017072236.GA12504@aaronlu.sh.intel.com>	<544F33AF.1000704@intel.com>	<20141107191127.GB27438@developer>	<1417350176.27484.10.camel@rzhang1-toshiba>	<547D59D2.8010906@intel.com>	<1418009702.19126.14.camel@rzhang1-toshiba>	<CAMuHMdWHn+BcpPjr7x+Y1aRwUgBP54mH=4XpjB1VOd7T76-kjw@mail.gmail.com> <CAMuHMdW8Yap=VrHaEs-oKbVtRSUSb87qf9JJph7aG-MPuv4f_w@mail.gmail.com>
+In-Reply-To: <CAMuHMdW8Yap=VrHaEs-oKbVtRSUSb87qf9JJph7aG-MPuv4f_w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120813-0013-0000-0000-000002222FD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Am 05.12.2014 um 12:18 schrieb David Hildenbrand:
-> > This patch adds the pagefault_count to the thread_info of all
-> > architectures. It will be used to count the pagefault_disable() levels
-> > on a per-thread basis.
-> > 
-> > We are not reusing the preempt_count as this is per cpu on x86 and we want to
-> > demangle pagefault_disable() from preemption in the future.
-> > 
-> > Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> > ---
-> >  arch/alpha/include/asm/thread_info.h      |  1 +
-> >  arch/arc/include/asm/thread_info.h        |  1 +
-> >  arch/arm/include/asm/thread_info.h        |  1 +
-> >  arch/arm64/include/asm/thread_info.h      |  1 +
-> >  arch/avr32/include/asm/thread_info.h      |  1 +
-> >  arch/blackfin/include/asm/thread_info.h   |  1 +
-> >  arch/c6x/include/asm/thread_info.h        |  1 +
-> >  arch/cris/include/asm/thread_info.h       |  1 +
-> >  arch/frv/include/asm/thread_info.h        |  1 +
-> >  arch/hexagon/include/asm/thread_info.h    |  1 +
-> >  arch/ia64/include/asm/thread_info.h       |  1 +
-> >  arch/m32r/include/asm/thread_info.h       |  5 +++--
-> >  arch/m68k/include/asm/thread_info.h       |  1 +
-> >  arch/metag/include/asm/thread_info.h      |  1 +
-> >  arch/microblaze/include/asm/thread_info.h |  1 +
-> >  arch/mips/include/asm/thread_info.h       |  1 +
-> >  arch/mn10300/include/asm/thread_info.h    |  1 +
-> >  arch/openrisc/include/asm/thread_info.h   |  1 +
-> >  arch/parisc/include/asm/thread_info.h     |  1 +
-> >  arch/powerpc/include/asm/thread_info.h    |  1 +
-> >  arch/s390/include/asm/thread_info.h       |  1 +
-> >  arch/score/include/asm/thread_info.h      |  1 +
-> >  arch/sh/include/asm/thread_info.h         |  1 +
-> >  arch/sparc/include/asm/thread_info_32.h   | 20 +++++++++++---------
-> >  arch/sparc/include/asm/thread_info_64.h   | 17 +++++++++--------
+On 12/08/2014 07:20 PM, Geert Uytterhoeven wrote:
+> On Mon, Dec 8, 2014 at 11:55 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> Unfortunately drivers/thermal/int340x_thermal/Kconfig was missing
+>> from the patch, hence "make oldconfig" now fails miserably with
+>>
+>> drivers/thermal/Kconfig:265: can't open file
+>> "drivers/thermal/int340x_thermal/Kconfig"
 > 
-> Maybe its easier to put the pagefault count at the end of the thread_info struct to make the patch smaller and easier to review for thoses architectures that have hand-maintained asm offsets? 
+> I've lifted the missing file from "[PATCH v3] Thermal: int3406_thermal:
+> solve the dependency build error" (https://lkml.org/lkml/2014/10/17/38).
 
-Jap, that's also what I asked for in my cover letter.
+My bad, and thanks a lot for your kind help!
 
-Right now I wanted to keep the new count close to the preempt_count and similar
-on all archs.
+Regards,
+Aaron
 
-So move it only on the "hand-maintained asm offset" archs or on all archs?
-
-David
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
 
