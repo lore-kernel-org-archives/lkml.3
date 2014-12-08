@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaLHPIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:08:40 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:53917 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837AbaLHPIh (ORCPT
+	id S1755870AbaLHPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:08:56 -0500
+Received: from smtprelay0094.hostedemail.com ([216.40.44.94]:36485 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755661AbaLHPIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:08:37 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Matthias Klein <matthias.klein@linux.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc tree
-Date: Mon, 08 Dec 2014 16:08:14 +0100
-Message-ID: <27886656.dlK0fV8eSK@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141208134903.GN3951@x1>
-References: <20141208120619.68287b54@canb.auug.org.au> <3348703.0b5FTH9Sa3@wuerfel> <20141208134903.GN3951@x1>
+	Mon, 8 Dec 2014 10:08:55 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3874:4250:5007:6261:7556:7875:10004:10400:10848:10967:11232:11658:11914:12296:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shirt83_3082013c7703a
+X-Filterd-Recvd-Size: 1620
+Date: Mon, 8 Dec 2014 10:08:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Kosina <jkosina@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>
+Subject: Re: [GIT PULL] tracing/NMI/printk: Use seq_buf for safe printing
+ from NMI context
+Message-ID: <20141208100851.3906cc0a@gandalf.local.home>
+In-Reply-To: <20141208100528.5f97106f@gandalf.local.home>
+References: <20141208100528.5f97106f@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:OPcg0eILUuJJRSzDAAjUCNPBE6309EU59EvQxvg1MF/NMKM0ZAi
- X78tblV9pUgNBBYFy+r9WHyb/Sj+V/PGqNJfJ8EVOOiC8/hOaCxV2zD6h8jOOEwjjt6wc/T
- py7UMh15dhHvAwQa9Wxr2gBGfwnSi4+7x3FjhjUB4K3JOQxNKubS3XOR0mhP5XBmCgT/BAA
- ZlAHZmh9/A12veSmjbPUQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 13:49:03 Lee Jones wrote:
-> On Mon, 08 Dec 2014, Arnd Bergmann wrote:
-> 
-> > On Monday 08 December 2014 13:00:09 Lee Jones wrote:
-> > > On Mon, 08 Dec 2014, Arnd Bergmann wrote:
-> > > 
-> > > > On Monday 08 December 2014 12:06:19 Stephen Rothwell wrote:
-> > > > > Hi Stephen,
-> > > > > 
-> > > > > Today's linux-next merge of the bcm2835 tree got a conflict in
-> > > > > arch/arm/boot/dts/Makefile between commit 302a5ef29d49 ("ARM: BCM5301X:
-> > > > > Add DT for Netgear R6300 V2") from the arm-soc tree and commit
-> > > > > 6298ed17a404 ("ARM: bcm2835: Add device tree for Raspberry Pi model
-> > > > > B+") from the bcm2835 tree.
-> > > > > 
-> > > > > I fixed it up (the bcm2835 tree patch is also in the arm-soc tree as
-> > > > > commit ba2a1d6959ac ("ARM: bcm2835: Add device tree for Raspberry Pi
-> > > > > model B+"), so I just used the arm-soc version) and can carry the fix
-> > > > > as necessary (no action is required).
-> > > > 
-> > > > Thanks a lot for the notification!
-> > > > 
-> > > > Lee, do you know what is going on? Did you accidentally rebase a commit
-> > > > that you already sent for inclusion in arm-soc?
-> > > 
-> > > Nope.  The branch hasn't changed at all.
-> > > 
-> > > OOI why would a re-base affect anything?  I sent you it in patch form.
-> > 
-> > Ah, I looked at the wrong branch and didn't see that I applied a patch
-> > instead of a pull request. It's all fine then, as long as you never
-> > intend to send any pull requests based on top of your current branch.
-> > 
-> > You can possibly make Stephen's life a tiny bit simpler if you just
-> > drop all patches from your for-next branch as soon as we've picked
-> > them up into arm-soc.
-> 
-> That is something I thought about, but I believe we have users of that
-> branch.  I guess we could always point them to ARM-SoC, or reset the
-> branch to the aforementioned.
+On Mon, 8 Dec 2014 10:05:28 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-How about adding another branch then, which contains everything you
-expect to get merged into the next kernel and that you can provide
-to your users but that is potentially separate from the one that Stephen
-pulls into linux-next?
 
-	ARnd
+> This code solves the issue of performing stack dumps from NMI context.
+> The issue is that printk() is not safe from NMI context as if the NMI
+> were to trigger when a printk() was being performed, the NMI could
+> deadlock from the printk() internal locks. This has been seen in practice.
+> 
+
+One added bonus is that this code also makes the NMI dump stack work on
+PREEMPT_RT kernels. As printk() includes sleeping locks on PREEMPT_RT,
+printk() only writes to console if the console does not use any
+rt_mutex converted spin locks. Which a lot do.
+
+-- Steve
