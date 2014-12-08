@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaLHLFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:05:13 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:13748 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaLHLFF (ORCPT
+	id S1755291AbaLHLFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:05:44 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:10917 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755226AbaLHLE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:05:05 -0500
-X-AuditID: cbfee68f-f791c6d000004834-15-548585de776b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
-Cc: "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        linux-fbdev@vger.kernel.org,
-        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        "'Linux PM list'" <linux-pm@vger.kernel.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <19160360.7uJRUqlDQg@vostro.rjw.lan> <548584CC.7010603@ti.com>
-In-reply-to: <548584CC.7010603@ti.com>
-Subject: Re: [PATCH] video / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Mon, 08 Dec 2014 20:06:30 +0900
-Message-id: <000901d012d7$0509a090$0f1ce1b0$%han@samsung.com>
+	Mon, 8 Dec 2014 06:04:56 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-e5-548585d5568f
+Message-id: <548585C5.3000209@samsung.com>
+Date: Mon, 08 Dec 2014 12:04:37 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH v2 01/11] media: s3c-camif: use vb2_ops_wait_prepare/finish
+ helper
+References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1417041754-8714-2-git-send-email-prabhakar.csengg@gmail.com>
+In-reply-to: <1417041754-8714-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-type: text/plain; charset=windows-1252
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdAS1jN+vLr5ttVhT0ezURh9GkHNhgAAKvvQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t8zQ917ra0hBjOviVhcXniJ1eJE3wdW
-	i8u75rBZfO49wmix7uELJoszp4ES6+ffYnNg93h14Q6Lx5ar7SwefVtWMXocv7GdyePzJrkA
-	1igum5TUnMyy1CJ9uwSujMNb7zEWtHNWNN57ztrAOJG9i5GTQ0LARGLzqbnMELaYxIV769lA
-	bCGBZYwSayfxwtQsvf4AKM4FFJ/OKNF46AIThPOLUeLXlJVg3WwCahJfvhwGmyoiEClx88EF
-	sEnMAm8ZJSbfEehi5ABq8JJ4+bkaJMwJVP5z/Qo2kLCwgKfE6WklIGEWAVWJ0z1XwCbyCthK
-	fD66gQnCFpT4MfkeC0g5s4C6xJQpuRDD5SU2r3nLDBKWAAo/+qsLsd9I4u/eu4wQJSIS+168
-	YwQ5WELgEbvE+Rn7GSFWCUh8m3yIBaJXVmLTAWgoSEocXHGDZQKjxCwki2chLJ6FZPEsJBsW
-	MLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJ2v4djHcPWB9iFOBgVOLhXfCgJUSINbGs
-	uDL3EKMp0EETmaVEk/OBqSGvJN7Q2MzIwtTE1NjI3NJMSZx3odTPYCGB9MSS1OzU1ILUovii
-	0pzU4kOMTBycUg2MVRcCVBR/Zkcp9PFH+l2TvbdLPOxl1gOZnTIcX7c3T3Q9Y8q1RPLA5cn7
-	k9Rtd/gujnh58fvqZdu+fXjHzd5wX5r5hsvEuWfZ7H6HNDg/eN/MfdLc2WVb6uG4fb6nUnu/
-	//qSzWzy47qu7f31fNu/ZanGnlz0+mEe2wNTv92bK10+ODjdVSz4osRSnJFoqMVcVJwIAIad
-	0c/VAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO691tYQgxcH+S0uL7zEanGi7wOr
-	xeVdc9gsPvceYbRY9/AFk8WZ00CJ9fNvsTmwe7y6cIfFY8vVdhaPvi2rGD2O39jO5PF5k1wA
-	a1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0B1K
-	CmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xozDW+8xFrRzVjTee87awDiR
-	vYuRk0NCwERi6fUHbBC2mMSFe+uBbC4OIYHpjBKNhy4wQTi/GCV+TVnJDFLFJqAm8eXLYbBu
-	EYFIiZsPLoB1Mwu8ZZSYfEegi5EDqMFL4uXnapAwJ1D5z/Ur2EDCwgKeEqenlYCEWQRUJU73
-	XAGbyCtgK/H56AYmCFtQ4sfkeywg5cwC6hJTpuRCDJeX2LzmLTNIWAIo/OivLsR+I4m/e+8y
-	QpSISOx78Y5xAqPQLCSDZiEMmoVk0CwkHQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525i
-	BCeFZ1I7GFc2WBxiFOBgVOLhXfCgJUSINbGsuDL3EKMEB7OSCG9iXGuIEG9KYmVValF+fFFp
-	TmrxIUZToDcnMkuJJucDE1ZeSbyhsYmZkaWRmYWRibm5kjjvjZu5IUIC6YklqdmpqQWpRTB9
-	TBycUg2MjM89ZQPWrfRMPf6ofontZK7bfEoLZx58n1dpcUTTWcZkbVz6CeVpF3vjrDgfB2iu
-	eJsa5jiraPdEw0M+ciYxLXlp6enfsxnXv/KZ+zYzJ4C/NdHlwJka7YnZryIcPuQ/Fnf7X69v
-	8qGvuOmk76W7JwN+3nwzf2Gm5G7GWcJ+rOtOVgf/6v+pxFKckWioxVxUnAgAxkG0VyADAAA=
-DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t/xq7rXWltDDNaVWiz5uYvJ4vKuOWwW
+	PRu2slq8vL+C2WLe551MDqweU35vZPXYOesuu8fnTXIBzFFuNhmpiSmpRQqpecn5KZl56bZK
+	oSFuuhZKCnmJuam2ShG6viFBSgpliTmlQJ6RARpwcA5wD1bSt0twy1hwdyZLwRGWils/D7I0
+	MD5i7mLk5JAQMJH4fW0rG4QtJnHh3nogm4tDSGApo8TGFZuZIZxPjBJ9k/exg1TxCmhJzDjz
+	D6yDRUBV4uicK6wgNpuAoUTv0T5GEFtUIELi5N09UPWCEj8m32MBsUUEwiVWfL0PtplZoEZi
+	6odmoDgHhzBQ/a+V8SBhIYFORomW+eUgNqeAl8Sb7jVsICXMAnoS9y9qQXTKS2xe85Z5AqPA
+	LCQLZiFUzUJStYCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSLx82cG4+JjVIUYBDkYl
+	Hl5zxdYQIdbEsuLK3EOMEhzMSiK8iXFAId6UxMqq1KL8+KLSnNTiQ4zJQO9PZJYSTc4HxnJe
+	SbyhiaG5paGRsYWFuZERacJK4rwVX1tChATSE0tSs1NTC1KLYLYwcXBKNTA63Mhau/LuE660
+	g03zudZx14fUieSqetlff/GYsfKvZHzAinL5p69SkvYVftygFHBqkuHdWj+bJgWluX/M5Q3F
+	3/DE97bVh5650qJqXK4459rPL1t4jqx9XjKN5ZrzitWPL0Z7FfL+9vTcuU968Z1lCUZRSu8j
+	d7B73FvKffTSI4uV10VZAq4osRRnJBpqMRcVJwIAQuMCpNsCAAA=
 X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 08, 2014 8:00 PM, Tomi Valkeinen wrote
+On 26/11/14 23:42, Lad, Prabhakar wrote:
+> This patch drops driver specific wait_prepare() and
+> wait_finish() callbacks from vb2_ops and instead uses
+> the the helpers vb2_ops_wait_prepare/finish() provided
+> by the vb2 core, the lock member of the queue needs
+> to be initalized to a mutex so that vb2 helpers
+> vb2_ops_wait_prepare/finish() can make use of it.
 > 
-> On 06/12/14 04:36, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> > selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> > depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> > CONFIG_PM.
-> >
-> > The alternative of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME may be
-> > replaced with CONFIG_PM too.
-> >
-> > Make these changes in 2 files under drivers/video/.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >
-> > Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> > PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> > linux-pm tree).
-> >
-> > Please let me know if it is OK to take this one into linux-pm.
-> 
-> Does not seem to conflict with fbdev changes, so:
-> 
-> Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-
-For drivers/video/fbdev/s3c-fb.c,
-
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
-> 
->  Tomi
-> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 
 
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+-- 
+Thanks,
+Sylwester
