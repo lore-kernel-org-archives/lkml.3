@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaLHIg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:36:28 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43300 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaLHIg1 (ORCPT
+	id S1752403AbaLHIjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:39:44 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6709 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaLHIjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:36:27 -0500
-Message-ID: <54856305.2070408@codeaurora.org>
-Date: Mon, 08 Dec 2014 10:36:21 +0200
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 8 Dec 2014 03:39:43 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 08 Dec 2014 00:37:57 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thierry Reding <treding@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] ARM: DMA: Fix kzalloc flags in __iommu_alloc_buffer()
+Date: Mon, 8 Dec 2014 17:39:27 +0900
+Message-ID: <1418027967-12923-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.1.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-3-git-send-email-richard@nod.at>
-In-Reply-To: <1417347340-6872-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 1:35 PM, Richard Weinberger wrote:
-> There is no need to allocate new ones every time, we can reuse
-> the existing ones.
-> This makes the code cleaner and more easy to follow.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->   drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
->   drivers/mtd/ubi/wl.c      | 11 +++++++----
->   2 files changed, 12 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-> index db3defd..9507702 100644
-> --- a/drivers/mtd/ubi/fastmap.c
-> +++ b/drivers/mtd/ubi/fastmap.c
-> @@ -1446,19 +1446,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->   	}
->
->   	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
+There doesn't seem to be any valid reason to allocate the pages array
+with the same flags as the buffer itself. Doing so can eventually lead
+to the following safeguard in mm/slab.c to be hit:
 
-Not related to this patch, but looking at this function it got me 
-thinking: why do we need to re-calculate new_fm->used_blocks (and check 
-calculated value) each time? fm_size doesn't changed at runtime. 
-leb_size sure does not, so fm->used_blocks can be ubi device parameter 
-and calculated & tested only once, and not each time we write fastmap. 
-Correct?
+BUG_ON(flags & GFP_SLAB_BUG_MASK);
 
+This happens when buffers are allocated with __GFP_DMA32 or
+__GFP_HIGHMEM.
 
-> -
-> -	for (i = 0; i < new_fm->used_blocks; i++) {
-> -		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
-> -		if (!new_fm->e[i]) {
-> -			while (i--)
-> -				kfree(new_fm->e[i]);
-> -
-> -			kfree(new_fm);
-> -			mutex_unlock(&ubi->fm_mutex);
-> -			return -ENOMEM;
-> -		}
-> -	}
-> -
->   	old_fm = ubi->fm;
->   	ubi->fm = NULL;
->
+Fix this by allocating the pages array with GFP_KERNEL to follow what is
+done elsewhere in this file. Using GFP_KERNEL in __iommu_alloc_buffer()
+is safe because atomic allocations are handled by __iommu_alloc_atomic().
 
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Thierry Reding <treding@nvidia.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/arm/mm/dma-mapping.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Tanya Brokhman
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index e8907117861e..bc495354c802 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -1106,7 +1106,7 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
+ 	int i = 0;
+ 
+ 	if (array_size <= PAGE_SIZE)
+-		pages = kzalloc(array_size, gfp);
++		pages = kzalloc(array_size, GFP_KERNEL);
+ 	else
+ 		pages = vzalloc(array_size);
+ 	if (!pages)
 -- 
-Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+2.1.3
+
