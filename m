@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362AbaLHTEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 14:04:36 -0500
-Received: from mga02.intel.com ([134.134.136.20]:61731 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756203AbaLHTEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 14:04:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,540,1413270000"; 
-   d="scan'208";a="620566268"
-Subject: [PATCH 1/2] x86 tlb: fix overflow of flush_end in remote tlb flush
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
-        stable@vger.kernel.org
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 08 Dec 2014 11:03:48 -0800
-Message-Id: <20141208190348.BEDDE684@viggo.jf.intel.com>
+	id S1756405AbaLHTFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 14:05:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53507 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaLHTFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 14:05:17 -0500
+Date: Mon, 8 Dec 2014 11:05:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH wq/for-3.19 3/3] workqueue: dump workqueues on sysrq-t
+Message-Id: <20141208110515.7860d68baca2b3bd46c9dab7@linux-foundation.org>
+In-Reply-To: <20141208184035.GE12274@htj.dyndns.org>
+References: <20141208174326.GB12274@htj.dyndns.org>
+	<20141208174406.GC12274@htj.dyndns.org>
+	<20141208174733.GD12274@htj.dyndns.org>
+	<20141208100613.ecc66d89.akpm@linux-foundation.org>
+	<20141208184035.GE12274@htj.dyndns.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 8 Dec 2014 13:40:35 -0500 Tejun Heo <tj@kernel.org> wrote:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> Hello, Andrew.
+> 
+> On Mon, Dec 08, 2014 at 10:06:13AM -0800, Andrew Morton wrote:
+> > sysrq-t already produces thousands of lines of output.  Maybe create a
+> > new keycode for this?
+> 
+> Believe it or not, we already used up all alphanumerics if we count in
+> the arch-specific ones.  Given that the workqueue information would
+> primarily be useful in tracking down hangs and we'd want to see the
+> dump of tasks in that case anyway, sysrq-t isn't a bad fit for
+> appending workqueue dump.  If anybody has a better idea, I'm all ears.
 
-If flush_end ends up being at or above 1 page before the end of
-memory, the following calculation can overflow:
+Really.  Upper case?
 
-	f->flush_end = f->flush_start + PAGE_SIZE;
+> ...
+> > > +static void pr_cont_pool_info(struct worker_pool *pool)
+> > > +{
+> > > +	if (pool->cpu >= 0)
+> > > +		pr_cont(" cpu=%d", pool->cpu);
+> > > +	else if (pool->node != NUMA_NO_NODE)
+> > > +		pr_cont(" node=%d", pool->node);
+> > > +
+> > > +	if (pool->cpu < 0) {
+> > > +		static char cpus_buf[PAGE_SIZE];
+> > 
+> > Ouch.  This could be [NR_CPUS + epsilon]?
+> 
+> It's bitmap mask printing so each char can show four cpus.  PAGE_SIZE
+> should be enough for now but I think we need cpumask_prcont().
 
-x86_64 has a 2MB hole at the end of memory, so we don't expect
-this to be possible there.  On i386, I believe this page is in
-the fixmap, and we never use this code there.  We only do _local_
-tlb flushes.
+I'm not concerned about it being too small ;) Not many people have 16k
+CPUs - can it be shrunk?  It's particularly gross when CONFIG_SMP=n!
 
-Either way, just fall back to a full tlb flush and spit out a
-warning if we ever run in to this.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: stable@vger.kernel.org
----
-
- b/arch/x86/mm/tlb.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff -puN arch/x86/mm/tlb.c~x86-tlb-fix-overflow arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~x86-tlb-fix-overflow	2014-12-08 10:58:21.875765823 -0800
-+++ b/arch/x86/mm/tlb.c	2014-12-08 10:58:21.878765959 -0800
-@@ -109,8 +109,17 @@ static void flush_tlb_func(void *info)
- 
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
--	if (!f->flush_end)
-+	if (!f->flush_end) {
- 		f->flush_end = f->flush_start + PAGE_SIZE;
-+		/*
-+		 * Check for an overflow and just flush the whole
-+		 * TLB in that case.
-+		 */
-+		if (f->flush_end < f->flush_start + PAGE_SIZE) {
-+			f->flush_end = TLB_FLUSH_ALL;
-+			VM_WARN_ON_ONCE(1);
-+		}
-+	}
- 
- 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
-_
