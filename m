@@ -1,276 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaLHFM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 00:12:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaLHFM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 00:12:56 -0500
-Message-ID: <1418015529.1095.26.camel@bling.home>
-Subject: Re: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for VT-d
- Posted-Interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Wu, Feng" <feng.wu@intel.com>
-Cc: Eric Auger <eric.auger@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Sun, 07 Dec 2014 22:12:09 -0700
-In-Reply-To: <E959C4978C3B6342920538CF579893F0022E2DC0@SHSMSX104.ccr.corp.intel.com>
-References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
-	 <1417592394-24343-19-git-send-email-feng.wu@intel.com>
-	 <54807F5C.4050607@linaro.org>
-	 <E959C4978C3B6342920538CF579893F0022E2DC0@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753860AbaLHFR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 00:17:57 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:62568 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaLHFR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 00:17:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+RfmHbitDG0bMuAYjivFF54sjbocoYmvsvaAg=NcPha_vWYGw@mail.gmail.com>
+References: <1416993266-16514-1-git-send-email-kiran.kumar@linaro.org>
+	<CAMbhsRR0XzJ9ouYuoE2z+oCR9jRt8XBEfuVgd7sLJMg24bMKyQ@mail.gmail.com>
+	<5476F3C5.8020709@linaro.org>
+	<CA+RfmHbitDG0bMuAYjivFF54sjbocoYmvsvaAg=NcPha_vWYGw@mail.gmail.com>
+Date: Mon, 8 Dec 2014 10:47:54 +0530
+Message-ID: <CA+RfmHY1ngbVgS8xakK01dE0S=1e7Mq9rzRXvqNZoeOh4XfVVw@mail.gmail.com>
+Subject: Re: [RFC v3] debug: prevent entering debug mode on errors
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-08 at 04:58 +0000, Wu, Feng wrote:
-> 
-> > -----Original Message-----
-> > From: Eric Auger [mailto:eric.auger@linaro.org]
-> > Sent: Thursday, December 04, 2014 11:36 PM
-> > To: Wu, Feng; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> > x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
-> > dwmw2@infradead.org; joro@8bytes.org; alex.williamson@redhat.com;
-> > jiang.liu@linux.intel.com
-> > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> > kvm@vger.kernel.org
-> > Subject: Re: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for VT-d
-> > Posted-Interrupts
-> > 
-> > Hi Feng,
-> > 
-> > On 12/03/2014 08:39 AM, Feng Wu wrote:
-> > > This patch adds the kvm-vfio interface for VT-d Posted-Interrrupts.
-> > > When guests updates MSI/MSI-x information for an assigned-device,
-> > update
-> > > QEMU will use KVM_DEV_VFIO_DEVICE_POSTING_IRQ attribute to setup
-> > > IRTE for VT-d PI. This patch implement this IRQ attribute.
-> > s/implement/implements
-> > >
-> > > Signed-off-by: Feng Wu <feng.wu@intel.com>
-> > > ---
-> > >  include/linux/kvm_host.h |   19 ++++++++
-> > >  virt/kvm/vfio.c          |  103
-> > ++++++++++++++++++++++++++++++++++++++++++++++
-> > >  2 files changed, 122 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > > index 5cd4420..8d06678 100644
-> > > --- a/include/linux/kvm_host.h
-> > > +++ b/include/linux/kvm_host.h
-> > > @@ -1134,6 +1134,25 @@ static inline int
-> > kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
-> > >  }
-> > >  #endif
-> > >
-> > > +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> > > +/*
-> > > + * kvm_arch_vfio_update_pi_irte - set IRTE for Posted-Interrupts
-> > > + *
-> > > + * @kvm: kvm
-> > > + * @host_irq: host irq of the interrupt
-> > > + * @guest_irq: gsi of the interrupt
-> > > + * returns 0 on success, < 0 on failure
-> > > + */
-> > > +int kvm_arch_vfio_update_pi_irte(struct kvm *kvm, unsigned int host_irq,
-> > > +				 uint32_t guest_irq);
-> > > +#else
-> > > +static int kvm_arch_vfio_update_pi_irte(struct kvm *kvm, unsigned int
-> > host_irq,
-> > > +					uint32_t guest_irq)
-> > > +{
-> > > +	return 0;
-> > > +}
-> > > +#endif
-> > > +
-> > >  #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
-> > >
-> > >  static inline void kvm_vcpu_set_in_spin_loop(struct kvm_vcpu *vcpu, bool
-> > val)
-> > > diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> > > index 6bc7001..5e5515f 100644
-> > > --- a/virt/kvm/vfio.c
-> > > +++ b/virt/kvm/vfio.c
-> > > @@ -446,6 +446,99 @@ out:
-> > >  	return ret;
-> > >  }
-> > >
-> > > +static int kvm_vfio_pci_get_irq_count(struct pci_dev *pdev, int irq_type)
-> > > +{
-> > > +	if (irq_type == VFIO_PCI_INTX_IRQ_INDEX) {
-> > > +		u8 pin;
-> > > +
-> > > +		pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &pin);
-> > > +		if (pin)
-> > > +			return 1;
-> > > +	} else if (irq_type == VFIO_PCI_MSI_IRQ_INDEX)
-> > > +		return pci_msi_vec_count(pdev);
-> > > +	else if (irq_type == VFIO_PCI_MSIX_IRQ_INDEX)
-> > > +		return pci_msix_vec_count(pdev);
-> > > +
-> > > +	return 0;
-> > > +}
-> > for platform case I was asked to move the retrieval of absolute irq
-> > number to the architecture specific part. I don't know if it should
-> > apply to PCI stuff as well? This explains why I need to pass the VFIO
-> > device (or struct device handle) to the arch specific part. Actually we
-> > do the same job, we provide a phys/virt IRQ mapping to KVM, right? So to
-> > me our architecture specific API should look quite similar?
-> 
-> In my patch, QEMU passes IRQ type(MSI/MSIx in my case), VFIO device index,
-> and sub-index via "struct kvm_vfio_dev_irq" to KVM, then KVM will find the
-> real host irq from the VFIO device index and the IRQ type. Is this something
-> similar with your patch?
-> 
-> > 
-> > > +
-> > > +static int kvm_vfio_set_pi(struct kvm_device *kdev, int32_t __user *argp)
-> > > +{
-> > > +	struct kvm_vfio_dev_irq pi_info;
-> > > +	uint32_t *gsi;
-> > > +	unsigned long minsz;
-> > > +	struct vfio_device *vdev;
-> > > +	struct msi_desc *entry;
-> > > +	struct device *dev;
-> > > +	struct pci_dev *pdev;
-> > > +	int i, max, ret;
-> > > +
-> > > +	minsz = offsetofend(struct kvm_vfio_dev_irq, count);
-> > > +
-> > > +	if (copy_from_user(&pi_info, (void __user *)argp, minsz))
-> > > +		return -EFAULT;
-> > > +
-> > > +	if (pi_info.argsz < minsz || pi_info.index >= VFIO_PCI_NUM_IRQS)
-> > PCI specific check, same remark as above but I will let Alex further
-> > comment on this and possibly invalidate this commeny ;-)
-> > > +		return -EINVAL;
-> > > +
-> > > +	vdev = kvm_vfio_get_vfio_device(pi_info.fd);
-> > > +	if (IS_ERR(vdev))
-> > > +		return PTR_ERR(vdev);
-> > > +
-> > > +	dev = kvm_vfio_external_base_device(vdev);
-> > > +	if (!dev || !dev_is_pci(dev)) {
-> > > +		ret = -EFAULT;
-> > > +		goto put_vfio_device;
-> > > +	}
-> > > +
-> > > +	pdev = to_pci_dev(dev);
-> > > +
-> > > +	max = kvm_vfio_pci_get_irq_count(pdev, pi_info.index);
-> > > +	if (max <= 0) {
-> > > +		ret = -EFAULT;
-> > > +		goto put_vfio_device;
-> > > +	}
-> > > +
-> > > +	if (pi_info.argsz - minsz < pi_info.count * sizeof(int) ||
-> > shouldn' we use the actual datatype?
-> 
-> I am afraid I don't get this, could you please be more specific? Thanks a lot!
+Hi Jason,
 
-We could have a platform that supports 64bit INTs.
+On 1 December 2014 at 11:32, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+> Hi Jason,
+>
+> On 27 November 2014 at 15:19, Daniel Thompson
+> <daniel.thompson@linaro.org> wrote:
+>> On 26/11/14 17:45, Colin Cross wrote:
+>>> On Wed, Nov 26, 2014 at 1:14 AM, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+>>>> From: Colin Cross <ccross@android.com>
+>>>>
+>>>> debug: prevent entering debug mode on errors
+>>>>
+>>>> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
+>>>> device after a panic.
+>>>>
+>>>> In case of panics and exceptions, to honor CONFIG_PANIC_TIMEOUT, prevent
+>>>> entering debug mode to avoid getting stuck waiting for the user to interact
+>>>> with debugger.
+>>>>
+>>>> Cc: Jason Wessel <jason.wessel@windriver.com>
+>>>> Cc: kgdb-bugreport@lists.sourceforge.net
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> Cc: Android Kernel Team <kernel-team@android.com>
+>>>> Cc: John Stultz <john.stultz@linaro.org>
+>>>> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+>>>> Signed-off-by: Colin Cross <ccross@android.com>
+>>>> [Kiran: Added context to commit message.
+>>>> panic_timeout is used instead of break_on_panic and
+>>>> break_on_exception to honor CONFIG_PANIC_TIMEOUT]
+>>>> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+>>>> ---
+>>>>  kernel/debug/debug_core.c | 17 +++++++++++++++++
+>>>>  1 file changed, 17 insertions(+)
+>>>>
+>>>> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+>>>> index 1adf62b..0012a1f 100644
+>>>> --- a/kernel/debug/debug_core.c
+>>>> +++ b/kernel/debug/debug_core.c
+>>>> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+>>>>
+>>>>         if (arch_kgdb_ops.enable_nmi)
+>>>>                 arch_kgdb_ops.enable_nmi(0);
+>>>> +       /*
+>>>> +        * Avoid entering the debugger if we were triggered due to an oops
+>>>> +        * but panic_timeout indicates the system should automatically
+>>>> +        * reboot on panic. We don't want to get stuck waiting for input
+>>>> +        * on such systems, especially if its "just" an oops.
+>>>> +        */
+>>>> +       if (signo != SIGTRAP && panic_timeout)
+>>>> +               return 1;
+>>>>
+>>>>         memset(ks, 0, sizeof(struct kgdb_state));
+>>>>         ks->cpu                 = raw_smp_processor_id();
+>>>> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
+>>>>                             unsigned long val,
+>>>>                             void *data)
+>>>>  {
+>>>> +       /*
+>>>> +        * Avoid entering the debugger if we were triggered due to a panic
+>>>> +        * We don't want to get stuck waiting for input from user in such case.
+>>>> +        * panic_timeout indicates the system should automatically
+>>>> +        * reboot on panic.
+>>>> +        */
+>>>> +       if (panic_timeout)
+>>>> +               return NOTIFY_DONE;
+>>>> +
+>>>>         if (dbg_kdb_mode)
+>>>>                 kdb_printf("PANIC: %s\n", (char *)data);
+>>>>         kgdb_breakpoint();
+>>>
+>>> The original patch was more useful as it allowed re-enabling break on
+>>> panic on specific devices where you were trying to debug a
+>>> reproducible issue.  What about using a module_param similar to
+>>> kgdbreboot, but setting the default based on CONFIG_PANIC_TIMEOUT to
+>>> avoid extra configuration?
+>>
+>> This change was due to my review so perhaps I'd better answer this...
+>>
+>> panic_timeout is the value of the panic sysctl. In addition to the
+>> normal sysctl tooling (which I don't think is available on most android
+>> systems), its value can be set using panic=0 on the kernel command line
+>> or via /proc/sys/kernel/panic at runtime.
+>>
+>> CONFIG_PANIC_TIMEOUT merely sets the default value of the sysctl. I
+>> guess perhaps the patch description could be improved to make this clearer.
+>>
+>> Therefore, the only loss of function I expected versus the original is
+>> that it would be hard to get as far as a reproducible panic if the
+>> system also has a ton of reproducible oopses that we don't want to fix.
+>> Is such a use-case important?
+>
+> Could you please let me know if this patch is good to move from RFC to PATCH?
+Just a gentle reminder.
+Regards,
+Kiran
 
-> > > +	    pi_info.start >= max || pi_info.start + pi_info.count > max) {
-> > > +		ret = -EINVAL;
-> > > +		goto put_vfio_device;
-> > > +	}
-> > > +
-> > > +	gsi = memdup_user((void __user *)((unsigned long)argp + minsz),
-> > > +			   pi_info.count * sizeof(int));
-> > same question as above
-> > > +	if (IS_ERR(gsi)) {
-> > > +		ret = PTR_ERR(gsi);
-> > > +		goto put_vfio_device;
-> > > +	}
-> > > +
-> > > +#ifdef CONFIG_PCI_MSI
-> > > +	for (i = 0; i < pi_info.count; i++) {
-> > > +		list_for_each_entry(entry, &pdev->msi_list, list) {
-> > > +			if (entry->msi_attrib.entry_nr != pi_info.start+i)
-> > > +				continue;
-> > > +
-> > > +			ret = kvm_arch_vfio_update_pi_irte(kdev->kvm,
-> > > +							   entry->irq,
-> > > +							   gsi[i]);
-> > > +			if (ret) {
-> > > +				ret = -EFAULT;
-> > why -EFAULT? and not propagation of original error code?
-> Yes, you are right. Thanks for the comments!
-> 
-> > you may have posting set for part of the subindexes and unset for rest.
-> > Isn't it an issue?
-> 
-> QEMU will always set the posting for all the sub-indexes for MSI/MSIx,
-> once the guest updates the configuration of some sub-indexes, KVM will
-> update it accordingly. So in which case will what you mentioned above
-> happen?
-
-QEMU is just one userspace, not necessarily the only userspace.  The
-kernel shouldn't expect a specific userspace behavior.
-
-> > > +				goto free_gsi;
-> > > +			}
-> > > +		}
-> > > +	}
-> > > +#endif
-> > > +
-> > > +	ret = 0;
-> > > +
-> > > +free_gsi:
-> > > +	kfree(gsi);
-> > > +
-> > > +put_vfio_device:
-> > > +	kvm_vfio_put_vfio_device(vdev);
-> > > +	return ret;
-> > > +}
-> > > +
-> > >  static int kvm_vfio_set_device(struct kvm_device *kdev, long attr, u64 arg)
-> > >  {
-> > >  	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
-> > > @@ -456,6 +549,11 @@ static int kvm_vfio_set_device(struct kvm_device
-> > *kdev, long attr, u64 arg)
-> > >  	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> > >  		ret = kvm_vfio_control_irq_forward(kdev, attr, argp);
-> > >  		break;
-> > > +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> > > +	case KVM_DEV_VFIO_DEVICE_POSTING_IRQ:
-> > > +		ret = kvm_vfio_set_pi(kdev, argp);
-> > > +		break;
-> > > +#endif
-> > >  	default:
-> > >  		ret = -ENXIO;
-> > >  	}
-> > > @@ -511,6 +609,11 @@ static int kvm_vfio_has_attr(struct kvm_device
-> > *dev,
-> > >  		case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> > >  			return 0;
-> > >  #endif
-> > > +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> > > +		case KVM_DEV_VFIO_DEVICE_POSTING_IRQ:
-> > > +			return 0;
-> > > +#endif
-> > > +
-> > >  		}
-> > >  		break;
-> > >  	}
-> > >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+> Regards,
+> Kiran
