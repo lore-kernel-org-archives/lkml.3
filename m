@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671AbaLHPDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:03:23 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:46161 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755629AbaLHPDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:03:21 -0500
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Beniamino Galvani <b.galvani@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        <srv_heupstream@mediatek.com>, <hc.yen@mediatek.com>,
-        <yh.chen@mediatek.com>, <linux-kernel@vger.kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <nathan.chung@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>, <eddie.huang@mediatek.com>,
-        <yingjoe.chen@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-Subject: [PATCH] irqchip: mediatek: Fix error return code detection
-Date: Mon, 8 Dec 2014 23:03:09 +0800
-Message-ID: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
+	id S1755711AbaLHPEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:04:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908AbaLHPEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:04:48 -0500
+Date: Mon, 8 Dec 2014 16:04:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        linux-mm@kvack.org, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
+ memory hot-add code
+Message-ID: <20141208150445.GB29102@dhcp22.suse.cz>
+References: <1417826471-21131-1-git-send-email-kys@microsoft.com>
+ <1417826498-21172-1-git-send-email-kys@microsoft.com>
+ <1417826498-21172-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417826498-21172-2-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix an error handling bug reported by Beniamino, this is based on
-mtk intpol patches [1]
+On Fri 05-12-14 16:41:38, K. Y. Srinivasan wrote:
+> Andy Whitcroft <apw@canonical.com> initially saw this deadlock. We
+> have seen this as well. Here is the original description of the
+> problem (and a potential solution) from Andy:
+> 
+> https://lkml.org/lkml/2014/3/14/451
+> 
+> Here is an excerpt from that mail:
+> 
+> "We are seeing machines lockup with what appears to be an ABBA
+> deadlock in the memory hotplug system.  These are from the 3.13.6 based Ubuntu kernels.
+> The hv_balloon driver is adding memory using add_memory() which takes
+> the hotplug lock
 
-Joe.C
+Do you mean mem_hotplug_begin?
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/305808.html
+> and then emits a udev event, and then attempts to
+> lock the sysfs device.  In response to the udev event udev opens the
+> sysfs device and locks it, then attempts to grab the hotplug lock to online the memory.
 
-====================
-of_io_request_and_map() return ERR_PTR wrapped error code instead of
-NULL when fail, fix code in mtk_sysirq_of_init() to correctly handle
-this.
+Cannot we simply teach online_pages to fail with EBUSY when the memory
+hotplug is on the way. We shouldn't try to online something that is not
+initialized yet, no? The memory hotplug log is global so we can get
+false positives but that should be easier to deal with than exporting
+lock_device_hotplug and adding yet another lock dependency.
 
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
----
- drivers/irqchip/irq-mtk-sysirq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> This seems to be inverted nesting in the two cases, leading to the hangs below:
+> 
+> [  240.608612] INFO: task kworker/0:2:861 blocked for more than 120 seconds.
+> [  240.608705] INFO: task systemd-udevd:1906 blocked for more than 120 seconds.
+> 
+> I note that the device hotplug locking allows complete retries (via
+> ERESTARTSYS) and if we could detect this at the online stage it could
+> be used to get us out.
 
-diff --git a/drivers/irqchip/irq-mtk-sysirq.c b/drivers/irqchip/irq-mtk-sysirq.c
-index 7e342df..0b0d2c0 100644
---- a/drivers/irqchip/irq-mtk-sysirq.c
-+++ b/drivers/irqchip/irq-mtk-sysirq.c
-@@ -137,9 +137,9 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
- 		return -ENOMEM;
+I am not sure I understand this but it suggests EBUSY above?
+
+> But before I go down this road I wanted to
+> make sure I am reading this right.  Or indeed if the hv_balloon driver
+> is just doing this wrong."
+> 
+> This patch is based on the suggestion from
+> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+This changelog doesn't explain us much. And boy this whole thing is so
+convoluted. E.g. I have hard time to see why ACPI hotplug is working
+correctly. My trail got lost at acpi_memory_device_add level which is
+a callback while acpi_device_hotplug is holding lock_device_hotplug but
+then again the rest is hidden by callbacks. I cannot seem to find any
+documentation which would explain all the locking here.
+
+So why other callers of add_memory don't need the same treatment and if
+they do then why don't we use the lock at add_memory level?
  
- 	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
--	if (!chip_data->intpol_base) {
-+	if (IS_ERR(chip_data->intpol_base)) {
- 		pr_err("mtk_sysirq: unable to map sysirq register\n");
--		ret = -ENOMEM;
-+		ret = PTR_ERR(chip_data->intpol_base);
- 		goto out_free;
- 	}
- 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+
+Nak to this without proper explanation and I really think that it should
+be the onlining code which should deal with the parallel add_memory and
+back off until the full initialization is done.
+
+> ---
+>  drivers/hv/hv_balloon.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+> index afdb0d5..f525a62 100644
+> --- a/drivers/hv/hv_balloon.c
+> +++ b/drivers/hv/hv_balloon.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/jiffies.h>
+>  #include <linux/mman.h>
+>  #include <linux/delay.h>
+> +#include <linux/device.h>
+>  #include <linux/init.h>
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+> @@ -649,8 +650,11 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
+>  
+>  		release_region_mutex(false);
+>  		nid = memory_add_physaddr_to_nid(PFN_PHYS(start_pfn));
+> +
+> +		lock_device_hotplug();
+>  		ret = add_memory(nid, PFN_PHYS((start_pfn)),
+>  				(HA_CHUNK << PAGE_SHIFT));
+> +		unlock_device_hotplug();
+>  
+>  		if (ret) {
+>  			pr_info("hot_add memory failed error is %d\n", ret);
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.8.1.1.dirty
-
+Michal Hocko
+SUSE Labs
