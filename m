@@ -1,68 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaLHP4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:56:09 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46365 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572AbaLHP4H (ORCPT
+	id S1755890AbaLHP4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:56:15 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:35660 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaLHP4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:56:07 -0500
-Date: Mon, 8 Dec 2014 15:55:57 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "brcm80211-dev-list@broadcom.com" <brcm80211-dev-list@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: using DMA-API on ARM
-Message-ID: <20141208155556.GL16185@e104818-lin.cambridge.arm.com>
-References: <5481794E.4050406@broadcom.com>
- <20141205183945.GE31222@e104818-lin.cambridge.arm.com>
- <20141205185303.GG31222@e104818-lin.cambridge.arm.com>
- <20141208125538.GA26983@sig21.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141208125538.GA26983@sig21.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 10:56:13 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
+Date: Mon,  8 Dec 2014 10:55:34 -0500
+Message-Id: <1418054134-28746-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 12:55:38PM +0000, Johannes Stezenbach wrote:
-> On Fri, Dec 05, 2014 at 06:53:03PM +0000, Catalin Marinas wrote:
-> > On Fri, Dec 05, 2014 at 06:39:45PM +0000, Catalin Marinas wrote:
-> > > 
-> > > Does your system have an L2 cache? What's the SoC topology, can PCIe see
-> > > such L2 cache (or snoop the L1 caches)?
-> > 
-> > BTW, if you really have a PL310-like L2 cache, have a look at some
-> > patches (I've seen similar symptoms) and make sure your configuration is
-> > correct:
-> > 
-> > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6395/1
-> > 
-> > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6529/1
-> > 
-> > The first one is vexpress specific. The second one was eventually
-> > discarded by Russell (I don't remember the reason, I guess it's because
-> > SoC code is supposed to set the right bits in there anyway). In your
-> > case, such bits may be set up by firmware, so Linux cannot fix anything
-> > up.
-> 
-> How do you avoid the unpredictable behavior mentioned in the
-> PL310 TRM when the Shared Attribute Invalidate Enable bit is set?
-> http://infocenter.arm.com/help/topic/com.arm.doc.ddi0246h/Ceggcfcj.html
+Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
+is a compile time failure if srcu is used when not enabled. This was decided to
+be better than waiting until link time for a failure to occur.
 
-So you talk about "Shared Attribute _Invalidate_ Enable" (bit 13) while
-I talk about "Shared Attribute _Override_ Enable" (bit 22).
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+CC: Josh Triplett <josh@joshtriplett.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ include/linux/notifier.h | 45 +++++++++++++++++++++++++--------------------
+ include/linux/srcu.h     |  6 +++++-
+ 2 files changed, 30 insertions(+), 21 deletions(-)
 
-In addition, Shared _Invalidate_ behaviour can only be enabled if Shared
-Attribute _Override_ Enable bit is not set.
-
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index d14a4c3..291ecb1 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -70,12 +70,6 @@ struct raw_notifier_head {
+ 	struct notifier_block __rcu *head;
+ };
+ 
+-struct srcu_notifier_head {
+-	struct mutex mutex;
+-	struct srcu_struct srcu;
+-	struct notifier_block __rcu *head;
+-};
+-
+ #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
+ 		spin_lock_init(&(name)->lock);	\
+ 		(name)->head = NULL;		\
+@@ -88,11 +82,6 @@ struct srcu_notifier_head {
+ 		(name)->head = NULL;		\
+ 	} while (0)
+ 
+-/* srcu_notifier_heads must be initialized and cleaned up dynamically */
+-extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+-#define srcu_cleanup_notifier_head(name)	\
+-		cleanup_srcu_struct(&(name)->srcu);
+-
+ #define ATOMIC_NOTIFIER_INIT(name) {				\
+ 		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
+ 		.head = NULL }
+@@ -101,7 +90,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+ 		.head = NULL }
+ #define RAW_NOTIFIER_INIT(name)	{				\
+ 		.head = NULL }
+-/* srcu_notifier_heads cannot be initialized statically */
+ 
+ #define ATOMIC_NOTIFIER_HEAD(name)				\
+ 	struct atomic_notifier_head name =			\
+@@ -121,8 +109,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int blocking_notifier_chain_cond_register(
+ 		struct blocking_notifier_head *nh,
+@@ -134,8 +120,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ 		unsigned long val, void *v);
+@@ -149,10 +133,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 		unsigned long val, void *v);
+ extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+-extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-		unsigned long val, void *v);
+-extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+ 
+ #define NOTIFY_DONE		0x0000		/* Don't care */
+ #define NOTIFY_OK		0x0001		/* Suits me */
+@@ -211,5 +191,30 @@ static inline int notifier_to_errno(int ret)
+ 
+ extern struct blocking_notifier_head reboot_notifier_list;
+ 
++#ifdef CONFIG_SRCU
++
++struct srcu_notifier_head {
++	struct mutex mutex;
++	struct srcu_struct srcu;
++	struct notifier_block __rcu *head;
++};
++
++/* srcu_notifier_heads must be initialized and cleaned up dynamically
++ * srcu_notifier_heads cannot be initialized statically
++ */
++extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
++#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
++
++extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++		unsigned long val, void *v);
++extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++	unsigned long val, void *v, int nr_to_call, int *nr_calls);
++
++#endif /* CONFIG_SRCU */
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_NOTIFIER_H */
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index 9cfd962..ed9c389 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -26,6 +26,8 @@
+  *
+  */
+ 
++#ifdef CONFIG_SRCU
++
+ #ifndef _LINUX_SRCU_H
+ #define _LINUX_SRCU_H
+ 
+@@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
+ 	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+ }
+ 
+-#endif
++#endif /* _LINUX_SRCU_H */
++
++#endif /* CONFIG_SRCU */
 -- 
-Catalin
+1.9.1
+
