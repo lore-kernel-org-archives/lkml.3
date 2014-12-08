@@ -1,195 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaLHMG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:06:58 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:27938 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaLHMG5 (ORCPT
+	id S1754808AbaLHMM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:12:26 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39976 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752111AbaLHMMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:06:57 -0500
-Message-ID: <54859454.30603@huawei.com>
-Date: Mon, 8 Dec 2014 20:06:44 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 8 Dec 2014 07:12:25 -0500
+Date: Mon, 8 Dec 2014 12:11:10 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jingchang.lu@freescale.com" <jingchang.lu@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH V2] tick-broadcast: Register for hrtimer based broadcast
+ as the fallback broadcast mode
+Message-ID: <20141208121110.GC21680@leverpostej>
+References: <20141208065513.3075.48721.stgit@preeti.in.ibm.com>
+ <20141208104828.GA21680@leverpostej>
+ <5485936F.20901@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v14 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1418020040-68977-1-git-send-email-wangnan0@huawei.com>		 <1418020131-69375-1-git-send-email-wangnan0@huawei.com>	 <1418036666.3647.33.camel@linaro.org> <5485886E.2060303@huawei.com> <1418039451.3647.48.camel@linaro.org>
-In-Reply-To: <1418039451.3647.48.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A0B0206.5485945F.009A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 9257eea5d514716c828b0c252b8d71d0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5485936F.20901@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/8 19:50, Jon Medhurst (Tixy) wrote:
-> On Mon, 2014-12-08 at 19:15 +0800, Wang Nan wrote:
->> On 2014/12/8 19:04, Jon Medhurst (Tixy) wrote:
->>> On Mon, 2014-12-08 at 14:28 +0800, Wang Nan wrote:
->>>> This patch introduce kprobeopt for ARM 32.
->>>>
->>>> Limitations:
->>>>  - Currently only kernel compiled with ARM ISA is supported.
->>>>
->>>>  - Offset between probe point and optinsn slot must not larger than
->>>>    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->>>>    things complex. Futher patch can make such optimization.
->>>>
->>>> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
->>>> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
->>>> replace probed instruction by a 'b', branch to trampoline code and then
->>>> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
->>>> to execute kprobe handler. It also emulate/simulate replaced instruction.
->>>>
->>>> When unregistering kprobe, the deferred manner of unoptimizer may leave
->>>> branch instruction before optimizer is called. Different from x86_64,
->>>> which only copy the probed insn after optprobe_template_end and
->>>> reexecute them, this patch call singlestep to emulate/simulate the insn
->>>> directly. Futher patch can optimize this behavior.
->>>>
->>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->>>> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>>> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
->>>> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
->>>> Cc: Will Deacon <will.deacon@arm.com>
->>>> ---
->>> [...]
->>>> v13 -> v14:
->>>>   - Use stop_machine to wrap arch_optimize_kprobes to avoid a racing.
->>>
->>> Think we need to use stop_machine differently, see comments on code
->>> below.
->>
->> Well, yes, I experienced one deadlock at serval minutes before.
->> I'm not very sure the reason and working on it now. I think it may caused
->> by recursivly stop_machine().
->>
->>>
->>>> ---
->>>>  arch/arm/Kconfig                        |   1 +
->>>>  arch/arm/{kernel => include/asm}/insn.h |   0
->>>>  arch/arm/include/asm/kprobes.h          |  29 +++
->>>>  arch/arm/kernel/Makefile                |   2 +-
->>>>  arch/arm/kernel/ftrace.c                |   3 +-
->>>>  arch/arm/kernel/jump_label.c            |   3 +-
->>>>  arch/arm/probes/kprobes/Makefile        |   1 +
->>>>  arch/arm/probes/kprobes/opt-arm.c       | 322 ++++++++++++++++++++++++++++++++
->>>>  samples/kprobes/kprobe_example.c        |   2 +-
->>>
->>> The change kprobe_example.c doesn't apply and I guess wasn't meant to be
->>> included in the patch?
->>>
->>
->> Yes. These 2 lines are introduced by mistake.
->>
->>> [...]
->>>> +/*
->>>> + * Similar to __arch_disarm_kprobe, operations which removing
->>>> + * breakpoints must be wrapped by stop_machine to avoid racing.
->>>> + */
->>>> +static __kprobes int __arch_optimize_kprobes(void *p)
->>>> +{
->>>> +	struct list_head *oplist = p;
->>>> +	struct optimized_kprobe *op, *tmp;
->>>> +
->>>> +	list_for_each_entry_safe(op, tmp, oplist, list) {
->>>> +		unsigned long insn;
->>>> +		WARN_ON(kprobe_disabled(&op->kp));
->>>> +
->>>> +		/*
->>>> +		 * Backup instructions which will be replaced
->>>> +		 * by jump address
->>>> +		 */
->>>> +		memcpy(op->optinsn.copied_insn, op->kp.addr,
->>>> +				RELATIVEJUMP_SIZE);
->>>> +
->>>> +		insn = arm_gen_branch((unsigned long)op->kp.addr,
->>>> +				(unsigned long)op->optinsn.insn);
->>>> +		BUG_ON(insn == 0);
->>>> +
->>>> +		/*
->>>> +		 * Make it a conditional branch if replaced insn
->>>> +		 * is consitional
->>>> +		 */
->>>> +		insn = (__mem_to_opcode_arm(
->>>> +			  op->optinsn.copied_insn[0]) & 0xf0000000) |
->>>> +			(insn & 0x0fffffff);
->>>> +
->>>> +		patch_text(op->kp.addr, insn);
->>>
->>> patch_text() itself may use stop_machine under certain circumstances,
->>> and if it were to do so, I believe that would cause the system to
->>> lock/panic. So, this should be __patch_text() instead, but we would also
->>> need to take care of the cache_ops_need_broadcast() case, where all
->>> CPU's need to invalidate their own caches and we can't rely on just one
->>> CPU executing the code patching whilst other CPUs spin and wait. Though
->>> to make life easier, we could just not optimise kprobes in the legacy
->>> cache_ops_need_broadcast() case.
->>>
->>>> +
->>>> +		list_del_init(&op->list);
->>>> +	}
->>>> +	return 0;
->>>> +}
->>>> +
->>>> +void arch_optimize_kprobes(struct list_head *oplist)
->>>> +{
->>>> +	stop_machine(__arch_optimize_kprobes, oplist, cpu_online_mask);
->>>> +}
->>>
->>> I believe passing cpu_online_mask above will cause
->>> __arch_optimize_kprobes to be executed on every CPU, is this safe? If it
->>> is, it's a serendipitous optimisation if each CPU can process different
->>> probes in the list. If it's not safe, this needs to be NULL instead so
->>> only one CPU executes the code.
->>>
->>
->> This stop_machine() call is copied from arch_disarm_kprobe, I think their
->> senario should be similar.
+On Mon, Dec 08, 2014 at 12:02:55PM +0000, Preeti U Murthy wrote:
+> On 12/08/2014 04:18 PM, Mark Rutland wrote:
+> > Hi Preeti,
+> > 
+> > On Mon, Dec 08, 2014 at 06:55:43AM +0000, Preeti U Murthy wrote:
+> >> Commit 5d1638acb9f6 ('tick: Introduce hrtimer based broadcast') added a
+> >> hrtimer based broadcast mode for those platforms in which local timers stop
+> >> when CPUs enter deep idle states. The commit expected the platforms to
+> >> register for this mode explicitly when they lacked a better external device
+> >> to wake up CPUs in deep idle. Given that more platforms are beginning to use
+> >> this mode, we can avoid the call to set it up on every platform that requires
+> >> it, by registering for the hrtimer based broadcast mode in the core code if
+> >> no better broadcast device is available.
+> >>
+> >> This commit also helps detect cases where the platform fails to register for
+> >> a broadcast device but invokes the help of one when entering deep idle states.
+> >> Currently we do not handle this situation at all and call the broadcast clock
+> >> device without checking for its existence. This patch will handle such buggy
+> >> cases properly.
+> >>
+> >> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> > 
+> > I've just given this a go on an arm64 platform (Juno) without any
+> > system-wide clock_event_devices registered, and everything works well
+> > with CPUs entering and exiting idle states where the cpu-local timers
+> > lose state. So:
+> > 
+> > Tested-by: Mark Rutland <mark.rutland@arm.com>
 > 
-> arch_disarm_kprobe is just executing __patch_text on each cpu, which
-> pokes a word of memory with a new value and flushes caches for it.
+> Thanks!
 > 
-> arch_optimize_kprobes is calling __arch_optimize_kprobes, which is
-> iterating over a list of probes and removing each one in turn, if this
-> is happening on multiple cpu's simultaneously, it's not clear to me that
-> such an operation is safe. list_del_init calls __list_del which does
+> > 
+> > One minor thing I noticed when testing was that
+> > /sys/devices/system/clockevents/broadcast/name contained "(null)",
+> > because we never set the name field on the clock_event_device. It's
+> > always been that way, but now might be a good time to change that to
+> > something like "broadcast_hrtimer".
 > 
-> 	next->prev = prev;
-> 	prev->next = next;
-> 
-> so what happens if another cpu is at the same time updating any of those
-> list entries? Without even fully analysing the code I can see that with
-> the fact that the list handling helpers have no memory barriers, that
-> the above two lines could be seen to execute in the reverse order, e.g.
->  
-> 	prev->next = next;
-> 	next->prev = prev;
-> 
-> so another CPU could find and delete next before this one has finished
-> doing so. Would the list end up in a consistent state where no loops
-> develop and no probes are missed? I don't know the answer and a full
-> analysis would be complicated, but my gut feeling is that if a cpu can
-> observe the links in the list in an inconsistent state then only bad
-> things can result.
-> 
+> You mean /sys/devices/system/clockevents/broadcast/current_device right?
 
-I see the problem.
+Whoops, yes I did.
 
-I'm thinking about making core.c and opt-arm.c to share stop_machine() code.
-stop_machine() is required when removing breakpoint, so I'd like to define
-a "remove_breakpoint" function in core.c and make opt-arm.c to call it.
-Do you think it is a good idea?
+> > [...]
+> > 
+> >> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+> >> index 2e4cb67..91754b0 100644
+> >> --- a/include/linux/clockchips.h
+> >> +++ b/include/linux/clockchips.h
+> >> @@ -187,11 +187,11 @@ extern int tick_receive_broadcast(void);
+> >>  #endif
+> >>  
+> >>  #if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
+> >> -extern void tick_setup_hrtimer_broadcast(void);
+> >> +extern int __init tick_setup_hrtimer_broadcast(void);
+> >>  extern int tick_check_broadcast_expired(void);
+> >>  #else
+> >>  static inline int tick_check_broadcast_expired(void) { return 0; }
+> >> -static inline void tick_setup_hrtimer_broadcast(void) {};
+> >> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
+> >>  #endif
+> >>  
+> >>  #ifdef CONFIG_GENERIC_CLOCKEVENTS
+> >> @@ -207,7 +207,7 @@ static inline void clockevents_resume(void) {}
+> >>  
+> >>  static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
+> >>  static inline int tick_check_broadcast_expired(void) { return 0; }
+> >> -static inline void tick_setup_hrtimer_broadcast(void) {};
+> >> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
+> > 
+> > With the initcall moved to the driver we have no external users of
+> > tick_setup_hrtimer_broadcast, so I think we can remove the prototype
+> > entirely from clockchips.h...
+> > 
+> >>  #endif
+> >>  
+> >> diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
+> >> index eb682d5..5c35995 100644
+> >> --- a/kernel/time/tick-broadcast-hrtimer.c
+> >> +++ b/kernel/time/tick-broadcast-hrtimer.c
+> >> @@ -98,9 +98,11 @@ static enum hrtimer_restart bc_handler(struct hrtimer *t)
+> >>  	return HRTIMER_RESTART;
+> >>  }
+> >>  
+> >> -void tick_setup_hrtimer_broadcast(void)
+> >> +int __init tick_setup_hrtimer_broadcast(void)
+> > 
+> > ...and make it static here.
+> 
+> Yep will do. Sorry I overlooked this.
+> 
+> > 
+> >>  {
+> >>  	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+> >>  	bctimer.function = bc_handler;
+> >>  	clockevents_register_device(&ce_broadcast_hrtimer);
+> >> +	return 0;
+> >>  }
+> >> +early_initcall(tick_setup_hrtimer_broadcast);
+> > 
+> > Otherwise this looks good to me, thanks for putting this together!
+> 
+> Thanks a lot for the review! Will send out the patch with the above
+> corrections.
 
+Cheers!
 
+Thanks,
+Mark.
