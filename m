@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994AbaLHPWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:22:53 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:59443 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898AbaLHPWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:22:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Hante Meuleman <meuleman@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arend Van Spriel <arend@broadcom.com>,
-        David Miller <davem@davemloft.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, hauke@hauke-m.de
-Subject: Re: using DMA-API on ARM
-Date: Mon, 08 Dec 2014 16:22:11 +0100
-Message-ID: <2335290.YorTSI1K36@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141208151733.GF11285@n2100.arm.linux.org.uk>
-References: <5481794E.4050406@broadcom.com> <2863746.4sUSEYqahB@wuerfel> <20141208151733.GF11285@n2100.arm.linux.org.uk>
+	id S1755544AbaLHP1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:27:45 -0500
+Received: from relay02.alfahosting-server.de ([109.237.142.238]:49904 "EHLO
+	relay02.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752358AbaLHP1n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:27:43 -0500
+X-Spam-DCC: : 
+Date: Mon, 8 Dec 2014 16:28:10 +0100
+From: Richard Leitner <dev@g0hl1n.net>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] misc: ioc4: simplify wave period measurement in
+ clock_calibrate
+Message-ID: <20141208162810.7b009382@frodo>
+In-Reply-To: <CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
+References: <20141208132720.16356743@frodo>
+	<4066664.BgJJnCmQ3h@wuerfel>
+	<20141208141837.752a9968@frodo>
+	<CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:AsaSWqNoShchQYxO9ArsYZ8zazMOxC0Kgfa8AoLJVffQKznBOTw
- dy+nUk/8p1D6A3TBsNrDvJwwUQrEhLnLoiVlntszc8C2+LxfdlgPgXBsXWsDg0Z3GAcEq6q
- cHN4Is2Y7Awox6ZDHw6EKhUbb6AzxJJSs9qG24ujFkWJmm7IrGd/dKFfaKGidTI6Ddrkx8D
- UinfQDXtw+dmXuVF+gckA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19749/Mon Dec  8 12:41:14 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 15:17:33 Russell King - ARM Linux wrote:
-> On Mon, Dec 08, 2014 at 04:01:32PM +0100, Arnd Bergmann wrote:
-> > In your log, I see this message:
-> > 
-> > [    0.000000] PL310 OF: cache setting yield illegal associativity
-> > [    0.000000] PL310 OF: -1069781724 calculated, only 8 and 16 legal
-> > [    0.000000] L2C-310 enabling early BRESP for Cortex-A9
-> > [    0.000000] L2C-310 full line of zeros enabled for Cortex-A9
-> > [    0.000000] L2C-310 dynamic clock gating enabled, standby mode enabled
-> > [    0.000000] L2C-310 cache controller enabled, 16 ways, 256 kB
-> > [    0.000000] L2C-310: CACHE_ID 0x410000c8, AUX_CTRL 0x4e130001
-> > 
-> > Evidently the cache controller information in DT is incorrect and
-> > the setup may be wrong as a consequence, which may explain cache
-> > coherency problems.
-> 
-> No.  See d0b92845e54 (ARM: 8182/1: l2c: Make l2x0_cache_size_of_parse() return 'int')
-> which was merged in rc3, post-dating this kernel.  The original commit
-> was buggy, and produces those harmless "illegal associativity" messages.
-> They occur if DT *doesn't* specify the cache parameters, in which case
-> we use the hardware-set value (which /should/ be correct.)
-> 
-> We made these optional in DT as hardware really should set these
-> correctly in the first place.
+The loop for measuring the square wave periods over some cycles is
+refactored to be more easily readable. This includes avoiding a
+"by-hand-implemented" for loop with a "real" one and adding some
+comments.
 
-Ok, good.
+Furthermore the following compiler warning is avoided by this patch:
+drivers/misc/ioc4.c: In function ‘ioc4_probe’:
+drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
+in this function [-Wmaybe-uninitialized]
+  period = (end - start) /
+                ^
+drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
+  uint64_t start, end, period;
+           ^
 
-	Arnd
+Signed-off-by: Richard Leitner <dev@g0hl1n.net>
+---
+A simplification of this loop was suggested by Andrew Morton [1].
+This is my first proposal of such a simplification.
+
+Furthermore I'm not sure if the commit message is sufficient.
+Please give me also some feedback on it.
+
+If this simplification is not needed only initializing start to
+ktime_get_ns() would fix the compiler warning too.
+
+[1] https://lkml.org/lkml/2014/12/5/76
+---
+ drivers/misc/ioc4.c | 31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
+index 3336ddc..8758d03 100644
+--- a/drivers/misc/ioc4.c
++++ b/drivers/misc/ioc4.c
+@@ -144,9 +144,9 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
+ {
+ 	union ioc4_int_out int_out;
+ 	union ioc4_gpcr gpcr;
+-	unsigned int state, last_state = 1;
++	unsigned int state, last_state;
+ 	uint64_t start, end, period;
+-	unsigned int count = 0;
++	unsigned int count;
+ 
+ 	/* Enable output */
+ 	gpcr.raw = 0;
+@@ -167,19 +167,20 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
+ 	mmiowb();
+ 
+ 	/* Check square wave period averaged over some number of cycles */
+-	do {
+-		int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
+-		state = int_out.fields.int_out;
+-		if (!last_state && state) {
+-			count++;
+-			if (count == IOC4_CALIBRATE_END) {
+-				end = ktime_get_ns();
+-				break;
+-			} else if (count == IOC4_CALIBRATE_DISCARD)
+-				start = ktime_get_ns();
+-		}
+-		last_state = state;
+-	} while (1);
++	start = ktime_get_ns();
++	state = 1; /* make sure the first read isn't a rising edge */
++	for (count = 0; count <= IOC4_CALIBRATE_END; count++) {
++		do { /* wait for a rising edge */
++			last_state = state;
++			int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
++			state = int_out.fields.int_out;
++		} while (last_state || !state);
++
++		/* discard the first few cycles */
++		if (count == IOC4_CALIBRATE_DISCARD)
++			start = ktime_get_ns();
++	}
++	end = ktime_get_ns();
+ 
+ 	/* Calculation rearranged to preserve intermediate precision.
+ 	 * Logically:
+-- 
+2.1.3
+
