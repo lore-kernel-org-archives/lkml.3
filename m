@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaLHQIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:08:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58552 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaLHQIO (ORCPT
+	id S1755572AbaLHQOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:14:24 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:53760 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaLHQOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:08:14 -0500
-Message-ID: <5485CD02.7010903@wwwdotorg.org>
-Date: Mon, 08 Dec 2014 09:08:34 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 8 Dec 2014 11:14:21 -0500
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>,
-        Matthias Klein <matthias.klein@linux.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc
- tree
-References: <20141208120619.68287b54@canb.auug.org.au> <2406890.FlzRjyvuXd@wuerfel> <20141208130009.GL3951@x1> <3348703.0b5FTH9Sa3@wuerfel> <20141208134903.GN3951@x1>
-In-Reply-To: <20141208134903.GN3951@x1>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141208105732.GA14346@localhost>
+References: <1417089434-11274-1-git-send-email-octavian.purdila@intel.com>
+	<20141205101741.GD11445@localhost>
+	<CAE1zotJwn6kVv8s5Dk+wxQxuGDKSjaqMqYY0M0Q0uODQypSsoA@mail.gmail.com>
+	<20141205120610.GG11445@localhost>
+	<CAE1zotKGAvd9oKz5_McihnPcpH-n4Rc4s0r=jm2wb26-dD8Dsg@mail.gmail.com>
+	<20141208105732.GA14346@localhost>
+Date: Mon, 8 Dec 2014 18:14:19 +0200
+Message-ID: <CAE1zotJPkTsvwqYEsfHHrdgdBW+03M20nqGzUL8bQXBfn70tBg@mail.gmail.com>
+Subject: Re: [PATCH] mfd: dln2: add suspend/resume functionality
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 06:49 AM, Lee Jones wrote:
-> On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+On Mon, Dec 8, 2014 at 12:57 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Fri, Dec 05, 2014 at 03:05:45PM +0200, Octavian Purdila wrote:
+>> On Fri, Dec 5, 2014 at 2:06 PM, Johan Hovold <johan@kernel.org> wrote:
+>> > On Fri, Dec 05, 2014 at 01:51:17PM +0200, Octavian Purdila wrote:
+>> >> On Fri, Dec 5, 2014 at 12:17 PM, Johan Hovold <johan@kernel.org> wrote:
 >
->> On Monday 08 December 2014 13:00:09 Lee Jones wrote:
->>> On Mon, 08 Dec 2014, Arnd Bergmann wrote:
->>>
->>>> On Monday 08 December 2014 12:06:19 Stephen Rothwell wrote:
->>>>> Hi Stephen,
->>>>>
->>>>> Today's linux-next merge of the bcm2835 tree got a conflict in
->>>>> arch/arm/boot/dts/Makefile between commit 302a5ef29d49 ("ARM: BCM5301X:
->>>>> Add DT for Netgear R6300 V2") from the arm-soc tree and commit
->>>>> 6298ed17a404 ("ARM: bcm2835: Add device tree for Raspberry Pi model
->>>>> B+") from the bcm2835 tree.
->>>>>
->>>>> I fixed it up (the bcm2835 tree patch is also in the arm-soc tree as
->>>>> commit ba2a1d6959ac ("ARM: bcm2835: Add device tree for Raspberry Pi
->>>>> model B+"), so I just used the arm-soc version) and can carry the fix
->>>>> as necessary (no action is required).
->>>>
->>>> Thanks a lot for the notification!
->>>>
->>>> Lee, do you know what is going on? Did you accidentally rebase a commit
->>>> that you already sent for inclusion in arm-soc?
->>>
->>> Nope.  The branch hasn't changed at all.
->>>
->>> OOI why would a re-base affect anything?  I sent you it in patch form.
+>> >> > And surely you need to resubmit the read urbs in resume, or you will
+>> >> > never receive any more data.
+>> >> >
+>> >> > How did you test this patch?
+>> >> >
+>> >>
+>> >> The resume cb is not called in my setup (kvm), only reset_resume.
+>> >
+>> > Please make sure to test your patches on proper hardware.
 >>
->> Ah, I looked at the wrong branch and didn't see that I applied a patch
->> instead of a pull request. It's all fine then, as long as you never
->> intend to send any pull requests based on top of your current branch.
->>
->> You can possibly make Stephen's life a tiny bit simpler if you just
->> drop all patches from your for-next branch as soon as we've picked
->> them up into arm-soc.
+>> It was tested with the proper hardware, I was just testing it in the
+>> setup we use, which is kvm with USB pass through.
 >
-> That is something I thought about, but I believe we have users of that
-> branch.  I guess we could always point them to ARM-SoC, or reset the
-> branch to the aforementioned.
+> I was referring to your kvm setup.
+>
 
-The primary purpose of the kernel.org linux-rpi.git repo is for staging 
-patches into arm-soc/linux-next. As such, just like any other similar 
-repo, users should expect at least the for-xxx (e.g. for-next) branches 
-to get reset as kernel versions tick over, in order to contain the 
-content for the next kernel. Anyone using those branches for anything 
-else (e.g. local development) simply has to be prepared to do a rebase 
-themselves when that happens.
-
-Equally, and patches that get sent to arm-soc should probably never be 
-applied to linux-rpi.git; anything that gets applied to linux-rpi.git 
-should get sent to arm-soc as a pull request. That avoids duplicate commits.
+I see the same behavior (reset_resume called) when testing on bare
+bone hardware. BTW, KVM allows me to test more thoroughly, as I can
+use custom SSDT tables required by i2c devices to find their IRQs.
