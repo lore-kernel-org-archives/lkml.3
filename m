@@ -1,510 +1,594 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaLHNNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:13:01 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:32835 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaLHNM5 (ORCPT
+	id S1755558AbaLHNNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:13:09 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54347 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753312AbaLHNNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:12:57 -0500
-Message-ID: <5485A3D2.3020404@de.ibm.com>
-Date: Mon, 08 Dec 2014 14:12:50 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 8 Dec 2014 08:13:05 -0500
+Message-ID: <5485A3B3.2050206@st.com>
+Date: Mon, 8 Dec 2014 14:12:19 +0100
+From: Patrice Chotard <patrice.chotard@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mst@redhat.com,
-        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
-        hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v1 1/5] uaccess: add pagefault_count to thread_info
-References: <1417778289-51567-1-git-send-email-dahi@linux.vnet.ibm.com> <1417778289-51567-2-git-send-email-dahi@linux.vnet.ibm.com>
-In-Reply-To: <1417778289-51567-2-git-send-email-dahi@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=iso-8859-15
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <devicetree@vger.kernel.org>, <broonie@kernel.org>, <kernel@stlinux.com>,
+        <linux-spi@vger.kernel.org>
+Subject: Re: [STLinux Kernel] [PATCH v3 1/4] spi: Add new driver for STMicroelectronics'
+ SPI Controller
+References: <1418043214-14324-1-git-send-email-lee.jones@linaro.org> <1418043214-14324-2-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1418043214-14324-2-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120813-0029-0000-0000-000002123144
+X-Originating-IP: [10.48.254.1]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-08_01:2014-12-08,2014-12-07,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.12.2014 um 12:18 schrieb David Hildenbrand:
-> This patch adds the pagefault_count to the thread_info of all
-> architectures. It will be used to count the pagefault_disable() levels
-> on a per-thread basis.
-> 
-> We are not reusing the preempt_count as this is per cpu on x86 and we want to
-> demangle pagefault_disable() from preemption in the future.
-> 
-> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Hi Lee
+
+Acked-by: Patrice Chotard <patrice.chotard@st.com>
+
+Thanks
+
+On 12/08/2014 01:53 PM, Lee Jones wrote:
+> This patch adds support for the SPI portion of ST's SSC device.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  arch/alpha/include/asm/thread_info.h      |  1 +
->  arch/arc/include/asm/thread_info.h        |  1 +
->  arch/arm/include/asm/thread_info.h        |  1 +
->  arch/arm64/include/asm/thread_info.h      |  1 +
->  arch/avr32/include/asm/thread_info.h      |  1 +
->  arch/blackfin/include/asm/thread_info.h   |  1 +
->  arch/c6x/include/asm/thread_info.h        |  1 +
->  arch/cris/include/asm/thread_info.h       |  1 +
->  arch/frv/include/asm/thread_info.h        |  1 +
->  arch/hexagon/include/asm/thread_info.h    |  1 +
->  arch/ia64/include/asm/thread_info.h       |  1 +
->  arch/m32r/include/asm/thread_info.h       |  5 +++--
->  arch/m68k/include/asm/thread_info.h       |  1 +
->  arch/metag/include/asm/thread_info.h      |  1 +
->  arch/microblaze/include/asm/thread_info.h |  1 +
->  arch/mips/include/asm/thread_info.h       |  1 +
->  arch/mn10300/include/asm/thread_info.h    |  1 +
->  arch/openrisc/include/asm/thread_info.h   |  1 +
->  arch/parisc/include/asm/thread_info.h     |  1 +
->  arch/powerpc/include/asm/thread_info.h    |  1 +
->  arch/s390/include/asm/thread_info.h       |  1 +
->  arch/score/include/asm/thread_info.h      |  1 +
->  arch/sh/include/asm/thread_info.h         |  1 +
->  arch/sparc/include/asm/thread_info_32.h   | 20 +++++++++++---------
->  arch/sparc/include/asm/thread_info_64.h   | 17 +++++++++--------
-
-Maybe its easier to put the pagefault count at the end of the thread_info struct to make the patch smaller and easier to review for thoses architectures that have hand-maintained asm offsets? 
-
-
->  arch/tile/include/asm/thread_info.h       |  1 +
->  arch/um/include/asm/thread_info.h         |  1 +
->  arch/unicore32/include/asm/thread_info.h  |  1 +
->  arch/x86/include/asm/thread_info.h        |  1 +
->  arch/xtensa/include/asm/thread_info.h     |  5 +++--
->  30 files changed, 52 insertions(+), 21 deletions(-)
-> 
-> diff --git a/arch/alpha/include/asm/thread_info.h b/arch/alpha/include/asm/thread_info.h
-> index 48bbea6..1830671 100644
-> --- a/arch/alpha/include/asm/thread_info.h
-> +++ b/arch/alpha/include/asm/thread_info.h
-> @@ -22,6 +22,7 @@ struct thread_info {
->  	mm_segment_t		addr_limit;	/* thread address space */
->  	unsigned		cpu;		/* current CPU */
->  	int			preempt_count; /* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	unsigned int		status;		/* thread-synchronous flags */
-> 
->  	int bpt_nsaved;
-> diff --git a/arch/arc/include/asm/thread_info.h b/arch/arc/include/asm/thread_info.h
-> index 02bc5ec..2fde704 100644
-> --- a/arch/arc/include/asm/thread_info.h
-> +++ b/arch/arc/include/asm/thread_info.h
-> @@ -41,6 +41,7 @@
->  struct thread_info {
->  	unsigned long flags;		/* low level flags */
->  	int preempt_count;		/* 0 => preemptable, <0 => BUG */
-> +	int pagefault_count;		/* pagefault_disable() levels */
->  	struct task_struct *task;	/* main task structure */
->  	mm_segment_t addr_limit;	/* thread address space */
->  	struct exec_domain *exec_domain;/* execution domain */
-> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-> index ce73ab6..bf47d2d 100644
-> --- a/arch/arm/include/asm/thread_info.h
-> +++ b/arch/arm/include/asm/thread_info.h
-> @@ -51,6 +51,7 @@ struct cpu_context_save {
->  struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	int			preempt_count;	/* 0 => preemptable, <0 => bug */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;	/* address limit */
->  	struct task_struct	*task;		/* main task structure */
->  	struct exec_domain	*exec_domain;	/* execution domain */
-> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-> index 459bf8e..2469f15 100644
-> --- a/arch/arm64/include/asm/thread_info.h
-> +++ b/arch/arm64/include/asm/thread_info.h
-> @@ -50,6 +50,7 @@ struct thread_info {
->  	struct exec_domain	*exec_domain;	/* execution domain */
->  	struct restart_block	restart_block;
->  	int			preempt_count;	/* 0 => preemptable, <0 => bug */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	int			cpu;		/* cpu */
->  };
-> 
-> diff --git a/arch/avr32/include/asm/thread_info.h b/arch/avr32/include/asm/thread_info.h
-> index a978f3f..0c1d6f7 100644
-> --- a/arch/avr32/include/asm/thread_info.h
-> +++ b/arch/avr32/include/asm/thread_info.h
-> @@ -25,6 +25,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	__u32			cpu;
->  	__s32			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	__s32			pagefault_count;/* pagefault_disable() levels */
->  	__u32			rar_saved;	/* return address... */
->  	__u32			rsr_saved;	/* ...and status register
->  						   saved by debug handler
-> diff --git a/arch/blackfin/include/asm/thread_info.h b/arch/blackfin/include/asm/thread_info.h
-> index 55f473b..3ba26aa 100644
-> --- a/arch/blackfin/include/asm/thread_info.h
-> +++ b/arch/blackfin/include/asm/thread_info.h
-> @@ -41,6 +41,7 @@ struct thread_info {
->  	unsigned long flags;	/* low level flags */
->  	int cpu;		/* cpu we're on */
->  	int preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int pagefault_count;	/* pagefault_disable() levels */
->  	mm_segment_t addr_limit;	/* address limit */
->  	struct restart_block restart_block;
->  #ifndef CONFIG_SMP
-> diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
-> index d4e9ef8..6b2dcac 100644
-> --- a/arch/c6x/include/asm/thread_info.h
-> +++ b/arch/c6x/include/asm/thread_info.h
-> @@ -44,6 +44,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	int			cpu;		/* cpu we're on */
->  	int			preempt_count;	/* 0 = preemptable, <0 = BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;	/* thread address space */
->  	struct restart_block	restart_block;
->  };
-> diff --git a/arch/cris/include/asm/thread_info.h b/arch/cris/include/asm/thread_info.h
-> index 55dede1..3356902 100644
-> --- a/arch/cris/include/asm/thread_info.h
-> +++ b/arch/cris/include/asm/thread_info.h
-> @@ -32,6 +32,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	__u32			tls;		/* TLS for this thread */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space:
-> diff --git a/arch/frv/include/asm/thread_info.h b/arch/frv/include/asm/thread_info.h
-> index af29e17..79a97ee 100644
-> --- a/arch/frv/include/asm/thread_info.h
-> +++ b/arch/frv/include/asm/thread_info.h
-> @@ -36,6 +36,7 @@ struct thread_info {
->  	unsigned long		status;		/* thread-synchronous flags */
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space:
->  						 * 0-0xBFFFFFFF for user-thead
-> diff --git a/arch/hexagon/include/asm/thread_info.h b/arch/hexagon/include/asm/thread_info.h
-> index a59dad3..d54042e 100644
-> --- a/arch/hexagon/include/asm/thread_info.h
-> +++ b/arch/hexagon/include/asm/thread_info.h
-> @@ -51,6 +51,7 @@ struct thread_info {
->  	unsigned long		flags;          /* low level flags */
->  	__u32                   cpu;            /* current cpu */
->  	int                     preempt_count;  /* 0=>preemptible,<0=>BUG */
-> +	int                     pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t            addr_limit;     /* segmentation sux */
->  	/*
->  	 * used for syscalls somehow;
-> diff --git a/arch/ia64/include/asm/thread_info.h b/arch/ia64/include/asm/thread_info.h
-> index 5b17418..14f128c 100644
-> --- a/arch/ia64/include/asm/thread_info.h
-> +++ b/arch/ia64/include/asm/thread_info.h
-> @@ -27,6 +27,7 @@ struct thread_info {
->  	__u32 status;			/* Thread synchronous flags */
->  	mm_segment_t addr_limit;	/* user-level address space limit */
->  	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
-> +	int pagefault_count;		/* pagefault_disable() levels */
->  	struct restart_block restart_block;
->  #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
->  	__u64 ac_stamp;
-> diff --git a/arch/m32r/include/asm/thread_info.h b/arch/m32r/include/asm/thread_info.h
-> index 0017170..a1ec910 100644
-> --- a/arch/m32r/include/asm/thread_info.h
-> +++ b/arch/m32r/include/asm/thread_info.h
-> @@ -29,6 +29,7 @@ struct thread_info {
->  	unsigned long		status;		/* thread-synchronous flags */
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space:
->  					 	   0-0xBFFFFFFF for user-thread
-> @@ -48,8 +49,8 @@ struct thread_info {
->  #define TI_STATUS	0x0000000C
->  #define TI_CPU		0x00000010
->  #define TI_PRE_COUNT	0x00000014
-> -#define TI_ADDR_LIMIT	0x00000018
-> -#define TI_RESTART_BLOCK 0x000001C
-> +#define TI_ADDR_LIMIT	0x0000001C
-> +#define TI_RESTART_BLOCK 0x0000020
-> 
->  #endif
-> 
-> diff --git a/arch/m68k/include/asm/thread_info.h b/arch/m68k/include/asm/thread_info.h
-> index 21a4784..5a6a203 100644
-> --- a/arch/m68k/include/asm/thread_info.h
-> +++ b/arch/m68k/include/asm/thread_info.h
-> @@ -29,6 +29,7 @@ struct thread_info {
->  	struct exec_domain	*exec_domain;	/* execution domain */
->  	mm_segment_t		addr_limit;	/* thread address space */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	__u32			cpu;		/* should always be 0 on m68k */
->  	unsigned long		tp_value;	/* thread pointer */
->  	struct restart_block    restart_block;
-> diff --git a/arch/metag/include/asm/thread_info.h b/arch/metag/include/asm/thread_info.h
-> index 4771133..91729f5 100644
-> --- a/arch/metag/include/asm/thread_info.h
-> +++ b/arch/metag/include/asm/thread_info.h
-> @@ -33,6 +33,7 @@ struct thread_info {
->  	unsigned long status;	/* thread-synchronous flags */
->  	u32 cpu;		/* current CPU */
->  	int preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int pagefault_count;	/* pagefault_disable() levels */
-> 
->  	mm_segment_t addr_limit;	/* thread address space */
->  	struct restart_block restart_block;
-> diff --git a/arch/microblaze/include/asm/thread_info.h b/arch/microblaze/include/asm/thread_info.h
-> index 8c9d365..f905b02 100644
-> --- a/arch/microblaze/include/asm/thread_info.h
-> +++ b/arch/microblaze/include/asm/thread_info.h
-> @@ -70,6 +70,7 @@ struct thread_info {
->  	unsigned long		status; /* thread-synchronous flags */
->  	__u32			cpu; /* current CPU */
->  	__s32			preempt_count; /* 0 => preemptable,< 0 => BUG*/
-> +	__s32			pagefault_count; /* pagefault_disable() levels */
->  	mm_segment_t		addr_limit; /* thread address space */
->  	struct restart_block	restart_block;
-> 
-> diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
-> index 7de8658..f9f27ac 100644
-> --- a/arch/mips/include/asm/thread_info.h
-> +++ b/arch/mips/include/asm/thread_info.h
-> @@ -28,6 +28,7 @@ struct thread_info {
->  	unsigned long		tp_value;	/* thread pointer */
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/*
->  						 * thread address space limit:
-> diff --git a/arch/mn10300/include/asm/thread_info.h b/arch/mn10300/include/asm/thread_info.h
-> index bf280ea..f6c03a5 100644
-> --- a/arch/mn10300/include/asm/thread_info.h
-> +++ b/arch/mn10300/include/asm/thread_info.h
-> @@ -45,6 +45,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	__u32			cpu;		/* current CPU */
->  	__s32			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	__s32			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space:
->  						   0-0xBFFFFFFF for user-thead
-> diff --git a/arch/openrisc/include/asm/thread_info.h b/arch/openrisc/include/asm/thread_info.h
-> index d797acc..bdabd6e 100644
-> --- a/arch/openrisc/include/asm/thread_info.h
-> +++ b/arch/openrisc/include/asm/thread_info.h
-> @@ -52,6 +52,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	__u32			cpu;		/* current CPU */
->  	__s32			preempt_count; /* 0 => preemptable, <0 => BUG */
-> +	__s32			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit; /* thread address space:
->  					       0-0x7FFFFFFF for user-thead
-> diff --git a/arch/parisc/include/asm/thread_info.h b/arch/parisc/include/asm/thread_info.h
-> index a846118..e37b76b 100644
-> --- a/arch/parisc/include/asm/thread_info.h
-> +++ b/arch/parisc/include/asm/thread_info.h
-> @@ -14,6 +14,7 @@ struct thread_info {
->  	mm_segment_t addr_limit;	/* user-level address space limit */
->  	__u32 cpu;			/* current CPU */
->  	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
-> +	int pagefault_count;		/* pagefault_disable() levels */
->  	struct restart_block restart_block;
->  };
-> 
-> diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
-> index b034ecd..e8585fd 100644
-> --- a/arch/powerpc/include/asm/thread_info.h
-> +++ b/arch/powerpc/include/asm/thread_info.h
-> @@ -43,6 +43,7 @@ struct thread_info {
->  	int		cpu;			/* cpu we're on */
->  	int		preempt_count;		/* 0 => preemptable,
->  						   <0 => BUG */
-> +	int		pagefault_count;	/* pagefault_disable() levels */
->  	struct restart_block restart_block;
->  	unsigned long	local_flags;		/* private flags for thread */
-> 
-> diff --git a/arch/s390/include/asm/thread_info.h b/arch/s390/include/asm/thread_info.h
-> index 4d62fd5..bbf0513f 100644
-> --- a/arch/s390/include/asm/thread_info.h
-> +++ b/arch/s390/include/asm/thread_info.h
-> @@ -39,6 +39,7 @@ struct thread_info {
->  	unsigned long		sys_call_table;	/* System call table address */
->  	unsigned int		cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	struct restart_block	restart_block;
->  	unsigned int		system_call;
->  	__u64			user_timer;
-> diff --git a/arch/score/include/asm/thread_info.h b/arch/score/include/asm/thread_info.h
-> index 656b7ad..d7f748d 100644
-> --- a/arch/score/include/asm/thread_info.h
-> +++ b/arch/score/include/asm/thread_info.h
-> @@ -35,6 +35,7 @@ struct thread_info {
-> 
->  	/* 0 => preemptable, < 0 => BUG */
->  	int			preempt_count;
-> +	int			pagefault_count;/* pagefault_disable() levels */
-> 
->  	/*
->  	 * thread address space:
-> diff --git a/arch/sh/include/asm/thread_info.h b/arch/sh/include/asm/thread_info.h
-> index ad27ffa..682a466 100644
-> --- a/arch/sh/include/asm/thread_info.h
-> +++ b/arch/sh/include/asm/thread_info.h
-> @@ -32,6 +32,7 @@ struct thread_info {
->  	__u32			status;		/* thread synchronous flags */
->  	__u32			cpu;
->  	int			preempt_count; /* 0 => preemptable, <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;	/* thread address space */
->  	struct restart_block	restart_block;
->  	unsigned long		previous_sp;	/* sp of previous stack in case
-> diff --git a/arch/sparc/include/asm/thread_info_32.h b/arch/sparc/include/asm/thread_info_32.h
-> index 025c984..3dc0054 100644
-> --- a/arch/sparc/include/asm/thread_info_32.h
-> +++ b/arch/sparc/include/asm/thread_info_32.h
-> @@ -32,6 +32,7 @@ struct thread_info {
->  	int			cpu;		/* cpu we're on */
->  	int			preempt_count;	/* 0 => preemptable,
->  						   <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	int			softirq_count;
->  	int			hardirq_count;
-> 
-> @@ -94,15 +95,16 @@ register struct thread_info *current_thread_info_reg asm("g6");
->  #define TI_FLAGS	0x0c
->  #define TI_CPU		0x10
->  #define TI_PREEMPT	0x14	/* preempt_count */
-> -#define TI_SOFTIRQ	0x18	/* softirq_count */
-> -#define TI_HARDIRQ	0x1c	/* hardirq_count */
-> -#define TI_KSP		0x20	/* ksp */
-> -#define TI_KPC		0x24	/* kpc (ldd'ed with kpc) */
-> -#define TI_KPSR		0x28	/* kpsr */
-> -#define TI_KWIM		0x2c	/* kwim (ldd'ed with kpsr) */
-> -#define TI_REG_WINDOW	0x30
-> -#define TI_RWIN_SPTRS	0x230
-> -#define TI_W_SAVED	0x250
-> +/* #define TI_PAGEFAULT	0x18 */ /* pagefault_count */
-> +#define TI_SOFTIRQ	0x1c	/* softirq_count */
-> +#define TI_HARDIRQ	0x20	/* hardirq_count */
-> +#define TI_KSP		0x24	/* ksp */
-> +#define TI_KPC		0x28	/* kpc (ldd'ed with kpc) */
-> +#define TI_KPSR		0x2c	/* kpsr */
-> +#define TI_KWIM		0x30	/* kwim (ldd'ed with kpsr) */
-> +#define TI_REG_WINDOW	0x34
-> +#define TI_RWIN_SPTRS	0x234
-> +#define TI_W_SAVED	0x254
->  /* #define TI_RESTART_BLOCK 0x25n */ /* Nobody cares */
-> 
->  /*
-> diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
-> index 798f027..4b54608 100644
-> --- a/arch/sparc/include/asm/thread_info_64.h
-> +++ b/arch/sparc/include/asm/thread_info_64.h
-> @@ -50,6 +50,7 @@ struct thread_info {
->  	__u8			current_ds;
->  	__u16			cpu;
-> 
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	unsigned long		*utraps;
-> 
->  	struct reg_window 	reg_window[NSWINS];
-> @@ -87,14 +88,14 @@ struct thread_info {
->  #define TI_NEW_CHILD	0x0000003c
->  #define TI_CURRENT_DS	0x0000003d
->  #define TI_CPU		0x0000003e
-> -#define TI_UTRAPS	0x00000040
-> -#define TI_REG_WINDOW	0x00000048
-> -#define TI_RWIN_SPTRS	0x000003c8
-> -#define TI_GSR		0x00000400
-> -#define TI_XFSR		0x00000438
-> -#define TI_RESTART_BLOCK 0x00000470
-> -#define TI_KUNA_REGS	0x000004a0
-> -#define TI_KUNA_INSN	0x000004a8
-> +#define TI_UTRAPS	0x00000048
-> +#define TI_REG_WINDOW	0x00000050
-> +#define TI_RWIN_SPTRS	0x000003d0
-> +#define TI_GSR		0x00000408
-> +#define TI_XFSR		0x00000440
-> +#define TI_RESTART_BLOCK 0x00000478
-> +#define TI_KUNA_REGS	0x000004a8
-> +#define TI_KUNA_INSN	0x000004b0
->  #define TI_FPREGS	0x000004c0
-> 
->  /* We embed this in the uppermost byte of thread_info->flags */
-> diff --git a/arch/tile/include/asm/thread_info.h b/arch/tile/include/asm/thread_info.h
-> index 48e4fd0..57032b6 100644
-> --- a/arch/tile/include/asm/thread_info.h
-> +++ b/arch/tile/include/asm/thread_info.h
-> @@ -33,6 +33,7 @@ struct thread_info {
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;	/* 0 => preemptable,
->  						   <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space
->  						   (KERNEL_DS or USER_DS) */
-> diff --git a/arch/um/include/asm/thread_info.h b/arch/um/include/asm/thread_info.h
-> index 1c5b2a8..90b193c 100644
-> --- a/arch/um/include/asm/thread_info.h
-> +++ b/arch/um/include/asm/thread_info.h
-> @@ -19,6 +19,7 @@ struct thread_info {
->  	__u32			cpu;		/* current CPU */
->  	int			preempt_count;  /* 0 => preemptable,
->  						   <0 => BUG */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;	/* thread address space:
->  					 	   0-0xBFFFFFFF for user
->  						   0-0xFFFFFFFF for kernel */
-> diff --git a/arch/unicore32/include/asm/thread_info.h b/arch/unicore32/include/asm/thread_info.h
-> index af36d8e..1d50fb3 100644
-> --- a/arch/unicore32/include/asm/thread_info.h
-> +++ b/arch/unicore32/include/asm/thread_info.h
-> @@ -69,6 +69,7 @@ struct thread_info {
->  	unsigned long		flags;		/* low level flags */
->  	int			preempt_count;	/* 0 => preemptable */
->  						/* <0 => bug */
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;	/* address limit */
->  	struct task_struct	*task;		/* main task structure */
->  	struct exec_domain	*exec_domain;	/* execution domain */
-> diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-> index 547e344..fa075ab 100644
-> --- a/arch/x86/include/asm/thread_info.h
-> +++ b/arch/x86/include/asm/thread_info.h
-> @@ -30,6 +30,7 @@ struct thread_info {
->  	__u32			status;		/* thread synchronous flags */
->  	__u32			cpu;		/* current CPU */
->  	int			saved_preempt_count;
-> +	int			pagefault_count;/* pagefault_disable() levels */
->  	mm_segment_t		addr_limit;
->  	struct restart_block    restart_block;
->  	void __user		*sysenter_return;
-> diff --git a/arch/xtensa/include/asm/thread_info.h b/arch/xtensa/include/asm/thread_info.h
-> index 470153e..079e175 100644
-> --- a/arch/xtensa/include/asm/thread_info.h
-> +++ b/arch/xtensa/include/asm/thread_info.h
-> @@ -49,6 +49,7 @@ struct thread_info {
->  	unsigned long		status;		/* thread-synchronous flags */
->  	__u32			cpu;		/* current CPU */
->  	__s32			preempt_count;	/* 0 => preemptable,< 0 => BUG*/
-> +	__s32			pagefault_count;/* pagefault_disable() levels */
-> 
->  	mm_segment_t		addr_limit;	/* thread address space */
->  	struct restart_block    restart_block;
-> @@ -71,8 +72,8 @@ struct thread_info {
->  #define TI_STATUS	 0x0000000C
->  #define TI_CPU		 0x00000010
->  #define TI_PRE_COUNT	 0x00000014
-> -#define TI_ADDR_LIMIT	 0x00000018
-> -#define TI_RESTART_BLOCK 0x000001C
-> +#define TI_ADDR_LIMIT	 0x0000001c
-> +#define TI_RESTART_BLOCK 0x00000020
-> 
->  #endif
-> 
+>   drivers/spi/Kconfig       |   7 +
+>   drivers/spi/Makefile      |   1 +
+>   drivers/spi/spi-st-ssc4.c | 509 ++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 517 insertions(+)
+>   create mode 100644 drivers/spi/spi-st-ssc4.c
+>
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index 84e7c9e..0d42362 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -488,6 +488,13 @@ config SPI_SIRF
+>   	help
+>   	  SPI driver for CSR SiRFprimaII SoCs
+>   
+> +config SPI_ST_SSC4
+> +	tristate "STMicroelectronics SPI SSC-based driver"
+> +	depends on ARCH_STI
+> +	help
+> +	  STMicroelectronics SoCs support for SPI. If you say yes to
+> +	  this option, support will be included for the SSC driven SPI.
+> +
+>   config SPI_SUN4I
+>   	tristate "Allwinner A10 SoCs SPI controller"
+>   	depends on ARCH_SUNXI || COMPILE_TEST
+> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+> index 78f24ca..c38e28c 100644
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@ -74,6 +74,7 @@ obj-$(CONFIG_SPI_SH_HSPI)		+= spi-sh-hspi.o
+>   obj-$(CONFIG_SPI_SH_MSIOF)		+= spi-sh-msiof.o
+>   obj-$(CONFIG_SPI_SH_SCI)		+= spi-sh-sci.o
+>   obj-$(CONFIG_SPI_SIRF)		+= spi-sirf.o
+> +obj-$(CONFIG_SPI_ST_SSC4)		+= spi-st-ssc4.o
+>   obj-$(CONFIG_SPI_SUN4I)			+= spi-sun4i.o
+>   obj-$(CONFIG_SPI_SUN6I)			+= spi-sun6i.o
+>   obj-$(CONFIG_SPI_TEGRA114)		+= spi-tegra114.o
+> diff --git a/drivers/spi/spi-st-ssc4.c b/drivers/spi/spi-st-ssc4.c
+> new file mode 100644
+> index 0000000..3fd3e85
+> --- /dev/null
+> +++ b/drivers/spi/spi-st-ssc4.c
+> @@ -0,0 +1,509 @@
+> +/*
+> + *  Copyright (c) 2008-2014 STMicroelectronics Limited
+> + *
+> + *  Author: Angus Clark <Angus.Clark@st.com>
+> + *          Patrice Chotard <patrice.chotard@st.com>
+> + *          Lee Jones <lee.jones@linaro.org>
+> + *
+> + *  SPI master mode controller driver, used in STMicroelectronics devices.
+> + *
+> + *  May be copied or modified under the terms of the GNU General Public
+> + *  License Version 2.0 only.  See linux/COPYING for more information.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/of.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/spi/spi_bitbang.h>
+> +
+> +/* SSC registers */
+> +#define SSC_BRG				0x000
+> +#define SSC_TBUF			0x004
+> +#define SSC_RBUF			0x008
+> +#define SSC_CTL				0x00C
+> +#define SSC_IEN				0x010
+> +#define SSC_I2C				0x018
+> +
+> +/* SSC Control */
+> +#define SSC_CTL_DATA_WIDTH_9		0x8
+> +#define SSC_CTL_DATA_WIDTH_MSK		0xf
+> +#define SSC_CTL_BM			0xf
+> +#define SSC_CTL_HB			BIT(4)
+> +#define SSC_CTL_PH			BIT(5)
+> +#define SSC_CTL_PO			BIT(6)
+> +#define SSC_CTL_SR			BIT(7)
+> +#define SSC_CTL_MS			BIT(8)
+> +#define SSC_CTL_EN			BIT(9)
+> +#define SSC_CTL_LPB			BIT(10)
+> +#define SSC_CTL_EN_TX_FIFO		BIT(11)
+> +#define SSC_CTL_EN_RX_FIFO		BIT(12)
+> +#define SSC_CTL_EN_CLST_RX		BIT(13)
+> +
+> +/* SSC Interrupt Enable */
+> +#define SSC_IEN_TEEN			BIT(2)
+> +
+> +#define FIFO_SIZE			8
+> +
+> +struct spi_st {
+> +	/* SSC SPI Controller */
+> +	void __iomem		*base;
+> +	struct clk		*clk;
+> +	struct device		*dev;
+> +
+> +	/* SSC SPI current transaction */
+> +	const u8		*tx_ptr;
+> +	u8			*rx_ptr;
+> +	u16			bytes_per_word;
+> +	unsigned int		words_remaining;
+> +	unsigned int		baud;
+> +	struct completion	done;
+> +};
+> +
+> +static int spi_st_clk_enable(struct spi_st *spi_st)
+> +{
+> +	/*
+> +	 * Current platforms use one of the core clocks for SPI and I2C.
+> +	 * If we attempt to disable the clock, the system will hang.
+> +	 *
+> +	 * TODO: Remove this when platform supports power domains.
+> +	 */
+> +	return 0;
+> +
+> +	return clk_prepare_enable(spi_st->clk);
+> +}
+> +
+> +static void spi_st_clk_disable(struct spi_st *spi_st)
+> +{
+> +	/*
+> +	 * Current platforms use one of the core clocks for SPI and I2C.
+> +	 * If we attempt to disable the clock, the system will hang.
+> +	 *
+> +	 * TODO: Remove this when platform supports power domains.
+> +	 */
+> +	return;
+> +
+> +	clk_disable_unprepare(spi_st->clk);
+> +}
+> +
+> +/* Load the TX FIFO */
+> +static void ssc_write_tx_fifo(struct spi_st *spi_st)
+> +{
+> +	unsigned int count, i;
+> +	uint32_t word = 0;
+> +
+> +	if (spi_st->words_remaining > FIFO_SIZE)
+> +		count = FIFO_SIZE;
+> +	else
+> +		count = spi_st->words_remaining;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		if (spi_st->tx_ptr) {
+> +			if (spi_st->bytes_per_word == 1) {
+> +				word = *spi_st->tx_ptr++;
+> +			} else {
+> +				word = *spi_st->tx_ptr++;
+> +				word = *spi_st->tx_ptr++ | (word << 8);
+> +			}
+> +		}
+> +		writel_relaxed(word, spi_st->base + SSC_TBUF);
+> +	}
+> +}
+> +
+> +/* Read the RX FIFO */
+> +static void ssc_read_rx_fifo(struct spi_st *spi_st)
+> +{
+> +	unsigned int count, i;
+> +	uint32_t word = 0;
+> +
+> +	if (spi_st->words_remaining > FIFO_SIZE)
+> +		count = FIFO_SIZE;
+> +	else
+> +		count = spi_st->words_remaining;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		word = readl_relaxed(spi_st->base + SSC_RBUF);
+> +
+> +		if (spi_st->rx_ptr) {
+> +			if (spi_st->bytes_per_word == 1) {
+> +				*spi_st->rx_ptr++ = (uint8_t)word;
+> +			} else {
+> +				*spi_st->rx_ptr++ = (word >> 8);
+> +				*spi_st->rx_ptr++ = word & 0xff;
+> +			}
+> +		}
+> +	}
+> +	spi_st->words_remaining -= count;
+> +}
+> +
+> +static int spi_st_transfer_one(struct spi_master *master,
+> +			       struct spi_device *spi, struct spi_transfer *t)
+> +{
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +	uint32_t ctl = 0;
+> +
+> +	/* Setup transfer */
+> +	spi_st->tx_ptr = t->tx_buf;
+> +	spi_st->rx_ptr = t->rx_buf;
+> +
+> +	if (spi->bits_per_word > 8) {
+> +		/*
+> +		 * Anything greater than 8 bits-per-word requires 2
+> +		 * bytes-per-word in the RX/TX buffers
+> +		 */
+> +		spi_st->bytes_per_word = 2;
+> +		spi_st->words_remaining = t->len / 2;
+> +
+> +	} else if (spi->bits_per_word == 8 && !(t->len & 0x1)) {
+> +		/*
+> +		 * If transfer is even-length, and 8 bits-per-word, then
+> +		 * implement as half-length 16 bits-per-word transfer
+> +		 */
+> +		spi_st->bytes_per_word = 2;
+> +		spi_st->words_remaining = t->len / 2;
+> +
+> +		/* Set SSC_CTL to 16 bits-per-word */
+> +		ctl = readl_relaxed(spi_st->base + SSC_CTL);
+> +		writel_relaxed((ctl | 0xf), spi_st->base + SSC_CTL);
+> +
+> +		readl_relaxed(spi_st->base + SSC_RBUF);
+> +
+> +	} else {
+> +		spi_st->bytes_per_word = 1;
+> +		spi_st->words_remaining = t->len;
+> +	}
+> +
+> +	reinit_completion(&spi_st->done);
+> +
+> +	/* Start transfer by writing to the TX FIFO */
+> +	ssc_write_tx_fifo(spi_st);
+> +	writel_relaxed(SSC_IEN_TEEN, spi_st->base + SSC_IEN);
+> +
+> +	/* Wait for transfer to complete */
+> +	wait_for_completion(&spi_st->done);
+> +
+> +	/* Restore SSC_CTL if necessary */
+> +	if (ctl)
+> +		writel_relaxed(ctl, spi_st->base + SSC_CTL);
+> +
+> +	spi_finalize_current_transfer(spi->master);
+> +
+> +	return t->len;
+> +}
+> +
+> +static void spi_st_cleanup(struct spi_device *spi)
+> +{
+> +	int cs = spi->cs_gpio;
+> +
+> +	if (gpio_is_valid(cs))
+> +		devm_gpio_free(&spi->dev, cs);
+> +}
+> +
+> +/* the spi->mode bits understood by this driver: */
+> +#define MODEBITS  (SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST | SPI_LOOP | SPI_CS_HIGH)
+> +static int spi_st_setup(struct spi_device *spi)
+> +{
+> +	struct spi_st *spi_st = spi_master_get_devdata(spi->master);
+> +	u32 spi_st_clk, sscbrg, var;
+> +	u32 hz = spi->max_speed_hz;
+> +	int cs = spi->cs_gpio;
+> +	int ret;
+> +
+> +	if (spi->mode & ~MODEBITS) {
+> +		dev_err(&spi->dev, "unsupported mode bits 0x%x\n",
+> +			spi->mode & ~MODEBITS);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (!hz)  {
+> +		dev_err(&spi->dev, "max_speed_hz unspecified\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (!gpio_is_valid(cs)) {
+> +		dev_err(&spi->dev, "%d is not a valid gpio\n", cs);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (devm_gpio_request(&spi->dev, cs, dev_name(&spi->dev))) {
+> +		dev_err(&spi->dev, "could not request gpio:%d\n", cs);
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = gpio_direction_output(cs, spi->mode & SPI_CS_HIGH);
+> +	if (ret)
+> +		return ret;
+> +
+> +	spi_st_clk = clk_get_rate(spi_st->clk);
+> +
+> +	/* Set SSC_BRF */
+> +	sscbrg = spi_st_clk / (2 * hz);
+> +	if (sscbrg < 0x07 || sscbrg > BIT(16)) {
+> +		dev_err(&spi->dev,
+> +			"baudrate %d outside valid range %d\n", sscbrg, hz);
+> +		return -EINVAL;
+> +	}
+> +
+> +	spi_st->baud = spi_st_clk / (2 * sscbrg);
+> +	if (sscbrg == BIT(16)) /* 16-bit counter wraps */
+> +		sscbrg = 0x0;
+> +
+> +	writel_relaxed(sscbrg, spi_st->base + SSC_BRG);
+> +
+> +	dev_dbg(&spi->dev,
+> +		"setting baudrate:target= %u hz, actual= %u hz, sscbrg= %u\n",
+> +		hz, spi_st->baud, sscbrg);
+> +
+> +	 /* Set SSC_CTL and enable SSC */
+> +	 var = readl_relaxed(spi_st->base + SSC_CTL);
+> +	 var |= SSC_CTL_MS;
+> +
+> +	 if (spi->mode & SPI_CPOL)
+> +		var |= SSC_CTL_PO;
+> +	 else
+> +		var &= ~SSC_CTL_PO;
+> +
+> +	 if (spi->mode & SPI_CPHA)
+> +		var |= SSC_CTL_PH;
+> +	 else
+> +		var &= ~SSC_CTL_PH;
+> +
+> +	 if ((spi->mode & SPI_LSB_FIRST) == 0)
+> +		var |= SSC_CTL_HB;
+> +	 else
+> +		var &= ~SSC_CTL_HB;
+> +
+> +	 if (spi->mode & SPI_LOOP)
+> +		var |= SSC_CTL_LPB;
+> +	 else
+> +		var &= ~SSC_CTL_LPB;
+> +
+> +	 var &= ~SSC_CTL_DATA_WIDTH_MSK;
+> +	 var |= (spi->bits_per_word - 1);
+> +
+> +	 var |= SSC_CTL_EN_TX_FIFO | SSC_CTL_EN_RX_FIFO;
+> +	 var |= SSC_CTL_EN;
+> +
+> +	 writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	 /* Clear the status register */
+> +	 readl_relaxed(spi_st->base + SSC_RBUF);
+> +
+> +	 return 0;
+> +}
+> +
+> +/* Interrupt fired when TX shift register becomes empty */
+> +static irqreturn_t spi_st_irq(int irq, void *dev_id)
+> +{
+> +	struct spi_st *spi_st = (struct spi_st *)dev_id;
+> +
+> +	/* Read RX FIFO */
+> +	ssc_read_rx_fifo(spi_st);
+> +
+> +	/* Fill TX FIFO */
+> +	if (spi_st->words_remaining) {
+> +		ssc_write_tx_fifo(spi_st);
+> +	} else {
+> +		/* TX/RX complete */
+> +		writel_relaxed(0x0, spi_st->base + SSC_IEN);
+> +		/*
+> +		 * read SSC_IEN to ensure that this bit is set
+> +		 * before re-enabling interrupt
+> +		 */
+> +		readl(spi_st->base + SSC_IEN);
+> +		complete(&spi_st->done);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int spi_st_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct spi_master *master;
+> +	struct resource *res;
+> +	struct spi_st *spi_st;
+> +	int irq, ret = 0;
+> +	u32 var;
+> +
+> +	master = spi_alloc_master(&pdev->dev, sizeof(*spi_st));
+> +	if (!master)
+> +		return -ENOMEM;
+> +
+> +	master->dev.of_node		= np;
+> +	master->mode_bits		= MODEBITS;
+> +	master->setup			= spi_st_setup;
+> +	master->cleanup			= spi_st_cleanup;
+> +	master->transfer_one		= spi_st_transfer_one;
+> +	master->bits_per_word_mask	= SPI_BPW_MASK(8) | SPI_BPW_MASK(16);
+> +	master->auto_runtime_pm		= true;
+> +	master->bus_num			= pdev->id;
+> +	spi_st				= spi_master_get_devdata(master);
+> +
+> +	spi_st->clk = devm_clk_get(&pdev->dev, "ssc");
+> +	if (IS_ERR(spi_st->clk)) {
+> +		dev_err(&pdev->dev, "Unable to request clock\n");
+> +		return PTR_ERR(spi_st->clk);
+> +	}
+> +
+> +	ret = spi_st_clk_enable(spi_st);
+> +	if (ret)
+> +		return ret;
+> +
+> +	init_completion(&spi_st->done);
+> +
+> +	/* Get resources */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	spi_st->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(spi_st->base)) {
+> +		ret = PTR_ERR(spi_st->base);
+> +		goto clk_disable;
+> +	}
+> +
+> +	/* Disable I2C and Reset SSC */
+> +	writel_relaxed(0x0, spi_st->base + SSC_I2C);
+> +	var = readw_relaxed(spi_st->base + SSC_CTL);
+> +	var |= SSC_CTL_SR;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	udelay(1);
+> +	var = readl_relaxed(spi_st->base + SSC_CTL);
+> +	var &= ~SSC_CTL_SR;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	/* Set SSC into slave mode before reconfiguring PIO pins */
+> +	var = readl_relaxed(spi_st->base + SSC_CTL);
+> +	var &= ~SSC_CTL_MS;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	irq = irq_of_parse_and_map(np, 0);
+> +	if (!irq) {
+> +		dev_err(&pdev->dev, "IRQ missing or invalid\n");
+> +		ret = -EINVAL;
+> +		goto clk_disable;
+> +	}
+> +
+> +	ret = devm_request_irq(&pdev->dev, irq, spi_st_irq, 0,
+> +			       pdev->name, spi_st);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request irq %d\n", irq);
+> +		goto clk_disable;
+> +	}
+> +
+> +	/* by default the device is on */
+> +	pm_runtime_set_active(&pdev->dev);
+> +	pm_runtime_enable(&pdev->dev);
+> +
+> +	platform_set_drvdata(pdev, master);
+> +
+> +	ret = devm_spi_register_master(&pdev->dev, master);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to register master\n");
+> +		goto clk_disable;
+> +	}
+> +
+> +	return 0;
+> +
+> +clk_disable:
+> +	spi_st_clk_disable(spi_st);
+> +
+> +	return ret;
+> +}
+> +
+> +static int spi_st_remove(struct platform_device *pdev)
+> +{
+> +	struct spi_master *master = platform_get_drvdata(pdev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +
+> +	spi_st_clk_disable(spi_st);
+> +
+> +	pinctrl_pm_select_sleep_state(&pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int spi_st_runtime_suspend(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +
+> +	writel_relaxed(0, spi_st->base + SSC_IEN);
+> +	pinctrl_pm_select_sleep_state(dev);
+> +
+> +	spi_st_clk_disable(spi_st);
+> +
+> +	return 0;
+> +}
+> +
+> +static int spi_st_runtime_resume(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +	int ret;
+> +
+> +	ret = spi_st_clk_enable(spi_st);
+> +	pinctrl_pm_select_default_state(dev);
+> +
+> +	return ret;
+> +}
+> +#endif
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int spi_st_suspend(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	ret = spi_master_suspend(master);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return pm_runtime_force_suspend(dev);
+> +}
+> +
+> +static int spi_st_resume(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	ret = spi_master_resume(master);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return pm_runtime_force_resume(dev);
+> +}
+> +#endif
+> +
+> +static const struct dev_pm_ops spi_st_pm = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(spi_st_suspend, spi_st_resume)
+> +	SET_RUNTIME_PM_OPS(spi_st_runtime_suspend, spi_st_runtime_resume, NULL)
+> +};
+> +
+> +static struct of_device_id stm_spi_match[] = {
+> +	{ .compatible = "st,comms-ssc4-spi", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, stm_spi_match);
+> +
+> +static struct platform_driver spi_st_driver = {
+> +	.driver = {
+> +		.name = "spi-st",
+> +		.pm = &spi_st_pm,
+> +		.of_match_table = of_match_ptr(stm_spi_match),
+> +	},
+> +	.probe = spi_st_probe,
+> +	.remove = spi_st_remove,
+> +};
+> +module_platform_driver(spi_st_driver);
+> +
+> +MODULE_AUTHOR("Patrice Chotard <patrice.chotard@st.com>");
+> +MODULE_DESCRIPTION("STM SSC SPI driver");
+> +MODULE_LICENSE("GPL v2");
 
