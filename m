@@ -1,114 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaLHFU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 00:20:57 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:36270 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaLHFU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 00:20:56 -0500
-Date: Sun, 7 Dec 2014 21:20:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141208052048.GJ25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141202193252.GB17595@redhat.com>
- <547E4C14.6040509@oracle.com>
- <54813C03.8040009@oracle.com>
- <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
- <5481C92E.6020805@oracle.com>
- <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com>
- <54846B06.8050906@oracle.com>
- <20141207182420.GG25340@linux.vnet.ibm.com>
- <20141207194304.GA17810@linux.vnet.ibm.com>
- <5484E2AB.1070503@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5484E2AB.1070503@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120805-0013-0000-0000-000006DBDF37
+	id S1754021AbaLHFV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 00:21:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaLHFV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 00:21:57 -0500
+Message-ID: <1418016076.1095.30.camel@bling.home>
+Subject: Re: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Wu, Feng" <feng.wu@intel.com>
+Cc: Eric Auger <eric.auger@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Sun, 07 Dec 2014 22:21:16 -0700
+In-Reply-To: <E959C4978C3B6342920538CF579893F0022E2DD7@SHSMSX104.ccr.corp.intel.com>
+References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
+	 <1417592394-24343-18-git-send-email-feng.wu@intel.com>
+	 <548069F6.7020308@linaro.org>
+	 <E959C4978C3B6342920538CF579893F0022E2DD7@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 06:28:43PM -0500, Sasha Levin wrote:
-> On 12/07/2014 02:43 PM, Paul E. McKenney wrote:
-> > On Sun, Dec 07, 2014 at 10:24:20AM -0800, Paul E. McKenney wrote:
-> >> On Sun, Dec 07, 2014 at 09:58:14AM -0500, Sasha Levin wrote:
-> >>> On 12/05/2014 01:15 PM, Linus Torvalds wrote:
-> >>>> On Fri, Dec 5, 2014 at 7:03 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> >>>>>
-> >>>>> Yes, it's going to a serial line, but it's only about 100 lines/second on
-> >>>>> average. I wouldn't expect it to cause anything to hang!
-> >>>>
-> >>>> A regular 16650 serial chip? Running at 115kbps, I assume? So that's
-> >>>> about 11kB/s.
-> >>>>
-> >>>> And the serial console is polling, since it can't sleep or depend on interrupts.
-> >>>>
-> >>>> At a average line length of what, 40 characters? At less than 300
-> >>>> lines/s, you'd be using up 100% of one CPU. And since the printouts
-> >>>> are serialized, that would be all other CPU's too..
-> >>>>
-> >>>> 100 lines/s _average_ means that I can easily see it be 300lines/s for a while.
-> >>>>
-> >>>> So yeah. The serial console is simply not designed to handle
-> >>>> continuous output. It's for the "occasional" stuff.
-> >>>>
-> >>>> The fact that your rcu lockups go away when you make the fault
-> >>>> injection be quiet makes me really suspect this is related.
-> >>>
-> >>> The lockups themselves "go away", but looking closer at the log
-> >>> without those extra prints, I'm seeing:
-> >>>
-> >>> [ 1458.700070] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> >>> [ 1458.700133]  (detected by 19, t=30502 jiffies, g=12293, c=12292, q=0)
-> >>> [ 1458.702764] INFO: Stall ended before state dump start
-> >>>
-> >>> Quite often.
-> >>>
-> >>> Maybe the extra prints were just a catalyst?
-> >>
-> >> Is anything else being printed about the time that these message show
-> >> up?  Or is this the only output for the 40,000 jiffies preceding this
-> >> message?
+On Mon, 2014-12-08 at 04:58 +0000, Wu, Feng wrote:
 > 
-> There's actually nothing going on (beyond fuzzing noise) before/after:
+> > -----Original Message-----
+> > From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
+> > Behalf Of Eric Auger
+> > Sent: Thursday, December 04, 2014 10:05 PM
+> > To: Wu, Feng; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> > x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
+> > dwmw2@infradead.org; joro@8bytes.org; alex.williamson@redhat.com;
+> > jiang.liu@linux.intel.com
+> > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
+> > kvm@vger.kernel.org
+> > Subject: Re: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+> > 
+> > Hi Feng,
+> > On 12/03/2014 08:39 AM, Feng Wu wrote:
+> > > This patch adds and documents a new attribute
+> > > KVM_DEV_VFIO_DEVICE_POSTING_IRQ in KVM_DEV_VFIO_DEVICE group.
+> > > This new attribute is used for VT-d Posted-Interrupts.
+> > >
+> > > When guest OS changes the interrupt configuration for an
+> > > assigned device, such as, MSI/MSIx data/address fields,
+> > > QEMU will use this IRQ attribute to tell KVM to update the
+> > > related IRTE according the VT-d Posted-Interrrupts Specification,
+> > > such as, the guest vector should be updated in the related IRTE.
+> > >
+> > > Signed-off-by: Feng Wu <feng.wu@intel.com>
+> > > ---
+> > >  Documentation/virtual/kvm/devices/vfio.txt |    9 +++++++++
+> > >  include/uapi/linux/kvm.h                   |   10 ++++++++++
+> > >  2 files changed, 19 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/Documentation/virtual/kvm/devices/vfio.txt
+> > b/Documentation/virtual/kvm/devices/vfio.txt
+> > > index f7aff29..41e12b7 100644
+> > > --- a/Documentation/virtual/kvm/devices/vfio.txt
+> > > +++ b/Documentation/virtual/kvm/devices/vfio.txt
+> > > @@ -42,3 +42,12 @@ activated before VFIO_DEVICE_SET_IRQS has been
+> > called to trigger the IRQ
+> > >  or associate an eventfd to it. Unforwarding can only be called while the
+> > >  signaling has been disabled with VFIO_DEVICE_SET_IRQS. If this condition
+> > is
+> > >  not satisfied, the command returns an -EBUSY.
+> > > +
+> > > +  KVM_DEV_VFIO_DEVICE_POSTING_IRQ: Use posted interrtups
+> > mechanism to post
+> > typo
+> > > +                                   the IRQ to guests.
+> > > +For this attribute, kvm_device_attr.addr points to a kvm_vfio_dev_irq
+> > struct.
+> > > +
+> > > +When guest OS changes the interrupt configuration for an assigned device,
+> > > +such as, MSI/MSIx data/address fields, QEMU will use this IRQ attribute
+> > > +to tell KVM to update the related IRTE according the VT-d
+> > Posted-Interrrupts
+> > > +Specification, such as, the guest vector should be updated in the related
+> > IRTE.
+> > For my curiosity are there any restrictions about the instant at which
+> > the change can be done?
+> > I do not get here how you deactivate the posting?
 > 
-> [  756.618342] kexec-bzImage64: Not a bzImage
-> [  762.381734] kexec-bzImage64: Not a bzImage
-> [  765.129612] Unable to find swap-space signature
-> [  771.022304] Unable to find swap-space signature
-> [  793.434417] kexec-bzImage64: Not a bzImage
-> [  797.978210] => alloc_cpumask_var: failed!
-> [  800.253116] kexec-bzImage64: Not a bzImage
-> [  818.280056] INFO: rcu_sched detected stalls on CPUs/tasks:
-> [  818.280056]  (detected by 11, t=30503 jiffies, g=-295, c=-296, q=0)
-> [  818.283400] INFO: Stall ended before state dump start
-> [  829.523992] audit: type=1326 audit(39.680:47): auid=4294967295 uid=2385760256 gid=2214330370 ses=4294967295 pid=13307 comm="trinity-c353" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
-> [  830.890841] audit: type=1326 audit(41.010:48): auid=4294967295 uid=310902784 gid=201841673 ses=4294967295 pid=13294 comm="trinity-c350" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fffcb7bee47 code=0x0
-
-I have seen this caused by lost IPIs, but you have to lose two of them,
-which seems less than fully likely.
-
-> > And could you please build with CONFIG_RCU_CPU_STALL_INFO=y and try
-> > this again?
+> The current method is if the hardware supports interrupts posting, we will
+> use it instead of interrupts remapping, since it has good performance. Why
+> do I need deactivate interrupts posting?
 > 
-> I already have it set:
+> Here is the reply to Alex for the same question:
+> "In fact, I don't think we need to stop the posted-interrupts. For setting
+> posted interrupts, we update the related IRTE according to the new
+> format. If the guest reboots, or unload the drivers, or some other
+> operations, the msi/msix will be disabled first, in this path, the irq
+> will be disabled the related IRTE is not used anymore."
+
+Right, and I'm still not sure I agree with that reasoning.  We need to
+build the kernel interface to be generic, not tailored for a specific
+userspace.  I don't really feel comfortable having something that can't
+be disabled via a similar path to it being enabled.  For instance, what
+about a dynamic debug interface where we want to enable tracing and see
+each interrupt injected into the guest.  At that point we'd want to
+disabled posted interrupts and direct KVM injection and route via QEMU.
+Thanks,
+
+Alex
+
+> > > diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> > > index a269a42..7d98650 100644
+> > > --- a/include/uapi/linux/kvm.h
+> > > +++ b/include/uapi/linux/kvm.h
+> > > @@ -949,6 +949,7 @@ struct kvm_device_attr {
+> > >  #define  KVM_DEV_VFIO_DEVICE			2
+> > >  #define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
+> > >  #define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
+> > > +#define   KVM_DEV_VFIO_DEVICE_POSTING_IRQ			3
+> > Maybe we should align our naming verb vs verbing here?
+> > Best Regards
+> > Eric
 > 
-> $ grep STALL_INFO .config
-> CONFIG_RCU_CPU_STALL_INFO=y
+> No problem, I will align my patch in the next version. Thanks!
+> 
+> Thanks,
+> Feng
+> 
+> > >
+> > >  enum kvm_device_type {
+> > >  	KVM_DEV_TYPE_FSL_MPIC_20	= 1,
+> > > @@ -973,6 +974,15 @@ struct kvm_arch_forwarded_irq {
+> > >  	__u32 gsi; /* gsi, ie. virtual IRQ number */
+> > >  };
+> > >
+> > > +struct kvm_vfio_dev_irq {
+> > > +	__u32	argsz;
+> > > +	__u32	fd;		/* file descriptor of the VFIO device */
+> > > +	__u32	index;		/* VFIO device IRQ index */
+> > > +	__u32	start;
+> > > +	__u32	count;
+> > > +	__u32	gsi[];		/* gsi, ie. virtual IRQ number */
+> > > +};
+> > > +
+> > >  /*
+> > >   * ioctls for VM fds
+> > >   */
+> > >
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Ah, apologies.  OK, time to make this the default, and later to remove
-the option...
 
-							Thanx, Paul
 
