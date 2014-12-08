@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405AbaLHTFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 14:05:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53507 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223AbaLHTFR (ORCPT
+	id S1752849AbaLHTIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 14:08:16 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:43468 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaLHTIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 14:05:17 -0500
-Date: Mon, 8 Dec 2014 11:05:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH wq/for-3.19 3/3] workqueue: dump workqueues on sysrq-t
-Message-Id: <20141208110515.7860d68baca2b3bd46c9dab7@linux-foundation.org>
-In-Reply-To: <20141208184035.GE12274@htj.dyndns.org>
-References: <20141208174326.GB12274@htj.dyndns.org>
-	<20141208174406.GC12274@htj.dyndns.org>
-	<20141208174733.GD12274@htj.dyndns.org>
-	<20141208100613.ecc66d89.akpm@linux-foundation.org>
-	<20141208184035.GE12274@htj.dyndns.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Dec 2014 14:08:14 -0500
+Date: Mon, 8 Dec 2014 11:08:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        oleg@redhat.com, bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v1] CPU hotplug: active_reader not woken up in some cases
+ - deadlock
+Message-ID: <20141208190803.GR25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418062383-39657-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141208183134.GQ25340@linux.vnet.ibm.com>
+ <20141208195814.663007dd@thinkpad-w530>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141208195814.663007dd@thinkpad-w530>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120819-0009-0000-0000-000006F66AAE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Dec 2014 13:40:35 -0500 Tejun Heo <tj@kernel.org> wrote:
-
-> Hello, Andrew.
-> 
-> On Mon, Dec 08, 2014 at 10:06:13AM -0800, Andrew Morton wrote:
-> > sysrq-t already produces thousands of lines of output.  Maybe create a
-> > new keycode for this?
-> 
-> Believe it or not, we already used up all alphanumerics if we count in
-> the arch-specific ones.  Given that the workqueue information would
-> primarily be useful in tracking down hangs and we'd want to see the
-> dump of tasks in that case anyway, sysrq-t isn't a bad fit for
-> appending workqueue dump.  If anybody has a better idea, I'm all ears.
-
-Really.  Upper case?
-
-> ...
-> > > +static void pr_cont_pool_info(struct worker_pool *pool)
-> > > +{
-> > > +	if (pool->cpu >= 0)
-> > > +		pr_cont(" cpu=%d", pool->cpu);
-> > > +	else if (pool->node != NUMA_NO_NODE)
-> > > +		pr_cont(" node=%d", pool->node);
-> > > +
-> > > +	if (pool->cpu < 0) {
-> > > +		static char cpus_buf[PAGE_SIZE];
+On Mon, Dec 08, 2014 at 07:58:14PM +0100, David Hildenbrand wrote:
+> > On Mon, Dec 08, 2014 at 07:13:03PM +0100, David Hildenbrand wrote:
+> > > Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
+> > > grace periods") introduced another problem that can easily be reproduced by
+> > > starting/stopping cpus in a loop.
+> > > 
+> > > E.g.:
+> > >   for i in `seq 5000`; do
+> > >       echo 1 > /sys/devices/system/cpu/cpu1/online
+> > >       echo 0 > /sys/devices/system/cpu/cpu1/online
+> > >   done
+> > > 
+> > > Will result in:
+> > >   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
+> > >   Call Trace:
+> > >   ([<00000000006a028e>] __schedule+0x406/0x91c)
+> > >    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
+> > >    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
+> > >    [<0000000000131232>] cpu_up+0xb6/0xd4
+> > >    [<00000000004a5720>] device_online+0x80/0xc0
+> > >    [<00000000004a57f0>] online_store+0x90/0xb0
+> > >   ...
+> > > 
+> > > And a deadlock.
+> > > 
+> > > Problem is that if the last ref in put_online_cpus() can't get the
+> > > cpu_hotplug.lock the puts_pending count is incremented, but a sleeping active_writer
+> > > might never be woken up, therefore never exiting the loop in cpu_hotplug_begin().
+> > > 
+> > > This quick fix wakes up the active_writer proactively. The writer already
+> > > goes back to sleep if the ref count isn't already down to 0, so this should be
+> > > fine.
+> > > 
+> > > Can't reproduce the error with this fix.
 > > 
-> > Ouch.  This could be [NR_CPUS + epsilon]?
+> > Good catch!
+> > 
+> > But don't we need to use exactly the same value for the NULL check
+> > and for the wakeup?  Otherwise, wouldn't it be possible for
+> > cpu_hotplug.active_writer to be non-NULL for the check but NULL
+> > for the wake_up_process()?
+> > 
+> > 							Thanx, Paul
 > 
-> It's bitmap mask printing so each char can show four cpus.  PAGE_SIZE
-> should be enough for now but I think we need cpumask_prcont().
+> active_writer is cleared while holding cpuhp_lock, so this should be safe,
+> right?
 
-I'm not concerned about it being too small ;) Not many people have 16k
-CPUs - can it be shrunk?  It's particularly gross when CONFIG_SMP=n!
+You lost me on that one.  Don't we get to that piece of code precisely
+because we don't hold any of the CPU-hotplug locks?  If so, the
+writer might well hold all the locks it needs, and might well change
+cpu_hotplug.active_writer out from under us.
 
+What am I missing here?
+
+							Thanx, Paul
 
