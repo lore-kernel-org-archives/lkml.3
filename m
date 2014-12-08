@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaLHPQw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:16:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34311 "EHLO mx1.redhat.com"
+	id S1755970AbaLHPRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:17:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55193 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821AbaLHPQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:16:48 -0500
-Date: Mon, 8 Dec 2014 17:16:40 +0200
+	id S1755932AbaLHPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:16:56 -0500
+Date: Mon, 8 Dec 2014 17:16:50 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH v2 03/10] virtio_pci: free up vq->priv
-Message-ID: <1418051779-27748-4-git-send-email-mst@redhat.com>
+Subject: [PATCH v2 07/10] virtio_pci: setup config vector indirectly
+Message-ID: <1418051779-27748-8-git-send-email-mst@redhat.com>
 References: <1418051779-27748-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,165 +23,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to go from vq to vq info on
-data path, so using direct vq->priv pointer for that
-seems like a waste.
-
-Let's build an array of vq infos, then we can use vq->index
-for that lookup.
+config vector setup is version specific, do it indirectly.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/virtio/virtio_pci.c | 56 +++++++++++++++++++++++++--------------------
- 1 file changed, 31 insertions(+), 25 deletions(-)
+ drivers/virtio/virtio_pci.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 6f3db1f..6a7b8bf 100644
+index 68023e5..c8ca3f7 100644
 --- a/drivers/virtio/virtio_pci.c
 +++ b/drivers/virtio/virtio_pci.c
-@@ -31,6 +31,23 @@ MODULE_DESCRIPTION("virtio-pci");
- MODULE_LICENSE("GPL");
- MODULE_VERSION("1");
- 
-+struct virtio_pci_vq_info {
-+	/* the actual virtqueue */
-+	struct virtqueue *vq;
-+
-+	/* the number of entries in the queue */
-+	int num;
-+
-+	/* the virtual address of the ring queue */
-+	void *queue;
-+
-+	/* the list node for the virtqueues list */
-+	struct list_head node;
-+
-+	/* MSI-X vector (or none) */
-+	unsigned msix_vector;
-+};
-+
- /* Our device structure */
- struct virtio_pci_device {
- 	struct virtio_device vdev;
-@@ -46,6 +63,9 @@ struct virtio_pci_device {
- 	spinlock_t lock;
- 	struct list_head virtqueues;
- 
-+	/* array of all queues for house-keeping */
-+	struct virtio_pci_vq_info **vqs;
-+
- 	/* MSI-X support */
- 	int msix_enabled;
- 	int intx_enabled;
-@@ -71,23 +91,6 @@ enum {
- 	VP_MSIX_VQ_VECTOR = 1,
+@@ -89,6 +89,7 @@ struct virtio_pci_device {
+ 				      const char *name,
+ 				      u16 msix_vec);
+ 	void (*del_vq)(struct virtio_pci_vq_info *info);
++	u16 (*config_vector)(struct virtio_pci_device *vp_dev, u16 vector);
  };
  
--struct virtio_pci_vq_info {
--	/* the actual virtqueue */
--	struct virtqueue *vq;
--
--	/* the number of entries in the queue */
--	int num;
--
--	/* the virtual address of the ring queue */
--	void *queue;
--
--	/* the list node for the virtqueues list */
--	struct list_head node;
--
--	/* MSI-X vector (or none) */
--	unsigned msix_vector;
--};
--
- /* Qumranet donated their vendor ID for devices 0x1000 thru 0x10FF. */
- static const struct pci_device_id virtio_pci_id_table[] = {
- 	{ PCI_DEVICE(0x1af4, PCI_ANY_ID) },
-@@ -434,7 +437,6 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 		goto out_activate_queue;
- 	}
- 
--	vq->priv = info;
- 	info->vq = vq;
- 
- 	if (msix_vec != VIRTIO_MSI_NO_VECTOR) {
-@@ -454,6 +456,7 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 		INIT_LIST_HEAD(&info->node);
- 	}
- 
-+	vp_dev->vqs[index] = info;
- 	return vq;
- 
- out_assign:
-@@ -469,7 +472,7 @@ out_info:
- static void vp_del_vq(struct virtqueue *vq)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
--	struct virtio_pci_vq_info *info = vq->priv;
-+	struct virtio_pci_vq_info *info = vp_dev->vqs[vq->index];
- 	unsigned long flags, size;
- 
- 	spin_lock_irqsave(&vp_dev->lock, flags);
-@@ -503,7 +506,7 @@ static void vp_del_vqs(struct virtio_device *vdev)
- 	struct virtio_pci_vq_info *info;
- 
- 	list_for_each_entry_safe(vq, n, &vdev->vqs, list) {
--		info = vq->priv;
-+		info = vp_dev->vqs[vq->index];
- 		if (vp_dev->per_vq_vectors &&
- 			info->msix_vector != VIRTIO_MSI_NO_VECTOR)
- 			free_irq(vp_dev->msix_entries[info->msix_vector].vector,
-@@ -513,6 +516,7 @@ static void vp_del_vqs(struct virtio_device *vdev)
- 	vp_dev->per_vq_vectors = false;
- 
- 	vp_free_vectors(vdev);
-+	kfree(vp_dev->vqs);
+ /* Constants for MSI-X */
+@@ -271,6 +272,15 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
+ 	return vp_vring_interrupt(irq, opaque);
  }
  
- static int vp_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-@@ -526,11 +530,15 @@ static int vp_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 	u16 msix_vec;
- 	int i, err, nvectors, allocated_vectors;
- 
-+	vp_dev->vqs = kmalloc(nvqs * sizeof *vp_dev->vqs, GFP_KERNEL);
-+	if (!vp_dev->vqs)
-+		return -ENOMEM;
++u16 vp_config_vector(struct virtio_pci_device *vp_dev, u16 vector)
++{
++	/* Setup the vector used for configuration events */
++	iowrite16(vector, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++	/* Verify we had enough resources to assign the vector */
++	/* Will also flush the write out to device */
++	return ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++}
 +
- 	if (!use_msix) {
- 		/* Old style: one normal interrupt for change and all vqs. */
- 		err = vp_request_intx(vdev);
- 		if (err)
--			goto error_request;
-+			goto error_find;
- 	} else {
- 		if (per_vq_vectors) {
- 			/* Best option: one for change interrupt, one per vq. */
-@@ -545,7 +553,7 @@ static int vp_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 
- 		err = vp_request_msix_vectors(vdev, nvectors, per_vq_vectors);
- 		if (err)
--			goto error_request;
-+			goto error_find;
- 	}
- 
- 	vp_dev->per_vq_vectors = per_vq_vectors;
-@@ -587,8 +595,6 @@ static int vp_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 
- error_find:
- 	vp_del_vqs(vdev);
--
--error_request:
- 	return err;
- }
- 
-@@ -630,7 +636,7 @@ static int vp_set_vq_affinity(struct virtqueue *vq, int cpu)
+ static void vp_free_vectors(struct virtio_device *vdev)
  {
- 	struct virtio_device *vdev = vq->vdev;
  	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
--	struct virtio_pci_vq_info *info = vq->priv;
-+	struct virtio_pci_vq_info *info = vp_dev->vqs[vq->index];
- 	struct cpumask *mask;
- 	unsigned int irq;
+@@ -290,10 +300,7 @@ static void vp_free_vectors(struct virtio_device *vdev)
+ 
+ 	if (vp_dev->msix_enabled) {
+ 		/* Disable the vector used for configuration */
+-		iowrite16(VIRTIO_MSI_NO_VECTOR,
+-			  vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
+-		/* Flush the write out to device */
+-		ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++		vp_dev->config_vector(vp_dev, VIRTIO_MSI_NO_VECTOR);
+ 
+ 		pci_disable_msix(vp_dev->pci_dev);
+ 		vp_dev->msix_enabled = 0;
+@@ -357,9 +364,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
+ 		goto error;
+ 	++vp_dev->msix_used_vectors;
+ 
+-	iowrite16(v, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
++	v = vp_dev->config_vector(vp_dev, v);
+ 	/* Verify we had enough resources to assign the vector */
+-	v = ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
+ 	if (v == VIRTIO_MSI_NO_VECTOR) {
+ 		err = -EBUSY;
+ 		goto error;
+@@ -770,6 +776,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
+ 	vp_dev->vdev.id.vendor = pci_dev->subsystem_vendor;
+ 	vp_dev->vdev.id.device = pci_dev->subsystem_device;
+ 
++	vp_dev->config_vector = vp_config_vector;
+ 	vp_dev->setup_vq = setup_vq;
+ 	vp_dev->del_vq = del_vq;
  
 -- 
 MST
