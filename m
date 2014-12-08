@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbaLHMyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:54:41 -0500
-Received: from mail-yk0-f181.google.com ([209.85.160.181]:36152 "EHLO
-	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385AbaLHMxr (ORCPT
+	id S1755454AbaLHMyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:54:55 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:38768 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211AbaLHMyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:53:47 -0500
+	Mon, 8 Dec 2014 07:54:53 -0500
+Date: Mon, 8 Dec 2014 12:54:47 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, broonie@kernel.org,
-        linux-spi@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH v3 2/4] spi: st: Provide Device Tree binding documentation
-Date: Mon,  8 Dec 2014 12:53:32 +0000
-Message-Id: <1418043214-14324-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418043214-14324-1-git-send-email-lee.jones@linaro.org>
-References: <1418043214-14324-1-git-send-email-lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Subject: Re: linux-next: build failure after merge of the spi tree
+Message-ID: <20141208125447.GJ3951@x1>
+References: <20141208230517.13ebfe4f@canb.auug.org.au>
+ <20141208121342.GW11764@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141208121342.GW11764@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT documentation for the SPI portion of ST's SSC device.
+On Mon, 08 Dec 2014, Mark Brown wrote:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/spi/spi-st.txt | 40 ++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-st.txt
+> On Mon, Dec 08, 2014 at 11:05:17PM +1100, Stephen Rothwell wrote:
+> 
+> > Caused by commit cf9e9c98fa8c ("spi: Add new driver for
+> > STMicroelectronics' SPI Controller").
+> 
+> > To me COMPILE_TEST means "this builds everywhere, make sure it doesn't
+> > break" ... not "lets set this and see if Stephen finds anything" :-)
+> 
+> > I reverted both commits for today.
+> 
+> I've dropped both from my tree too.
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-st.txt b/Documentation/devicetree/bindings/spi/spi-st.txt
-new file mode 100644
-index 0000000..fe54959
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-st.txt
-@@ -0,0 +1,40 @@
-+STMicroelectronics SSC (SPI) Controller
-+---------------------------------------
-+
-+Required properties:
-+- compatible	: "st,comms-ssc4-spi"
-+- reg		: Offset and length of the device's register set
-+- interrupts	: The interrupt specifier
-+- clock-names	: Must contain "ssc"
-+- clocks	: Must contain an entry for each name in clock-names
-+		    See ../clk/*
-+- pinctrl-names	: Uses "default", can use "sleep" if provided
-+		    See ../pinctrl/pinctrl-binding.txt
-+
-+Optional properties:
-+- cs-gpios	: List of GPIO chip selects
-+		    See ../spi/spi-bus.txt
-+
-+Child nodes represent devices on the SPI bus
-+  See ../spi/spi-bus.txt
-+
-+Example:
-+	spi@9840000 {
-+		compatible	= "st,comms-ssc4-spi";
-+		reg		= <0x9840000 0x110>;
-+		interrupts	= <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks		= <&clk_s_c0_flexgen CLK_EXT2F_A9>;
-+		clock-names	= "ssc";
-+		pinctrl-0	= <&pinctrl_spi0_default>;
-+		pinctrl-names	= "default";
-+		cs-gpios	= <&pio17 5 0>;
-+		#address-cells	= <1>;
-+		#size-cells	= <0>;
-+
-+		st95hf@0{
-+			compatible		= "st,st95hf";
-+			reg			= <0>;
-+			spi-max-frequency	= <1000000>;
-+			interrupts		= <2 IRQ_TYPE_EDGE_FALLING>;
-+		};
-+	};
+Patches re-sent without COMPILE_TEST support.
+
+I will re-enable COMPILE_TEST when Will Deacon's patch to fix this
+kind of nonsense lands.
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
