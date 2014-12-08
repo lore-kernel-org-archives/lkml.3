@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaLHVL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:11:27 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:57630 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091AbaLHVLZ (ORCPT
+	id S1755072AbaLHVPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:15:06 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:63691 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753148AbaLHVPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:11:25 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: wl1251: NVS firmware data
-Date: Mon, 8 Dec 2014 22:11:22 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <201411271506.20457@pali> <201412081747.30965@pali> <20141208205721.GA14895@kroah.com>
-In-Reply-To: <20141208205721.GA14895@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3309978.raKky74fON";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Mon, 8 Dec 2014 16:15:02 -0500
+Message-ID: <1418073300.2058.63.camel@x220>
+Subject: Re: [PATCH 2/3] kconfig: remove undocumented type definition alias
+ 'boolean'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Jaeger <cj@linux.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, yann.morin.1998@free.fr,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Date: Mon, 08 Dec 2014 22:15:00 +0100
+In-Reply-To: <1418070979.2058.52.camel@x220>
+References: <cover.1418003065.git.cj@linux.com>
+	 <1539c3778a0f3533942f69540a9b5b3d1f965bdc.1418003065.git.cj@linux.com>
+	 <1418064660.2058.11.camel@x220> <1418066039.2058.19.camel@x220>
+	 <5485F923.3090301@redhat.com> <1418067685.2058.27.camel@x220>
+	 <1418070979.2058.52.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412082211.22352@pali>
+X-OriginalArrivalTime: 08 Dec 2014 21:15:00.0355 (UTC) FILETIME=[06934D30:01D0132C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3309978.raKky74fON
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-12-08 at 21:36 +0100, Paul Bolle wrote:
+> On Mon, 2014-12-08 at 20:41 +0100, Paul Bolle wrote:
+> > Well, it seems the treewide "boolean" cleanup should be done first.
+> > Removing support for "boolean" could than be a second, separate step.
+> > Just to ease review.
+> 
+> This appears to have no effect on the .config files I generated for the
+> defconfig files in next-20141208. (After porting the patch and changing
+> those last booleans to bool, that is.) So that's good.
+> 
+> If you'd resend as two patches on top of linux-next, I might add an
+> Acked-by: or a Tested-by:.
 
-On Monday 08 December 2014 21:57:21 Greg Kroah-Hartman wrote:
-> On Mon, Dec 08, 2014 at 05:47:30PM +0100, Pali Roh=C3=A1r wrote:
-> > On Monday 08 December 2014 17:37:14 Greg Kroah-Hartman wrote:
-> > > On Mon, Dec 08, 2014 at 11:18:18PM +0800, Ming Lei wrote:
-> > > > On Sat, Dec 6, 2014 at 9:02 PM, Pali Roh=C3=A1r
-> >=20
-> > <pali.rohar@gmail.com> wrote:
-> > > > > On Saturday 06 December 2014 13:49:54 Pavel Machek=20
-wrote:
-> > > > >  /**
-> > > > >=20
-> > > > > + * request_firmware_prefer_user: - prefer usermode
-> > > > > helper for loading firmware + * @firmware_p: pointer
-> > > > > to firmware image
-> > > > > + * @name: name of firmware file
-> > > > > + * @device: device for which firmware is being loaded
-> > > > > + *
-> > > > > + * This function works pretty much like
-> > > > > request_firmware(), but it prefer + * usermode helper.
-> > > > > If usermode helper fails then it fallback to direct
-> > > > > access. + * Usefull for dynamic or model specific
-> > > > > firmware data. + **/
-> > > > > +int request_firmware_prefer_user(const struct
-> > > > > firmware **firmware_p, +                         =20
-> > > > > const char *name, struct device *device) +{
-> > > > > +       int ret;
-> > > > > +       __module_get(THIS_MODULE);
-> > > > > +       ret =3D _request_firmware(firmware_p, name,
-> > > > > device, +                               FW_OPT_UEVENT
-> > > > > | FW_OPT_PREFER_USER); +     =20
-> > > > > module_put(THIS_MODULE); +       return ret;
-> > > > > +}
-> > > > > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
-> > > >=20
-> > > > I'd like to introduce request_firmware_user() which only
-> > > > requests firmware from user space, and this way is
-> > > > simpler and more flexible since we have
-> > > > request_firmware_direct() already.
-> > >=20
-> > > Why would a driver care about what program provides the
-> > > firmware?  It shouldn't at all, and we want to get rid of
-> > > the userspace firmware loader, not encourage drivers to
-> > > use it "exclusively" at all.
-> >=20
-> > Do not remove it! Without userspace firmware loader it is
-> > impossible to load dynamic firmware files.
->=20
-> You should not be loading "dynamic" firmware files with the
-> firmware interface, as that's not a "firmware" file anymore,
-> it's a "special binary file that my driver needs to be
-> created and sent into the kernel."
->=20
-> Use your own custom usermode helper for stuff like this, not
-> the firmware interface.  But use a binary sysfs file if you
-> want, that seems to make sense for it...
->=20
-> greg k-h
+My last mail on this series. To make sure the tree stays buildable that
+second patch to drop support for 'boolean' should only be applied a
+release or two after the cleanup patch has been applied. Otherwise we're
+bound to run into fun build errors in linux-next, and even mainline, for
+quite a few commits, aren't we? One tree still using boolean is all it
+takes...
 
-Nokia for this problem invented its own netlink interface into=20
-wl1251 driver. But because it was specific for N900 device it was=20
-rejected for inclusion into mainline kernel.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Paul Bolle
 
---nextPart3309978.raKky74fON
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSGE/oACgkQi/DJPQPkQ1Li4ACfUYeNAfILh+bSTeMLUeaNxmoP
-lBMAmgNKHgHgFHFsXaApXxS0uSzMPEJz
-=85FL
------END PGP SIGNATURE-----
-
---nextPart3309978.raKky74fON--
