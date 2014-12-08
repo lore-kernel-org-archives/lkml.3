@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaLHHtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 02:49:20 -0500
-Received: from ozlabs.org ([103.22.144.67]:48905 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901AbaLHHtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 02:49:18 -0500
-Date: Mon, 8 Dec 2014 18:49:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: linux-next: manual merge of the xen-tip tree with the arm-soc tree
-Message-ID: <20141208184908.27bfd605@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754071AbaLHIHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:07:47 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:33161 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaLHIHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:07:45 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/keqifRXUMrFmd1v=HZ4il08"; protocol="application/pgp-signature"
+In-Reply-To: <1417623842-14331-2-git-send-email-jolsa@kernel.org>
+References: <1417623842-14331-1-git-send-email-jolsa@kernel.org> <1417623842-14331-2-git-send-email-jolsa@kernel.org>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 8 Dec 2014 17:07:23 +0900
+X-Google-Sender-Auth: an4T2ROVLIXsPYfYYIc35bUUbAk
+Message-ID: <CAM9d7cixHgGqiLu0c8zrbEU6aLNdvhwC0vne4zcd8OZjQkCV1Q@mail.gmail.com>
+Subject: Re: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/keqifRXUMrFmd1v=HZ4il08
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Jiri,
 
-Hi all,
+On Thu, Dec 4, 2014 at 1:23 AM, Jiri Olsa <jolsa@kernel.org> wrote:
+> +ifndef NO_LIBBABELTRACE
+> +  # for linking with debug library, run like:
+> +  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libdw/
 
-Today's linux-next merge of the xen-tip tree got a conflict in
-arch/arm/include/asm/dma-mapping.h between commits a3a60f81ee6f
-("dma-mapping: replace set_arch_dma_coherent_ops with
-arch_setup_dma_ops") and 4bb25789ed28 ("arm: dma-mapping: plumb our
-iommu mapping ops into arch_setup_dma_ops") from the arm-soc tree and
-commit 3d5391ac6f5e ("arm: introduce is_device_dma_coherent") from the
-xen-tip tree.
+s/libdw/libbabeltrace/
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
-I also neede this merge fix patch:
+> +  ifdef LIBBABELTRACE_DIR
+> +    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
+> +    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
+> +  endif
+> +  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
+> +  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
+> +endif
+> +
+>  # include ARCH specific config
+>  -include $(src-perf)/arch/$(ARCH)/Makefile
+>
+> @@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =                        \
+>         stackprotector-all              \
+>         timerfd                         \
+>         libdw-dwarf-unwind              \
+> +       libbabeltrace                   \
+>         zlib
+>
+>  LIB_FEATURE_TESTS =                    \
+> @@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =                 \
+>         libslang                        \
+>         libunwind                       \
+>         libdw-dwarf-unwind              \
+> +       libbabeltrace                   \
+>         zlib
+>
+>  VF_FEATURE_TESTS =                     \
+> @@ -661,6 +674,17 @@ else
+>    NO_PERF_READ_VDSOX32 := 1
+>  endif
+>
+> +ifndef NO_LIBBABELTRACE
+> +  ifeq ($(feature-libbabeltrace), 0)
+> +    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-dev);
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Dec 2014 18:46:59 +1100
-Subject: [PATCH] arm: introduce is_device_dma_coherent merge fix
+It seems that Ubuntu has libbabeltrace-ctf-dev package.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/arm/mm/dma-mapping.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks,
+Namhyung
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 09645f00bd17..43064cbe58f9 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -2058,6 +2058,7 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_b=
-ase, u64 size,
- 	else
- 		dma_ops =3D arm_get_dma_map_ops(coherent);
-=20
-+	dev->archdata.dma_coherent =3D coherent;
- 	set_dma_ops(dev, dma_ops);
- }
-=20
---=20
-2.1.3
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/include/asm/dma-mapping.h
-index 9410b7e548fc,e6e3446abdf6..000000000000
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@@ -121,13 -121,20 +121,19 @@@ static inline unsigned long dma_max_pfn
-  }
-  #define dma_max_pfn(dev) dma_max_pfn(dev)
- =20
- -static inline int set_arch_dma_coherent_ops(struct device *dev)
- -{
- -	dev->archdata.dma_coherent =3D true;
- -	set_dma_ops(dev, &arm_coherent_dma_ops);
- -	return 0;
- -}
- -#define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
- +#define arch_setup_dma_ops arch_setup_dma_ops
- +extern void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
- +			       struct iommu_ops *iommu, bool coherent);
- +
- +#define arch_teardown_dma_ops arch_teardown_dma_ops
- +extern void arch_teardown_dma_ops(struct device *dev);
- =20
-+ /* do not use this function in a driver */
-+ static inline bool is_device_dma_coherent(struct device *dev)
-+ {
-+ 	return dev->archdata.dma_coherent;
-+ }
-+=20
-  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t padd=
-r)
-  {
-  	unsigned int offset =3D paddr & ~PAGE_MASK;
-
---Sig_/keqifRXUMrFmd1v=HZ4il08
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUhVf8AAoJEMDTa8Ir7ZwVauYQAJaFQg2K5pLKsuzWje2mAv2r
-P2fggQQrBBFC7MO8aWRlJlaz2i9kzkOOIZoJC5sIgSiWIWYptw8K8FPwh78UDHKh
-YOXnlVSclL5KP35pok6sqIBNVpjug3DvNlP4ruIQu1BvSne7UZIhlLaLSDlCp7Lj
-qybnlefodPOoJOLVOYwI+R2Wa0rhhNbM62PwySPvsvE004VjmdKDQqZvuTrlcezD
-Tir3kGgnLkMp+pEVIPfdbkoWZqAjMpKHfRJ/cGM13As4A7BT9kbcI23Duh3Fhb5w
-0+qJQW5rOYx/eeJAjKuCCDorcoXaRGNOrd1zKAFbf53HAn4ex/CDd3+/jpsOa0jU
-JndBOIjjLcezwQyZZuU+T7Dxdtb/1dVxspLCiRsCkDv9dmljPaY6zDm7LYTIeAbV
-+tKTgiPjC79Z7F18H/p2+VSDG9Y9+1A5S/4V+mbTyZdiHnUfKSLsFX1TKmlzQi78
-8N99ki0aFKG1t9lHRZs1hfKhqWTLl/Z6I/XfL9i2mQ9talG0loFAzOorCHPy42X3
-mpJf4ufiCWnKMJrBmh2mrnRBOQKyjjm9paNQ/LM2ip/9pBdMyl8MEooYGlD68xmG
-HhJJeWQjXoU+Xxj8IxUWEG2LO1np55NuqJlzwJaiZ9rjl7zJ0pQAaCogjWdXicP6
-k46Vdrjllr2oHULIaBoW
-=AIpA
------END PGP SIGNATURE-----
-
---Sig_/keqifRXUMrFmd1v=HZ4il08--
+> +    NO_LIBBABELTRACE := 1
+> +  else
+> +    CFLAGS += -DHAVE_LIBBABELTRACE_SUPPORT $(LIBBABELTRACE_CFLAGS)
+> +    LDFLAGS += $(LIBBABELTRACE_LDFLAGS)
+> +    EXTLIBS += -lbabeltrace-ctf
+> +  endif
+> +endif
