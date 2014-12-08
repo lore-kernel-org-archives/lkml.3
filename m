@@ -1,266 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaLHGWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:22:13 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:3690 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaLHGWM (ORCPT
+	id S1754043AbaLHGbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:31:19 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:52054 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaLHGbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:22:12 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 07 Dec 2014 22:19:11 -0800
-From: Mark Zhang <markz@nvidia.com>
-To: <hdoyu@nvidia.com>, <joro@8bytes.org>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>, <gnurou@gmail.com>, <olof@lixom.net>
-CC: <iommu@lists.linux-foundation.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Mark Zhang <markz@nvidia.com>
-Subject: [PATCH] memory: Add NVIDIA SMMU suspend/resume support
-Date: Mon, 8 Dec 2014 14:20:56 +0800
-Message-ID: <1418019656-6893-1-git-send-email-markz@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Mon, 8 Dec 2014 01:31:18 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v14 0/7] ARM: kprobes: OPTPROBES and other improvements.
+Date: Mon, 8 Dec 2014 14:27:20 +0800
+Message-ID: <1418020040-68977-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.548545B3.027D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 7cee8413bf8ebe27f6fb1053d0f2ca68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds suspend/resume support for NVIDIA SMMU.
-This patch is created on top of Thierry Reding's patch set:
+This is v14 of optprobe related patch series. This series fixes a bug
+found by Tixy: a race between patch_text() and undef handler.
 
-"[PATCH v7 00/12] NVIDIA Tegra memory controller and IOMMU support"
+Previous discussions can be found:
 
-Signed-off-by: Mark Zhang <markz@nvidia.com>
----
- drivers/iommu/tegra-smmu.c | 79 +++++++++++++++++++++++++++++++++++++++++++++-
- drivers/memory/tegra/mc.c  | 21 ++++++++++++
- drivers/memory/tegra/mc.h  |  4 +++
- 3 files changed, 103 insertions(+), 1 deletion(-)
+https://lkml.org/lkml/2014/12/4/942
+https://lkml.org/lkml/2014/12/4/4
+https://lkml.org/lkml/2014/12/1/64
+https://lkml.org/lkml/2014/11/22/18
+https://lkml.org/lkml/2014/11/21/55
+https://lkml.org/lkml/2014/11/18/26
+https://lkml.org/lkml/2014/11/19/31
+https://lkml.org/lkml/2014/11/18/41
+https://lkml.org/lkml/2014/10/25/48
+https://lkml.org/lkml/2014/10/22/254
+https://lkml.org/lkml/2014/8/27/255
+https://lkml.org/lkml/2014/8/12/12
+https://lkml.org/lkml/2014/8/8/992
+https://lkml.org/lkml/2014/8/8/5
+https://lkml.org/lkml/2014/8/5/63
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index 0909e0bae9ec..ab38805055a4 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -17,6 +17,8 @@
- #include <soc/tegra/ahb.h>
- #include <soc/tegra/mc.h>
- 
-+struct tegra_smmu_as;
-+
- struct tegra_smmu {
- 	void __iomem *regs;
- 	struct device *dev;
-@@ -25,9 +27,10 @@ struct tegra_smmu {
- 	const struct tegra_smmu_soc *soc;
- 
- 	unsigned long *asids;
-+	struct tegra_smmu_as **as;
- 	struct mutex lock;
- 
--	struct list_head list;
-+	struct list_head swgroup_asid_list;
- };
- 
- struct tegra_smmu_as {
-@@ -40,6 +43,12 @@ struct tegra_smmu_as {
- 	u32 attr;
- };
- 
-+struct tegra_smmu_swgroup_asid {
-+	struct list_head list;
-+	unsigned swgroup_id;
-+	unsigned asid;
-+};
-+
- static inline void smmu_writel(struct tegra_smmu *smmu, u32 value,
- 			       unsigned long offset)
- {
-@@ -376,6 +385,7 @@ static int tegra_smmu_as_prepare(struct tegra_smmu *smmu,
- 	as->smmu = smmu;
- 	as->use_count++;
- 
-+	smmu->as[as->id] = as;
- 	return 0;
- }
- 
-@@ -386,6 +396,7 @@ static void tegra_smmu_as_unprepare(struct tegra_smmu *smmu,
- 		return;
- 
- 	tegra_smmu_free_asid(smmu, as->id);
-+	smmu->as[as->id] = NULL;
- 	as->smmu = NULL;
- }
- 
-@@ -398,6 +409,7 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
- 	struct of_phandle_args args;
- 	unsigned int index = 0;
- 	int err = 0;
-+	struct tegra_smmu_swgroup_asid *sa = NULL;
- 
- 	while (!of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
- 					   &args)) {
-@@ -411,6 +423,14 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
- 			return err;
- 
- 		tegra_smmu_enable(smmu, swgroup, as->id);
-+
-+		sa = kzalloc(sizeof(struct tegra_smmu_swgroup_asid),
-+				GFP_KERNEL);
-+		INIT_LIST_HEAD(&sa->list);
-+		sa->swgroup_id = swgroup;
-+		sa->asid = as->id;
-+		list_add_tail(&sa->list, &smmu->swgroup_asid_list);
-+
- 		index++;
- 	}
- 
-@@ -427,6 +447,7 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
- 	struct tegra_smmu *smmu = as->smmu;
- 	struct of_phandle_args args;
- 	unsigned int index = 0;
-+	struct tegra_smmu_swgroup_asid *sa = NULL;
- 
- 	while (of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
- 					  &args)) {
-@@ -435,6 +456,13 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
- 		if (args.np != smmu->dev->of_node)
- 			continue;
- 
-+		list_for_each_entry(sa, &smmu->swgroup_asid_list, list) {
-+			if (sa->asid == as->id && sa->swgroup_id == swgroup)
-+				break;
-+		}
-+		list_del(&sa->list);
-+		kfree(sa);
-+
- 		tegra_smmu_disable(smmu, swgroup, as->id);
- 		tegra_smmu_as_unprepare(smmu, as);
- 		index++;
-@@ -651,6 +679,48 @@ static void tegra_smmu_ahb_enable(void)
- 	}
- }
- 
-+void tegra_smmu_resume(struct tegra_smmu *smmu)
-+{
-+	struct tegra_smmu_as *as = NULL;
-+	unsigned int bit;
-+	u32 value;
-+	struct tegra_smmu_swgroup_asid *sa = NULL;
-+
-+	for_each_set_bit(bit, smmu->asids, smmu->soc->num_asids) {
-+		as = smmu->as[bit];
-+		smmu->soc->ops->flush_dcache(as->pd, 0, SMMU_SIZE_PD);
-+
-+		smmu_writel(smmu, as->id & 0x7f, SMMU_PTB_ASID);
-+		value = SMMU_PTB_DATA_VALUE(as->pd, as->attr);
-+		smmu_writel(smmu, value, SMMU_PTB_DATA);
-+	}
-+
-+	list_for_each_entry(sa, &smmu->swgroup_asid_list, list)
-+		tegra_smmu_enable(smmu, sa->swgroup_id, sa->asid);
-+
-+	value = SMMU_PTC_CONFIG_ENABLE | SMMU_PTC_CONFIG_INDEX_MAP(0x3f);
-+
-+	if (smmu->soc->supports_request_limit)
-+		value |= SMMU_PTC_CONFIG_REQ_LIMIT(8);
-+
-+	smmu_writel(smmu, value, SMMU_PTC_CONFIG);
-+
-+	value = SMMU_TLB_CONFIG_HIT_UNDER_MISS |
-+		SMMU_TLB_CONFIG_ACTIVE_LINES(0x20);
-+
-+	if (smmu->soc->supports_round_robin_arbitration)
-+		value |= SMMU_TLB_CONFIG_ROUND_ROBIN_ARBITRATION;
-+
-+	smmu_writel(smmu, value, SMMU_TLB_CONFIG);
-+
-+	smmu_flush_ptc(smmu, NULL, 0);
-+	smmu_flush_tlb(smmu);
-+	smmu_writel(smmu, SMMU_CONFIG_ENABLE, SMMU_CONFIG);
-+	smmu_flush(smmu);
-+
-+	tegra_smmu_ahb_enable();
-+}
-+
- struct tegra_smmu *tegra_smmu_probe(struct device *dev,
- 				    const struct tegra_smmu_soc *soc,
- 				    struct tegra_mc *mc)
-@@ -684,7 +754,14 @@ struct tegra_smmu *tegra_smmu_probe(struct device *dev,
- 	if (!smmu->asids)
- 		return ERR_PTR(-ENOMEM);
- 
-+	smmu->as = devm_kzalloc(dev,
-+				sizeof(struct tegra_smmu_as *) * soc->num_asids,
-+				GFP_KERNEL);
-+	if (!smmu->as)
-+		return ERR_PTR(-ENOMEM);
-+
- 	mutex_init(&smmu->lock);
-+	INIT_LIST_HEAD(&smmu->swgroup_asid_list);
- 
- 	smmu->regs = mc->regs;
- 	smmu->soc = soc;
-diff --git a/drivers/memory/tegra/mc.c b/drivers/memory/tegra/mc.c
-index 9b7c1645fd59..aa0c59ccd33a 100644
---- a/drivers/memory/tegra/mc.c
-+++ b/drivers/memory/tegra/mc.c
-@@ -283,6 +283,23 @@ static int tegra_mc_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int tegra_mc_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	return 0;
-+}
-+
-+static int tegra_mc_resume(struct platform_device *pdev)
-+{
-+	struct tegra_mc *mc = platform_get_drvdata(pdev);
-+
-+	if (IS_ENABLED(CONFIG_TEGRA_IOMMU_SMMU))
-+		tegra_smmu_resume(mc->smmu);
-+
-+	return 0;
-+}
-+#endif
-+
- static struct platform_driver tegra_mc_driver = {
- 	.driver = {
- 		.name = "tegra-mc",
-@@ -291,6 +308,10 @@ static struct platform_driver tegra_mc_driver = {
- 	},
- 	.prevent_deferred_probe = true,
- 	.probe = tegra_mc_probe,
-+#ifdef CONFIG_PM
-+	.suspend = tegra_mc_suspend,
-+	.resume = tegra_mc_resume,
-+#endif
- };
- 
- static int tegra_mc_init(void)
-diff --git a/drivers/memory/tegra/mc.h b/drivers/memory/tegra/mc.h
-index f714c309b960..cbf538b3f995 100644
---- a/drivers/memory/tegra/mc.h
-+++ b/drivers/memory/tegra/mc.h
-@@ -29,6 +29,7 @@ static inline void mc_writel(struct tegra_mc *mc, u32 value,
- struct tegra_smmu *tegra_smmu_probe(struct device *dev,
- 				    const struct tegra_smmu_soc *soc,
- 				    struct tegra_mc *mc);
-+void tegra_smmu_resume(struct tegra_smmu *smmu);
- #else
- static inline struct tegra_smmu *
- tegra_smmu_probe(struct device *dev, const struct tegra_smmu_soc *soc,
-@@ -36,6 +37,9 @@ tegra_smmu_probe(struct device *dev, const struct tegra_smmu_soc *soc,
- {
- 	return NULL;
- }
-+void tegra_smmu_resume(struct tegra_smmu *smmu)
-+{
-+}
- #endif
- 
- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
+
+
+Jon Medhurst (1):
+  ARM: kprobes: Add test cases for stack consuming instructions
+
+Masami Hiramatsu (1):
+  kprobes: Pass the original kprobe for preparing optimized kprobe
+
+Wang Nan (5):
+  ARM: probes: move all probe code to dedicate directory
+  ARM: kprobes: introduces checker
+  ARM: kprobes: collects stack consumption for store instructions
+  ARM: kprobes: disallow probing stack consuming instructions
+  ARM: kprobes: enable OPTPROBES for ARM 32
+
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/{kernel => include/asm}/insn.h            |   0
+ arch/arm/include/asm/kprobes.h                     |  30 +-
+ arch/arm/{kernel => include/asm}/patch.h           |   0
+ arch/arm/include/asm/probes.h                      |  13 +
+ arch/arm/kernel/Makefile                           |  16 +-
+ arch/arm/kernel/entry-armv.S                       |   3 +-
+ arch/arm/kernel/ftrace.c                           |   3 +-
+ arch/arm/kernel/jump_label.c                       |   5 +-
+ arch/arm/kernel/patch.c                            |   3 +-
+ arch/arm/probes/Makefile                           |   7 +
+ .../{kernel/probes-arm.c => probes/decode-arm.c}   |  12 +-
+ .../{kernel/probes-arm.h => probes/decode-arm.h}   |   7 +-
+ .../probes-thumb.c => probes/decode-thumb.c}       |  16 +-
+ .../probes-thumb.h => probes/decode-thumb.h}       |  10 +-
+ arch/arm/{kernel/probes.c => probes/decode.c}      |  74 ++++-
+ arch/arm/{kernel/probes.h => probes/decode.h}      |  13 +-
+ arch/arm/probes/kprobes/Makefile                   |  12 +
+ .../kprobes-arm.c => probes/kprobes/actions-arm.c} |   9 +-
+ .../kprobes/actions-common.c}                      |   4 +-
+ .../kprobes/actions-thumb.c}                       |  10 +-
+ arch/arm/probes/kprobes/checkers-arm.c             |  99 +++++++
+ arch/arm/probes/kprobes/checkers-common.c          | 101 +++++++
+ arch/arm/probes/kprobes/checkers-thumb.c           | 110 +++++++
+ arch/arm/probes/kprobes/checkers.h                 |  54 ++++
+ .../{kernel/kprobes.c => probes/kprobes/core.c}    |  23 +-
+ .../{kernel/kprobes.h => probes/kprobes/core.h}    |  10 +-
+ arch/arm/probes/kprobes/opt-arm.c                  | 322 +++++++++++++++++++++
+ .../kprobes/test-arm.c}                            |  31 +-
+ .../kprobes-test.c => probes/kprobes/test-core.c}  |   8 +-
+ .../kprobes-test.h => probes/kprobes/test-core.h}  |   2 +-
+ .../kprobes/test-thumb.c}                          |  16 +-
+ arch/arm/probes/uprobes/Makefile                   |   2 +
+ .../uprobes-arm.c => probes/uprobes/actions-arm.c} |   6 +-
+ .../{kernel/uprobes.c => probes/uprobes/core.c}    |   8 +-
+ .../{kernel/uprobes.h => probes/uprobes/core.h}    |   0
+ arch/x86/kernel/kprobes/opt.c                      |   3 +-
+ include/linux/kprobes.h                            |   3 +-
+ kernel/kprobes.c                                   |   4 +-
+ samples/kprobes/kprobe_example.c                   |   2 +-
+ 41 files changed, 961 insertions(+), 92 deletions(-)
+ rename arch/arm/{kernel => include/asm}/insn.h (100%)
+ rename arch/arm/{kernel => include/asm}/patch.h (100%)
+ create mode 100644 arch/arm/probes/Makefile
+ rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
+ rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (93%)
+ rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (98%)
+ rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (90%)
+ rename arch/arm/{kernel/probes.c => probes/decode.c} (85%)
+ rename arch/arm/{kernel/probes.h => probes/decode.h} (97%)
+ create mode 100644 arch/arm/probes/kprobes/Makefile
+ rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (98%)
+ rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/kprobes/checkers-arm.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-common.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-thumb.c
+ create mode 100644 arch/arm/probes/kprobes/checkers.h
+ rename arch/arm/{kernel/kprobes.c => probes/kprobes/core.c} (96%)
+ rename arch/arm/{kernel/kprobes.h => probes/kprobes/core.h} (83%)
+ create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+ rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (97%)
+ rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
+ rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (99%)
+ rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/uprobes/Makefile
+ rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/uprobes.c => probes/uprobes/core.c} (97%)
+ rename arch/arm/{kernel/uprobes.h => probes/uprobes/core.h} (100%)
+
 -- 
-1.8.1.5
+1.8.4
 
