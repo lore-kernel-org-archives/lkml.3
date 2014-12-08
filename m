@@ -1,99 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbaLHOdq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:33:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33766 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaLHOdp (ORCPT
+	id S1755564AbaLHOfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:35:16 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:37685 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751709AbaLHOfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:33:45 -0500
-Message-ID: <5485B6B9.7010800@oracle.com>
-Date: Mon, 08 Dec 2014 09:33:29 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 8 Dec 2014 09:35:14 -0500
+Date: Mon, 8 Dec 2014 15:31:25 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141208143125.GD8739@lukather>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+ <20141208093246.GB27228@ldesroches-Latitude-E6320>
+ <20141208133047.GM16827@intel.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?windows-1252?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141202193252.GB17595@redhat.com> <547E4C14.6040509@oracle.com> <54813C03.8040009@oracle.com> <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com> <5481C92E.6020805@oracle.com> <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com> <54846B06.8050906@oracle.com> <20141207182420.GG25340@linux.vnet.ibm.com> <20141207194304.GA17810@linux.vnet.ibm.com> <5484E2AB.1070503@oracle.com> <20141208052048.GJ25340@linux.vnet.ibm.com>
-In-Reply-To: <20141208052048.GJ25340@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
+Content-Disposition: inline
+In-Reply-To: <20141208133047.GM16827@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 12:20 AM, Paul E. McKenney wrote:
-> I have seen this caused by lost IPIs, but you have to lose two of them,
-> which seems less than fully likely.
 
-It does seem that it can cause full blown stalls as well, just pretty
-rarely (notice the lack of any prints before):
+--cHMo6Wbp1wrKhbfi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[11373.032327] audit: type=1326 audit(1397703594.974:502): auid=4294967295 uid=7884781 gid=0 ses=4294967295 pid=9853 comm="trinity-c768" exe="/trinity/trinity" sig=9 arch=c0000
-03e syscall=96 compat=0 ip=0x7fff2c3fee47 code=0x0
-[11374.565881] audit: type=1326 audit(1397703596.504:503): auid=4294967295 uid=32 gid=0
- ses=4294967295 pid=9801 comm="trinity-c710" exe="/trinity/trinity" sig=9 arch=c000003e syscall=96 compat=0 ip=0x7fff2c3fee47 code=0x0
-[11839.353539] Hangcheck: hangcheck value past margin!
-[12040.010128] INFO: rcu_sched detected stalls on CPUs/tasks:
-[12040.012072]  (detected by 4, t=213513 jiffies, g=-222, c=-223, q=0)
-[12040.014200] INFO: Stall ended before state dump start
-[12159.730069] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[12159.730069]  (detected by 3, t=396537 jiffies, g=24095, c=24094, q=1346)
-[12159.730069] INFO: Stall ended before state dump start
-[12602.162439] Hangcheck: hangcheck value past margin!
-[12655.560806] INFO: rcu_sched detected stalls on CPUs/tasks:
-[12655.560806]  0: (3 ticks this GP) idle=bc3/140000000000002/0 softirq=26674/26674 last_accelerate: b2a8/da68, nonlazy_posted: 20893, ..
-[12655.602171]  (detected by 13, t=30506 jiffies, g=-219, c=-220, q=0)
-[12655.602171] Task dump for CPU 0:
-[12655.602171] trinity-c39     R  running task    11904  6558  26120 0x0008000c
-[12655.602171]  ffffffff81593bf7 ffff8808d5d58d40 0000000000000282 ffffffff9ef40538
-[12655.602171]  ffff880481400000 ffff8808d5dcb638 ffffffff83f2ed2b ffffffff9eaa1718
-[12655.602171]  ffff8808d5d58d08 00000b820c44b0ae 0000000000000000 0000000000000001
-[12655.602171] Call Trace:
-[12655.602171]  [<ffffffff81593bf7>] ? trace_hardirqs_on_caller+0x677/0x900
-[12655.602171]  [<ffffffff83f2ed2b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[12655.602171]  [<ffffffff91677ffb>] ? retint_restore_args+0x13/0x13
-[12655.602171]  [<ffffffff91676612>] ? _raw_spin_unlock_irqrestore+0xa2/0xf0
-[12655.602171]  [<ffffffff83f93705>] ? __debug_check_no_obj_freed+0x2f5/0xd90
-[12655.602171]  [<ffffffff81593bf7>] ? trace_hardirqs_on_caller+0x677/0x900
-[12655.602171]  [<ffffffff83f95ba9>] ? debug_check_no_obj_freed+0x19/0x20
-[12655.602171]  [<ffffffff819049bf>] ? free_pages_prepare+0x5bf/0x1000
-[12655.602171]  [<ffffffff83f90fe3>] ? __this_cpu_preempt_check+0x13/0x20
-[12655.602171]  [<ffffffff8190cacd>] ? __free_pages_ok+0x3d/0x360
-[12655.602171]  [<ffffffff8190ce7d>] ? free_compound_page+0x8d/0xd0
-[12655.602171]  [<ffffffff81929986>] ? __put_compound_page+0x46/0x70
-[12655.602171]  [<ffffffff8192b395>] ? put_compound_page+0xf5/0x10e0
-[12655.602171]  [<ffffffff814d99ab>] ? preempt_count_sub+0x11b/0x1d0
-[12655.602171]  [<ffffffff8192da4d>] ? release_pages+0x41d/0x6f0
-[12655.602171]  [<ffffffff81a0188b>] ? free_pages_and_swap_cache+0x11b/0x1a0
-[12655.602171]  [<ffffffff819a6b92>] ? tlb_flush_mmu_free+0x72/0x180
-[12655.602171]  [<ffffffff819ace76>] ? unmap_single_vma+0x1326/0x2170
-[12655.602171]  [<ffffffff83f90fe3>] ? __this_cpu_preempt_check+0x13/0x20
-[12655.602171]  [<ffffffff819b0644>] ? unmap_vmas+0xd4/0x250
-[12655.602171]  [<ffffffff819d62c9>] ? exit_mmap+0x169/0x610
-[12655.602171]  [<ffffffff81a678fd>] ? kmem_cache_free+0x7cd/0xbb0
-[12655.602171]  [<ffffffff814095b2>] ? mmput+0xd2/0x2c0
-[12655.602171]  [<ffffffff81423551>] ? do_exit+0x7e1/0x39c0
-[12655.602171]  [<ffffffff81456fb2>] ? get_signal+0x7a2/0x2130
-[12655.602171]  [<ffffffff81426891>] ? do_group_exit+0x101/0x490
-[12655.602171]  [<ffffffff814d99ab>] ? preempt_count_sub+0x11b/0x1d0
-[12655.602171]  [<ffffffff81456f4e>] ? get_signal+0x73e/0x2130
-[12655.602171]  [<ffffffff811d59f1>] ? sched_clock+0x31/0x50
-[12655.602171]  [<ffffffff81585ded>] ? get_lock_stats+0x1d/0x100
-[12655.602171]  [<ffffffff811ac828>] ? do_signal+0x28/0x3750
-[12655.602171]  [<ffffffff814f7f73>] ? vtime_account_user+0x173/0x220
-[12655.602171]  [<ffffffff814d96c1>] ? get_parent_ip+0x11/0x50
-[12655.602171]  [<ffffffff83f90fe3>] ? __this_cpu_preempt_check+0x13/0x20
-[12655.602171]  [<ffffffff81593bf7>] ? trace_hardirqs_on_caller+0x677/0x900
-[12655.602171]  [<ffffffff81593e8d>] ? trace_hardirqs_on+0xd/0x10
-[12655.602171]  [<ffffffff811affb9>] ? do_notify_resume+0x69/0x100
-[12655.602171]  [<ffffffff9167744f>] ? int_signal+0x12/0x17
+On Mon, Dec 08, 2014 at 07:00:47PM +0530, Vinod Koul wrote:
+> On Mon, Dec 08, 2014 at 10:32:47AM +0100, Ludovic Desroches wrote:
+> > On Mon, Dec 08, 2014 at 11:47:46AM +0530, Vinod Koul wrote:
+> > > On Mon, Nov 17, 2014 at 02:41:54PM +0100, Maxime Ripard wrote:
+> > > > Hi,
+> > > >=20
+> > > > As we discussed a couple of weeks ago, this is the third attempt at
+> > > > creating a generic behaviour for slave capabilities retrieval so th=
+at
+> > > > generic layers using dmaengine can actually rely on that.
+> > > >=20
+> > > > That has been done mostly through two steps: by moving out the
+> > > > sub-commands of the device_control callback, so that the dmaengine
+> > > > core can then infer from that wether a sub-command is implemented, =
+and
+> > > > then by moving the slave properties, such as the supported buswidth,
+> > > > to the structure dma_device itself.
+> > >=20
+> > > Okay managed to get this done. Apart from the two issues identified d=
+idn't
+> > > find anything so applied and pushed to a branch
+> > > "topic/slave_caps_device_control_fix"
+> > >=20
+> > > Today did some compile tests and found few warnings, were trivial but=
+ I
+> > > am worried about the testing of this code. Has anyone tested this, if=
+ so
+> > > which platforms are covered Since I pushed base branch last night, Fe=
+ng's
+> > > bot covered it and all was OK. Looks like Feng's bot doesn't have wide
+> > > coverage of arm platforms, wasn't there one run by arm guys which tri=
+es to
+> > > test and boot, if so can we get this tested there please.
+> >=20
+> > Tested with your branch on sama5d3 and sama5d4 so at_hdmac and at xdmac.
+> >=20
+> > I have also sent some patches based on Maxime's series for at_xdmac.
 
+I did the development on the Allwinner A31 (sun6i driver). So that's
+tested too.
 
-Thanks,
-Sasha
+Thanks to Ludovic for his testing.
+
+> Anymore voluteers? I am looking at omap, mxs, tegra ones (these had
+> issues)
+
+Since these were compile time issues (and trivial one). From a
+functional point of view, beside the warning introduced, this won't
+change anything.
+
+And even if it does, we have a full bug-fixing window to take care of
+that.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--cHMo6Wbp1wrKhbfi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUhbY9AAoJEBx+YmzsjxAgsb4P/2ZuSK4hc5MXQS3bKF1sALCS
+HI0ExYYBTcCpEi4EDJDSvbzDw0vYVjvO0MlgfKqe7DRnLYjWYqM+UamMIpPUROzv
+EsVOAJpVtRAG7axRlZgMIHLq7RUUwayiTzU7z/Ki3wN7YLuFu48BAhJrD+1iYt/I
+wQdmo9EEB3aP4ih1s1XiQ/vHWfP9OW5I6+R9ccuyAcMhf9/MuKclAXuIuKiRbzNX
+4z4DKyWWH873P9RY8DVU/Xs/YWxwFQ3CF7JWnaKbitglZgyO+rEeL+cr04ZnuPup
+oi4LzIejHUH83k4GsaH0zcpsLHHuwvaF9MAoaO7CIq5glap33P+SZPDTLF//MPkJ
+AEE3i8rzc+v/WGPzghbVxK8ecSRmvo18QDh63qZLROQQTkrXa80SQ9/8WeVpg6nf
+dT01i2whbqlyOC1bT8wk8QjWRY90Jst2qwzbNk4RR4MrPOb2Yj3Sd3IoBZ5yK12+
+3TiC6wO2qIwC3/ENp/PJRan0HE4rgSXcSbCRa+nMzg160jC8bIyFbK5L1fGSxEy3
+tcyJiOUm+uZ58PgzeiqWNhiGPdQIhZ/YsUPnO+sqvulZa0witnDcvcHPPpvZ7+2N
+aY0JEY64+YM4VP0uzIv5vEVk0fZp23vVywI9KFN/B2UfzmiaZ+dvnzy16zsv/N/K
+Z71oV18/ESxHJavfhLu+
+=1mxv
+-----END PGP SIGNATURE-----
+
+--cHMo6Wbp1wrKhbfi--
