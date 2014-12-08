@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaLHNGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:06:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42964 "EHLO mx1.redhat.com"
+	id S1755609AbaLHNG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:06:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535AbaLHNGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:06:36 -0500
-Date: Mon, 8 Dec 2014 15:06:30 +0200
+	id S1755568AbaLHNGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:06:42 -0500
+Date: Mon, 8 Dec 2014 15:06:36 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 7/9] virtio_pci: setup config vector indirectly
-Message-ID: <1418043812-25753-8-git-send-email-mst@redhat.com>
+Subject: [PATCH 9/9] virtio_pci: update file descriptions and copyright
+Message-ID: <1418043812-25753-10-git-send-email-mst@redhat.com>
 References: <1418043812-25753-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,72 +23,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-config vector setup is version specific, do it indirectly.
+There's been a lot of changes since 2007.
+List main authors, add Red Hat copyright.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/virtio/virtio_pci.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ drivers/virtio/virtio_pci.h        | 5 ++++-
+ drivers/virtio/virtio_pci.c        | 5 ++++-
+ drivers/virtio/virtio_pci_legacy.c | 5 ++++-
+ 3 files changed, 12 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/virtio/virtio_pci.h b/drivers/virtio/virtio_pci.h
+index a3b1259..fba383c 100644
+--- a/drivers/virtio/virtio_pci.h
++++ b/drivers/virtio/virtio_pci.h
+@@ -1,15 +1,18 @@
+ #ifndef _DRIVERS_VIRTIO_VIRTIO_PCI_H
+ #define _DRIVERS_VIRTIO_VIRTIO_PCI_H
+ /*
+- * Virtio PCI driver
++ * Virtio PCI driver - APIs for common functionality for all device versions
+  *
+  * This module allows virtio devices to be used over a virtual PCI device.
+  * This can be used with QEMU based VMMs like KVM or Xen.
+  *
+  * Copyright IBM Corp. 2007
++ * Copyright Red Hat, Inc. 2014
+  *
+  * Authors:
+  *  Anthony Liguori  <aliguori@us.ibm.com>
++ *  Rusty Russell <rusty@rustcorp.com.au>
++ *  Michael S. Tsirkin <mst@redhat.com>
+  *
+  * This work is licensed under the terms of the GNU GPL, version 2 or later.
+  * See the COPYING file in the top-level directory.
 diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 68023e5..c8ca3f7 100644
+index 6c7e186..c263f67 100644
 --- a/drivers/virtio/virtio_pci.c
 +++ b/drivers/virtio/virtio_pci.c
-@@ -89,6 +89,7 @@ struct virtio_pci_device {
- 				      const char *name,
- 				      u16 msix_vec);
- 	void (*del_vq)(struct virtio_pci_vq_info *info);
-+	u16 (*config_vector)(struct virtio_pci_device *vp_dev, u16 vector);
- };
- 
- /* Constants for MSI-X */
-@@ -271,6 +272,15 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
- 	return vp_vring_interrupt(irq, opaque);
- }
- 
-+u16 vp_config_vector(struct virtio_pci_device *vp_dev, u16 vector)
-+{
-+	/* Setup the vector used for configuration events */
-+	iowrite16(vector, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
-+	/* Verify we had enough resources to assign the vector */
-+	/* Will also flush the write out to device */
-+	return ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
-+}
-+
- static void vp_free_vectors(struct virtio_device *vdev)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
-@@ -290,10 +300,7 @@ static void vp_free_vectors(struct virtio_device *vdev)
- 
- 	if (vp_dev->msix_enabled) {
- 		/* Disable the vector used for configuration */
--		iowrite16(VIRTIO_MSI_NO_VECTOR,
--			  vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
--		/* Flush the write out to device */
--		ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
-+		vp_dev->config_vector(vp_dev, VIRTIO_MSI_NO_VECTOR);
- 
- 		pci_disable_msix(vp_dev->pci_dev);
- 		vp_dev->msix_enabled = 0;
-@@ -357,9 +364,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
- 		goto error;
- 	++vp_dev->msix_used_vectors;
- 
--	iowrite16(v, vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
-+	v = vp_dev->config_vector(vp_dev, v);
- 	/* Verify we had enough resources to assign the vector */
--	v = ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
- 	if (v == VIRTIO_MSI_NO_VECTOR) {
- 		err = -EBUSY;
- 		goto error;
-@@ -770,6 +776,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
- 	vp_dev->vdev.id.vendor = pci_dev->subsystem_vendor;
- 	vp_dev->vdev.id.device = pci_dev->subsystem_device;
- 
-+	vp_dev->config_vector = vp_config_vector;
- 	vp_dev->setup_vq = setup_vq;
- 	vp_dev->del_vq = del_vq;
- 
+@@ -1,13 +1,16 @@
+ /*
+- * Virtio PCI driver
++ * Virtio PCI driver - common functionality for all device versions
+  *
+  * This module allows virtio devices to be used over a virtual PCI device.
+  * This can be used with QEMU based VMMs like KVM or Xen.
+  *
+  * Copyright IBM Corp. 2007
++ * Copyright Red Hat, Inc. 2014
+  *
+  * Authors:
+  *  Anthony Liguori  <aliguori@us.ibm.com>
++ *  Rusty Russell <rusty@rustcorp.com.au>
++ *  Michael S. Tsirkin <mst@redhat.com>
+  *
+  * This work is licensed under the terms of the GNU GPL, version 2 or later.
+  * See the COPYING file in the top-level directory.
+diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
+index 9fdec9a..1ca4422 100644
+--- a/drivers/virtio/virtio_pci_legacy.c
++++ b/drivers/virtio/virtio_pci_legacy.c
+@@ -1,13 +1,16 @@
+ /*
+- * Virtio PCI driver
++ * Virtio PCI driver - legacy device support
+  *
+  * This module allows virtio devices to be used over a virtual PCI device.
+  * This can be used with QEMU based VMMs like KVM or Xen.
+  *
+  * Copyright IBM Corp. 2007
++ * Copyright Red Hat, Inc. 2014
+  *
+  * Authors:
+  *  Anthony Liguori  <aliguori@us.ibm.com>
++ *  Rusty Russell <rusty@rustcorp.com.au>
++ *  Michael S. Tsirkin <mst@redhat.com>
+  *
+  * This work is licensed under the terms of the GNU GPL, version 2 or later.
+  * See the COPYING file in the top-level directory.
 -- 
 MST
 
