@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaLHNtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:49:11 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:49102 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249AbaLHNtJ (ORCPT
+	id S1752229AbaLHNwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:52:35 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:53104 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaLHNwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:49:09 -0500
-Date: Mon, 8 Dec 2014 13:49:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>,
-        Matthias Klein <matthias.klein@linux.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc
- tree
-Message-ID: <20141208134903.GN3951@x1>
-References: <20141208120619.68287b54@canb.auug.org.au>
- <2406890.FlzRjyvuXd@wuerfel>
- <20141208130009.GL3951@x1>
- <3348703.0b5FTH9Sa3@wuerfel>
+	Mon, 8 Dec 2014 08:52:33 -0500
+Date: Mon, 8 Dec 2014 13:52:23 +0000
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, computersforpeace@gmail.com,
+        kernel@stlinux.com
+Subject: Re: [STLinux Kernel] [PATCH v2 RESEND 02/11] mtd: st_spi_fsm: Obtain
+ and use EMI clock if provided
+Message-ID: <20141208135223.GB29220@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1417688512-7644-1-git-send-email-lee.jones@linaro.org>
+ <1417688512-7644-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3348703.0b5FTH9Sa3@wuerfel>
+In-Reply-To: <1417688512-7644-3-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+Hi Lee,
 
-> On Monday 08 December 2014 13:00:09 Lee Jones wrote:
-> > On Mon, 08 Dec 2014, Arnd Bergmann wrote:
-> > 
-> > > On Monday 08 December 2014 12:06:19 Stephen Rothwell wrote:
-> > > > Hi Stephen,
-> > > > 
-> > > > Today's linux-next merge of the bcm2835 tree got a conflict in
-> > > > arch/arm/boot/dts/Makefile between commit 302a5ef29d49 ("ARM: BCM5301X:
-> > > > Add DT for Netgear R6300 V2") from the arm-soc tree and commit
-> > > > 6298ed17a404 ("ARM: bcm2835: Add device tree for Raspberry Pi model
-> > > > B+") from the bcm2835 tree.
-> > > > 
-> > > > I fixed it up (the bcm2835 tree patch is also in the arm-soc tree as
-> > > > commit ba2a1d6959ac ("ARM: bcm2835: Add device tree for Raspberry Pi
-> > > > model B+"), so I just used the arm-soc version) and can carry the fix
-> > > > as necessary (no action is required).
-> > > 
-> > > Thanks a lot for the notification!
-> > > 
-> > > Lee, do you know what is going on? Did you accidentally rebase a commit
-> > > that you already sent for inclusion in arm-soc?
-> > 
-> > Nope.  The branch hasn't changed at all.
-> > 
-> > OOI why would a re-base affect anything?  I sent you it in patch form.
-> 
-> Ah, I looked at the wrong branch and didn't see that I applied a patch
-> instead of a pull request. It's all fine then, as long as you never
-> intend to send any pull requests based on top of your current branch.
-> 
-> You can possibly make Stephen's life a tiny bit simpler if you just
-> drop all patches from your for-next branch as soon as we've picked
-> them up into arm-soc.
+On Thu, 04 Dec 2014, Lee Jones wrote:
 
-That is something I thought about, but I believe we have users of that
-branch.  I guess we could always point them to ARM-SoC, or reset the
-branch to the aforementioned.
+> ST's Common Clk Framework is now available. This patch ensures the FSM
+> makes use of it by obtaining and enabling the EMI clock if provided. If
+> system fails to provide the EMI clock FSM uses its original default
+> rate.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+<snip>
+
+I'm not sure I understand this patch. Now that common clock framework
+is available for STI platforms, why would the emi clock ever not be available?
+
+If it is to maintain DT compatability then we are already breaking this with the
+syscfg 'reg' DT changes which are coming up, and this was deemed OK as the platform
+is WIP.
+
+IMO keeping this legacy code which assumes the bootloader / JTAG has enabled and configured
+the emi clock correctly is not worth it now that CCF is available for the platform.
+
+> -	/* TODO: Make this dynamic */
+> -	emi_freq = STFSM_DEFAULT_EMI_FREQ;
+> +	if (!fsm->clk) {
+> +		dev_warn(fsm->dev,
+> +			 "No EMI clock available. Using default 100MHz.\n");
+> +
+> +		emi_freq = STFSM_DEFAULT_EMI_FREQ;
+> +	} else
+> +		emi_freq = clk_get_rate(fsm->clk);
+>  
+>  	/*
+>  	 * Calculate clk_div - values between 2 and 128
+> @@ -2057,6 +2064,15 @@ static int stfsm_probe(struct platform_device *pdev)
+>  		return PTR_ERR(fsm->base);
+>  	}
+>  
+> +	fsm->clk = devm_clk_get(&pdev->dev, "emi_clk");
+> +	if (IS_ERR(fsm->clk)) {
+> +		dev_warn(fsm->dev, "Couldn't find EMI clock.\n");
+> +		fsm->clk = NULL;
+> +	} else if (clk_prepare_enable(fsm->clk)) {
+> +		dev_warn(fsm->dev, "Failed to enable EMI clock.\n");
+
+If a clock has been provided and we fail to enable it, then surely that is game over?
+
+As the code currently is it then goes onto assume in stfsm_set_freq() that the rate
+is STFSM_DEFAULT_EMI_FREQ which can't be true if it can't enable the clock.
+
+regards,
+
+Peter.
