@@ -1,48 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaLHPI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:08:56 -0500
-Received: from smtprelay0094.hostedemail.com ([216.40.44.94]:36485 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755661AbaLHPIz (ORCPT
+	id S1755884AbaLHPJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:09:15 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:48388 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572AbaLHPID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:08:55 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3874:4250:5007:6261:7556:7875:10004:10400:10848:10967:11232:11658:11914:12296:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shirt83_3082013c7703a
-X-Filterd-Recvd-Size: 1620
-Date: Mon, 8 Dec 2014 10:08:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Kosina <jkosina@suse.cz>,
-        Petr Mladek <pmladek@suse.cz>
-Subject: Re: [GIT PULL] tracing/NMI/printk: Use seq_buf for safe printing
- from NMI context
-Message-ID: <20141208100851.3906cc0a@gandalf.local.home>
-In-Reply-To: <20141208100528.5f97106f@gandalf.local.home>
-References: <20141208100528.5f97106f@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Dec 2014 10:08:03 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 2/4] gpio/xilinx: Convert the driver to platform device interface
+Date: Mon,  8 Dec 2014 16:07:54 +0100
+Message-Id: <1418051276-5476-3-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418051276-5476-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1418051276-5476-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Dec 2014 10:05:28 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+This way we do not need to transverse the device tree manually and we
+support hot plugged devices.
 
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/gpio/gpio-xilinx.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
-> This code solves the issue of performing stack dumps from NMI context.
-> The issue is that printk() is not safe from NMI context as if the NMI
-> were to trigger when a printk() was being performed, the NMI could
-> deadlock from the printk() internal locks. This has been seen in practice.
-> 
+diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+index 9483950..1199a31 100644
+--- a/drivers/gpio/gpio-xilinx.c
++++ b/drivers/gpio/gpio-xilinx.c
+@@ -174,16 +174,16 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
+ 
+ /**
+  * xgpio_of_probe - Probe method for the GPIO device.
+- * @np: pointer to device tree node
+  *
+  * This function probes the GPIO device in the device tree. It initializes the
+  * driver data structure. It returns 0, if the driver is bound to the GPIO
+  * device, or a negative value if there is an error.
+  */
+-static int xgpio_of_probe(struct device_node *np)
++static int xgpio_probe(struct platform_device *pdev)
+ {
+ 	struct xgpio_instance *chip;
+ 	int status = 0;
++	struct device_node *np = pdev->dev.of_node;
+ 	const u32 *tree_info;
+ 	u32 ngpio;
+ 
+@@ -210,6 +210,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 
+ 	spin_lock_init(&chip->gpio_lock);
+ 
++	chip->mmchip.gc.dev = &pdev->dev;
+ 	chip->mmchip.gc.direction_input = xgpio_dir_in;
+ 	chip->mmchip.gc.direction_output = xgpio_dir_out;
+ 	chip->mmchip.gc.get = xgpio_get;
+@@ -255,6 +256,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 
+ 		spin_lock_init(&chip->gpio_lock);
+ 
++		chip->mmchip.gc.dev = &pdev->dev;
+ 		chip->mmchip.gc.direction_input = xgpio_dir_in;
+ 		chip->mmchip.gc.direction_output = xgpio_dir_out;
+ 		chip->mmchip.gc.get = xgpio_get;
+@@ -286,19 +288,18 @@ static const struct of_device_id xgpio_of_match[] = {
+ 	{ /* end of list */ },
+ };
+ 
+-static int __init xgpio_init(void)
+-{
+-	struct device_node *np;
+-
+-	for_each_matching_node(np, xgpio_of_match)
+-		xgpio_of_probe(np);
++MODULE_DEVICE_TABLE(of, xgpio_of_match);
+ 
+-	return 0;
+-}
++static struct platform_driver xgpio_plat_driver = {
++	.probe		= xgpio_probe,
++	.driver		= {
++			.name = "gpio-xilinx",
++			.owner = THIS_MODULE,
++			.of_match_table	= xgpio_of_match,
++	},
++};
+ 
+-/* Make sure we get initialized before anyone else tries to use us */
+-subsys_initcall(xgpio_init);
+-/* No exit call at the moment as we cannot unregister of GPIO chips */
++module_platform_driver(xgpio_plat_driver);
+ 
+ MODULE_AUTHOR("Xilinx, Inc.");
+ MODULE_DESCRIPTION("Xilinx GPIO driver");
+-- 
+2.1.3
 
-One added bonus is that this code also makes the NMI dump stack work on
-PREEMPT_RT kernels. As printk() includes sleeping locks on PREEMPT_RT,
-printk() only writes to console if the console does not use any
-rt_mutex converted spin locks. Which a lot do.
-
--- Steve
