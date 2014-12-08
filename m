@@ -1,198 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaLHFtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 00:49:04 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:55574 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaLHFtB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 00:49:01 -0500
+	id S1754025AbaLHFw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 00:52:27 -0500
+Received: from ozlabs.org ([103.22.144.67]:53009 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007AbaLHFw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 00:52:26 -0500
+Date: Mon, 8 Dec 2014 16:52:17 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v3 4/4] powernv: powerpc: Add winkle support for offline
+ cpus
+Message-ID: <20141208055217.GC4437@drongo>
+References: <1417678103-32571-1-git-send-email-shreyas@linux.vnet.ibm.com>
+ <1417678103-32571-5-git-send-email-shreyas@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1417806260-9264-7-git-send-email-javi.merino@arm.com>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-	<1417806260-9264-7-git-send-email-javi.merino@arm.com>
-Date: Mon, 8 Dec 2014 11:19:00 +0530
-X-Google-Sender-Auth: T_5H8VZqzTSUhYfevX5bfXr3I_4
-Message-ID: <CAOh2x==BKyS08th2d4r0Q2UGqhzAwj6sqOgFsH6J0pWup+OU_A@mail.gmail.com>
-Subject: Re: [RFC PATCH v6 6/9] thermal: cpu_cooling: implement the power
- cooling device API
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        punit.agrawal@arm.com, Mark Brown <broonie@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417678103-32571-5-git-send-email-shreyas@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javi,
+On Thu, Dec 04, 2014 at 12:58:23PM +0530, Shreyas B. Prabhu wrote:
+> Winkle is a deep idle state supported in power8 chips. A core enters
+> winkle when all the threads of the core enter winkle. In this state
+> power supply to the entire chiplet i.e core, private L2 and private L3
+> is turned off. As a result it gives higher powersavings compared to
+> sleep.
+> 
+> But entering winkle results in a total hypervisor state loss. Hence the
+> hypervisor context has to be preserved before entering winkle and
+> restored upon wake up.
+> 
+> Power-on Reset Engine (PORE) is a dedicated engine which is responsible
+> for powering on the chiplet during wake up. It can be programmed to
+> restore the register contests of a few specific registers. This patch
+> uses PORE to restore register state wherever possible and uses stack to
+> save and restore rest of the necessary registers.
+> 
+> With hypervisor state restore things fall under three categories-
+> per-core state, per-subcore state and per-thread state. To manage this,
+> extend the infrastructure introduced for sleep. Mainly we add a paca
+> variable subcore_sibling_mask. Using this and the core_idle_state we can
+> distingush first thread in core and subcore.
 
-Looks like ARM's exchange server screwed up your patch?
+Comments below...
 
-This is how I see it with gmail's show-original option:
-
-+=09cpufreq_device->dyn_power_table =3D power_table;
-+=09cpufreq_device->dyn_power_table_entries =3D i;
-+
-
-I have seen this a lot, while I was in ARM. Had to adopt some work-arounds to
-get over it. :)
-
-On Sat, Dec 6, 2014 at 12:34 AM, Javi Merino <javi.merino@arm.com> wrote:
-
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-
-> +static int build_dyn_power_table(struct cpufreq_cooling_device *cpufreq_device,
-> +                               u32 capacitance)
-> +{
-> +       struct power_table *power_table;
-> +       struct dev_pm_opp *opp;
-> +       struct device *dev = NULL;
-> +       int num_opps, cpu, i, ret = 0;
-
-Why not initialize num_opps and i to 0 here?
-
-> +       unsigned long freq;
+> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+> index 7637889..2b9b5fb 100644
+> --- a/arch/powerpc/kernel/exceptions-64s.S
+> +++ b/arch/powerpc/kernel/exceptions-64s.S
+> @@ -102,9 +102,7 @@ system_reset_pSeries:
+>  #ifdef CONFIG_PPC_P7_NAP
+>  BEGIN_FTR_SECTION
+>  	/* Running native on arch 2.06 or later, check if we are
+> -	 * waking up from nap. We only handle no state loss and
+> -	 * supervisor state loss. We do -not- handle hypervisor
+> -	 * state loss at this time.
+> +	 * waking up from nap/sleep/winkle.
+>  	 */
+>  	mfspr	r13,SPRN_SRR1
+>  	rlwinm.	r13,r13,47-31,30,31
+> @@ -112,7 +110,17 @@ BEGIN_FTR_SECTION
+>  
+>  	cmpwi	cr3,r13,2
+>  
+> -	GET_PACA(r13)
+> +	/* Check if last bit of HSPGR0 is set. This indicates whether we are
+> +	 * waking up from winkle */
+> +	li	r3,1
+> +	mfspr	r4,SPRN_HSPRG0
+> +	and	r5,r4,r3
+> +	cmpwi	cr4,r5,1	/* Store result in cr4 for later use */
 > +
-> +       num_opps = 0;
+> +	andc	r4,r4,r3
+> +	mtspr	SPRN_HSPRG0,r4
 > +
-> +       rcu_read_lock();
-> +
-> +       for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
+> +	mr	r13,r4
 
-All these CPUs must be sharing the OPPs as they must be supplied
-from a single clock line. But probably you need to iterate over all
-because you don't know which ones share OPP. Right ? Probably
-the work I am doing around getting new OPP bindings might solve
-this..
+This seems unnecessarily convoluted.  How about:
 
-> +               dev = get_cpu_device(cpu);
-> +               if (!dev)
+	GET_PACA(r13)
+	clrldi	r5,r13,63
+	clrrdi	r13,r13,1
+	cmpwi	cr4,r5,1
+	mtspr	SPRN_HSPRG0,r13
 
-Is this allowed? I understand you can continue, but this is not
-possible. Right ? So, print a error here?
+> diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+> index 8c3a1f4..8102075 100644
+> --- a/arch/powerpc/kernel/idle_power7.S
+> +++ b/arch/powerpc/kernel/idle_power7.S
+> @@ -19,8 +19,24 @@
+>  #include <asm/kvm_book3s_asm.h>
+>  #include <asm/opal.h>
+>  #include <asm/cpuidle.h>
+> +#include <asm/mmu-hash64.h>
+>  
+>  #undef DEBUG
+> +/*
+> + * Use unused space in the interrupt stack to save and restore
+> + * registers for winkle support.
+> + */
+> +#define _SDR1	GPR3
+> +#define _RPR	GPR4
+> +#define _SPURR	GPR5
+> +#define _PURR	GPR6
+> +#define _TSCR	GPR7
+> +#define _DSCR	GPR8
+> +#define _AMOR	GPR9
+> +#define _PMC5	GPR10
+> +#define _PMC6	GPR11
 
-> +                       continue;
-> +
-> +               num_opps = dev_pm_opp_get_opp_count(dev);
-> +               if (num_opps > 0) {
-> +                       break;
-> +               } else if (num_opps < 0) {
-> +                       ret = num_opps;
-> +                       goto unlock;
-> +               }
-> +       }
-> +
-> +       if (num_opps == 0) {
-> +               ret = -EINVAL;
-> +               goto unlock;
-> +       }
-> +
-> +       power_table = kcalloc(num_opps, sizeof(*power_table), GFP_KERNEL);
-> +
-> +       i = 0;
+Why only PMC5 and PMC6 out of all the PMU registers?  What about
+PMC1-PMC4 and the MMCR registers?  I assume they're lost during winkle
+state also, aren't they?  If we're not saving them, what's the point
+of saving and restoring PMC5 and PMC6?
 
-Either initialize i at the beginning or in the initialization part of
-for loop below.
+> +#define _WORT	GPR12
+> +#define _WORC	GPR13
+>  
+>  /* Idle state entry routines */
+>  
+> @@ -124,8 +140,8 @@ power7_enter_nap_mode:
+>  	stb	r4,HSTATE_HWTHREAD_STATE(r13)
+>  #endif
+>  	stb	r3,PACA_THREAD_IDLE_STATE(r13)
+> -	cmpwi	cr1,r3,PNV_THREAD_SLEEP
+> -	bge	cr1,2f
+> +	cmpwi	cr3,r3,PNV_THREAD_SLEEP
+> +	bge	cr3,2f
+>  	IDLE_STATE_ENTER_SEQ(PPC_NAP)
+>  	/* No return */
+>  2:
+> @@ -154,7 +170,8 @@ pnv_fastsleep_workaround_at_entry:
+>  	isync
+>  	bne-	lwarx_loop1
+>  
+> -common_enter: /* common code for all the threads entering sleep */
+> +common_enter: /* common code for all the threads entering sleep  or winkle */
+> +	bgt	cr3,enter_winkle
+>  	IDLE_STATE_ENTER_SEQ(PPC_SLEEP)
+>  
+>  fastsleep_workaround_at_entry:
+> @@ -175,6 +192,34 @@ fastsleep_workaround_at_entry:
+>  	stw	r0,0(r14)
+>  	b	common_enter
+>  
+> +enter_winkle:
+> +	/*
+> +	 * Note all register i.e per-core, per-subcore or per-thread is saved
+> +	 * here since any thread in the core might wake up first
+> +	 */
+> +	mfspr	r3,SPRN_SDR1
+> +	std	r3,_SDR1(r1)
+> +	mfspr	r3,SPRN_RPR
+> +	std	r3,_RPR(r1)
+> +	mfspr	r3,SPRN_SPURR
+> +	std	r3,_SPURR(r1)
+> +	mfspr	r3,SPRN_PURR
+> +	std	r3,_PURR(r1)
+> +	mfspr	r3,SPRN_TSCR
+> +	std	r3,_TSCR(r1)
+> +	mfspr	r3,SPRN_DSCR
+> +	std	r3,_DSCR(r1)
+> +	mfspr	r3,SPRN_AMOR
+> +	std	r3,_AMOR(r1)
+> +	mfspr	r3,SPRN_PMC5
+> +	std	r3,_PMC5(r1)
+> +	mfspr	r3,SPRN_PMC6
+> +	std	r3,_PMC6(r1)
+> +	mfspr	r3,SPRN_WORT
+> +	std	r3,_WORT(r1)
+> +	mfspr	r3,SPRN_WORC
+> +	std	r3,_WORC(r1)
+> +	IDLE_STATE_ENTER_SEQ(PPC_WINKLE)
+>  
+>  _GLOBAL(power7_idle)
+>  	/* Now check if user or arch enabled NAP mode */
+> @@ -197,6 +242,12 @@ _GLOBAL(power7_sleep)
+>  	b	power7_powersave_common
+>  	/* No return */
+>  
+> +_GLOBAL(power7_winkle)
+> +	li	r3,3
+> +	li	r4,1
+> +	b	power7_powersave_common
+> +	/* No return */
+> +
+>  #define CHECK_HMI_INTERRUPT						\
+>  	mfspr	r0,SPRN_SRR1;						\
+>  BEGIN_FTR_SECTION_NESTED(66);						\
+> @@ -238,11 +289,23 @@ lwarx_loop2:
+>  	bne	core_idle_lock_held
+>  
+>  	cmpwi	cr2,r15,0
+> +	lbz	r4,PACA_SUBCORE_SIBLING_MASK(r13)
+> +	and	r4,r4,r15
+> +	cmpwi	cr1,r4,0	/* Check if first in subcore */
+> +
+> +	/*
+> +	 * At this stage
+> +	 * cr1 - 10 if first thread to wakeup in subcore
+> +	 * cr2 - 10 if first thread to wakeup in core
+> +	 * cr3-  01 if waking up from sleep or winkle
+> +	 * cr4 - 10 if waking up from winkle
+> +	 */
 
-> +       for (freq = 0;
-> +            opp = dev_pm_opp_find_freq_ceil(dev, &freq), !IS_ERR(opp);
-> +            freq++) {
-> +               u32 freq_mhz, voltage_mv;
-> +               u64 power;
-> +
-> +               freq_mhz = freq / 1000000;
-> +               voltage_mv = dev_pm_opp_get_voltage(opp) / 1000;
-> +
-> +               /*
-> +                * Do the multiplication with MHz and millivolt so as
-> +                * to not overflow.
-> +                */
-> +               power = (u64)capacitance * freq_mhz * voltage_mv * voltage_mv;
-> +               do_div(power, 1000000000);
-> +
-> +               /* frequency is stored in power_table in KHz */
-> +               power_table[i].frequency = freq / 1000;
-> +               power_table[i].power = power;
-> +
-> +               i++;
+What do "10" and "01" mean in this comment?  (If they were CR field
+values in binary they would need to be 3 or 4 bits, not 2.)
 
-Why here and not with freq++?
-
-> +       }
-> +
-> +       if (i == 0) {
-> +               ret = PTR_ERR(opp);
-> +               goto unlock;
-> +       }
-> +
-> +       cpufreq_device->dyn_power_table = power_table;
-> +       cpufreq_device->dyn_power_table_entries = i;
-> +
-> +unlock:
-> +       rcu_read_unlock();
-> +       return ret;
-> +}
-> +
-> +static u32 cpu_freq_to_power(struct cpufreq_cooling_device *cpufreq_device,
-> +                       u32 freq)
-
-Because the patch is screwed up a bit, I really can't see if the 'u'
-or u32 is directly
-below the 's' of struct cpufreq_cooling_device. Running checkpatch with --strict
-will take care of that probably. Sorry if you have already taken care of that..
-
-> +{
-> +       int i;
-> +       struct power_table *pt = cpufreq_device->dyn_power_table;
-> +
-> +       for (i = 1; i < cpufreq_device->dyn_power_table_entries; i++)
-> +               if (freq < pt[i].frequency)
-> +                       break;
-> +
-> +       return pt[i - 1].power;
-> +}
-
-> +static u32 get_static_power(struct cpufreq_cooling_device *cpufreq_device,
-> +                       unsigned long freq)
-> +{
-> +       struct device *cpu_dev;
-> +       struct dev_pm_opp *opp;
-> +       unsigned long voltage;
-> +       struct cpumask *cpumask = &cpufreq_device->allowed_cpus;
-> +       unsigned long freq_hz = freq * 1000;
-> +
-> +       if (!cpufreq_device->plat_get_static_power)
-> +               return 0;
-> +
-> +       cpu_dev = get_cpu_device(cpumask_any(cpumask));
-
-Similar to the way you have used for-each-cpu earlier, the cpu
-returned from above maynot have opps attached to it. Right ?
-
-Probably you can keep a copy of the cpu_dev we have opps attached
-with somewhere and reuse it.
-
-> +
-> +       rcu_read_lock();
-> +
-> +       opp = dev_pm_opp_find_freq_exact(cpu_dev, freq_hz, true);
-
-So, this might fail if I am not wrong.
-
-> +       voltage = dev_pm_opp_get_voltage(opp);
-> +
-> +       rcu_read_unlock();
-> +
-> +       if (voltage == 0) {
-> +               dev_warn_ratelimited(cpu_dev,
-> +                               "Failed to get voltage for frequency %lu: %ld\n",
-> +                               freq_hz, IS_ERR(opp) ? PTR_ERR(opp) : 0);
-> +               return 0;
-> +       }
-> +
-> +       return cpufreq_device->plat_get_static_power(cpumask, voltage);
-> +}
+Paul.
