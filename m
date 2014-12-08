@@ -1,94 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaLHQQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:16:12 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:65277 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908AbaLHQQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:16:08 -0500
-Date: Mon, 8 Dec 2014 17:16:02 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Muthu Mani <muth@cypress.com>
-Cc: Johan Hovold <johan@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>
-Subject: Re: [PATCH v4 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Message-ID: <20141208161602.GE14346@localhost>
-References: <1417241944-17799-1-git-send-email-muth@cypress.com>
- <20141208153701.GD14346@localhost>
- <BN1PR06MB069088C07483AEA527DD338CC640@BN1PR06MB069.namprd06.prod.outlook.com>
+	id S1756014AbaLHQQS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:16:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755908AbaLHQQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 11:16:14 -0500
+Date: Mon, 8 Dec 2014 11:16:01 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Hannes Reinecke <hare@suse.de>, Milan Broz <gmazyland@gmail.com>,
+        Pranith Kumar <bobby.prani@gmail.com>
+Subject: [git pull] device mapper changes for 3.19
+Message-ID: <20141208161600.GA28316@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BN1PR06MB069088C07483AEA527DD338CC640@BN1PR06MB069.namprd06.prod.outlook.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 04:00:13PM +0000, Muthu Mani wrote:
-> > On Sat, Nov 29, 2014 at 11:49:04AM +0530, Muthu Mani wrote:
-> > > Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
-> > > CYUSBS234 USB-Serial Bridge controller.
-> > >
-> > > Details about the device can be found at:
-> > > http://www.cypress.com/?rID=84126
-> > >
-> > > Signed-off-by: Muthu Mani <muth@cypress.com>
-> > > Signed-off-by: Rajaram Regupathy <rera@cypress.com>
-> > > ---
-> >
-> > This patch as well as the other two patches in the series is white-space
-> > damaged. Please always make sure to run your patches through
-> > checkpatch.pl before submission (and/or fix your mailer).
-> >
-> > Also use git-send-email when submitting your series so that the individual
-> > patches get threaded properly.
-> 
-> Sorry about the inconvenience.
-> I ran checkpatch.pl for all the patches before I submitted them using
-> git-send-email.
-> checkpatch doesn't show any error.
+Hi Linus,
 
-Then the problem could be your mail server. All (leading) tabs have been
-converted to spaces.
+The following changes since commit 9b460d3699324d570a4d4161c3741431887f102f:
 
-> I used the following command to submit patch. Please let me know if anything wrong.
-> $ git format-patch -s -n -v4 master..Driver_v4
-> $ git send-email --smtp-encryption=tls --smtp-server=<mail-server> --smtp-user=muth@cypress.com --smtp-server-port=<port#> --to="Samuel Ortiz <sameo@linux.intel.com>" --to="Lee Jones <lee.jones@linaro.org>" --to="Wolfram Sang <wsa@the-dreams.de>" --to="Linus Walleij <linus.walleij@linaro.org>" --to="Alexandre Courbot <gnurou@gmail.com>" --to="gregkh@linuxfoundation.org"  --to="Johan Hovold <johan@kernel.org>" --cc="linux-usb@vger.kernel.org"  --cc="linux-kernel@vger.kernel.org" --cc="linux-i2c@vger.kernel.org" --cc="linux-gpio@vger.kernel.org" v4-0001-mfd-add-support-for-Cypress-CYUSBS234-USB-Serial-.patch
+  dm btree: fix a recursion depth bug in btree walking code (2014-11-10 15:23:58 -0500)
 
-Have a look at git-send-email's --thread switch. Depending on your
-settings you may only need to specify all three patches to
-git-send-email at once to have them threaded properly.
+are available in the git repository at:
 
-> > And always increase (or add a "resend" prefix) when resending. I got two
-> > v4 series in my inbox. No idea what's the difference, if any.
-> 
-> In the second v4 patch, I added Greg KH and usb group. There is no code changes.
-> I will take care when I resend again.
-> 
-> Thanks,
-> Muthu
-> 
-> >
-> > Thanks,
-> > Johan
-> 
-> This message and any attachments may contain Cypress (or its
-> subsidiaries) confidential information. If it has been received in
-> error, please advise the sender and immediately delete this message.
+  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.19-changes
 
-Make sure not to include such disclaimers when posting to public mailing
-lists.
+for you to fetch changes up to 1a71d6ffe18c0d0f03fc8531949cc8ed41d702ee:
 
-Thanks,
-Johan
+  dm crypt: use memzero_explicit for on-stack buffer (2014-12-02 10:25:07 -0500)
+
+Please pull, thanks.
+Mike
+
+----------------------------------------------------------------
+- Significant DM thin-provisioning performance improvements to meet
+  performance requirements that were requested by the Gluster
+  distributed filesystem.  Specifically, dm-thinp now takes care to
+  aggregate IO that will be issued to the same thinp block before
+  issuing IO to the underlying devices.  This really helps improve
+  performance on HW RAID6 devices that have a writeback cache because it
+  avoids RMW in the HW RAID controller.
+
+- Some stable fixes: fix leak in DM bufio if integrity profiles were
+  enabled, use memzero_explicit in DM crypt to avoid any potential for
+  information leak, and a DM cache fix to properly mark a cache block
+  dirty if it was promoted to the cache via the overwrite optimization.
+
+- A few simple DM persistent data library fixes
+
+- DM cache multiqueue policy block promotion improvements.
+
+- DM cache discard improvements that take advantage of range
+  (multiblock) discard support in the DM bio-prison.  This allows for
+  much more efficient bulk discard processing (e.g. when mkfs.xfs
+  discards the entire device).
+
+- Some small optimizations in DM core and RCU deference cleanups
+
+- DM core changes to suspend/resume code to introduce the new internal
+  suspend/resume interface that the DM thin-pool target now uses to
+  suspend/resume active thin devices when the thin-pool must
+  suspend/resume.  This avoids forcing userspace to track all active
+  thin volumes in a thin-pool when the thin-pool is suspended for the
+  purposes of metadata or data space resize.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      dm space map metadata: fix sm_bootstrap_get_nr_blocks()
+
+Darrick J. Wong (1):
+      dm bufio: fix memleak when using a dm_buffer's inline bio
+
+Eric Dumazet (1):
+      dm: use rcu_dereference_protected instead of rcu_dereference
+
+Hannes Reinecke (1):
+      dm: do not call dm_sync_table() when creating new devices
+
+Joe Thornber (27):
+      dm bufio: switch from a huge hash table to an rbtree
+      dm bufio: evict buffers that are past the max age but retain some buffers
+      dm bio prison: switch to using a red black tree
+      dm thin metadata: change dm_thin_find_block to allow blocking, but not issuing, IO
+      dm transaction manager: add support for prefetching blocks of metadata
+      dm thin: prefetch missing metadata pages
+      dm thin: throttle incoming IO
+      dm thin: performance improvement to discard processing
+      dm thin: defer whole cells rather than individual bios
+      dm thin: remap the bios in a cell immediately
+      dm thin: direct dispatch when breaking sharing
+      dm thin: sort the deferred cells
+      dm cache policy mq: tweak algorithm that decides when to promote a block
+      dm bio prison: introduce support for locking ranges of blocks
+      dm cache: revert "remove remainder of distinct discard block size"
+      dm cache: revert "prevent corruption caused by discard_block_size > cache_block_size"
+      dm cache: improve discard support
+      dm cache: emit a warning message if there are a lot of cache blocks
+      dm array: if resizing the array is a noop set the new root to the old one
+      dm cache: fix some issues with the new discard range support
+      dm cache: when reloading a discard bitset allow for a different discard block size
+      dm cache: fix a harmless race when working out if a block is discarded
+      dm cache: discard block size must be a multiple of cache block size
+      dm cache: only use overwrite optimisation for promotion when in writeback mode
+      dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
+      dm cache: fix spurious cell_defer when dealing with partial block at end of device
+      dm space map metadata: fix sm_bootstrap_get_count()
+
+Mike Snitzer (14):
+      dm thin: adjust max_sectors_kb based on thinp blocksize
+      dm: improve documentation and code clarity in dm_merge_bvec
+      dm thin: implement thin_merge
+      dm thin: factor out remap_and_issue_overwrite
+      dm thin: optimize retry_bios_on_resume
+      dm thin: refactor requeue_io to eliminate spinlock bouncing
+      dm cache policy mq: simplify ability to promote sequential IO to the cache
+      dm thin: remove stale 'trim' message in block comment above pool_message
+      dm: return earlier from dm_blk_ioctl if target doesn't implement .ioctl
+      dm: add presuspend_undo hook to target_type
+      dm thin: do not allow thin device activation while pool is suspended
+      dm: enhance internal suspend and resume interface
+      dm thin: suspend/resume active thin devices when reloading thin-pool
+      dm thin: fix pool_io_hints to avoid looking at max_hw_sectors
+
+Mikulas Patocka (1):
+      dm thin: fix a race in thin_dtr
+
+Milan Broz (1):
+      dm crypt: use memzero_explicit for on-stack buffer
+
+Pranith Kumar (2):
+      dm: Use rcu_dereference() for accessing rcu pointer
+      dm: sparse: Annotate field with __rcu for checking
+
+ Documentation/device-mapper/cache-policies.txt     |  24 +-
+ drivers/md/dm-bio-prison.c                         | 186 +++--
+ drivers/md/dm-bio-prison.h                         |  28 +-
+ drivers/md/dm-bufio.c                              | 226 +++---
+ drivers/md/dm-cache-block-types.h                  |  11 +
+ drivers/md/dm-cache-metadata.c                     |  34 +-
+ drivers/md/dm-cache-metadata.h                     |   6 +-
+ drivers/md/dm-cache-policy-mq.c                    |  82 ++-
+ drivers/md/dm-cache-target.c                       | 378 +++++++---
+ drivers/md/dm-crypt.c                              |   2 +-
+ drivers/md/dm-ioctl.c                              |   5 +-
+ drivers/md/dm-stats.c                              |   2 +-
+ drivers/md/dm-table.c                              |  36 +-
+ drivers/md/dm-thin-metadata.c                      |  35 +-
+ drivers/md/dm-thin-metadata.h                      |   9 +-
+ drivers/md/dm-thin.c                               | 760 ++++++++++++++++-----
+ drivers/md/dm.c                                    | 273 ++++++--
+ drivers/md/dm.h                                    |  10 +
+ drivers/md/persistent-data/dm-array.c              |   4 +-
+ drivers/md/persistent-data/dm-space-map-metadata.c |   8 +-
+ .../md/persistent-data/dm-transaction-manager.c    |  77 ++-
+ .../md/persistent-data/dm-transaction-manager.h    |   7 +
+ include/linux/device-mapper.h                      |   2 +
+ include/uapi/linux/dm-ioctl.h                      |   9 +-
+ 24 files changed, 1634 insertions(+), 580 deletions(-)
