@@ -1,65 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaLHKiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:38:14 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:51437 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982AbaLHKiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:38:12 -0500
-X-IronPort-AV: E=Sophos;i="5.07,537,1413244800"; 
-   d="scan'208";a="201335579"
-Message-ID: <54857F91.3020002@citrix.com>
-Date: Mon, 8 Dec 2014 10:38:09 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1754868AbaLHKkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:40:42 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63438 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaLHKkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 05:40:41 -0500
+Date: Mon, 8 Dec 2014 11:41:13 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] gpu: drm: i915: intel_dp.c:  Remove unused function
+Message-ID: <20141208104113.GP20350@phenom.ffwll.local>
+Mail-Followup-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <1417988170-17451-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-References: <201412041206.sB4C6XVQ009497@userz7022.oracle.com> <5480528F.8010106@citrix.com> <1107877503.20141204141054@eikelenboom.it> <548064EA.8090905@citrix.com> <308719815.20141204150909@eikelenboom.it> <5480702F.2060004@citrix.com> <1578910783.20141204155025@eikelenboom.it> <1417707546.15750.100.camel@bling.home> <54818929.5000008@citrix.com> <20141205172250.GA2895@laptop.dumpdata.com>
-In-Reply-To: <20141205172250.GA2895@laptop.dumpdata.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417988170-17451-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/14 17:22, Konrad Rzeszutek Wilk wrote:
-> On Fri, Dec 05, 2014 at 10:30:01AM +0000, David Vrabel wrote:
->> On 04/12/14 15:39, Alex Williamson wrote:
->>>
->>> I don't know what workaround you're talking about.  As devices are
->>> released from the user, vfio-pci attempts to reset them.  If
->>> pci_reset_function() returns success we mark the device clean, otherwise
->>> it gets marked dirty.  Each time a device is released, if there are
->>> dirty devices we test whether we can try a bus/slot reset to clean them.
->>> In the case of assigning a GPU this typically means that the GPU or
->>> audio function come through first, there's no reset mechanism so it gets
->>> marked dirty, the next device comes through and we manage to try a bus
->>> reset.  vfio-pci does not have any device specific resets, all
->>> functionality is added to the PCI-core, thank-you-very-much.  I even
->>> posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
->>> bad so that pci_reset_function() won't claim that worked.  All VGA
->>> access quirks are done in QEMU, the kernel doesn't have any business in
->>> remapping config space over MMIO regions or trapping other config space
->>> backdoors.
->>
->> Thanks for the info Alex, I hadn't got around to actually looking and
->> the vfio-pci code and was just going to what Sander said.
->>
->> We probably do need to have a more in depth look at now PCI devices and
->> handled by both the toolstack and pciback but in the short term I would
->> like a simple solution that does not extend the ABI.
+On Sun, Dec 07, 2014 at 10:36:10PM +0100, Rickard Strandqvist wrote:
+> Remove the function intel_dp_set_drrs_state() that is not used anywhere.
 > 
-> Could you enumerate the 'simple solution' then please? I am having
-> a frustrating time figuring out what it is that you are proposing.
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-I've posted it repeatedly.
+Ok I've merged one of these patches here for old stale code, but all the
+others are in areas where there's a lot of stuff going on and we'll likely
+use these functions again. So decided to drop those patches.
 
-David
+If you want to keep working on drm stuff I'd highly appreciate it. We have
+a list of intro tasks which might be interesting:
+
+http://www.x.org/wiki/DRMJanitors/
+
+Nuking all the UMS checks might be a good one, we've already started with
+that. And #intel-gfx irc on freenode is always a good place to hang out
+and ask questions.
+
+Cheers, Daniel
+> ---
+>  drivers/gpu/drm/i915/intel_dp.c  |   89 --------------------------------------
+>  drivers/gpu/drm/i915/intel_drv.h |    1 -
+>  2 files changed, 90 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 5ad45bf..6df948b 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -4810,95 +4810,6 @@ intel_dp_init_panel_power_sequencer_registers(struct drm_device *dev,
+>  		      I915_READ(pp_div_reg));
+>  }
+>  
+> -void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate)
+> -{
+> -	struct drm_i915_private *dev_priv = dev->dev_private;
+> -	struct intel_encoder *encoder;
+> -	struct intel_dp *intel_dp = NULL;
+> -	struct intel_crtc_config *config = NULL;
+> -	struct intel_crtc *intel_crtc = NULL;
+> -	struct intel_connector *intel_connector = dev_priv->drrs.connector;
+> -	u32 reg, val;
+> -	enum edp_drrs_refresh_rate_type index = DRRS_HIGH_RR;
+> -
+> -	if (refresh_rate <= 0) {
+> -		DRM_DEBUG_KMS("Refresh rate should be positive non-zero.\n");
+> -		return;
+> -	}
+> -
+> -	if (intel_connector == NULL) {
+> -		DRM_DEBUG_KMS("DRRS supported for eDP only.\n");
+> -		return;
+> -	}
+> -
+> -	/*
+> -	 * FIXME: This needs proper synchronization with psr state. But really
+> -	 * hard to tell without seeing the user of this function of this code.
+> -	 * Check locking and ordering once that lands.
+> -	 */
+> -	if (INTEL_INFO(dev)->gen < 8 && intel_edp_is_psr_enabled(dev)) {
+> -		DRM_DEBUG_KMS("DRRS is disabled as PSR is enabled\n");
+> -		return;
+> -	}
+> -
+> -	encoder = intel_attached_encoder(&intel_connector->base);
+> -	intel_dp = enc_to_intel_dp(&encoder->base);
+> -	intel_crtc = encoder->new_crtc;
+> -
+> -	if (!intel_crtc) {
+> -		DRM_DEBUG_KMS("DRRS: intel_crtc not initialized\n");
+> -		return;
+> -	}
+> -
+> -	config = &intel_crtc->config;
+> -
+> -	if (intel_dp->drrs_state.type < SEAMLESS_DRRS_SUPPORT) {
+> -		DRM_DEBUG_KMS("Only Seamless DRRS supported.\n");
+> -		return;
+> -	}
+> -
+> -	if (intel_connector->panel.downclock_mode->vrefresh == refresh_rate)
+> -		index = DRRS_LOW_RR;
+> -
+> -	if (index == intel_dp->drrs_state.refresh_rate_type) {
+> -		DRM_DEBUG_KMS(
+> -			"DRRS requested for previously set RR...ignoring\n");
+> -		return;
+> -	}
+> -
+> -	if (!intel_crtc->active) {
+> -		DRM_DEBUG_KMS("eDP encoder disabled. CRTC not Active\n");
+> -		return;
+> -	}
+> -
+> -	if (INTEL_INFO(dev)->gen > 6 && INTEL_INFO(dev)->gen < 8) {
+> -		reg = PIPECONF(intel_crtc->config.cpu_transcoder);
+> -		val = I915_READ(reg);
+> -		if (index > DRRS_HIGH_RR) {
+> -			val |= PIPECONF_EDP_RR_MODE_SWITCH;
+> -			intel_dp_set_m_n(intel_crtc);
+> -		} else {
+> -			val &= ~PIPECONF_EDP_RR_MODE_SWITCH;
+> -		}
+> -		I915_WRITE(reg, val);
+> -	}
+> -
+> -	/*
+> -	 * mutex taken to ensure that there is no race between differnt
+> -	 * drrs calls trying to update refresh rate. This scenario may occur
+> -	 * in future when idleness detection based DRRS in kernel and
+> -	 * possible calls from user space to set differnt RR are made.
+> -	 */
+> -
+> -	mutex_lock(&intel_dp->drrs_state.mutex);
+> -
+> -	intel_dp->drrs_state.refresh_rate_type = index;
+> -
+> -	mutex_unlock(&intel_dp->drrs_state.mutex);
+> -
+> -	DRM_DEBUG_KMS("eDP Refresh Rate set to : %dHz\n", refresh_rate);
+> -}
+> -
+>  static struct drm_display_mode *
+>  intel_dp_drrs_init(struct intel_digital_port *intel_dig_port,
+>  			struct intel_connector *intel_connector,
+> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+> index ba71522..6ad239d 100644
+> --- a/drivers/gpu/drm/i915/intel_drv.h
+> +++ b/drivers/gpu/drm/i915/intel_drv.h
+> @@ -941,7 +941,6 @@ void intel_edp_panel_on(struct intel_dp *intel_dp);
+>  void intel_edp_panel_off(struct intel_dp *intel_dp);
+>  void intel_edp_psr_enable(struct intel_dp *intel_dp);
+>  void intel_edp_psr_disable(struct intel_dp *intel_dp);
+> -void intel_dp_set_drrs_state(struct drm_device *dev, int refresh_rate);
+>  void intel_edp_psr_invalidate(struct drm_device *dev,
+>  			      unsigned frontbuffer_bits);
+>  void intel_edp_psr_flush(struct drm_device *dev,
+> -- 
+> 1.7.10.4
+> 
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
