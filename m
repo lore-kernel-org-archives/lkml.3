@@ -1,64 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190AbaLHM0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:26:53 -0500
-Received: from relay05.alfahosting-server.de ([109.237.142.241]:52843 "EHLO
-	relay05.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752717AbaLHM0w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:26:52 -0500
-X-Spam-DCC: : 
-Date: Mon, 8 Dec 2014 13:27:20 +0100
-From: Richard Leitner <dev@g0hl1n.net>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] misc: ioc4: fix variable may be used uninitialized warning
-Message-ID: <20141208132720.16356743@frodo>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1754693AbaLHMcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:32:06 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:27724 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaLHMcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 07:32:04 -0500
+Message-ID: <54859A2C.8030009@huawei.com>
+Date: Mon, 8 Dec 2014 20:31:40 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19748/Mon Dec  8 06:41:21 2014
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v14 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
+References: <1418020040-68977-1-git-send-email-wangnan0@huawei.com>		 <1418020131-69375-1-git-send-email-wangnan0@huawei.com>	 <1418036666.3647.33.camel@linaro.org> <5485886E.2060303@huawei.com> <1418039451.3647.48.camel@linaro.org> <54859454.30603@huawei.com>
+In-Reply-To: <54859454.30603@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following build warning:
-drivers/misc/ioc4.c: In function ‘ioc4_probe’:
-drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
-in this function [-Wmaybe-uninitialized]
-  period = (end - start) /
-                ^
-drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
-  uint64_t start, end, period;
-           ^
+On 2014/12/8 20:06, Wang Nan wrote:
+> On 2014/12/8 19:50, Jon Medhurst (Tixy) wrote:
+>> On Mon, 2014-12-08 at 19:15 +0800, Wang Nan wrote:
+>>> On 2014/12/8 19:04, Jon Medhurst (Tixy) wrote:
+>>>> On Mon, 2014-12-08 at 14:28 +0800, Wang Nan wrote:
+[...]
+>>
+>> so another CPU could find and delete next before this one has finished
+>> doing so. Would the list end up in a consistent state where no loops
+>> develop and no probes are missed? I don't know the answer and a full
+>> analysis would be complicated, but my gut feeling is that if a cpu can
+>> observe the links in the list in an inconsistent state then only bad
+>> things can result.
+>>
+> 
+> I see the problem.
+> 
+> I'm thinking about making core.c and opt-arm.c to share stop_machine() code.
+> stop_machine() is required when removing breakpoint, so I'd like to define
+> a "remove_breakpoint" function in core.c and make opt-arm.c to call it.
+> Do you think it is a good idea?
+> 
+> 
 
-As far as I can tell 'start' cannot really be used uninitialized
-here, but for the sanity of gcc output explicitly initialize it.
-Same goes for the 'end' variable.
+What I mean is something like this:
 
-Signed-off-by: Richard Leitner <dev@g0hl1n.net>
----
-Used gcc version was 4.9.1 (Debian 4.9.1-19)
-P.S.: I know I'm too late for 3.18 but hopefully it still helps.
----
- drivers/misc/ioc4.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
+index 3a58db4..efd8ab1 100644
+--- a/arch/arm/probes/kprobes/core.c
++++ b/arch/arm/probes/kprobes/core.c
+@@ -163,19 +163,31 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
+  * memory. It is also needed to atomically set the two half-words of a 32-bit
+  * Thumb breakpoint.
+  */
+-int __kprobes __arch_disarm_kprobe(void *p)
+-{
+-	struct kprobe *kp = p;
+-	void *addr = (void *)((uintptr_t)kp->addr & ~1);
+-
+-	__patch_text(addr, kp->opcode);
++struct patch {
++	void *addr;
++	unsigned int insn;
++};
 
-diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
-index 3336ddc..7ec2733 100644
---- a/drivers/misc/ioc4.c
-+++ b/drivers/misc/ioc4.c
-@@ -145,7 +145,7 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
- 	union ioc4_int_out int_out;
- 	union ioc4_gpcr gpcr;
- 	unsigned int state, last_state = 1;
--	uint64_t start, end, period;
-+	uint64_t start = 0, end = 0, period;
- 	unsigned int count = 0;
- 
- 	/* Enable output */
--- 
-2.1.3
++static int __remove_breakpoint(void *data)
++{
++	struct patch *p = data;
++	__patch_text(p->addr, p->insn);
+ 	return 0;
+ }
+
++void __kprobes remove_breakpoint(void *addr, unsigned int insn)
++{
++	struct patch p = {
++		.addr = addr,
++		.insn = insn,
++	};
++	stop_machine(__remove_breakpoint, &p, cpu_online_mask);
++}
++
+ void __kprobes arch_disarm_kprobe(struct kprobe *p)
+ {
+-	stop_machine(__arch_disarm_kprobe, p, cpu_online_mask);
++	remove_breakpoint((void *)((uintptr_t)p->addr & ~1),
++			p->opcode);
+ }
+
+ void __kprobes arch_remove_kprobe(struct kprobe *p)
+diff --git a/arch/arm/probes/kprobes/core.h b/arch/arm/probes/kprobes/core.h
+index f88c79f..7b7c334 100644
+--- a/arch/arm/probes/kprobes/core.h
++++ b/arch/arm/probes/kprobes/core.h
+@@ -30,6 +30,8 @@
+ #define KPROBE_THUMB16_BREAKPOINT_INSTRUCTION	0xde18
+ #define KPROBE_THUMB32_BREAKPOINT_INSTRUCTION	0xf7f0a018
+
++extern void remove_breakpoint(void *addr, unsigned int insn);
++
+ enum probes_insn __kprobes
+ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
+ 		const struct decode_header *h);
+diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
+index afbfeef..a1a1882 100644
+--- a/arch/arm/probes/kprobes/opt-arm.c
++++ b/arch/arm/probes/kprobes/opt-arm.c
+@@ -28,8 +28,9 @@
+ #include <asm/insn.h>
+ /* for patch_text */
+ #include <asm/patch.h>
+-/* for stop_machine */
+-#include <linux/stop_machine.h>
++
++#include "core.h"
++
+ /*
+  * NOTE: the first sub and add instruction will be modified according
+  * to the stack cost of the instruction.
+@@ -245,13 +246,8 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op, struct kprobe *or
+ 	return 0;
+ }
+
+-/*
+- * Similar to __arch_disarm_kprobe, operations which removing
+- * breakpoints must be wrapped by stop_machine to avoid racing.
+- */
+-static __kprobes int __arch_optimize_kprobes(void *p)
++void __kprobes arch_optimize_kprobes(struct list_head *oplist)
+ {
+-	struct list_head *oplist = p;
+ 	struct optimized_kprobe *op, *tmp;
+
+ 	list_for_each_entry_safe(op, tmp, oplist, list) {
+@@ -277,16 +273,15 @@ static __kprobes int __arch_optimize_kprobes(void *p)
+ 			  op->optinsn.copied_insn[0]) & 0xf0000000) |
+ 			(insn & 0x0fffffff);
+
+-		patch_text(op->kp.addr, insn);
++		/*
++		 * Similar to __arch_disarm_kprobe, operations which
++		 * removing breakpoints must be wrapped by stop_machine
++		 * to avoid racing.
++		 */
++		remove_breakpoint(op->kp.addr, insn);
+
+ 		list_del_init(&op->list);
+ 	}
+-	return 0;
+-}
+-
+-void arch_optimize_kprobes(struct list_head *oplist)
+-{
+-	stop_machine(__arch_optimize_kprobes, oplist, cpu_online_mask);
+ }
+
+ void arch_unoptimize_kprobe(struct optimized_kprobe *op)
+
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
