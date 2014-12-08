@@ -1,140 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaLHON1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:13:27 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:3361 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaLHONR (ORCPT
+	id S1755763AbaLHONv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:13:51 -0500
+Received: from lb1-smtp-cloud3.xs4all.net ([194.109.24.22]:46419 "EHLO
+	lb1-smtp-cloud3.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755700AbaLHONs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:13:17 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [RESEND][PATCH v15 0/7] ARM: kprobes: OPTPROBES and other improvements.
-Date: Mon, 8 Dec 2014 22:09:18 +0800
-Message-ID: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 8 Dec 2014 09:13:48 -0500
+Message-ID: <5485B214.3090805@xs4all.nl>
+Date: Mon, 08 Dec 2014 15:13:40 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A0B0204.5485B1FC.00C7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: e6d660d361cd9c255e9c4664d0994028
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>, devicetree@vger.kernel.org,
+        linux-api <linux-api@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v4] media: platform: add VPFE capture driver support for
+ AM437X
+References: <1417871242-23797-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1417871242-23797-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v15 patch series of kprobeopt related code. V14 uses
-stop_machine() incorrectly, this version fixes it.
+On 12/06/2014 02:07 PM, Lad, Prabhakar wrote:
+> From: Benoit Parrot <bparrot@ti.com>
+> 
+> This patch adds Video Processing Front End (VPFE) driver for
+> AM437X family of devices
+> Driver supports the following:
+> - V4L2 API using MMAP buffer access based on videobuf2 api
+> - Asynchronous sensor/decoder sub device registration
+> - DT support
+> 
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> Signed-off-by: Darren Etheridge <detheridge@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  Changes for v4:
+>  1: Fixed review comments pointed by Hans to check
+>     ycbcr_enc and quantization while comparing formats,
+>     fixed the release function and dropped compose cases
+>     for vpfe_g_selection as compose isn't supported.
+> 
+>  .../devicetree/bindings/media/ti-am437x-vpfe.txt   |   61 +
+>  MAINTAINERS                                        |    9 +
+>  drivers/media/platform/Kconfig                     |    1 +
+>  drivers/media/platform/Makefile                    |    2 +
+>  drivers/media/platform/am437x/Kconfig              |   11 +
+>  drivers/media/platform/am437x/Makefile             |    3 +
+>  drivers/media/platform/am437x/am437x-vpfe.c        | 2778 ++++++++++++++++++++
+>  drivers/media/platform/am437x/am437x-vpfe.h        |  283 ++
+>  drivers/media/platform/am437x/am437x-vpfe_regs.h   |  140 +
+>  include/uapi/linux/Kbuild                          |    1 +
+>  include/uapi/linux/am437x-vpfe.h                   |  122 +
+>  11 files changed, 3411 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/media/ti-am437x-vpfe.txt
+>  create mode 100644 drivers/media/platform/am437x/Kconfig
+>  create mode 100644 drivers/media/platform/am437x/Makefile
+>  create mode 100644 drivers/media/platform/am437x/am437x-vpfe.c
+>  create mode 100644 drivers/media/platform/am437x/am437x-vpfe.h
+>  create mode 100644 drivers/media/platform/am437x/am437x-vpfe_regs.h
+>  create mode 100644 include/uapi/linux/am437x-vpfe.h
+> 
 
-Previous discussion can be found from:
+<snip>
 
-https://lkml.org/lkml/2014/12/8/21
-https://lkml.org/lkml/2014/12/4/942
-https://lkml.org/lkml/2014/12/4/4
-https://lkml.org/lkml/2014/12/1/64
-https://lkml.org/lkml/2014/11/22/18
-https://lkml.org/lkml/2014/11/21/55
-https://lkml.org/lkml/2014/11/18/26
-https://lkml.org/lkml/2014/11/19/31
-https://lkml.org/lkml/2014/11/18/41
-https://lkml.org/lkml/2014/10/25/48
-https://lkml.org/lkml/2014/10/22/254
-https://lkml.org/lkml/2014/8/27/255
-https://lkml.org/lkml/2014/8/12/12
-https://lkml.org/lkml/2014/8/8/992
-https://lkml.org/lkml/2014/8/8/5
-https://lkml.org/lkml/2014/8/5/63
+> +/*
+> + * vpfe_release : This function is based on the vb2_fop_release
+> + * helper function.
+> + * It has been augmented to handle module power management,
+> + * by disabling/enabling h/w module fcntl clock when necessary.
+> + */
+> +static int vpfe_release(struct file *file)
+> +{
+> +	struct vpfe_device *vpfe = video_drvdata(file);
+> +	int ret;
+> +
+> +	vpfe_dbg(2, vpfe, "vpfe_release\n");
+> +
+> +	if (!v4l2_fh_is_singular_file(file))
+> +		return vb2_fop_release(file);
+> +
+> +	mutex_lock(&vpfe->lock);
 
-Jon Medhurst (1):
-  ARM: kprobes: Add test cases for stack consuming instructions
+This should be moved up to before the if. Otherwise there will be a
+race between open and release w.r.t. to v4l2_fh_is_singular_file().
 
-Masami Hiramatsu (1):
-  kprobes: Pass the original kprobe for preparing optimized kprobe
+> +	ret = _vb2_fop_release(file, NULL);
+> +	vpfe_ccdc_close(&vpfe->ccdc, vpfe->pdev);
+> +	mutex_unlock(&vpfe->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +/*
+> + * vpfe_open : This function is based on the v4l2_fh_open helper function.
+> + * It has been augmented to handle module power management,
+> + * by disabling/enabling h/w module fcntl clock when necessary.
+> + */
+> +static int vpfe_open(struct file *file)
+> +{
+> +	struct vpfe_device *vpfe = video_drvdata(file);
+> +	int ret;
+> +
+> +	ret = v4l2_fh_open(file);
+> +	if (ret) {
+> +		vpfe_err(vpfe, "v4l2_fh_open failed\n");
+> +		return ret;
+> +	}
+> +
+> +	if (!v4l2_fh_is_singular_file(file))
+> +		return 0;
+> +
+> +	mutex_lock(&vpfe->lock);
 
-Wang Nan (5):
-  ARM: probes: move all probe code to dedicate directory
-  ARM: kprobes: introduces checker
-  ARM: kprobes: collects stack consumption for store instructions
-  ARM: kprobes: disallow probing stack consuming instructions
-  ARM: kprobes: enable OPTPROBES for ARM 32
+Same here: the lock should move to before the v4l2_fh_open call.
 
- arch/arm/Kconfig                                   |   1 +
- arch/arm/Makefile                                  |   1 +
- arch/arm/{kernel => include/asm}/insn.h            |   0
- arch/arm/include/asm/kprobes.h                     |  30 +-
- arch/arm/{kernel => include/asm}/patch.h           |   0
- arch/arm/include/asm/probes.h                      |  13 +
- arch/arm/kernel/Makefile                           |  16 +-
- arch/arm/kernel/entry-armv.S                       |   3 +-
- arch/arm/kernel/ftrace.c                           |   3 +-
- arch/arm/kernel/jump_label.c                       |   5 +-
- arch/arm/kernel/patch.c                            |   3 +-
- arch/arm/probes/Makefile                           |   7 +
- .../{kernel/probes-arm.c => probes/decode-arm.c}   |  12 +-
- .../{kernel/probes-arm.h => probes/decode-arm.h}   |   7 +-
- .../probes-thumb.c => probes/decode-thumb.c}       |  16 +-
- .../probes-thumb.h => probes/decode-thumb.h}       |  10 +-
- arch/arm/{kernel/probes.c => probes/decode.c}      |  74 ++++-
- arch/arm/{kernel/probes.h => probes/decode.h}      |  13 +-
- arch/arm/probes/kprobes/Makefile                   |  12 +
- .../kprobes-arm.c => probes/kprobes/actions-arm.c} |   9 +-
- .../kprobes/actions-common.c}                      |   4 +-
- .../kprobes/actions-thumb.c}                       |  10 +-
- arch/arm/probes/kprobes/checkers-arm.c             |  99 +++++++
- arch/arm/probes/kprobes/checkers-common.c          | 101 +++++++
- arch/arm/probes/kprobes/checkers-thumb.c           | 110 +++++++
- arch/arm/probes/kprobes/checkers.h                 |  54 ++++
- .../{kernel/kprobes.c => probes/kprobes/core.c}    |  49 +++-
- .../{kernel/kprobes.h => probes/kprobes/core.h}    |  12 +-
- arch/arm/probes/kprobes/opt-arm.c                  | 317 +++++++++++++++++++++
- .../kprobes/test-arm.c}                            |  31 +-
- .../kprobes-test.c => probes/kprobes/test-core.c}  |   8 +-
- .../kprobes-test.h => probes/kprobes/test-core.h}  |   2 +-
- .../kprobes/test-thumb.c}                          |  16 +-
- arch/arm/probes/uprobes/Makefile                   |   2 +
- .../uprobes-arm.c => probes/uprobes/actions-arm.c} |   6 +-
- .../{kernel/uprobes.c => probes/uprobes/core.c}    |   8 +-
- .../{kernel/uprobes.h => probes/uprobes/core.h}    |   0
- arch/x86/kernel/kprobes/opt.c                      |   3 +-
- include/linux/kprobes.h                            |   3 +-
- kernel/kprobes.c                                   |   4 +-
- 40 files changed, 976 insertions(+), 98 deletions(-)
- rename arch/arm/{kernel => include/asm}/insn.h (100%)
- rename arch/arm/{kernel => include/asm}/patch.h (100%)
- create mode 100644 arch/arm/probes/Makefile
- rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
- rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (93%)
- rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (98%)
- rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (90%)
- rename arch/arm/{kernel/probes.c => probes/decode.c} (85%)
- rename arch/arm/{kernel/probes.h => probes/decode.h} (97%)
- create mode 100644 arch/arm/probes/kprobes/Makefile
- rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (98%)
- rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (98%)
- rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (98%)
- create mode 100644 arch/arm/probes/kprobes/checkers-arm.c
- create mode 100644 arch/arm/probes/kprobes/checkers-common.c
- create mode 100644 arch/arm/probes/kprobes/checkers-thumb.c
- create mode 100644 arch/arm/probes/kprobes/checkers.h
- rename arch/arm/{kernel/kprobes.c => probes/kprobes/core.c} (94%)
- rename arch/arm/{kernel/kprobes.h => probes/kprobes/core.h} (79%)
- create mode 100644 arch/arm/probes/kprobes/opt-arm.c
- rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (97%)
- rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
- rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (99%)
- rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (98%)
- create mode 100644 arch/arm/probes/uprobes/Makefile
- rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (98%)
- rename arch/arm/{kernel/uprobes.c => probes/uprobes/core.c} (97%)
- rename arch/arm/{kernel/uprobes.h => probes/uprobes/core.h} (100%)
+> +	if (vpfe_initialize_device(vpfe)) {
+> +		mutex_unlock(&vpfe->lock);
+> +		v4l2_fh_release(file);
+> +		return -ENODEV;
+> +	}
+> +	mutex_unlock(&vpfe->lock);
+> +
+> +	return 0;
+> +}
 
--- 
-1.8.4
+Regards,
 
+	Hans
