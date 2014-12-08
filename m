@@ -1,118 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaLHOR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:17:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140AbaLHOR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:17:58 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>
-Subject: [PATCH] xen/blkfront: remove redundant flush_op
-Date: Mon,  8 Dec 2014 15:17:47 +0100
-Message-Id: <1418048267-18509-1-git-send-email-vkuznets@redhat.com>
+	id S1755546AbaLHOVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:21:11 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:37596 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751216AbaLHOVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 09:21:08 -0500
+Date: Mon, 8 Dec 2014 15:18:07 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141208141807.GC8739@lukather>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dkEUBIird37B8yKS"
+Content-Disposition: inline
+In-Reply-To: <20141208061746.GD16827@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_op is unambiguously defined by feature_flush:
-    REQ_FUA | REQ_FLUSH -> BLKIF_OP_WRITE_BARRIER
-    REQ_FLUSH -> BLKIF_OP_FLUSH_DISKCACHE
-    0 -> 0
-and thus can be removed. This is just a cleanup.
 
-The patch was suggested by Boris Ostrovsky.
+--dkEUBIird37B8yKS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
-The patch is supposed to be applied after "xen/blkfront: improve protection
-against issuing unsupported REQ_FUA".
----
- drivers/block/xen-blkfront.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+On Mon, Dec 08, 2014 at 11:47:46AM +0530, Vinod Koul wrote:
+> On Mon, Nov 17, 2014 at 02:41:54PM +0100, Maxime Ripard wrote:
+> > Hi,
+> >=20
+> > As we discussed a couple of weeks ago, this is the third attempt at
+> > creating a generic behaviour for slave capabilities retrieval so that
+> > generic layers using dmaengine can actually rely on that.
+> >=20
+> > That has been done mostly through two steps: by moving out the
+> > sub-commands of the device_control callback, so that the dmaengine
+> > core can then infer from that wether a sub-command is implemented, and
+> > then by moving the slave properties, such as the supported buswidth,
+> > to the structure dma_device itself.
+>=20
+> Okay managed to get this done. Apart from the two issues identified didn't
+> find anything so applied and pushed to a branch
+> "topic/slave_caps_device_control_fix"
+>=20
+> Today did some compile tests and found few warnings, were trivial but I
+> am worried about the testing of this code. Has anyone tested this, if so
+> which platforms are covered Since I pushed base branch last night, Feng's
+> bot covered it and all was OK. Looks like Feng's bot doesn't have wide
+> coverage of arm platforms, wasn't there one run by arm guys which tries to
+> test and boot, if so can we get this tested there please.
+>=20
+> So bit sceptical for merging now. I will send the patches which I have
+> applied on top of this
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 2e6c103..d1ee233 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -126,7 +126,6 @@ struct blkfront_info
- 	unsigned int persistent_gnts_c;
- 	unsigned long shadow_free;
- 	unsigned int feature_flush;
--	unsigned int flush_op;
- 	unsigned int feature_discard:1;
- 	unsigned int feature_secdiscard:1;
- 	unsigned int discard_granularity;
-@@ -479,7 +478,14 @@ static int blkif_queue_request(struct request *req)
- 				 * way.  (It's also a FLUSH+FUA, since it is
- 				 * guaranteed ordered WRT previous writes.)
- 				 */
--				ring_req->operation = info->flush_op;
-+				if (unlikely(info->feature_flush & REQ_FUA))
-+					ring_req->operation =
-+						BLKIF_OP_WRITE_BARRIER;
-+				else if (likely(info->feature_flush))
-+					ring_req->operation =
-+						BLKIF_OP_FLUSH_DISKCACHE;
-+				else
-+					ring_req->operation = 0;
- 			}
- 			ring_req->u.rw.nr_segments = nseg;
- 		}
-@@ -691,8 +697,8 @@ static void xlvbd_flush(struct blkfront_info *info)
- 	blk_queue_flush(info->rq, info->feature_flush);
- 	printk(KERN_INFO "blkfront: %s: %s: %s %s %s %s %s\n",
- 	       info->gd->disk_name,
--	       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
--		"barrier" : (info->flush_op == BLKIF_OP_FLUSH_DISKCACHE ?
-+	       info->feature_flush == (REQ_FLUSH | REQ_FUA) ?
-+		"barrier" : (info->feature_flush == REQ_FLUSH ?
- 		"flush diskcache" : "barrier or flush"),
- 	       info->feature_flush ? "enabled;" : "disabled;",
- 	       "persistent grants:",
-@@ -1190,7 +1196,6 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 				if (error == -EOPNOTSUPP)
- 					error = 0;
- 				info->feature_flush = 0;
--				info->flush_op = 0;
- 				xlvbd_flush(info);
- 			}
- 			/* fall through */
-@@ -1810,7 +1815,6 @@ static void blkfront_connect(struct blkfront_info *info)
- 		physical_sector_size = sector_size;
- 
- 	info->feature_flush = 0;
--	info->flush_op = 0;
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
- 			    "feature-barrier", "%d", &barrier,
-@@ -1823,10 +1827,8 @@ static void blkfront_connect(struct blkfront_info *info)
- 	 *
- 	 * If there are barriers, then we use flush.
- 	 */
--	if (!err && barrier) {
-+	if (!err && barrier)
- 		info->feature_flush = REQ_FLUSH | REQ_FUA;
--		info->flush_op = BLKIF_OP_WRITE_BARRIER;
--	}
- 	/*
- 	 * And if there is "feature-flush-cache" use that above
- 	 * barriers.
-@@ -1835,10 +1837,8 @@ static void blkfront_connect(struct blkfront_info *info)
- 			    "feature-flush-cache", "%d", &flush,
- 			    NULL);
- 
--	if (!err && flush) {
-+	if (!err && flush)
- 		info->feature_flush = REQ_FLUSH;
--		info->flush_op = BLKIF_OP_FLUSH_DISKCACHE;
--	}
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
- 			    "feature-discard", "%d", &discard,
--- 
-1.9.3
+Which is why I wanted to merge this at the *beginning* of the
+development cycle in the first place....
 
+These patches have been sent more than 2 weeks ago, and were exactly
+the same as the ones send at the end of October, rebased and updated
+to take into account the drivers that were merged in between.
+
+In short, these patches have been hanging around since 6 weeks. I
+relied probably too much on the intel's build bot. This is not a
+mistake I'll repeat. But blaming it on me because they came too late
+is *very* unfair.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--dkEUBIird37B8yKS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUhbMfAAoJEBx+YmzsjxAgA1sP/jpMIO1HZ3z4pSBEX/xgxFLR
+Xc2HcODjRuoqtVWR4C0Vc0fzgnzojHcuZ8avAZcODad8pNLswaeouu/3WhMW0jbT
+6aG/b0jzpTtC2vqnL6K7lpMymzOnVfCwi+dfLkTyS5HUtlWT7VzZh7bWr0w8QZO1
+ksRPwCvcXwhXkbUUf9OxgB3Nb/gpq5FlEkZ2qcqr0ZXJhxxkDO75PNpbKavh0Tob
+6RHbe3V9CzHSivA9mcx9UnfNWXSXWiXW29/CtBUKe22GYvyYiVNqupSO/9uGY7/a
+y9em1WnFnjFnDbk51oEbuRCaViTv4+Qym+k2suYNQuOgrrjpQ+8cV9BVkzcxGjhX
+KHyQpR2uvube/WorGoQco4mFIMvcoMByChiFG4BFRMAfs7RdocGdNzJvSbOOcmUD
+lA0g0+ebSMBhI+OHp4dYys89rIeaBBdDpmZ60xEz98FAbB/NSqqXIpi6k0lhRCS+
+iu4xogrzQzJ85IzTqlX2WCwYo2abz9qrvZw0bhyXc/p4NQOrwjM56ZjVUk7PCeWQ
+zcDym68r3g4Rn0tWCQDHWvZGvDR06X3ttDuWHB8/gkhm5ezSkVd/E4UAIXCxkNhH
+tVtkkeOu5Kp3V0W6RHSpPGpuTzC7p8M933tm2xfm63uLYEFq1NlBWTSQAvEyGA5f
+klQthQZNXhph45i6svZg
+=/spt
+-----END PGP SIGNATURE-----
+
+--dkEUBIird37B8yKS--
