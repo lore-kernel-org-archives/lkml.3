@@ -1,848 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaLHRII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:08:08 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34644 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaLHRID (ORCPT
+	id S1756004AbaLHRLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:11:53 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:56291 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaLHRLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:08:03 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-fa-5485daef2f88
-Message-id: <5485DAEE.30409@samsung.com>
-Date: Mon, 08 Dec 2014 18:07:58 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Bryan Wu <cooloney@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, Richard Purdie <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC v8 01/14] leds: Add LED Flash class extension to the
- LED subsystem
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-2-git-send-email-j.anaszewski@samsung.com>
- <CAK5ve-KMdJOLQ0ThKw9OM9u_CcwT87Bx4vcUjnX4fG2+t3pJsw@mail.gmail.com>
-In-reply-to: <CAK5ve-KMdJOLQ0ThKw9OM9u_CcwT87Bx4vcUjnX4fG2+t3pJsw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t/xq7rvb7WGGEz6Z2qxccZ6VoujOycy
-	WVzeNYfNYuubdYwWPRu2slrcPXWUzWL3rqesFofftLNanNm/ks2B02PnrLvsHoe/LmTx2DP/
-	B6tH35ZVjB4rVn9n9/i8SS6ALcrNJiM1MSW1SCE1Lzk/JTMv3VYpNMRN10JJIS8xN9VWKULX
-	NyRISaEsMacUyDMyQAMOzgHuwUr6dgluGfsnt7MVzHjIWPHy1yeWBsbnSxi7GDk5JARMJE7f
-	ngdli0lcuLeerYuRi0NIYCmjxMG+aUwgCSGBj4wSm9Y6dDFycPAKaEj8XCEKYrIIqEqcb/QA
-	qWATMJT4+eI1WLWoQITEn9P7WEFsXgFBiR+T77GAjBQR+M4kMaf1LDNIQlggRuLMijeMELvO
-	MUrc3nGGGWQop0CwRNvJcpAaZgEziUct65ghbHmJzWveMk9g5J+FZO4sJGWzkJQtYGRexSia
-	WppcUJyUnmuoV5yYW1yal66XnJ+7iRESZV92MC4+ZnWIUYCDUYmH11yxNUSINbGsuDL3EKME
-	B7OSCO/ynUAh3pTEyqrUovz4otKc1OJDjMlAX09klhJNzgcmgLySeEMTQ3NLQyNjCwtzIyPS
-	hJXEeSu+toQICaQnlqRmp6YWpBbBbGHi4JRqYGRozG08L701YDpHdldUp+uHxa4fLxwI3fzA
-	f9q/nTYnuR1MHLpcC9cY8qncuPAyO3JvsLTEep5dujlcIltzz5wQq2NMCz2wf1Z89PfeVZtf
-	zxZRFBTgX/N6w90dD8wzkuKzUjeeYHl4UGX5ahePEztZHRrnXTG7vPdj7HufB5Mffbz2+XM4
-	l5ASS3FGoqEWc1FxIgBrrsUU9gIAAA==
-X-MTR: 20000000000000000@CPGS
+	Mon, 8 Dec 2014 12:11:51 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: wl1251: NVS firmware data
+Date: Mon, 8 Dec 2014 18:11:46 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <201411271506.20457@pali> <201412081747.30965@pali> <E5F3BB54-6365-4856-A231-A5FEDAEA217F@holtmann.org>
+In-Reply-To: <E5F3BB54-6365-4856-A231-A5FEDAEA217F@holtmann.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1715012.6Goo9eDEJj";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412081811.46943@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 08:27 PM, Bryan Wu wrote:
-> On Fri, Nov 28, 2014 at 1:17 AM, Jacek Anaszewski
-> <j.anaszewski@samsung.com> wrote:
->> Some LED devices support two operation modes - torch and flash.
->> This patch provides support for flash LED devices in the LED subsystem
->> by introducing new sysfs attributes and kernel internal interface.
->> The attributes being introduced are: flash_brightness, flash_strobe,
->> flash_timeout, max_flash_timeout, max_flash_brightness, flash_fault
->> and flash_sync_strobe. All the flash related features are placed
->> in a separate module. Torch mode is supported by the LED class
->> interface.
->>
->> The modifications aim to be compatible with V4L2 framework requirements
->> related to the flash devices management. The design assumes that V4L2
->> sub-device can take of the LED class device control and communicate
->> with it through the kernel internal interface. When V4L2 Flash sub-device
->> file is opened, the LED class device sysfs interface is made
->> unavailable.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Bryan Wu <cooloney@gmail.com>
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->> ---
->>   drivers/leds/Kconfig            |   10 +
->>   drivers/leds/Makefile           |    1 +
->>   drivers/leds/led-class-flash.c  |  446 +++++++++++++++++++++++++++++++++++++++
->>   drivers/leds/led-class.c        |    4 +
->>   include/linux/led-class-flash.h |  198 +++++++++++++++++
->>   include/linux/leds.h            |    3 +
->>   6 files changed, 662 insertions(+)
->>   create mode 100644 drivers/leds/led-class-flash.c
->>   create mode 100644 include/linux/led-class-flash.h
->>
->> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->> index b3c0d8a..fa8021e 100644
->> --- a/drivers/leds/Kconfig
->> +++ b/drivers/leds/Kconfig
->> @@ -19,6 +19,16 @@ config LEDS_CLASS
->>            This option enables the led sysfs class in /sys/class/leds.  You'll
->>            need this to do anything useful with LEDs.  If unsure, say N.
->>
->> +config LEDS_CLASS_FLASH
->> +       tristate "LED Flash Class Support"
->> +       depends on LEDS_CLASS
->
-> Looks like it requires V4L2, so probably add depends on V4L2 or similar.
-> But actually I want to see LED Flash class doesn't depends on V4L2. Is
-> that possible to do that?
-> For example a non-V4L2 application want to control the LED as a flash?
+--nextPart1715012.6Goo9eDEJj
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-It doesn't require V4L2. It only used v4l2-controls.h for error code
-macros, but this is also going to be changed.
+On Monday 08 December 2014 18:05:37 Marcel Holtmann wrote:
+> Hi Pali,
+>=20
+> >>>> On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
+> >>>> /**
+> >>>>=20
+> >>>> + * request_firmware_prefer_user: - prefer usermode
+> >>>> helper for loading firmware + * @firmware_p: pointer to
+> >>>> firmware image
+> >>>> + * @name: name of firmware file
+> >>>> + * @device: device for which firmware is being loaded
+> >>>> + *
+> >>>> + * This function works pretty much like
+> >>>> request_firmware(), but it prefer + * usermode helper. If
+> >>>> usermode helper fails then it fallback to direct access.
+> >>>> + * Usefull for dynamic or model specific firmware data.
+> >>>> + **/
+> >>>> +int request_firmware_prefer_user(const struct firmware
+> >>>> **firmware_p, +                           const char
+> >>>> *name, struct device *device) +{
+> >>>> +       int ret;
+> >>>> +       __module_get(THIS_MODULE);
+> >>>> +       ret =3D _request_firmware(firmware_p, name, device,
+> >>>> +                               FW_OPT_UEVENT |
+> >>>> FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
+> >>>> +       return ret;
+> >>>> +}
+> >>>> +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
+> >>>=20
+> >>> I'd like to introduce request_firmware_user() which only
+> >>> requests firmware from user space, and this way is simpler
+> >>> and more flexible since we have request_firmware_direct()
+> >>> already.
+> >>=20
+> >> Why would a driver care about what program provides the
+> >> firmware?  It shouldn't at all, and we want to get rid of
+> >> the userspace firmware loader, not encourage drivers to
+> >> use it "exclusively" at all.
+> >=20
+> > Do not remove it! Without userspace firmware loader it is
+> > impossible to load dynamic firmware files.
+>=20
+> why is this dynamic in the first place. It does not sound like
+> dynamic data to me at all. This is like the WiFi MAC
+> address(es) or Bluetooth BD_ADDR. They are all static
+> information. The only difference is that they are on the host
+> accessibly filesystem or storage and not on the device
+> itself.
+>=20
+> To be honest, for Bluetooth we solved this now. If the device
+> is missing key information like the calibration data or
+> BD_ADDR, then it comes up unconfigured. A userspace process
+> can then go and load the right data into it and then the
+> device becomes available as Bluetooth device.
+>=20
+> Trying to use request_firmware to load some random data and
+> insist on going through userspace helper for that sounds
+> crazy to me. Especially since we are trying hard to get away
+> from the userspace loader. Forcing to keep it for new stuff
+> sounds backwards to me.
+>=20
+> With the special Nokia partition in mind, why hasn't this been
+> turned into a mountable filesystem or into a driver/subsystem
+> that can access the data direct from the kernel. I advocated
+> for this some time ago. Maybe there should be a special
+> subsystem for access to these factory persistent information
+> that drivers then just can access. I seem to remember that
+> some systems provide these via ACPI. Why does the ARM
+> platform has to be special here?
+>=20
+> And the problem of getting Ethernet and WiFi MAC address and
+> Bluetooth BD_ADDR comes up many many times. Why not have
+> something generic here. And don't tell me request_firmware is
+> that generic solution ;)
+>=20
+> Regards
+>=20
+> Marcel
 
-> Other than this main concern, I'm good with this patch now.
->
-> -Bryan
->
->> +       help
->> +         This option enables the flash led sysfs class in /sys/class/leds.
->> +         It wrapps LED Class and adds flash LEDs specific sysfs attributes
->> +         and kernel internal API to it. You'll need this to provide support
->> +         for the flash related features of a LED device. It can be built
->> +         as a module.
->> +
->>   comment "LED drivers"
->>
->>   config LEDS_88PM860X
->> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
->> index 1c65a19..cbba921 100644
->> --- a/drivers/leds/Makefile
->> +++ b/drivers/leds/Makefile
->> @@ -2,6 +2,7 @@
->>   # LED Core
->>   obj-$(CONFIG_NEW_LEDS)                 += led-core.o
->>   obj-$(CONFIG_LEDS_CLASS)               += led-class.o
->> +obj-$(CONFIG_LEDS_CLASS_FLASH)         += led-class-flash.o
->>   obj-$(CONFIG_LEDS_TRIGGERS)            += led-triggers.o
->>
->>   # LED Platform Drivers
->> diff --git a/drivers/leds/led-class-flash.c b/drivers/leds/led-class-flash.c
->> new file mode 100644
->> index 0000000..219b414
->> --- /dev/null
->> +++ b/drivers/leds/led-class-flash.c
->> @@ -0,0 +1,446 @@
->> +/*
->> + * LED Flash class interface
->> + *
->> + * Copyright (C) 2014 Samsung Electronics Co., Ltd.
->> + * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/device.h>
->> +#include <linux/init.h>
->> +#include <linux/led-class-flash.h>
->> +#include <linux/leds.h>
->> +#include <linux/module.h>
->> +#include <linux/slab.h>
->> +#include "leds.h"
->> +
->> +#define has_flash_op(flash, op)                                \
->> +       (flash && flash->ops->op)
->> +
->> +#define call_flash_op(flash, op, args...)              \
->> +       ((has_flash_op(flash, op)) ?                    \
->> +                       (flash->ops->op(flash, args)) : \
->> +                       -EINVAL)
->> +
->> +static ssize_t flash_brightness_store(struct device *dev,
->> +               struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       unsigned long state;
->> +       ssize_t ret;
->> +
->> +       mutex_lock(&led_cdev->led_access);
->> +
->> +       if (led_sysfs_is_disabled(led_cdev)) {
->> +               ret = -EBUSY;
->> +               goto unlock;
->> +       }
->> +
->> +       ret = kstrtoul(buf, 10, &state);
->> +       if (ret)
->> +               goto unlock;
->> +
->> +       ret = led_set_flash_brightness(flash, state);
->> +       if (ret < 0)
->> +               goto unlock;
->> +
->> +       ret = size;
->> +unlock:
->> +       mutex_unlock(&led_cdev->led_access);
->> +       return ret;
->> +}
->> +
->> +static ssize_t flash_brightness_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       /* no lock needed for this */
->> +       led_update_flash_brightness(flash);
->> +
->> +       return sprintf(buf, "%u\n", flash->brightness.val);
->> +}
->> +static DEVICE_ATTR_RW(flash_brightness);
->> +
->> +static ssize_t max_flash_brightness_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       return sprintf(buf, "%u\n", flash->brightness.max);
->> +}
->> +static DEVICE_ATTR_RO(max_flash_brightness);
->> +
->> +static ssize_t flash_strobe_store(struct device *dev,
->> +               struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       unsigned long state;
->> +       ssize_t ret = -EINVAL;
->> +
->> +       mutex_lock(&led_cdev->led_access);
->> +
->> +       if (led_sysfs_is_disabled(led_cdev)) {
->> +               ret = -EBUSY;
->> +               goto unlock;
->> +       }
->> +
->> +       ret = kstrtoul(buf, 10, &state);
->> +       if (ret)
->> +               goto unlock;
->> +
->> +       if (state < 0 || state > 1) {
->> +               ret = -EINVAL;
->> +               goto unlock;
->> +       }
->> +
->> +       ret = led_set_flash_strobe(flash, state);
->> +       if (ret < 0)
->> +               goto unlock;
->> +       ret = size;
->> +unlock:
->> +       mutex_unlock(&led_cdev->led_access);
->> +       return ret;
->> +}
->> +
->> +static ssize_t flash_strobe_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       bool state;
->> +       int ret;
->> +
->> +       /* no lock needed for this */
->> +       ret = led_get_flash_strobe(flash, &state);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       return sprintf(buf, "%u\n", state);
->> +}
->> +static DEVICE_ATTR_RW(flash_strobe);
->> +
->> +static ssize_t flash_timeout_store(struct device *dev,
->> +               struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       unsigned long flash_timeout;
->> +       ssize_t ret;
->> +
->> +       mutex_lock(&led_cdev->led_access);
->> +
->> +       if (led_sysfs_is_disabled(led_cdev)) {
->> +               ret = -EBUSY;
->> +               goto unlock;
->> +       }
->> +
->> +       ret = kstrtoul(buf, 10, &flash_timeout);
->> +       if (ret)
->> +               goto unlock;
->> +
->> +       ret = led_set_flash_timeout(flash, flash_timeout);
->> +       if (ret < 0)
->> +               goto unlock;
->> +
->> +       ret = size;
->> +unlock:
->> +       mutex_unlock(&led_cdev->led_access);
->> +       return ret;
->> +}
->> +
->> +static ssize_t flash_timeout_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       return sprintf(buf, "%u\n", flash->timeout.val);
->> +}
->> +static DEVICE_ATTR_RW(flash_timeout);
->> +
->> +static ssize_t max_flash_timeout_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       return sprintf(buf, "%u\n", flash->timeout.max);
->> +}
->> +static DEVICE_ATTR_RO(max_flash_timeout);
->> +
->> +static ssize_t flash_fault_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       u32 fault;
->> +       int ret;
->> +
->> +       ret = led_get_flash_fault(flash, &fault);
->> +       if (ret < 0)
->> +               return -EINVAL;
->> +
->> +       return sprintf(buf, "0x%8.8x\n", fault);
->> +}
->> +static DEVICE_ATTR_RO(flash_fault);
->> +
->> +static ssize_t flash_sync_strobe_store(struct device *dev,
->> +               struct device_attribute *attr, const char *buf, size_t size)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +       unsigned long sync_strobe;
->> +       ssize_t ret;
->> +
->> +       mutex_lock(&led_cdev->led_access);
->> +
->> +       if (led_sysfs_is_disabled(led_cdev)) {
->> +               ret = -EBUSY;
->> +               goto unlock;
->> +       }
->> +
->> +       ret = kstrtoul(buf, 10, &sync_strobe);
->> +       if (ret)
->> +               goto unlock;
->> +
->> +       flash->sync_strobe = sync_strobe;
->> +
->> +       ret = size;
->> +unlock:
->> +       mutex_unlock(&led_cdev->led_access);
->> +       return ret;
->> +}
->> +
->> +static ssize_t flash_sync_strobe_show(struct device *dev,
->> +               struct device_attribute *attr, char *buf)
->> +{
->> +       struct led_classdev *led_cdev = dev_get_drvdata(dev);
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       return sprintf(buf, "%u\n", flash->sync_strobe);
->> +}
->> +static DEVICE_ATTR_RW(flash_sync_strobe);
->> +
->> +static struct attribute *led_flash_strobe_attrs[] = {
->> +       &dev_attr_flash_strobe.attr,
->> +       NULL,
->> +};
->> +
->> +static struct attribute *led_flash_timeout_attrs[] = {
->> +       &dev_attr_flash_timeout.attr,
->> +       &dev_attr_max_flash_timeout.attr,
->> +       NULL,
->> +};
->> +
->> +static struct attribute *led_flash_brightness_attrs[] = {
->> +       &dev_attr_flash_brightness.attr,
->> +       &dev_attr_max_flash_brightness.attr,
->> +       NULL,
->> +};
->> +
->> +static struct attribute *led_flash_fault_attrs[] = {
->> +       &dev_attr_flash_fault.attr,
->> +       NULL,
->> +};
->> +
->> +static struct attribute *led_flash_sync_strobe_attrs[] = {
->> +       &dev_attr_flash_sync_strobe.attr,
->> +       NULL,
->> +};
->> +
->> +static const struct attribute_group led_flash_strobe_group = {
->> +       .attrs = led_flash_strobe_attrs,
->> +};
->> +
->> +static const struct attribute_group led_flash_timeout_group = {
->> +       .attrs = led_flash_timeout_attrs,
->> +};
->> +
->> +static const struct attribute_group led_flash_brightness_group = {
->> +       .attrs = led_flash_brightness_attrs,
->> +};
->> +
->> +static const struct attribute_group led_flash_fault_group = {
->> +       .attrs = led_flash_fault_attrs,
->> +};
->> +
->> +static const struct attribute_group led_flash_sync_strobe_group = {
->> +       .attrs = led_flash_sync_strobe_attrs,
->> +};
->> +
->> +static const struct attribute_group *flash_groups[] = {
->> +       &led_flash_strobe_group,
->> +       NULL,
->> +       NULL,
->> +       NULL,
->> +       NULL,
->> +       NULL,
->> +       NULL
->> +};
->> +
->> +static void led_flash_resume(struct led_classdev *led_cdev)
->> +{
->> +       struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
->> +
->> +       call_flash_op(flash, flash_brightness_set, flash->brightness.val);
->> +       call_flash_op(flash, timeout_set, flash->timeout.val);
->> +}
->> +
->> +static void led_flash_init_sysfs_groups(struct led_classdev_flash *flash)
->> +{
->> +       struct led_classdev *led_cdev = &flash->led_cdev;
->> +       const struct led_flash_ops *ops = flash->ops;
->> +       int num_sysfs_groups = 1;
->> +
->> +       if (ops->flash_brightness_set)
->> +               flash_groups[num_sysfs_groups++] = &led_flash_brightness_group;
->> +
->> +       if (ops->timeout_set)
->> +               flash_groups[num_sysfs_groups++] = &led_flash_timeout_group;
->> +
->> +       if (ops->fault_get)
->> +               flash_groups[num_sysfs_groups++] = &led_flash_fault_group;
->> +
->> +       if (led_cdev->flags & LED_DEV_CAP_COMPOUND)
->> +               flash_groups[num_sysfs_groups++] = &led_flash_sync_strobe_group;
->> +
->> +       led_cdev->groups = flash_groups;
->> +}
->> +
->> +int led_classdev_flash_register(struct device *parent,
->> +                               struct led_classdev_flash *flash)
->> +{
->> +       struct led_classdev *led_cdev;
->> +       const struct led_flash_ops *ops;
->> +       int ret;
->> +
->> +       if (!flash)
->> +               return -EINVAL;
->> +
->> +       led_cdev = &flash->led_cdev;
->> +
->> +       if (led_cdev->flags & LED_DEV_CAP_FLASH) {
->> +               if (!led_cdev->brightness_set_sync)
->> +                       return -EINVAL;
->> +
->> +               ops = flash->ops;
->> +               if (!ops || !ops->strobe_set)
->> +                       return -EINVAL;
->> +
->> +               led_cdev->flash_resume = led_flash_resume;
->> +
->> +               /* Select the sysfs attributes to be created for the device */
->> +               led_flash_init_sysfs_groups(flash);
->> +       }
->> +
->> +       /* Register led class device */
->> +       ret = led_classdev_register(parent, led_cdev);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       /* Setting a torch brightness needs to have immediate effect */
->> +       led_cdev->flags &= ~SET_BRIGHTNESS_ASYNC;
->> +       led_cdev->flags |= SET_BRIGHTNESS_SYNC;
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(led_classdev_flash_register);
->> +
->> +void led_classdev_flash_unregister(struct led_classdev_flash *flash)
->> +{
->> +       if (!flash)
->> +               return;
->> +
->> +       led_classdev_unregister(&flash->led_cdev);
->> +}
->> +EXPORT_SYMBOL_GPL(led_classdev_flash_unregister);
->> +
->> +int led_set_flash_strobe(struct led_classdev_flash *flash, bool state)
->> +{
->> +       return call_flash_op(flash, strobe_set, state);
->> +}
->> +EXPORT_SYMBOL_GPL(led_set_flash_strobe);
->> +
->> +int led_get_flash_strobe(struct led_classdev_flash *flash, bool *state)
->> +{
->> +       return call_flash_op(flash, strobe_get, state);
->> +}
->> +EXPORT_SYMBOL_GPL(led_get_flash_strobe);
->> +
->> +static void led_clamp_align(struct led_flash_setting *s)
->> +{
->> +       u32 v, offset;
->> +
->> +       v = s->val + s->step / 2;
->> +       v = clamp(v, s->min, s->max);
->> +       offset = v - s->min;
->> +       offset = s->step * (offset / s->step);
->> +       s->val = s->min + offset;
->> +}
->> +
->> +int led_set_flash_timeout(struct led_classdev_flash *flash, u32 timeout)
->> +{
->> +       struct led_classdev *led_cdev = &flash->led_cdev;
->> +       struct led_flash_setting *s = &flash->timeout;
->> +
->> +       s->val = timeout;
->> +       led_clamp_align(s);
->> +
->> +       if (!(led_cdev->flags & LED_SUSPENDED))
->> +               return call_flash_op(flash, timeout_set, s->val);
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(led_set_flash_timeout);
->> +
->> +int led_get_flash_fault(struct led_classdev_flash *flash, u32 *fault)
->> +{
->> +       return call_flash_op(flash, fault_get, fault);
->> +}
->> +EXPORT_SYMBOL_GPL(led_get_flash_fault);
->> +
->> +int led_set_flash_brightness(struct led_classdev_flash *flash,
->> +                               u32 brightness)
->> +{
->> +       struct led_classdev *led_cdev = &flash->led_cdev;
->> +       struct led_flash_setting *s = &flash->brightness;
->> +
->> +       s->val = brightness;
->> +       led_clamp_align(s);
->> +
->> +       if (!(led_cdev->flags & LED_SUSPENDED))
->> +               return call_flash_op(flash, flash_brightness_set, s->val);
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(led_set_flash_brightness);
->> +
->> +int led_update_flash_brightness(struct led_classdev_flash *flash)
->> +{
->> +       struct led_flash_setting *s = &flash->brightness;
->> +       u32 brightness;
->> +
->> +       if (has_flash_op(flash, flash_brightness_get)) {
->> +               int ret = call_flash_op(flash, flash_brightness_get,
->> +                                               &brightness);
->> +               if (ret < 0)
->> +                       return ret;
->> +
->> +               s->val = brightness;
->> +       }
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(led_update_flash_brightness);
->> +
->> +MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
->> +MODULE_LICENSE("GPL");
->> +MODULE_DESCRIPTION("LED Flash class Interface");
->> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
->> index dbeebac..02564c5 100644
->> --- a/drivers/leds/led-class.c
->> +++ b/drivers/leds/led-class.c
->> @@ -179,6 +179,10 @@ EXPORT_SYMBOL_GPL(led_classdev_suspend);
->>   void led_classdev_resume(struct led_classdev *led_cdev)
->>   {
->>          led_cdev->brightness_set(led_cdev, led_cdev->brightness);
->> +
->> +       if (led_cdev->flash_resume)
->> +               led_cdev->flash_resume(led_cdev);
->> +
->>          led_cdev->flags &= ~LED_SUSPENDED;
->>   }
->>   EXPORT_SYMBOL_GPL(led_classdev_resume);
->> diff --git a/include/linux/led-class-flash.h b/include/linux/led-class-flash.h
->> new file mode 100644
->> index 0000000..5188d9fd
->> --- /dev/null
->> +++ b/include/linux/led-class-flash.h
->> @@ -0,0 +1,198 @@
->> +/*
->> + * LED Flash class interface
->> + *
->> + * Copyright (C) 2014 Samsung Electronics Co., Ltd.
->> + * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + */
->> +#ifndef __LINUX_FLASH_LEDS_H_INCLUDED
->> +#define __LINUX_FLASH_LEDS_H_INCLUDED
->> +
->> +#include <linux/leds.h>
->> +#include <uapi/linux/v4l2-controls.h>
->> +
->> +struct device_node;
->> +struct led_classdev_flash;
->> +
->> +/*
->> + * Supported led fault bits - must be kept in synch
->> + * with V4L2_FLASH_FAULT bits.
->> + */
->> +#define LED_FAULT_OVER_VOLTAGE          V4L2_FLASH_FAULT_OVER_VOLTAGE
->> +#define LED_FAULT_TIMEOUT               V4L2_FLASH_FAULT_TIMEOUT
->> +#define LED_FAULT_OVER_TEMPERATURE      V4L2_FLASH_FAULT_OVER_TEMPERATURE
->> +#define LED_FAULT_SHORT_CIRCUIT                 V4L2_FLASH_FAULT_SHORT_CIRCUIT
->> +#define LED_FAULT_OVER_CURRENT          V4L2_FLASH_FAULT_OVER_CURRENT
->> +#define LED_FAULT_INDICATOR             V4L2_FLASH_FAULT_INDICATOR
->> +#define LED_FAULT_UNDER_VOLTAGE                 V4L2_FLASH_FAULT_UNDER_VOLTAGE
->> +#define LED_FAULT_INPUT_VOLTAGE                 V4L2_FLASH_FAULT_INPUT_VOLTAGE
->> +#define LED_FAULT_LED_OVER_TEMPERATURE  V4L2_FLASH_OVER_TEMPERATURE
->> +
->
-> I suggest we move those V4L2_FLASH_FAULT_* to our LED subsystem as LED_FAULT_*.
-> Then V4L2 Flash control code should include that LED header file and
-> #define V4L2_FLASH_FAULT_* LED_FAULT_*
->
-> Because this flash fault feature is for LED actually not for V4L2.
->
-> Then we can decouple V4L2 and LED Flash class driver here.
+Hi Marcel. I think you did not understand this problem. This=20
+discussion is not about mac address. Please read email thread=20
+again and if there are some unclear pars, then ask. Thanks!
 
-I'm OK with it. Sakari, what do you think about spinning it the other
-way round - V4L2 will use LED Flash class fault definitions?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
->> +struct led_flash_ops {
->> +       /* set flash brightness */
->> +       int (*flash_brightness_set)(struct led_classdev_flash *flash,
->> +                                       u32 brightness);
->> +       /* get flash brightness */
->> +       int (*flash_brightness_get)(struct led_classdev_flash *flash,
->> +                                       u32 *brightness);
->> +       /* set flash strobe state */
->> +       int (*strobe_set)(struct led_classdev_flash *flash, bool state);
->> +       /* get flash strobe state */
->> +       int (*strobe_get)(struct led_classdev_flash *flash, bool *state);
->> +       /* set flash timeout */
->> +       int (*timeout_set)(struct led_classdev_flash *flash, u32 timeout);
->> +       /* get the flash LED fault */
->> +       int (*fault_get)(struct led_classdev_flash *flash, u32 *fault);
->> +};
->> +
->> +/*
->> + * Current value of a flash setting along
->> + * with its constraints.
->> + */
->> +struct led_flash_setting {
->> +       /* maximum allowed value */
->> +       u32 min;
->> +       /* maximum allowed value */
->> +       u32 max;
->> +       /* step value */
->> +       u32 step;
->> +       /* current value */
->> +       u32 val;
->> +};
->> +
->> +/*
->> + * Aggregated flash settings - designed for ease
->> + * of passing initialization data to the clients
->> + * wrapping a LED Flash class device.
->> + */
->> +struct led_flash_config {
->> +       struct led_flash_setting torch_brightness;
->> +       struct led_flash_setting flash_brightness;
->> +       struct led_flash_setting flash_timeout;
->> +       u32 flash_faults;
->> +};
->> +
->> +struct led_classdev_flash {
->> +       /* led class device */
->> +       struct led_classdev led_cdev;
->> +
->> +       /* flash led specific ops */
->> +       const struct led_flash_ops *ops;
->> +
->> +       /* flash brightness value in microamperes along with its constraints */
->> +       struct led_flash_setting brightness;
->> +
->> +       /* flash timeout value in microseconds along with its constraints */
->> +       struct led_flash_setting timeout;
->> +
->> +       /*
->> +        * Indicates whether the flash sub-led should strobe
->> +        * upon strobe activation on any of the remaining sub-leds.
->> +        */
->> +       bool sync_strobe:1;
->> +};
->> +
->> +static inline struct led_classdev_flash *lcdev_to_flash(
->> +                                               struct led_classdev *lcdev)
->> +{
->> +       return container_of(lcdev, struct led_classdev_flash, led_cdev);
->> +}
->> +
->> +/**
->> + * led_classdev_flash_register - register a new object of led_classdev class
->> + *                              with support for flash LEDs
->> + * @parent: the flash LED to register
->> + * @flash: the led_classdev_flash structure for this device
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +int led_classdev_flash_register(struct device *parent,
->> +                               struct led_classdev_flash *flash);
->> +
->> +/**
->> + * led_classdev_flash_unregister - unregisters an object of led_classdev class
->> + *                                with support for flash LEDs
->> + * @flash: the flash LED to unregister
->> + *
->> + * Unregister a previously registered via led_classdev_flash_register object
->> + */
->> +void led_classdev_flash_unregister(struct led_classdev_flash *flash);
->> +
->> +/**
->> + * led_set_flash_strobe - setup flash strobe
->> + * @flash: the flash LED to set strobe on
->> + * @state: 1 - strobe flash, 0 - stop flash strobe
->> + *
->> + * Strobe the flash LED.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_set_flash_strobe(struct led_classdev_flash *flash,
->> +                               bool state);
->> +
->> +/**
->> + * led_get_flash_strobe - get flash strobe status
->> + * @flash: the flash LED to query
->> + * @state: 1 - flash is strobing, 0 - flash is off
->> + *
->> + * Check whether the flash is strobing at the moment.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_get_flash_strobe(struct led_classdev_flash *flash,
->> +                               bool *state);
->> +
->> +/**
->> + * led_set_flash_brightness - set flash LED brightness
->> + * @flash: the flash LED to set
->> + * @brightness: the brightness to set it to
->> + *
->> + * Set a flash LED's brightness.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_set_flash_brightness(struct led_classdev_flash *flash,
->> +                                       u32 brightness);
->> +
->> +/**
->> + * led_update_flash_brightness - update flash LED brightness
->> + * @flash: the flash LED to query
->> + *
->> + * Get a flash LED's current brightness and update led_flash->brightness
->> + * member with the obtained value.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_update_flash_brightness(struct led_classdev_flash *flash);
->> +
->> +/**
->> + * led_set_flash_timeout - set flash LED timeout
->> + * @flash: the flash LED to set
->> + * @timeout: the flash timeout to set it to
->> + *
->> + * Set the flash strobe duration. The duration set by the driver
->> + * is returned in the timeout argument and may differ from the
->> + * one that was originally passed.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_set_flash_timeout(struct led_classdev_flash *flash,
->> +                                       u32 timeout);
->> +
->> +/**
->> + * led_get_flash_fault - get the flash LED fault
->> + * @flash: the flash LED to query
->> + * @fault: bitmask containing flash faults
->> + *
->> + * Get the flash LED fault.
->> + *
->> + * Returns: 0 on success or negative error value on failure
->> + */
->> +extern int led_get_flash_fault(struct led_classdev_flash *flash,
->> +                                       u32 *fault);
->> +
->> +#endif /* __LINUX_FLASH_LEDS_H_INCLUDED */
->> diff --git a/include/linux/leds.h b/include/linux/leds.h
->> index cfceef3..c359f35 100644
->> --- a/include/linux/leds.h
->> +++ b/include/linux/leds.h
->> @@ -46,6 +46,8 @@ struct led_classdev {
->>   #define LED_SYSFS_DISABLE      (1 << 20)
->>   #define SET_BRIGHTNESS_ASYNC   (1 << 21)
->>   #define SET_BRIGHTNESS_SYNC    (1 << 22)
->> +#define LED_DEV_CAP_FLASH      (1 << 23)
->> +#define LED_DEV_CAP_COMPOUND   (1 << 24)
->>
-> What's the use case of CAP_COMPOUND?
+--nextPart1715012.6Goo9eDEJj
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-It signifies that the device controls many sub-leds and the sub-leds
-will expose flash_strobe_sync sysfs attribute for strobing the flash
-synchronously with the other sub-leds. Please see the driver for
-MAX77693.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
->>          /* Set LED brightness level */
->>          /* Must not sleep, use a workqueue if needed */
->> @@ -81,6 +83,7 @@ struct led_classdev {
->>          unsigned long            blink_delay_on, blink_delay_off;
->>          struct timer_list        blink_timer;
->>          int                      blink_brightness;
->> +       void                    (*flash_resume)(struct led_classdev *led_cdev);
->>
->>          struct work_struct      set_brightness_work;
->>          int                     delayed_set_value;
->> --
->> 1.7.9.5
->>
->
+iEYEABECAAYFAlSF29IACgkQi/DJPQPkQ1KsDgCeNZmwr8tIOz9uchTfCHmTGhqs
+mwsAni5d+CRKG11fYsdVEyk4Mz3LMAWN
+=8APv
+-----END PGP SIGNATURE-----
 
-Best Regards,
-Jacek Anaszewski
+--nextPart1715012.6Goo9eDEJj--
