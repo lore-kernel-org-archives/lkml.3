@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532AbaLHVAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:00:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54141 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbaLHVAU (ORCPT
+	id S1754772AbaLHVCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:02:09 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59005 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaLHVCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:00:20 -0500
-Date: Mon, 8 Dec 2014 16:00:18 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Ming Lei <ming.lei@canonical.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: wl1251: NVS firmware data
-Message-ID: <20141208210018.GB14895@kroah.com>
-References: <201411271506.20457@pali>
- <201412081811.46943@pali>
- <30072B9E-2495-4F90-AC91-9C0D7E08F44E@holtmann.org>
- <201412082015.18501@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412082015.18501@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 16:02:07 -0500
+From: Jakub Sitnicki <jsitnicki@gmail.com>
+To: rafael.j.wysocki@intel.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Sitnicki <jsitnicki@gmail.com>
+Subject: [PATCH] PNP: Switch from __check_region() to __request_region()
+Date: Mon,  8 Dec 2014 22:01:57 +0100
+Message-Id: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 08:15:18PM +0100, Pali Rohár wrote:
-> On Nokia N900 NVS data are generated on-the-fly from some bytes 
-> from CAL (/dev/mtd1), from state of cellular network and from 
-> some other regulation settings.
+PNP core is the last user of the __check_region() which has been
+deprecated for almost 12 years (since v2.5.54). Replace it with a combo
+of __request_region() followed by __release_region().
 
-When is this "generated"?  At boot time?  Or by the firmware loader
-program you have hooked into being called by the kernel at "load the
-firmware now please" call time?
+pnp_check_port() and pnp_check_mem() remain racy after this change.
 
-> So I think that files stored in linux-firmware.git tree (which 
-> are also installed into /lib/firmware/) should be loaded with 
-> request_firmware function. Or not? Do you think something else? 
-> What other developers think?
-> 
-> I'm against kernel driver for CAL (/dev/mtd1) for more reasons:
-> 
-> 1) we have userspace open source code, but licensed under GPLv3. 
-> And until kernel change license, we cannot include it.
+Signed-off-by: Jakub Sitnicki <jsitnicki@gmail.com>
+---
 
-You can change the license of your code if you want to, don't make this
-type of nonsense argument.
+There was a previous attempt at making this change 3 years ago but the
+author has never addressed the review comments:
 
-> 2) NVS data are (probably) not in one place, plus they depends on 
-> something other.
+  https://lkml.org/lkml/2011/8/12/216
 
-What is "something other"?  Where are they located?  Why would the
-firmware interface know or care anything about this?
+The end goal here is to get rid of __check_region() which lands in
+every kernel image because of the PNP core.
 
-> 3) If manufacture XYZ create new device with its own storage 
-> format of calibration data this means that correct solution for 
-> XYZ is also to implement new kernel fs driver for its own format. 
+It has been previously pointed out that replacing __check_region()
+with request_region() obscures the fact that pnp_check_port() is racy:
 
-Yes, as it is doing it's own custom thing, why overload an existing
-interface to do something it was never designed to do?
+  https://lkml.org/lkml/2011/8/11/466
 
-> Do you really want to have in kernel all those drivers for all 
-> different (proprietary) storage formats?
+Because of that I've also considered just moving __check_region() to
+PNP core. However, that would require making free_resource() an
+exported symbol in kernel/resource.c.
 
-Yes, we are not afraid of lots of different drivers.  That is not even a
-valid argument, you know better than this :)
+On the other hand, a switch to request/release_region() makes
+pnp_check_port() and pnp_check_mem() follow the same pattern as found
+in pnp_check_irq() and pnp_check_dma():
 
-> 4) It does not help us with existence of generic file 
-> /lib/firmware/ti-connectivity/wl1251-nvs.bin which comes from 
-> linux-firmware.git tree.
+	if (!dev->active) {
+		if (request_<resource type>(...))
+			return 0;
+		free_<resource type>(...);
+	}
+  
+Admittedly, I was not able to exercise the touched code paths on a
+commodity x86_64 laptop or under QEMU / VirtualBox (which lack ISA PnP
+support, AFAIK).
 
-Again, not an issue.  If you don't want that file in the repo, ask for
-it to be removed, and it will be, just send a patch to do it.
+To my understanding, the correct way to test pnp_check_port() or
+pnp_check_mem() would be by issuing either:
 
-greg k-h
+  $ echo fill >/sys/bus/pnp/devices/XX:YY/resources
+or
+  $ echo auto >/sys/bus/pnp/devices/XX:YY/resources
+
+... but only if the device is not attached or active, which is not the
+case for ACPI PnP devices on my machines. If anyone can provide hints
+on steps to test this, I will be glad to do so.
+
+ drivers/pnp/resource.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+index 782e822..f980ff7 100644
+--- a/drivers/pnp/resource.c
++++ b/drivers/pnp/resource.c
+@@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
+ 	/* check if the resource is already in use, skip if the
+ 	 * device is active because it itself may be in use */
+ 	if (!dev->active) {
+-		if (__check_region(&ioport_resource, *port, length(port, end)))
++		if (!request_region(*port, length(port, end), "pnp"))
+ 			return 0;
++		release_region(*port, length(port, end));
+ 	}
+ 
+ 	/* check if the resource is reserved */
+@@ -241,8 +242,9 @@ int pnp_check_mem(struct pnp_dev *dev, struct resource *res)
+ 	/* check if the resource is already in use, skip if the
+ 	 * device is active because it itself may be in use */
+ 	if (!dev->active) {
+-		if (check_mem_region(*addr, length(addr, end)))
++		if (!request_mem_region(*addr, length(addr, end), "pnp"))
+ 			return 0;
++		release_mem_region(*addr, length(addr, end));
+ 	}
+ 
+ 	/* check if the resource is reserved */
+-- 
+1.9.3
+
