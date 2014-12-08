@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaLHV6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:58:38 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55691 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754216AbaLHV6f (ORCPT
+	id S1754879AbaLHV6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:58:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9046 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754075AbaLHV6e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:58:35 -0500
-Message-ID: <1418075913.2058.71.camel@x220>
-Subject: Re: [PATCH] kbuild: fix scripts/headers.sh to see the correct
- Kbuild path
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 08 Dec 2014 22:58:33 +0100
-In-Reply-To: <1417589535-15867-1-git-send-email-yamada.m@jp.panasonic.com>
-References: <1417589535-15867-1-git-send-email-yamada.m@jp.panasonic.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2014 21:58:33.0076 (UTC) FILETIME=[1BE0E340:01D01332]
-X-RcptDomain: vger.kernel.org
+	Mon, 8 Dec 2014 16:58:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,540,1413270000"; 
+   d="scan'208";a="650530885"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH] ACPI, EINJ: Enhance error injection tolerance level
+Thread-Topic: [PATCH] ACPI, EINJ: Enhance error injection tolerance level
+Thread-Index: AQHQErYBvJljPJCVjkWnDEnz5isqXZyGO4+g
+Date: Mon, 8 Dec 2014 21:58:33 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32961DDF@ORSMSX114.amr.corp.intel.com>
+References: <c5f50564109273ab7f1c5fab4490169ae573128d.1417641347.git.tony.luck@intel.com>
+ <54854EAC.8090504@linaro.org>
+In-Reply-To: <54854EAC.8090504@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masahiro,
+> If it solves problem related to ACPI, you should not use in this file:
+> > +	if ((pci_probe & PCI_PROBE_MMCONF) == 0)
+> > +		return 0;
+> This is very x86 specific. We are making a lot of effort to make 
+> MMCONFIG platform independent now.
 
-On Wed, 2014-12-03 at 15:52 +0900, Masahiro Yamada wrote:
-> The exported headers were moved to "uapi" directories.
-> We should check the existence of arch/*/include/uapi/asm/Kbuild.
-> 
-> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-> ---
+So you'd like to see the changes in this patch spread out across more
+appropriate files?  pci_mmcfg_for_each_region() moving off into
+arch/x86/pci/mmconfig-shared.c, for example.
 
-Does this patch fix any problems? If so, which? And why did no one
-notice these problems before? Perhaps the commit explanation could
-mention that.
+I'm not sure how to make that pretty in apei_resources_request()
+where essentially we need to add an extra scan for some arch
+specific addresses to ignore from the list of addresses.
 
-See, none of this is obvious, at least to me, and I don't think people
-reading the patch should be expected to figure this out themselves.
-
->  scripts/headers.sh | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/scripts/headers.sh b/scripts/headers.sh
-> index 95ece06..b164336 100755
-> --- a/scripts/headers.sh
-> +++ b/scripts/headers.sh
-> @@ -6,7 +6,7 @@ set -e
->  
->  do_command()
->  {
-> -	if [ -f ${srctree}/arch/$2/include/asm/Kbuild ]; then
-> +	if [ -f ${srctree}/arch/$2/include/uapi/asm/Kbuild ]; then
->  		make ARCH=$2 KBUILD_HEADERS=$1 headers_$1
->  	else
->  		printf "Ignoring arch: %s\n" ${arch}
-
-Thanks,
-
-
-Paul Bolle
-
+-Tony
