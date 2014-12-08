@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaLHKxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:53:42 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:55325 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaLHKxl (ORCPT
+	id S1755005AbaLHKzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:55:54 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:42511 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaLHKzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:53:41 -0500
-Date: Mon, 8 Dec 2014 11:53:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, xiakaixu <xiakaixu@huawei.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jacob Shin <jacob.w.shin@gmail.com>
-Subject: Re: [GIT PULL][RESEND] hw_breakpoints: Support AMD range breakpoints
-Message-ID: <20141208105333.GC22066@gmail.com>
-References: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
+	Mon, 8 Dec 2014 05:55:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417652025-2305-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418009702.19126.14.camel@rzhang1-toshiba>
+References: <CA+r1ZhhoskOXaRSmcrnbdgapi-FsaKf+dnPHTXGkDvkYbvwQ8Q@mail.gmail.com>
+	<543F88BE.4090307@intel.com>
+	<20141017070620.GA1538@aaronlu.sh.intel.com>
+	<20141017072236.GA12504@aaronlu.sh.intel.com>
+	<544F33AF.1000704@intel.com>
+	<20141107191127.GB27438@developer>
+	<1417350176.27484.10.camel@rzhang1-toshiba>
+	<547D59D2.8010906@intel.com>
+	<1418009702.19126.14.camel@rzhang1-toshiba>
+Date: Mon, 8 Dec 2014 11:55:49 +0100
+X-Google-Sender-Auth: NdywWETlyx3cwddwsjEqnWf9SZI
+Message-ID: <CAMuHMdWHn+BcpPjr7x+Y1aRwUgBP54mH=4XpjB1VOd7T76-kjw@mail.gmail.com>
+Subject: Re: [PATCH] Thermal: introduce INT3406 thermal driver
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, Eduardo Valentin <edubezval@gmail.com>,
+        Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 8, 2014 at 4:35 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Tue, 2014-12-02 at 14:18 +0800, Aaron Lu wrote:
+>> On 11/30/2014 08:22 PM, Zhang Rui wrote:
+>> > On Fri, 2014-11-07 at 15:11 -0400, Eduardo Valentin wrote:
+>> >> Hi,
+>> >>
+>> >> On Tue, Oct 28, 2014 at 02:11:59PM +0800, Aaron Lu wrote:
+>> >>> Jim found that the current kernel may trigger a build error with some
+>> >>> config: drivers/built-in.o: In function `int3406_thermal_probe':
+>> >>> int3406_thermal.c:(.text+0x1d10b8): undefined reference to
+>> >>> `acpi_video_get_levels'. The problem happens when CONFIG_THERMAL=y and
+>> >>> CONFIG_ACPI_VIDEO=m. Solve the problem by separating a kernel config for
+>> >>> int3406 thermal driver and add dependency on ACPI video for it.
+>> >>>
+>> >>> Reported-by: Jim Davis <jim.epost@gmail.com>
+>> >>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> >>
+>> > Aaron, this is an incremental patch on top of the INT3406 driver patch.
+>> > As, both patches have not been shipped in Linus' tree, please merge
+>> > these two patches altogether and resend.
+>>
+>> OK, here it is:
+>>
+>> From 02d7abdcfe138e6cdee7572b10addce4f56d89eb Mon Sep 17 00:00:00 2001
+>> From: Aaron Lu <aaron.lu@intel.com>
+>> Date: Wed, 3 Sep 2014 15:15:02 +0800
+>> Subject: [PATCH] Thermal: introduce INT3406 thermal driver
+>>
+>> INT3406 ACPI device object resembles an ACPI video output device, but its
+>> _BCM is said to be deprecated and should not be used. So we will make
+>> use of the raw interface to do the actual cooling. Due to this, the
+>> backlight core has some modifications. Also, to re-use some of the ACPI
+>> video module's code, one function has been exported.
+>>
+>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>
+> applied.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Unfortunately drivers/thermal/int340x_thermal/Kconfig was missing
+from the patch, hence "make oldconfig" now fails miserably with
 
-> Ingo,
-> 
-> Please pull the perf/core-v3 branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	perf/core-v3
-> 
-> HEAD: 36748b9518a2437beffe861b47dff6d12b736b3f
-> 
-> It has been acked by Jiri and Oleg.
-> ---
-> Summary:
-> 
-> * Extend breakpoint tools and core to support address range through perf
->   event with initial backend support for AMD extended breakpoints.
->   Syntax is:
-> 
->         perf record -e mem:addr/len:type
-> 
->   For example set write breakpoint from 0x1000 to 0x1200 (0x1000 + 512)
-> 
->         perf record -e mem:0x1000/512:w
-> 
-> * Clean up a bit breakpoint code validation
-> ---
-> 
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Jacob Shin (4):
->       perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
->       perf tools: allow user to specify hardware breakpoint bp_len
->       perf tools: add hardware breakpoint bp_len test cases
->       perf/x86: Remove get_hbp_len and replace with bp_len
-> 
-> 
->  arch/x86/include/asm/cpufeature.h        |  2 ++
->  arch/x86/include/asm/debugreg.h          |  5 +++
->  arch/x86/include/asm/hw_breakpoint.h     |  1 +
->  arch/x86/include/uapi/asm/msr-index.h    |  4 +++
->  arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
->  arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++---------------
->  tools/perf/Documentation/perf-record.txt |  7 ++--
->  tools/perf/tests/parse-events.c          | 58 ++++++++++++++++++++++++++++++++
->  tools/perf/util/parse-events.c           | 21 ++++++------
->  tools/perf/util/parse-events.h           |  2 +-
->  tools/perf/util/parse-events.l           |  1 +
->  tools/perf/util/parse-events.y           | 26 ++++++++++++--
->  12 files changed, 148 insertions(+), 43 deletions(-)
+drivers/thermal/Kconfig:265: can't open file
+"drivers/thermal/int340x_thermal/Kconfig"
 
-Pulled into tip:perf/hw_breakpoints, thanks Frederic!
+Gr{oetje,eeting}s,
 
-It might not make it into v3.19, we'll see.
+                        Geert
 
-Thanks,
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-	Ingo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
