@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562AbaLHIeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:34:15 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:43543 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941AbaLHIeN (ORCPT
+	id S1754568AbaLHIg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:36:28 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43300 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901AbaLHIg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:34:13 -0500
-Date: Mon, 8 Dec 2014 09:34:08 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, tj@kernel.org, fengguang.wu@intel.com,
-        rafael.j.wysocki@intel.com, yuyang.du@intel.com, lkp@01.org,
-        yuanhan.liu@linux.intel.com, pjt@google.com, bsegall@google.com,
-        daniel@numascale.com, subbaram@codeaurora.org,
-        computersforpeace@gmail.com, sp@datera.io,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] kthread: kthread_bind fails to enforce CPU affinity
- (fixes kernel BUG at kernel/smpboot.c:134!)
-Message-ID: <20141208083408.GA8023@gmail.com>
-References: <1418009221-12719-1-git-send-email-anton@samba.org>
+	Mon, 8 Dec 2014 03:36:27 -0500
+Message-ID: <54856305.2070408@codeaurora.org>
+Date: Mon, 08 Dec 2014 10:36:21 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418009221-12719-1-git-send-email-anton@samba.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
+References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-3-git-send-email-richard@nod.at>
+In-Reply-To: <1417347340-6872-3-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/30/2014 1:35 PM, Richard Weinberger wrote:
+> There is no need to allocate new ones every time, we can reuse
+> the existing ones.
+> This makes the code cleaner and more easy to follow.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
+>   drivers/mtd/ubi/wl.c      | 11 +++++++----
+>   2 files changed, 12 insertions(+), 30 deletions(-)
+>
+> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+> index db3defd..9507702 100644
+> --- a/drivers/mtd/ubi/fastmap.c
+> +++ b/drivers/mtd/ubi/fastmap.c
+> @@ -1446,19 +1446,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
+>   	}
+>
+>   	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
 
-* Anton Blanchard <anton@samba.org> wrote:
+Not related to this patch, but looking at this function it got me 
+thinking: why do we need to re-calculate new_fm->used_blocks (and check 
+calculated value) each time? fm_size doesn't changed at runtime. 
+leb_size sure does not, so fm->used_blocks can be ubi device parameter 
+and calculated & tested only once, and not each time we write fastmap. 
+Correct?
 
-> I have a busy ppc64le KVM box where guests sometimes hit the 
-> infamous "kernel BUG at kernel/smpboot.c:134!" issue during 
-> boot:
-> 
-> BUG_ON(td->cpu != smp_processor_id());
-> 
-> Basically a per CPU hotplug thread scheduled on the wrong CPU. The oops
-> output confirms it:
-> 
-> CPU: 0
-> Comm: watchdog/130
-> 
-> The issue is in kthread_bind where we set the cpus_allowed 
-> mask, but do not touch task_thread_info(p)->cpu. The scheduler 
-> assumes the previously scheduled CPU is in the cpus_allowed 
-> mask, but in this case we are moving a thread to another CPU so 
-> it is not.
-> 
-> We used to call set_task_cpu which sets 
-> task_thread_info(p)->cpu (in fact kthread_bind still has a 
-> comment suggesting this). That was removed in e2912009fb7b 
-> ("sched: Ensure set_task_cpu() is never called on blocked 
-> tasks").
-> 
-> Since we cannot call set_task_cpu (the task is in a sleeping 
-> state), just do an explicit set of task_thread_info(p)->cpu.
 
-So we cannot call set_task_cpu() because in the normal life time 
-of a task the ->cpu value gets set on wakeup. So if a task is 
-blocked right now, and its affinity changes, it ought to get a 
-correct ->cpu selected on wakeup. The affinity mask and the 
-current value of ->cpu getting out of sync is thus 'normal'.
+> -
+> -	for (i = 0; i < new_fm->used_blocks; i++) {
+> -		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
+> -		if (!new_fm->e[i]) {
+> -			while (i--)
+> -				kfree(new_fm->e[i]);
+> -
+> -			kfree(new_fm);
+> -			mutex_unlock(&ubi->fm_mutex);
+> -			return -ENOMEM;
+> -		}
+> -	}
+> -
+>   	old_fm = ubi->fm;
+>   	ubi->fm = NULL;
+>
 
-(Check for example how set_cpus_allowed_ptr() works: we first set 
-the new allowed mask, then do we migrate the task away if 
-necessary.)
-
-In the kthread_bind() case this is explicitly assumed: it only 
-calls do_set_cpus_allowed().
-
-But obviously the bug triggers in kernel/smpboot.c, and that 
-assert shows a real bug - and your patch makes the assert go 
-away, so the question is, how did the kthread get woken up and 
-put on a runqueue without its ->cpu getting set?
-
-One possibility is a generic scheduler bug in ttwu(), resulting 
-in ->cpu not getting set properly. If this was the case then 
-other places would be blowing up as well, and I don't think we 
-are seeing this currently, especially not over such a long 
-timespan.
-
-Another possibility would be that kthread_bind()'s assumption 
-that the task is inactive is false: if the task activates when we 
-think it's blocked and we just hotplug-migrate it away while its 
-running (setting its td->cpu?), the assert could trigger I think 
-- and the patch would make the assert go away.
-
-A third possibility would be, if this is a freshly created 
-thread, some sort of initialization race - either in the kthread 
-or in the scheduler code.
-
-Weird.
 
 Thanks,
-
-	Ingo
+Tanya Brokhman
+-- 
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
