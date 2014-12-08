@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaLHLgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:36:09 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:16441 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256AbaLHLgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:36:04 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-4a-54858d223a38
-Message-id: <54858D2B.3040809@samsung.com>
-Date: Mon, 08 Dec 2014 17:06:11 +0530
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
-        arnd@arndb.de, olof@lixom.net, catalin.marinas@arm.com,
-        will.deacon@arm.com, s.nawrocki@samsung.com, tomasz.figa@gmail.com,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        chanho61.park@samsung.com, geunsik.lim@samsung.com,
-        sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/19] clk: samsung: exynos5433: Add clocks for CMU_G2D
- domain
-References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
- <1417510196-6714-6-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1417510196-6714-6-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=windows-1252; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsWyRsSkSleptzXEYN4bMYvHaxYzWfyddIzd
-	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtsenyN1eLy
-	rjlsFjPO7wPqv/OPzWLp9YtMFqeuf2azOPymndVixuSXbBardv1htHj58QSLg6jHmnlrGD1+
-	/5rE6LFz1l12j81L6j2unGhi9ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6M+Q9Pshec4qhY
-	PJmzgfEzWxcjJ4eEgInE3S8/2SFsMYkL99YDxbk4hASWMkrs2P+HFabo+PYfzBCJ6YwSXx6t
-	ZIRwWpkkDvy7ywhSxSugJfFzx3ewsSwCqhIP50wCG8smoCvx5P1cZhBbVCBC4sqaOVD1ghI/
-	Jt9jAbFFBLIlnr45DLaaWWAns8T57ilgCWGBEInjN94xgdhCAvUSfd8awU7iFHCVeDTjDVgN
-	s4CtxIL366BseYnNa96CnSohcIBDYt2Hn0wQFwlIfJt8CKiIAyghK7HpADPEa5ISB1fcYJnA
-	KDYLyU2zkIydhWTsAkbmVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBSeH0v2d9OxhvHrA+
-	xCjAwajEw7vgQUuIEGtiWXFl7iFGU6ArJjJLiSbnA1NPXkm8obGZkYWpiamxkbmlmZI4b4LU
-	z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjG2KTe0Mco0H94s8nsdyzj3mgNGs1gupf6OC
-	p95rL355rjpYh12pI6ZI+6yvUoDVo0Rex7/8W/QfXnl/026BzprF5l3BIW55f6+7+q6XPKSf
-	vunzMom/17nvS6i9ep/1WVOhtlfm8lrVU6mPHCK3RPSKJfHdVFuU1rw9Nm/S0UUzMy10r7wW
-	UWIpzkg01GIuKk4EANCWooIFAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jQV2l3tYQg13/uC0er1nMZPF30jF2
-	i/fLehgtLu/Xtrj+5Tmrxfwj51gt/kxoZbOYdH8Ci8WNX22sFr0LrrJZnG16w26x6fE1VovL
-	u+awWcw4vw+o/84/Noul1y8yWZy6/pnN4vCbdlaLGZNfslms2vWH0eLlxxMsDqIea+atYfT4
-	/WsSo8fOWXfZPTYvqfe4cqKJ1aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPj
-	neNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAvlJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih
-	6xsSBNdjZIAGEtYwZsx/eJK94BRHxeLJnA2Mn9m6GDk5JARMJI5v/8EMYYtJXLi3HijOxSEk
-	MJ1R4sujlYwQTiuTxIF/dxlBqngFtCR+7vgO1s0ioCrxcM4kdhCbTUBX4sn7uWCTRAUiJK6s
-	mQNVLyjxY/I9FhBbRCBb4umbw2AbmAV2Mkuc754ClhAWCJE4fuMdE4gtJFAv0fetkRXE5hRw
-	lXg04w1YDbOArcSC9+ugbHmJzWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yY
-	W1yal66XnJ+7iRGccp5J7WBc2WBxiFGAg1GJh3fBg5YQIdbEsuLK3EOMEhzMSiK8iXGtIUK8
-	KYmVValF+fFFpTmpxYcYTYFBMJFZSjQ5H5gO80riDY1NzE2NTS1NLEzMLJXEeW/czA0REkhP
-	LEnNTk0tSC2C6WPi4JRqYOz3Tr80ccqW9yobXoRnf97iwJs0ofx5WO6+CdLG0xomFu1M0jlW
-	sthHJOnrf8ZQRcmA/YstjH892L2MRfU8zxRJ5tc+m0r/rj7HwGmjcfpryKftNunP5h02YTZN
-	8DS4I79j3z27sPSW0GVCkb0bRBd8f7kq4eq0Z5sXX+02dJQ/yPL4g4337kYlluKMREMt5qLi
-	RAB8tSNbTwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755370AbaLHLgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:36:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:35192 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755256AbaLHLgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 06:36:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,538,1413270000"; 
+   d="scan'208";a="620353062"
+Date: Mon, 8 Dec 2014 17:06:37 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: =?iso-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Magnus Damm <damm+renesas@opensource.se>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor
+ allocation failure
+Message-ID: <20141208113637.GG16827@intel.com>
+References: <1416924617-15939-1-git-send-email-j@bitron.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416924617-15939-1-git-send-email-j@bitron.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+On Tue, Nov 25, 2014 at 03:10:17PM +0100, Jürg Billeter wrote:
+> If the atomic DMA coherent pool is too small, disable use of hardware
+> descriptor lists instead of crashing the system:
+> 
+> ERROR: 256 KiB atomic DMA coherent pool is too small!
+> Please increase it with coherent_pool= kernel parameter!
+> 
+> Unable to handle kernel NULL pointer dereference at virtual address 00000004
+> Internal error: Oops: a07 [#1] PREEMPT SMP ARM
+> 
+> PC is at rcar_dmac_chan_reinit+0x3c/0x160
+> LR is at _raw_spin_lock_irqsave+0x18/0x5c
+> 
+> [<802132c0>] (rcar_dmac_chan_reinit) from [<80214818>] (rcar_dmac_isr_error+0x84/0xa0)
+> [<80214818>] (rcar_dmac_isr_error) from [<80060484>] (handle_irq_event_percpu+0x50/0x150)
+> [<80060484>] (handle_irq_event_percpu) from [<800605c0>] (handle_irq_event+0x3c/0x5c)
+> [<800605c0>] (handle_irq_event) from [<8006350c>] (handle_fasteoi_irq+0xb8/0x198)
+> [<8006350c>] (handle_fasteoi_irq) from [<8005fdb0>] (generic_handle_irq+0x20/0x30)
+> [<8005fdb0>] (generic_handle_irq) from [<8000fcd0>] (handle_IRQ+0x50/0xc4)
+> [<8000fcd0>] (handle_IRQ) from [<800092cc>] (gic_handle_irq+0x28/0x5c)
+> [<800092cc>] (gic_handle_irq) from [<80012700>] (__irq_svc+0x40/0x70)
+> 
+> Kernel panic - not syncing: Fatal exception in interrupt
 
-On Tuesday 02 December 2014 02:19 PM, Chanwoo Choi wrote:
-> This patch adds ths mux/divider/gate clocksof CMU_G2D domain which includes
+Can you please rebase this on my next, this fails to apply for me
 
-nit: %s/clocksof/clocks of
-
-> G2D/MDMA IPs. The CMU_G2D must need the clocks related to G2D by providing
-> CMU_TOP domain. So, this patch add several clocks for G2D from CMU_TOP domain.
->
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Tomasz Figa <tomasz.figa@gmail.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Inki Dae <inki.dae@samsung.com>
-> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
+Thanks
+-- 
+~Vinod
+> 
+> Signed-off-by: Jürg Billeter <j@bitron.ch>
 > ---
->   .../devicetree/bindings/clock/exynos5433-clock.txt |   8 ++
->   drivers/clk/samsung/clk-exynos5433.c               | 144 +++++++++++++++++++++
->   include/dt-bindings/clock/exynos5433.h             |  42 +++++-
->   3 files changed, 193 insertions(+), 1 deletion(-)
->
+>  drivers/dma/sh/rcar-dmac.c | 14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/dma/sh/rcar-dmac.c b/drivers/dma/sh/rcar-dmac.c
+> index f8f70eb..f18b1b6 100644
+> --- a/drivers/dma/sh/rcar-dmac.c
+> +++ b/drivers/dma/sh/rcar-dmac.c
+> @@ -679,8 +679,8 @@ static void rcar_dmac_realloc_hwdesc(struct rcar_dmac_chan *chan,
+>  	desc->hwdescs.size = size;
+>  }
+>  
+> -static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+> -				  struct rcar_dmac_desc *desc)
+> +static int rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+> +				 struct rcar_dmac_desc *desc)
+>  {
+>  	struct rcar_dmac_xfer_chunk *chunk;
+>  	struct rcar_dmac_hw_desc *hwdesc;
+> @@ -689,7 +689,7 @@ static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+>  
+>  	hwdesc = desc->hwdescs.mem;
+>  	if (!hwdesc)
+> -		return;
+> +		return -ENOMEM;
+>  
+>  	list_for_each_entry(chunk, &desc->chunks, node) {
+>  		hwdesc->sar = chunk->src_addr;
+> @@ -697,6 +697,8 @@ static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+>  		hwdesc->tcr = chunk->size >> desc->xfer_shift;
+>  		hwdesc++;
+>  	}
+> +
+> +	return 0;
+>  }
+>  
+>  /* -----------------------------------------------------------------------------
+> @@ -933,8 +935,10 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_chan *chan, struct scatterlist *sgl,
+>  	 * additional complexity remains to be investigated.
+>  	 */
+>  	desc->hwdescs.use = !highmem && nchunks > 1;
+> -	if (desc->hwdescs.use)
+> -		rcar_dmac_fill_hwdesc(chan, desc);
+> +	if (desc->hwdescs.use) {
+> +		if (rcar_dmac_fill_hwdesc(chan, desc) < 0)
+> +			desc->hwdescs.use = false;
+> +	}
+>  
+>  	return &desc->async_tx;
+>  }
+> -- 
+> 2.1.3
+> 
 
-Verified all changes in clock file against UM I have with me, all 
-changes are OK.
-
-With small nit in commit message feel free to add:
-
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-
-Thanks,
-Pankaj Dubey
+-- 
