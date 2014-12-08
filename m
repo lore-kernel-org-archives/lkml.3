@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaLHK31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:29:27 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:9019 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaLHK3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:29:24 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-95-54857d82a286
-Message-id: <54857D7B.8050304@samsung.com>
-Date: Mon, 08 Dec 2014 11:29:15 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>, linux-leds@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, s.nawrocki@samsung.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Andrzej Hajda <a.hajda@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH/RFC v9 06/19] DT: Add documentation for the mfd Maxim
- max77693
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-7-git-send-email-j.anaszewski@samsung.com>
- <20141204100706.GP14746@valkosipuli.retiisi.org.uk>
- <54804840.4030202@samsung.com> <20141204161201.GB29080@amd>
-In-reply-to: <20141204161201.GB29080@amd>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t/xy7pNta0hBj3t/Ba31p1jtdg4Yz2r
-	xdGdE5ksrn95zmox/whQrP/NQlaLc69WMlqcbXrDbnH/61FGi8u75rBZbH2zjtGiZ8NWVoul
-	1y8yWdw9dZTNYsL0tSwWrXuPsFvs3vWU1eLwm3ZWizP7V7I5CHusmbeG0eNyXy+Tx85Zd9k9
-	Vi7/wuZx+OtCFo9NqzrZPO5c28PmsWf+D1aPvi2rGD1WrP7O7vF5k1wAd5SbTUZqYkpqkUJq
-	XnJ+SmZeuq1SaIibroWSQl5ibqqtUoSub0iQkkJZYk4pkGdkgAYcnAPcg5X07RLcMub83sVU
-	MJWnYtLGb8wNjI85uxg5OSQETCQm3JzHCmGLSVy4t54NxBYSWMooMXeqWBcjF5D9Ech++xws
-	wSugJbHvTQc7iM0ioCrxZU8vE4jNJmAo8fPFazBbVCBC4s/pfawQ9YISPybfYwGxRQTkJbb2
-	rWAGGcos8JtZYvWCx2BDhQVCJLbuP80Cse03o8SlnVeBNnBwcApoStx7bg5SwyxgLbFy0jZG
-	CFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEpISv
-	OxiXHrM6xCjAwajEw7uhvDlEiDWxrLgy9xCjBAezkghvYlxriBBvSmJlVWpRfnxRaU5q8SHG
-	ZGAQTGSWEk3OB6arvJJ4QxNDc0tDI2MLC3MjI9KElcR5K7+2hAgJpCeWpGanphakFsFsYeLg
-	lGpgLHVTde+2ExA+rZFe468V2+dvKtIVvnzmkuAp87mXMRxi3XXNi/Pm9MUK26JCN8o9ilul
-	btU2/Vf5Gj37HdZdU37OEpB/ucjgRSnnsT0/yzYpHfbPuJNles5K6fPvPb/f/vJp358lc/jO
-	4nfXvHcwaHf8/rup0C1gxY2+xn0FTZ3FZ4pWhR7kV2Ipzkg01GIuKk4EALpATlNNAwAA
-X-MTR: 20000000000000000@CPGS
+	id S1754965AbaLHKbC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:31:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52768 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211AbaLHKbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 05:31:00 -0500
+Message-ID: <54857DE2.1000802@suse.cz>
+Date: Mon, 08 Dec 2014 11:30:58 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [RFC PATCH 3/3] mm: always steal split buddies in fallback allocations
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz> <1417713178-10256-4-git-send-email-vbabka@suse.cz> <20141208073637.GA4757@js1304-P5Q-DELUXE>
+In-Reply-To: <20141208073637.GA4757@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-On 12/04/2014 05:12 PM, Pavel Machek wrote:
-> Hi!
->
->>>> +- maxim,boost-mode :
->>>> +	In boost mode the device can produce up to 1.2A of total current
->>>> +	on both outputs. The maximum current on each output is reduced
->>>> +	to 625mA then. If there are two child led nodes defined then boost
->>>> +	is enabled by default.
->>>> +	Possible values:
->>>> +		MAX77693_LED_BOOST_OFF - no boost,
->>>> +		MAX77693_LED_BOOST_ADAPTIVE - adaptive mode,
->>>> +		MAX77693_LED_BOOST_FIXED - fixed mode.
->>>> +- maxim,boost-vout : Output voltage of the boost module in millivolts.
->>>> +- maxim,vsys-min : Low input voltage level in millivolts. Flash is not fired
->>>> +	if chip estimates that system voltage could drop below this level due
->>>> +	to flash power consumption.
->>>> +
->>>> +Required properties of the LED child node:
->>>> +- label : see Documentation/devicetree/bindings/leds/common.txt
->>>> +- maxim,fled_id : Identifier of the fled output the led is connected to;
->>>
->>> I'm pretty sure this will be needed for about every chip that can drive
->>> multiple LEDs. Shouldn't it be documented in the generic documentation?
+On 12/08/2014 08:36 AM, Joonsoo Kim wrote:
+> On Thu, Dec 04, 2014 at 06:12:58PM +0100, Vlastimil Babka wrote:
+>> When allocation falls back to another migratetype, it will steal a page with
+>> highest available order, and (depending on this order and desired migratetype),
+>> it might also steal the rest of free pages from the same pageblock.
 >>
->> OK.
+>> Given the preference of highest available order, it is likely that it will be
+>> higher than the desired order, and result in the stolen buddy page being split.
+>> The remaining pages after split are currently stolen only when the rest of the
+>> free pages are stolen. This can however lead to situations where for MOVABLE
+>> allocations we split e.g. order-4 fallback UNMOVABLE page, but steal only
+>> order-0 page. Then on the next MOVABLE allocation (which may be batched to
+>> fill the pcplists) we split another order-3 or higher page, etc. By stealing
+>> all pages that we have split, we can avoid further stealing.
+>>
+>> This patch therefore adjust the page stealing so that buddy pages created by
+>> split are always stolen. This has effect only on MOVABLE allocations, as
+>> RECLAIMABLE and UNMOVABLE allocations already always do that in addition to
+>> stealing the rest of free pages from the pageblock.
 >
-> Well... "fled_id" is not exactly suitable name. On other busses, it
-> would be "reg = <1>"?
+> In fact, CMA also has same problem and this patch skips to fix it.
+> If movable allocation steals the page on CMA reserved area, remained split
+> freepages are always linked to original CMA buddy list. And then, next
+> fallback allocation repeately selects most highorder freepage on CMA
+> area and split it.
 
-I'm ok with "reg". This scheme is used for pca963x.txt and is described
-as "number of LED line". We could define it similarly in the common.txt.
-A device would have to specify the range of allowed values though.
-I would add such a note to the generic binding.
+Hm yeah, for CMA it would make more sense to steal page of the lowest 
+available order, not highest.
 
-Regards,
-Jacek
+> IMO, It'd be better to re-consider whole fragmentation avoidance logic.
+>
+> Thanks.
+>
+>>
+>> Note that commit 7118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added")
+>> has already performed this change (unintentinally), but was reverted by commit
+>> 0cbef29a7821 ("mm: __rmqueue_fallback() should respect pageblock type").
+>> Neither included evaluation. My evaluation with stress-highalloc from mmtests
+>> shows about 2.5x reduction of page stealing events for MOVABLE allocations,
+>> without affecting the page stealing events for other allocation migratetypes.
+>>
+>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> ---
+>>   mm/page_alloc.c | 4 +---
+>>   1 file changed, 1 insertion(+), 3 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index a14249c..82096a6 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -1108,11 +1108,9 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+>>   		if (pages >= (1 << (pageblock_order-1)) ||
+>>   				page_group_by_mobility_disabled)
+>>   			set_pageblock_migratetype(page, start_type);
+>> -
+>> -		return start_type;
+>>   	}
+>>
+>> -	return fallback_type;
+>> +	return start_type;
+>>   }
+>>
+>>   /* Remove an element from the buddy allocator from the fallback list */
+>> --
+>> 2.1.2
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
