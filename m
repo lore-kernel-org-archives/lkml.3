@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaLHWm1 (ORCPT <rfc822;w@1wt.eu>);
+	id S1755344AbaLHWmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 17:42:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51965 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754656AbaLHWm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Dec 2014 17:42:27 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:33124 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbaLHWmZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 17:42:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417623503-30261-2-git-send-email-marc.zyngier@arm.com>
-References: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
-	<1417623503-30261-2-git-send-email-marc.zyngier@arm.com>
-Date: Mon, 8 Dec 2014 14:42:23 -0800
-Message-ID: <CAJAp7OijMW4_VMp29K1UxtURJT-WgwwsN-O1x3Lqi-gHrAj6Sw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] genirq: Allow the irqchip state of an IRQ to be save/restored
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
-        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Toan Le <toanle@apm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <1418078493.31640.4.camel@dcbw.local>
+Subject: Re: wl1251: NVS firmware data
+From: Dan Williams <dcbw@redhat.com>
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+Date: Mon, 08 Dec 2014 16:41:33 -0600
+In-Reply-To: <5485FF17.1070504@gmail.com>
+References: <201411271506.20457@pali> <201412081811.46943@pali>
+		 <30072B9E-2495-4F90-AC91-9C0D7E08F44E@holtmann.org>
+		 <201412082015.18501@pali> <1418066813.1350.18.camel@dcbw.local>
+	 <5485FF17.1070504@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 8:18 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> There is a number of cases where a kernel subsystem may want to
-> introspect the state of an interrupt at the irqchip level:
->
-> - When a peripheral is shared between virtual machines,
->   its interrupt state becomes part of the guest's state,
->   and must be switched accordingly. KVM on arm/arm64 requires
->   this for its guest-visible timer
-> - Some GPIO controllers seem to require peeking into the
->   interrupt controller they are connected to to report
->   their internal state
->
-> This seem to be a pattern that is common enough for the core code
-> to try and support this without too many horrible hacks. Introduce
-> a pair of accessors (irq_get_irqchip_state/irq_set_irqchip_state)
-> to retrieve the bits that can be of interest to another subsystem:
-> pending, active, and masked.
->
-> - irq_get_irqchip_state returns the state of the interrupt according
->   to a parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE,
->   IRQCHIP_STATE_MASKED or IRQCHIP_STATE_LINE_LEVEL.
-> - irq_set_irqchip_state similarly sets the state of the interrupt.
->
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+On Mon, 2014-12-08 at 21:42 +0200, Ivaylo Dimitrov wrote:
+> 
+> On  8.12.2014 21:26, Dan Williams wrote:
+> >
+> > a) change driver to prefer a new "wl1251-nvs-n900.bin" file, but fall
+> > back to "wl1251-nvs.bin" if the first one isn't present
+> > b) have a "wl1251-cal-nvs-update" service that, if wl1521-nvs-n900.bin
+> > is *not* present mounts the CAL MTD, reads the data, writes it out into
+> > wl1521-nvs-n900.bin, and the rmmod/modprobes the driver
+> >
+> > and done?  Stuff that's not N900 just wouldn't ship the update service
+> > and would proceed like none of this happened.
+> >
+> > Dan
+> >
+> >
+> 
+> That would mean that the driver should not be built-in, as afaik we 
+> cannot rmmod built-in drivers. Sure, it will work after a reboot, but 
+> this is a bit hacky, agree?
+> 
+> Also, new NVS file needs to be loaded when fcc regulation changes(flying 
+> abroad), so that would mean that the device would be outside of those 
+> until reboot (in case of built-in driver)
 
-With the addition of actually assigning err to something useful in the
-setter below:
+Regulatory stuff needs to be hooked into CRDA or the existing regulatory
+codepaths, not some other path.  So when cfg80211 sets the regulatory
+domain on the driver the driver needs to get the necessary NVS data.
+Either the NVS for every domain (which cannot be a lot of them) gets
+hardcoded into the driver, and then selected based on what cfg80211
+says, or the driver needs to ask userspace for the NVS data based on
+what cfg80211 says.  In all cases, cfg80211 drives the regulatory domain
+[1].
 
-Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+a) How many regulatory domains does the driver support, how much data is
+there for each domain, and can that be put into the driver instead of
+getting it from the CAL partition?
 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+b) what do *other* (non-N900) wl1251 devices do for regulatory data?
 
-[..]
+Dan
 
-> +/**
-> + *     irq_set_irqchip_state - set the state of a forwarded interrupt.
-> + *     @irq: Interrupt line that is forwarded to a VM
-> + *     @which: State to be restored (one of IRQCHIP_STATE_*)
-> + *     @val: Value corresponding to @which
-> + *
-> + *     This call sets the internal irqchip state of an interrupt,
-> + *     depending on the value of @which.
-> + *
-> + *     This function should be called with preemption disabled if the
-> + *     interrupt controller has per-cpu registers.
-> + */
-> +int irq_set_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
-> +                         bool val)
-> +{
-> +       struct irq_desc *desc;
-> +       struct irq_data *data;
-> +       struct irq_chip *chip;
-> +       unsigned long flags;
-> +       int err = -EINVAL;
-> +
-> +       desc = irq_get_desc_buslock(irq, &flags, 0);
-> +       if (!desc)
-> +               return err;
-> +
-> +       data = irq_desc_get_irq_data(desc);
-> +
-> +       do {
-> +               chip = irq_data_get_irq_chip(data);
-> +               if (chip->irq_set_irqchip_state)
-> +                       break;
-> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
-> +               data = data->parent_data;
-> +#else
-> +               data = NULL;
-> +#endif
-> +       } while (data);
-> +
-> +       if (data)
-> +               chip->irq_set_irqchip_state(data, which, val);
+[1] unless there's some *restriction* hardcoded into the EEPROM of the
+device, which in the case of the N900 there isn't, since the regulatory
+data changes based on the MCC/MNC of the cellular side.
 
-err =
-
-> +
-> +       irq_put_desc_busunlock(desc, flags);
-> +       return err;
-> +}
-
-Regards,
-Bjorn
