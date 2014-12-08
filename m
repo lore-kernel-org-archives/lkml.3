@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445AbaLHSvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:51:06 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:58834 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755780AbaLHSvE (ORCPT
+	id S932213AbaLHSxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:53:47 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:62824 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263AbaLHSxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:51:04 -0500
-Message-ID: <1418064660.2058.11.camel@x220>
-Subject: Re: [PATCH 2/3] kconfig: remove undocumented type definition alias
- 'boolean'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Christoph Jaeger <cj@linux.com>
-Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dborkman@redhat.com
-Date: Mon, 08 Dec 2014 19:51:00 +0100
-In-Reply-To: <1539c3778a0f3533942f69540a9b5b3d1f965bdc.1418003065.git.cj@linux.com>
-References: <cover.1418003065.git.cj@linux.com>
-	 <1539c3778a0f3533942f69540a9b5b3d1f965bdc.1418003065.git.cj@linux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2014 18:51:00.0760 (UTC) FILETIME=[E8F9B980:01D01317]
-X-RcptDomain: vger.kernel.org
+	Mon, 8 Dec 2014 13:53:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141208173432.GA5732@katana>
+References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+	<1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
+	<20141208085202.GA13486@pengutronix.de>
+	<CAD=FV=V=PDPiDhDmd+j8ePsF43EvuFP-LxKgMKo7ZRBzSMyOJA@mail.gmail.com>
+	<20141208173432.GA5732@katana>
+Date: Mon, 8 Dec 2014 10:53:44 -0800
+X-Google-Sender-Auth: BmK0J1CDQYnGnn3EUpGUaPAR8S4
+Message-ID: <CAD=FV=WQypHthEDPGUqVX3kzfFBSdj4H+_QY_=WYA3R77H+WiQ@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c: rk3x: fix bug that cause measured high_ns doesn't
+ meet I2C spec
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tao Huang <huangtao@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Jianqun Xu <xjq@rock-chips.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        caesar <caesar.wang@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Han Jiang <hj@rock-chips.com>, Shunqian Zheng <zhengsq@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-12-07 at 20:49 -0500, Christoph Jaeger wrote:
-> Having an undocumented alias for type definitions of boolean config options is
-> more confusing than helpful. Remove support for the keyword 'boolean' in favor
-> of 'bool' and convert all its users.
-> 
-> While at it, fix some minor grammar issues in warning messages.
-> 
-> Suggested-by: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Christoph Jaeger <cj@linux.com>
+Hi,
 
-This doesn't apply on next-20141208. What tree did you base this on?
+On Mon, Dec 8, 2014 at 9:34 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>
+>> > There are different capitalisation of i2c in the patch and the commit log. I
+>> > don't know what Wolfram prefers here, but using the same spelling
+>> > everywhere would be nice.
+>>
+>> Can you please point out?  IIRC you should always capitalize I2C in
+>> prose (descriptions, comments, documentation, etc).  However when used
+>> in places which specific capitalization standards it should be
+>> lowercase.  That means file names, directory names, device tree
+>> property names, etc should be lower case.
+>
+> This is what I prefer, too. However, I am not too strict about it.
+> I mean, both are readable.
 
-Thanks,
+Glad my understanding is OK.  :)
+
+>
+>> >> +     /* Read rise and fall ns; if not there use the default max from spec */
+>> >> +     if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
+>> >> +                              &i2c->rise_ns)) {
+>> >> +             if (i2c->scl_frequency <= 100000)
+>> >> +                     i2c->rise_ns = 1000;
+>> >> +             else
+>> >> +                     i2c->rise_ns = 300;
+>> >> +     }
+>> >> +     if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
+>> >> +                              &i2c->fall_ns))
+>> >> +             i2c->fall_ns = 300;
+>> >> +
+>> > I don't know if other drivers do the same (I assume they should). If so,
+>> > moving this logic into the core would be nice. I guess this can still be
+>> > done later.
+>
+> Let's leave that for later. If we do it, we should start with bus speed
+> setting first, probably.
+
+OK, great.
 
 
-Paul Bolle
+So just to summarize for Addy, I think you're being asked to spin one more time.
 
+1. Update the patch description as per Uwe.  Fix other typos pointed out by him.
+
+2. Since you're spinning anyway, adjust "i2c" capitalization to "I2C".
+
+3. If you agree with Uwe, rename spec_max_data_hold_ns to
+spec_data_valid_ns.  If not, we should debate in a followup patch.
+
+4. If you think spec_data_hold_buffer_ns could be better represented
+in another way (should this be i2c-sda-falling-time-ns"?), please do
+so.  If not, we should debate in a followup patch.
+
+-Doug
