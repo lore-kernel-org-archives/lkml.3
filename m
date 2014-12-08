@@ -1,118 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaLHP1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:27:45 -0500
-Received: from relay02.alfahosting-server.de ([109.237.142.238]:49904 "EHLO
-	relay02.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358AbaLHP1n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:27:43 -0500
-X-Spam-DCC: : 
-Date: Mon, 8 Dec 2014 16:28:10 +0100
-From: Richard Leitner <dev@g0hl1n.net>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] misc: ioc4: simplify wave period measurement in
- clock_calibrate
-Message-ID: <20141208162810.7b009382@frodo>
-In-Reply-To: <CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
-References: <20141208132720.16356743@frodo>
-	<4066664.BgJJnCmQ3h@wuerfel>
-	<20141208141837.752a9968@frodo>
-	<CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1755713AbaLHP3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:29:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35478 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaLHP3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:29:07 -0500
+Message-ID: <5485C3B5.4000401@oracle.com>
+Date: Mon, 08 Dec 2014 10:28:53 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19749/Mon Dec  8 12:41:14 2014
+To: paulmck@linux.vnet.ibm.com
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        =?windows-1252?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <20141202193252.GB17595@redhat.com> <547E4C14.6040509@oracle.com> <54813C03.8040009@oracle.com> <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com> <5481C92E.6020805@oracle.com> <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com> <54846B06.8050906@oracle.com> <20141207182420.GG25340@linux.vnet.ibm.com> <20141207194304.GA17810@linux.vnet.ibm.com> <5484E2AB.1070503@oracle.com> <20141208052048.GJ25340@linux.vnet.ibm.com> <5485B6B9.7010800@oracle.com>
+In-Reply-To: <5485B6B9.7010800@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loop for measuring the square wave periods over some cycles is
-refactored to be more easily readable. This includes avoiding a
-"by-hand-implemented" for loop with a "real" one and adding some
-comments.
+On 12/08/2014 09:33 AM, Sasha Levin wrote:
+> On 12/08/2014 12:20 AM, Paul E. McKenney wrote:
+>> > I have seen this caused by lost IPIs, but you have to lose two of them,
+>> > which seems less than fully likely.
+> It does seem that it can cause full blown stalls as well, just pretty
+> rarely (notice the lack of any prints before):
 
-Furthermore the following compiler warning is avoided by this patch:
-drivers/misc/ioc4.c: In function ‘ioc4_probe’:
-drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
-in this function [-Wmaybe-uninitialized]
-  period = (end - start) /
-                ^
-drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
-  uint64_t start, end, period;
-           ^
+Forgot to mentioned, I cranked the rcu lockup timeout to 300 seconds and got
+that stall.
 
-Signed-off-by: Richard Leitner <dev@g0hl1n.net>
----
-A simplification of this loop was suggested by Andrew Morton [1].
-This is my first proposal of such a simplification.
 
-Furthermore I'm not sure if the commit message is sufficient.
-Please give me also some feedback on it.
-
-If this simplification is not needed only initializing start to
-ktime_get_ns() would fix the compiler warning too.
-
-[1] https://lkml.org/lkml/2014/12/5/76
----
- drivers/misc/ioc4.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
-index 3336ddc..8758d03 100644
---- a/drivers/misc/ioc4.c
-+++ b/drivers/misc/ioc4.c
-@@ -144,9 +144,9 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
- {
- 	union ioc4_int_out int_out;
- 	union ioc4_gpcr gpcr;
--	unsigned int state, last_state = 1;
-+	unsigned int state, last_state;
- 	uint64_t start, end, period;
--	unsigned int count = 0;
-+	unsigned int count;
- 
- 	/* Enable output */
- 	gpcr.raw = 0;
-@@ -167,19 +167,20 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
- 	mmiowb();
- 
- 	/* Check square wave period averaged over some number of cycles */
--	do {
--		int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
--		state = int_out.fields.int_out;
--		if (!last_state && state) {
--			count++;
--			if (count == IOC4_CALIBRATE_END) {
--				end = ktime_get_ns();
--				break;
--			} else if (count == IOC4_CALIBRATE_DISCARD)
--				start = ktime_get_ns();
--		}
--		last_state = state;
--	} while (1);
-+	start = ktime_get_ns();
-+	state = 1; /* make sure the first read isn't a rising edge */
-+	for (count = 0; count <= IOC4_CALIBRATE_END; count++) {
-+		do { /* wait for a rising edge */
-+			last_state = state;
-+			int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
-+			state = int_out.fields.int_out;
-+		} while (last_state || !state);
-+
-+		/* discard the first few cycles */
-+		if (count == IOC4_CALIBRATE_DISCARD)
-+			start = ktime_get_ns();
-+	}
-+	end = ktime_get_ns();
- 
- 	/* Calculation rearranged to preserve intermediate precision.
- 	 * Logically:
--- 
-2.1.3
-
+Thanks,
+Sasha
