@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaLHMmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:42:38 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:56462 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaLHMmg (ORCPT
+	id S1755303AbaLHMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:42:56 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:53112 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855AbaLHMmz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:42:36 -0500
+	Mon, 8 Dec 2014 07:42:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Leitner <dev@g0hl1n.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH] misc: ioc4: fix variable may be used uninitialized warning
+Date: Mon, 08 Dec 2014 13:42:47 +0100
+Message-ID: <4066664.BgJJnCmQ3h@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141208132720.16356743@frodo>
+References: <20141208132720.16356743@frodo>
 MIME-Version: 1.0
-In-Reply-To: <1503477.DVdkExccIe@wuerfel>
-References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
- <2279061.naADrHDgyn@wuerfel> <CAPTm99WYNyxtY-NCVN8pB0HwNPn+EFx-7w7yEevaEK1z7-Zqxg@mail.gmail.com>
- <1503477.DVdkExccIe@wuerfel>
-From: Ankit Jindal <ankit.jindal@linaro.org>
-Date: Mon, 8 Dec 2014 18:12:15 +0530
-Message-ID: <CAPTm99V1qP5dAgDV04i3m_yR1ri9h=b8fDXBDxmPfpZG_P268g@mail.gmail.com>
-Subject: Re: [PATCH v5 5/6] Documentation: dt-bindings: Add binding info for
- X-Gene QMTM UIO driver
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Varka Bhadram <varkabhadram@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anup Patel <anup@brainfault.org>, Guenter Roeck <linux@roeck-us.net>,
-        "patches@apm.com" <patches@apm.com>, Rob Herring <robh+dt@kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:VXU0MnpF6XG9SEEnW/m/T5U2yG6FTC5oFeNbdcCvPLWGRYggkYt
+ rJWmvlXEruINcce6P91BXpXziN6tC2Gi3zzqWvIVPC/4kYT2tq+nTMLGKCSIpAsNns/eIrc
+ JpRG95uxlfqTRjmSqiYG98/0veAZfbjCWmjnKS/bG4QzbATqMGR7pSbXnR02GYfdTeeKE0w
+ jx5RX8TluHrbsp/HDhjXQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2014 at 18:40, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 18 November 2014 14:59:54 Ankit Jindal wrote:
->> On 17 November 2014 16:47, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Monday 17 November 2014 16:06:11 Ankit Jindal wrote:
->> >> +
->> >> +       qmtm1_uio: qmtm_uio@1f200000 {
->> >> +               compatible = "apm,xgene-qmtm";
->> >> +               status = "disabled";
->> >> +               reg = <0x0 0x1f200000 0x0 0x10000>,
->> >> +                     <0x0 0x1b000000 0x0 0x400000>;
->> >> +               reg-names = "csr", "fabric";
->> >> +               qpool-memory = <&qmtm1_uio_qpool>;
->> >> +               clocks = <&qmtm1clk 0>;
->> >> +               num-queues = <0x400>;
->> >> +               devid = <1>;
->> >> +       };
->> >> +
->> >
->> > To make my previous review comments clearer:
->> >
->> > NAK
->> >
->> > Do not create device nodes that are meant for a specific use case in
->> > software and that are not usable for the common case. I don't think
->> > it makes any sense to keep on submitting a UIO driver for this until
->> > we have a proper network driver that uses this so we can make sure we
->> > have a working binding.
->>
->> The dataplane frameworks like OpenDataPlane etc, need to have access
->> to complete subsystem from the user space. Hence, we would like to
->> have this driver and some other UIO drivers to be the part of kernel
->> to have data plane frameworks working on our platform.
->
-> Please work with the people that do the in-kernel QMTM driver to come
-> up with a common binding then.
-Thanks Arnd, I have synced with them, and in future our dt bindings
-for this device is going to be inline with the one mentioned in the
-patchset.
->
->         Arnd
-Thanks,
-Ankit
+On Monday 08 December 2014 13:27:20 Richard Leitner wrote:
+> Fix the following build warning:
+> drivers/misc/ioc4.c: In function ‘ioc4_probe’:
+> drivers/misc/ioc4.c:194:16: warning: ‘start’ may be used uninitialized
+> in this function [-Wmaybe-uninitialized]
+>   period = (end - start) /
+>                 ^
+> drivers/misc/ioc4.c:148:11: note: ‘start’ was declared here
+>   uint64_t start, end, period;
+>            ^
+> 
+> As far as I can tell 'start' cannot really be used uninitialized
+> here, but for the sanity of gcc output explicitly initialize it.
+> Same goes for the 'end' variable.
+> 
+> Signed-off-by: Richard Leitner <dev@g0hl1n.net>
+
+Prabhakar Lad also sent a patch for this already, which was lacking
+a good patch description. Your patch does this slightly better but
+still fails to explain how you concluded it was safe and you don't
+really explain why you initialize the 'end' variable that we don't
+even get a warning about.
+
+	Arnd
+
+> ---
+> Used gcc version was 4.9.1 (Debian 4.9.1-19)
+> P.S.: I know I'm too late for 3.18 but hopefully it still helps.
+> ---
+>  drivers/misc/ioc4.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
+> index 3336ddc..7ec2733 100644
+> --- a/drivers/misc/ioc4.c
+> +++ b/drivers/misc/ioc4.c
+> @@ -145,7 +145,7 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
+>  	union ioc4_int_out int_out;
+>  	union ioc4_gpcr gpcr;
+>  	unsigned int state, last_state = 1;
+> -	uint64_t start, end, period;
+> +	uint64_t start = 0, end = 0, period;
+>  	unsigned int count = 0;
+>  
+>  	/* Enable output */
+> 
+
