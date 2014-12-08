@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaLHSiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:38:20 -0500
-Received: from smtpauth15.mfg.siteprotect.com ([64.26.60.147]:49029 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756181AbaLHSiR (ORCPT
+	id S1756334AbaLHSkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:40:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39010 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751355AbaLHSkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:38:17 -0500
-Date: Mon, 8 Dec 2014 13:39:43 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: Linux 3.18 released
-In-Reply-To: <CA+55aFwK3XtS32iJna-2uXZUfZQNUGC0Z4FmEFHK4JXB_kyojA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
-References: <CA+55aFwK3XtS32iJna-2uXZUfZQNUGC0Z4FmEFHK4JXB_kyojA@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 8 Dec 2014 13:40:04 -0500
+Date: Mon, 8 Dec 2014 19:38:53 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141208183853.GG8739@lukather>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+ <20141208141807.GC8739@lukather>
+ <20141208162843.GP16827@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020201.5485F021.01D6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vSsTm1kUtxIHoa7M"
+Content-Disposition: inline
+In-Reply-To: <20141208162843.GP16827@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Dec 2014, Linus Torvalds wrote:
 
-> I'd love to say that we've figured out the problem that plagues 3.17
-> for a couple of people, but we haven't. At the same time, there's
-> absolutely no point in having everybody else twiddling their thumbs
-> when a couple of people are actively trying to bisect an older issue,
-> so holding up the release just didn't make sense. Especially since
-> that would just have then held things up entirely over the holiday
-> break.
-> 
-> So the merge window for 3.19 is open, and DaveJ will hopefully get his
-> bisection done (or at least narrow things down sufficiently that we
-> have that "Ahaa" moment) over the next week. But in solidarity with
-> Dave (and to make my life easier too ;) let's try to avoid introducing
-> any _new_ nasty issues, ok?
+--vSsTm1kUtxIHoa7M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's probably unrelated to DaveJ's issue, but my perf_event fuzzer still 
-quickly locks the kernel pretty solid on 3.18.
+On Mon, Dec 08, 2014 at 09:58:43PM +0530, Vinod Koul wrote:
+> > > So bit sceptical for merging now. I will send the patches which I have
+> > > applied on top of this
+> >=20
+> > Which is why I wanted to merge this at the *beginning* of the
+> > development cycle in the first place....
+> >=20
+> > These patches have been sent more than 2 weeks ago, and were exactly
+> > the same as the ones send at the end of October, rebased and updated
+> > to take into account the drivers that were merged in between.
+> >=20
+> > In short, these patches have been hanging around since 6 weeks. I
+> > relied probably too much on the intel's build bot. This is not a
+> > mistake I'll repeat. But blaming it on me because they came too late
+> > is *very* unfair.
+>
+> as a first step one is expected to compile the patches we send. That is v=
+ery
+> basic stuff which should not be avoided.
 
-Just 5 minutes of testing managed to trip over the following issue that 
-dates back to at least 3.15-rc7
+Indeed. My mistake, it won't happen again.
 
-My notes say last time I tracked down the issue as so:
+> given that we had build failures on v5 rev of the series and serious
+> failures flagged off by compilers doesn't inspire a lot of
+> confidence.
 
-  What happens is in kernel/core/events.c  find_get_context()
-  somehow perf_lock_task_context() returns NULL 
-  due to !atomic_inc_not_zero(&ctx->refcount)
-  but task->perf_event_ctxp[ctxn] still has a valid value.
+v5 that you never reviewed, just like the v4, v3 and v2 before it.
 
-There are multiple perf related issues like this that are hard to track 
-down.  They are borderline heisenbugs that are possibly race conditions, 
-so bisecting doesn't work and even things like enablibg ftrace will make 
-the issue go away (or crash ftrace itself).
+> And lastly noone blamed you for being late, if things were rosy they
+> would have been merged over the weekend and been in today's next,
+> but...
 
-This particular manifestation of the bug (or bugs) wedges things but I can 
-use alt-sysrq from the serial console to see where it is stuck (see 
-below; the CPU is stuck in a loop).
+I totally understand your point. And I actually am a bit uncomfortable
+merging this so late too, and I'd actually prefer to have it merged
+for 3.20. But this is a huge patchset, and I'd really like to avoid
+rebasing it forever.
 
+I'll send a v6, with your patches, as soon as 3.19-rc1 is out. This
+will be my last rebase of this serie. If these patches are not merged
+then, then I will just give up on this cleanup, and probably any
+subsequent ones.
 
-[ 2225.916004]  [<ffffffff810e61e9>] ? get_page_from_freelist+0x55/0x781
-[ 2225.916004]  [<ffffffff810e6a7c>] __alloc_pages_nodemask+0x167/0x6dc
-[ 2225.916004]  [<ffffffff8101a4a3>] ? intel_pmu_enable_all+0x28/0xa4
-[ 2225.916004]  [<ffffffff8111f0b3>] kmem_getpages+0x58/0xec
-[ 2225.916004]  [<ffffffff81120278>] cache_grow+0xad/0x1d8
-[ 2225.916004]  [<ffffffff81120021>] ____cache_alloc+0x237/0x2ce
-[ 2225.916004]  [<ffffffff811216b9>] __kmalloc+0x8f/0xf2
-[ 2225.916004]  [<ffffffff810dc35d>] ? T.1336+0xe/0x10
-[ 2225.916004]  [<ffffffff810dc35d>] T.1336+0xe/0x10
-[ 2225.916004]  [<ffffffff810dc8ca>] alloc_perf_context+0x20/0x51
-[ 2225.916004]  [<ffffffff810dca33>] find_get_context+0x138/0x1c7
-[ 2225.916004]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-[ 2225.916004]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-[ 2225.916004]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
+I'm sorry, but I just don't care enough.
 
-[ 2256.708004]  [<ffffffff810d7e36>] ? put_ctx+0x40/0x61
-[ 2256.708004]  [<ffffffff810dcaa4>] find_get_context+0x1a9/0x1c7
-[ 2256.708004]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-[ 2256.708004]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-[ 2256.708004]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
+Maxime.
 
-[ 2303.796003]  [<ffffffff810fa6cb>] ? kmalloc_slab+0x7f/0x8d
-[ 2303.796003]  [<ffffffff81121653>] __kmalloc+0x29/0xf2
-[ 2303.796003]  [<ffffffff810dc35d>] ? T.1336+0xe/0x10
-[ 2303.796003]  [<ffffffff810dc35d>] T.1336+0xe/0x10
-[ 2303.796003]  [<ffffffff810dc8ca>] alloc_perf_context+0x20/0x51
-[ 2303.796003]  [<ffffffff810dca33>] find_get_context+0x138/0x1c7
-[ 2303.796003]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-[ 2303.796003]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-[ 2303.796003]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Vince
+--vSsTm1kUtxIHoa7M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUhfA9AAoJEBx+YmzsjxAgzdUQAJpRNet20gGke0GchPJyL86r
+2GhDNx04AWFxEkAwzFQj16zEgW3iQPnSXT8pVMxJ5/pkcOTRCuXXoYPsRLWGOYJ/
+aXw1nS9fcFSHKXWiVU7VCHyaHTzcTNCrkGWHQPwUzUYqMn8tpiZGEICSJyVwuPrh
+33SAg9+uNTJ1ZtXHnfu24D1EmmxTl1wGJWwHTDZsW5+v1dp9rogMiEXRK43cL5SQ
+ZfrKSF+LIdGldylaGSFKFClTCyE5tBm7M6vO/fOTg4A9sYwWhTqtdKLsQrpEprQT
+kRQuQjbUkqFXLzSlSCZwuGfnyi9qdRg0bMram76GtSp6GE/aA+HCjWj6oAcYRQpQ
+qmG/l8PT0+HZ8wwH9t+9lZ0/buDKQkl4bejj8bcSrM8jB9raMSPBC9e4ZW4abHJD
+B8JpdCXfc3cVg3nUBaHTpESEm3/EHS8ErwtqCuWPPzpsU/NzGvPG3TiaIulna4gp
+IFFNwOgpaY9RzdQ+6MZNNY1RpTfxa7QchFYQISMB6vVsTdnX06Q8NKFl17dIvZSE
+D6AQAmTci3JM3B6iLxB5n55A+hLLXtKNwtwTHQVI4TGytQsKsw27jN1bWvhzfJ0f
+TNHQ/ZQzH88YozqEyMRm01XyxWAuzjcQJtB9S3QQdSLWizkmC4tI2Chbd5A010xW
+umiHgJymQE9bg6p9EiSv
+=maXJ
+-----END PGP SIGNATURE-----
+
+--vSsTm1kUtxIHoa7M--
