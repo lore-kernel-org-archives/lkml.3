@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaLHP5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:57:49 -0500
-Received: from relay01.alfahosting-server.de ([109.237.142.236]:39147 "EHLO
-	relay01.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754953AbaLHP5s (ORCPT
+	id S1755915AbaLHP5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:57:54 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50383 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087AbaLHP5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:57:48 -0500
-X-Spam-DCC: : 
-Date: Mon, 8 Dec 2014 16:58:17 +0100
-From: Richard Leitner <dev@g0hl1n.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] misc: ioc4: simplify wave period measurement in
- clock_calibrate
-Message-ID: <20141208165817.52d03794@frodo>
-In-Reply-To: <3564575.fggPKDmMEE@wuerfel>
-References: <20141208132720.16356743@frodo>
-	<CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
-	<20141208162810.7b009382@frodo>
-	<3564575.fggPKDmMEE@wuerfel>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 8 Dec 2014 10:57:52 -0500
+Date: Mon, 8 Dec 2014 07:57:45 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141208155745.GM25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFyZOo=HzB_n3gLqswFsN1FcMdumaKLBk+fbhDD3wrvXnA@mail.gmail.com>
+ <5481C92E.6020805@oracle.com>
+ <CA+55aFxnCxJcg7NgNeqn_P_TugpcHTUk+v21Td25Aw6+2Z8=YA@mail.gmail.com>
+ <54846B06.8050906@oracle.com>
+ <20141207182420.GG25340@linux.vnet.ibm.com>
+ <20141207194304.GA17810@linux.vnet.ibm.com>
+ <5484E2AB.1070503@oracle.com>
+ <20141208052048.GJ25340@linux.vnet.ibm.com>
+ <5485B6B9.7010800@oracle.com>
+ <5485C3B5.4000401@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19749/Mon Dec  8 12:41:14 2014
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5485C3B5.4000401@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120815-0013-0000-0000-000006E019F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Dec 2014 16:46:31 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
+On Mon, Dec 08, 2014 at 10:28:53AM -0500, Sasha Levin wrote:
+> On 12/08/2014 09:33 AM, Sasha Levin wrote:
+> > On 12/08/2014 12:20 AM, Paul E. McKenney wrote:
+> >> > I have seen this caused by lost IPIs, but you have to lose two of them,
+> >> > which seems less than fully likely.
+> > It does seem that it can cause full blown stalls as well, just pretty
+> > rarely (notice the lack of any prints before):
+> 
+> Forgot to mentioned, I cranked the rcu lockup timeout to 300 seconds and got
+> that stall.
 
-> On Monday 08 December 2014 16:28:10 Richard Leitner wrote:
-> > 
-> > Signed-off-by: Richard Leitner <dev@g0hl1n.net>
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> 
-> With the changed loop, do you still get a warning if you
-> remove the extra 'start = ktime_get_ns()' at the start of the loop?
-> 
-Yes. Although IOC4_CALIBRATE_DISCARD is smaller than IOC4_CALIBRATE_END
-and there's no more break in the loop, it seems gcc doesn't get it...
+So with the default of 21 seconds, you presumably get huge numbers of
+RCU CPU stall warnings?
 
-regards,
-richard
+							Thanx, Paul
 
