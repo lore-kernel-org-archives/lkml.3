@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaLHU2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:28:31 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:58946 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753901AbaLHU23 (ORCPT
+	id S1754793AbaLHUa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:30:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45236 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619AbaLHUa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:28:29 -0500
-Message-ID: <1418070507.2058.46.camel@x220>
-Subject: Re: [PATCH 1/3] kconfig: regenerate parser
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Christoph Jaeger <cj@linux.com>
-Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dborkman@redhat.com
-Date: Mon, 08 Dec 2014 21:28:27 +0100
-In-Reply-To: <0bf50ad9bc78f6944ebf5d5b1f8c9bdff223185f.1418003065.git.cj@linux.com>
-References: <cover.1418003065.git.cj@linux.com>
-	 <0bf50ad9bc78f6944ebf5d5b1f8c9bdff223185f.1418003065.git.cj@linux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2014 20:28:27.0520 (UTC) FILETIME=[85EA8000:01D01325]
-X-RcptDomain: vger.kernel.org
+	Mon, 8 Dec 2014 15:30:58 -0500
+Date: Mon, 8 Dec 2014 21:30:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+cc: Beniamino Galvani <b.galvani@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>, srv_heupstream@mediatek.com,
+        hc.yen@mediatek.com, yh.chen@mediatek.com,
+        linux-kernel@vger.kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, eddie.huang@mediatek.com,
+        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irqchip: mediatek: Fix error return code detection
+In-Reply-To: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
+Message-ID: <alpine.DEB.2.11.1412082114340.16275@nanos>
+References: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-12-07 at 20:49 -0500, Christoph Jaeger wrote:
-> Regenerate the Kconfig parser with Bison 3.0.2 in preparation for a following
+On Mon, 8 Dec 2014, Yingjoe Chen wrote:
 
-Nit: could you please add the exact command line too? 
-
-> commit. Otherwise the changes caused by the more recent Bison version would be
-> intermingled with functional changes.
+> This fix an error handling bug reported by Beniamino, this is based on
+> mtk intpol patches [1]
+>
+> Joe.C
 > 
-> Signed-off-by: Christoph Jaeger <cj@linux.com>
-> ---
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/305808.html
+> 
+> ====================
+> of_io_request_and_map() return ERR_PTR wrapped error code instead of
+> NULL when fail, fix code in mtk_sysirq_of_init() to correctly handle
+> this.
+> 
+> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
 
-Are there any downsides to regenerating using, what looks like, a
-current version of bison? I'm not aware there are.
+This is not a proper changelog. Let me write up a proper one:
 
-I've tested this on all 463 defconfig files in next-20141208. None of
-the generated .config files changed. So this patch is:
-    Tested-by: Paul Bolle <pebolle@tiscali.nl>
+Subject: irqchip: mediatek: Use IS_ERR() instead of NULL pointer check
 
+Beniamino reported a kernel oops caused by an invalid DT file for the
+mediatek interrupt polarity extension.
 
-Paul Bolle
+The reason is that the interrupt polarity support for mediatek chips
+merily checks for at NULL pointer instead of a casted error return
+value in mtk_sysirq_of_init() so any other casted error value passes
+the NULL pointer check and causes a kernel panic when dereferenced.
 
+Use IS_ERR() and return the error value via PTR_ERR().
+
+Reported-and-tested-by: Beniamino Galvani <b.galvani@gmail.com>
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+
+Can you see the difference?
+
+Thanks,
+
+	tglx
