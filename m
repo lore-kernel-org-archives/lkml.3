@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaLHKcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:32:22 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:56232 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaLHKcU (ORCPT
+	id S1755140AbaLHKd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:33:29 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45983 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaLHKd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:32:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141208212523.47c3cf35@canb.auug.org.au>
-References: <1418032337-15218-1-git-send-email-geert@linux-m68k.org>
-	<20141208212523.47c3cf35@canb.auug.org.au>
-Date: Mon, 8 Dec 2014 11:32:18 +0100
-X-Google-Sender-Auth: gaYxdzVc9ig-_XPZFoJNOzkXwJ0
-Message-ID: <CAMuHMdWSUP=iRsMZD2ZphdGnZy_d6+wKByVZ+RbrpUmvMvjsdA@mail.gmail.com>
-Subject: Re: [git pull] m68k updates for 3.19
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+	Mon, 8 Dec 2014 05:33:28 -0500
+Date: Mon, 8 Dec 2014 10:33:29 +0000
+From: Will Deacon <will.deacon@arm.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the xen-tip tree with the arm-soc
+ tree
+Message-ID: <20141208103328.GE27367@arm.com>
+References: <20141208184908.27bfd605@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141208184908.27bfd605@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, Dec 08, 2014 at 07:49:08AM +0000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the xen-tip tree got a conflict in
+> arch/arm/include/asm/dma-mapping.h between commits a3a60f81ee6f
+> ("dma-mapping: replace set_arch_dma_coherent_ops with
+> arch_setup_dma_ops") and 4bb25789ed28 ("arm: dma-mapping: plumb our
+> iommu mapping ops into arch_setup_dma_ops") from the arm-soc tree and
+> commit 3d5391ac6f5e ("arm: introduce is_device_dma_coherent") from the
+> xen-tip tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> I also neede this merge fix patch:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 8 Dec 2014 18:46:59 +1100
+> Subject: [PATCH] arm: introduce is_device_dma_coherent merge fix
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/arm/mm/dma-mapping.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 09645f00bd17..43064cbe58f9 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -2058,6 +2058,7 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+>  	else
+>  		dma_ops = arm_get_dma_map_ops(coherent);
+>  
+> +	dev->archdata.dma_coherent = coherent;
+>  	set_dma_ops(dev, dma_ops);
+>  }
 
-On Mon, Dec 8, 2014 at 11:25 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Mon,  8 Dec 2014 10:52:17 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
->>
->>   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
->>
->> for you to fetch changes up to f0b99a643e9613beb28af43333bbfa90d4bf85cc:
->>
->>   m68k/mm: Eliminate memset after alloc_bootmem_pages (2014-11-10 09:56:44 +0100)
->
-> It looks like this branch has not updated yet (or you forgot to push).
-> It is still commit f7bbd12a4b7e088f53f20dd31019984459699fb9 on
-> git.kernel.org.
+Looks good to me.
 
-Woops, fixed. Sorry for that.
+Cheers,
 
-Actually git tried to tell me, by showing "for-next" instead of "for-linus"
-in the output from request-pull, but I choose to ignore that as they're
-both pointing to the same commit, and fix that manually. Oh well...
+Will
 
-Gr{oetje,eeting}s,
+> -- 
+> 2.1.3
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/include/asm/dma-mapping.h
+> index 9410b7e548fc,e6e3446abdf6..000000000000
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@@ -121,13 -121,20 +121,19 @@@ static inline unsigned long dma_max_pfn
+>   }
+>   #define dma_max_pfn(dev) dma_max_pfn(dev)
+>   
+>  -static inline int set_arch_dma_coherent_ops(struct device *dev)
+>  -{
+>  -	dev->archdata.dma_coherent = true;
+>  -	set_dma_ops(dev, &arm_coherent_dma_ops);
+>  -	return 0;
+>  -}
+>  -#define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
+>  +#define arch_setup_dma_ops arch_setup_dma_ops
+>  +extern void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+>  +			       struct iommu_ops *iommu, bool coherent);
+>  +
+>  +#define arch_teardown_dma_ops arch_teardown_dma_ops
+>  +extern void arch_teardown_dma_ops(struct device *dev);
+>   
+> + /* do not use this function in a driver */
+> + static inline bool is_device_dma_coherent(struct device *dev)
+> + {
+> + 	return dev->archdata.dma_coherent;
+> + }
+> + 
+>   static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+>   {
+>   	unsigned int offset = paddr & ~PAGE_MASK;
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
