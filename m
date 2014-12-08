@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaLHKbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:31:33 -0500
-Received: from ozlabs.org ([103.22.144.67]:60467 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753575AbaLHKbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:31:32 -0500
-Date: Mon, 8 Dec 2014 21:31:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: status of the lzo-update tree
-Message-ID: <20141208213120.214c8386@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1755166AbaLHKcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:32:22 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:56232 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaLHKcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 05:32:20 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Y1sEam=so/FcZ.pSpBYWFN."; protocol="application/pgp-signature"
+In-Reply-To: <20141208212523.47c3cf35@canb.auug.org.au>
+References: <1418032337-15218-1-git-send-email-geert@linux-m68k.org>
+	<20141208212523.47c3cf35@canb.auug.org.au>
+Date: Mon, 8 Dec 2014 11:32:18 +0100
+X-Google-Sender-Auth: gaYxdzVc9ig-_XPZFoJNOzkXwJ0
+Message-ID: <CAMuHMdWSUP=iRsMZD2ZphdGnZy_d6+wKByVZ+RbrpUmvMvjsdA@mail.gmail.com>
+Subject: Re: [git pull] m68k updates for 3.19
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Y1sEam=so/FcZ.pSpBYWFN.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-Hi Markus,
+On Mon, Dec 8, 2014 at 11:25 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Mon,  8 Dec 2014 10:52:17 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+>>
+>>   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+>>
+>> are available in the git repository at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+>>
+>> for you to fetch changes up to f0b99a643e9613beb28af43333bbfa90d4bf85cc:
+>>
+>>   m68k/mm: Eliminate memset after alloc_bootmem_pages (2014-11-10 09:56:44 +0100)
+>
+> It looks like this branch has not updated yet (or you forgot to push).
+> It is still commit f7bbd12a4b7e088f53f20dd31019984459699fb9 on
+> git.kernel.org.
 
-The only commit in the lzo-update tree
-(git://github.com/markus-oberhumer/linux.git#lzo-update) is:
+Woops, fixed. Sorry for that.
 
-    lib/lzo: huge LZO decompression speedup on ARM by using unaligned access
+Actually git tried to tell me, by showing "for-next" instead of "for-linus"
+in the output from request-pull, but I choose to ignore that as they're
+both pointing to the same commit, and fix that manually. Oh well...
 
-It is dated 4 Feb 2013 and committed on 4 Mar 2013.  Is this going
-anywhere?  Or should I just remove the whole tree?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Gr{oetje,eeting}s,
 
---Sig_/Y1sEam=so/FcZ.pSpBYWFN.
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+                        Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-iQIcBAEBCAAGBQJUhX4CAAoJEMDTa8Ir7ZwVh3AP/A4JyG3YGBo/sFstM8+LcX+A
-SQeeQO2Ky2NnHb6sWz3OQXRD1NNqJ4eqFGDFYV+1nPaRNJaCAwdWdEhxg7yXyl5N
-l98dxLGFvmbeLWOyjIaaQl7j5Ac8AcorjLAWBUlmF/qf37uWU90RecozjsWDp3dU
-gToQw8Mwh+kfcM1j4b6hTX+hIEIjy7yczYvnzguC0bdTfsmm4Is09UgCwiCKibbC
-gUrdU72qd7+T4gzS6w/mwI+goEbsee404vTvXqiBJMYl88hG4N6emScnBS7OlCi1
-nUqP+E63UkS4ovc0fiNp9j1Ion187iFn6kpr744TBo6kpS/r/jTR8baeO5/hiSAT
-auTOpZeeI8HyWm7boYaOQzIKKqq+z5VmLPpNoiGcHJhzY8TPBl6rD4TXa7g926RZ
-iqT7aBRrcG5EQQSsR09KTCYRd9KJphF4QDQbK2IZrDY28uvix+VX2j3u8/PThUG4
-p6eA2r1JAsZ/XvHx18eKyf0vi6DfsYw3+UaX7muIAUs/9B/ZtZlGyTRadv9gXX2y
-/tZMm555bCWbcPwmL9d2IPRmjbKBNQUgorX0DF5RACsPpNIuiGQ3GZugBHlouwZ+
-CC7+e7OcQWuqlzpAuQS+NMfLukWhdO993nzXvIt8WRDZgOmn3XjfckKtyUmkEXH/
-rkIUQlRhsKgmA2oJKO/h
-=bRxn
------END PGP SIGNATURE-----
-
---Sig_/Y1sEam=so/FcZ.pSpBYWFN.--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
