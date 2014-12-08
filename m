@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaLHNbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:31:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6996 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaLHNbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:31:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,538,1413270000"; 
-   d="scan'208";a="620398370"
-Date: Mon, 8 Dec 2014 19:00:47 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
-Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
- retrieval
-Message-ID: <20141208133047.GM16827@intel.com>
-References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
- <20141208061746.GD16827@intel.com>
- <20141208093246.GB27228@ldesroches-Latitude-E6320>
+	id S1755113AbaLHNbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:31:38 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:63093 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927AbaLHNbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:31:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141208093246.GB27228@ldesroches-Latitude-E6320>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141208125033.GB2980@e104805>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+	<1417806260-9264-7-git-send-email-javi.merino@arm.com>
+	<CAOh2x==BKyS08th2d4r0Q2UGqhzAwj6sqOgFsH6J0pWup+OU_A@mail.gmail.com>
+	<20141208125033.GB2980@e104805>
+Date: Mon, 8 Dec 2014 19:01:35 +0530
+Message-ID: <CAKohpokM_8Qm5YH0Xb=n95bP94Qreqpcd1fAyCD2W5u9Pd=ndg@mail.gmail.com>
+Subject: Re: [RFC PATCH v6 6/9] thermal: cpu_cooling: implement the power
+ cooling device API
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Javi Merino <javi.merino@arm.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>, Mark Brown <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:32:47AM +0100, Ludovic Desroches wrote:
-> On Mon, Dec 08, 2014 at 11:47:46AM +0530, Vinod Koul wrote:
-> > On Mon, Nov 17, 2014 at 02:41:54PM +0100, Maxime Ripard wrote:
-> > > Hi,
-> > > 
-> > > As we discussed a couple of weeks ago, this is the third attempt at
-> > > creating a generic behaviour for slave capabilities retrieval so that
-> > > generic layers using dmaengine can actually rely on that.
-> > > 
-> > > That has been done mostly through two steps: by moving out the
-> > > sub-commands of the device_control callback, so that the dmaengine
-> > > core can then infer from that wether a sub-command is implemented, and
-> > > then by moving the slave properties, such as the supported buswidth,
-> > > to the structure dma_device itself.
-> > 
-> > Okay managed to get this done. Apart from the two issues identified didn't
-> > find anything so applied and pushed to a branch
-> > "topic/slave_caps_device_control_fix"
-> > 
-> > Today did some compile tests and found few warnings, were trivial but I
-> > am worried about the testing of this code. Has anyone tested this, if so
-> > which platforms are covered Since I pushed base branch last night, Feng's
-> > bot covered it and all was OK. Looks like Feng's bot doesn't have wide
-> > coverage of arm platforms, wasn't there one run by arm guys which tries to
-> > test and boot, if so can we get this tested there please.
-> 
-> Tested with your branch on sama5d3 and sama5d4 so at_hdmac and at xdmac.
-> 
-> I have also sent some patches based on Maxime's series for at_xdmac.
-Thank You!
+On 8 December 2014 at 18:20, Javi Merino <javi.merino@arm.com> wrote:
+> Sigh.  Care to share them (privately I guess)?
 
-Anymore voluteers? I am looking at omap, mxs, tegra ones (these had issues)
+Sure, you will get that in a separate (private) mail..
 
--- 
-~Vinod
+> Is this loop pointless?  I seem to recall that it was needed but I
+> forgot the details.  If you think it is, I can remove it.
+
+Yes it is pointless. The CPUs you are iterating on, share clock lines
+and so they will have same set of OPPs. Just do this for the cpu
+we are registering the cooling device.
