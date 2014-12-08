@@ -1,112 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaLHHOn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 02:14:43 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50177 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941AbaLHHOl (ORCPT
+	id S1754126AbaLHHTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 02:19:37 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:49178 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901AbaLHHTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 02:14:41 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-cd-54854fdf97d8
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: merge two uchar variable in struct nat_entry
- to reduce memory cost
-Date: Mon, 08 Dec 2014 15:13:49 +0800
-Message-id: <001c01d012b6$a0fbaaa0$e2f2ffe0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAStn8oh65xfBabRUSYTgjrP494Kg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9jAd37/q0hBuceiFpc29fIZPFk/Sxm
-	i0uL3C327D3JYnF51xw2B1aPTas62Tx2L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	298uZyxoEKyYdfoTewPjMt4uRk4OCQETiXdvz7NA2GISF+6tZ+ti5OIQEljEKLH20TZGCOcH
-	o8StSedYQarYBFQklnf8ZwKxRQS8JCbtPwHWzSyQKXGvaQYziC0skCrxdfordhCbRUBV4lvb
-	CrAaXgFLiUeXrzBC2IISPybfg+rVkti8rYkVwpaX2LzmLTPERQoSO86+ZoTYpSfxb8Z7qHpx
-	iY1HbrFMYBSYhWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYweH9
-	THoH46oGi0OMAhyMSjy8Cx+0hAixJpYVV+YeYpTgYFYS4fW0bw0R4k1JrKxKLcqPLyrNSS0+
-	xCjNwaIkznvjZm6IkEB6YklqdmpqQWoRTJaJg1OqgbG7cPsDns0+zA+TjnmWTtFefUqqol1n
-	6VQv7Rc7jkZveLLI+lLxtvPBLCxPbl3InXBDeeXP7TzSZwQ+Vp7ac+bezW87Ne67yQruZY/b
-	6PVqkeC+i5xdZpvXae9W2ngssc3ad/b20z9Unwmevc/moqf8xWT1jt/TIqoUi3+EOwg/tFYu
-	nZF233GXEktxRqKhFnNRcSIANB7Vx2sCAAA=
+	Mon, 8 Dec 2014 02:19:35 -0500
+Date: Sun, 7 Dec 2014 23:19:30 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH 1/2] Input: gpio_keys - allow separating gpio and irq in
+ device tree
+Message-ID: <20141208071930.GA20802@dtor-ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves one member of struct nat_entry: _flag_ to struct node_info,
-so _version_ in struct node_info and _flag_ with unsigned char type will merge
-to one 32-bit space in register/memory. Then the size of nat_entry will reduce
-its size from 28 bytes to 24 bytes and slab memory using by f2fs will be
-reduced.
+This change allows specify interrupt for buttons separately form gpio,
+potentially allowing to form several "clusters" of buttons on
+different interrupts.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Button defined without both gpio and irq in device tree is a hared error
+instead of a warning now.
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- fs/f2fs/node.h | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ .../devicetree/bindings/input/gpio-keys.txt        | 10 +++--
+ drivers/input/keyboard/gpio_keys.c                 | 50 ++++++++++++----------
+ 2 files changed, 34 insertions(+), 26 deletions(-)
 
-diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
-index d10b644..27a7318 100644
---- a/fs/f2fs/node.h
-+++ b/fs/f2fs/node.h
-@@ -29,6 +29,14 @@
- /* return value for read_node_page */
- #define LOCKED_PAGE	1
+diff --git a/Documentation/devicetree/bindings/input/gpio-keys.txt b/Documentation/devicetree/bindings/input/gpio-keys.txt
+index a4a38fc..44b7057 100644
+--- a/Documentation/devicetree/bindings/input/gpio-keys.txt
++++ b/Documentation/devicetree/bindings/input/gpio-keys.txt
+@@ -10,12 +10,13 @@ Optional properties:
+ Each button (key) is represented as a sub-node of "gpio-keys":
+ Subnode properties:
  
-+/* For flag in struct node_info */
-+enum {
-+	IS_CHECKPOINTED,	/* is it checkpointed before? */
-+	HAS_FSYNCED_INODE,	/* is the inode fsynced before? */
-+	HAS_LAST_FSYNC,		/* has the latest node fsync mark? */
-+	IS_DIRTY,		/* this nat entry is dirty? */
-+};
++	- gpios: OF device-tree gpio specification.
++	- interrupts: the interrupt line for that input.
+ 	- label: Descriptive name of the key.
+ 	- linux,code: Keycode to emit.
+ 
+-Required mutual exclusive subnode-properties:
+-	- gpios: OF device-tree gpio specification.
+-	- interrupts: the interrupt line for that input
++Note that either "interrupts" or "gpios" properties can be omitted, but not
++both at the same time. Specifying both properties is allowed.
+ 
+ Optional subnode-properties:
+ 	- linux,input-type: Specify event type this button/key generates.
+@@ -23,6 +24,9 @@ Optional subnode-properties:
+ 	- debounce-interval: Debouncing interval time in milliseconds.
+ 	  If not specified defaults to 5.
+ 	- gpio-key,wakeup: Boolean, button can wake-up the system.
++	- linux,can-disable: Boolean, indicates that button is connected
++	  to dedicated (not shared) interrupt which can be disabled to
++	  suppress events from the button.
+ 
+ Example nodes:
+ 
+diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+index b8b4876..a5ece3f 100644
+--- a/drivers/input/keyboard/gpio_keys.c
++++ b/drivers/input/keyboard/gpio_keys.c
+@@ -470,15 +470,19 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 						button->debounce_interval;
+ 		}
+ 
+-		irq = gpio_to_irq(button->gpio);
+-		if (irq < 0) {
+-			error = irq;
+-			dev_err(dev,
+-				"Unable to get irq number for GPIO %d, error %d\n",
+-				button->gpio, error);
+-			return error;
++		if (button->irq) {
++			bdata->irq = button->irq;
++		} else {
++			irq = gpio_to_irq(button->gpio);
++			if (irq < 0) {
++				error = irq;
++				dev_err(dev,
++					"Unable to get irq number for GPIO %d, error %d\n",
++					button->gpio, error);
++				return error;
++			}
++			bdata->irq = irq;
+ 		}
+-		bdata->irq = irq;
+ 
+ 		INIT_WORK(&bdata->work, gpio_keys_gpio_work_func);
+ 		setup_timer(&bdata->timer,
+@@ -618,32 +622,30 @@ gpio_keys_get_devtree_pdata(struct device *dev)
+ 
+ 	i = 0;
+ 	for_each_child_of_node(node, pp) {
+-		int gpio = -1;
+ 		enum of_gpio_flags flags;
+ 
+-		if (!of_find_property(pp, "gpios", NULL)) {
+-			button->irq = irq_of_parse_and_map(pp, 0);
+-			if (button->irq == 0) {
+-				pdata->nbuttons--;
+-				dev_warn(dev, "Found button without gpios or irqs\n");
+-				continue;
+-			}
+-		} else {
+-			gpio = of_get_gpio_flags(pp, 0, &flags);
+-			if (gpio < 0) {
+-				error = gpio;
++		button = &pdata->buttons[i++];
 +
- /*
-  * For node information
-  */
-@@ -37,18 +45,11 @@ struct node_info {
- 	nid_t ino;		/* inode number of the node's owner */
- 	block_t	blk_addr;	/* block address of the node */
- 	unsigned char version;	/* version of the node */
--};
--
--enum {
--	IS_CHECKPOINTED,	/* is it checkpointed before? */
--	HAS_FSYNCED_INODE,	/* is the inode fsynced before? */
--	HAS_LAST_FSYNC,		/* has the latest node fsync mark? */
--	IS_DIRTY,		/* this nat entry is dirty? */
-+	unsigned char flag;	/* for node information bits */
- };
++		button->gpio = of_get_gpio_flags(pp, 0, &flags);
++		if (button->gpio < 0) {
++			error = button->gpio;
++			if (error != -ENOENT) {
+ 				if (error != -EPROBE_DEFER)
+ 					dev_err(dev,
+ 						"Failed to get gpio flags, error: %d\n",
+ 						error);
+ 				return ERR_PTR(error);
+ 			}
++		} else {
++			button->active_low = flags & OF_GPIO_ACTIVE_LOW;
+ 		}
  
- struct nat_entry {
- 	struct list_head list;	/* for clean or dirty nat list */
--	unsigned char flag;	/* for node information bits */
- 	struct node_info ni;	/* in-memory node information */
- };
+-		button = &pdata->buttons[i++];
++		button->irq = irq_of_parse_and_map(pp, 0);
  
-@@ -68,15 +69,15 @@ static inline void set_nat_flag(struct nat_entry *ne,
- {
- 	unsigned char mask = 0x01 << type;
- 	if (set)
--		ne->flag |= mask;
-+		ne->ni.flag |= mask;
- 	else
--		ne->flag &= ~mask;
-+		ne->ni.flag &= ~mask;
- }
+-		button->gpio = gpio;
+-		button->active_low = flags & OF_GPIO_ACTIVE_LOW;
++		if (!gpio_is_valid(button->gpio) && !button->irq) {
++			dev_err(dev, "Found button without gpios or irqs\n");
++			return ERR_PTR(-EINVAL);
++		}
  
- static inline bool get_nat_flag(struct nat_entry *ne, unsigned int type)
- {
- 	unsigned char mask = 0x01 << type;
--	return ne->flag & mask;
-+	return ne->ni.flag & mask;
- }
+ 		if (of_property_read_u32(pp, "linux,code", &button->code)) {
+ 			dev_err(dev, "Button without keycode: 0x%x\n",
+@@ -658,6 +660,8 @@ gpio_keys_get_devtree_pdata(struct device *dev)
  
- static inline void nat_reset_flag(struct nat_entry *ne)
+ 		button->wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
+ 
++		button->can_disable = !!of_get_property(pp, "linux,can-disable", NULL);
++
+ 		if (of_property_read_u32(pp, "debounce-interval",
+ 					 &button->debounce_interval))
+ 			button->debounce_interval = 5;
 -- 
-2.1.2
+2.2.0.rc0.207.ga3a616c
 
 
+-- 
+Dmitry
