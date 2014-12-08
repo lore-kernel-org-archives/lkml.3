@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaLHKKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:10:31 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45966 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaLHKKa (ORCPT
+	id S1754736AbaLHKM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:12:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36806 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaLHKMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:10:30 -0500
-Date: Mon, 8 Dec 2014 10:10:26 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, Michael Matz <matz@suse.de>
-Subject: Re: [PATCH] arm64: Enable CONFIG_COMPAT also for 64k page size
-Message-ID: <20141208101026.GD27367@arm.com>
-References: <1417707993-82290-1-git-send-email-agraf@suse.de>
- <20141204182049.GB7749@arm.com>
- <54833BAF.1030405@suse.de>
+	Mon, 8 Dec 2014 05:12:54 -0500
+Date: Mon, 8 Dec 2014 02:12:26 -0800
+From: tip-bot for Xishi Qiu <tipbot@zytor.com>
+Message-ID: <tip-5f9f7a56565c3f44b0a4b2966414e09048dddcf7@git.kernel.org>
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, qiuxishi@huawei.com, riel@redhat.com,
+        linux-mm@kvack.org, dave@sr71.net
+Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, dave@sr71.net,
+        qiuxishi@huawei.com, linux-mm@kvack.org, riel@redhat.com,
+        hpa@zytor.com, tglx@linutronix.de
+In-Reply-To: <54801228.5030405@huawei.com>
+References: <54801228.5030405@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm: Fix zone ranges boot printout
+Git-Commit-ID: 5f9f7a56565c3f44b0a4b2966414e09048dddcf7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <54833BAF.1030405@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 05:23:59PM +0000, Alexander Graf wrote:
-> On 04.12.14 19:20, Will Deacon wrote:
-> > On Thu, Dec 04, 2014 at 03:46:33PM +0000, Alexander Graf wrote:
-> >> With binutils 2.25 the default alignment for 32bit arm sections changed to
-> >> have everything 64k aligned. Armv7 binaries built with this binutils version
-> >> run successfully on an arm64 system.
-> >>
-> >> Since effectively there is now the chance to run armv7 code on arm64 even
-> >> with 64k page size, it doesn't make sense to block people from enabling
-> >> CONFIG_COMPAT on those configurations.
-> > 
-> > Is there a distro available that is built with a recent enough binutils for
-> > this? I'd really like to run our regression tests to check that page-size
-> > assumptions don't exist for things like shm.
-> 
-> So how much of a distro do you need? I could probably assemble a simple
-> very minimalistic rootfs with only bash if that helps.
+Commit-ID:  5f9f7a56565c3f44b0a4b2966414e09048dddcf7
+Gitweb:     http://git.kernel.org/tip/5f9f7a56565c3f44b0a4b2966414e09048dddcf7
+Author:     Xishi Qiu <qiuxishi@huawei.com>
+AuthorDate: Thu, 4 Dec 2014 15:50:00 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Dec 2014 11:05:41 +0100
 
-I'd like to run LTP, so I'd probably need slightly more than that but I
-certainly don't need the whole world.
+x86/mm: Fix zone ranges boot printout
 
-Will
+This is the usual physical memory layout boot printout:
+
+	...
+	[    0.000000] Zone ranges:
+	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+	[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+	[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
+	[    0.000000] Movable zone start for each node
+	[    0.000000] Early memory node ranges
+	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+	[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
+	[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
+	[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
+	...
+
+This is the log when we set "mem=2G" on the boot cmdline:
+
+	...
+	[    0.000000] Zone ranges:
+	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+	[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
+	[    0.000000]   Normal   empty
+	[    0.000000] Movable zone start for each node
+	[    0.000000] Early memory node ranges
+	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+	[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
+	...
+
+This patch fixes the printout, the following log shows the right ranges:
+
+	...
+	[    0.000000] Zone ranges:
+	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+	[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
+	[    0.000000]   Normal   empty
+	[    0.000000] Movable zone start for each node
+	[    0.000000] Early memory node ranges
+	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
+	[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
+	...
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Linux MM <linux-mm@kvack.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: <dave@sr71.net>
+Link: http://lkml.kernel.org/r/54801228.5030405@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/init.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 82b41d5..a97ee08 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -703,10 +703,10 @@ void __init zone_sizes_init(void)
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+ 
+ #ifdef CONFIG_ZONE_DMA
+-	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
++	max_zone_pfns[ZONE_DMA]		= min(MAX_DMA_PFN, max_low_pfn);
+ #endif
+ #ifdef CONFIG_ZONE_DMA32
+-	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
++	max_zone_pfns[ZONE_DMA32]	= min(MAX_DMA32_PFN, max_low_pfn);
+ #endif
+ 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
+ #ifdef CONFIG_HIGHMEM
