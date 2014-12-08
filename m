@@ -1,133 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaLHPmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:42:16 -0500
-Received: from smtprelay0059.hostedemail.com ([216.40.44.59]:60329 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752383AbaLHPmP (ORCPT
+	id S1755575AbaLHPor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:44:47 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:44891 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaLHPop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:42:15 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:4605:5007:6119:6120:6261:7875:8603:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: angle37_30621bef9df3f
-X-Filterd-Recvd-Size: 3663
-Date: Mon, 8 Dec 2014 10:42:10 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Javi Merino" <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        punit.agrawal@arm.com, broonie@kernel.org,
-        Dave Martin <Dave.Martin@arm.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH v6 1/9] tracing: Add array printing helpers
-Message-ID: <20141208104210.69874f14@gandalf.local.home>
-In-Reply-To: <1417806260-9264-2-git-send-email-javi.merino@arm.com>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-	<1417806260-9264-2-git-send-email-javi.merino@arm.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 8 Dec 2014 10:44:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1417980062-25151-21-git-send-email-Julia.Lawall@lip6.fr>
+References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1417980062-25151-21-git-send-email-Julia.Lawall@lip6.fr>
+Date: Mon, 8 Dec 2014 10:44:44 -0500
+Message-ID: <CADnq5_PW=xeQ=DxdoNxwvVxYjkav1qx1wL13OF92QwY6uX3gGg@mail.gmail.com>
+Subject: Re: [PATCH 20/20] drm/radeon: fix misspelling of current function in string
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Alex Deucher <alexander.deucher@amd.com>, kernel-janitors@vger.kernel.org,
+        linux@rasmusvillemoes.dk, LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Joe Perches <joe@perches.com>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  5 Dec 2014 19:04:12 +0000
-"Javi Merino" <javi.merino@arm.com> wrote:
+On Sun, Dec 7, 2014 at 2:21 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> Replace a misspelled function name by %s and then __func__.
+>
+> This was done using Coccinelle, including the use of Levenshtein distance,
+> as proposed by Rasmus Villemoes.
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
- 
-> +static const char *
-> +ftrace_print_array_seq(struct trace_seq *p, const void *buf, int buf_len,
-> +		       bool (*iterator)(struct trace_seq *p, const char *prefix,
-> +					const void **buf, int *buf_len))
-> +{
-> +	const char *ret = trace_seq_buffer_ptr(p);
-> +	const char *prefix = "";
-> +
-> +	trace_seq_putc(p, '{');
-> +
-> +	while (iterator(p, prefix, &buf, &buf_len))
-> +		prefix = ",";
-> +
-> +	trace_seq_putc(p, '}');
-> +	trace_seq_putc(p, 0);
-> +
-> +	return ret;
-> +}
-> +
-> +#define DEFINE_PRINT_ARRAY(type, printk_type, format)			\
-> +static bool								\
-> +ftrace_print_array_iterator_##type(struct trace_seq *p, const char *prefix, \
-> +				   const void **buf, int *buf_len)	\
-> +{									\
-> +	const type *__src = *buf;					\
-> +									\
-> +	if (*buf_len < sizeof(*__src))					\
-> +		return false;						\
-> +									\
-> +	trace_seq_printf(p, "%s" format, prefix, (printk_type)*__src++); \
-> +									\
-> +	*buf = __src;							\
-> +	*buf_len -= sizeof(*__src);					\
-> +									\
-> +	return true;							\
-> +}									\
-> +									\
-> +const char *ftrace_print_##type##_array_seq(				\
-> +	struct trace_seq *p, const type *buf, int count)		\
-> +{									\
-> +	return ftrace_print_array_seq(p, buf, (count) * sizeof(type),	\
-> +				      ftrace_print_array_iterator_##type); \
-> +}									\
-> +									\
-> +EXPORT_SYMBOL(ftrace_print_##type##_array_seq)
-> +
-> +DEFINE_PRINT_ARRAY(u8, unsigned int, "0x%x");
-> +DEFINE_PRINT_ARRAY(u16, unsigned int, "0x%x");
-> +DEFINE_PRINT_ARRAY(u32, unsigned int, "0x%x");
-> +DEFINE_PRINT_ARRAY(u64, unsigned long long, "0x%llx");
-> +
+Looks fine to me.  For consistency, any chance you'd want to fix up
+the other places that use function names directly with this style
+patch?
 
-I would really like to avoid adding a bunch of macros for each type.
-Can't we have something like this:
+Alex
 
-ftrace_print_array(struct trace_seq *p, void *buf, int buf_len, 
-		int size)
-{
-	char *prefix = "";
-	void *ptr = buf;
-
-	while (ptr < buf + buf_len) {
-		switch(size) {
-		case 8:
-			trace_seq_printf("%s0x%x", prefix,
-				*(unsigned char *)ptr);
-			break;
-		case 16:
-			trace_seq_printf("%s0x%x", prefix,
-				*(unsigned short *)ptr);
-			break;
-		case 32:
-			trace_seq_printf("%s0x%x", prefix,
-				*(unsigned int *)ptr);
-			break;
-		case 64:
-			trace_seq_printf("%s0x%llx", prefix,
-				*(unsigned long long *)ptr);
-			break;
-		default:
-			BUG();
-		}
-		prefix = ",";
-		ptr += size;
-	}
-
-}
-
-We probably could even make the "BUG()" into a build bug, with a little
-work.
-
--- Steve
-
->  int ftrace_raw_output_prep(struct trace_iterator *iter,
->  			   struct trace_event *trace_event)
->  {
-
+>
+> ---
+> The semantic patch is difficult to summarize, but is available in the cover
+> letter of this patch series.
+>
+>  drivers/gpu/drm/radeon/cik.c |   16 ++++++++++------
+>  1 file changed, 10 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+> index 6dcde37..24d5e43 100644
+> --- a/drivers/gpu/drm/radeon/cik.c
+> +++ b/drivers/gpu/drm/radeon/cik.c
+> @@ -7367,34 +7367,38 @@ int cik_irq_set(struct radeon_device *rdev)
+>         }
+>         if (atomic_read(&rdev->irq.ring_int[CAYMAN_RING_TYPE_CP1_INDEX])) {
+>                 struct radeon_ring *ring = &rdev->ring[CAYMAN_RING_TYPE_CP1_INDEX];
+> -               DRM_DEBUG("si_irq_set: sw int cp1\n");
+> +               DRM_DEBUG("%s: sw int cp1\n", __func__);
+>                 if (ring->me == 1) {
+>                         switch (ring->pipe) {
+>                         case 0:
+>                                 cp_m1p0 |= TIME_STAMP_INT_ENABLE;
+>                                 break;
+>                         default:
+> -                               DRM_DEBUG("si_irq_set: sw int cp1 invalid pipe %d\n", ring->pipe);
+> +                               DRM_DEBUG("%s: sw int cp1 invalid pipe %d\n",
+> +                                         __func__, ring->pipe);
+>                                 break;
+>                         }
+>                 } else {
+> -                       DRM_DEBUG("si_irq_set: sw int cp1 invalid me %d\n", ring->me);
+> +                       DRM_DEBUG("%s: sw int cp1 invalid me %d\n", __func__,
+> +                                 ring->me);
+>                 }
+>         }
+>         if (atomic_read(&rdev->irq.ring_int[CAYMAN_RING_TYPE_CP2_INDEX])) {
+>                 struct radeon_ring *ring = &rdev->ring[CAYMAN_RING_TYPE_CP2_INDEX];
+> -               DRM_DEBUG("si_irq_set: sw int cp2\n");
+> +               DRM_DEBUG("%s: sw int cp2\n", __func__);
+>                 if (ring->me == 1) {
+>                         switch (ring->pipe) {
+>                         case 0:
+>                                 cp_m1p0 |= TIME_STAMP_INT_ENABLE;
+>                                 break;
+>                         default:
+> -                               DRM_DEBUG("si_irq_set: sw int cp2 invalid pipe %d\n", ring->pipe);
+> +                               DRM_DEBUG("%s: sw int cp2 invalid pipe %d\n",
+> +                                         __func__, ring->pipe);
+>                                 break;
+>                         }
+>                 } else {
+> -                       DRM_DEBUG("si_irq_set: sw int cp2 invalid me %d\n", ring->me);
+> +                       DRM_DEBUG("%s: sw int cp2 invalid me %d\n", __func__,
+> +                                 ring->me);
+>                 }
+>         }
+>
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
