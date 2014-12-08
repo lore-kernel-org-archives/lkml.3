@@ -1,198 +1,544 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121AbaLHRNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:13:11 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:62559 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079AbaLHRNH convert rfc822-to-8bit (ORCPT
+	id S1756154AbaLHROa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:14:30 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:32898 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaLHRO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:13:07 -0500
+	Mon, 8 Dec 2014 12:14:28 -0500
+Message-ID: <5485DC20.6030305@linaro.org>
+Date: Mon, 08 Dec 2014 18:13:04 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141208085202.GA13486@pengutronix.de>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
-	<1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
-	<20141208085202.GA13486@pengutronix.de>
-Date: Mon, 8 Dec 2014 09:13:05 -0800
-X-Google-Sender-Auth: GE59caOzqKJlzf9GzZx50o8QxI8
-Message-ID: <CAD=FV=V=PDPiDhDmd+j8ePsF43EvuFP-LxKgMKo7ZRBzSMyOJA@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c: rk3x: fix bug that cause measured high_ns doesn't
- meet I2C spec
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Tao Huang <huangtao@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Jianqun Xu <xjq@rock-chips.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        caesar <caesar.wang@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Han Jiang <hj@rock-chips.com>, Shunqian Zheng <zhengsq@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com, agraf@suse.de,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
+Subject: Re: [PATCH v3 7/8] KVM: kvm-vfio: generic forwarding control
+References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>			 <1416767760-14487-8-git-send-email-eric.auger@linaro.org>		 <1416862573.11825.83.camel@bling.home> <5474C86D.8000007@linaro.org>	 <1416942020.11825.134.camel@bling.home> <54859818.8050507@linaro.org> <1418057684.1095.118.camel@bling.home>
+In-Reply-To: <1418057684.1095.118.camel@bling.home>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Dec 8, 2014 at 12:52 AM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> Hello Addy,
->
-> On Mon, Dec 08, 2014 at 10:59:49AM +0800, Addy Ke wrote:
->> high_ns calculated from the low division of CLKDIV register is the sum
->> of actual measured high_ns and rise_ns. The rise time which related to
-> I think "actual measured" is misleading here. (The driver doesn't
-> dermine these parameters automatically, right?)
->
-> Maybe something like the following is more correct and understandable?:
->
->         The number of clock cycles to be written into the XYZ register
->         that determines the i2c clk high phase includes the rise time.
->         So to meet the timing requirements defined in the i2c
->         specification which defines the minimal time SCL has to be high,
->         the rise time has to taken into account. The same applies to the
->         low phase with falling time.
-
-I agree that the prose of the commit message could be cleaned up.  I
-don't think English is Addy's primary language.  Your proposals sound
-fine to me, though I would probably replace XYZ by "CLKDIV".  You
-should capitalize I2C here, too.
-
-
->> external pull-up resistor can be up to the maximum rise time in I2C spec.
+On 12/08/2014 05:54 PM, Alex Williamson wrote:
+> On Mon, 2014-12-08 at 13:22 +0100, Eric Auger wrote:
+>> On 11/25/2014 08:00 PM, Alex Williamson wrote:
+>>> On Tue, 2014-11-25 at 19:20 +0100, Eric Auger wrote:
+>>>> On 11/24/2014 09:56 PM, Alex Williamson wrote:
+>>>>> On Sun, 2014-11-23 at 19:35 +0100, Eric Auger wrote:
+>>>>>> This patch introduces a new KVM_DEV_VFIO_DEVICE group.
+>>>>>>
+>>>>>> This is a new control channel which enables KVM to cooperate with
+>>>>>> viable VFIO devices.
+>>>>>>
+>>>>>> Functions are introduced to check the validity of a VFIO device
+>>>>>> file descriptor, increment/decrement the ref counter of the VFIO
+>>>>>> device.
+>>>>>>
+>>>>>> The patch introduces 2 attributes for this new device group:
+>>>>>> KVM_DEV_VFIO_DEVICE_FORWARD_IRQ, KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ.
+>>>>>> Their purpose is to turn a VFIO device IRQ into a forwarded IRQ and
+>>>>>> unset respectively unset the feature.
+>>>>>>
+>>>>>> The VFIO device stores a list of registered forwarded IRQs. The reference
+>>>>>> counter of the device is incremented each time a new IRQ is forwarded.
+>>>>>> Reference counter is decremented when the IRQ forwarding is unset.
+>>>>>>
+>>>>>> The forwarding programmming is architecture specific, implemented in
+>>>>>> kvm_arch_set_fwd_state function. Architecture specific implementation is
+>>>>>> enabled when __KVM_HAVE_ARCH_KVM_VFIO_FORWARD is set. When not set those
+>>>>>> functions are void.
+>>>>>>
+>>>>>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>>>>>>
+>>>>>> ---
+>>>>>>
+>>>>>> v2 -> v3:
+>>>>>> - add API comments in kvm_host.h
+>>>>>> - improve the commit message
+>>>>>> - create a private kvm_vfio_fwd_irq struct
+>>>>>> - fwd_irq_action replaced by a bool and removal of VFIO_IRQ_CLEANUP. This
+>>>>>>   latter action will be handled in vgic.
+>>>>>> - add a vfio_device handle argument to kvm_arch_set_fwd_state. The goal is
+>>>>>>   to move platform specific stuff in architecture specific code.
+>>>>>> - kvm_arch_set_fwd_state renamed into kvm_arch_vfio_set_forward
+>>>>>> - increment the ref counter each time we do an IRQ forwarding and decrement
+>>>>>>   this latter each time one IRQ forward is unset. Simplifies the whole
+>>>>>>   ref counting.
+>>>>>> - simplification of list handling: create, search, removal
+>>>>>>
+>>>>>> v1 -> v2:
+>>>>>> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+>>>>>> - original patch file separated into 2 parts: generic part moved in vfio.c
+>>>>>>   and ARM specific part(kvm_arch_set_fwd_state)
+>>>>>> ---
+>>>>>>  include/linux/kvm_host.h |  28 ++++++
+>>>>>>  virt/kvm/vfio.c          | 249 ++++++++++++++++++++++++++++++++++++++++++++++-
+>>>>>>  2 files changed, 274 insertions(+), 3 deletions(-)
+>>>>>>
+>>>>>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>>>>>> index ea53b04..0b9659d 100644
+>>>>>> --- a/include/linux/kvm_host.h
+>>>>>> +++ b/include/linux/kvm_host.h
+>>>>>> @@ -1076,6 +1076,15 @@ struct kvm_device_ops {
+>>>>>>  		      unsigned long arg);
+>>>>>>  };
+>>>>>>  
+>>>>>> +/* internal self-contained structure describing a forwarded IRQ */
+>>>>>> +struct kvm_fwd_irq {
+>>>>>> +	struct kvm *kvm; /* VM to inject the GSI into */
+>>>>>> +	struct vfio_device *vdev; /* vfio device the IRQ belongs to */
+>>>>>> +	__u32 index; /* VFIO device IRQ index */
+>>>>>> +	__u32 subindex; /* VFIO device IRQ subindex */
+>>>>>> +	__u32 gsi; /* gsi, ie. virtual IRQ number */
+>>>>>> +};
+>>>>>> +
+>>>>>>  void kvm_device_get(struct kvm_device *dev);
+>>>>>>  void kvm_device_put(struct kvm_device *dev);
+>>>>>>  struct kvm_device *kvm_device_from_filp(struct file *filp);
+>>>>>> @@ -1085,6 +1094,25 @@ void kvm_unregister_device_ops(u32 type);
+>>>>>>  extern struct kvm_device_ops kvm_mpic_ops;
+>>>>>>  extern struct kvm_device_ops kvm_xics_ops;
+>>>>>>  
+>>>>>> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+>>>>>> +/**
+>>>>>> + * kvm_arch_vfio_set_forward - changes the forwarded state of an IRQ
+>>>>>> + *
+>>>>>> + * @fwd_irq: handle to the forwarded irq struct
+>>>>>> + * @forward: true means forwarded, false means not forwarded
+>>>>>> + * returns 0 on success, < 0 on failure
+>>>>>> + */
+>>>>>> +int kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
+>>>>>> +			      bool forward);
+>>>>>
+>>>>> We could add a struct device* to the args list or into struct
+>>>>> kvm_fwd_irq so that arch code doesn't need to touch the vdev.  arch code
+>>>>> has no business dealing with references to the vfio_device.
+>>>> Hi Alex,
+>>>>
+>>>> Currently It can't put struct device* into the kvm_fwd_irq struct since
+>>>> I need to release the vfio_device with
+>>>> vfio_device_put_external_user(struct vfio_device *vdev)
+>>>> typically in kvm_vfio_clean_fwd_irq. So I need to store the pointers to
+>>>> the vfio_device somewhere.
+>>>>
+>>>> I see 2 solutions: change the proto of
+>>>> vfio_device_put_external_user(struct vfio_device *vdev) and pass a
+>>>> struct device* (??)
+>>>>
+>>>> or change the proto of kvm_arch_vfio_set_forward into
+>>>>
+>>>> kvm_arch_vfio_set_forward(struct kvm *kvm, struct device *dev, int
+>>>> index, [int subindex], int gsi, bool forward) or using index/start/count
+>>>> but loosing the interest of having a self-contained internal struct.
+>>>
+>>> The latter is sort of what I was assuming, I think the interface between
+>>> VFIO and KVM-VFIO is good, we just don't need to expose VFIO-isms out to
+>>> the arch KVM code.  KVM-VFIO should be the barrier layer.  In that
+>>> spirit, maybe it should be kvm_arch_set_forward() and the KVM-VFIO code
+>>> should do the processing of index/subindex sort of like how Feng did for
+>>> PCI devices.
 >>
->> In my test, if external pull-up resistor is 4.7K, rise_ns is about
-> It would be nice to point out the actual board you used (if it's a
-> publically available machine).
-
-He probably tested on rk3288-pinky, which is not an upstream board yet.
-
-
->> 700ns. So the actual measured high_ns is about 3900ns, which is less
->> than 4000ns(the minimum high_ns in I2C spec).
-> s/s(/s (/;
-> s/spec/specification for Standard-mode/
->
-> There are different capitalisation of i2c in the patch and the commit log. I
-> don't know what Wolfram prefers here, but using the same spelling
-> everywhere would be nice.
-
-Can you please point out?  IIRC you should always capitalize I2C in
-prose (descriptions, comments, documentation, etc).  However when used
-in places which specific capitalization standards it should be
-lowercase.  That means file names, directory names, device tree
-property names, etc should be lower case.
-
-I think Addy got it right in most cases and places where it's wrong
-are probably my fault.  I think I missed a few in my patches.  :(
-
-
->> To fix this bug, min_low_ns should include fall time and min_high_ns
->> should include rise time too.
+>> Hi Alex,
 >>
->> This patch merged the patch that Doug submitted to chromium, which
-> Isn't Chromium a web browser? Does it really contain i2c stuff?
-> I bet it's about Chromium OS.
+>> In Feng's series, host irq is retrieved in the generic part while in
+>> mine it is retrieved in arch specific part, as encouraged at some point.
+>> From the above comment I understand the right API between generic and
+>> arch specific parts may be <operation>(kvm, host_irq, guest_irq) in
+>> which case I should revert the platform specific IRQ retrieval in the
+>> generic part. Is it the correct understanding?
+> 
+> Hi Eric,
+> 
+> Sorry if I'm flip-flopping on any of this, but I think you're right that
+> we want some sort of <operation>(kvm, host_irq, guest_irq) callout in
+> the kvm direction.  The parsing of vfio index/sub-index is vfio specific
+> and needs to happen in either kvm-vfio or deeper on the vfio side of the
+> equation.  We don't want things like vfio-pci encoding of
+> index/sub-index leaking out into the non-vfio related parts of the code.
+> 
+> In a perfectly abstracted world, that might mean that in addition to the
+> vfio external user interface to get the base struct device, we also have
+> a mechanism that takes a vfio_device, index, and sub-index and returns a
+> host irq, encapsulating that code in vfio-pci or vfio-platform rather
+> than having it leak into kvm-vfio.  Our layering should be:
+> 
+> vfio bus driver - vfio -  kvm-vfio  -  kvm - arch
+> 
+> And ideally the data goes like this:
+> 
+>   host irq --------------------------------->
+>                  device --------------------> 
+>                           guest irq -------->
 
-Chromium OS is part of the Chromium project.
+Hi Alex,
 
+no problem. thanks for clarifying. Makes sense to me too.
 
->> +     (t(r) in i2c spec). If not specified this is assumed to be the max the
-> s/spec/specification/; s/max/maximum/
+Best Regards
 
-This should have been I2C, not i2c (capital).
+Eric
+> 
+> I'm willing to accept though that kvm-vfio might have everything it
+> needs to determine host irq and the routing back to the bus driver is
+> more effort than simply decoding it in kvm-vfio.  Thanks,
+> 
+> Alex
+> 
+>>>>>> +
+>>>>>> +#else
+>>>>>> +static inline int kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
+>>>>>> +					    bool forward)
+>>>>>> +{
+>>>>>> +	return 0;
+>>>>>> +}
+>>>>>> +#endif
+>>>>>> +
+>>>>>>  #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+>>>>>>  
+>>>>>>  static inline void kvm_vcpu_set_in_spin_loop(struct kvm_vcpu *vcpu, bool val)
+>>>>>> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+>>>>>> index 6f0cc34..af178bb 100644
+>>>>>> --- a/virt/kvm/vfio.c
+>>>>>> +++ b/virt/kvm/vfio.c
+>>>>>> @@ -25,8 +25,16 @@ struct kvm_vfio_group {
+>>>>>>  	struct vfio_group *vfio_group;
+>>>>>>  };
+>>>>>>  
+>>>>>> +/* private linkable kvm_fwd_irq struct */
+>>>>>> +struct kvm_vfio_fwd_irq_node {
+>>>>>> +	struct list_head link;
+>>>>>> +	struct kvm_fwd_irq fwd_irq;
+>>>>>> +};
+>>>>>> +
+>>>>>>  struct kvm_vfio {
+>>>>>>  	struct list_head group_list;
+>>>>>> +	/* list of registered VFIO forwarded IRQs */
+>>>>>> +	struct list_head fwd_node_list;
+>>>>>>  	struct mutex lock;
+>>>>>>  	bool noncoherent;
+>>>>>>  };
+>>>>>> @@ -247,12 +255,239 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
+>>>>>>  	return -ENXIO;
+>>>>>>  }
+>>>>>>  
+>>>>>> +/**
+>>>>>> + * kvm_vfio_get_vfio_device - Returns a handle to a vfio-device
+>>>>>> + *
+>>>>>> + * Checks it is a valid vfio device and increments its reference counter
+>>>>>> + * @fd: file descriptor of the vfio platform device
+>>>>>> + */
+>>>>>> +static struct vfio_device *kvm_vfio_get_vfio_device(int fd)
+>>>>>> +{
+>>>>>> +	struct fd f = fdget(fd);
+>>>>>> +	struct vfio_device *vdev;
+>>>>>> +
+>>>>>> +	if (!f.file)
+>>>>>> +		return NULL;
+>>>>>
+>>>>> ERR_PTR(-EINVAL)?
+>>>>>
+>>>>> ie. propagate errors from the point where they're encountered so we
+>>>>> don't need to make up an errno later.
+>>>> yes thanks
+>>>>>
+>>>>>> +	vdev = kvm_vfio_device_get_external_user(f.file);
+>>>>>> +	fdput(f);
+>>>>>> +	return vdev;
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_put_vfio_device: decrements the reference counter of the
+>>>>>> + * vfio platform * device
+>>>>>> + *
+>>>>>> + * @vdev: vfio_device handle to release
+>>>>>> + */
+>>>>>> +static void kvm_vfio_put_vfio_device(struct vfio_device *vdev)
+>>>>>> +{
+>>>>>> +	kvm_vfio_device_put_external_user(vdev);
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_find_fwd_irq - checks whether a forwarded IRQ already is
+>>>>>> + * registered in the list of forwarded IRQs
+>>>>>> + *
+>>>>>> + * @kv: handle to the kvm-vfio device
+>>>>>> + * @fwd: handle to the forwarded irq struct
+>>>>>> + * In the positive returns the handle to its node in the kvm-vfio
+>>>>>> + * forwarded IRQ list, returns NULL otherwise.
+>>>>>> + * Must be called with kv->lock hold.
+>>>>>> + */
+>>>>>> +static struct kvm_vfio_fwd_irq_node *kvm_vfio_find_fwd_irq(
+>>>>>> +				struct kvm_vfio *kv,
+>>>>>> +				struct kvm_fwd_irq *fwd)
+>>>>>> +{
+>>>>>> +	struct kvm_vfio_fwd_irq_node *node;
+>>>>>> +
+>>>>>> +	list_for_each_entry(node, &kv->fwd_node_list, link) {
+>>>>>> +		if ((node->fwd_irq.index == fwd->index) &&
+>>>>>> +		    (node->fwd_irq.subindex == fwd->subindex) &&
+>>>>>> +		    (node->fwd_irq.vdev == fwd->vdev))
+>>>>>> +			return node;
+>>>>>> +	}
+>>>>>> +	return NULL;
+>>>>>> +}
+>>>>>> +/**
+>>>>>> + * kvm_vfio_register_fwd_irq - Allocates, populates and registers a
+>>>>>> + * forwarded IRQ
+>>>>>> + *
+>>>>>> + * @kv: handle to the kvm-vfio device
+>>>>>> + * @fwd: handle to the forwarded irq struct
+>>>>>> + * In case of success returns a handle to the new list node,
+>>>>>> + * NULL otherwise.
+>>>>>> + * Must be called with kv->lock hold.
+>>>>>> + */
+>>>>>> +static struct kvm_vfio_fwd_irq_node *kvm_vfio_register_fwd_irq(
+>>>>>> +				struct kvm_vfio *kv,
+>>>>>> +				struct kvm_fwd_irq *fwd)
+>>>>>> +{
+>>>>>> +	struct kvm_vfio_fwd_irq_node *node;
+>>>>>> +
+>>>>>> +	node = kmalloc(sizeof(*node), GFP_KERNEL);
+>>>>>> +	if (!node)
+>>>>>> +		return NULL;
+>>>>>
+>>>>> ERR_PTR(-ENOMEM)?
+>>>>>
+>>>> OK
+>>>>>> +
+>>>>>> +	node->fwd_irq = *fwd;
+>>>>>> +
+>>>>>> +	list_add(&node->link, &kv->fwd_node_list);
+>>>>>> +
+>>>>>> +	return node;
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_unregister_fwd_irq - unregisters and frees a forwarded IRQ
+>>>>>> + *
+>>>>>> + * @node: handle to the node struct
+>>>>>> + * Must be called with kv->lock hold.
+>>>>>> + */
+>>>>>> +static void kvm_vfio_unregister_fwd_irq(struct kvm_vfio_fwd_irq_node *node)
+>>>>>> +{
+>>>>>> +	list_del(&node->link);
+>>>>>> +	kfree(node);
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_set_forward - turns a VFIO device IRQ into a forwarded IRQ
+>>>>>> + * @kv: handle to the kvm-vfio device
+>>>>>> + * @fd: file descriptor of the vfio device the IRQ belongs to
+>>>>>> + * @fwd: handle to the forwarded irq struct
+>>>>>> + *
+>>>>>> + * Registers an IRQ as forwarded and calls the architecture specific
+>>>>>> + * implementation of set_forward. In case of operation failure, the IRQ
+>>>>>> + * is unregistered. In case of success, the vfio device ref counter is
+>>>>>> + * incremented.
+>>>>>> + */
+>>>>>> +static int kvm_vfio_set_forward(struct kvm_vfio *kv, int fd,
+>>>>>> +				struct kvm_fwd_irq *fwd)
+>>>>>> +{
+>>>>>> +	int ret;
+>>>>>> +	struct kvm_vfio_fwd_irq_node *node =
+>>>>>> +			kvm_vfio_find_fwd_irq(kv, fwd);
+>>>>>> +
+>>>>>> +	if (node)
+>>>>>> +		return -EINVAL;
+>>>>>
+>>>>> I assume you're saving -EBUSY for arch code for the case where the IRQ
+>>>>> is already active?
+>>>> yes. -EBUSY now corresponds to the case where the VFIO signaling is
+>>>> already setup.
+>>>>>
+>>>>>> +	node = kvm_vfio_register_fwd_irq(kv, fwd);
+>>>>>> +	if (!node)
+>>>>>> +		return -ENOMEM;
+>>>>>
+>>>>> if (IS_ERR(node))
+>>>>> 	return PTR_ERR(node);
+>>>>>
+>>>>>> +	ret = kvm_arch_vfio_set_forward(fwd, true);
+>>>>>> +	if (ret < 0)  {
+>>>>>> +		kvm_vfio_unregister_fwd_irq(node);
+>>>>>> +		return ret;
+>>>>>> +	}
+>>>>>> +	/* increment the ref counter */
+>>>>>> +	kvm_vfio_get_vfio_device(fd);
+>>>>>
+>>>>> Wouldn't it be easier if the reference counting were coupled with the
+>>>>> register/unregister_fwd_irq?
+>>>> ok
+>>>>   I'd be tempted to pass your user_fwd_irq
+>>>>> to this function instead of a kvm_fwd_irq.
+>>>> Well in that case I would use kvm_arch_forwarded_irq for both set and
+>>>> unset. Then comes the problem of kvm_vfio_clean_fwd_irq which
+>>>> manipulates only internal structs.
+>>>>
+>>>>>> +	return ret;
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_unset_forward - Sets a VFIO device IRQ as non forwarded
+>>>>>> + * @kv: handle to the kvm-vfio device
+>>>>>> + * @fwd: handle to the forwarded irq struct
+>>>>>> + *
+>>>>>> + * Calls the architecture specific implementation of set_forward and
+>>>>>> + * unregisters the IRQ from the forwarded IRQ list. Decrements the vfio
+>>>>>> + * device reference counter.
+>>>>>> + */
+>>>>>> +static int kvm_vfio_unset_forward(struct kvm_vfio *kv,
+>>>>>> +				  struct kvm_fwd_irq *fwd)
+>>>>>> +{
+>>>>>> +	int ret;
+>>>>>> +	struct kvm_vfio_fwd_irq_node *node =
+>>>>>> +			kvm_vfio_find_fwd_irq(kv, fwd);
+>>>>>> +	if (!node)
+>>>>>> +		return -EINVAL;
+>>>>>> +	ret = kvm_arch_vfio_set_forward(fwd, false);
+>>>>>
+>>>>> Whoa, if the unforward fails we continue to undo everything else?  How
+>>>>> does userspace cleanup from this?  We need a guaranteed shutdown path
+>>>>> for cleanup code, we can never trust userspace to do things in the
+>>>>> correct order.  Can we really preclude the user calling unforward with
+>>>>> an active IRQ?  Maybe _forward() and _unforward() need to be separate
+>>>>> functions so that 'un' can be made void to indicate it can't fail.
+>>>> If I accept an unforward while the VFIO signaling mechanism is set, the
+>>>> wrong handler will be setup on VFIO driver. So should I put in place a
+>>>> mechanism that changes the VFIO handler for that irq (causing VFIO
+>>>> driver free_irq/request_irq), using another external API function?
+>>>
+>>> Yep, it seems like we need to re-evaluate whether forwarding can be
+>>> changed on a running IRQ.  Disallowing it doesn't appear to support KVM
+>>> initiated shutdown, only user initiated configuration.  So the
+>>> vfio-platform interrupt handler probably needs to be bi-modal.  Maybe
+>>> the forwarding state of the IRQ can use RCU to avoid locks.
+>>>
+>>>>>> +	kvm_vfio_unregister_fwd_irq(node);
+>>>>>> +
+>>>>>> +	/* decrement the ref counter */
+>>>>>> +	kvm_vfio_put_vfio_device(fwd->vdev);
+>>>>>
+>>>>> Again, seems like the unregister should do this.
+>>>> ok
+>>>>>
+>>>>>> +	return ret;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static int kvm_vfio_control_irq_forward(struct kvm_device *kdev, long attr,
+>>>>>> +					int32_t __user *argp)
+>>>>>> +{
+>>>>>> +	struct kvm_arch_forwarded_irq user_fwd_irq;
+>>>>>> +	struct kvm_fwd_irq fwd;
+>>>>>> +	struct vfio_device *vdev;
+>>>>>> +	struct kvm_vfio *kv = kdev->private;
+>>>>>> +	int ret;
+>>>>>> +
+>>>>>> +	if (copy_from_user(&user_fwd_irq, argp, sizeof(user_fwd_irq)))
+>>>>>> +		return -EFAULT;
+>>>>>> +
+>>>>>> +	vdev = kvm_vfio_get_vfio_device(user_fwd_irq.fd);
+>>>>>> +	if (IS_ERR(vdev)) {
+>>>>>> +		ret = PTR_ERR(vdev);
+>>>>>> +		goto out;
+>>>>>> +	}
+>>>>>> +
+>>>>>> +	fwd.vdev =  vdev;
+>>>>>> +	fwd.kvm =  kdev->kvm;
+>>>>>> +	fwd.index = user_fwd_irq.index;
+>>>>>> +	fwd.subindex = user_fwd_irq.subindex;
+>>>>>> +	fwd.gsi = user_fwd_irq.gsi;
+>>>>>> +
+>>>>>> +	switch (attr) {
+>>>>>> +	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:
+>>>>>> +		mutex_lock(&kv->lock);
+>>>>>> +		ret = kvm_vfio_set_forward(kv, user_fwd_irq.fd, &fwd);
+>>>>>> +		mutex_unlock(&kv->lock);
+>>>>>> +		break;
+>>>>>> +	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
+>>>>>> +		mutex_lock(&kv->lock);
+>>>>>> +		ret = kvm_vfio_unset_forward(kv, &fwd);
+>>>>>> +		mutex_unlock(&kv->lock);
+>>>>>> +		break;
+>>>>>> +	}
+>>>>>> +out:
+>>>>>> +	kvm_vfio_put_vfio_device(vdev);
+>>>>>
+>>>>> It might add a little extra code, but logically the reference being tied
+>>>>> to the register/unregister feels a bit cleaner than this.
+>>>> Sorry I do not catch your comment here. Since i called
+>>>> kvm_vfio_get_vfio_device at the beg of the function, I need to release
+>>>> at the end of the function, besides the ref counter incr/decr at
+>>>> registration?
+>>>
+>>> If we do reference counting on register/unregister, I'd think that the
+>>> get/put in this function would go away.  Having the reference here seems
+>>> redundant.
+>>>
+>>>>>
+>>>>>> +	return ret;
+>>>>>> +}
+>>>>>> +
+>>>>>> +static int kvm_vfio_set_device(struct kvm_device *kdev, long attr, u64 arg)
+>>>>>> +{
+>>>>>> +	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
+>>>>>> +	int ret;
+>>>>>> +
+>>>>>> +	switch (attr) {
+>>>>>> +	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:
+>>>>>> +	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
+>>>>>> +		ret = kvm_vfio_control_irq_forward(kdev, attr, argp);
+>>>>>> +		break;
+>>>>>> +	default:
+>>>>>> +		ret = -ENXIO;
+>>>>>> +	}
+>>>>>> +	return ret;
+>>>>>> +}
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * kvm_vfio_clean_fwd_irq - Unset forwarding state of all
+>>>>>> + * registered forwarded IRQs and free their list nodes.
+>>>>>> + * @kv: kvm-vfio device
+>>>>>> + *
+>>>>>> + * Loop on all registered device/IRQ combos, reset the non forwarded state,
+>>>>>> + * void the lists and release the reference
+>>>>>> + */
+>>>>>> +static int kvm_vfio_clean_fwd_irq(struct kvm_vfio *kv)
+>>>>>> +{
+>>>>>> +	struct kvm_vfio_fwd_irq_node *node, *tmp;
+>>>>>> +
+>>>>>> +	list_for_each_entry_safe(node, tmp, &kv->fwd_node_list, link) {
+>>>>>> +		kvm_vfio_unset_forward(kv, &node->fwd_irq);
+>>>>>> +	}
+>>>>>> +	return 0;
+>>>>>
+>>>>> This shouldn't be able to fail, make it void.
+>>>> see above questioning? But you're right, I am too much virtualization
+>>>> oriented. Currently my cleanup is even done in the virtual interrupt
+>>>> controller when the VM dies because nobody unsets the VFIO signaling.
+>>>
+>>> Yep, being a kernel interface it needs to be hardened against careless
+>>> and malicious users.  The kernel should return to the correct state if
+>>> we kill -9 QEMU at any point.  Thanks,
+>>>
+>>> Alex
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
 
-
->> +     might cause slightly slower communication.
->> + - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
->> +     (t(f) in the i2c0 spec).  If not specified this is assumed to be the
-> s/i2c0/i2c/
-
-Same here: I2C.
-
-
->>        * min_low_ns:  The minimum number of ns we need to hold low
->> -      *              to meet i2c spec
->> +      *              to meet i2c spec, should include fall time.
->>        * min_high_ns: The minimum number of ns we need to hold high
->> -      *              to meet i2c spec
->> +      *              to meet i2c spec, should include rise time.
->>        * max_low_ns:  The maximum number of ns we can hold low
->> -      *              to meet i2c spec
->> +      *              to meet i2c spec.
-
-...and those should be I2C.
-
-
->>        *
->>        * Note: max_low_ns should be (max data hold time * 2 - buffer)
->>        *       This is because the i2c host on Rockchip holds the data line
->>        *       for half the low time.
->>        */
->>       if (scl_rate <= 100000) {
->                 /* Standard-mode */
->> -             min_low_ns = 4700;
->> -             min_high_ns = 4000;
->> -             max_data_hold_ns = 3450;
->> -             data_hold_buffer_ns = 50;
->> +             spec_min_low_ns = 4700;
->> +             spec_min_high_ns = 4000;
->> +             spec_max_data_hold_ns = 3450;
-> The specification calls this "data valid time" (t_(VD;DAT)).
-
-Could change this if need be, but the old code had it as "data hold".
-Maybe we could argue about it in a future patch?
-
-
->> +             spec_data_hold_buffer_ns = 50;
-> I didn't find this parameter in the spec, also it doesn't differ for
-> Standard-mode vs. Fast-mode. What is this?
-
-I believe I put it in an earlier bit of sample code when Addy was
-worried about things being too close to the margins.  I'm not sure
-what specifically Addy was worried about.  Maybe this should actually
-be the falling time for data?
-
-Again, this is not something new so perhaps we could debate in a future patch?
-
-
->> +     /* Read rise and fall ns; if not there use the default max from spec */
->> +     if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
->> +                              &i2c->rise_ns)) {
->> +             if (i2c->scl_frequency <= 100000)
->> +                     i2c->rise_ns = 1000;
->> +             else
->> +                     i2c->rise_ns = 300;
->> +     }
->> +     if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
->> +                              &i2c->fall_ns))
->> +             i2c->fall_ns = 300;
->> +
-> I don't know if other drivers do the same (I assume they should). If so,
-> moving this logic into the core would be nice. I guess this can still be
-> done later.
->
-> The i2c specification also has a minimum for t(r) and t(f). I don't know
-> why these are limited, but I think it would be good to check for these
-> limits, too.
-
-One of these two properties is in another driver (the Designware one).
-However, different hardware seems to take in different parameters for
-I2C.  It seems like for now the best thing to do is to keep drivers
-consistent.  If we notice a pattern then stuff should move to the
-core.
-
--Doug
