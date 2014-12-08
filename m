@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaLHQEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:04:20 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:20673 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489AbaLHQER (ORCPT
+	id S1755649AbaLHQIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:08:15 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58552 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaLHQIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:04:17 -0500
-Date: Mon, 8 Dec 2014 11:04:02 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH v5 9/9] xen/pciback: Implement PCI reset slot
- or bus with 'do_flr' SysFS attribute
-Message-ID: <20141208160402.GF7745@laptop.dumpdata.com>
-References: <5480528F.8010106@citrix.com>
- <1107877503.20141204141054@eikelenboom.it>
- <548064EA.8090905@citrix.com>
- <308719815.20141204150909@eikelenboom.it>
- <5480702F.2060004@citrix.com>
- <1578910783.20141204155025@eikelenboom.it>
- <1417707546.15750.100.camel@bling.home>
- <54818929.5000008@citrix.com>
- <20141205172250.GA2895@laptop.dumpdata.com>
- <54857F91.3020002@citrix.com>
+	Mon, 8 Dec 2014 11:08:14 -0500
+Message-ID: <5485CD02.7010903@wwwdotorg.org>
+Date: Mon, 08 Dec 2014 09:08:34 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54857F91.3020002@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>,
+        Matthias Klein <matthias.klein@linux.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: linux-next: manual merge of the bcm2835 tree with the arm-soc
+ tree
+References: <20141208120619.68287b54@canb.auug.org.au> <2406890.FlzRjyvuXd@wuerfel> <20141208130009.GL3951@x1> <3348703.0b5FTH9Sa3@wuerfel> <20141208134903.GN3951@x1>
+In-Reply-To: <20141208134903.GN3951@x1>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:38:09AM +0000, David Vrabel wrote:
-> On 05/12/14 17:22, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Dec 05, 2014 at 10:30:01AM +0000, David Vrabel wrote:
-> >> On 04/12/14 15:39, Alex Williamson wrote:
-> >>>
-> >>> I don't know what workaround you're talking about.  As devices are
-> >>> released from the user, vfio-pci attempts to reset them.  If
-> >>> pci_reset_function() returns success we mark the device clean, otherwise
-> >>> it gets marked dirty.  Each time a device is released, if there are
-> >>> dirty devices we test whether we can try a bus/slot reset to clean them.
-> >>> In the case of assigning a GPU this typically means that the GPU or
-> >>> audio function come through first, there's no reset mechanism so it gets
-> >>> marked dirty, the next device comes through and we manage to try a bus
-> >>> reset.  vfio-pci does not have any device specific resets, all
-> >>> functionality is added to the PCI-core, thank-you-very-much.  I even
-> >>> posted a generic PCI quirk patch recently that marks AMD VGA PM reset as
-> >>> bad so that pci_reset_function() won't claim that worked.  All VGA
-> >>> access quirks are done in QEMU, the kernel doesn't have any business in
-> >>> remapping config space over MMIO regions or trapping other config space
-> >>> backdoors.
-> >>
-> >> Thanks for the info Alex, I hadn't got around to actually looking and
-> >> the vfio-pci code and was just going to what Sander said.
-> >>
-> >> We probably do need to have a more in depth look at now PCI devices and
-> >> handled by both the toolstack and pciback but in the short term I would
-> >> like a simple solution that does not extend the ABI.
-> > 
-> > Could you enumerate the 'simple solution' then please? I am having
-> > a frustrating time figuring out what it is that you are proposing.
-> 
-> I've posted it repeatedly.
+On 12/08/2014 06:49 AM, Lee Jones wrote:
+> On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+>
+>> On Monday 08 December 2014 13:00:09 Lee Jones wrote:
+>>> On Mon, 08 Dec 2014, Arnd Bergmann wrote:
+>>>
+>>>> On Monday 08 December 2014 12:06:19 Stephen Rothwell wrote:
+>>>>> Hi Stephen,
+>>>>>
+>>>>> Today's linux-next merge of the bcm2835 tree got a conflict in
+>>>>> arch/arm/boot/dts/Makefile between commit 302a5ef29d49 ("ARM: BCM5301X:
+>>>>> Add DT for Netgear R6300 V2") from the arm-soc tree and commit
+>>>>> 6298ed17a404 ("ARM: bcm2835: Add device tree for Raspberry Pi model
+>>>>> B+") from the bcm2835 tree.
+>>>>>
+>>>>> I fixed it up (the bcm2835 tree patch is also in the arm-soc tree as
+>>>>> commit ba2a1d6959ac ("ARM: bcm2835: Add device tree for Raspberry Pi
+>>>>> model B+"), so I just used the arm-soc version) and can carry the fix
+>>>>> as necessary (no action is required).
+>>>>
+>>>> Thanks a lot for the notification!
+>>>>
+>>>> Lee, do you know what is going on? Did you accidentally rebase a commit
+>>>> that you already sent for inclusion in arm-soc?
+>>>
+>>> Nope.  The branch hasn't changed at all.
+>>>
+>>> OOI why would a re-base affect anything?  I sent you it in patch form.
+>>
+>> Ah, I looked at the wrong branch and didn't see that I applied a patch
+>> instead of a pull request. It's all fine then, as long as you never
+>> intend to send any pull requests based on top of your current branch.
+>>
+>> You can possibly make Stephen's life a tiny bit simpler if you just
+>> drop all patches from your for-next branch as soon as we've picked
+>> them up into arm-soc.
+>
+> That is something I thought about, but I believe we have users of that
+> branch.  I guess we could always point them to ARM-SoC, or reset the
+> branch to the aforementioned.
 
-Are you referring to http://lists.xenproject.org/archives/html/xen-devel/2014-07/msg01270.html
-which is still waiting for your feedback?
+The primary purpose of the kernel.org linux-rpi.git repo is for staging 
+patches into arm-soc/linux-next. As such, just like any other similar 
+repo, users should expect at least the for-xxx (e.g. for-next) branches 
+to get reset as kernel versions tick over, in order to contain the 
+content for the next kernel. Anyone using those branches for anything 
+else (e.g. local development) simply has to be prepared to do a rebase 
+themselves when that happens.
 
+Equally, and patches that get sent to arm-soc should probably never be 
+applied to linux-rpi.git; anything that gets applied to linux-rpi.git 
+should get sent to arm-soc as a pull request. That avoids duplicate commits.
