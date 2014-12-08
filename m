@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaLHIxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:53:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753146AbaLHIvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:51:36 -0500
-From: Amos Kong <akong@redhat.com>
-To: linux-crypto@vger.kernel.org
-Cc: virtualization@lists.linux-foundation.org, herbert@gondor.apana.org.au,
-        rusty@rustcorp.com.au, kvm@vger.kernel.org, m@bues.ch, mpm@selenic.com,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 REPOST 4/6] hw_random: fix unregister race.
-Date: Mon,  8 Dec 2014 16:50:38 +0800
-Message-Id: <1418028640-4891-5-git-send-email-akong@redhat.com>
-In-Reply-To: <1418028640-4891-1-git-send-email-akong@redhat.com>
-References: <1418028640-4891-1-git-send-email-akong@redhat.com>
+	id S1752882AbaLHI6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:58:03 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:36603 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869AbaLHI6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:58:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <1555621726.710701418024675477.JavaMail.weblogic@epmlwas04c>
+References: <1555621726.710701418024675477.JavaMail.weblogic@epmlwas04c>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Mon, 8 Dec 2014 09:57:39 +0100
+X-Google-Sender-Auth: cdtKmg8anKSNZKSp2dzQy0s50ks
+Message-ID: <CAAObsKDmWDez5tRNa=zGuCDhM+FNgeXOUCygpjeQ-eyK=4Kq9g@mail.gmail.com>
+Subject: Re: [RFC RESEND 0/3] Add watermark support to devfreq
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Arto Merilainen <amerilainen@nvidia.com>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "srasal@nvidia.com" <srasal@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+On 8 December 2014 at 08:44, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> (Sorry for the spam. I am resending the series because I noted that
+>> some of the email addresses were mistyped)
+>>
+>> Currently main mechanism to implement scaling using devfreq is
+>> polling and the device profile is free to set polling interval.
+>> However, in many cases this approach is not optimal; We may
+>> unnecessarily use CPU time to determine load on engine that
+>> is idle most of time - or we may simply read load when we
+>> already know that the device is busy.
+>>
+>> In some cases a device itself has counters to track its activity
+>> and possibility to raise interrupts when load goes above or below
+>> certain threshold.
+>>
+>> This series adds support for watermark events to devfreq and
+>> introduces two example governors. The first patch adds two
+>> callbacks to the device profile (for setting watermark) and
+>> adds a new function call to devfreq that informs of crossed
+>> watermark.
+>>
+>> The added governors demonstrate usage of the new API. The first
+>> governor (watermark simple) sets device to trigger low watermark
+>> event when load goes below 10% and high watermark interrupt when
+>> the load goes above 60%. Watermark active tries to keep load at
+>> certain level and it actively sets thresholds based on the
+>> frequency table in order get interrupts only when the load value
+>> would affect to the current frequency in re-estimation.
+>
+> Hi Arto,
+>
+>
+> Please let me start with somewhat naive high-level question:
+>   What do you mean by watermark in this context?
+> Is it a product name of yours (interrupt-based PMU, I presume)?
+> Or does watermark have another semantics that I am not aware of?
+> Or do you really mean something like
+>   http://en.wikipedia.org/wiki/Digital_watermarking
 
-The previous patch added one potential problem: we can still be
-reading from a hwrng when it's unregistered.  Add a wait for zero
-in the hwrng_unregister path.
+The watermark term is borrowed here from queues. The high and low
+watermarks define the boundaries within the load has to be contained.
+If the load is above or below the watermarks, a more suitable
+frequency has to be found.
 
-v5: reset cleanup_done flag, use compiler barrier to prevent recording.
-v4: add cleanup_done flag to insure that cleanup is done
+Regards,
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Amos Kong <akong@redhat.com>
----
- drivers/char/hw_random/core.c | 12 ++++++++++++
- include/linux/hw_random.h     |  1 +
- 2 files changed, 13 insertions(+)
+Tomeu
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 83516cb..067270b 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -60,6 +60,7 @@ static DEFINE_MUTEX(rng_mutex);
- static DEFINE_MUTEX(reading_mutex);
- static int data_avail;
- static u8 *rng_buffer, *rng_fillbuf;
-+static DECLARE_WAIT_QUEUE_HEAD(rng_done);
- static unsigned short current_quality;
- static unsigned short default_quality; /* = 0; default to "off" */
- 
-@@ -98,6 +99,11 @@ static inline void cleanup_rng(struct kref *kref)
- 
- 	if (rng->cleanup)
- 		rng->cleanup(rng);
-+
-+	/* cleanup_done should be updated after cleanup finishes */
-+	smp_wmb();
-+	rng->cleanup_done = true;
-+	wake_up_all(&rng_done);
- }
- 
- static void set_current_rng(struct hwrng *rng)
-@@ -498,6 +504,8 @@ int hwrng_register(struct hwrng *rng)
- 		add_early_randomness(rng);
- 	}
- 
-+	rng->cleanup_done = false;
-+
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- out:
-@@ -529,6 +537,10 @@ void hwrng_unregister(struct hwrng *rng)
- 			kthread_stop(hwrng_fill);
- 	} else
- 		mutex_unlock(&rng_mutex);
-+
-+	/* Just in case rng is reading right now, wait. */
-+	wait_event(rng_done, rng->cleanup_done &&
-+		   atomic_read(&rng->ref.refcount) == 0);
- }
- EXPORT_SYMBOL_GPL(hwrng_unregister);
- 
-diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
-index c212e71..7832e50 100644
---- a/include/linux/hw_random.h
-+++ b/include/linux/hw_random.h
-@@ -46,6 +46,7 @@ struct hwrng {
- 	/* internal. */
- 	struct list_head list;
- 	struct kref ref;
-+	bool cleanup_done;
- };
- 
- /** Register a new Hardware Random Number Generator driver. */
--- 
-1.9.3
-
+> Other itching points include:
+> - devfreq_watermark_event() was declared but has never been used.
+>     Who is supposed to call this function?
+> - Is enum watermark_type supposed to be used out of /drivers/devfreq/* ?
+>     Otherwise, please move it inside /drivers/devfreq/governor.h
+>     (I guess it is to be used inside corresponding governors only)
+> - Could you please watermark-specific interfaces (set_high/low_wmark) into
+>     its own public header file? (e.g., /include/linux/devfreq/governor_wmark.h)
+>   I think we can create another (governor_simpleondemand.h) in there as well
+>     in order to have threshold values configured by device drivers.
+>   Adding governor-specific configurations into devfreq.h seems not
+>     appropriate especially when we expect that we may need many different
+>     governors.
+>
+>   OR..
+>
+>   This seems that you can keep set_h/l_wmark functions exposed to
+>     drivers/devfreq/* only. Therefore, having /drivers/devfreq/governor_wmark.h
+>     should be sufficient as well, which should be more neat than the above.
+>   The callbacks are to be defined by the devfreq drivers, aren't they?
+>
+> - The event name, "DEVFREQ_GOV_WMARK", defined in governor.h, seems to be
+>     more appropriate if it is named "DEVFREQ_GOV_INTERNAL" as we won't need
+>     to define event names for each govornor's internal needs.
+>
+>   OR.. for more generality,
+>     we may define a macro like:
+>
+> #define DEVFREQ_GOV_INTERNAL(value)     ((0x1 << 31) | (value))
+> #define GET_DEVFREQ_GOV_INTERNAL(event) ((event) & ~(0x1 << 31))
+>
+> - In general, I would love to see governors with minimal intervention on
+>     the framework core/main code, especially when it is not beneficial to
+>     other governors. Unlike cpufreq, we may contain many different types of
+>     devices in devfreq, which has the potential to accompany many different
+>     governors.
+>
+>
+> Cheers,
+> MyungJoo.
+>
+>>
+>> Arto Merilainen (1):
+>>   PM / devfreq: Add watermark active governor
+>>
+>> Shridhar Rasal (2):
+>>   PM / devfreq: Add watermark events
+>>   PM / devfreq: Add watermark simple governor
+>>
+>>  drivers/devfreq/Kconfig                 |  18 +++
+>>  drivers/devfreq/Makefile                |   2 +
+>>  drivers/devfreq/devfreq.c               |  19 +++
+>>  drivers/devfreq/governor.h              |   1 +
+>>  drivers/devfreq/governor_wmark_active.c | 276 ++++++++++++++++++++++++++++++++
+>>  drivers/devfreq/governor_wmark_simple.c | 245 ++++++++++++++++++++++++++++
+>>  include/linux/devfreq.h                 |  26 +++
+>>  7 files changed, 587 insertions(+)
+>>  create mode 100644 drivers/devfreq/governor_wmark_active.c
+>>  create mode 100644 drivers/devfreq/governor_wmark_simple.c
+>>
+>> --
+>> 1.8.1.5
+>>
