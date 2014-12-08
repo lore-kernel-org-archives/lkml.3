@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaLHRLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:11:53 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:56291 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaLHRLv (ORCPT
+	id S932105AbaLHRMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:12:14 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:60140 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaLHRML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:11:51 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: wl1251: NVS firmware data
-Date: Mon, 8 Dec 2014 18:11:46 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <201411271506.20457@pali> <201412081747.30965@pali> <E5F3BB54-6365-4856-A231-A5FEDAEA217F@holtmann.org>
-In-Reply-To: <E5F3BB54-6365-4856-A231-A5FEDAEA217F@holtmann.org>
+	Mon, 8 Dec 2014 12:12:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ray Jui <rjui@broadcom.com>, Mark Rutland <mark.rutland@arm.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@linaro.org>, Joe Perches <joe@perches.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com, linux-gpio@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 1/5] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+Date: Mon, 08 Dec 2014 18:11:08 +0100
+Message-ID: <9945772.cPNxB9AH25@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5485D7F8.6090305@broadcom.com>
+References: <1418006316-324-2-git-send-email-rjui@broadcom.com> <2594176.SCRFa6Sb3O@wuerfel> <5485D7F8.6090305@broadcom.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1715012.6Goo9eDEJj";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412081811.46943@pali>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:1q4531nvbm+Zj1Q5qmPc4U1MhBXdSl23spRC+gLDJM37vDNOCjz
+ l8qH2XVCApi03AgJPhgXz3W0NFw9bdb7rMP1lXqLpjaVlT/5eq/8PZbedKQYB4fMqLWbEDP
+ LUSah3xvnf067+GpAWWc69sQUekksQWdzuwwVoN09WBYTmIfg219iRJ7VxCwNgfkF2aM3np
+ 4c14tHj0ujfc03hBVcZeQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1715012.6Goo9eDEJj
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Monday 08 December 2014 08:55:20 Ray Jui wrote:
+> 
+> On 12/8/2014 3:22 AM, Arnd Bergmann wrote:
+> > On Sunday 07 December 2014 18:38:32 Ray Jui wrote:
+> >> +Required properties:
+> >> +
+> >> +- compatible:
+> >> +    Currently supported Cygnus GPIO controllers include:
+> >> +    "brcm,cygnus-ccm-gpio": ChipcommonG GPIO controller
+> >> +    "brcm,cygnus-asiu-gpio": ASIU GPIO controller
+> >> +    "brcm,cygnus-crmu-gpio": CRMU GPIO controller
+> >
+> > How different are these? If they are almost the same, would it
+> > be better to use the same compatible string for all of them and
+> > describe the differences in extra properties?
+> >
+> > If they are rather different, maybe you should have a separate
+> > binding and driver for each?
+> >
+> > 	Arnd
+> >
+> They are quite similar with the following minor differences:
+> 1) ChipcommonG GPIO controller uses a separate register block 
+> (0x0301d164) to control drive stregnth
+> 2) Cannot control drive strength for the CMRU GPIO
 
-On Monday 08 December 2014 18:05:37 Marcel Holtmann wrote:
-> Hi Pali,
->=20
-> >>>> On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
-> >>>> /**
-> >>>>=20
-> >>>> + * request_firmware_prefer_user: - prefer usermode
-> >>>> helper for loading firmware + * @firmware_p: pointer to
-> >>>> firmware image
-> >>>> + * @name: name of firmware file
-> >>>> + * @device: device for which firmware is being loaded
-> >>>> + *
-> >>>> + * This function works pretty much like
-> >>>> request_firmware(), but it prefer + * usermode helper. If
-> >>>> usermode helper fails then it fallback to direct access.
-> >>>> + * Usefull for dynamic or model specific firmware data.
-> >>>> + **/
-> >>>> +int request_firmware_prefer_user(const struct firmware
-> >>>> **firmware_p, +                           const char
-> >>>> *name, struct device *device) +{
-> >>>> +       int ret;
-> >>>> +       __module_get(THIS_MODULE);
-> >>>> +       ret =3D _request_firmware(firmware_p, name, device,
-> >>>> +                               FW_OPT_UEVENT |
-> >>>> FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
-> >>>> +       return ret;
-> >>>> +}
-> >>>> +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
-> >>>=20
-> >>> I'd like to introduce request_firmware_user() which only
-> >>> requests firmware from user space, and this way is simpler
-> >>> and more flexible since we have request_firmware_direct()
-> >>> already.
-> >>=20
-> >> Why would a driver care about what program provides the
-> >> firmware?  It shouldn't at all, and we want to get rid of
-> >> the userspace firmware loader, not encourage drivers to
-> >> use it "exclusively" at all.
-> >=20
-> > Do not remove it! Without userspace firmware loader it is
-> > impossible to load dynamic firmware files.
->=20
-> why is this dynamic in the first place. It does not sound like
-> dynamic data to me at all. This is like the WiFi MAC
-> address(es) or Bluetooth BD_ADDR. They are all static
-> information. The only difference is that they are on the host
-> accessibly filesystem or storage and not on the device
-> itself.
->=20
-> To be honest, for Bluetooth we solved this now. If the device
-> is missing key information like the calibration data or
-> BD_ADDR, then it comes up unconfigured. A userspace process
-> can then go and load the right data into it and then the
-> device becomes available as Bluetooth device.
->=20
-> Trying to use request_firmware to load some random data and
-> insist on going through userspace helper for that sounds
-> crazy to me. Especially since we are trying hard to get away
-> from the userspace loader. Forcing to keep it for new stuff
-> sounds backwards to me.
->=20
-> With the special Nokia partition in mind, why hasn't this been
-> turned into a mountable filesystem or into a driver/subsystem
-> that can access the data direct from the kernel. I advocated
-> for this some time ago. Maybe there should be a special
-> subsystem for access to these factory persistent information
-> that drivers then just can access. I seem to remember that
-> some systems provide these via ACPI. Why does the ARM
-> platform has to be special here?
->=20
-> And the problem of getting Ethernet and WiFi MAC address and
-> Bluetooth BD_ADDR comes up many many times. Why not have
-> something generic here. And don't tell me request_firmware is
-> that generic solution ;)
->=20
-> Regards
->=20
-> Marcel
+This can be deducted from having one or two register blocks I
+assume.
 
-Hi Marcel. I think you did not understand this problem. This=20
-discussion is not about mac address. Please read email thread=20
-again and if there are some unclear pars, then ask. Thanks!
+> 3) CRMU GPIO controller's interrupt is not connected to GIC of A9. 
+> Currently that's taken care of by using a "no-interrupt" device tree 
+> property
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+No need for this property even, just see if there is an "interrupts"
+property or not.
+ 
+> I can change to use the common compatible string "brcm,cygnus-gpio". 
+> With an introduction of property "no-drv-stregnth" which should be set 
+> for CRMU GPIO controller. 
 
---nextPart1715012.6Goo9eDEJj
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> For ChipcommonG GPIO, it will have a second 
+> register block defined, so we'll know to use that second register block 
+> for drive strength configuration. For the rest, we assume normal drive 
+> strength configuration (i.e., ASIU in our case).
 
-iEYEABECAAYFAlSF29IACgkQi/DJPQPkQ1KsDgCeNZmwr8tIOz9uchTfCHmTGhqs
-mwsAni5d+CRKG11fYsdVEyk4Mz3LMAWN
-=8APv
------END PGP SIGNATURE-----
+Maybe see if something older than cygnus was already using a compatible
+gpio controller and then use the name of that.
 
---nextPart1715012.6Goo9eDEJj--
+> Looking at this again, it looks like the "no-interrupt" property is 
+> really redundant. For GPIO controller without interrupt connected to A9, 
+> we can simply leave its interrupt properties not defined. I'll get rid 
+> of it along with the above changes.
+
+Right.
+
+	Arnd
