@@ -1,137 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaLHVDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:03:21 -0500
-Received: from relay06.alfahosting-server.de ([109.237.142.242]:55706 "EHLO
-	relay06.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755170AbaLHVDU (ORCPT
+	id S1755243AbaLHVJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:09:03 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:41787 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287AbaLHVI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:03:20 -0500
-X-Spam-DCC: : 
-Date: Mon, 8 Dec 2014 22:03:46 +0100
-From: Richard Leitner <dev@g0hl1n.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] misc: ioc4: simplify wave period measurement in
- clock_calibrate
-Message-ID: <20141208220346.6baaf4ca@frodo>
-In-Reply-To: <1418054051.2058.8.camel@x220>
-References: <20141208132720.16356743@frodo>
-	<4066664.BgJJnCmQ3h@wuerfel>
-	<20141208141837.752a9968@frodo>
-	<CA+V-a8tww3bt7rhMT8Bxn0dwyg4qQTeVKbAKKJxh__zXrKrewA@mail.gmail.com>
-	<20141208162810.7b009382@frodo>
-	<1418054051.2058.8.camel@x220>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 8 Dec 2014 16:08:59 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: wl1251: NVS firmware data
+Date: Mon, 8 Dec 2014 22:08:56 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Marcel Holtmann <marcel@holtmann.org>, Ming Lei <ming.lei@canonical.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <201411271506.20457@pali> <201412082015.18501@pali> <20141208210018.GB14895@kroah.com>
+In-Reply-To: <20141208210018.GB14895@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart1606789.mnJHGJHFWa";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19750/Mon Dec  8 18:41:37 2014
+Message-Id: <201412082208.56307@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-regarding the general approach ("helper-function" versus loop) a
-maintainer should decide what suits better here.
+--nextPart1606789.mnJHGJHFWa
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-IMHO on the one hand the readability of the ioc4_clock_calibrate is better
-with the "helper-function", on the other hand when using the loop you
-don't have to look up the function an see the implementation at the
-first glance.
+On Monday 08 December 2014 22:00:18 Greg Kroah-Hartman wrote:
+> On Mon, Dec 08, 2014 at 08:15:18PM +0100, Pali Roh=C3=A1r wrote:
+> > On Nokia N900 NVS data are generated on-the-fly from some
+> > bytes from CAL (/dev/mtd1), from state of cellular network
+> > and from some other regulation settings.
+>=20
+> When is this "generated"?  At boot time?  Or by the firmware
+> loader program you have hooked into being called by the
+> kernel at "load the firmware now please" call time?
+>=20
 
-Some comments on the code are embedded below.
+When userspace system network daemon is started.
 
-On Mon, 08 Dec 2014 16:54:11 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
+> > So I think that files stored in linux-firmware.git tree
+> > (which are also installed into /lib/firmware/) should be
+> > loaded with request_firmware function. Or not? Do you think
+> > something else? What other developers think?
+> >=20
+> > I'm against kernel driver for CAL (/dev/mtd1) for more
+> > reasons:
+> >=20
+> > 1) we have userspace open source code, but licensed under
+> > GPLv3. And until kernel change license, we cannot include
+> > it.
+>=20
+> You can change the license of your code if you want to, don't
+> make this type of nonsense argument.
+>=20
 
-> On Mon, 2014-12-08 at 16:28 +0100, Richard Leitner wrote:
-> > The loop for measuring the square wave periods over some cycles is
-> > refactored to be more easily readable. This includes avoiding a
-> > "by-hand-implemented" for loop with a "real" one and adding some
-> > comments.
-> > 
-> 
-> I've had the patch pasted at the end of this message in my local stack
-> of patches for some time now. It uses another approach: by using a
-> helper function things become much simpler. I _think_ it doesn't
-> introduce any functional changes but still need to a quiet day to make
-> sure that is correct.
-> 
-> Hope this helps,
+Code is not mine, so I cannot change license.
 
-...
+> > 2) NVS data are (probably) not in one place, plus they
+> > depends on something other.
+>=20
+> What is "something other"?  Where are they located?  Why would
+> the firmware interface know or care anything about this?
+>=20
 
-> Adding a small (inline) function that only returns after a certain
-> number of wave cycles have been seen allows to reorder the code a bit.
-> And after reordering it is clearer for both the compiler and the human
-> reader what's going on here. So let's do that.
+fcc bit and some other data retrieved from daemon which=20
+communicating with cellular modem.
 
-Maybe this function name should include "wait" or something similar to
-make clear it does nothing during the wave cycles?
+> > 3) If manufacture XYZ create new device with its own storage
+> > format of calibration data this means that correct solution
+> > for XYZ is also to implement new kernel fs driver for its
+> > own format.
+>=20
+> Yes, as it is doing it's own custom thing, why overload an
+> existing interface to do something it was never designed to
+> do?
+>=20
+> > Do you really want to have in kernel all those drivers for
+> > all different (proprietary) storage formats?
+>=20
+> Yes, we are not afraid of lots of different drivers.  That is
+> not even a valid argument, you know better than this :)
+>=20
+> > 4) It does not help us with existence of generic file
+> > /lib/firmware/ti-connectivity/wl1251-nvs.bin which comes
+> > from linux-firmware.git tree.
+>=20
+> Again, not an issue.  If you don't want that file in the repo,
+> ask for it to be removed, and it will be, just send a patch
+> to do it.
+>=20
+> greg k-h
 
-> +/* return after count wave cycles have been seen */
-> +static inline void
-> +ioc4_clock_wave_cycles(struct ioc4_driver_data *idd, unsigned int count)
-> +{
-> +	union ioc4_int_out int_out;
-> +	unsigned int state, last_state = 1;
-> +	unsigned int i = 0;
-> +
-> +	do {
-> +		int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
-> +		state = int_out.fields.int_out;
-> +		if (!last_state && state)
-> +			i++;
-> +		last_state = state;
-> +	} while (i < count);
-> +}
-> +
->  /* Determines external interrupt output clock period of the PCI bus an
->   * IOC4 is attached to.  This value can be used to determine the PCI
->   * bus speed.
-> @@ -144,9 +158,7 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
->  {
->  	union ioc4_int_out int_out;
->  	union ioc4_gpcr gpcr;
-> -	unsigned int state, last_state = 1;
->  	uint64_t start, end, period;
-> -	unsigned int count = 0;
->  
->  	/* Enable output */
->  	gpcr.raw = 0;
-> @@ -167,19 +179,10 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd) mmiowb();
->  
->  	/* Check square wave period averaged over some number of cycles */
-> -	do {
-> -		int_out.raw = readl(&idd->idd_misc_regs->int_out.raw);
-> -		state = int_out.fields.int_out;
-> -		if (!last_state && state) {
-> -			count++;
-> -			if (count == IOC4_CALIBRATE_END) {
-> -				end = ktime_get_ns();
-> -				break;
-> -			} else if (count == IOC4_CALIBRATE_DISCARD)
-> -				start = ktime_get_ns();
-> -		}
-> -		last_state = state;
-> -	} while (1);
-> +	ioc4_clock_wave_cycles(idd, IOC4_CALIBRATE_DISCARD);
-> +	start = ktime_get_ns();
-> +	ioc4_clock_wave_cycles(idd, IOC4_CALIBRATE_COUNT);
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Shouldn't this be IOC4_CALIBRATE_CYCLES instead of IOC4_CALIBRATE_COUNT?
-IOC4_CALIBRATE_END was (IOC4_CALIBRATE_CYCLES + IOC4_CALIBRATE_DISCARD).
+--nextPart1606789.mnJHGJHFWa
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> +	end = ktime_get_ns();
->  
->  	/* Calculation rearranged to preserve intermediate precision.
->  	 * Logically:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-regards,
-richard
+iEYEABECAAYFAlSGE2gACgkQi/DJPQPkQ1LQRQCgk2B5ZOAScxF0ImASD/Ovbx5U
+g/wAoK8+bUl/BHPdkuqNVb/G785LK7FP
+=ZFpA
+-----END PGP SIGNATURE-----
 
+--nextPart1606789.mnJHGJHFWa--
