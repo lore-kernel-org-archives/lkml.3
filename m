@@ -1,317 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaLHIvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:51:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132AbaLHIvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:51:35 -0500
-From: Amos Kong <akong@redhat.com>
-To: linux-crypto@vger.kernel.org
-Cc: virtualization@lists.linux-foundation.org, herbert@gondor.apana.org.au,
-        rusty@rustcorp.com.au, kvm@vger.kernel.org, m@bues.ch, mpm@selenic.com,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 REPOST 3/6] hw_random: use reference counts on each struct hwrng.
-Date: Mon,  8 Dec 2014 16:50:37 +0800
-Message-Id: <1418028640-4891-4-git-send-email-akong@redhat.com>
-In-Reply-To: <1418028640-4891-1-git-send-email-akong@redhat.com>
-References: <1418028640-4891-1-git-send-email-akong@redhat.com>
+	id S1754462AbaLHIwV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:52:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60115 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346AbaLHIwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:52:18 -0500
+Date: Mon, 8 Dec 2014 09:52:02 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        huangtao@rock-chips.com, hl@rock-chips.com, yzq@rock-chips.com,
+        zyw@rock-chips.com, linux-kernel@vger.kernel.org,
+        kever.yang@rock-chips.com, linux-rockchip@lists.infradead.org,
+        xjq@rock-chips.com, linux-i2c@vger.kernel.org,
+        caesar.wang@rock-chips.com, cf@rock-chips.com, hj@rock-chips.com,
+        zhengsq@rock-chips.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] i2c: rk3x: fix bug that cause measured high_ns
+ doesn't meet I2C spec
+Message-ID: <20141208085202.GA13486@pengutronix.de>
+References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+ <1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+Hello Addy,
 
-current_rng holds one reference, and we bump it every time we want
-to do a read from it.
+On Mon, Dec 08, 2014 at 10:59:49AM +0800, Addy Ke wrote:
+> high_ns calculated from the low division of CLKDIV register is the sum
+> of actual measured high_ns and rise_ns. The rise time which related to
+I think "actual measured" is misleading here. (The driver doesn't
+dermine these parameters automatically, right?)
 
-This means we only hold the rng_mutex to grab or drop a reference,
-so accessing /sys/devices/virtual/misc/hw_random/rng_current doesn't
-block on read of /dev/hwrng.
+Maybe something like the following is more correct and understandable?:
 
-Using a kref is overkill (we're always under the rng_mutex), but
-a standard pattern.
+	The number of clock cycles to be written into the XYZ register
+	that determines the i2c clk high phase includes the rise time.
+	So to meet the timing requirements defined in the i2c
+	specification which defines the minimal time SCL has to be high,
+	the rise time has to taken into account. The same applies to the
+	low phase with falling time.
 
-This also solves the problem that the hwrng_fillfn thread was
-accessing current_rng without a lock, which could change (eg. to NULL)
-underneath it.
+> external pull-up resistor can be up to the maximum rise time in I2C spec.
+> 
+> In my test, if external pull-up resistor is 4.7K, rise_ns is about
+It would be nice to point out the actual board you used (if it's a
+publically available machine).
 
-v5: drop redundant kref_init()
-v4: decrease last reference for triggering the cleanup
-v3: initialize kref (thanks Amos Kong)
-v2: fix missing put_rng() on exit path (thanks Amos Kong)
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Amos Kong <akong@redhat.com>
----
- drivers/char/hw_random/core.c | 135 ++++++++++++++++++++++++++++--------------
- include/linux/hw_random.h     |   2 +
- 2 files changed, 94 insertions(+), 43 deletions(-)
+> 700ns. So the actual measured high_ns is about 3900ns, which is less
+> than 4000ns(the minimum high_ns in I2C spec).
+s/s(/s (/;
+s/spec/specification for Standard-mode/
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index a0905c8..83516cb 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -42,6 +42,7 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/random.h>
-+#include <linux/err.h>
- #include <asm/uaccess.h>
- 
- 
-@@ -91,6 +92,60 @@ static void add_early_randomness(struct hwrng *rng)
- 		add_device_randomness(bytes, bytes_read);
- }
- 
-+static inline void cleanup_rng(struct kref *kref)
-+{
-+	struct hwrng *rng = container_of(kref, struct hwrng, ref);
-+
-+	if (rng->cleanup)
-+		rng->cleanup(rng);
-+}
-+
-+static void set_current_rng(struct hwrng *rng)
-+{
-+	BUG_ON(!mutex_is_locked(&rng_mutex));
-+	kref_get(&rng->ref);
-+	current_rng = rng;
-+}
-+
-+static void drop_current_rng(void)
-+{
-+	BUG_ON(!mutex_is_locked(&rng_mutex));
-+	if (!current_rng)
-+		return;
-+
-+	/* decrease last reference for triggering the cleanup */
-+	kref_put(&current_rng->ref, cleanup_rng);
-+	current_rng = NULL;
-+}
-+
-+/* Returns ERR_PTR(), NULL or refcounted hwrng */
-+static struct hwrng *get_current_rng(void)
-+{
-+	struct hwrng *rng;
-+
-+	if (mutex_lock_interruptible(&rng_mutex))
-+		return ERR_PTR(-ERESTARTSYS);
-+
-+	rng = current_rng;
-+	if (rng)
-+		kref_get(&rng->ref);
-+
-+	mutex_unlock(&rng_mutex);
-+	return rng;
-+}
-+
-+static void put_rng(struct hwrng *rng)
-+{
-+	/*
-+	 * Hold rng_mutex here so we serialize in case they set_current_rng
-+	 * on rng again immediately.
-+	 */
-+	mutex_lock(&rng_mutex);
-+	if (rng)
-+		kref_put(&rng->ref, cleanup_rng);
-+	mutex_unlock(&rng_mutex);
-+}
-+
- static inline int hwrng_init(struct hwrng *rng)
- {
- 	if (rng->init) {
-@@ -113,12 +168,6 @@ static inline int hwrng_init(struct hwrng *rng)
- 	return 0;
- }
- 
--static inline void hwrng_cleanup(struct hwrng *rng)
--{
--	if (rng && rng->cleanup)
--		rng->cleanup(rng);
--}
--
- static int rng_dev_open(struct inode *inode, struct file *filp)
- {
- 	/* enforce read-only access to this chrdev */
-@@ -154,21 +203,22 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 	ssize_t ret = 0;
- 	int err = 0;
- 	int bytes_read, len;
-+	struct hwrng *rng;
- 
- 	while (size) {
--		if (mutex_lock_interruptible(&rng_mutex)) {
--			err = -ERESTARTSYS;
-+		rng = get_current_rng();
-+		if (IS_ERR(rng)) {
-+			err = PTR_ERR(rng);
- 			goto out;
- 		}
--
--		if (!current_rng) {
-+		if (!rng) {
- 			err = -ENODEV;
--			goto out_unlock;
-+			goto out;
- 		}
- 
- 		mutex_lock(&reading_mutex);
- 		if (!data_avail) {
--			bytes_read = rng_get_data(current_rng, rng_buffer,
-+			bytes_read = rng_get_data(rng, rng_buffer,
- 				rng_buffer_size(),
- 				!(filp->f_flags & O_NONBLOCK));
- 			if (bytes_read < 0) {
-@@ -200,8 +250,8 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 			ret += len;
- 		}
- 
--		mutex_unlock(&rng_mutex);
- 		mutex_unlock(&reading_mutex);
-+		put_rng(rng);
- 
- 		if (need_resched())
- 			schedule_timeout_interruptible(1);
-@@ -213,12 +263,11 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
- 	}
- out:
- 	return ret ? : err;
--out_unlock:
--	mutex_unlock(&rng_mutex);
--	goto out;
-+
- out_unlock_reading:
- 	mutex_unlock(&reading_mutex);
--	goto out_unlock;
-+	put_rng(rng);
-+	goto out;
- }
- 
- 
-@@ -257,8 +306,8 @@ static ssize_t hwrng_attr_current_store(struct device *dev,
- 			err = hwrng_init(rng);
- 			if (err)
- 				break;
--			hwrng_cleanup(current_rng);
--			current_rng = rng;
-+			drop_current_rng();
-+			set_current_rng(rng);
- 			err = 0;
- 			break;
- 		}
-@@ -272,17 +321,15 @@ static ssize_t hwrng_attr_current_show(struct device *dev,
- 				       struct device_attribute *attr,
- 				       char *buf)
- {
--	int err;
- 	ssize_t ret;
--	const char *name = "none";
-+	struct hwrng *rng;
- 
--	err = mutex_lock_interruptible(&rng_mutex);
--	if (err)
--		return -ERESTARTSYS;
--	if (current_rng)
--		name = current_rng->name;
--	ret = snprintf(buf, PAGE_SIZE, "%s\n", name);
--	mutex_unlock(&rng_mutex);
-+	rng = get_current_rng();
-+	if (IS_ERR(rng))
-+		return PTR_ERR(rng);
-+
-+	ret = snprintf(buf, PAGE_SIZE, "%s\n", rng ? rng->name : "none");
-+	put_rng(rng);
- 
- 	return ret;
- }
-@@ -357,12 +404,16 @@ static int hwrng_fillfn(void *unused)
- 	long rc;
- 
- 	while (!kthread_should_stop()) {
--		if (!current_rng)
-+		struct hwrng *rng;
-+
-+		rng = get_current_rng();
-+		if (IS_ERR(rng) || !rng)
- 			break;
- 		mutex_lock(&reading_mutex);
--		rc = rng_get_data(current_rng, rng_fillbuf,
-+		rc = rng_get_data(rng, rng_fillbuf,
- 				  rng_buffer_size(), 1);
- 		mutex_unlock(&reading_mutex);
-+		put_rng(rng);
- 		if (rc <= 0) {
- 			pr_warn("hwrng: no data available\n");
- 			msleep_interruptible(10000);
-@@ -423,14 +474,13 @@ int hwrng_register(struct hwrng *rng)
- 		err = hwrng_init(rng);
- 		if (err)
- 			goto out_unlock;
--		current_rng = rng;
-+		set_current_rng(rng);
- 	}
- 	err = 0;
- 	if (!old_rng) {
- 		err = register_miscdev();
- 		if (err) {
--			hwrng_cleanup(rng);
--			current_rng = NULL;
-+			drop_current_rng();
- 			goto out_unlock;
- 		}
- 	}
-@@ -457,22 +507,21 @@ EXPORT_SYMBOL_GPL(hwrng_register);
- 
- void hwrng_unregister(struct hwrng *rng)
- {
--	int err;
--
- 	mutex_lock(&rng_mutex);
- 
- 	list_del(&rng->list);
- 	if (current_rng == rng) {
--		hwrng_cleanup(rng);
--		if (list_empty(&rng_list)) {
--			current_rng = NULL;
--		} else {
--			current_rng = list_entry(rng_list.prev, struct hwrng, list);
--			err = hwrng_init(current_rng);
--			if (err)
--				current_rng = NULL;
-+		drop_current_rng();
-+		if (!list_empty(&rng_list)) {
-+			struct hwrng *tail;
-+
-+			tail = list_entry(rng_list.prev, struct hwrng, list);
-+
-+			if (hwrng_init(tail) == 0)
-+				set_current_rng(tail);
- 		}
- 	}
-+
- 	if (list_empty(&rng_list)) {
- 		mutex_unlock(&rng_mutex);
- 		unregister_miscdev();
-diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
-index 914bb08..c212e71 100644
---- a/include/linux/hw_random.h
-+++ b/include/linux/hw_random.h
-@@ -14,6 +14,7 @@
- 
- #include <linux/types.h>
- #include <linux/list.h>
-+#include <linux/kref.h>
- 
- /**
-  * struct hwrng - Hardware Random Number Generator driver
-@@ -44,6 +45,7 @@ struct hwrng {
- 
- 	/* internal. */
- 	struct list_head list;
-+	struct kref ref;
- };
- 
- /** Register a new Hardware Random Number Generator driver. */
+There are different capitalisation of i2c in the patch and the commit log. I
+don't know what Wolfram prefers here, but using the same spelling
+everywhere would be nice.
+
+> To fix this bug, min_low_ns should include fall time and min_high_ns
+> should include rise time too.
+> 
+> This patch merged the patch that Doug submitted to chromium, which
+Isn't Chromium a web browser? Does it really contain i2c stuff?
+I bet it's about Chromium OS.
+
+> can get the rise and fall times for signals from the device tree.
+> This allows us to more accurately calculate timings. see:
+> https://chromium-review.googlesource.com/#/c/232774/
+> 
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+> Changes in v2:
+> - merged the patch that Doug submitted to chromium
+> Changes in v3:
+> - merged the patch that Doug submitted to chromium to change bindins
+>   see: https://chromium-review.googlesource.com/#/c/232775/
+> 
+>  Documentation/devicetree/bindings/i2c/i2c-rk3x.txt | 11 +++++
+>  drivers/i2c/busses/i2c-rk3x.c                      | 57 +++++++++++++++-------
+>  2 files changed, 50 insertions(+), 18 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+> index dde6c22..925d6eb 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+> @@ -21,6 +21,14 @@ Required on RK3066, RK3188 :
+>  Optional properties :
+>  
+>   - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
+> + - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
+> +	(t(r) in i2c spec). If not specified this is assumed to be the max the
+s/spec/specification/; s/max/maximum/
+
+> +	spec allows(1000 ns for standard mode, 300 ns for fast mode) which
+s/s(/s (/; s/standard mode/Standard-mode/; s/fast mode/Fast-mode/;
+
+
+> +	might cause slightly slower communication.
+> + - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
+> +	(t(f) in the i2c0 spec).  If not specified this is assumed to be the
+s/i2c0/i2c/
+
+> +	max the spec allows (300 ns) which might cause slightly slower
+> +	communication.
+>  
+>  Example:
+>  
+> @@ -39,4 +47,7 @@ i2c0: i2c@2002d000 {
+>  
+>  	clock-names = "i2c";
+>  	clocks = <&cru PCLK_I2C0>;
+> +
+> +	i2c-scl-rising-time-ns = <800>;
+> +	i2c-scl-falling-time-ns = <100>;
+>  };
+> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+> index 0ee5802..50c1678 100644
+> --- a/drivers/i2c/busses/i2c-rk3x.c
+> +++ b/drivers/i2c/busses/i2c-rk3x.c
+> @@ -470,28 +477,30 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
+>  
+>  	/*
+>  	 * min_low_ns:  The minimum number of ns we need to hold low
+> -	 *		to meet i2c spec
+> +	 *		to meet i2c spec, should include fall time.
+>  	 * min_high_ns: The minimum number of ns we need to hold high
+> -	 *		to meet i2c spec
+> +	 *		to meet i2c spec, should include rise time.
+>  	 * max_low_ns:  The maximum number of ns we can hold low
+> -	 *		to meet i2c spec
+> +	 *		to meet i2c spec.
+>  	 *
+>  	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
+>  	 *	 This is because the i2c host on Rockchip holds the data line
+>  	 *	 for half the low time.
+>  	 */
+>  	if (scl_rate <= 100000) {
+		/* Standard-mode */
+> -		min_low_ns = 4700;
+> -		min_high_ns = 4000;
+> -		max_data_hold_ns = 3450;
+> -		data_hold_buffer_ns = 50;
+> +		spec_min_low_ns = 4700;
+> +		spec_min_high_ns = 4000;
+> +		spec_max_data_hold_ns = 3450;
+The specification calls this "data valid time" (t_(VD;DAT)).
+> +		spec_data_hold_buffer_ns = 50;
+I didn't find this parameter in the spec, also it doesn't differ for
+Standard-mode vs. Fast-mode. What is this?
+
+>  	} else {
+		/* Fast-mode */
+> -		min_low_ns = 1300;
+> -		min_high_ns = 600;
+> -		max_data_hold_ns = 900;
+> -		data_hold_buffer_ns = 50;
+> +		spec_min_low_ns = 1300;
+> +		spec_min_high_ns = 600;
+> +		spec_max_data_hold_ns = 900;
+> +		spec_data_hold_buffer_ns = 50;
+>  	}
+> -	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
+> +	min_low_ns = spec_min_low_ns + fall_ns;
+> +	min_high_ns = spec_min_high_ns + rise_ns;
+> +	max_low_ns = spec_max_data_hold_ns * 2 - spec_data_hold_buffer_ns;
+>  	min_total_ns = min_low_ns + min_high_ns;
+>  
+>  	/* Adjust to avoid overflow */
+> @@ -588,8 +597,8 @@ static void rk3x_i2c_adapt_div(struct rk3x_i2c *i2c, unsigned long clk_rate)
+>  	u64 t_low_ns, t_high_ns;
+>  	int ret;
+>  
+> -	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, &div_low,
+> -				 &div_high);
+> +	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->rise_ns,
+> +				 i2c->fall_ns, &div_low, &div_high);
+>  
+>  	WARN_ONCE(ret != 0, "Could not reach SCL freq %u", i2c->scl_frequency);
+>  
+> @@ -633,9 +642,9 @@ static int rk3x_i2c_clk_notifier_cb(struct notifier_block *nb, unsigned long
+>  	switch (event) {
+>  	case PRE_RATE_CHANGE:
+>  		if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
+> -				      &div_low, &div_high) != 0) {
+> +				       i2c->rise_ns, i2c->fall_ns, &div_low,
+> +				       &div_high) != 0)
+>  			return NOTIFY_STOP;
+> -		}
+>  
+>  		/* scale up */
+>  		if (ndata->new_rate > ndata->old_rate)
+> @@ -859,6 +868,18 @@ static int rk3x_i2c_probe(struct platform_device *pdev)
+>  		i2c->scl_frequency = DEFAULT_SCL_RATE;
+>  	}
+>  
+> +	/* Read rise and fall ns; if not there use the default max from spec */
+> +	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
+> +				 &i2c->rise_ns)) {
+> +		if (i2c->scl_frequency <= 100000)
+> +			i2c->rise_ns = 1000;
+> +		else
+> +			i2c->rise_ns = 300;
+> +	}
+> +	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
+> +				 &i2c->fall_ns))
+> +		i2c->fall_ns = 300;
+> +
+I don't know if other drivers do the same (I assume they should). If so,
+moving this logic into the core would be nice. I guess this can still be
+done later.
+
+The i2c specification also has a minimum for t(r) and t(f). I don't know
+why these are limited, but I think it would be good to check for these
+limits, too.
+
+>  	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
+>  	i2c->adap.owner = THIS_MODULE;
+>  	i2c->adap.algo = &rk3x_i2c_algorithm;
+
+Best regards
+Uwe
+
 -- 
-1.9.3
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
