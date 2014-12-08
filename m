@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510AbaLHUMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:12:09 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35075 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033AbaLHUMH (ORCPT
+	id S1754812AbaLHUMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:12:37 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46543 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688AbaLHUMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:12:07 -0500
-Date: Mon, 8 Dec 2014 12:11:58 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Robert Yang <hachyang@gmail.com>
-Cc: Wim Van Seroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ryang <ryang@hach.com>
-Subject: Re: [PATCH 1/1] Watchdog: Fixed the watchdog close/stop logic - only
- close the watchdog if the magic character was received and the magic close
- is supported.
-Message-ID: <20141208201158.GA29618@roeck-us.net>
-References: <1418060711-47872-1-git-send-email-hachyang@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418060711-47872-1-git-send-email-hachyang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.54860617.0004,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 8 Dec 2014 15:12:35 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH 4/6] PCI/MSI: Let pci_msi_get_domain use struct device's msi_domain
+Date: Mon,  8 Dec 2014 20:12:21 +0000
+Message-Id: <1418069543-21969-5-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com>
+References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:45:11AM -0700, Robert Yang wrote:
-> From: ryang <ryang@hach.com>
-> 
-> Signed-off-by: ryang <ryang@hach.com>
-> ---
->  drivers/watchdog/watchdog_dev.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index 6aaefba..73793d8 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -471,8 +471,8 @@ static int watchdog_release(struct inode *inode, struct file *file)
->  	 */
->  	if (!test_bit(WDOG_ACTIVE, &wdd->status))
->  		err = 0;
-> -	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-> -		 !(wdd->info->options & WDIOF_MAGICCLOSE))
-> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) &&
-> +		(wdd->info->options & WDIOF_MAGICCLOSE))
->  		err = watchdog_stop(wdd);
->  
-Why ?
+Now that we can easily find which MSI domain a PCI device is
+using, use dev_get_msi_domain as a way to retrieve the information.
 
-Guenter
+The original code is still used as a fallback.
+
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/pci/msi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index fd60806..003040b 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -41,7 +41,8 @@ static struct irq_domain *pci_msi_get_domain(struct pci_dev *dev)
+ {
+ 	struct irq_domain *domain = NULL;
+ 
+-	if (dev->bus->msi)
++	domain = dev_get_msi_domain(&dev->dev);
++	if (!domain && dev->bus->msi)
+ 		domain = dev->bus->msi->domain;
+ 	if (!domain)
+ 		domain = arch_get_pci_msi_domain(dev);
+-- 
+2.1.3
+
