@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482AbaLHUnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:43:06 -0500
-Received: from mx2.comprocs.com ([12.186.155.30]:52929 "HELO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753148AbaLHUnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:43:05 -0500
-X-BYPSHEADER: 3151324
-X-SMScore: -200
-Message-ID: <54860D53.1050800@compro.net>
-Date: Mon, 08 Dec 2014 15:42:59 -0500
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: nouveau: Do you really want these new links in the kernel tree?
-Content-Type: text/plain; charset=utf-8
+	id S1755550AbaLHUnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:43:18 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64344 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755489AbaLHUnP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 15:43:15 -0500
+Message-ID: <1418071392.2058.56.camel@x220>
+Subject: Re: [PATCH 3/3] kconfig: rename S_BOOLEAN to S_BOOL for consistency
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Jaeger <cj@linux.com>
+Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dborkman@redhat.com
+Date: Mon, 08 Dec 2014 21:43:12 +0100
+In-Reply-To: <7fa2d6b65dfd4d5549baf8cbc53b6940b00fe52d.1418003065.git.cj@linux.com>
+References: <cover.1418003065.git.cj@linux.com>
+	 <7fa2d6b65dfd4d5549baf8cbc53b6940b00fe52d.1418003065.git.cj@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Dec 2014 20:43:12.0598 (UTC) FILETIME=[9576AF60:01D01327]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/usr/src/linux-3.18> find drivers/ -type l | xargs ls -al
+On Sun, 2014-12-07 at 20:49 -0500, Christoph Jaeger wrote:
+> Rename S_BOOLEAN to S_BOOL so that it reflects the actual string as
+> S_TRISTATE, S_INT, etc., do. No functional changes.
+> 
+> Signed-off-by: Christoph Jaeger <cj@linux.com>
 
-lrwxrwxrwx 1 markh users 21 Dec  7 17:21 ./drivers/gpu/drm/nouveau/core/include/nvif/class.h -> ../../../nvif/class.h
-lrwxrwxrwx 1 markh users 21 Dec  7 17:21 ./drivers/gpu/drm/nouveau/core/include/nvif/event.h -> ../../../nvif/event.h
-lrwxrwxrwx 1 markh users 21 Dec  7 17:21 ./drivers/gpu/drm/nouveau/core/include/nvif/ioctl.h -> ../../../nvif/ioctl.h
-lrwxrwxrwx 1 markh users 22 Dec  7 17:21 ./drivers/gpu/drm/nouveau/core/include/nvif/unpack.h -> ../../../nvif/unpack.h
-lrwxrwxrwx 1 markh users 12 Dec  7 17:21 ./drivers/gpu/drm/nouveau/nvif/os.h -> ../core/os.h
+If you resend this series, and take in account my comments on 2/3, feel
+free to add:
+    Acked-by: Paul Bolle <pebolle@tiscali.nl>
 
-Regards
-Mark
+to this patch.
+
+Thanks,
+
+
+Paul Bolle
+
