@@ -1,220 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaLHDJJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 22:09:09 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:47494 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaLHDJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 22:09:06 -0500
-Message-ID: <1418008142.3957.1.camel@primarydata.com>
-Subject: [GIT PULL] Please pull NFS client changes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sun, 07 Dec 2014 22:09:02 -0500
-Organization: Primary Data, Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Rq/iQrWI7T7hnrRuX7Af"
-X-Mailer: Evolution 3.12.8 (3.12.8-1.fc21) 
-Mime-Version: 1.0
+	id S1753560AbaLHD1G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 22:27:06 -0500
+Received: from ozlabs.org ([103.22.144.67]:58707 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824AbaLHD1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 22:27:05 -0500
+From: Anton Blanchard <anton@samba.org>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, tj@kernel.org, fengguang.wu@intel.com,
+        rafael.j.wysocki@intel.com, yuyang.du@intel.com, lkp@01.org,
+        yuanhan.liu@linux.intel.com, pjt@google.com, bsegall@google.com,
+        daniel@numascale.com, subbaram@codeaurora.org,
+        computersforpeace@gmail.com, sp@datera.io
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] kthread: kthread_bind fails to enforce CPU affinity (fixes kernel BUG at kernel/smpboot.c:134!)
+Date: Mon,  8 Dec 2014 14:27:01 +1100
+Message-Id: <1418009221-12719-1-git-send-email-anton@samba.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have a busy ppc64le KVM box where guests sometimes hit the infamous
+"kernel BUG at kernel/smpboot.c:134!" issue during boot:
 
---=-Rq/iQrWI7T7hnrRuX7Af
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+BUG_ON(td->cpu != smp_processor_id());
 
-Hi Linus,
+Basically a per CPU hotplug thread scheduled on the wrong CPU. The oops
+output confirms it:
 
-The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9=
-:
+CPU: 0
+Comm: watchdog/130
 
-  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
+The issue is in kthread_bind where we set the cpus_allowed mask, but do
+not touch task_thread_info(p)->cpu. The scheduler assumes the previously
+scheduled CPU is in the cpus_allowed mask, but in this case we are
+moving a thread to another CPU so it is not.
 
-are available in the git repository at:
+We used to call set_task_cpu which sets task_thread_info(p)->cpu (in fact
+kthread_bind still has a comment suggesting this). That was removed in
+e2912009fb7b ("sched: Ensure set_task_cpu() is never called on blocked
+tasks").
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.19-=
-1
+Since we cannot call set_task_cpu (the task is in a sleeping state),
+just do an explicit set of task_thread_info(p)->cpu.
 
-for you to fetch changes up to 388f0c776781fe64ce951701bfe712b2182a31f2:
+Fixes: e2912009fb7b ("sched: Ensure set_task_cpu() is never called on blocked tasks")
+Cc: stable@vger.kernel.org
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+ kernel/kthread.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-  sunrpc: add a debugfs rpc_xprt directory with an info file in it (2014-11=
--27 13:14:52 -0500)
-
-----------------------------------------------------------------
-NFS client updates for Linux 3.19
-
-Highlights include:
-
-Features:
-- NFSv4.2 client support for hole punching and preallocation.
-- Further RPC/RDMA client improvements.
-- Add more RPC transport debugging tracepoints.
-- Add RPC debugging tools in debugfs.
-
-Bugfixes:
-- Stable fix for layoutget error handling
-- Fix a change in COMMIT behaviour resulting from the recent io code update=
-s
-
-----------------------------------------------------------------
-Anna Schumaker (3):
-      NFS: Use nfs_server_capable() for checknig NFS_CAP_SEEK
-      nfs: Add ALLOCATE support
-      nfs: Add DEALLOCATE support
-
-Christoph Hellwig (1):
-      pnfs/blocklayout: fix end calculation in pnfs_num_cont_bytes
-
-Chuck Lever (10):
-      xprtrdma: Return an errno from rpcrdma_register_external()
-      xprtrdma: Cap req_cqinit
-      xprtrdma: unmap all FMRs during transport disconnect
-      xprtrdma: Refactor tasklet scheduling
-      xprtrdma: Re-write rpcrdma_flush_cqs()
-      xprtrdma: Enable pad optimization
-      xprtrdma: Display async errors
-      SUNRPC: serialize iostats updates
-      NFS: SETCLIENTID XDR buffer sizes are incorrect
-      NFS: Clean up nfs4_init_callback()
-
-Jan Kara (1):
-      nfs: Remove dead case from nfs4_map_errors()
-
-Jeff Layton (8):
-      sunrpc: add some tracepoints in svc_rqst handling functions
-      sunrpc: add new tracepoints in xprt handling code
-      sunrpc: add tracepoints in xs_tcp_data_recv
-      lockd: eliminate LOCKD_DEBUG
-      sunrpc: eliminate RPC_DEBUG
-      sunrpc: eliminate RPC_TRACEPOINTS
-      sunrpc: add debugfs file for displaying client rpc_task queue
-      sunrpc: add a debugfs rpc_xprt directory with an info file in it
-
-Li RongQing (2):
-      nfs: replace nfs_add_stats with nfs_inc_stats when add one
-      nfs: define nfs_inc_fscache_stats and using it as possible
-
-Markus Elfring (1):
-      NFS: Deletion of unnecessary checks before the function call "nfs_put=
-_client"
-
-Peng Tao (1):
-      nfs41: fix nfs4_proc_layoutget error handling
-
-Trond Myklebust (2):
-      Merge tag 'nfs-cel-for-3.19' of git://git.linux-nfs.org/projects/anna=
-/nfs-rdma into linux-next
-      Merge tag 'nfs-rdma-for-3.19' of git://git.linux-nfs.org/projects/ann=
-a/nfs-rdma into linux-next
-
-Weston Andros Adamson (1):
-      NFS: fix subtle change in COMMIT behavior
-
- fs/lockd/svclock.c                      |   2 +-
- fs/nfs/blocklayout/blocklayout.c        |   2 +-
- fs/nfs/callback_proc.c                  |   2 +-
- fs/nfs/filelayout/filelayoutdev.c       |   3 +-
- fs/nfs/fscache.c                        |  24 +--
- fs/nfs/inode.c                          |   9 +-
- fs/nfs/iostat.h                         |   5 +
- fs/nfs/nfs42.h                          |   2 +
- fs/nfs/nfs42proc.c                      |  77 ++++++++-
- fs/nfs/nfs42xdr.c                       | 139 +++++++++++++++
- fs/nfs/nfs4_fs.h                        |   1 +
- fs/nfs/nfs4client.c                     |  46 +++--
- fs/nfs/nfs4file.c                       |  31 ++++
- fs/nfs/nfs4proc.c                       |  12 +-
- fs/nfs/nfs4xdr.c                        |  12 +-
- fs/nfs/pagelist.c                       |  11 +-
- fs/nfs/read.c                           |   2 +-
- fs/nfs/write.c                          |  19 ++-
- include/linux/lockd/debug.h             |   6 +-
- include/linux/nfs4.h                    |   2 +
- include/linux/nfs_fs.h                  |   4 +-
- include/linux/nfs_fs_sb.h               |   2 +
- include/linux/nfs_xdr.h                 |  14 ++
- include/linux/sunrpc/auth.h             |   2 +-
- include/linux/sunrpc/clnt.h             |   4 +
- include/linux/sunrpc/debug.h            |  64 +++++--
- include/linux/sunrpc/metrics.h          |   3 +
- include/linux/sunrpc/sched.h            |   8 +-
- include/linux/sunrpc/xprt.h             |   3 +
- include/linux/sunrpc/xprtsock.h         |  59 +++++++
- include/trace/events/sunrpc.h           | 160 +++++++++++++++++
- include/uapi/linux/nfsd/debug.h         |   2 +-
- net/sunrpc/Kconfig                      |   1 +
- net/sunrpc/Makefile                     |   1 +
- net/sunrpc/auth.c                       |   4 +-
- net/sunrpc/auth_generic.c               |   2 +-
- net/sunrpc/auth_gss/auth_gss.c          |   2 +-
- net/sunrpc/auth_gss/gss_generic_token.c |   2 +-
- net/sunrpc/auth_gss/gss_krb5_crypto.c   |   2 +-
- net/sunrpc/auth_gss/gss_krb5_keys.c     |   2 +-
- net/sunrpc/auth_gss/gss_krb5_mech.c     |   2 +-
- net/sunrpc/auth_gss/gss_krb5_seal.c     |   2 +-
- net/sunrpc/auth_gss/gss_krb5_seqnum.c   |   2 +-
- net/sunrpc/auth_gss/gss_krb5_unseal.c   |   2 +-
- net/sunrpc/auth_gss/gss_krb5_wrap.c     |   2 +-
- net/sunrpc/auth_gss/gss_mech_switch.c   |   2 +-
- net/sunrpc/auth_gss/gss_rpc_xdr.h       |   2 +-
- net/sunrpc/auth_gss/svcauth_gss.c       |   2 +-
- net/sunrpc/auth_null.c                  |   4 +-
- net/sunrpc/auth_unix.c                  |   2 +-
- net/sunrpc/backchannel_rqst.c           |   2 +-
- net/sunrpc/clnt.c                       |  16 +-
- net/sunrpc/debugfs.c                    | 292 ++++++++++++++++++++++++++++=
-++++
- net/sunrpc/rpcb_clnt.c                  |   2 +-
- net/sunrpc/sched.c                      |   4 +-
- net/sunrpc/stats.c                      |  21 ++-
- net/sunrpc/sunrpc_syms.c                |  12 +-
- net/sunrpc/svc.c                        |  23 +--
- net/sunrpc/svc_xprt.c                   |  31 ++--
- net/sunrpc/sysctl.c                     |   2 +-
- net/sunrpc/xprt.c                       |  19 ++-
- net/sunrpc/xprtrdma/rpc_rdma.c          |   4 +-
- net/sunrpc/xprtrdma/transport.c         |  12 +-
- net/sunrpc/xprtrdma/verbs.c             | 122 ++++++++++---
- net/sunrpc/xprtrdma/xprt_rdma.h         |   6 +
- net/sunrpc/xprtsock.c                   |  77 ++-------
- 66 files changed, 1171 insertions(+), 244 deletions(-)
- create mode 100644 net/sunrpc/debugfs.c
-
---=20
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
-
-
-
-
---=-Rq/iQrWI7T7hnrRuX7Af
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABAgAGBQJUhRZOAAoJEGcL54qWCgDymKwQAJkZoYDVmGAPByVMmf75E/54
-0L5dKChvtDntksKjo084MrQTuqNOsfp3lHW9qmae4nGqAlelh1aQ8V6D0TmQoebQ
-qCj+a6qTJZDVI0UuAKcxY+M/yMwNjVQWKET8auXhA+rZZom4VzxexBLL3mwyN40e
-IpEUirvGI04iTX0U5Ep+WOfgeBJv7RkXrmr8drdqLrn7FlsWvzrk2W8D2xDOx1JT
-8EqfzLfpyracYGb3MRsxPgcSf9yiwBMg//fVUvm1yQ8z6bustw1YQaoFomQPhnKy
-ljB9tZf0OHFwCmVOGWE6wfvdwnW+FuCd+I2P2d5Kddu/Bhk/c0Hi+mvFEU045S+e
-XJvt79xeVUjBpKvjmqVShTh9Vqn3U3DHiI4JBlcbxwYXv84fs8PzsncY+cPxDDTp
-j/Zkya+r6zaGQp8C3wcOusUd6gg+zfm/+pCSh/7/DjqRyYgN4AfeQr/jlBxegj4G
-aealsssGQC5H6BwcCvDkB+iBrj/ULNWsVd8TV0d/oFGmFovecBJBCoacY/pZbF1F
-X0YNvphQCBvfJp6UozP0lf02sZwvMBazcsx1oRwpR/T6RD3wbsCJZmYPO3t5aJ9B
-w9hE9yvDgIFXeAK0QLBrCyP4RqSl9sPFnpaZypF6tz+LKeNA9VbYKLpfR2mOibwC
-T3sv8MViCo6vmMQuO3M1
-=lW1h
------END PGP SIGNATURE-----
-
---=-Rq/iQrWI7T7hnrRuX7Af--
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 10e489c..e40ab1d 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -327,13 +327,14 @@ EXPORT_SYMBOL(kthread_create_on_node);
+ 
+ static void __kthread_bind(struct task_struct *p, unsigned int cpu, long state)
+ {
+-	/* Must have done schedule() in kthread() before we set_task_cpu */
++	/* Must have done schedule() in kthread() before we change affinity */
+ 	if (!wait_task_inactive(p, state)) {
+ 		WARN_ON(1);
+ 		return;
+ 	}
+ 	/* It's safe because the task is inactive. */
+ 	do_set_cpus_allowed(p, cpumask_of(cpu));
++	task_thread_info(p)->cpu = cpu;
+ 	p->flags |= PF_NO_SETAFFINITY;
+ }
+ 
+-- 
+2.1.0
 
