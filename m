@@ -1,134 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134AbaLHK1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:27:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52594 "EHLO mx2.suse.de"
+	id S1755155AbaLHK1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:27:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56835 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563AbaLHK1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:27:30 -0500
-Message-ID: <54857D0F.3080601@suse.cz>
-Date: Mon, 08 Dec 2014 11:27:27 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754968AbaLHK1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 05:27:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,537,1413270000"; 
+   d="scan'208";a="634353191"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpu: drm: i915: intel_dsi_pll.c:  Remove unused function
+In-Reply-To: <1417992176-20712-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1417992176-20712-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 08 Dec 2014 12:27:15 +0200
+Message-ID: <87a92yo2rg.fsf@intel.com>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [RFC PATCH 2/3] mm: more aggressive page stealing for UNMOVABLE
- allocations
-References: <1417713178-10256-1-git-send-email-vbabka@suse.cz> <1417713178-10256-3-git-send-email-vbabka@suse.cz> <20141208071140.GB3904@js1304-P5Q-DELUXE>
-In-Reply-To: <20141208071140.GB3904@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 08:11 AM, Joonsoo Kim wrote:
-> On Thu, Dec 04, 2014 at 06:12:57PM +0100, Vlastimil Babka wrote:
->> When allocation falls back to stealing free pages of another migratetype,
->> it can decide to steal extra pages, or even the whole pageblock in order to
->> reduce fragmentation, which could happen if further allocation fallbacks
->> pick a different pageblock. In try_to_steal_freepages(), one of the situations
->> where extra pages are stolen happens when we are trying to allocate a
->> MIGRATE_RECLAIMABLE page.
->>
->> However, MIGRATE_UNMOVABLE allocations are not treated the same way, although
->> spreading such allocation over multiple fallback pageblocks is arguably even
->> worse than it is for RECLAIMABLE allocations. To minimize fragmentation, we
->> should minimize the number of such fallbacks, and thus steal as much as is
->> possible from each fallback pageblock.
+On Mon, 08 Dec 2014, Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+> Remove the function dsi_rr_formula() that is not used anywhere.
+
+Please don't.
+
+BR,
+Jani.
+
 >
-> I'm not sure that this change is good. If we steal order 0 pages,
-> this may be good. But, sometimes, we try to steal high order page
-> and, in this case, there would be many order 0 freepages and blindly
-> stealing freepages in that pageblock make the system more fragmented.
-
-I don't understand. If we try to steal high order page (current_order >= 
-pageblock_order / 2), then nothing changes, the condition for extra 
-stealing is the same.
-
-> MIGRATE_RECLAIMABLE is different case than MIGRATE_UNMOVABLE, because
-> it can be reclaimed so excessive migratetype movement doesn't result
-> in permanent fragmentation.
-
-There's two kinds of "fragmentation" IMHO. First, inside a pageblock, 
-unmovable allocations can prevent merging of lower orders. This can get 
-worse if we steal multiple pages from a single pageblock, but the 
-pageblock itself is not marked as unmovable.
-
-Second kind of fragmentation is when unmovable allocations spread over 
-multiple pageblocks. Lower order allocations within each such pageblock 
-might be still possible, but less pageblocks are able to compact to have 
-whole pageblock free.
-
-I think the second kind is worse, so when do have to pollute a movable 
-pageblock with unmovable allocation, we better take as much as possible, 
-so we prevent polluting other pageblocks.
-
-
-> What I'd like to do to prevent fragmentation is
-> 1) check whether we can steal all or almost freepages and change
-> migratetype of pageblock.
-> 2) If above condition isn't met, deny allocation and invoke compaction.
-
-Could work to some extend, but we need also to prevent excessive compaction.
-
-We could also introduce a new pageblock migratetype, something like 
-MIGRATE_MIXED. The idea is that once pageblock isn't used purely by 
-MOVABLE allocations, it's marked as MIXED, until it either becomes 
-marked UNMOVABLE or RECLAIMABLE by the existing mechanisms, or is fully 
-freed. In more detail:
-
-- MIXED is preferred for fallback before any other migratetypes
-- if RECLAIMABLE/UNMOVABLE page allocation is stealing from MOVABLE 
-pageblock and cannot mark pageblock as RECLAIMABLE/UNMOVABLE (by current 
-rules), it marks it as MIXED instead.
-- if MOVABLE allocation is stealing from UNMOVABLE/RECLAIMABLE 
-pageblocks, it will only mark it as MOVABLE if it was fully free. 
-Otherwise, if current rules would result in marking it as MOVABLE (i.e. 
-most of it was stolen, but not all) it will mark it as MIXED instead.
-
-This could in theory leave more MOVABLE pageblocks unspoiled by 
-UNMOVABLE allocations.
-
-> Maybe knob to control behaviour would be needed.
-> How about it?
-
-Adding new knobs is not a good solution.
-
-> Thanks.
+> This was partially found by using a static code analysis program called cppcheck.
 >
->>
->> This patch thus adds a check for MIGRATE_UNMOVABLE to the decision to steal
->> extra free pages. When evaluating with stress-highalloc from mmtests, this has
->> reduced the number of MIGRATE_UNMOVABLE fallbacks to roughly 1/6. The number
->> of these fallbacks stealing from MIGRATE_MOVABLE block is reduced to 1/3.
->>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> ---
->>   mm/page_alloc.c | 1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 548b072..a14249c 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -1098,6 +1098,7 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
->>
->>   	if (current_order >= pageblock_order / 2 ||
->>   	    start_type == MIGRATE_RECLAIMABLE ||
->> +	    start_type == MIGRATE_UNMOVABLE ||
->>   	    page_group_by_mobility_disabled) {
->>   		int pages;
->>
->> --
->> 2.1.2
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/gpu/drm/i915/intel_dsi_pll.c |   83 +---------------------------------
+>  1 file changed, 1 insertion(+), 82 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/intel_dsi_pll.c b/drivers/gpu/drm/i915/intel_dsi_pll.c
+> index fa7a6ca..20086e8 100644
+> --- a/drivers/gpu/drm/i915/intel_dsi_pll.c
+> +++ b/drivers/gpu/drm/i915/intel_dsi_pll.c
+> @@ -50,88 +50,7 @@ static const u32 lfsr_converts[] = {
+>  	71, 35							/* 91 - 92 */
+>  };
+>  
+> -#ifdef DSI_CLK_FROM_RR
+> -
+> -static u32 dsi_rr_formula(const struct drm_display_mode *mode,
+> -			  int pixel_format, int video_mode_format,
+> -			  int lane_count, bool eotp)
+> -{
+> -	u32 bpp;
+> -	u32 hactive, vactive, hfp, hsync, hbp, vfp, vsync, vbp;
+> -	u32 hsync_bytes, hbp_bytes, hactive_bytes, hfp_bytes;
+> -	u32 bytes_per_line, bytes_per_frame;
+> -	u32 num_frames;
+> -	u32 bytes_per_x_frames, bytes_per_x_frames_x_lanes;
+> -	u32 dsi_bit_clock_hz;
+> -	u32 dsi_clk;
+> -
+> -	switch (pixel_format) {
+> -	default:
+> -	case VID_MODE_FORMAT_RGB888:
+> -	case VID_MODE_FORMAT_RGB666_LOOSE:
+> -		bpp = 24;
+> -		break;
+> -	case VID_MODE_FORMAT_RGB666:
+> -		bpp = 18;
+> -		break;
+> -	case VID_MODE_FORMAT_RGB565:
+> -		bpp = 16;
+> -		break;
+> -	}
+> -
+> -	hactive = mode->hdisplay;
+> -	vactive = mode->vdisplay;
+> -	hfp = mode->hsync_start - mode->hdisplay;
+> -	hsync = mode->hsync_end - mode->hsync_start;
+> -	hbp = mode->htotal - mode->hsync_end;
+> -
+> -	vfp = mode->vsync_start - mode->vdisplay;
+> -	vsync = mode->vsync_end - mode->vsync_start;
+> -	vbp = mode->vtotal - mode->vsync_end;
+> -
+> -	hsync_bytes = DIV_ROUND_UP(hsync * bpp, 8);
+> -	hbp_bytes = DIV_ROUND_UP(hbp * bpp, 8);
+> -	hactive_bytes = DIV_ROUND_UP(hactive * bpp, 8);
+> -	hfp_bytes = DIV_ROUND_UP(hfp * bpp, 8);
+> -
+> -	bytes_per_line = DSI_HSS_PACKET_SIZE + hsync_bytes +
+> -		DSI_HSA_PACKET_EXTRA_SIZE + DSI_HSE_PACKET_SIZE +
+> -		hbp_bytes + DSI_HBP_PACKET_EXTRA_SIZE +
+> -		hactive_bytes + DSI_HACTIVE_PACKET_EXTRA_SIZE +
+> -		hfp_bytes + DSI_HFP_PACKET_EXTRA_SIZE;
+> -
+> -	/*
+> -	 * XXX: Need to accurately calculate LP to HS transition timeout and add
+> -	 * it to bytes_per_line/bytes_per_frame.
+> -	 */
+> -
+> -	if (eotp && video_mode_format == VIDEO_MODE_BURST)
+> -		bytes_per_line += DSI_EOTP_PACKET_SIZE;
+> -
+> -	bytes_per_frame = vsync * bytes_per_line + vbp * bytes_per_line +
+> -		vactive * bytes_per_line + vfp * bytes_per_line;
+> -
+> -	if (eotp &&
+> -	    (video_mode_format == VIDEO_MODE_NON_BURST_WITH_SYNC_PULSE ||
+> -	     video_mode_format == VIDEO_MODE_NON_BURST_WITH_SYNC_EVENTS))
+> -		bytes_per_frame += DSI_EOTP_PACKET_SIZE;
+> -
+> -	num_frames = drm_mode_vrefresh(mode);
+> -	bytes_per_x_frames = num_frames * bytes_per_frame;
+> -
+> -	bytes_per_x_frames_x_lanes = bytes_per_x_frames / lane_count;
+> -
+> -	/* the dsi clock is divided by 2 in the hardware to get dsi ddr clock */
+> -	dsi_bit_clock_hz = bytes_per_x_frames_x_lanes * 8;
+> -	dsi_clk = dsi_bit_clock_hz / 1000;
+> -
+> -	if (eotp && video_mode_format == VIDEO_MODE_BURST)
+> -		dsi_clk *= 2;
+> -
+> -	return dsi_clk;
+> -}
+> -
+> -#else
+> +#ifndef DSI_CLK_FROM_RR
+>  
+>  /* Get DSI clock from pixel clock */
+>  static u32 dsi_clk_from_pclk(u32 pclk, int pixel_format, int lane_count)
+> -- 
+> 1.7.10.4
+>
 
+-- 
+Jani Nikula, Intel Open Source Technology Center
