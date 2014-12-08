@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaLHQjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:39:17 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:53643 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851AbaLHQjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:39:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, hauke@hauke-m.de
-Subject: Re: using DMA-API on ARM
-Date: Mon, 08 Dec 2014 17:38:57 +0100
-Message-ID: <2048819.2EPzBi8E3T@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5485D054.7090109@broadcom.com>
-References: <5481794E.4050406@broadcom.com> <2863746.4sUSEYqahB@wuerfel> <5485D054.7090109@broadcom.com>
+	id S1755897AbaLHQnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:43:37 -0500
+Received: from mail-bn1on0061.outbound.protection.outlook.com ([157.56.110.61]:15488
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755719AbaLHQnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 11:43:35 -0500
+Date: Mon, 8 Dec 2014 08:43:31 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Athira Lekshmi <andnlnbn18@gmail.com>
+CC: <gregkh@linuxfoundation.org>, <laurent.pinchart@ideasonboard.com>,
+        <devendra.aaru@gmail.com>, <athirasnamby@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] Clocking-wizard: Fixed missing blank line warning
+References: <1417943100-3723-1-git-send-email-andnlnbn18@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:2CkTiAofQJFzFf2jlZZCuEE5PtqcI5zTA0d7YlquXStvfhi4W7B
- wVcnYuLqz4xUrxEAlfkZB9fgbFsNt0BEF3K+/u79Nr1xha+FPEjzBVEgftJhDQdDKk0VcdE
- 2/P5R65EIAq0XC/qzUp4j4bAY8748HdeChAkEqsxjyCVTbz2Grj5Db6OQylmq5Fm1pgAx/B
- M8XAUkMVgVZxRivpSSU1g==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1417943100-3723-1-git-send-email-andnlnbn18@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21160.000
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <32e7de10392b459f9cbc1ca9cf2970a1@BL2FFO11FD024.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(979002)(6009001)(438002)(24454002)(189002)(51704005)(377424004)(199003)(83506001)(53416004)(54356999)(99396003)(50986999)(76176999)(46102003)(85182001)(77156002)(74316001)(19580405001)(62966003)(19580395003)(85202003)(21056001)(6806004)(31966008)(104016003)(87936001)(4396001)(47776003)(86362001)(108616004)(120916001)(64706001)(50466002)(106466001)(20776003)(23676002)(1411001)(107046002)(110136001)(92566001)(558084003)(92726002)(107986001)(24736002)(23106004)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB005;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:ovrnspm;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB005;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB005;
+X-Forefront-PRVS: 041963B986
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB005;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 17:22:44 Arend van Spriel wrote:
-> >> The log: first the ring allocation info is printed. Starting at
-> >> 16.124847, ring 2, 3 and 4 are rings used for device to host. In this
-> >> log the failure is on a read of ring 3. Ring 3 is 1024 entries of each
-> >> 16 bytes. The next thing printed is the kernel page tables. Then some
-> >> OpenWRT info and the logging of part of the connection setup. Then at
-> >> 1780.130752 the logging of the failure starts. The sequence number is
-> >> modulo 253 with ring size of 1024 matches an "old" entry (read 40,
-> >> expected 52). Then the different pointers are printed followed by
-> >> the kernel page table. The code does then a cache invalidate on the
-> >> dma_handle and the next read the sequence number is correct.
-> >
-> > How do you invalidate the cache? A dma_handle is of type dma_addr_t
-> > and we don't define an operation for that, nor does it make sense
-> > on an allocation from dma_alloc_coherent(). What happens if you
-> > take out the invalidate?
+On Sun, 2014-12-07 at 02:35PM +0530, Athira Lekshmi wrote:
+> Added a new line after declaration to remove the warning
+> 'Missing a blank line after declarations'
 > 
-> dma_sync_single_for_cpu(, DMA_FROM_DEVICE) which ends up invalidating 
-> the cache (or that is our suspicion).
+> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-I'm not sure about that:
-
-static void arm_dma_sync_single_for_cpu(struct device *dev,
-                dma_addr_t handle, size_t size, enum dma_data_direction dir)
-{
-        unsigned int offset = handle & (PAGE_SIZE - 1);
-        struct page *page = pfn_to_page(dma_to_pfn(dev, handle-offset));
-        __dma_page_dev_to_cpu(page, offset, size, dir);
-}
-
-Assuming a noncoherent linear (no IOMMU, no swiotlb, no dmabounce) mapping,
-dma_to_pfn will return the correct pfn here, but pfn_to_page will return a
-page pointer into the kernel linear mapping, which is not the same
-as the pointer you get from __alloc_remap_buffer(). The pointer that
-was returned from dma_alloc_coherent is a) non-cachable, and b) not the
-same that you flush here.
-
-	Arnd
+	Soren
