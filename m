@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaLHVuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:50:09 -0500
-Received: from smtp-out-161.synserver.de ([212.40.185.161]:1219 "EHLO
-	smtp-out-158.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753040AbaLHVuG (ORCPT
+	id S1754634AbaLHVvy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:51:54 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55965 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaLHVvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:50:06 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 3253
-Message-ID: <54861D04.8000102@metafoo.de>
-Date: Mon, 08 Dec 2014 22:49:56 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Vinod Koul <vinod.koul@intel.com>
-CC: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?windows-1252?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
- retrieval
-References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com> <20141208061746.GD16827@intel.com> <20141208141807.GC8739@lukather> <20141208162843.GP16827@intel.com> <20141208183853.GG8739@lukather>
-In-Reply-To: <20141208183853.GG8739@lukather>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Dec 2014 16:51:53 -0500
+From: Olof Johansson <olof@lixom.net>
+To: mturquette@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        f.fainelli@gmail.com, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 1/2] clk: bcm: kona: don't return -EFOO as bool
+Date: Mon,  8 Dec 2014 13:54:04 -0800
+Message-Id: <1418075645-14571-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 07:38 PM, Maxime Ripard wrote:
-[...]
->> And lastly noone blamed you for being late, if things were rosy they
->> would have been merged over the weekend and been in today's next,
->> but...
->
-> I totally understand your point. And I actually am a bit uncomfortable
-> merging this so late too, and I'd actually prefer to have it merged
-> for 3.20. But this is a huge patchset, and I'd really like to avoid
-> rebasing it forever.
+Found with sparse:
 
-We don't have to pull in the whole series at once. I think everybody agrees 
-that the approach is the right one, so the first couple of patches that work 
-on the framework should be good to go in. Same goes for the drivers that 
-have been acked and tested.
+drivers/clk/bcm/clk-kona.c:1255:16: warning: odd constant _Bool cast (ffffffffffffffea becomes 1)
 
-- Lars
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ drivers/clk/bcm/clk-kona.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+index 95af2e6..53fca77 100644
+--- a/drivers/clk/bcm/clk-kona.c
++++ b/drivers/clk/bcm/clk-kona.c
+@@ -1252,7 +1252,7 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
+ 	default:
+ 		BUG();
+ 	}
+-	return -EINVAL;
++	return false;
+ }
+ 
+ /* Set a CCU and all its clocks into their desired initial state */
+-- 
+1.7.10.4
+
