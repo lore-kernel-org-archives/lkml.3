@@ -1,108 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaLHUVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 15:21:31 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:40844 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537AbaLHUV3 (ORCPT
+	id S1754578AbaLHUXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 15:23:37 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:49893 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLHUXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 15:21:29 -0500
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+	Mon, 8 Dec 2014 15:23:36 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: [PATCH v2] CPU hotplug: active_writer not woken up in some cases - deadlock
-Date: Mon,  8 Dec 2014 21:21:22 +0100
-Message-Id: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120820-0013-0000-0000-000002234AAE
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
+Date: Mon,  8 Dec 2014 15:23:36 -0500
+Message-Id: <1418070216-23606-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-grace periods") introduced another problem that can easily be reproduced by
-starting/stopping cpus in a loop.
+Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
+is a compile time failure if srcu is used when not enabled. This was decided to
+be better than waiting until link time for a failure to occur.
 
-E.g.:
-  for i in `seq 5000`; do
-      echo 1 > /sys/devices/system/cpu/cpu1/online
-      echo 0 > /sys/devices/system/cpu/cpu1/online
-  done
-
-Will result in:
-  INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-  Call Trace:
-  ([<00000000006a028e>] __schedule+0x406/0x91c)
-   [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-   [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-   [<0000000000131232>] cpu_up+0xb6/0xd4
-   [<00000000004a5720>] device_online+0x80/0xc0
-   [<00000000004a57f0>] online_store+0x90/0xb0
-  ...
-
-And a deadlock.
-
-Problem is that if the last ref in put_online_cpus() can't get the
-cpu_hotplug.lock the puts_pending count is incremented, but a sleeping active_writer
-might never be woken up, therefore never exiting the loop in cpu_hotplug_begin().
-
-This quick fix wakes up the active_writer proactively. The writer already
-goes back to sleep if the ref count isn't already down to 0, so this should be
-fine. Also move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
-check, so we won't lose any wakeups when racing with put_online_cpus().
-
-Can't reproduce it with this fix.
-
-Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+CC: Josh Triplett <josh@joshtriplett.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/cpu.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ include/linux/notifier.h | 47 +++++++++++++++++++++++++++--------------------
+ include/linux/srcu.h     |  6 +++++-
+ 2 files changed, 32 insertions(+), 21 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 90a3d01..1f50c06 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -113,10 +113,16 @@ EXPORT_SYMBOL_GPL(try_get_online_cpus);
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index d14a4c3..fe4f02a 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -47,6 +47,8 @@
+  * runtime initialization.
+  */
  
- void put_online_cpus(void)
- {
-+	struct task_struct *active_writer;
++struct notifier_block;
 +
- 	if (cpu_hotplug.active_writer == current)
- 		return;
- 	if (!mutex_trylock(&cpu_hotplug.lock)) {
- 		atomic_inc(&cpu_hotplug.puts_pending);
-+		/* we might be the last one */
-+		active_writer = cpu_hotplug.active_writer;
-+		if (unlikely(active_writer))
-+			wake_up_process(active_writer);
- 		cpuhp_lock_release();
- 		return;
- 	}
-@@ -161,15 +167,17 @@ void cpu_hotplug_begin(void)
- 	cpuhp_lock_acquire();
- 	for (;;) {
- 		mutex_lock(&cpu_hotplug.lock);
-+		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (atomic_read(&cpu_hotplug.puts_pending)) {
- 			int delta;
+ typedef	int (*notifier_fn_t)(struct notifier_block *nb,
+ 			unsigned long action, void *data);
  
- 			delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
- 			cpu_hotplug.refcount -= delta;
- 		}
--		if (likely(!cpu_hotplug.refcount))
-+		if (likely(!cpu_hotplug.refcount)) {
-+			__set_current_state(TASK_RUNNING);
- 			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
-+		}
- 		mutex_unlock(&cpu_hotplug.lock);
- 		schedule();
- 	}
+@@ -70,12 +72,6 @@ struct raw_notifier_head {
+ 	struct notifier_block __rcu *head;
+ };
+ 
+-struct srcu_notifier_head {
+-	struct mutex mutex;
+-	struct srcu_struct srcu;
+-	struct notifier_block __rcu *head;
+-};
+-
+ #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
+ 		spin_lock_init(&(name)->lock);	\
+ 		(name)->head = NULL;		\
+@@ -88,11 +84,6 @@ struct srcu_notifier_head {
+ 		(name)->head = NULL;		\
+ 	} while (0)
+ 
+-/* srcu_notifier_heads must be initialized and cleaned up dynamically */
+-extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+-#define srcu_cleanup_notifier_head(name)	\
+-		cleanup_srcu_struct(&(name)->srcu);
+-
+ #define ATOMIC_NOTIFIER_INIT(name) {				\
+ 		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
+ 		.head = NULL }
+@@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+ 		.head = NULL }
+ #define RAW_NOTIFIER_INIT(name)	{				\
+ 		.head = NULL }
+-/* srcu_notifier_heads cannot be initialized statically */
+ 
+ #define ATOMIC_NOTIFIER_HEAD(name)				\
+ 	struct atomic_notifier_head name =			\
+@@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int blocking_notifier_chain_cond_register(
+ 		struct blocking_notifier_head *nh,
+@@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ 		unsigned long val, void *v);
+@@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 		unsigned long val, void *v);
+ extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+-extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-		unsigned long val, void *v);
+-extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+ 
+ #define NOTIFY_DONE		0x0000		/* Don't care */
+ #define NOTIFY_OK		0x0001		/* Suits me */
+@@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
+ 
+ extern struct blocking_notifier_head reboot_notifier_list;
+ 
++#ifdef CONFIG_SRCU
++
++struct srcu_notifier_head {
++	struct mutex mutex;
++	struct srcu_struct srcu;
++	struct notifier_block __rcu *head;
++};
++
++/* srcu_notifier_heads must be initialized and cleaned up dynamically
++ * srcu_notifier_heads cannot be initialized statically
++ */
++extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
++#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
++
++extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++		unsigned long val, void *v);
++extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++	unsigned long val, void *v, int nr_to_call, int *nr_calls);
++
++#endif /* CONFIG_SRCU */
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_NOTIFIER_H */
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index 9cfd962..ed9c389 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -26,6 +26,8 @@
+  *
+  */
+ 
++#ifdef CONFIG_SRCU
++
+ #ifndef _LINUX_SRCU_H
+ #define _LINUX_SRCU_H
+ 
+@@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
+ 	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+ }
+ 
+-#endif
++#endif /* _LINUX_SRCU_H */
++
++#endif /* CONFIG_SRCU */
 -- 
-1.8.5.5
+1.9.1
 
