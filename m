@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbaLHSfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:35:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59242 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaLHSfy (ORCPT
+	id S1756232AbaLHSgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:36:38 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:64756 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaLHSgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:35:54 -0500
-Date: Mon, 8 Dec 2014 18:35:42 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141208183539.GF22149@ZenIV.linux.org.uk>
-References: <20141204202011.GO29748@ZenIV.linux.org.uk>
- <20141208164650.GB29028@node.dhcp.inet.fi>
- <CA+55aFz6izpVGxkziynRXg7zbHzteQyPJH1Kg91ZO3fzqn3LaQ@mail.gmail.com>
- <20141208181401.GD22149@ZenIV.linux.org.uk>
- <CA+55aFzKGsYKh1HALoeFGYQ46uMHww0WdLf5N-9duNTgMSSFxQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzKGsYKh1HALoeFGYQ46uMHww0WdLf5N-9duNTgMSSFxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Dec 2014 13:36:37 -0500
+From: Dean Michael Ancajas <dbancajas@gmail.com>
+To: oleg.drokin@intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        HPDD-discuss@ml01.01.org, Dean Ancajas <dbancajas@gmail.com>
+Subject: [PATCH] Staging: lustre: obd: Fix a coding style issue
+Date: Mon,  8 Dec 2014 11:36:33 -0700
+Message-Id: <1418063793-28813-1-git-send-email-dbancajas@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:23:26AM -0800, Linus Torvalds wrote:
+From: Dean Ancajas <dbancajas@gmail.com>
 
-> Did this actually use to work? Or is it an issue of "the new iov_iter
-> is so generic that something that used to just return an error now
-> 'works' and triggers the problem"?
+Fixed a brace coding style issue for functions.
 
-Looks like it failed with EINVAL.  Which might very well be the sane
-reaction - if we run into a vmalloc/module address, act as if we failed
-to get that page and exit the loop.
+Signed-off-by: Dean Michael Ancajas <dbancajas@gmail.com>
+---
+ drivers/staging/lustre/lustre/obdclass/cl_object.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> > What's the sane way to grab struct page * for a vmalloc'ed address?
-> 
-> So "vmalloc_to_page()" should work.
-> 
-> However, it's actually fundamentally racy unless you can guarantee
-> that the vmalloc()'ed area in question is stable (so you had better
-> have done that allocation yourself, and be in control of the freeing,
-> rather than "we look up random vmalloc'ed addresses).
+diff --git a/drivers/staging/lustre/lustre/obdclass/cl_object.c b/drivers/staging/lustre/lustre/obdclass/cl_object.c
+index ce96bd2..c40bb6c 100644
+--- a/drivers/staging/lustre/lustre/obdclass/cl_object.c
++++ b/drivers/staging/lustre/lustre/obdclass/cl_object.c
+@@ -662,7 +662,8 @@ static int cl_env_store_init(void) {
+ 	return cl_env_hash != NULL ? 0 :-ENOMEM;
+ }
+ 
+-static void cl_env_store_fini(void) {
++static void cl_env_store_fini(void)
++{
+ 	cfs_hash_putref(cl_env_hash);
+ }
+ 
+-- 
+1.9.1
 
-If vfree(buffer) races with kernel_read() into buffer, we are so badly
-fucked that stability of pointers to pages is the least of our concerns...
-
-> In general, it's really a horrible thing to use, and tends to be a big
-> red sign that "somebody misdesigned this badly"
-
-More like "nobody has thought of that case", at a guess, but then I hadn't
-been involved in finit_module() design - I don't even remember the discussions
-around it.  That would be what, something circa 3.7?
