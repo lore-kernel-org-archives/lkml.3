@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaLHRFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:05:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:34612 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaLHRFH (ORCPT
+	id S1756108AbaLHRFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:05:47 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:54077 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLHRFp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:05:07 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-e8-5485da41fac4
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        navneet kumar <navneetk@nvidia.com>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH v3 0/5] thermal: of: of-thermal.c API extensions
-Date: Mon, 08 Dec 2014 18:04:16 +0100
-Message-id: <1418058261-25251-1-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
-References: <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAV3HW60hBo/PSVo8XrOYyWLjjPWs
-	Fl8+97FZzL9yjdVizV8lizePuC3ePNzMaHF51xw2i8+9Rxgtniw8w2Tx4Oo0Not9a5YyWTx5
-	CFT/6mAbi8XPXfNYHPg9ds66y+6xeM9LJo91094ye/Q2v2Pz+DtrP4vHzu8N7B59W1Yxenze
-	JOexcW5oAGcUl01Kak5mWWqRvl0CV8bE1VPYC5ZxVBzeeo6lgfExWxcjJ4eEgInEhw39zBC2
-	mMSFe+uB4lwcQgKLGCXauxvBioQEupgkdt8Hs9kE9CQ+333KBGKLCHhLvN43nRGkgVlgDYvE
-	h6t3wYqEBRwkLvW/ZgGxWQRUJX61N7GD2LwCbhLXTm+F2qwo0f1sApjNCRTfuKyZBWKZq8T2
-	CdsYJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHMjPpHcwrmqwOMQowMGoxMO7
-	8EFLiBBrYllxZe4hRgkOZiUR3uU7W0OEeFMSK6tSi/Lji0pzUosPMUpzsCiJ8964mRsiJJCe
-	WJKanZpakFoEk2Xi4JRqYExxYtmmmJHssffW4ub2Btfjd1bUfNX8lL5j8/6M4MmpapLGFy9t
-	cE5w+ZjgPr/2+6uNM1bPD3nBPHfdPNVNC5jTrae83GznI+5imKbVcohh/ezIKZPv5r6duWO5
-	AZvnb5aKxIVb/fLihWrDju0SDEgX37gjeO0VPeZQl3nL914NOOS9M2jqE18lluKMREMt5qLi
-	RAB98yxvYAIAAA==
+	Mon, 8 Dec 2014 12:05:45 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: wl1251: NVS firmware data
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <201412081747.30965@pali>
+Date: Mon, 8 Dec 2014 18:05:37 +0100
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E5F3BB54-6365-4856-A231-A5FEDAEA217F@holtmann.org>
+References: <201411271506.20457@pali> <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com> <20141208163714.GA31169@kroah.com> <201412081747.30965@pali>
+To: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provided patch series extend of-thermal.c file API. It is necessary 
-for ongoing Exynos TMU rework.
+Hi Pali,
 
-First version of this code can be found at:
-http://www.spinics.net/lists/linux-samsung-soc/msg37719.html
+>>>> On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
+>>>> /**
+>>>> 
+>>>> + * request_firmware_prefer_user: - prefer usermode helper
+>>>> for loading firmware + * @firmware_p: pointer to firmware
+>>>> image
+>>>> + * @name: name of firmware file
+>>>> + * @device: device for which firmware is being loaded
+>>>> + *
+>>>> + * This function works pretty much like
+>>>> request_firmware(), but it prefer + * usermode helper. If
+>>>> usermode helper fails then it fallback to direct access.
+>>>> + * Usefull for dynamic or model specific firmware data.
+>>>> + **/
+>>>> +int request_firmware_prefer_user(const struct firmware
+>>>> **firmware_p, +                           const char
+>>>> *name, struct device *device) +{
+>>>> +       int ret;
+>>>> +       __module_get(THIS_MODULE);
+>>>> +       ret = _request_firmware(firmware_p, name, device,
+>>>> +                               FW_OPT_UEVENT |
+>>>> FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
+>>>> +       return ret;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
+>>> 
+>>> I'd like to introduce request_firmware_user() which only
+>>> requests firmware from user space, and this way is simpler
+>>> and more flexible since we have request_firmware_direct()
+>>> already.
+>> 
+>> Why would a driver care about what program provides the
+>> firmware?  It shouldn't at all, and we want to get rid of the
+>> userspace firmware loader, not encourage drivers to use it
+>> "exclusively" at all.
+>> 
+> 
+> Do not remove it! Without userspace firmware loader it is 
+> impossible to load dynamic firmware files.
 
-Second version:
-http://www.spinics.net/lists/kernel/msg1872274.html
+why is this dynamic in the first place. It does not sound like dynamic data to me at all. This is like the WiFi MAC address(es) or Bluetooth BD_ADDR. They are all static information. The only difference is that they are on the host accessibly filesystem or storage and not on the device itself.
 
-This code provides methods to access some of-thermal local data.
-Moreover it provides a read only access to of-thermal trip points.
+To be honest, for Bluetooth we solved this now. If the device is missing key information like the calibration data or BD_ADDR, then it comes up unconfigured. A userspace process can then go and load the right data into it and then the device becomes available as Bluetooth device.
 
-Lukasz Majewski (5):
-  thermal: of: Extend of-thermal.c to provide number of trip points
-  thermal: of: Extend of-thermal.c to provide check if trip point is
-    valid
-  thermal: of: Rename struct __thermal_trip to struct thermal_trip
-  thermal: of: Extend of-thermal to export table of trip points
-  thermal: of: Extend current of-thermal.c code to allow setting
-    emulated temp
+Trying to use request_firmware to load some random data and insist on going through userspace helper for that sounds crazy to me. Especially since we are trying hard to get away from the userspace loader. Forcing to keep it for new stuff sounds backwards to me.
 
- drivers/thermal/of-thermal.c   | 109 ++++++++++++++++++++++++++++++++++-------
- drivers/thermal/thermal_core.h |  18 +++++++
- include/linux/thermal.h        |  18 +++++++
- 3 files changed, 127 insertions(+), 18 deletions(-)
+With the special Nokia partition in mind, why hasn't this been turned into a mountable filesystem or into a driver/subsystem that can access the data direct from the kernel. I advocated for this some time ago. Maybe there should be a special subsystem for access to these factory persistent information that drivers then just can access. I seem to remember that some systems provide these via ACPI. Why does the ARM platform has to be special here?
 
--- 
-2.0.0.rc2
+And the problem of getting Ethernet and WiFi MAC address and Bluetooth BD_ADDR comes up many many times. Why not have something generic here. And don't tell me request_firmware is that generic solution ;)
+
+Regards
+
+Marcel
 
