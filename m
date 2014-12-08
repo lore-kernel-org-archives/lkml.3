@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaLHL0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:26:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53836 "EHLO mx2.suse.de"
+	id S932090AbaLHL0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:26:52 -0500
+Received: from ozlabs.org ([103.22.144.67]:36947 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232AbaLHL0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:26:14 -0500
-Date: Mon, 8 Dec 2014 11:26:06 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [RFC PATCH 3/3] mm: always steal split buddies in fallback
- allocations
-Message-ID: <20141208112606.GP6043@suse.de>
-References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
- <1417713178-10256-4-git-send-email-vbabka@suse.cz>
+	id S1752111AbaLHL0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 06:26:51 -0500
+Date: Mon, 8 Dec 2014 22:26:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, Michael Ellerman <mpe@ellerman.id.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the access_once tree
+Message-ID: <20141208222641.40a64946@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1417713178-10256-4-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/A=bv69.VVArYVLGKVtsDaBW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 06:12:58PM +0100, Vlastimil Babka wrote:
-> When allocation falls back to another migratetype, it will steal a page with
-> highest available order, and (depending on this order and desired migratetype),
-> it might also steal the rest of free pages from the same pageblock.
-> 
-> Given the preference of highest available order, it is likely that it will be
-> higher than the desired order, and result in the stolen buddy page being split.
-> The remaining pages after split are currently stolen only when the rest of the
-> free pages are stolen.
+--Sig_/A=bv69.VVArYVLGKVtsDaBW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The original intent was that the stolen fallback buddy page would be
-added to the requested migratetype freelists. This was independent of
-whether all other free pages in the pageblock were moved or whether the
-pageblock migratetype was updated.
+Hi Christian,
 
-> This can however lead to situations where for MOVABLE
-> allocations we split e.g. order-4 fallback UNMOVABLE page, but steal only
-> order-0 page. Then on the next MOVABLE allocation (which may be batched to
-> fill the pcplists) we split another order-3 or higher page, etc. By stealing
-> all pages that we have split, we can avoid further stealing.
-> 
-> This patch therefore adjust the page stealing so that buddy pages created by
-> split are always stolen. This has effect only on MOVABLE allocations, as
-> RECLAIMABLE and UNMOVABLE allocations already always do that in addition to
-> stealing the rest of free pages from the pageblock.
-> 
+After merging the acess_once tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-This restores the intended behaviour.
+arch/powerpc/mm/hugetlbpage.c: In function 'find_linux_pte_or_hugepte':
+arch/powerpc/mm/hugetlbpage.c:981:3: error: invalid initializer
+   pud  =3D ACCESS_ONCE(*pudp);
+   ^
+arch/powerpc/mm/hugetlbpage.c:993:4: error: invalid initializer
+    pmd  =3D ACCESS_ONCE(*pmdp);
+    ^
 
-> Note that commit 7118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added")
-> has already performed this change (unintentinally), but was reverted by commit
-> 0cbef29a7821 ("mm: __rmqueue_fallback() should respect pageblock type").
-> Neither included evaluation. My evaluation with stress-highalloc from mmtests
-> shows about 2.5x reduction of page stealing events for MOVABLE allocations,
-> without affecting the page stealing events for other allocation migratetypes.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+These are preexisting ...
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+mm/gup.c: In function 'gup_pmd_range':
+mm/gup.c:929:3: error: invalid initializer
+   pmd_t pmd =3D ACCESS_ONCE(*pmdp);
+   ^
+mm/gup.c:929:3: error: (near initialization for 'pmd')
 
--- 
-Mel Gorman
-SUSE Labs
+This is from commit f30c59e921f1 ("mm: Update generic gup
+implementation to handle hugepage directory") from the powerpc-mpe (and
+powerpc) tree and so will require a merge fix patch (presumable
+s/ACCESS_ONCE/READ_ONCE/).
+
+I am not sure how many architectures you are trying to cover, but
+powerpc is one I care about :-)
+
+I have dropped the access_once tree again today, sorry (its too late at
+night).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/A=bv69.VVArYVLGKVtsDaBW
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUhYr3AAoJEMDTa8Ir7ZwVaIQP/162dexk3to+Y9RDaXMOwrq0
+fSzrsad3Vv/mV025ZyXpCRyD6ijYRCrRIHJN7eoql2GsknOQX5yTW6nlJWjIjcUy
+6OQx1G3ajRHFBNEkHLzgbG/+A1IiFAJGl9GVHnVl4GEFF+iiv95YeRgoo4hQ3ZaI
+XxQNPTcuGeWGny6RJY6h1UyevmcQu3siU3vQ7tMHJ/wna+/M6n+VG+p4UiYcLkEc
+tm6WvEA5JefOqv++JX9Emw7a/I8EFbjUuKQIc9g+a5j4jc/IFcLZ2+xQyIFzIm/b
+k2l1dtH5gdoGb0RKOoN6NN1/su9osqIN0W0ENNDfqEH7pGfmv/ZKggsu1tr1TzCF
+ZECV+Y9YI0oC5SxRPw0HEJfmAKhpZkQ283sWVqzN1BxiY/xmE0avXNhZZPHBQRl8
+Uvb8ebHtgds4J270NUD0blE12buMRSYymnN9uQB1dMpK19Bq11S9hf0OVoN4idZo
+szXOrQRyyrKeNhRDhNRyieAaBN+PKFl7U2EuZVHq82kFtkbnWzmJILPGbRvdLABH
+jbxNNuidTVR5+/O38B/8qXuGsm3y4a6nXfhIkQCvbjEanqkG8qUG8ICxBSU8Zojp
+T+CZUWOQ5Wxv++AJ8iHgRFVPhAVi1ENLNv28SKrFk+U031Teor/+dJJC0Sv7kc62
+Ho5YS3s3YYMv0XyEkQxf
+=m+Ij
+-----END PGP SIGNATURE-----
+
+--Sig_/A=bv69.VVArYVLGKVtsDaBW--
