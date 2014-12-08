@@ -1,234 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaLHELn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 23:11:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:11494 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872AbaLHELl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 23:11:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,536,1413270000"; 
-   d="scan'208";a="644020001"
-Message-ID: <1418011892.19126.20.camel@rzhang1-toshiba>
-Subject: Re: [RFC PATCH v6 4/9] thermal: let governors have private data for
- each thermal zone
-From: Zhang Rui <rui.zhang@intel.com>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        punit.agrawal@arm.com, broonie@kernel.org,
-        Eduardo Valentin <edubezval@gmail.com>
-Date: Mon, 08 Dec 2014 12:11:32 +0800
-In-Reply-To: <1417806260-9264-5-git-send-email-javi.merino@arm.com>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
-	 <1417806260-9264-5-git-send-email-javi.merino@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1753966AbaLHEMl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 23:12:41 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:39118 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbaLHEMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Dec 2014 23:12:39 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: romain.perier@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <587ddd76327141f6459c6654aa10e6f8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5485252A.90308@rock-chips.com>
+Date: Mon, 08 Dec 2014 12:12:26 +0800
+From: Yunzhi Li <lyz@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Romain Perier <romain.perier@gmail.com>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Tao Huang <huangtao@rock-chips.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>, zyw@rock-chips.com,
+        Rob Herring <robh+dt@kernel.org>, olof@lixom.net,
+        Eddie Cai <cf@rock-chips.com>, ulrich.prinz@googlemail.com,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY.
+References: <1417783941-2418-1-git-send-email-lyz@rock-chips.com>	<1417783941-2418-2-git-send-email-lyz@rock-chips.com> <CABgxDoLe2RxCjD53uvTgYZ=tNOKHLeGoZE5Aa5XvaUYvNX=HYw@mail.gmail.com>
+In-Reply-To: <CABgxDoLe2RxCjD53uvTgYZ=tNOKHLeGoZE5Aa5XvaUYvNX=HYw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-05 at 19:04 +0000, Javi Merino wrote:
-> A governor may need to store its current state between calls to
-> throttle().  That state depends on the thermal zone, so store it as
-> private data in struct thermal_zone_device.
-> 
-> The governors may have two new ops: bind_to_tz() and unbind_from_tz().
-> When provided, these functions let governors do some initialization
-> and teardown when they are bound/unbound to a tz and possibly store that
-> information in the governor_data field of the struct
-> thermal_zone_device.
-> 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
-> Signed-off-by: Javi Merino <javi.merino@arm.com>
+Hi Romain :
 
-applied.
-
-thanks,
-rui
-> ---
->  drivers/thermal/thermal_core.c | 83 ++++++++++++++++++++++++++++++++++++++----
->  include/linux/thermal.h        |  9 +++++
->  2 files changed, 84 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 43b90709585f..9021cb72a13a 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -75,6 +75,58 @@ static struct thermal_governor *__find_governor(const char *name)
->  	return NULL;
->  }
->  
-> +/**
-> + * bind_previous_governor() - bind the previous governor of the thermal zone
-> + * @tz:		a valid pointer to a struct thermal_zone_device
-> + * @failed_gov_name:	the name of the governor that failed to register
-> + *
-> + * Register the previous governor of the thermal zone after a new
-> + * governor has failed to be bound.
-> + */
-> +static void bind_previous_governor(struct thermal_zone_device *tz,
-> +				const char *failed_gov_name)
-> +{
-> +	if (tz->governor && tz->governor->bind_to_tz) {
-> +		if (tz->governor->bind_to_tz(tz)) {
-> +			dev_err(&tz->device,
-> +				"governor %s failed to bind and the previous one (%s) failed to bind again, thermal zone %s has no governor\n",
-> +				failed_gov_name, tz->governor->name, tz->type);
-> +			tz->governor = NULL;
-> +		}
-> +	}
-> +}
-> +
-> +/**
-> + * thermal_set_governor() - Switch to another governor
-> + * @tz:		a valid pointer to a struct thermal_zone_device
-> + * @new_gov:	pointer to the new governor
-> + *
-> + * Change the governor of thermal zone @tz.
-> + *
-> + * Return: 0 on success, an error if the new governor's bind_to_tz() failed.
-> + */
-> +static int thermal_set_governor(struct thermal_zone_device *tz,
-> +				struct thermal_governor *new_gov)
-> +{
-> +	int ret = 0;
-> +
-> +	if (tz->governor && tz->governor->unbind_from_tz)
-> +		tz->governor->unbind_from_tz(tz);
-> +
-> +	if (new_gov && new_gov->bind_to_tz) {
-> +		ret = new_gov->bind_to_tz(tz);
-> +		if (ret) {
-> +			bind_previous_governor(tz, new_gov->name);
-> +
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	tz->governor = new_gov;
-> +
-> +	return ret;
-> +}
-> +
->  int thermal_register_governor(struct thermal_governor *governor)
->  {
->  	int err;
-> @@ -107,8 +159,15 @@ int thermal_register_governor(struct thermal_governor *governor)
->  
->  		name = pos->tzp->governor_name;
->  
-> -		if (!strncasecmp(name, governor->name, THERMAL_NAME_LENGTH))
-> -			pos->governor = governor;
-> +		if (!strncasecmp(name, governor->name, THERMAL_NAME_LENGTH)) {
-> +			int ret;
-> +
-> +			ret = thermal_set_governor(pos, governor);
-> +			if (ret)
-> +				dev_err(&pos->device,
-> +					"Failed to set governor %s for thermal zone %s: %d\n",
-> +					governor->name, pos->type, ret);
-> +		}
->  	}
->  
->  	mutex_unlock(&thermal_list_lock);
-> @@ -134,7 +193,7 @@ void thermal_unregister_governor(struct thermal_governor *governor)
->  	list_for_each_entry(pos, &thermal_tz_list, node) {
->  		if (!strncasecmp(pos->governor->name, governor->name,
->  						THERMAL_NAME_LENGTH))
-> -			pos->governor = NULL;
-> +			thermal_set_governor(pos, NULL);
->  	}
->  
->  	mutex_unlock(&thermal_list_lock);
-> @@ -762,8 +821,9 @@ policy_store(struct device *dev, struct device_attribute *attr,
->  	if (!gov)
->  		goto exit;
->  
-> -	tz->governor = gov;
-> -	ret = count;
-> +	ret = thermal_set_governor(tz, gov);
-> +	if (!ret)
-> +		ret = count;
->  
->  exit:
->  	mutex_unlock(&thermal_governor_lock);
-> @@ -1459,6 +1519,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  	int result;
->  	int count;
->  	int passive = 0;
-> +	struct thermal_governor *governor;
->  
->  	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
->  		return ERR_PTR(-EINVAL);
-> @@ -1549,9 +1610,15 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
->  	mutex_lock(&thermal_governor_lock);
->  
->  	if (tz->tzp)
-> -		tz->governor = __find_governor(tz->tzp->governor_name);
-> +		governor = __find_governor(tz->tzp->governor_name);
->  	else
-> -		tz->governor = def_governor;
-> +		governor = def_governor;
-> +
-> +	result = thermal_set_governor(tz, governor);
-> +	if (result) {
-> +		mutex_unlock(&thermal_governor_lock);
-> +		goto unregister;
-> +	}
->  
->  	mutex_unlock(&thermal_governor_lock);
->  
-> @@ -1640,7 +1707,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
->  		device_remove_file(&tz->device, &dev_attr_mode);
->  	device_remove_file(&tz->device, &dev_attr_policy);
->  	remove_trip_attrs(tz);
-> -	tz->governor = NULL;
-> +	thermal_set_governor(tz, NULL);
->  
->  	thermal_remove_hwmon_sysfs(tz);
->  	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index ef90838b36a0..2c14ab1f5c0d 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -191,6 +191,7 @@ struct thermal_attr {
->   * @ops:	operations this &thermal_zone_device supports
->   * @tzp:	thermal zone parameters
->   * @governor:	pointer to the governor for this thermal zone
-> + * @governor_data:	private pointer for governor data
->   * @thermal_instances:	list of &struct thermal_instance of this thermal zone
->   * @idr:	&struct idr to generate unique id for this zone's cooling
->   *		devices
-> @@ -217,6 +218,7 @@ struct thermal_zone_device {
->  	struct thermal_zone_device_ops *ops;
->  	const struct thermal_zone_params *tzp;
->  	struct thermal_governor *governor;
-> +	void *governor_data;
->  	struct list_head thermal_instances;
->  	struct idr idr;
->  	struct mutex lock;
-> @@ -227,12 +229,19 @@ struct thermal_zone_device {
->  /**
->   * struct thermal_governor - structure that holds thermal governor information
->   * @name:	name of the governor
-> + * @bind_to_tz: callback called when binding to a thermal zone.  If it
-> + *		returns 0, the governor is bound to the thermal zone,
-> + *		otherwise it fails.
-> + * @unbind_from_tz:	callback called when a governor is unbound from a
-> + *			thermal zone.
->   * @throttle:	callback called for every trip point even if temperature is
->   *		below the trip point temperature
->   * @governor_list:	node in thermal_governor_list (in thermal_core.c)
->   */
->  struct thermal_governor {
->  	char name[THERMAL_NAME_LENGTH];
-> +	int (*bind_to_tz)(struct thermal_zone_device *tz);
-> +	void (*unbind_from_tz)(struct thermal_zone_device *tz);
->  	int (*throttle)(struct thermal_zone_device *tz, int trip);
->  	struct list_head	governor_list;
->  };
+On 2014/12/5 21:38, Romain Perier wrote:
+> Hi,
+>
+> Some quick comments
+>
+> 2014-12-05 13:52 GMT+01:00 Yunzhi Li <lyz@rock-chips.com>:
+>> [...]
+>>
+>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>> index ccad880..e3a5857 100644
+>> --- a/drivers/phy/Kconfig
+>> +++ b/drivers/phy/Kconfig
+>> @@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
+>>          depends on OF
+>>          select GENERIC_PHY
+>>
+>> +config PHY_ROCKCHIP_RK3288_USB2
+>> +       tristate "Rockchip USB2 RK3288 PHY Driver"
+>> +       depends on ARCH_ROCKCHIP && OF
+>> +       select GENERIC_PHY
+>> +       help
+>> +         Enable this to support the Rockchip USB 2.0 PHY.
+>> +
+>
+> The C module is named phy-rockchip-usb.c, why did you call the config
+> entry PHY_ROCKCHIP_RK3288_USB2 ? why RK3288 ? this driver might be
+> ported to old SoCs later.
+> I think that PHY_ROCKCHIP_USB would be enough.
+Right, this driver will be ported to old SoCs like RK3188 or RK3066, 
+this will be renamed to PHY_ROCKCHIP_USB in the next version.
 
 
