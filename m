@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969AbaLHLAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:00:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54641 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148AbaLHLAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:00:12 -0500
-Date: Mon, 8 Dec 2014 11:59:07 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
-        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5 1/4] tools/perf: support parsing parameterized events
-Message-ID: <20141208105907.GB4796@krava.redhat.com>
-References: <1417572578-9051-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1417572578-9051-2-git-send-email-sukadev@linux.vnet.ibm.com>
- <20141204124422.GA4195@krava.brq.redhat.com>
- <20141207073724.GA32721@us.ibm.com>
+	id S1755216AbaLHLAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:00:42 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:35095 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaLHLAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 06:00:40 -0500
+Message-ID: <548584CC.7010603@ti.com>
+Date: Mon, 8 Dec 2014 13:00:28 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141207073724.GA32721@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] video / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+References: <19160360.7uJRUqlDQg@vostro.rjw.lan>
+In-Reply-To: <19160360.7uJRUqlDQg@vostro.rjw.lan>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 06, 2014 at 11:37:24PM -0800, Sukadev Bhattiprolu wrote:
-> Jiri Olsa [jolsa@redhat.com] wrote:
-> 
-> | anyway we could assign directly to the param term name as you do,
-> | but I think we just need to mark the term as parametrized, like:
-> | 
-> | in /sys/bus/event_source/devices/pmu/events/event_name you have:
-> |   param2=?,bar=1,param1=?
-> 
-> I like the idea of just using a single ? for required parameters, but
-> the problem I had with this approach can be seen with these two sysfs
-> entries:
-> 
->         $ cat HPM_0THRD_NON_IDLE_CCYC__PHYS_CORE
->         domain=0x2,offset=0xe0,starting_index=core,lpar=0x0
-> 
->         $ cat HPM_0THRD_NON_IDLE_CCYC__VCPU_HOME_CORE
->         domain=0x3,offset=0xe0,starting_index=vcpu,lpar=sibling_guest_id
-> 
-> The parameter 'starting_index' refers to a core in one event and vcpu in
-> another event. We were trying to give a hint as to what it refers to.
-> 
-> Given that, 'starting_index' is not very intuitive, how about discarding
-> starting_index and replacing with what it really means for the event and,
-> use a simple '?' to indicate required parameter).
-> 
->         $ cat HPM_0THRD_NON_IDLE_CCYC__PHYS_CORE
->         domain=0x2,offset=0xe0,core=?,lpar=0x0
-> 
->         $ cat HPM_0THRD_NON_IDLE_CCYC__VCPU_HOME_CORE
->         domain=0x3,offset=0xe0,vcpu=?,lpar=?
-> 
-> perf list shows these as:
-> 
-> 	hv_24x7/HPM_0THRD_NON_IDLE_CCYC__PHYS_CORE,core=?/ 
-> 	hv_24x7/HPM_0THRD_NON_IDLE_CCYC__VCPU_HOME_CHIP,vcpu=?,lpar=?/
-> 
-> command line would be
-> 
-> 	-e hv_24x7/HPM_0THRD_NON_IDLE_CCYC__PHYS_CORE,core=2/ 
-> 
-> 	or
-> 
-> 	-e hv_24x7/HPM_0THRD_NON_IDLE_CCYC__VCPU_HOME_CHIP,vcpu=2,lpar=7/
-> 
-> and would fail if a required parameter is missing.
+--FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-that sounds good to me
+On 06/12/14 04:36, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>=20
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
+>=20
+> The alternative of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME may be
+> replaced with CONFIG_PM too.
+>=20
+> Make these changes in 2 files under drivers/video/.
+>=20
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>=20
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME =
+if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via th=
+e
+> linux-pm tree).
+>=20
+> Please let me know if it is OK to take this one into linux-pm.
 
-jirka
+Does not seem to conflict with fbdev changes, so:
+
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
+
+
+
+--FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUhYTMAAoJEPo9qoy8lh71uXgQAIV22jLyJQL+DkDsmDE8buTT
+tB0GkxxDqm/Z1HtO0BjDYxuDKNDlgJ3kPBCHOqi+aKxLM+Y71v8BdTpOY4UVDfPX
+AX3oklbRazxLFeCWlFSNQ2oMXKFms1CuvQd2jRo98X3sYniP1Vt4mmcqlebW8dco
+7GHFO/jgYnmpKrU5wz/CQeAvHSdaH5ArYb++uDWvvoOM1oKwA0+loNx3McJS2QSC
+TqC20xR39Wu9m63gB6sa27tyhmRHb7XBdcXaVg3ubozfO+2oPKMP/6wupeT0nXUP
+wl6V6tR6C3ZdRuyCe+HmOTXsFaUCWdosRWijaDIO762Rts9NnuThRjYN1AFLfQKC
+IumkjFWXdHfsE+0R5nmcXAFha3UybMM/AtFS8l2tSieJMe/wQlo6ilk1NycCvfHA
+Blf+Co2bCTmKEY241jNmQixw1Rkb5a0XAiL/wYVh2m86NIYf3ZvoOOWamAShNPkc
+jXJdTrTTioMp9rEiqp1yHq4Cy7Qz3nyE0vCQHKzYHgsZFjAURl4hiJjHoqZ8ss8F
+2PNEGK8Myy0R+8ArLdkVsmvS/jnXLW0n5PW/2xsP0Kb1SBGgDqR2Ob5YP3NvH9IL
+VS2YfcyUa4dCADgAodBwRUjXsc4o2gUyMbQubxMurhcYv+bFx7TB0SuJrlRpltnR
+nnttB9xQ9l43dRi31QxO
+=zUcK
+-----END PGP SIGNATURE-----
+
+--FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg--
