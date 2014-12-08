@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaLHVPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 16:15:06 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:63691 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753148AbaLHVPC (ORCPT
+	id S1755170AbaLHVXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 16:23:15 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:38157 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaLHVXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 16:15:02 -0500
-Message-ID: <1418073300.2058.63.camel@x220>
-Subject: Re: [PATCH 2/3] kconfig: remove undocumented type definition alias
- 'boolean'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Christoph Jaeger <cj@linux.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, yann.morin.1998@free.fr,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Date: Mon, 08 Dec 2014 22:15:00 +0100
-In-Reply-To: <1418070979.2058.52.camel@x220>
-References: <cover.1418003065.git.cj@linux.com>
-	 <1539c3778a0f3533942f69540a9b5b3d1f965bdc.1418003065.git.cj@linux.com>
-	 <1418064660.2058.11.camel@x220> <1418066039.2058.19.camel@x220>
-	 <5485F923.3090301@redhat.com> <1418067685.2058.27.camel@x220>
-	 <1418070979.2058.52.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2014 21:15:00.0355 (UTC) FILETIME=[06934D30:01D0132C]
-X-RcptDomain: vger.kernel.org
+	Mon, 8 Dec 2014 16:23:13 -0500
+From: Dean Michael Ancajas <dbancajas@gmail.com>
+To: marek.belisko@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Dean Michael Ancajas <dbancajas@gmail.com>
+Subject: [PATCH] Staging: ft1000: ft1000-pcmcia: Fixed a coding style issue
+Date: Mon,  8 Dec 2014 14:23:01 -0700
+Message-Id: <1418073781-10237-1-git-send-email-dbancajas@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-08 at 21:36 +0100, Paul Bolle wrote:
-> On Mon, 2014-12-08 at 20:41 +0100, Paul Bolle wrote:
-> > Well, it seems the treewide "boolean" cleanup should be done first.
-> > Removing support for "boolean" could than be a second, separate step.
-> > Just to ease review.
-> 
-> This appears to have no effect on the .config files I generated for the
-> defconfig files in next-20141208. (After porting the patch and changing
-> those last booleans to bool, that is.) So that's good.
-> 
-> If you'd resend as two patches on top of linux-next, I might add an
-> Acked-by: or a Tested-by:.
+Fixed a coding style issue for braces.
 
-My last mail on this series. To make sure the tree stays buildable that
-second patch to drop support for 'boolean' should only be applied a
-release or two after the cleanup patch has been applied. Otherwise we're
-bound to run into fun build errors in linux-next, and even mainline, for
-quite a few commits, aren't we? One tree still using boolean is all it
-takes...
+Signed-off-by: Dean Michael Ancajas <dbancajas@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-
-Paul Bolle
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 44575c7..45960b2 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -176,11 +176,11 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+ 	/* check if we want to read upper or lower 32-bit word */
+-	if (Index) {
++	if (Index)
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
+-	} else {
++	else
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
+-	}
++
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ 
+ 	return data;
+-- 
+1.9.1
 
