@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736AbaLHKM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 05:12:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36806 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaLHKMy (ORCPT
+	id S1754783AbaLHKPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 05:15:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53633 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752543AbaLHKPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 05:12:54 -0500
-Date: Mon, 8 Dec 2014 02:12:26 -0800
-From: tip-bot for Xishi Qiu <tipbot@zytor.com>
-Message-ID: <tip-5f9f7a56565c3f44b0a4b2966414e09048dddcf7@git.kernel.org>
-Cc: tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, qiuxishi@huawei.com, riel@redhat.com,
-        linux-mm@kvack.org, dave@sr71.net
-Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, dave@sr71.net,
-        qiuxishi@huawei.com, linux-mm@kvack.org, riel@redhat.com,
-        hpa@zytor.com, tglx@linutronix.de
-In-Reply-To: <54801228.5030405@huawei.com>
-References: <54801228.5030405@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm: Fix zone ranges boot printout
-Git-Commit-ID: 5f9f7a56565c3f44b0a4b2966414e09048dddcf7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 8 Dec 2014 05:15:33 -0500
+Date: Mon, 8 Dec 2014 10:15:29 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Zidan Wang <B50113@freescale.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel][PATCH v3] ASoC: wm8960: Let wm8960 codec driver
+	manage its own MCLK
+Message-ID: <20141208101529.GD14516@opensource.wolfsonmicro.com>
+References: <1417696879-15402-1-git-send-email-b50113@freescale.com> <20141205170156.GB14516@opensource.wolfsonmicro.com> <20141205173932.GN11764@sirena.org.uk> <BN3PR0301MB12511B448B1C0B9E8F0BB6C48D640@BN3PR0301MB1251.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <BN3PR0301MB12511B448B1C0B9E8F0BB6C48D640@BN3PR0301MB1251.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f9f7a56565c3f44b0a4b2966414e09048dddcf7
-Gitweb:     http://git.kernel.org/tip/5f9f7a56565c3f44b0a4b2966414e09048dddcf7
-Author:     Xishi Qiu <qiuxishi@huawei.com>
-AuthorDate: Thu, 4 Dec 2014 15:50:00 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Dec 2014 11:05:41 +0100
+On Mon, Dec 08, 2014 at 09:49:51AM +0000, Zidan Wang wrote:
+> So I should move mclk to wm8960_priv. 
+> And doing wm8960_priv->mclk = devm_clk_get(&i2c->dev, "codec_mclk") in wm8960_i2c_probe.
+> 
+> Best Regards,
+> Zidan
+> 
+> -----Original Message-----
 
-x86/mm: Fix zone ranges boot printout
+>From the sounds of Mark's comment I believe he is happy with it
+where it is, and if he is happy so am I.
 
-This is the usual physical memory layout boot printout:
-
-	...
-	[    0.000000] Zone ranges:
-	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-	[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-	[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
-	[    0.000000] Movable zone start for each node
-	[    0.000000] Early memory node ranges
-	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-	[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
-	[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
-	[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
-	...
-
-This is the log when we set "mem=2G" on the boot cmdline:
-
-	...
-	[    0.000000] Zone ranges:
-	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-	[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
-	[    0.000000]   Normal   empty
-	[    0.000000] Movable zone start for each node
-	[    0.000000] Early memory node ranges
-	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-	[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-	...
-
-This patch fixes the printout, the following log shows the right ranges:
-
-	...
-	[    0.000000] Zone ranges:
-	[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-	[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
-	[    0.000000]   Normal   empty
-	[    0.000000] Movable zone start for each node
-	[    0.000000] Early memory node ranges
-	[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-	[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-	...
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Linux MM <linux-mm@kvack.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: <dave@sr71.net>
-Link: http://lkml.kernel.org/r/54801228.5030405@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/init.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 82b41d5..a97ee08 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -703,10 +703,10 @@ void __init zone_sizes_init(void)
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
- 
- #ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-+	max_zone_pfns[ZONE_DMA]		= min(MAX_DMA_PFN, max_low_pfn);
- #endif
- #ifdef CONFIG_ZONE_DMA32
--	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-+	max_zone_pfns[ZONE_DMA32]	= min(MAX_DMA32_PFN, max_low_pfn);
- #endif
- 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
- #ifdef CONFIG_HIGHMEM
+Thanks,
+Charles
