@@ -1,157 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374AbaLHGuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:50:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34708 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaLHGuv (ORCPT
+	id S1754407AbaLHGvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:51:04 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36343 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380AbaLHGvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:50:51 -0500
-Date: Sun, 7 Dec 2014 22:50:31 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-13112bbf595d4081f291f7061bb096dbf4401d41@git.kernel.org>
-Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@kernel.org,
-        jolsa@kernel.org, namhyung@kernel.org, dsahern@gmail.com,
-        acme@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, cjashfor@linux.vnet.ibm.com,
-        eranian@google.com, hpa@zytor.com, paulus@samba.org,
-        ak@linux.intel.com
-Reply-To: dsahern@gmail.com, namhyung@kernel.org, jolsa@kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, matt.fleming@intel.com,
-        ak@linux.intel.com, paulus@samba.org, hpa@zytor.com,
-        eranian@google.com, cjashfor@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, acme@redhat.com
-In-Reply-To: <1416562275-12404-3-git-send-email-jolsa@kernel.org>
-References: <1416562275-12404-3-git-send-email-jolsa@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Introduce perf_counts_values__scale function
-Git-Commit-ID: 13112bbf595d4081f291f7061bb096dbf4401d41
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 8 Dec 2014 01:51:00 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 8 Dec 2014 15:54:44 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [RFC PATCH 1/3] mm: when stealing freepages, also take pages
+ created by splitting buddy page
+Message-ID: <20141208065444.GA3904@js1304-P5Q-DELUXE>
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
+ <1417713178-10256-2-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1417713178-10256-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13112bbf595d4081f291f7061bb096dbf4401d41
-Gitweb:     http://git.kernel.org/tip/13112bbf595d4081f291f7061bb096dbf4401d41
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 21 Nov 2014 10:31:06 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Nov 2014 18:03:50 -0300
+On Thu, Dec 04, 2014 at 06:12:56PM +0100, Vlastimil Babka wrote:
+> When __rmqueue_fallback() is called to allocate a page of order X, it will
+> find a page of order Y >= X of a fallback migratetype, which is different from
+> the desired migratetype. With the help of try_to_steal_freepages(), it may
+> change the migratetype (to the desired one) also of:
+> 
+> 1) all currently free pages in the pageblock containing the fallback page
+> 2) the fallback pageblock itself
+> 3) buddy pages created by splitting the fallback page (when Y > X)
+> 
+> These decisions take the order Y into account, as well as the desired
+> migratetype, with the goal of preventing multiple fallback allocations that
+> could e.g. distribute UNMOVABLE allocations among multiple pageblocks.
+> 
+> Originally, decision for 1) has implied the decision for 3). Commit
+> 47118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added") changed that
+> (probably unintentionally) so that the buddy pages in case 3) are always
+> changed to the desired migratetype, except for CMA pageblocks.
+> 
+> Commit fef903efcf0c ("mm/page_allo.c: restructure free-page stealing code and
+> fix a bug") did some refactoring and added a comment that the case of 3) is
+> intended. Commit 0cbef29a7821 ("mm: __rmqueue_fallback() should respect
+> pageblock type") removed the comment and tried to restore the original behavior
+> where 1) implies 3), but due to the previous refactoring, the result is instead
+> that only 2) implies 3) - and the conditions for 2) are less frequently met
+> than conditions for 1). This may increase fragmentation in situations where the
+> code decides to steal all free pages from the pageblock (case 1)), but then
+> gives back the buddy pages produced by splitting.
+> 
+> This patch restores the original intended logic where 1) implies 3). During
+> testing with stress-highalloc from mmtests, this has shown to decrease the
+> number of events where UNMOVABLE and RECLAIMABLE allocations steal from MOVABLE
+> pageblocks, which can lead to permanent fragmentation. It has increased the
+> number of events when MOVABLE allocations steal from UNMOVABLE or RECLAIMABLE
+> pageblocks, but these are fixable by sync compaction and thus less harmful.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> ---
+>  mm/page_alloc.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 616a2c9..548b072 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1105,12 +1105,10 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+>  
+>  		/* Claim the whole block if over half of it is free */
+>  		if (pages >= (1 << (pageblock_order-1)) ||
+> -				page_group_by_mobility_disabled) {
+> -
+> +				page_group_by_mobility_disabled)
+>  			set_pageblock_migratetype(page, start_type);
+> -			return start_type;
+> -		}
+>  
+> +		return start_type;
+>  	}
+>  
+>  	return fallback_type;
 
-perf evsel: Introduce perf_counts_values__scale function
+change_ownership on tracepoint will be wrong with this change.
 
-Factoring out scale login into perf_counts_values__scale function.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1416562275-12404-3-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c | 47 ++++++++++++++++++++++-------------------------
- tools/perf/util/evsel.h |  3 +++
- 2 files changed, 25 insertions(+), 25 deletions(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 1c73bc4..6dc7a67 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -897,6 +897,26 @@ void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
- 	count->run = count->run - tmp.run;
- }
- 
-+void perf_counts_values__scale(struct perf_counts_values *count,
-+			       bool scale, s8 *pscaled)
-+{
-+	s8 scaled = 0;
-+
-+	if (scale) {
-+		if (count->run == 0) {
-+			scaled = -1;
-+			count->val = 0;
-+		} else if (count->run < count->ena) {
-+			scaled = 1;
-+			count->val = (u64)((double) count->val * count->ena / count->run + 0.5);
-+		}
-+	} else
-+		count->ena = count->run = 0;
-+
-+	if (pscaled)
-+		*pscaled = scaled;
-+}
-+
- int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 			      int cpu, int thread, bool scale)
- {
-@@ -913,15 +933,7 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 		return -errno;
- 
- 	perf_evsel__compute_deltas(evsel, cpu, &count);
--
--	if (scale) {
--		if (count.run == 0)
--			count.val = 0;
--		else if (count.run < count.ena)
--			count.val = (u64)((double)count.val * count.ena / count.run + 0.5);
--	} else
--		count.ena = count.run = 0;
--
-+	perf_counts_values__scale(&count, scale, NULL);
- 	evsel->counts->cpu[cpu] = count;
- 	return 0;
- }
-@@ -956,22 +968,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 	}
- 
- 	perf_evsel__compute_deltas(evsel, -1, aggr);
--
--	evsel->counts->scaled = 0;
--	if (scale) {
--		if (aggr->run == 0) {
--			evsel->counts->scaled = -1;
--			aggr->val = 0;
--			return 0;
--		}
--
--		if (aggr->run < aggr->ena) {
--			evsel->counts->scaled = 1;
--			aggr->val = (u64)((double)aggr->val * aggr->ena / aggr->run + 0.5);
--		}
--	} else
--		aggr->ena = aggr->run = 0;
--
-+	perf_counts_values__scale(aggr, scale, &evsel->counts->scaled);
- 	return 0;
- }
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 746b7ea..7af0377 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -110,6 +110,9 @@ struct thread_map;
- struct perf_evlist;
- struct record_opts;
- 
-+void perf_counts_values__scale(struct perf_counts_values *count,
-+			       bool scale, s8 *pscaled);
-+
- void perf_evsel__compute_deltas(struct perf_evsel *evsel, int cpu,
- 				struct perf_counts_values *count);
- 
+Thanks.
