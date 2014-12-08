@@ -1,125 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036AbaLHTJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 14:09:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:48091 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaLHTJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 14:09:25 -0500
-Date: Mon, 8 Dec 2014 11:09:24 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [f2fs-dev][PATCH 3/4] f2fs: readahead contiguous current summary
- blocks in checkpoint
-Message-ID: <20141208190924.GB18956@jaegeuk-mac02.mot.com>
-References: <001a01d012b4$dfe9d040$9fbd70c0$@samsung.com>
+	id S1753375AbaLHTKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 14:10:11 -0500
+Received: from smtpauth13.mfg.siteprotect.com ([64.26.60.145]:46221 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751645AbaLHTKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 14:10:09 -0500
+Date: Mon, 8 Dec 2014 14:11:26 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        vincent.weaver@maine.edu
+Subject: Re: Linux 3.18 released
+In-Reply-To: <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
+Message-ID: <alpine.DEB.2.10.1412081409180.29946@pianoman.cluster.toy>
+References: <CA+55aFwK3XtS32iJna-2uXZUfZQNUGC0Z4FmEFHK4JXB_kyojA@mail.gmail.com> <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001a01d012b4$dfe9d040$9fbd70c0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020205.5485F790.0112,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On Mon, 8 Dec 2014, Vince Weaver wrote:
 
-On Mon, Dec 08, 2014 at 03:01:16PM +0800, Chao Yu wrote:
-> Let's add readahead code for reading contiguous compact/normal summary blocks
-> in checkpoint, then we will gain better performance in mount procedure.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/checkpoint.c |  2 +-
->  fs/f2fs/f2fs.h       |  2 +-
->  fs/f2fs/segment.c    | 21 ++++++++++++++++++---
->  3 files changed, 20 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index e0ff75e..aa2a21c 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -915,7 +915,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
->  	ckpt->next_free_nid = cpu_to_le32(last_nid);
->  
->  	/* 2 cp  + n data seg summary + orphan inode blocks */
-> -	data_sum_blocks = npages_for_summary_flush(sbi);
-> +	data_sum_blocks = npages_for_summary_flush(sbi, false);
->  	if (data_sum_blocks < NR_CURSEG_DATA_TYPE)
->  		set_ckpt_flags(ckpt, CP_COMPACT_SUM_FLAG);
->  	else
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index d042813..fc88e8a 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -1393,7 +1393,7 @@ void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
->  void clear_prefree_segments(struct f2fs_sb_info *);
->  void release_discard_addrs(struct f2fs_sb_info *);
->  void discard_next_dnode(struct f2fs_sb_info *, block_t);
-> -int npages_for_summary_flush(struct f2fs_sb_info *);
-> +int npages_for_summary_flush(struct f2fs_sb_info *, bool);
->  void allocate_new_segments(struct f2fs_sb_info *);
->  int f2fs_trim_fs(struct f2fs_sb_info *, struct fstrim_range *);
->  struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 9a33e34..e3bec6e 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -731,7 +731,7 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi, int type,
->  /*
->   * Calculate the number of current summary pages for writing
->   */
-> -int npages_for_summary_flush(struct f2fs_sb_info *sbi)
-> +int npages_for_summary_flush(struct f2fs_sb_info *sbi, bool for_ra)
->  {
->  	int valid_sum_count = 0;
->  	int i, sum_in_page;
-> @@ -739,8 +739,13 @@ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
->  	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
->  		if (sbi->ckpt->alloc_type[i] == SSR)
->  			valid_sum_count += sbi->blocks_per_seg;
-> -		else
-> -			valid_sum_count += curseg_blkoff(sbi, i);
-> +		else {
-> +			if (unlikely(for_ra))
+> down.  They are borderline heisenbugs that are possibly race conditions, 
+> so bisecting doesn't work and even things like enablibg ftrace will make 
+> the issue go away (or crash ftrace itself).
 
-IMO, unlikely is not appropriate for here.
+For example, just trying to enable some extra printks in the fuzzer to get 
+a log of the syscalls causing the problem quickly causes this:
 
-Thanks,
+[  398.604507] ------------[ cut here ]------------
+[  398.604507] WARNING: CPU: 0 PID: 2889 at kernel/watchdog.c:290 watchdog_overflow_callback+0x9b/0xa6()
+[  398.604507] Watchdog detected hard LOCKUP on cpu 0
+[  398.604507] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg evdev mcs7830 usbnet ohci_pci psmouse pcspkr serio_raw coretemp ohci_hcd wmi video button i2c_nforce2 acpi_cpufreq processor thermal_sys sg sd_mod ehci_pci ehci_hcd usbcore usb_common
+[  398.604507] CPU: 0 PID: 2889 Comm: perf_fuzzer Not tainted 3.18.0+ #166
+[  398.604507] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[  398.604507]  0000000000000122 ffff88011fc06ba8 ffffffff8155cf3b 0000000000000122
+[  398.604507]  ffff88011fc06bf8 ffff88011fc06be8 ffffffff8104361b 0000000000000000
+[  398.604507]  ffffffff810b1711 ffff88011f055000 0000000000000000 ffff88011fc06d28
+[  398.604507] Call Trace:
+[  398.604507]  <NMI>  [<ffffffff8155cf3b>] dump_stack+0x49/0x5e
+[  398.604507]  [<ffffffff8104361b>] warn_slowpath_common+0x81/0x9b
+[  398.604507]  [<ffffffff810b1711>] ? watchdog_overflow_callback+0x9b/0xa6
+[  398.604507]  [<ffffffff810436d8>] warn_slowpath_fmt+0x46/0x48
+[  398.604507]  [<ffffffff810b1711>] watchdog_overflow_callback+0x9b/0xa6
+[  398.604507]  [<ffffffff810dafbe>] __perf_event_overflow+0x13c/0x1c6
+[  398.604507]  [<ffffffff810db684>] perf_event_overflow+0x19/0x1b
+[  398.604507]  [<ffffffff8101ab1e>] intel_pmu_handle_irq+0x2e3/0x378
+[  398.604507]  [<ffffffff81013dcf>] perf_event_nmi_handler+0x2d/0x4a
+[  398.604507]  [<ffffffff8100636f>] nmi_handle+0x5c/0xf9
+[  398.604507]  [<ffffffff810065db>] default_do_nmi+0x4e/0xe2
+[  398.604507]  [<ffffffff810066d9>] do_nmi+0x6a/0xaf
+[  398.604507]  [<ffffffff81561dda>] end_repeat_nmi+0x1e/0x2e
+[  398.604507]  [<ffffffff8155fbec>] ? _raw_spin_lock+0x26/0x2a
+[  398.604507]  [<ffffffff8155fbec>] ? _raw_spin_lock+0x26/0x2a
+[  398.604507]  [<ffffffff8155fbec>] ? _raw_spin_lock+0x26/0x2a
+[  398.604507]  <<EOE>>  [<ffffffff810d5fc7>] perf_ctx_lock+0x28/0x2d
+[  398.604507]  [<ffffffff810d8854>] perf_event_context_sched_in+0x3d/0xa0
+[  398.604507]  [<ffffffff810d8a4e>] __perf_event_task_sched_in+0x3f/0x111
+[  398.604507]  [<ffffffff8106570f>] finish_task_switch+0x46/0xad
+[  398.604507]  [<ffffffff8155d48d>] __schedule+0x454/0x4a8
+[  398.604507]  [<ffffffff8155d64f>] schedule+0x6e/0x70
+[  398.604507]  [<ffffffff811ec527>] jbd2_log_wait_commit+0xa5/0xf0
+[  398.604507]  [<ffffffff8106e17e>] ? signal_pending_state+0x35/0x35
+[  398.604507]  [<ffffffff8114c79b>] ? default_file_splice_read+0x2d1/0x2d1
+[  398.604507]  [<ffffffff811c03a9>] ext4_sync_fs+0xd6/0x124
+[  398.604507]  [<ffffffff8114c7bb>] sync_fs_one_sb+0x20/0x22
+[  398.604507]  [<ffffffff811295cb>] iterate_supers+0x6e/0xbf
+[  398.604507]  [<ffffffff8114cb2f>] sys_sync+0x55/0x83
+[  398.604507]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
+[  398.604507] ---[ end trace cb94cd46e328aa66 ]---
+[  401.000000] ------------[ cut here ]------------
+[  401.000000] WARNING: CPU: 1 PID: 3296 at kernel/watchdog.c:290 watchdog_overflow_callback+0x9b/0xa6()
+[  401.000000] Watchdog detected hard LOCKUP on cpu 1
+[  401.000000] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg evdev mcs7830 usbnet ohci_pci psmouse pcspkr serio_raw coretemp ohci_hcd wmi video button i2c_nforce2 acpi_cpufreq processor thermal_sys sg sd_mod ehci_pci ehci_hcd usbcore usb_common
+[  401.000000] CPU: 1 PID: 3296 Comm: perf_fuzzer Tainted: G        W      3.18.0+ #166
+[  401.000000] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[  401.000000]  0000000000000122 ffff88011fc86ba8 ffffffff8155cf3b 0000000000000122
+[  401.000000]  ffff88011fc86bf8 ffff88011fc86be8 ffffffff8104361b 0000000000000000
+[  401.000000]  ffffffff810b1711 ffff88011b3bec00 0000000000000000 ffff88011fc86d28
+[  401.000000] Call Trace:
+[  401.000000]  <NMI>  [<ffffffff8155cf3b>] dump_stack+0x49/0x5e
+[  401.000000]  [<ffffffff8104361b>] warn_slowpath_common+0x81/0x9b
+[  401.000000]  [<ffffffff810b1711>] ? watchdog_overflow_callback+0x9b/0xa6
+[  401.000000]  [<ffffffff810436d8>] warn_slowpath_fmt+0x46/0x48
+[  401.000000]  [<ffffffff810b1711>] watchdog_overflow_callback+0x9b/0xa6
+[  401.000000]  [<ffffffff810dafbe>] __perf_event_overflow+0x13c/0x1c6
+[  401.000000]  [<ffffffff810db684>] perf_event_overflow+0x19/0x1b
+[  401.000000]  [<ffffffff8101ab1e>] intel_pmu_handle_irq+0x2e3/0x378
+[  401.000000]  [<ffffffff81013dcf>] perf_event_nmi_handler+0x2d/0x4a
+[  401.000000]  [<ffffffff8100636f>] nmi_handle+0x5c/0xf9
+[  401.000000]  [<ffffffff810065db>] default_do_nmi+0x4e/0xe2
+[  401.000000]  [<ffffffff810066d9>] do_nmi+0x6a/0xaf
+[  401.000000]  [<ffffffff81561dda>] end_repeat_nmi+0x1e/0x2e
+[  401.000000]  [<ffffffff8155fbe5>] ? _raw_spin_lock+0x1f/0x2a
+[  401.000000]  [<ffffffff8155fbe5>] ? _raw_spin_lock+0x1f/0x2a
+[  401.000000]  [<ffffffff8155fbe5>] ? _raw_spin_lock+0x1f/0x2a
+[  401.000000]  <<EOE>>  <IRQ>  [<ffffffff8106c391>] sched_rt_period_timer+0x8b/0x1f2
+[  401.000000]  [<ffffffff8108a6b7>] __run_hrtimer+0xba/0x145
+[  401.000000]  [<ffffffff8106c306>] ? init_rt_bandwidth+0x46/0x46
+[  401.000000]  [<ffffffff8108a91a>] hrtimer_interrupt+0xd5/0x1c3
+[  401.000000]  [<ffffffff8102d209>] local_apic_timer_interrupt+0x58/0x5d
+[  401.000000]  [<ffffffff8102d6b0>] smp_apic_timer_interrupt+0x2a/0x3c
+[  401.000000]  [<ffffffff81560eaa>] apic_timer_interrupt+0x6a/0x70
+[  401.000000]  <EOI> 
+[  401.000000] ---[ end trace cb94cd46e328aa67 ]---
 
-> +				valid_sum_count += le16_to_cpu(
-> +					F2FS_CKPT(sbi)->cur_data_blkoff[i]);
-> +			else
-> +				valid_sum_count += curseg_blkoff(sbi, i);
-> +		}
->  	}
->  
->  	sum_in_page = (PAGE_CACHE_SIZE - 2 * SUM_JOURNAL_SIZE -
-> @@ -1446,12 +1451,22 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
->  	int err;
->  
->  	if (is_set_ckpt_flags(F2FS_CKPT(sbi), CP_COMPACT_SUM_FLAG)) {
-> +		int npages = npages_for_summary_flush(sbi, true);
-> +
-> +		if (npages >= 2)
-> +			ra_meta_pages(sbi, start_sum_block(sbi), npages,
-> +								META_CP);
-> +
->  		/* restore for compacted data summary */
->  		if (read_compacted_summaries(sbi))
->  			return -EINVAL;
->  		type = CURSEG_HOT_NODE;
->  	}
->  
-> +	if (is_set_ckpt_flags(F2FS_CKPT(sbi), CP_UMOUNT_FLAG))
-> +		ra_meta_pages(sbi, sum_blk_addr(sbi, NR_CURSEG_TYPE, type),
-> +					NR_CURSEG_TYPE - type, META_CP);
-> +
->  	for (; type <= CURSEG_COLD_NODE; type++) {
->  		err = read_normal_summaries(sbi, type);
->  		if (err)
-> -- 
-> 2.1.2
