@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaLHJTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:19:24 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:46479 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaLHJTW (ORCPT
+	id S1753883AbaLHJTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:19:42 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbaLHJTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:19:22 -0500
-Message-ID: <54856CEB.2070100@hp.com>
-Date: Mon, 08 Dec 2014 17:18:35 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Li, ZhenHua" <zhen-hual@hp.com>
-Subject: call trace caused by iounmap and spin_lock_irqsave
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Dec 2014 04:19:40 -0500
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: tlinder@codeaurora.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] UBI: Fastmap: Fix possible fastmap inconsistency
+Date: Mon,  8 Dec 2014 10:19:26 +0100
+Message-Id: <1418030366-9192-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I meet a problem about ioremap/iounmap and spin_lock_irqsave
-/spin_unlock_irqrestore , does anybody know how to fix this?
+Currently we call ubi_refill_pools() before all UBI meta data
+is collected for the fastmap on-flash data structure.
+It can happen that a second thread requests a new PEB and returns
+it immediately to the free list between ubi_refill_pools()
+and collecting meta data.
+In this case the same PEB will be in the free list and a fastmap
+pool.
+Upon attach time fastmap is able to detect that inconsistency
+and will fall back to scanning mode.
+But we can do better.
 
-The code is like this:
+To bypass the issue just call ubi_refill_pools() under the same
+wl_lock as the meta data collecting happens.
+If fastmap is disabled we can still call ubi_refill_pools() early.
 
-void some_function(){
-     void __iomem * virt_mem;
-     ....
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/fastmap-wl.c |  4 ----
+ drivers/mtd/ubi/fastmap.c    | 17 +++++++++--------
+ 2 files changed, 9 insertions(+), 12 deletions(-)
 
-     spin_lock_irqsave(&iommu->lock, flags);
-     virt_mem = ioremap(from, size);
-     memcpy(to, virt_mem, size);
-     ....
-     iounmap(virt_mem);
-     ....
-     spin_unlock_irqrestore(&iommu->lock, flags);
-}
+diff --git a/drivers/mtd/ubi/fastmap-wl.c b/drivers/mtd/ubi/fastmap-wl.c
+index 8f109cc..6883146 100644
+--- a/drivers/mtd/ubi/fastmap-wl.c
++++ b/drivers/mtd/ubi/fastmap-wl.c
+@@ -226,8 +226,6 @@ void ubi_refill_pools(struct ubi_device *ubi)
+ 	struct ubi_wl_entry *e;
+ 	int enough;
+ 
+-	spin_lock(&ubi->wl_lock);
+-
+ 	return_unused_pool_pebs(ubi, wl_pool);
+ 	return_unused_pool_pebs(ubi, pool);
+ 
+@@ -270,8 +268,6 @@ void ubi_refill_pools(struct ubi_device *ubi)
+ 
+ 	wl_pool->used = 0;
+ 	pool->used = 0;
+-
+-	spin_unlock(&ubi->wl_lock);
+ }
+ 
+ /**
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index 976e498..05b3c00 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -1121,6 +1121,8 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 	spin_lock(&ubi->volumes_lock);
+ 	spin_lock(&ubi->wl_lock);
+ 
++	ubi_refill_pools(ubi);
++
+ 	fmsb = (struct ubi_fm_sb *)fm_raw;
+ 	fm_pos += sizeof(*fmsb);
+ 	ubi_assert(fm_pos <= ubi->fm_size);
+@@ -1477,19 +1479,14 @@ int ubi_update_fastmap(struct ubi_device *ubi, struct ubi_wl_entry **forced_anch
+ 
+ 	down_write(&ubi->fm_protect);
+ 
+-	ubi_refill_pools(ubi);
+-
+ 	if (ubi->ro_mode || ubi->fm_disabled) {
++		spin_lock(&ubi->wl_lock);
++		ubi_refill_pools(ubi);
++		spin_unlock(&ubi->wl_lock);
+ 		up_write(&ubi->fm_protect);
+ 		return 0;
+ 	}
+ 
+-	ret = ubi_ensure_anchor_pebs(ubi);
+-	if (ret) {
+-		up_write(&ubi->fm_protect);
+-		return ret;
+-	}
+-
+ 	new_fm = kzalloc(sizeof(*new_fm), GFP_KERNEL);
+ 	if (!new_fm) {
+ 		up_write(&ubi->fm_protect);
+@@ -1614,6 +1611,10 @@ int ubi_update_fastmap(struct ubi_device *ubi, struct ubi_wl_entry **forced_anch
+ 	if (ret)
+ 		goto err;
+ 
++	ret = ubi_ensure_anchor_pebs(ubi);
++	if (ret)
++		goto err;
++
+ out_unlock:
+ 	up_write(&ubi->fm_protect);
+ 	kfree(old_fm);
+-- 
+1.8.4.5
 
-The problem is : when iounmap is called between spin_lock_irqsave and
-spin_unlock_irqrestore, there may happen some call trace dump.
-
-[    8.651661] WARNING: CPU: 2 PID: 1 at kernel/smp.c:401 
-smp_call_function_many+0xbd/0x290()
-[    8.660937] Modules linked in:
-[    8.664373] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc2.bp #113
-[    8.671897]  0000000000000000 00000000fc89b093 ffff880035e83848 
-ffffffff81691f2b
-[    8.680230]  0000000000000000 0000000000000000 ffff880035e83888 
-ffffffff81074d21
-[    8.688564]  ffff880035e83868 ffffffff81065cc0 ffff880035e83928 
-0000000000000002
-[    8.696897] Call Trace:
-[    8.699641]  [<ffffffff81691f2b>] dump_stack+0x46/0x58
-[    8.705412]  [<ffffffff81074d21>] warn_slowpath_common+0x81/0xa0
-[    8.712157]  [<ffffffff81065cc0>] ? 
-rbt_memtype_copy_nth_element+0xc0/0xc0
-[    8.719873]  [<ffffffff81074e3a>] warn_slowpath_null+0x1a/0x20
-[    8.726419]  [<ffffffff810ef9bd>] smp_call_function_many+0xbd/0x290
-[    8.733453]  [<ffffffff81065cc0>] ? 
-rbt_memtype_copy_nth_element+0xc0/0xc0
-[    8.741171]  [<ffffffff810efbf1>] on_each_cpu+0x31/0x60
-[    8.747035]  [<ffffffff8106647d>] flush_tlb_kernel_range+0x7d/0x90
-[    8.753978]  [<ffffffff811af2d7>] __purge_vmap_area_lazy+0x2c7/0x3a0
-[    8.761112]  [<ffffffff81063610>] ? arch_pick_mmap_layout+0x280/0x280
-[    8.768339]  [<ffffffff811af5bc>] free_vmap_area_noflush+0x7c/0x90
-[    8.775276]  [<ffffffff811b0e2e>] remove_vm_area+0x5e/0x70
-[    8.781432]  [<ffffffff81060047>] iounmap+0x67/0xa0
-.... More trace ....
-
-
-My question is: If we do not move iounmap out of this lock/unlock field, 
-is there any fix for this WARNING?
-
-Thanks
-Zhenhua
