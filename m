@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaLHGtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:49:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34629 "EHLO
+	id S1754149AbaLHGtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:49:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34610 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaLHGtn (ORCPT
+	with ESMTP id S1754047AbaLHGtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:49:43 -0500
-Date: Sun, 7 Dec 2014 22:49:30 -0800
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-85c116a6cb91a5c09b7a6c95ffc6a6cbd32cd237@git.kernel.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, namhyung@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, ak@linux.intel.com,
-        jolsa@redhat.com, acme@redhat.com
-Reply-To: hpa@zytor.com, tglx@linutronix.de, namhyung@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, ak@linux.intel.com,
-        acme@redhat.com, jolsa@redhat.com
-In-Reply-To: <1415844328-4884-10-git-send-email-andi@firstfloor.org>
-References: <1415844328-4884-10-git-send-email-andi@firstfloor.org>
+	Mon, 8 Dec 2014 01:49:16 -0500
+Date: Sun, 7 Dec 2014 22:48:44 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-a7444af69b2898bb9b3a847d3599e1fc98356ce5@git.kernel.org>
+Cc: paulus@samba.org, hpa@zytor.com, namhyung.kim@lge.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, mingo@kernel.org,
+        dsahern@gmail.com, namhyung@kernel.org, fweisbec@gmail.com,
+        acme@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, jolsa@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, hpa@zytor.com, namhyung.kim@lge.com,
+        paulus@samba.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, acme@redhat.com, namhyung@kernel.org,
+        dsahern@gmail.com
+In-Reply-To: <1416816807-6495-2-git-send-email-namhyung@kernel.org>
+References: <1416816807-6495-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf callchain:
-  Make get_srcline fall back to sym+offset
-Git-Commit-ID: 85c116a6cb91a5c09b7a6c95ffc6a6cbd32cd237
+Subject: [tip:perf/core] perf tools:
+  Collapse first level callchain entry if it has sibling
+Git-Commit-ID: a7444af69b2898bb9b3a847d3599e1fc98356ce5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,150 +37,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  85c116a6cb91a5c09b7a6c95ffc6a6cbd32cd237
-Gitweb:     http://git.kernel.org/tip/85c116a6cb91a5c09b7a6c95ffc6a6cbd32cd237
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 12 Nov 2014 18:05:27 -0800
+Commit-ID:  a7444af69b2898bb9b3a847d3599e1fc98356ce5
+Gitweb:     http://git.kernel.org/tip/a7444af69b2898bb9b3a847d3599e1fc98356ce5
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 24 Nov 2014 17:13:27 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Nov 2014 18:03:47 -0300
+CommitDate: Mon, 24 Nov 2014 11:34:33 -0300
 
-perf callchain: Make get_srcline fall back to sym+offset
+perf tools: Collapse first level callchain entry if it has sibling
 
-When the source line is not found fall back to sym + offset.  This is
-generally much more useful than a raw address.
+If first level callchain has more than single path like when -g caller
+option is given, it should show only first one in the path and hide
+others.  But it didn't do it properly and just hindered the output.
 
-For this we need to pass in the symbol from the caller.
+Before:
+  -   80.33%    11.11%  abc2     abc2              [.] main
+     + 86.18% main
+       13.82% __libc_start_main
+          main
 
-For some callers it's awkward to compute, so we stay at the old
-behaviour.
+After:
+  -   80.33%    11.11%  abc2     abc2              [.] main
+     + 86.18% main
+     + 13.82% __libc_start_main
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1415844328-4884-10-git-send-email-andi@firstfloor.org
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1416816807-6495-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c  |  2 +-
- tools/perf/util/callchain.c |  3 ++-
- tools/perf/util/map.c       |  2 +-
- tools/perf/util/sort.c      |  6 ++++--
- tools/perf/util/srcline.c   | 11 +++++++++--
- tools/perf/util/util.h      |  4 +++-
- 6 files changed, 20 insertions(+), 8 deletions(-)
+ tools/perf/ui/browsers/hists.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index e5670f1..79999ce 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1192,7 +1192,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		offset = start + i;
--		src_line->path = get_srcline(map->dso, offset);
-+		src_line->path = get_srcline(map->dso, offset, NULL, false);
- 		insert_source_line(&tmp_root, src_line);
- 
- 	next:
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index b6624ae..517ed84 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -819,7 +819,8 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 		    cl->ms.map && !cl->srcline)
- 			cl->srcline = get_srcline(cl->ms.map->dso,
- 						  map__rip_2objdump(cl->ms.map,
--								    cl->ip));
-+								    cl->ip),
-+						  cl->ms.sym, false);
- 		if (cl->srcline)
- 			printed = scnprintf(bf, bfsize, "%s %s",
- 					cl->ms.sym->name, cl->srcline);
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 040a785..62ca9f2 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -360,7 +360,7 @@ int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
- 
- 	if (map && map->dso) {
- 		srcline = get_srcline(map->dso,
--				      map__rip_2objdump(map, addr));
-+				      map__rip_2objdump(map, addr), NULL, true);
- 		if (srcline != SRCLINE_UNKNOWN)
- 			ret = fprintf(fp, "%s%s", prefix, srcline);
- 		free_srcline(srcline);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 82a5596..9139dda 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -291,7 +291,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = left->ms.map;
- 			left->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, left->ip));
-+					   map__rip_2objdump(map, left->ip),
-+						    left->ms.sym, true);
- 		}
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 8d22905..502daff 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -227,10 +227,14 @@ static void callchain_node__init_have_children_rb_tree(struct callchain_node *no
  	}
- 	if (!right->srcline) {
-@@ -300,7 +301,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = right->ms.map;
- 			right->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, right->ip));
-+					     map__rip_2objdump(map, right->ip),
-+						     right->ms.sym, true);
- 		}
- 	}
- 	return strcmp(right->srcline, left->srcline);
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index ac877f9..e73b6a5 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -8,6 +8,8 @@
- #include "util/util.h"
- #include "util/debug.h"
+ }
  
-+#include "symbol.h"
-+
- #ifdef HAVE_LIBBFD_SUPPORT
- 
- /*
-@@ -250,7 +252,8 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
-  */
- #define A2L_FAIL_LIMIT 123
- 
--char *get_srcline(struct dso *dso, unsigned long addr)
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym)
+-static void callchain_node__init_have_children(struct callchain_node *node)
++static void callchain_node__init_have_children(struct callchain_node *node,
++					       bool has_sibling)
  {
- 	char *file = NULL;
- 	unsigned line = 0;
-@@ -289,7 +292,11 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
+ 	struct callchain_list *chain;
+ 
++	chain = list_entry(node->val.next, struct callchain_list, list);
++	chain->ms.has_children = has_sibling;
++
+ 	if (!list_empty(&node->val)) {
+ 		chain = list_entry(node->val.prev, struct callchain_list, list);
+ 		chain->ms.has_children = !RB_EMPTY_ROOT(&node->rb_root);
+@@ -241,11 +245,12 @@ static void callchain_node__init_have_children(struct callchain_node *node)
+ 
+ static void callchain__init_have_children(struct rb_root *root)
+ {
+-	struct rb_node *nd;
++	struct rb_node *nd = rb_first(root);
++	bool has_sibling = nd && rb_next(nd);
+ 
+ 	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
+ 		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		callchain_node__init_have_children(node);
++		callchain_node__init_have_children(node, has_sibling);
  	}
--	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+	if (sym) {
-+		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
-+					addr - sym->start) < 0)
-+			return SRCLINE_UNKNOWN;
-+	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
- 		return SRCLINE_UNKNOWN;
- 	return srcline;
- }
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 76d23d8..419bee0 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -337,8 +337,10 @@ static inline int path__join3(char *bf, size_t size,
  }
  
- struct dso;
-+struct symbol;
- 
--char *get_srcline(struct dso *dso, unsigned long addr);
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym);
- void free_srcline(char *srcline);
- 
- int filename__read_int(const char *filename, int *value);
