@@ -1,63 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaLHJ6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:58:23 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:4073 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752840AbaLHJ6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:58:22 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Hillf Danton'" <hillf.zj@alibaba-inc.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 8 Dec 2014 17:58:14 +0800
-Subject: [PATCH V2] mm:add VM_BUG_ON() for page_mapcount()
-Thread-Topic: [PATCH V2] mm:add VM_BUG_ON() for page_mapcount()
-Thread-Index: AdASyaRYNK5Lt1HlQ1KFwSk6V3BFwAAA8Bmw
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313F9@CNBJMBX05.corpusers.net>
-References: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
-In-Reply-To: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754993AbaLHJ73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:59:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52213 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753291AbaLHJ7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:59:20 -0500
+Message-ID: <54857675.5080400@suse.cz>
+Date: Mon, 08 Dec 2014 10:59:17 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 4/4] mm/compaction: stop the isolation when we isolate
+ enough freepage
+References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com> <1418022980-4584-5-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1418022980-4584-5-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB89wUWf024238
 
-This patch add VM_BUG_ON_PAGE() for slab page,
-because _mapcount is an union with slab struct in struct page,
-avoid access _mapcount if this page is a slab page.
-Also remove the unneeded bracket.
+On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
+> From: Joonsoo Kim <js1304@gmail.com>
+>
+> Currently, freepage isolation in one pageblock doesn't consider how many
+> freepages we isolate. When I traced flow of compaction, compaction
+> sometimes isolates more than 256 freepages to migrate just 32 pages.
+>
+> In this patch, freepage isolation is stopped at the point that we
+> have more isolated freepage than isolated page for migration. This
+> results in slowing down free page scanner and make compaction success
+> rate higher.
+>
+> stress-highalloc test in mmtests with non movable order 7 allocation shows
+> increase of compaction success rate and slight improvement of allocation
+> success rate.
+>
+> Allocation success rate on phase 1 (%)
+> 62.70 : 64.00
+>
+> Compaction success rate (Compaction success * 100 / Compaction stalls, %)
+> 35.13 : 41.50
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- include/linux/mm.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+This is weird. I could maybe understand that isolating too many 
+freepages and then returning them is a waste of time if compaction 
+terminates immediately after the following migration (otherwise we would 
+keep those free pages for the future migrations within same compaction 
+run). And wasting time could reduce success rates for async compaction 
+terminating prematurely due to cond_resched(), but that should be all 
+the difference, unless there's another subtle bug, no?
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b464611..a117527 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -449,7 +449,8 @@ static inline void page_mapcount_reset(struct page *page)
- 
- static inline int page_mapcount(struct page *page)
- {
--	return atomic_read(&(page)->_mapcount) + 1;
-+	VM_BUG_ON_PAGE(PageSlab(page), page);
-+	return atomic_read(&page->_mapcount) + 1;
- }
- 
- static inline int page_count(struct page *page)
--- 
-2.1.3
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> pfn where both scanners meets on compaction complete
+> (separate test due to enormous tracepoint buffer)
+> (zone_start=4096, zone_end=1048576)
+> 586034 : 654378
+
+The difference here suggests that there is indeed another subtle bug 
+related to where free scanner restarts, and we must be leaving the 
+excessively isolated (and then returned) freepages behind. Otherwise I 
+think the scanners should meet at the same place regardless of your patch.
+
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> ---
+>   mm/compaction.c |   17 ++++++++++-------
+>   1 file changed, 10 insertions(+), 7 deletions(-)
+>
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 2fd5f79..12223b9 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -422,6 +422,13 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>
+>   		/* If a page was split, advance to the end of it */
+>   		if (isolated) {
+> +			cc->nr_freepages += isolated;
+> +			if (!strict &&
+> +				cc->nr_migratepages <= cc->nr_freepages) {
+> +				blockpfn += isolated;
+> +				break;
+> +			}
+> +
+>   			blockpfn += isolated - 1;
+>   			cursor += isolated - 1;
+>   			continue;
+> @@ -831,7 +838,6 @@ static void isolate_freepages(struct compact_control *cc)
+>   	unsigned long isolate_start_pfn; /* exact pfn we start at */
+>   	unsigned long block_end_pfn;	/* end of current pageblock */
+>   	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+> -	int nr_freepages = cc->nr_freepages;
+>   	struct list_head *freelist = &cc->freepages;
+>
+>   	/*
+> @@ -856,11 +862,11 @@ static void isolate_freepages(struct compact_control *cc)
+>   	 * pages on cc->migratepages. We stop searching if the migrate
+>   	 * and free page scanners meet or enough free pages are isolated.
+>   	 */
+> -	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+> +	for (; block_start_pfn >= low_pfn &&
+> +			cc->nr_migratepages > cc->nr_freepages;
+>   				block_end_pfn = block_start_pfn,
+>   				block_start_pfn -= pageblock_nr_pages,
+>   				isolate_start_pfn = block_start_pfn) {
+> -		unsigned long isolated;
+>
+>   		/*
+>   		 * This can iterate a massively long zone without finding any
+> @@ -885,9 +891,8 @@ static void isolate_freepages(struct compact_control *cc)
+>   			continue;
+>
+>   		/* Found a block suitable for isolating free pages from. */
+> -		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
+> +		isolate_freepages_block(cc, &isolate_start_pfn,
+>   					block_end_pfn, freelist, false);
+> -		nr_freepages += isolated;
+>
+>   		/*
+>   		 * Remember where the free scanner should restart next time,
+> @@ -919,8 +924,6 @@ static void isolate_freepages(struct compact_control *cc)
+>   	 */
+>   	if (block_start_pfn < low_pfn)
+>   		cc->free_pfn = cc->migrate_pfn;
+> -
+> -	cc->nr_freepages = nr_freepages;
+>   }
+>
+>   /*
+>
+
