@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178AbaLHRu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 12:50:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63450 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaLHRu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 12:50:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,539,1413270000"; 
-   d="scan'208";a="644346779"
-Date: Mon, 8 Dec 2014 23:20:44 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: =?iso-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor
- allocation failure
-Message-ID: <20141208175044.GT16827@intel.com>
-References: <1416924617-15939-1-git-send-email-j@bitron.ch>
- <1418057426.5069.6.camel@bitron.ch>
- <20141208171923.GS16827@intel.com>
- <2395334.C7dbfKWGeP@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2395334.C7dbfKWGeP@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756193AbaLHRvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 12:51:01 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:44625 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614AbaLHRu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 12:50:58 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 2/3] fpga manager: framework core
+To: Pavel Machek <pavel@denx.de>
+Cc: atull <atull@opensource.altera.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Ira Snyder <iws@ovro.caltech.edu>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, philip@balister.org,
+        rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason <jason@lakedaemon.net>, kyle.teske@ni.com,
+        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        David Miller <davem@davemloft.net>, cesarb@cesarb.net,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        Yves Vandervennet <yvanderv@opensource.altera.com>
+In-Reply-To: <20141206135533.GA19672@amd>
+References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
+	<1414007405-32186-3-git-send-email-atull@opensource.altera.com>
+	<20141024105200.GA20775@amd>
+	<B914D894-E486-4EF1-8F84-169E939C58B4@konsulko.com>
+	<alpine.DEB.2.02.1410240906340.23446@atx-linux-37>
+	<CACxGe6tiLxbCThzjOqrQg44Ue3XJuuRgti5jZY=UrssSY8=xqg@mail.gmail.com>
+	<20141206135533.GA19672@amd>
+Date: Mon, 08 Dec 2014 17:50:50 +0000
+Message-Id: <20141208175050.92EDAC40D73@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 07:40:15PM +0200, Laurent Pinchart wrote:
-> Hi Vinod,
+On Sat, 6 Dec 2014 14:55:33 +0100
+, Pavel Machek <pavel@denx.de>
+ wrote:
+> Hi!
 > 
-> On Monday 08 December 2014 22:49:24 Vinod Koul wrote:
-> > On Mon, Dec 08, 2014 at 05:50:26PM +0100, Jürg Billeter wrote:
-> > > Hi Vinod,
-> > > 
-> > > On Mon, 2014-12-08 at 17:06 +0530, Vinod Koul wrote:
-> > > > Can you please rebase this on my next, this fails to apply for me
-> > > 
-> > > This is a patch for Laurent's new rcar-dmac driver, which doesn't appear
-> > > to be in your next yet. Laurent has already merged my patch into his
-> > > dma/next branch and included it in his pull request from November 27.
-> > > 
-> > > [GIT PULL FOR v3.19] R-Car DMA engine driver
-> > > http://www.spinics.net/lists/linux-sh/msg37764.html
+> > > I am accustomed to doing 'echo -n' for most of sysfs anyway.  Once in a
+> > > while I am a bonehead and forget the '-n' and spend a few minutes
+> > > wondering why this thing that worked last week suddenly rejects all
+> > > commands.  I'm just trying to make my user interface a bit user-friendly.
+> > >
+> > > I will take out the '\n' stripping and update the documentation.  I didn't
+> > > realize this would be controversial.
 > > 
-> > And I dont seem to have this request in my Inbox :(
-> > Yes I do see it in archieves, so not sure how this is not present, not sure
-> > if the servers mangeled it!!
+> > Don't. You're doing the right thing by scrubbing your input. Requiring
+> > 'echo -n' is just stupid when it is so easy to make work easily.
 > 
-> I haven't CC'ed you, I'll make sure to do so next time. The mail should still 
-> have reached you through the mailing list though (I assume you're subscribed 
-> to dmaengine@vger.kernel.org ;-)).
-Yes I am, so should have reached me even though i wasnt cced
-I do see email reaching me from list without me being in CC, but then it
-wont hit my inbox and go to ML folder :)
-So generally its a good practice to CC relvant folks, lots of folks do ask
-that if ML is high volume
+> 'foo\nbar\n' is unusual but valid filename in linux. It is bad idea to
+> echo filenames into files in the first place... and arbitrarily
+> disallowing certain filenames is not helping.
 
-Hopefully the Intel servers are playing nice with vger, that is my bigger
-worry here.
+Meh. Just because it is a valid linux filename doesn't mean this
+interface is forced to accept it. There should be tighter rules about
+how the filename can be constructed. Allowing any arbitrary path for any
+arbitrary valid linux filename makes for a large attack surface.
 
--- 
-~Vinod
+I would like to know, what is the purpose of the interface? Why is it
+important to provide the firmware filename in this manor? Are there
+going to be a lot of different FPGA bitstreams that may need to be
+loaded? How does userspace choose between them, and is there a better
+way to do the selection without passing the firmware filename through
+the kernel? Is this merely intended to get udev to behave in a certain
+way? If so, then maybe there is a better way to go about it.
 
+We could for example use a UDEV 'PROGRAM=' rule to execute a userspace
+app and have that program figure out which firmware file to provide to
+the kernel.
+
+g.
