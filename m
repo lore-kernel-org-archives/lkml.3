@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbaLHSUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:20:21 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59209 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaLHSUT (ORCPT
+	id S1756126AbaLHSX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:23:29 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:43545 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaLHSX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:20:19 -0500
-Date: Mon, 8 Dec 2014 18:20:16 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	Mon, 8 Dec 2014 13:23:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141208181401.GD22149@ZenIV.linux.org.uk>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
+	<20141208164650.GB29028@node.dhcp.inet.fi>
+	<CA+55aFz6izpVGxkziynRXg7zbHzteQyPJH1Kg91ZO3fzqn3LaQ@mail.gmail.com>
+	<20141208181401.GD22149@ZenIV.linux.org.uk>
+Date: Mon, 8 Dec 2014 10:23:26 -0800
+X-Google-Sender-Auth: 2rwU2ZjOOK7Bc3Ruf4S6pJOeG_M
+Message-ID: <CA+55aFzKGsYKh1HALoeFGYQ46uMHww0WdLf5N-9duNTgMSSFxQ@mail.gmail.com>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Network Development <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141208182012.GE22149@ZenIV.linux.org.uk>
-References: <20141204202011.GO29748@ZenIV.linux.org.uk>
- <20141208164650.GB29028@node.dhcp.inet.fi>
- <20141208175805.GB22149@ZenIV.linux.org.uk>
- <20141208180824.GC22149@ZenIV.linux.org.uk>
- <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:14:13AM -0800, Linus Torvalds wrote:
+On Mon, Dec 8, 2014 at 10:14 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> iov_iter_get_pages() in ITER_KVEC case, trying to avoid get_user_pages_fast()
+> and getting it wrong.  FWIW, the reproducer is finit_module(fd, ....)
+> where fd has been opened with O_DIRECT.  In that case we get kernel_read()
+> on O_DIRECT and the buffer has just been vmalloc'ed.
 
-> For a vmalloc() address, you'd have to actually walk the page tables.
-> Which is a f*cking horrible idea. Don't do it. We do have a
-> "vmalloc_to_page()" that does it, but the basic issue is that you damn
-> well shouldn't do IO on vmalloc'ed addresses.  vmalloc'ed addresses
-> only exist in the first place to give a linear *virtual* mapping, if
-> you want physical pages you shouldn't have mixed it up with vmalloc in
-> the first place!
-> 
-> Where the hell does this crop up, and who does this insane thing
-> anyway? It's wrong. How did it ever work before?
+Ugh. That's horrid. Do we need to even support O_DIRECT in that case?
+In general, we should *not* do IO on vmalloc'ed areas, although at
+least the non-O_DIRECT case where we just memcpy() it as if it came
+from user space is much better.
 
-finit_module() with O_DIRECT descriptor.  And I suspect that "not well"
-is the answer - it used to call get_user_pages_fast() in that case.
+Did this actually use to work? Or is it an issue of "the new iov_iter
+is so generic that something that used to just return an error now
+'works' and triggers the problem"?
 
-I certainly had missed that insanity during the analysis - we don't do
-a lot of O_DIRECT IO to/from kernel addresses of any sort...  This
-codepath allows it ;-/  Ability to trigger it is equivalent to ability
-to run any code in kernel mode, so it's not an additional security hole,
-but...
+> What's the sane way to grab struct page * for a vmalloc'ed address?
+
+So "vmalloc_to_page()" should work.
+
+However, it's actually fundamentally racy unless you can guarantee
+that the vmalloc()'ed area in question is stable (so you had better
+have done that allocation yourself, and be in control of the freeing,
+rather than "we look up random vmalloc'ed addresses).
+
+In general, it's really a horrible thing to use, and tends to be a big
+red sign that "somebody misdesigned this badly"
+
+                    Linus
