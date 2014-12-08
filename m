@@ -1,202 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197AbaLHONT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:13:19 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:3338 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaLHONR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:13:17 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [RESEND][PATCH v15 4/7] ARM: kprobes: disallow probing stack consuming instructions
-Date: Mon, 8 Dec 2014 22:09:22 +0800
-Message-ID: <1418047765-53197-5-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>
-References: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A0B0208.5485B1FB.01EA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 0e2a9e87aaab351e82be44eda19fb69b
+	id S1755655AbaLHOQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:16:49 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:52862 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755494AbaLHOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 09:16:47 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc32: missing accessors to pgprot_t objects
+Message-Id: <20141208141629.912861A5D5B@localhost.localdomain>
+Date: Mon,  8 Dec 2014 15:16:29 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prohibits probing instructions for which the stack
-requirements are unable to be determined statically. Some test cases
-are found not work again after the modification, this patch also
-removes them.
+Compilation with #define STRICT_MM_TYPECHECKS in arch/powerpc/include/asm/page.h
+fails due to missing use of pgprot_val() when using pgprot_t objects.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Reviewed-by: Jon Medhurst <tixy@linaro.org>
+arch/powerpc/mm/pgtable_32.c: In function '__ioremap_caller':
+arch/powerpc/mm/pgtable_32.c:185:9: error: invalid operands to binary | (have 'long unsigned int' and 'pgprot_t')
+   flags |= PAGE_KERNEL;
+         ^
+arch/powerpc/mm/pgtable_32.c: In function '__mapin_ram_chunk':
+arch/powerpc/mm/pgtable_32.c:320:5: error: incompatible types when assigning to type 'long unsigned int' from type 'pgprot_t'
+   f = ktext ? PAGE_KERNEL_TEXT : PAGE_KERNEL;
+     ^
+arch/powerpc/mm/ppc_mmu_32.c:95:2: error: incompatible type for argument 5 of 'setbat'
+  setbat(2, PAGE_OFFSET, 0, bl, PAGE_KERNEL_X);
+  ^
+In file included from arch/powerpc/mm/ppc_mmu_32.c:35:0:
+arch/powerpc/mm/mmu_decl.h:98:13: note: expected 'int' but argument is of type 'pgprot_t'
+ extern void setbat(int index, unsigned long virt, phys_addr_t phys,
+             ^
+arch/powerpc/mm/ppc_mmu_32.c:103:3: error: incompatible type for argument 5 of 'setbat'
+   setbat(3, PAGE_OFFSET+done, done, bl, PAGE_KERNEL_X);
+   ^
+In file included from arch/powerpc/mm/ppc_mmu_32.c:35:0:
+arch/powerpc/mm/mmu_decl.h:98:13: note: expected 'int' but argument is of type 'pgprot_t'
+ extern void setbat(int index, unsigned long virt, phys_addr_t phys,
+             ^
+
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
 ---
-v1 -> v2:
- - Use MAX_STACK_SIZE macro instead of hard coded stack size.
+ arch/powerpc/mm/dma-noncoherent.c | 2 +-
+ arch/powerpc/mm/pgtable_32.c      | 4 ++--
+ arch/powerpc/mm/ppc_mmu_32.c      | 5 +++--
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
-v2 -> v3:
- - Commit message improvements.
-
-v3 -> v4:
- - Commit message improvements.
-
-v4 -> v5:
- - Move to arch/arm/probes.
----
- arch/arm/include/asm/kprobes.h     |  1 -
- arch/arm/include/asm/probes.h      | 12 ++++++++++++
- arch/arm/kernel/entry-armv.S       |  3 ++-
- arch/arm/probes/kprobes/core.c     |  9 +++++++++
- arch/arm/probes/kprobes/test-arm.c | 16 ++++++++++------
- 5 files changed, 33 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index 49fa0df..56f9ac6 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -22,7 +22,6 @@
+diff --git a/arch/powerpc/mm/dma-noncoherent.c b/arch/powerpc/mm/dma-noncoherent.c
+index d85e86a..169aba4 100644
+--- a/arch/powerpc/mm/dma-noncoherent.c
++++ b/arch/powerpc/mm/dma-noncoherent.c
+@@ -228,7 +228,7 @@ __dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t
+ 		do {
+ 			SetPageReserved(page);
+ 			map_page(vaddr, page_to_phys(page),
+-				 pgprot_noncached(PAGE_KERNEL));
++				 pgprot_val(pgprot_noncached(PAGE_KERNEL)));
+ 			page++;
+ 			vaddr += PAGE_SIZE;
+ 		} while (size -= PAGE_SIZE);
+diff --git a/arch/powerpc/mm/pgtable_32.c b/arch/powerpc/mm/pgtable_32.c
+index cf11342..a349089 100644
+--- a/arch/powerpc/mm/pgtable_32.c
++++ b/arch/powerpc/mm/pgtable_32.c
+@@ -182,7 +182,7 @@ __ioremap_caller(phys_addr_t addr, unsigned long size, unsigned long flags,
  
- #define __ARCH_WANT_KPROBES_INSN_SLOT
- #define MAX_INSN_SIZE			2
--#define MAX_STACK_SIZE			64	/* 32 would probably be OK */
+ 	/* Make sure we have the base flags */
+ 	if ((flags & _PAGE_PRESENT) == 0)
+-		flags |= PAGE_KERNEL;
++		flags |= pgprot_val(PAGE_KERNEL);
  
- #define flush_insn_slot(p)		do { } while (0)
- #define kretprobe_blacklist_size	0
-diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-index ccf9af3..f0a1ee8 100644
---- a/arch/arm/include/asm/probes.h
-+++ b/arch/arm/include/asm/probes.h
-@@ -19,6 +19,8 @@
- #ifndef _ASM_PROBES_H
- #define _ASM_PROBES_H
- 
-+#ifndef __ASSEMBLY__
-+
- typedef u32 probes_opcode_t;
- 
- struct arch_probes_insn;
-@@ -41,4 +43,14 @@ struct arch_probes_insn {
- 	int stack_space;
- };
- 
-+#endif /* __ASSEMBLY__ */
-+
-+/*
-+ * We assume one instruction can consume at most 64 bytes stack, which is
-+ * 'push {r0-r15}'. Instructions consume more or unknown stack space like
-+ * 'str r0, [sp, #-80]' and 'str r0, [sp, r1]' should be prohibit to probe.
-+ * Both kprobe and jprobe use this macro.
-+ */
-+#define MAX_STACK_SIZE			64
-+
- #endif
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 2f5555d..672b219 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -31,6 +31,7 @@
- 
- #include "entry-header.S"
- #include <asm/entry-macro-multi.S>
-+#include <asm/probes.h>
- 
- /*
-  * Interrupt handling.
-@@ -249,7 +250,7 @@ __und_svc:
- 	@ If a kprobe is about to simulate a "stmdb sp..." instruction,
- 	@ it obviously needs free stack space which then will belong to
- 	@ the saved context.
--	svc_entry 64
-+	svc_entry MAX_STACK_SIZE
- #else
- 	svc_entry
- #endif
-diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
-index 74f3dc3..3a58db4 100644
---- a/arch/arm/probes/kprobes/core.c
-+++ b/arch/arm/probes/kprobes/core.c
-@@ -115,6 +115,15 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 		break;
+ 	/* Non-cacheable page cannot be coherent */
+ 	if (flags & _PAGE_NO_CACHE)
+@@ -317,7 +317,7 @@ void __init __mapin_ram_chunk(unsigned long offset, unsigned long top)
+ 	p = memstart_addr + s;
+ 	for (; s < top; s += PAGE_SIZE) {
+ 		ktext = ((char *) v >= _stext && (char *) v < etext);
+-		f = ktext ? PAGE_KERNEL_TEXT : PAGE_KERNEL;
++		f = pgprot_val(ktext ? PAGE_KERNEL_TEXT : PAGE_KERNEL);
+ 		map_page(v, p, f);
+ #ifdef CONFIG_PPC_STD_MMU_32
+ 		if (ktext)
+diff --git a/arch/powerpc/mm/ppc_mmu_32.c b/arch/powerpc/mm/ppc_mmu_32.c
+index 5029dc1..dc710d4 100644
+--- a/arch/powerpc/mm/ppc_mmu_32.c
++++ b/arch/powerpc/mm/ppc_mmu_32.c
+@@ -92,7 +92,7 @@ unsigned long __init mmu_mapin_ram(unsigned long top)
+ 			break;
  	}
  
-+	/*
-+	 * Never instrument insn like 'str r0, [sp, +/-r1]'. Also, insn likes
-+	 * 'str r0, [sp, #-68]' should also be prohibited.
-+	 * See __und_svc.
-+	 */
-+	if ((p->ainsn.stack_space < 0) ||
-+			(p->ainsn.stack_space > MAX_STACK_SIZE))
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
-diff --git a/arch/arm/probes/kprobes/test-arm.c b/arch/arm/probes/kprobes/test-arm.c
-index d9a1255..fdeb300 100644
---- a/arch/arm/probes/kprobes/test-arm.c
-+++ b/arch/arm/probes/kprobes/test-arm.c
-@@ -476,7 +476,8 @@ void kprobe_arm_test_cases(void)
- 	TEST_GROUP("Extra load/store instructions")
- 
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
--	TEST_RPR(  "streqh	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")
-+	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
-+	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
- 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
- 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
-@@ -565,7 +566,8 @@ void kprobe_arm_test_cases(void)
- 
- #if __LINUX_ARM_ARCH__ >= 5
- 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
--	TEST_RPR(  "strccd	r",8, VAL2,", [r",13,0, ", r",12,48,"]")
-+	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
-+	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
- 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
- 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
-@@ -638,13 +640,15 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
- 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")	\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
-+	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
- 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
- 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 32,", lsr #2]")\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
-+	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
- 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
-@@ -668,12 +672,12 @@ void kprobe_arm_test_cases(void)
- 
- 	LOAD_STORE("")
- 	TEST_P(   "str	pc, [r",0,0,", #15*4]")
--	TEST_R(   "str	pc, [sp, r",2,15*4,"]")
-+	TEST_UNSUPPORTED(   "str	pc, [sp, r2]")
- 	TEST_BF(  "ldr	pc, [sp, #15*4]")
- 	TEST_BF_R("ldr	pc, [sp, r",2,15*4,"]")
- 
- 	TEST_P(   "str	sp, [r",0,0,", #13*4]")
--	TEST_R(   "str	sp, [sp, r",2,13*4,"]")
-+	TEST_UNSUPPORTED(   "str	sp, [sp, r2]")
- 	TEST_BF(  "ldr	sp, [sp, #13*4]")
- 	TEST_BF_R("ldr	sp, [sp, r",2,13*4,"]")
+-	setbat(2, PAGE_OFFSET, 0, bl, PAGE_KERNEL_X);
++	setbat(2, PAGE_OFFSET, 0, bl, pgprot_val(PAGE_KERNEL_X));
+ 	done = (unsigned long)bat_addrs[2].limit - PAGE_OFFSET + 1;
+ 	if ((done < tot) && !bat_addrs[3].limit) {
+ 		/* use BAT3 to cover a bit more */
+@@ -100,7 +100,8 @@ unsigned long __init mmu_mapin_ram(unsigned long top)
+ 		for (bl = 128<<10; bl < max_size; bl <<= 1)
+ 			if (bl * 2 > tot)
+ 				break;
+-		setbat(3, PAGE_OFFSET+done, done, bl, PAGE_KERNEL_X);
++		setbat(3, PAGE_OFFSET+done, done, bl,
++		       pgprot_val(PAGE_KERNEL_X));
+ 		done = (unsigned long)bat_addrs[3].limit - PAGE_OFFSET + 1;
+ 	}
  
 -- 
-1.8.4
+2.1.0
 
