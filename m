@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaLHQhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:37:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52506 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaLHQhS (ORCPT
+	id S1755953AbaLHQjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:39:17 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:53643 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851AbaLHQjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:37:18 -0500
-Date: Mon, 8 Dec 2014 11:37:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: wl1251: NVS firmware data
-Message-ID: <20141208163714.GA31169@kroah.com>
-References: <201411271506.20457@pali>
- <20141127155840.GC24149@kroah.com>
- <20141206124954.GB17289@amd>
- <201412061402.21514@pali>
- <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
+	Mon, 8 Dec 2014 11:39:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, hauke@hauke-m.de
+Subject: Re: using DMA-API on ARM
+Date: Mon, 08 Dec 2014 17:38:57 +0100
+Message-ID: <2048819.2EPzBi8E3T@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5485D054.7090109@broadcom.com>
+References: <5481794E.4050406@broadcom.com> <2863746.4sUSEYqahB@wuerfel> <5485D054.7090109@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:2CkTiAofQJFzFf2jlZZCuEE5PtqcI5zTA0d7YlquXStvfhi4W7B
+ wVcnYuLqz4xUrxEAlfkZB9fgbFsNt0BEF3K+/u79Nr1xha+FPEjzBVEgftJhDQdDKk0VcdE
+ 2/P5R65EIAq0XC/qzUp4j4bAY8748HdeChAkEqsxjyCVTbz2Grj5Db6OQylmq5Fm1pgAx/B
+ M8XAUkMVgVZxRivpSSU1g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 11:18:18PM +0800, Ming Lei wrote:
-> On Sat, Dec 6, 2014 at 9:02 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> > On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
-> 
+On Monday 08 December 2014 17:22:44 Arend van Spriel wrote:
+> >> The log: first the ring allocation info is printed. Starting at
+> >> 16.124847, ring 2, 3 and 4 are rings used for device to host. In this
+> >> log the failure is on a read of ring 3. Ring 3 is 1024 entries of each
+> >> 16 bytes. The next thing printed is the kernel page tables. Then some
+> >> OpenWRT info and the logging of part of the connection setup. Then at
+> >> 1780.130752 the logging of the failure starts. The sequence number is
+> >> modulo 253 with ring size of 1024 matches an "old" entry (read 40,
+> >> expected 52). Then the different pointers are printed followed by
+> >> the kernel page table. The code does then a cache invalidate on the
+> >> dma_handle and the next read the sequence number is correct.
 > >
-> >  /**
-> > + * request_firmware_prefer_user: - prefer usermode helper for loading firmware
-> > + * @firmware_p: pointer to firmware image
-> > + * @name: name of firmware file
-> > + * @device: device for which firmware is being loaded
-> > + *
-> > + * This function works pretty much like request_firmware(), but it prefer
-> > + * usermode helper. If usermode helper fails then it fallback to direct access.
-> > + * Usefull for dynamic or model specific firmware data.
-> > + **/
-> > +int request_firmware_prefer_user(const struct firmware **firmware_p,
-> > +                           const char *name, struct device *device)
-> > +{
-> > +       int ret;
-> > +       __module_get(THIS_MODULE);
-> > +       ret = _request_firmware(firmware_p, name, device,
-> > +                               FW_OPT_UEVENT | FW_OPT_PREFER_USER);
-> > +       module_put(THIS_MODULE);
-> > +       return ret;
-> > +}
-> > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
+> > How do you invalidate the cache? A dma_handle is of type dma_addr_t
+> > and we don't define an operation for that, nor does it make sense
+> > on an allocation from dma_alloc_coherent(). What happens if you
+> > take out the invalidate?
 > 
-> I'd like to introduce request_firmware_user() which only requests
-> firmware from user space, and this way is simpler and more flexible
-> since we have request_firmware_direct() already.
+> dma_sync_single_for_cpu(, DMA_FROM_DEVICE) which ends up invalidating 
+> the cache (or that is our suspicion).
 
-Why would a driver care about what program provides the firmware?  It
-shouldn't at all, and we want to get rid of the userspace firmware
-loader, not encourage drivers to use it "exclusively" at all.
+I'm not sure about that:
 
-So no, I don't want to see this, and I don't want drivers to worry about
-this either.
+static void arm_dma_sync_single_for_cpu(struct device *dev,
+                dma_addr_t handle, size_t size, enum dma_data_direction dir)
+{
+        unsigned int offset = handle & (PAGE_SIZE - 1);
+        struct page *page = pfn_to_page(dma_to_pfn(dev, handle-offset));
+        __dma_page_dev_to_cpu(page, offset, size, dir);
+}
 
-greg k-h
+Assuming a noncoherent linear (no IOMMU, no swiotlb, no dmabounce) mapping,
+dma_to_pfn will return the correct pfn here, but pfn_to_page will return a
+page pointer into the kernel linear mapping, which is not the same
+as the pointer you get from __alloc_remap_buffer(). The pointer that
+was returned from dma_alloc_coherent is a) non-cachable, and b) not the
+same that you flush here.
+
+	Arnd
