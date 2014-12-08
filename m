@@ -1,94 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaLHC7K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Dec 2014 21:59:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33904 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750858AbaLHC7I (ORCPT
+	id S1753660AbaLHDAd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Dec 2014 22:00:33 -0500
+Received: from regular1.263xmail.com ([211.150.99.135]:59369 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943AbaLHDAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Dec 2014 21:59:08 -0500
-Message-ID: <1418007534.11886.58.camel@decadent.org.uk>
-Subject: Re: [ 10/25] x86, espfix: Make it possible to disable 16-bit support
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 08 Dec 2014 02:58:54 +0000
-In-Reply-To: <20141206174148.851443989@1wt.eu>
-References: <20141206174148.851443989@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jND2xmxBgmdzzb0Ytgno"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 7 Dec 2014 22:00:30 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: wsa@the-dreams.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <9716a7bd3d0fb6c53e3c8bb32fd19ee9>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Addy Ke <addy.ke@rock-chips.com>
+To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
+        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v3] i2c: rk3x: fix bug that cause measured high_ns doesn't meet I2C spec
+Date: Mon,  8 Dec 2014 10:59:49 +0800
+Message-Id: <1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+high_ns calculated from the low division of CLKDIV register is the sum
+of actual measured high_ns and rise_ns. The rise time which related to
+external pull-up resistor can be up to the maximum rise time in I2C spec.
 
---=-jND2xmxBgmdzzb0Ytgno
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+In my test, if external pull-up resistor is 4.7K, rise_ns is about
+700ns. So the actual measured high_ns is about 3900ns, which is less
+than 4000ns(the minimum high_ns in I2C spec).
 
-On Sat, 2014-12-06 at 18:41 +0100, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: "H. Peter Anvin" <hpa@zytor.com>
->=20
-> commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
->=20
-> Embedded systems, which may be very memory-size-sensitive, are
-> extremely unlikely to ever encounter any 16-bit software, so make it
-> a CONFIG_EXPERT option to turn off support for any 16-bit software
-> whatsoever.
->=20
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux=
-.intel.com
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> (cherry picked from 3.2 commit 70d87cbbd92a3611655b39003176ee1033796bf7)
-> [wt: backport notes for 2.6.32 :
->   - Fixed arch/x86/kernel/ldt.c (no IS_ENABLED on 2.6.32).
->   - No CONFIG_EXPERT condition in 2.6.32.
-> /wt]
-[...]
+To fix this bug, min_low_ns should include fall time and min_high_ns
+should include rise time too.
 
-It used to be called CONFIG_EMBEDDED, so you could s/EXPERT/EMBEDDED/,
-but it doesn't matter much.
+This patch merged the patch that Doug submitted to chromium, which
+can get the rise and fall times for signals from the device tree.
+This allows us to more accurately calculate timings. see:
+https://chromium-review.googlesource.com/#/c/232774/
 
-Ben.
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+Changes in v2:
+- merged the patch that Doug submitted to chromium
+Changes in v3:
+- merged the patch that Doug submitted to chromium to change bindins
+  see: https://chromium-review.googlesource.com/#/c/232775/
 
---=20
-Ben Hutchings
-If you seem to know what you are doing, you'll be given more to do.
+ Documentation/devicetree/bindings/i2c/i2c-rk3x.txt | 11 +++++
+ drivers/i2c/busses/i2c-rk3x.c                      | 57 +++++++++++++++-------
+ 2 files changed, 50 insertions(+), 18 deletions(-)
 
---=-jND2xmxBgmdzzb0Ytgno
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+index dde6c22..925d6eb 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+@@ -21,6 +21,14 @@ Required on RK3066, RK3188 :
+ Optional properties :
+ 
+  - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
++ - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
++	(t(r) in i2c spec). If not specified this is assumed to be the max the
++	spec allows(1000 ns for standard mode, 300 ns for fast mode) which
++	might cause slightly slower communication.
++ - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
++	(t(f) in the i2c0 spec).  If not specified this is assumed to be the
++	max the spec allows (300 ns) which might cause slightly slower
++	communication.
+ 
+ Example:
+ 
+@@ -39,4 +47,7 @@ i2c0: i2c@2002d000 {
+ 
+ 	clock-names = "i2c";
+ 	clocks = <&cru PCLK_I2C0>;
++
++	i2c-scl-rising-time-ns = <800>;
++	i2c-scl-falling-time-ns = <100>;
+ };
+diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+index 0ee5802..50c1678 100644
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -102,6 +102,8 @@ struct rk3x_i2c {
+ 
+ 	/* Settings */
+ 	unsigned int scl_frequency;
++	unsigned int rise_ns;
++	unsigned int fall_ns;
+ 
+ 	/* Synchronization & notification */
+ 	spinlock_t lock;
+@@ -435,6 +437,8 @@ out:
+  *
+  * @clk_rate: I2C input clock rate
+  * @scl_rate: Desired SCL rate
++ * @rise_ns: How many ns it takes for signals to rise.
++ * @fall_ns: How many ns it takes for signals to fall.
+  * @div_low: Divider output for low
+  * @div_high: Divider output for high
+  *
+@@ -443,11 +447,14 @@ out:
+  * too high, we silently use the highest possible rate.
+  */
+ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
++			      unsigned long rise_ns, unsigned long fall_ns,
+ 			      unsigned long *div_low, unsigned long *div_high)
+ {
++	unsigned long spec_min_low_ns, spec_min_high_ns;
++	unsigned long spec_max_data_hold_ns;
++	unsigned long spec_data_hold_buffer_ns;
++
+ 	unsigned long min_low_ns, min_high_ns;
+-	unsigned long max_data_hold_ns;
+-	unsigned long data_hold_buffer_ns;
+ 	unsigned long max_low_ns, min_total_ns;
+ 
+ 	unsigned long clk_rate_khz, scl_rate_khz;
+@@ -470,28 +477,30 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
+ 
+ 	/*
+ 	 * min_low_ns:  The minimum number of ns we need to hold low
+-	 *		to meet i2c spec
++	 *		to meet i2c spec, should include fall time.
+ 	 * min_high_ns: The minimum number of ns we need to hold high
+-	 *		to meet i2c spec
++	 *		to meet i2c spec, should include rise time.
+ 	 * max_low_ns:  The maximum number of ns we can hold low
+-	 *		to meet i2c spec
++	 *		to meet i2c spec.
+ 	 *
+ 	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
+ 	 *	 This is because the i2c host on Rockchip holds the data line
+ 	 *	 for half the low time.
+ 	 */
+ 	if (scl_rate <= 100000) {
+-		min_low_ns = 4700;
+-		min_high_ns = 4000;
+-		max_data_hold_ns = 3450;
+-		data_hold_buffer_ns = 50;
++		spec_min_low_ns = 4700;
++		spec_min_high_ns = 4000;
++		spec_max_data_hold_ns = 3450;
++		spec_data_hold_buffer_ns = 50;
+ 	} else {
+-		min_low_ns = 1300;
+-		min_high_ns = 600;
+-		max_data_hold_ns = 900;
+-		data_hold_buffer_ns = 50;
++		spec_min_low_ns = 1300;
++		spec_min_high_ns = 600;
++		spec_max_data_hold_ns = 900;
++		spec_data_hold_buffer_ns = 50;
+ 	}
+-	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
++	min_low_ns = spec_min_low_ns + fall_ns;
++	min_high_ns = spec_min_high_ns + rise_ns;
++	max_low_ns = spec_max_data_hold_ns * 2 - spec_data_hold_buffer_ns;
+ 	min_total_ns = min_low_ns + min_high_ns;
+ 
+ 	/* Adjust to avoid overflow */
+@@ -588,8 +597,8 @@ static void rk3x_i2c_adapt_div(struct rk3x_i2c *i2c, unsigned long clk_rate)
+ 	u64 t_low_ns, t_high_ns;
+ 	int ret;
+ 
+-	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, &div_low,
+-				 &div_high);
++	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->rise_ns,
++				 i2c->fall_ns, &div_low, &div_high);
+ 
+ 	WARN_ONCE(ret != 0, "Could not reach SCL freq %u", i2c->scl_frequency);
+ 
+@@ -633,9 +642,9 @@ static int rk3x_i2c_clk_notifier_cb(struct notifier_block *nb, unsigned long
+ 	switch (event) {
+ 	case PRE_RATE_CHANGE:
+ 		if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
+-				      &div_low, &div_high) != 0) {
++				       i2c->rise_ns, i2c->fall_ns, &div_low,
++				       &div_high) != 0)
+ 			return NOTIFY_STOP;
+-		}
+ 
+ 		/* scale up */
+ 		if (ndata->new_rate > ndata->old_rate)
+@@ -859,6 +868,18 @@ static int rk3x_i2c_probe(struct platform_device *pdev)
+ 		i2c->scl_frequency = DEFAULT_SCL_RATE;
+ 	}
+ 
++	/* Read rise and fall ns; if not there use the default max from spec */
++	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
++				 &i2c->rise_ns)) {
++		if (i2c->scl_frequency <= 100000)
++			i2c->rise_ns = 1000;
++		else
++			i2c->rise_ns = 300;
++	}
++	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
++				 &i2c->fall_ns))
++		i2c->fall_ns = 300;
++
+ 	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
+ 	i2c->adap.owner = THIS_MODULE;
+ 	i2c->adap.algo = &rk3x_i2c_algorithm;
+-- 
+1.8.3.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIVAwUAVIUT8+e/yOyVhhEJAQqq8RAAh8Po8nw2EGrF8sWWJAwLOSXfqe+2a5WB
-7QKGFl+2N5tyC+P5jnJ2shswtZdEiIurpgNutitzyPfGuhE9kdf1oXO21R3QN1wj
-kqMVP2F6yfB0feOy+TS2uDbxDbooBy9STw4K610E6JF4zrEgOqVWZ5BJNE9tYtJn
-K6CVfLw2dSQpCGgCae8I/lZoB6LpwfxExwLxQJgKG1/tgkHTspbPL98wYYdPeho9
-u2N8zqy6JeXr+c7xhGx0Mc7XZv0MAxj9OODu0o0EJY3G0SSPw00tDYucxKarm1rM
-wpB+q7u4p1IzTQUwsBVeYVQSmwlWYttUb9dbV+JKgPCdMAzG2/II776OpRqpHzvH
-3LoC8VsqYFNMRjh2BTpDYVHEPd7zsrzXWlRAiYYCkky67wHex15887mPJYjDlkg5
-Tf6piX5RHXpCFUsxubrxivpoi20ZrN4fRCqcUa21rXmLC0VlMWa1sxL2zschTwvS
-i85V2wEWW0Z+nkuxwP3dycrjEsrbs9OTPzGRyrcjnqGMygyv6k8PoTced75K8p+8
-Fe4aJAi0h+eXxGYhwu9RsIrkYATa7+DINHUntwO0jkzvUScLzMiDA+PvjoNRUNf/
-kvuMowopqPJcOKBBhEbdBvY/kX0Fqw+zGKbk5RJJcwONWNg40Im0i4T1uyI0zX3O
-x+U1q9MRy0Y=
-=ptCI
------END PGP SIGNATURE-----
-
---=-jND2xmxBgmdzzb0Ytgno--
