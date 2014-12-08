@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaLHItt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:49:49 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:44770 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaLHIts (ORCPT
+	id S1753065AbaLHIv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:51:26 -0500
+Received: from mailout.micron.com ([137.201.242.129]:40853 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaLHIvY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:49:48 -0500
-Date: Mon, 8 Dec 2014 08:49:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        dan.carpenter@oracle.com, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH v4 1/6] mfd: rtsx: add func to split u32 into register
-Message-ID: <20141208084941.GC3951@x1>
-References: <cover.1417758564.git.micky_ching@realsil.com.cn>
- <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
+	Mon, 8 Dec 2014 03:51:24 -0500
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Marek Vasut <marex@denx.de>
+CC: "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+Subject: RE: [V6 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+Thread-Topic: [V6 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+Thread-Index: AdAQWnqsiImr5KpARvijPY3FrXHl/QCZ7LrQ
+Date: Mon, 8 Dec 2014 08:50:39 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315F03C4@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315EF2C5@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315EF2C5@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21158.005
+x-tm-as-result: No--34.490700-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1417758564.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Dec 2014, micky_ching@realsil.com.cn wrote:
+>This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Add helper function to write u32 to registers, if we want to put u32
-> value to 4 continuous register, this can help us reduce tedious work.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/linux/mfd/rtsx_pci.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..9234449 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -558,6 +558,7 @@
->  #define SD_SAMPLE_POINT_CTL		0xFDA7
->  #define SD_PUSH_POINT_CTL		0xFDA8
->  #define SD_CMD0				0xFDA9
-> +#define   SD_CMD_START			0x40
+>For Micron SPI NOR flash,enabling or disabling quad I/O protocol can be done By two methods, which are to 
+>use EVCR(Enhanced Volatile Configuration Register) and the ENTER QUAD I/O MODE command.There is no 
+>difference between these two methods.Unfortunately,for some Micron spi nor flashes,there no ENTER Quad 
+>I/O command(35h),such as n25q064.But for all current Micron spi nor,if it support quad I/O mode,using 
+>EVCR definitely be supported.It is a recommended method to enable Quad I/O mode by EVCR,Quad I/O protocol 
+>bit 7.When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O mode.
 
-This is a different format at the others in the group on two counts;
-firstly you have 3 whitespace characters after the #define and
-secondly all of the other hex digits in the set are 4 a breast.
-Please add the leading zeros to conform to this format.
+>This patch has been tested on N25Q512A and MT25TL256BAA1ESF.Micron spi nor of spi_nor_ids[] table all 
+>support this method.
 
->  #define SD_CMD1				0xFDAA
->  #define SD_CMD2				0xFDAB
->  #define SD_CMD3				0xFDAC
-> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
->  
-> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
-> +{
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
-> +}
-> +
->  #endif
+>Signed-off-by: bean huo <beanhuo@micron.com>
+>Acked-by: Marek Vasut <marex@denx.de>
+>---
+>v1-v2:
+>	Modified to that capture wait_till_ready()
+>	return value,if error,directly return its
+>	the value.
+ >v2-v3:
+>	Directly use the reurning error value of
+>	read_reg and write_reg,instead of -EINVAL.
+> v3-v4:
+>	Modify commit logs that wraped into 80 columns.
+> v4-v5:
+>	Rebuild new patch based on latest linux-mtd.
+> v5-v6:
+>	Rebuild patch based on latest l2-mtd.
+>	add some comments.
+>	Add SPI_NOR_QUAD_READ flag in the spi_nor_ids[] for Micron spi nor.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Hi,Brian
+
+This patch is based on the latest l2-mtd,I don't know if can pass?
+I have one question is that about following code.
+I have added our Mciron quad flag into spi_nor_ids[] table,but line over 80 characters,
+If I divided one line into two lines,this will make spi_nor_ids[] table look ugly.I also find that
+There are other venders configure line that also over 80 characters,such as Spansion,Catalyst.
+So I don't divide my following configure line into two two lines,I don't know if this can 
+Be accepted?
+ 
++	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K | SPI_NOR_QUAD_READ) },
++	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
++	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
++	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+ 
+
+
