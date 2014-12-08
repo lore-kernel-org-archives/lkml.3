@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaLHPQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:16:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50254 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755793AbaLHPQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:16:42 -0500
-Date: Mon, 8 Dec 2014 17:16:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH v2 01/10] virtio_pci: add isr field
-Message-ID: <1418051779-27748-2-git-send-email-mst@redhat.com>
-References: <1418051779-27748-1-git-send-email-mst@redhat.com>
+	id S1755757AbaLHPWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:22:31 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:54956 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaLHPWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 10:22:30 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Subject: Re: wl1251: NVS firmware data
+Date: Mon, 8 Dec 2014 16:22:25 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <201411271506.20457@pali> <201412061402.21514@pali> <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
+In-Reply-To: <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418051779-27748-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Type: multipart/signed;
+  boundary="nextPart6013142.Y7C6ce8dYc";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412081622.25541@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use isr field instead of direct access to ioaddr.
-This way generalizes easily to virtio 1.0.
+--nextPart6013142.Y7C6ce8dYc
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+On Monday 08 December 2014 16:18:18 Ming Lei wrote:
+> On Sat, Dec 6, 2014 at 9:02 PM, Pali Roh=C3=A1r=20
+<pali.rohar@gmail.com> wrote:
+> > On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
+> >  /**
+> >=20
+> > + * request_firmware_prefer_user: - prefer usermode helper
+> > for loading firmware + * @firmware_p: pointer to firmware
+> > image
+> > + * @name: name of firmware file
+> > + * @device: device for which firmware is being loaded
+> > + *
+> > + * This function works pretty much like request_firmware(),
+> > but it prefer + * usermode helper. If usermode helper fails
+> > then it fallback to direct access. + * Usefull for dynamic
+> > or model specific firmware data. + **/
+> > +int request_firmware_prefer_user(const struct firmware
+> > **firmware_p, +                           const char *name,
+> > struct device *device) +{
+> > +       int ret;
+> > +       __module_get(THIS_MODULE);
+> > +       ret =3D _request_firmware(firmware_p, name, device,
+> > +                               FW_OPT_UEVENT |
+> > FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
+> > +       return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
+>=20
+> I'd like to introduce request_firmware_user() which only
+> requests firmware from user space, and this way is simpler
+> and more flexible since we have request_firmware_direct()
+> already.
+>=20
+> Thanks,
+> Ming Lei
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 9be59d9..ee1b54c 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -40,6 +40,9 @@ struct virtio_pci_device
- 	/* the IO mapping for the PCI config space */
- 	void __iomem *ioaddr;
- 
-+	/* the IO mapping for ISR operation */
-+	void __iomem *isr;
-+
- 	/* a list of queues so we can dispatch IRQs */
- 	spinlock_t lock;
- 	struct list_head virtqueues;
-@@ -248,7 +251,7 @@ static irqreturn_t vp_interrupt(int irq, void *opaque)
- 
- 	/* reading the ISR has the effect of also clearing it so it's very
- 	 * important to save off the value. */
--	isr = ioread8(vp_dev->ioaddr + VIRTIO_PCI_ISR);
-+	isr = ioread8(vp_dev->isr);
- 
- 	/* It's definitely not us if the ISR was not high */
- 	if (!isr)
-@@ -719,6 +722,8 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
- 		goto out_req_regions;
- 	}
- 
-+	vp_dev->isr = vp_dev->ioaddr + VIRTIO_PCI_ISR;
-+
- 	pci_set_drvdata(pci_dev, vp_dev);
- 	pci_set_master(pci_dev);
- 
--- 
-MST
+Ming, for wl1251 NVS data we need to load use usermode helper and=20
+fallback to direct load. So I think it is better to handle this=20
+request in firmware code and not in driver.
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart6013142.Y7C6ce8dYc
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSFwjEACgkQi/DJPQPkQ1LiOwCfYDvcaBsb2UkGRzsc6RY/9zSb
+K5cAnj47jXkv66tvdcHMuFCFs2a0Itc2
+=mV9Q
+-----END PGP SIGNATURE-----
+
+--nextPart6013142.Y7C6ce8dYc--
