@@ -1,132 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222AbaLHMgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:36:00 -0500
-Received: from mga03.intel.com ([134.134.136.65]:38156 "EHLO mga03.intel.com"
+	id S1755241AbaLHMgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:36:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54937 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534AbaLHMf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:35:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,538,1413270000"; 
-   d="scan'208";a="620377335"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout correctly
-In-Reply-To: <1417687974-18681-1-git-send-email-daniel.vetter@ffwll.ch>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1417166995-10803-1-git-send-email-daniel.vetter@ffwll.ch> <1417687974-18681-1-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 08 Dec 2014 14:34:51 +0200
-Message-ID: <87lhmimiac.fsf@intel.com>
+	id S1752144AbaLHMgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 07:36:51 -0500
+Date: Mon, 8 Dec 2014 13:36:48 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC queue for 3.19
+Message-ID: <20141208123648.GC20057@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Dec 2014, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> We've lost the +1 required for correct timeouts in
->
-> commit 5ed0bdf21a85d78e04f89f15ccf227562177cbd9
-> Author: Thomas Gleixner <tglx@linutronix.de>
-> Date:   Wed Jul 16 21:05:06 2014 +0000
->
->     drm: i915: Use nsec based interfaces
->
->     Use ktime_get_raw_ns() and get rid of the back and forth timespec
->     conversions.
->
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->     Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->     Signed-off-by: John Stultz <john.stultz@linaro.org>
->
-> So fix this up by reinstating our handrolled _timeout function. While
-> at it bother with handling MAX_JIFFIES.
->
-> v2: Convert to usecs (we don't care about the accuracy anyway) first
-> to avoid overflow issues Dave Gordon spotted.
->
-> v3: Drop the explicit MAX_JIFFY_OFFSET check, usecs_to_jiffies should
-> take care of that already. It might be a bit too enthusiastic about it
-> though.
->
-> v4: Chris has a much nicer color, so use his implementation.
->
-> This requires to export nsec_to_jiffies from time.c.
->
-> Cc: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Dave Gordon <david.s.gordon@intel.com>
-> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82749
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+Hi Linus,
 
-Pushed to drm-intel-next-fixes, thanks for the patch.
+please pull,
+thanks.
 
-BR,
-Jani.
+---
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
-> ---
->  drivers/gpu/drm/i915/i915_drv.h | 5 +++++
->  drivers/gpu/drm/i915/i915_gem.c | 3 ++-
->  kernel/time/time.c              | 1 +
->  3 files changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> index 049482f5d9ac..564a45f4a0ab 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.h
-> +++ b/drivers/gpu/drm/i915/i915_drv.h
-> @@ -3097,6 +3097,11 @@ static inline unsigned long msecs_to_jiffies_timeout(const unsigned int m)
->  	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
->  }
->  
-> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
-> +{
-> +        return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
-> +}
-> +
->  static inline unsigned long
->  timespec_to_jiffies_timeout(const struct timespec *value)
->  {
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index 9d362d320d82..04a9f26407ae 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -1226,7 +1226,8 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
->  	if (i915_gem_request_completed(req, true))
->  		return 0;
->  
-> -	timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)*timeout) : 0;
-> +	timeout_expire = timeout ?
-> +		jiffies + nsecs_to_jiffies_timeout((u64)*timeout) : 0;
->  
->  	if (INTEL_INFO(dev)->gen >= 6 && ring->id == RCS && can_wait_boost(file_priv)) {
->  		gen6_rps_boost(dev_priv);
-> diff --git a/kernel/time/time.c b/kernel/time/time.c
-> index a9ae20fb0b11..8fae82ca5cbf 100644
-> --- a/kernel/time/time.c
-> +++ b/kernel/time/time.c
-> @@ -745,6 +745,7 @@ u64 nsecs_to_jiffies64(u64 n)
->  	return div_u64(n * 9, (9ull * NSEC_PER_SEC + HZ / 2) / HZ);
->  #endif
->  }
-> +EXPORT_SYMBOL(nsecs_to_jiffies64);
->  
->  /**
->   * nsecs_to_jiffies - Convert nsecs in u64 to jiffies
-> -- 
-> 1.9.3
->
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_for_3.19
+
+for you to fetch changes up to 50872ccd8786dc72bc5a32c17695561e031fae4c:
+
+  EDAC, MCE, AMD: Correct formatting of decoded text (2014-11-25 13:09:49 +0100)
+
+----------------------------------------------------------------
+EDAC updates all over the place:
+
+* Enablement for AMD F15h models 0x60 CPUs. Most notably DDR4 RAM
+support. Out of tree stuff is
+
+ arch/x86/kernel/amd_nb.c       |   2 +
+ include/linux/pci_ids.h        |   2 +
+
+adding the required PCI IDs. From Aravind Gopalakrishnan.
+
+* Enable amd64_edac for 32-bit due to popular demand. From Tomasz Pala.
+
+* Convert the AMD MCE injection module to debugfs, where it belongs.
+
+* Misc EDAC cleanups
+
+----------------------------------------------------------------
+Andreas Ruprecht (1):
+      EDAC, pci_sysfs: remove unneccessary ifdef around entire file
+
+Aravind Gopalakrishnan (5):
+      pci_ids: Add PCI device IDs for F15h M60h
+      x86, amd_nb: Add device IDs to NB tables for F15h M60h
+      EDAC: Add DDR3 LRDIMM entries to edac_mem_types
+      amd64_edac: Add F15h M60h support
+      EDAC, MCE, AMD: Add decoding table for MC6 xec
+
+Borislav Petkov (6):
+      EDAC: Sync memory types and names
+      EDAC, mce_amd_inj: Convert mce_amd_inj module to debugfs
+      EDAC, mce_amd_inj: Enable direct writes to MCE MSRs
+      EDAC, mce_amd_inj: Add hw-injection attributes
+      EDAC, mce_amd_inj: Add an injector function
+      EDAC, MCE, AMD: Correct formatting of decoded text
+
+Dan Carpenter (1):
+      ghes_edac: Use snprintf() to silence a static checker warning
+
+Markus Elfring (1):
+      EDAC: Delete unnecessary check before calling pci_dev_put()
+
+Michael Opdenacker (1):
+      {mv64x60,ppc4xx}_edac,: Remove deprecated IRQF_DISABLED
+
+Tomasz Pala (1):
+      amd64_edac: Build module on x86-32
+
+ arch/x86/kernel/amd_nb.c       |   2 +
+ drivers/edac/Kconfig           |  16 +--
+ drivers/edac/Makefile          |   2 +-
+ drivers/edac/amd64_edac.c      | 260 +++++++++++++++++++++++++-----------
+ drivers/edac/amd64_edac.h      |  15 ++-
+ drivers/edac/edac_mc.c         |  40 +++---
+ drivers/edac/edac_pci_sysfs.c  |   5 -
+ drivers/edac/ghes_edac.c       |   4 +-
+ drivers/edac/i3000_edac.c      |   3 +-
+ drivers/edac/i3200_edac.c      |   3 +-
+ drivers/edac/i82443bxgx_edac.c |   3 +-
+ drivers/edac/mce_amd.c         |  47 ++-----
+ drivers/edac/mce_amd_inj.c     | 293 +++++++++++++++++++++++++++--------------
+ drivers/edac/mv64x60_edac.c    |   8 +-
+ drivers/edac/ppc4xx_edac.c     |   4 +-
+ drivers/edac/x38_edac.c        |   3 +-
+ include/linux/edac.h           |   4 +-
+ include/linux/pci_ids.h        |   2 +
+ 18 files changed, 446 insertions(+), 268 deletions(-)
 
 -- 
-Jani Nikula, Intel Open Source Technology Center
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
