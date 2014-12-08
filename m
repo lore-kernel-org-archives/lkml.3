@@ -1,81 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaLHIcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:32:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50158 "EHLO mx2.suse.de"
+	id S1754508AbaLHIdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:33:32 -0500
+Received: from hofr.at ([212.69.189.236]:59449 "EHLO mail.hofr.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901AbaLHIcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:32:23 -0500
-Message-ID: <54856213.9070909@suse.cz>
-Date: Mon, 08 Dec 2014 09:32:19 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754056AbaLHIdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 03:33:31 -0500
+Date: Mon, 8 Dec 2014 09:33:26 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Carsten Emde <c.emde@osadl.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation of current lglocks implementation
+Message-ID: <20141208083326.GA29895@opentech.at>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC PATCH V2 0/4] Reducing parameters of alloc_pages* family
- of functions
-References: <1417809545-4540-1-git-send-email-vbabka@suse.cz> <CA+55aFwvWk6twgBaevPrF5z_0Faetnh0L19ZokWLidiaAaUmQg@mail.gmail.com>
-In-Reply-To: <CA+55aFwvWk6twgBaevPrF5z_0Faetnh0L19ZokWLidiaAaUmQg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2014 02:07 AM, Linus Torvalds wrote:
-> On Fri, Dec 5, 2014 at 11:59 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->> Hey all,
->>
->> this is a V2 of attempting something that has been discussed when Minchan
->> proposed to expand the x86 kernel stack [1], namely the reduction of huge
->> number of parameters that the alloc_pages* family and get_page_from_freelist()
->> functions have.
->
-> So I generally like this, but looking at that "struct alloc_context",
-> one member kind of stands out: the "order" parameter doesn't fit in
-> with all the other members.
->
-> Most everything else is describing where or what kind of pages to work
-> with. The "order" in contrast, really is separate.
->
-> So conceptually, my reaction is that it looks like a good cleanup even
-> aside from the code/stack size reduction, but that the alloc_context
-> definition is a bit odd.
->
-> Quite frankly, I think the :"order" really fits much more closely with
-> "alloc_flags", not with the alloc_context. Because like alloc_flags,.
-> it really describes how we need to allocate things within the context,
-> I'd argue.
->
-> In fact, I think that the order could actually be packed with the
-> alloc_flags in a single register, even on 32-bit (using a single-word
-> structure, perhaps). If we really care about number of parameters.
->
-> I'd rather go for "makes conceptual sense" over "packs order in
-> because it kind of works" and we don't modify it".
->
-> Hmm?
 
-Thanks for the suggestions, order indeed stands out. I'll check if it 
-makes more sense to have it separately, or pack as you suggest. Packing
-could perhaps bring more complexity than the benefit of less parameters. 
-But the suggestion made me realize that migratetype could be also packed 
-into alloc_flags and it would be more straightforward for that than order.
+Documentation of current lglocks implementation
 
-With order and migratetype out, everything left in alloc_context would 
-be about nodes and zones, which is also good I guess. Maybe a different 
-name for the structure then?
+local/global locks are currently not documented anywhere other
+than in an somewhat out-of-date LWN article - this is an attempt
+to document the current state of lglocks.
 
-Vlastimil
+This patch is against linux-next 3.18.0-rc6
 
->
->                         Linus
->
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
+ Documentation/locking/lglock.txt |  166 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 166 insertions(+)
+ create mode 100644 Documentation/locking/lglock.txt
+
+diff --git a/Documentation/locking/lglock.txt b/Documentation/locking/lglock.txt
+new file mode 100644
+index 0000000..a6971e3
+--- /dev/null
++++ b/Documentation/locking/lglock.txt
+@@ -0,0 +1,166 @@
++lglock - local/global locks for mostly local access patterns
++------------------------------------------------------------
++
++Origin: Nick Piggin's VFS scalability series introduced during
++	2.6.35++ [1] [2]
++Location: kernel/locking/lglock.c
++	include/linux/lglock.h
++Users: currently only the VFS and stop_machine related code
++
++Design Goal:
++------------
++
++Improve scalability of globally used large data sets that are
++distributed over all CPUs as per_cpu elements.
++
++To manage global data structures that are partitioned over all CPUs
++as per_cpu elements but can be mostly handled by CPU local actions
++lglock will be used where the majority of accesses are cpu local
++reading and occasional cpu local writing with very infrequent
++global write access.
++
++
++* deal with things locally whenever possible
++	- very fast access to the local per_cpu data
++	- reasonably fast access to specific per_cpu data on a different
++	  CPU
++* while making global action possible when needed
++	- by expensive access to all CPUs locks - effectively
++	  resulting in a globally visible critical section.
++
++Design:
++-------
++
++Basically it is an array of per_cpu spinlocks with the
++lg_local_lock/unlock accessing the local CPUs lock object and the
++lg_local_lock_cpu/unlock_cpu accessing a remote CPUs lock object
++the lg_local_lock has to disable preemption as migration protection so
++that the reference to the local CPUs lock does not go out of scope.
++Due to the lg_local_lock/unlock only touching cpu-local resources it
++is fast. Taking the local lock on a different CPU will be more
++expensive but still relatively cheap.
++
++One can relax the migration constraints by acquiring the current
++CPUs lock with lg_local_lock_cpu, remember the cpu, and release that
++lock at the end of the critical section even if migrated. This should
++give most of the performance benefits without inhibiting migration
++though needs careful considerations for nesting of lglocks and
++consideration of deadlocks with lg_global_lock.
++
++The lg_global_lock/unlock locks all underlying spinlocks of all
++possible CPUs (including those off-line). The preemption disable/enable
++are needed in the non-RT kernels to prevent deadlocks like:
++
++                     on cpu 1
++
++              task A          task B
++         lg_global_lock
++           got cpu 0 lock
++                 <<<< preempt <<<<
++                         lg_local_lock_cpu for cpu 0
++                           spin on cpu 0 lock
++
++On -RT this deadlock scenario is resolved by the arch_spin_locks in the
++lglocks being replaced by rt_mutexes which resolve the above deadlock
++by boosting the lock-holder.
++
++
++Implementation:
++---------------
++
++The initial lglock implementation from Nick Piggin used some complex
++macros to generate the lglock/brlock in lglock.h - they were later
++turned into a set of functions by Andi Kleen [7]. The change to functions
++was motivated by the presence of multiple lock users and also by them
++being easier to maintain than the generating macros. This change to
++functions is also the basis to eliminated the restriction of not
++being initializeable in kernel modules (the remaining problem is that
++locks are not explicitly initialized - see lockdep-design.txt)
++
++Declaration and initialization:
++-------------------------------
++
++  #include <linux/lglock.h>
++
++  DEFINE_LGLOCK(name)
++  or:
++  DEFINE_STATIC_LGLOCK(name);
++
++  lg_lock_init(&name, "lockdep_name_string");
++
++  on UP this is mapped to DEFINE_SPINLOCK(name) in both cases, note
++  also that as of 3.18-rc6 all declaration in use are of the _STATIC_
++  variant (and it seems that the non-static was never in use).
++  lg_lock_init is initializing the lockdep map only.
++
++Usage:
++------
++
++From the locking semantics it is a spinlock. It could be called a
++locality aware spinlock. lg_local_* behaves like a per_cpu
++spinlock and lg_global_* like a global spinlock.
++No surprises in the API.
++
++  lg_local_lock(*lglock);
++     access to protected per_cpu object on this CPU
++  lg_local_unlock(*lglock);
++
++  lg_local_lock_cpu(*lglock, cpu);
++     access to protected per_cpu object on other CPU cpu
++  lg_local_unlock_cpu(*lglock, cpu);
++
++  lg_global_lock(*lglock);
++     access all protected per_cpu objects on all CPUs
++  lg_global_unlock(*lglock);
++
++  There are no _trylock variants of the lglocks.
++
++Note that the lg_global_lock/unlock has to iterate over all possible
++CPUs rather than the actually present CPUs or a CPU could go off-line
++with a held lock [4] and that makes it very expensive. A discussion on
++these issues can be found at [5]
++
++Constraints:
++------------
++
++  * currently the declaration of lglocks in kernel modules is not
++    possible, though this should be doable with little change.
++  * lglocks are not recursive.
++  * suitable for code that can do most operations on the CPU local
++    data and will very rarely need the global lock
++  * lg_global_lock/unlock is *very* expensive and does not scale
++  * on UP systems all lg_* primitives are simply spinlocks
++  * in PREEMPT_RT the spinlock becomes an rt-mutex and can sleep but
++    does not change the tasks state while sleeping [6].
++  * in PREEMPT_RT the preempt_disable/enable in lg_local_lock/unlock
++    is downgraded to a migrate_disable/enable, the other
++    preempt_disable/enable are downgraded to barriers [6].
++    The deadlock noted for non-RT above is resolved due to rt_mutexes
++    boosting the lock-holder in this case which arch_spin_locks do
++    not do.
++
++lglocks were designed for very specific problems in the VFS and probably
++only are the right answer in these corner cases. Any new user that looks
++at lglocks probably wants to look at the seqlock and RCU alternatives as
++her first choice. There are also efforts to resolve the RCU issues that
++currently prevent using RCU in place of view remaining lglocks.
++
++Note on brlock history:
++-----------------------
++
++The 'Big Reader' read-write spinlocks were originally introduced by
++Ingo Molnar in 2000 (2.4/2.5 kernel series) and removed in 2003. They
++later were introduced by the VFS scalability patch set in 2.6 series
++again as the "big reader lock" brlock [2] variant of lglock which has
++been replaced by seqlock primitives or by RCU based primitives in the
++3.13 kernel series as was suggested in [3] in 2003. The brlock was
++entirely removed in the 3.13 kernel series.
++
++Link: 1 http://lkml.org/lkml/2010/8/2/81
++Link: 2 http://lwn.net/Articles/401738/
++Link: 3 http://lkml.org/lkml/2003/3/9/205
++Link: 4 https://lkml.org/lkml/2011/8/24/185
++Link: 5 http://lkml.org/lkml/2011/12/18/189
++Link: 6 https://www.kernel.org/pub/linux/kernel/projects/rt/
++        patch series - lglocks-rt.patch.patch
++Link: 7 http://lkml.org/lkml/2012/3/5/26
+-- 
+1.7.10.4
 
