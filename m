@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaLHLcL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:32:11 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:40244 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231AbaLHLcI (ORCPT
+	id S1755210AbaLHLfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:35:44 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53756 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291AbaLHLfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:32:08 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-3f-54858c3671a6
-Message-id: <54858C3C.9020701@samsung.com>
-Date: Mon, 08 Dec 2014 17:02:12 +0530
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
-        arnd@arndb.de, olof@lixom.net, catalin.marinas@arm.com,
-        will.deacon@arm.com, s.nawrocki@samsung.com, tomasz.figa@gmail.com,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        chanho61.park@samsung.com, geunsik.lim@samsung.com,
-        sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 04/19] clk: samsung: exynos5433: Add clocks for CMU_PERIS
- domain
-References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
- <1417510196-6714-5-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1417510196-6714-5-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=windows-1252; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsWyRsSkTtespzXE4McNDovHaxYzWfyddIzd
-	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtsenyN1eLy
-	rjlsFjPO7wPqv/OPzWLp9YtMFqeuf2azOPymndVixuSXbBardv1htHj58QSLg6jHmnlrGD1+
-	/5rE6LFz1l12j81L6j2unGhi9ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6Mn2tYC/6wVey9
-	/5C9gfElaxcjJ4eEgIlE99sPLBC2mMSFe+vZQGwhgaWMElNaa2Fqvh7cyAwRn84oseCoQxcj
-	F5DdyiTx8NsnsGZeAS2J+c2fwWwWAVWJI6c+gw1iE9CVePJ+LlizqECExJU1cxgh6gUlfky+
-	B1YvIpAt8fTNYTaQocwCO5klzndPAUpwcAgLhEmsm+sPsbhe4sfWDrCjOQVcJeataWMHsZkF
-	bCUWvF/HAmHLS2xe85YZZI6EwAEOif2P97BCHCQg8W3yIbCZEgKyEpsOMEM8JilxcMUNlgmM
-	YrOQnDQLydhZSMYuYGRexSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iRGYDk7/e9a3g/HmAetD
-	jAIcjEo8vAsetIQIsSaWFVfmHmI0BbpiIrOUaHI+MOnklcQbGpsZWZiamBobmVuaKYnzJkj9
-	DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAKJoRr/Y3rP6ykcymM3f5lsgucOG/veCrkFHo
-	lW7Wpc4iHyL/aSR12CVY3p9e9nDjzbWL/V8YfO2paP7ansOr9JqRZ0XO00AGp3N7bmb/1Fwt
-	dGnNiqMlnlNro6wiJj693+Cxzcme+yJLnwk7i3FwQeunxY8P2dV99Ql4vc6v/atm63E3jQgm
-	JZbijERDLeai4kQAjc5VawIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t9jQV3TntYQgydzbCwer1nMZPF30jF2
-	i/fLehgtLu/Xtrj+5Tmrxfwj51gt/kxoZbOYdH8Ci8WNX22sFr0LrrJZnG16w26x6fE1VovL
-	u+awWcw4vw+o/84/Noul1y8yWZy6/pnN4vCbdlaLGZNfslms2vWH0eLlxxMsDqIea+atYfT4
-	/WsSo8fOWXfZPTYvqfe4cqKJ1aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPj
-	neNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAvlJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih
-	6xsSBNdjZIAGEtYwZvxcw1rwh61i7/2H7A2ML1m7GDk5JARMJL4e3MgMYYtJXLi3ng3EFhKY
-	ziix4KhDFyMXkN3KJPHw2ycWkASvgJbE/ObPYDaLgKrEkVOfwRrYBHQlnryfCzZIVCBC4sqa
-	OYwQ9YISPybfA6sXEciWePrmMBvIUGaBncwS57unACU4OIQFwiTWzfWHWFwv8WNrB9hxnAKu
-	EvPWtLGD2MwCthIL3q9jgbDlJTavecs8gVFgFpIVs5CUzUJStoCReRWjaGpBckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGcLp5Jr2DcVWDxSFGAQ5GJR7ehQ9aQoRYE8uKK3MPMUpwMCuJ8CbGtYYI
-	8aYkVlalFuXHF5XmpBYfYjQFhsBEZinR5HxgKswriTc0NjE3NTa1NLEwMbNUEue9cTM3REgg
-	PbEkNTs1tSC1CKaPiYNTqoExSp+18n+7Wdqst0fXnJGK/eLkH/Q2NSFl8/c2rc1vS9bwbv6f
-	NdevM7kv9cXtOTdv7fYJXT3lqtz0qA2xmx4+b93mka3au7bhUqnhpdSEzu2Hc/s9eO1mLN/l
-	Ibbx8s40jlDhwy9XBh/aFPt4+vrb8VLhTjdelbadidv5a1o0s22G4ON7lx7rKrEUZyQaajEX
-	FScCAKU2/v9NAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 8 Dec 2014 06:35:42 -0500
+Message-ID: <54858D07.2030403@de.ibm.com>
+Date: Mon, 08 Dec 2014 12:35:35 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Michael Ellerman <mpe@ellerman.id.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the access_once tree
+References: <20141208222641.40a64946@canb.auug.org.au>
+In-Reply-To: <20141208222641.40a64946@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120811-0029-0000-0000-00000211B9B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+Am 08.12.2014 um 12:26 schrieb Stephen Rothwell:
+> Hi Christian,
+> 
+> After merging the acess_once tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> arch/powerpc/mm/hugetlbpage.c: In function 'find_linux_pte_or_hugepte':
+> arch/powerpc/mm/hugetlbpage.c:981:3: error: invalid initializer
+>    pud  = ACCESS_ONCE(*pudp);
+>    ^
+> arch/powerpc/mm/hugetlbpage.c:993:4: error: invalid initializer
+>     pmd  = ACCESS_ONCE(*pmdp);
+>     ^
+> 
+> These are preexisting ...
+> 
+> mm/gup.c: In function 'gup_pmd_range':
+> mm/gup.c:929:3: error: invalid initializer
+>    pmd_t pmd = ACCESS_ONCE(*pmdp);
+>    ^
+> mm/gup.c:929:3: error: (near initialization for 'pmd')
+> 
+> This is from commit f30c59e921f1 ("mm: Update generic gup
+> implementation to handle hugepage directory") from the powerpc-mpe (and
+> powerpc) tree and so will require a merge fix patch (presumable
+> s/ACCESS_ONCE/READ_ONCE/).
+> 
+> I am not sure how many architectures you are trying to cover, but
+> powerpc is one I care about :-)
+> 
+> I have dropped the access_once tree again today, sorry (its too late at
+> night).
 
-On Tuesday 02 December 2014 02:19 PM, Chanwoo Choi wrote:
-> This patch adds missing gate clocks of CMU_PERIS domain
-> which includes TMU/TZPC/SECKEY/CHIPID/TOPRTC/EFUSE IPs.
-> The special clocks of CMU_PERIS use fin_pll source clock directly.
->
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Tomasz Figa <tomasz.figa@gmail.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Inki Dae <inki.dae@samsung.com>
-> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
-> ---
->   drivers/clk/samsung/clk-exynos5433.c   | 146 ++++++++++++++++++++++++++++++++-
->   include/dt-bindings/clock/exynos5433.h |  33 +++++++-
->   2 files changed, 176 insertions(+), 3 deletions(-)
->
+Yes, we expect that tightening ACCESS_ONCE will trigger these bugs. I tried to cover everything in Linus master, but next is certainly a new game. It will be pretty hard for me to keep this running when hundreds of trees get merged during 3.19-rc. :-(
 
-Verified all registers and clock relationship against UM I have, and 
-changes are OK.
+Linus, I see two options:
 
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+a: Either we go a full round in linux-next and expect all trees to follow the new rules, so we can merge this for 3.20
+b: Only apply READ/ASSIGN_ONCE and the first fixups for 3.19 and put the ACCESS_ONCE change in next after rc1 so it will go in for 3.20 (or later) so that people can adopt. 
 
-Thanks,
-Pankaj Dubey
+Any opinions?
+
+Christian
+
 
