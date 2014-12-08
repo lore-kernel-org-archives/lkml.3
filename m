@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384AbaLHS5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:57:34 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:51234 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316AbaLHS5c (ORCPT
+	id S1756414AbaLHS6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:58:23 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51827 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaLHS6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:57:32 -0500
+	Mon, 8 Dec 2014 13:58:22 -0500
+Date: Mon, 8 Dec 2014 19:58:14 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        oleg@redhat.com, bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v1] CPU hotplug: active_reader not woken up in some
+ cases - deadlock
+Message-ID: <20141208195814.663007dd@thinkpad-w530>
+In-Reply-To: <20141208183134.GQ25340@linux.vnet.ibm.com>
+References: <1418062383-39657-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141208183134.GQ25340@linux.vnet.ibm.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141208184632.GG22149@ZenIV.linux.org.uk>
-References: <20141204202011.GO29748@ZenIV.linux.org.uk>
-	<20141208164650.GB29028@node.dhcp.inet.fi>
-	<20141208175805.GB22149@ZenIV.linux.org.uk>
-	<20141208180824.GC22149@ZenIV.linux.org.uk>
-	<CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
-	<20141208182012.GE22149@ZenIV.linux.org.uk>
-	<CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
-	<20141208184632.GG22149@ZenIV.linux.org.uk>
-Date: Mon, 8 Dec 2014 10:57:31 -0800
-X-Google-Sender-Auth: EmfqXeUg6T3ttVOoCmXDqW6TNkw
-Message-ID: <CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120818-0041-0000-0000-000002673E1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 10:46 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Dec 08, 2014 at 10:37:51AM -0800, Linus Torvalds wrote:
->
->> How about we make "kernel_read()" just clear O_DIRECT? Does that fix
->> it to just use copies?
->
-> Umm...  clearing O_DIRECT on struct file that might have other references
-> to it isn't nice, to put it mildly...
+> On Mon, Dec 08, 2014 at 07:13:03PM +0100, David Hildenbrand wrote:
+> > Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
+> > grace periods") introduced another problem that can easily be reproduced by
+> > starting/stopping cpus in a loop.
+> > 
+> > E.g.:
+> >   for i in `seq 5000`; do
+> >       echo 1 > /sys/devices/system/cpu/cpu1/online
+> >       echo 0 > /sys/devices/system/cpu/cpu1/online
+> >   done
+> > 
+> > Will result in:
+> >   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
+> >   Call Trace:
+> >   ([<00000000006a028e>] __schedule+0x406/0x91c)
+> >    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
+> >    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
+> >    [<0000000000131232>] cpu_up+0xb6/0xd4
+> >    [<00000000004a5720>] device_online+0x80/0xc0
+> >    [<00000000004a57f0>] online_store+0x90/0xb0
+> >   ...
+> > 
+> > And a deadlock.
+> > 
+> > Problem is that if the last ref in put_online_cpus() can't get the
+> > cpu_hotplug.lock the puts_pending count is incremented, but a sleeping active_writer
+> > might never be woken up, therefore never exiting the loop in cpu_hotplug_begin().
+> > 
+> > This quick fix wakes up the active_writer proactively. The writer already
+> > goes back to sleep if the ref count isn't already down to 0, so this should be
+> > fine.
+> > 
+> > Can't reproduce the error with this fix.
+> 
+> Good catch!
+> 
+> But don't we need to use exactly the same value for the NULL check
+> and for the wakeup?  Otherwise, wouldn't it be possible for
+> cpu_hotplug.active_writer to be non-NULL for the check but NULL
+> for the wake_up_process()?
+> 
+> 							Thanx, Paul
 
-Yeah.
+active_writer is cleared while holding cpuhp_lock, so this should be safe,
+right?
 
-> Frankly, stopping iov_iter_get_pages() on the first page in vmalloc/module
-> space looks like the sanest strategy anyway.  We'd get the same behaviour
-> as we used to, and as for finit_module(2), well... put "fails if given
-> an O_DIRECT descriptor" and be done with that.
+Thanks!
 
-If it used to fail, then by all means, just make this a failure in the
-new model. I really don't want to make core infrastructure silently
-just call vmalloc_to_page() to make things "work".
-
-And if it used to do "get_user_pages_fast()" then the old code really
-didn't work on vmalloc ranges anyway, since that one checks for not
-just _PAGE_PRESENT but also _PAGE_USER, which won't be set on a
-vmalloc() page. In fact, it should have failed on *all* kernel pages.
-
-> Alternatively, we can really go for
->         page = is_vmalloc_or_module_addr(addr) ? vmalloc_to_page(addr)
->                                                 : virt_to_page(addr)
->         *pages++ = get_page(page);
-
-actually, no we cannot. Thinking some more about it, that
-"get_page(page)" is wrong in _all_ cases. It actually works better for
-vmalloc pages than for normal 1:1 pages, since it's actually seriously
-and *horrendously* wrong for the case of random kernel addresses which
-may not even be refcounted to begin with.
-
-So the whole "get_page()" thing is broken. Iterating over pages in a
-KVEC is simply wrong, wrong, wrong. It needs to fail.
-
-Iterating over a KVEC to *copy* data is ok. But no page lookup stuff
-or page reference things.
-
-The old code that apparently used "get_user_pages_fast()" was ok
-almost by mistake, because it fails on all kernel pages.
-
-                       Linus
