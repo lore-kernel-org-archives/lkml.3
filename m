@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaLHPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:49:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47743 "EHLO
+	id S932183AbaLHPtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:49:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47749 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854AbaLHPtX (ORCPT
+	with ESMTP id S1755853AbaLHPtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:49:23 -0500
+	Mon, 8 Dec 2014 10:49:24 -0500
 From: Stephane Viau <sviau@codeaurora.org>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
         robdclark@gmail.com, gbeeresh@codeaurora.org,
         Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH 2/4] drm/msm/mdp: add common YUV information for MDP4/MDP5
-Date: Mon,  8 Dec 2014 10:48:57 -0500
-Message-Id: <1418053739-9386-3-git-send-email-sviau@codeaurora.org>
+Subject: [PATCH 3/4] drm/msm/mdp5: add NV12 support for MDP5
+Date: Mon,  8 Dec 2014 10:48:58 -0500
+Message-Id: <1418053739-9386-4-git-send-email-sviau@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1418053739-9386-1-git-send-email-sviau@codeaurora.org>
 References: <1418053739-9386-1-git-send-email-sviau@codeaurora.org>
@@ -22,314 +22,302 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both MDP4 and MDP5 share some code as far as YUV support is
-concerned. This change adds this information and will be followed
-by the actual MDP4 and MDP5 YUV support patches.
+This change adds the NV12 format support for public planes.
 
 Signed-off-by: Stephane Viau <sviau@codeaurora.org>
 ---
- drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h   |  19 ++++--
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h   |  19 ++++--
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c |   2 -
- drivers/gpu/drm/msm/mdp/mdp_format.c      | 108 +++++++++++++++++++++++++++---
- drivers/gpu/drm/msm/mdp/mdp_kms.h         |  24 ++++++-
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c | 213 +++++++++++++++++++++++++++---
  drivers/gpu/drm/msm/msm_fb.c              |   2 +-
- drivers/gpu/drm/msm/msm_kms.h             |   2 +
- 7 files changed, 154 insertions(+), 22 deletions(-)
+ 2 files changed, 194 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h
-index cbd77bc..0a5c58b 100644
---- a/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.h
-@@ -175,14 +175,25 @@ irqreturn_t mdp4_irq(struct msm_kms *kms);
- int mdp4_enable_vblank(struct msm_kms *kms, struct drm_crtc *crtc);
- void mdp4_disable_vblank(struct msm_kms *kms, struct drm_crtc *crtc);
- 
-+static inline bool pipe_supports_yuv(enum mdp4_pipe pipe)
-+{
-+	switch (pipe) {
-+	case VG1:
-+	case VG2:
-+	case VG3:
-+	case VG4:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
- static inline
- uint32_t mdp4_get_formats(enum mdp4_pipe pipe_id, uint32_t *pixel_formats,
- 		uint32_t max_formats)
- {
--	/* TODO when we have YUV, we need to filter supported formats
--	 * based on pipe_id..
--	 */
--	return mdp_get_formats(pixel_formats, max_formats);
-+	return mdp_get_formats(pixel_formats, max_formats,
-+				!pipe_supports_yuv(pipe_id));
- }
- 
- void mdp4_plane_install_properties(struct drm_plane *plane,
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-index dd69c77..49d011e 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-@@ -165,14 +165,25 @@ void mdp5_disable_vblank(struct msm_kms *kms, struct drm_crtc *crtc);
- int mdp5_irq_domain_init(struct mdp5_kms *mdp5_kms);
- void mdp5_irq_domain_fini(struct mdp5_kms *mdp5_kms);
- 
-+static inline bool pipe_supports_yuv(enum mdp5_pipe pipe)
-+{
-+	switch (pipe) {
-+	case SSPP_VIG0:
-+	case SSPP_VIG1:
-+	case SSPP_VIG2:
-+	case SSPP_VIG3:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
- static inline
- uint32_t mdp5_get_formats(enum mdp5_pipe pipe, uint32_t *pixel_formats,
- 		uint32_t max_formats)
- {
--	/* TODO when we have YUV, we need to filter supported formats
--	 * based on pipe id..
--	 */
--	return mdp_get_formats(pixel_formats, max_formats);
-+	return mdp_get_formats(pixel_formats, max_formats,
-+				!pipe_supports_yuv(pipe));
- }
- 
- void mdp5_plane_install_properties(struct drm_plane *plane,
 diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c
-index 533df7c..9a57e87 100644
+index 9a57e87..263a16b 100644
 --- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c
 +++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_plane.c
-@@ -18,8 +18,6 @@
- 
- #include "mdp5_kms.h"
- 
--#define MAX_PLANE	4
--
- struct mdp5_plane {
- 	struct drm_plane base;
- 	const char *name;
-diff --git a/drivers/gpu/drm/msm/mdp/mdp_format.c b/drivers/gpu/drm/msm/mdp/mdp_format.c
-index e0a6ffb..f683433 100644
---- a/drivers/gpu/drm/msm/mdp/mdp_format.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp_format.c
-@@ -1,4 +1,5 @@
- /*
-+ * Copyright (c) 2014 The Linux Foundation. All rights reserved.
-  * Copyright (C) 2013 Red Hat
-  * Author: Rob Clark <robdclark@gmail.com>
-  *
-@@ -19,7 +20,58 @@
- #include "msm_drv.h"
- #include "mdp_kms.h"
- 
--#define FMT(name, a, r, g, b, e0, e1, e2, e3, alpha, tight, c, cnt) { \
-+static struct csc_cfg csc_convert[CSC_MAX] = {
-+	[CSC_RGB2RGB] = {
-+		.type = CSC_RGB2RGB,
-+		.matrix = {
-+			0x0200, 0x0000, 0x0000,
-+			0x0000, 0x0200, 0x0000,
-+			0x0000, 0x0000, 0x0200
-+		},
-+		.pre_bias =	{ 0x0, 0x0, 0x0 },
-+		.post_bias =	{ 0x0, 0x0, 0x0 },
-+		.pre_clamp =	{ 0x0, 0xff, 0x0, 0xff, 0x0, 0xff },
-+		.post_clamp =	{ 0x0, 0xff, 0x0, 0xff, 0x0, 0xff },
-+	},
-+	[CSC_YUV2RGB] = {
-+		.type = CSC_YUV2RGB,
-+		.matrix = {
-+			0x0254, 0x0000, 0x0331,
-+			0x0254, 0xff37, 0xfe60,
-+			0x0254, 0x0409, 0x0000
-+		},
-+		.pre_bias =	{ 0xfff0, 0xff80, 0xff80 },
-+		.post_bias =	{ 0x00, 0x00, 0x00 },
-+		.pre_clamp =	{ 0x00, 0xff, 0x00, 0xff, 0x00, 0xff },
-+		.post_clamp =	{ 0x00, 0xff, 0x00, 0xff, 0x00, 0xff },
-+	},
-+	[CSC_RGB2YUV] = {
-+		.type = CSC_RGB2YUV,
-+		.matrix = {
-+			0x0083, 0x0102, 0x0032,
-+			0x1fb5, 0x1f6c, 0x00e1,
-+			0x00e1, 0x1f45, 0x1fdc
-+		},
-+		.pre_bias =	{ 0x00, 0x00, 0x00 },
-+		.post_bias =	{ 0x10, 0x80, 0x80 },
-+		.pre_clamp =	{ 0x00, 0xff, 0x00, 0xff, 0x00, 0xff },
-+		.post_clamp =	{ 0x10, 0xeb, 0x10, 0xf0, 0x10, 0xf0 },
-+	},
-+	[CSC_YUV2YUV] = {
-+		.type = CSC_YUV2YUV,
-+		.matrix = {
-+			0x0200, 0x0000, 0x0000,
-+			0x0000, 0x0200, 0x0000,
-+			0x0000, 0x0000, 0x0200
-+		},
-+		.pre_bias =	{ 0x00, 0x00, 0x00 },
-+		.post_bias =	{ 0x00, 0x00, 0x00 },
-+		.pre_clamp =	{ 0x00, 0xff, 0x00, 0xff, 0x00, 0xff },
-+		.post_clamp =	{ 0x00, 0xff, 0x00, 0xff, 0x00, 0xff },
-+	},
-+};
-+
-+#define FMT(name, a, r, g, b, e0, e1, e2, e3, alpha, tight, c, cnt, fp, cs) { \
- 		.base = { .pixel_format = DRM_FORMAT_ ## name }, \
- 		.bpc_a = BPC ## a ## A,                          \
- 		.bpc_r = BPC ## r,                               \
-@@ -30,21 +82,46 @@
- 		.unpack_tight = tight,                           \
- 		.cpp = c,                                        \
- 		.unpack_count = cnt,                             \
--	}
-+		.fetch_type = fp,                                \
-+		.chroma_sample = cs                              \
-+}
- 
- #define BPC0A 0
- 
-+/*
-+ * Note: Keep RGB formats 1st, followed by YUV formats to avoid breaking
-+ * mdp_get_rgb_formats()'s implementation.
-+ */
- static const struct mdp_format formats[] = {
--	/*  name      a  r  g  b   e0 e1 e2 e3  alpha   tight  cpp cnt */
--	FMT(ARGB8888, 8, 8, 8, 8,  1, 0, 2, 3,  true,   true,  4,  4),
--	FMT(XRGB8888, 8, 8, 8, 8,  1, 0, 2, 3,  false,  true,  4,  4),
--	FMT(RGB888,   0, 8, 8, 8,  1, 0, 2, 0,  false,  true,  3,  3),
--	FMT(BGR888,   0, 8, 8, 8,  2, 0, 1, 0,  false,  true,  3,  3),
--	FMT(RGB565,   0, 5, 6, 5,  1, 0, 2, 0,  false,  true,  2,  3),
--	FMT(BGR565,   0, 5, 6, 5,  2, 0, 1, 0,  false,  true,  2,  3),
-+	/*  name      a  r  g  b   e0 e1 e2 e3  alpha   tight  cpp cnt ... */
-+	FMT(ARGB8888, 8, 8, 8, 8,  1, 0, 2, 3,  true,   true,  4,  4,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+	FMT(XRGB8888, 8, 8, 8, 8,  1, 0, 2, 3,  false,  true,  4,  4,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+	FMT(RGB888,   0, 8, 8, 8,  1, 0, 2, 0,  false,  true,  3,  3,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+	FMT(BGR888,   0, 8, 8, 8,  2, 0, 1, 0,  false,  true,  3,  3,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+	FMT(RGB565,   0, 5, 6, 5,  1, 0, 2, 0,  false,  true,  2,  3,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+	FMT(BGR565,   0, 5, 6, 5,  2, 0, 1, 0,  false,  true,  2,  3,
-+			MDP_PLANE_INTERLEAVED, CHROMA_RGB),
-+
-+	/* --- RGB formats above / YUV formats below this line --- */
-+
-+	FMT(NV12,     0, 8, 8, 8,  1, 2, 0, 0,  false,  true,  2, 2,
-+			MDP_PLANE_PSEUDO_PLANAR, CHROMA_420),
-+	FMT(NV21,     0, 8, 8, 8,  2, 1, 0, 0,  false,  true,  2, 2,
-+			MDP_PLANE_PSEUDO_PLANAR, CHROMA_420),
- };
- 
--uint32_t mdp_get_formats(uint32_t *pixel_formats, uint32_t max_formats)
-+/*
-+ * Note:
-+ * @rgb_only must be set to true, when requesting
-+ * supported formats for RGB pipes.
-+ */
-+uint32_t mdp_get_formats(uint32_t *pixel_formats, uint32_t max_formats,
-+		bool rgb_only)
- {
- 	uint32_t i;
- 	for (i = 0; i < ARRAY_SIZE(formats); i++) {
-@@ -53,6 +130,9 @@ uint32_t mdp_get_formats(uint32_t *pixel_formats, uint32_t max_formats)
- 		if (i == max_formats)
- 			break;
- 
-+		if (rgb_only && MDP_FORMAT_IS_YUV(f))
-+			break;
-+
- 		pixel_formats[i] = f->base.pixel_format;
- 	}
- 
-@@ -69,3 +149,11 @@ const struct msm_format *mdp_get_format(struct msm_kms *kms, uint32_t format)
- 	}
- 	return NULL;
+@@ -274,6 +274,155 @@ static void set_scanout_locked(struct drm_plane *plane,
+ 	plane->fb = fb;
  }
-+
-+struct csc_cfg *mdp_get_default_csc_cfg(enum csc_type type)
+ 
++/* Note: mdp5_plane->pipe_lock must be locked */
++static void csc_disable(struct mdp5_kms *mdp5_kms, enum mdp5_pipe pipe)
 +{
-+	if (unlikely(WARN_ON(type >= CSC_MAX)))
-+		return NULL;
++	uint32_t value = mdp5_read(mdp5_kms, REG_MDP5_PIPE_OP_MODE(pipe)) &
++			 ~MDP5_PIPE_OP_MODE_CSC_1_EN;
 +
-+	return &csc_convert[type];
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_OP_MODE(pipe), value);
 +}
-diff --git a/drivers/gpu/drm/msm/mdp/mdp_kms.h b/drivers/gpu/drm/msm/mdp/mdp_kms.h
-index 99557b5..64c83a9 100644
---- a/drivers/gpu/drm/msm/mdp/mdp_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp_kms.h
-@@ -88,10 +88,32 @@ struct mdp_format {
- 	uint8_t unpack[4];
- 	bool alpha_enable, unpack_tight;
- 	uint8_t cpp, unpack_count;
-+	enum mdp_sspp_fetch_type fetch_type;
-+	enum mdp_chroma_samp_type chroma_sample;
- };
- #define to_mdp_format(x) container_of(x, struct mdp_format, base)
-+#define MDP_FORMAT_IS_YUV(mdp_format) ((mdp_format)->chroma_sample > CHROMA_RGB)
++
++/* Note: mdp5_plane->pipe_lock must be locked */
++static void csc_enable(struct mdp5_kms *mdp5_kms, enum mdp5_pipe pipe,
++		struct csc_cfg *csc)
++{
++	uint32_t  i, mode = 0; /* RGB, no CSC */
++	uint32_t *matrix;
++
++	if (unlikely(!csc))
++		return;
++
++	if ((csc->type == CSC_YUV2RGB) || (CSC_YUV2YUV == csc->type))
++		mode |= MDP5_PIPE_OP_MODE_CSC_SRC_DATA_FORMAT(DATA_FORMAT_YUV);
++	if ((csc->type == CSC_RGB2YUV) || (CSC_YUV2YUV == csc->type))
++		mode |= MDP5_PIPE_OP_MODE_CSC_DST_DATA_FORMAT(DATA_FORMAT_YUV);
++	mode |= MDP5_PIPE_OP_MODE_CSC_1_EN;
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_OP_MODE(pipe), mode);
++
++	matrix = csc->matrix;
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_MATRIX_COEFF_0(pipe),
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_0_COEFF_11(matrix[0]) |
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_0_COEFF_12(matrix[1]));
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_MATRIX_COEFF_1(pipe),
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_1_COEFF_13(matrix[2]) |
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_1_COEFF_21(matrix[3]));
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_MATRIX_COEFF_2(pipe),
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_2_COEFF_22(matrix[4]) |
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_2_COEFF_23(matrix[5]));
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_MATRIX_COEFF_3(pipe),
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_3_COEFF_31(matrix[6]) |
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_3_COEFF_32(matrix[7]));
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_MATRIX_COEFF_4(pipe),
++			MDP5_PIPE_CSC_1_MATRIX_COEFF_4_COEFF_33(matrix[8]));
++
++	for (i = 0; i < ARRAY_SIZE(csc->pre_bias); i++) {
++		uint32_t *pre_clamp = csc->pre_clamp;
++		uint32_t *post_clamp = csc->post_clamp;
++
++		mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_PRE_CLAMP(pipe, i),
++			MDP5_PIPE_CSC_1_PRE_CLAMP_REG_HIGH(pre_clamp[2*i+1]) |
++			MDP5_PIPE_CSC_1_PRE_CLAMP_REG_LOW(pre_clamp[2*i]));
++
++		mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_POST_CLAMP(pipe, i),
++			MDP5_PIPE_CSC_1_POST_CLAMP_REG_HIGH(post_clamp[2*i+1]) |
++			MDP5_PIPE_CSC_1_POST_CLAMP_REG_LOW(post_clamp[2*i]));
++
++		mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_PRE_BIAS(pipe, i),
++			MDP5_PIPE_CSC_1_PRE_BIAS_REG_VALUE(csc->pre_bias[i]));
++
++		mdp5_write(mdp5_kms, REG_MDP5_PIPE_CSC_1_POST_BIAS(pipe, i),
++			MDP5_PIPE_CSC_1_POST_BIAS_REG_VALUE(csc->post_bias[i]));
++	}
++}
++
++#define PHASE_STEP_SHIFT	21
++#define DOWN_SCALE_RATIO_MAX	32	/* 2^(26-21) */
++
++static int calc_phase_step(uint32_t src, uint32_t dst, uint32_t *out_phase)
++{
++	uint32_t unit;
++
++	if (src == 0 || dst == 0)
++		return -EINVAL;
++
++	/*
++	 * PHASE_STEP_X/Y is coded on 26 bits (25:0),
++	 * where 2^21 represents the unity "1" in fixed-point hardware design.
++	 * This leaves 5 bits for the integer part (downscale case):
++	 *	-> maximum downscale ratio = 0b1_1111 = 31
++	 */
++	if (src > (dst * DOWN_SCALE_RATIO_MAX))
++		return -EOVERFLOW;
++
++	unit = 1 << PHASE_STEP_SHIFT;
++	*out_phase = mult_frac(unit, src, dst);
++
++	return 0;
++}
++
++static int calc_scalex_steps(uint32_t pixel_format, uint32_t src, uint32_t dest,
++		uint32_t phasex_steps[2])
++{
++	uint32_t phasex_step;
++	unsigned int hsub;
++	int ret;
++
++	ret = calc_phase_step(src, dest, &phasex_step);
++	if (ret)
++		return ret;
++
++	hsub = drm_format_horz_chroma_subsampling(pixel_format);
++
++	phasex_steps[0] = phasex_step;
++	phasex_steps[1] = phasex_step / hsub;
++
++	return 0;
++}
++
++static int calc_scaley_steps(uint32_t pixel_format, uint32_t src, uint32_t dest,
++		uint32_t phasey_steps[2])
++{
++	uint32_t phasey_step;
++	unsigned int vsub;
++	int ret;
++
++	ret = calc_phase_step(src, dest, &phasey_step);
++	if (ret)
++		return ret;
++
++	vsub = drm_format_vert_chroma_subsampling(pixel_format);
++
++	phasey_steps[0] = phasey_step;
++	phasey_steps[1] = phasey_step / vsub;
++
++	return 0;
++}
++
++static uint32_t get_scalex_config(uint32_t src, uint32_t dest)
++{
++	uint32_t filter;
++
++	filter = (src <= dest) ? SCALE_FILTER_BIL : SCALE_FILTER_PCMN;
++
++	return  MDP5_PIPE_SCALE_CONFIG_SCALEX_EN |
++		MDP5_PIPE_SCALE_CONFIG_SCALEX_MIN_FILTER(filter) |
++		MDP5_PIPE_SCALE_CONFIG_SCALEX_CR_FILTER(filter)  |
++		MDP5_PIPE_SCALE_CONFIG_SCALEX_MAX_FILTER(filter);
++}
++
++static uint32_t get_scaley_config(uint32_t src, uint32_t dest)
++{
++	uint32_t filter;
++
++	filter = (src <= dest) ? SCALE_FILTER_BIL : SCALE_FILTER_PCMN;
++
++	return  MDP5_PIPE_SCALE_CONFIG_SCALEY_EN |
++		MDP5_PIPE_SCALE_CONFIG_SCALEY_MIN_FILTER(filter) |
++		MDP5_PIPE_SCALE_CONFIG_SCALEY_CR_FILTER(filter)  |
++		MDP5_PIPE_SCALE_CONFIG_SCALEY_MAX_FILTER(filter);
++}
++
+ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 		struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 		int crtc_x, int crtc_y,
+@@ -283,11 +432,14 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ {
+ 	struct mdp5_plane *mdp5_plane = to_mdp5_plane(plane);
+ 	struct mdp5_kms *mdp5_kms = get_kms(plane);
++	struct device *dev = mdp5_kms->dev->dev;
+ 	enum mdp5_pipe pipe = mdp5_plane->pipe;
+ 	const struct mdp_format *format;
+ 	uint32_t nplanes, config = 0;
+-	uint32_t phasex_step = 0, phasey_step = 0;
++	/* below array -> index 0: comp 0/3 ; index 1: comp 1/2 */
++	uint32_t phasex_step[2] = {0,}, phasey_step[2] = {0,};
+ 	uint32_t hdecm = 0, vdecm = 0;
++	uint32_t pix_format;
+ 	unsigned long flags;
+ 	int ret;
  
--uint32_t mdp_get_formats(uint32_t *formats, uint32_t max_formats);
-+uint32_t mdp_get_formats(uint32_t *formats, uint32_t max_formats, bool rgb_only);
- const struct msm_format *mdp_get_format(struct msm_kms *kms, uint32_t format);
+@@ -297,6 +449,9 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 	if (WARN_ON(nplanes > pipe2nclients(pipe)))
+ 		return -EINVAL;
  
-+enum csc_type {
-+	CSC_RGB2RGB = 0,
-+	CSC_YUV2RGB,
-+	CSC_RGB2YUV,
-+	CSC_YUV2YUV,
-+	CSC_MAX
-+};
++	format = to_mdp_format(msm_framebuffer_format(fb));
++	pix_format = format->base.pixel_format;
 +
-+struct csc_cfg {
-+	enum csc_type type;
-+	uint32_t matrix[9];
-+	uint32_t pre_bias[3];
-+	uint32_t post_bias[3];
-+	uint32_t pre_clamp[6];
-+	uint32_t post_clamp[6];
-+};
+ 	/* src values are in Q16 fixed point, convert to integer: */
+ 	src_x = src_x >> 16;
+ 	src_y = src_y >> 16;
+@@ -321,14 +476,28 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 	 */
+ 	mdp5_smp_configure(mdp5_kms->smp, pipe);
+ 
+-	if (src_w != crtc_w) {
+-		config |= MDP5_PIPE_SCALE_CONFIG_SCALEX_EN;
+-		/* TODO calc phasex_step, hdecm */
++	/* SCALE is used to both scale and up-sample chroma components */
 +
-+struct csc_cfg *mdp_get_default_csc_cfg(enum csc_type);
++	if ((src_w != crtc_w) || MDP_FORMAT_IS_YUV(format)) {
++		/* TODO calc hdecm */
++		ret = calc_scalex_steps(pix_format, src_w, crtc_w, phasex_step);
++		if (ret) {
++			dev_err(dev, "X scaling (%d -> %d) failed: %d\n",
++					src_w, crtc_w, ret);
++			return ret;
++		}
++		config |= get_scalex_config(src_w, crtc_w);
+ 	}
+ 
+-	if (src_h != crtc_h) {
+-		config |= MDP5_PIPE_SCALE_CONFIG_SCALEY_EN;
+-		/* TODO calc phasey_step, vdecm */
++	if ((src_h != crtc_h) || MDP_FORMAT_IS_YUV(format)) {
++		/* TODO calc vdecm */
++		ret = calc_scaley_steps(pix_format, src_h, crtc_h, phasey_step);
++		if (ret) {
++			dev_err(dev, "Y scaling (%d -> %d) failed: %d\n",
++					src_h, crtc_h, ret);
++			return ret;
++		}
++		config |= get_scaley_config(src_h, crtc_h);
+ 	}
+ 
+ 	spin_lock_irqsave(&mdp5_plane->pipe_lock, flags);
+@@ -353,8 +522,6 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 			MDP5_PIPE_OUT_XY_X(crtc_x) |
+ 			MDP5_PIPE_OUT_XY_Y(crtc_y));
+ 
+-	format = to_mdp_format(msm_framebuffer_format(fb));
+-
+ 	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SRC_FORMAT(pipe),
+ 			MDP5_PIPE_SRC_FORMAT_A_BPC(format->bpc_a) |
+ 			MDP5_PIPE_SRC_FORMAT_R_BPC(format->bpc_r) |
+@@ -364,8 +531,8 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 			MDP5_PIPE_SRC_FORMAT_CPP(format->cpp - 1) |
+ 			MDP5_PIPE_SRC_FORMAT_UNPACK_COUNT(format->unpack_count - 1) |
+ 			COND(format->unpack_tight, MDP5_PIPE_SRC_FORMAT_UNPACK_TIGHT) |
+-			MDP5_PIPE_SRC_FORMAT_NUM_PLANES(nplanes - 1) |
+-			MDP5_PIPE_SRC_FORMAT_CHROMA_SAMP(CHROMA_RGB));
++			MDP5_PIPE_SRC_FORMAT_NUM_PLANES(format->fetch_type) |
++			MDP5_PIPE_SRC_FORMAT_CHROMA_SAMP(format->chroma_sample));
+ 
+ 	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SRC_UNPACK(pipe),
+ 			MDP5_PIPE_SRC_UNPACK_ELEM0(format->unpack[0]) |
+@@ -379,18 +546,24 @@ static int mdp5_plane_mode_set(struct drm_plane *plane,
+ 	/* not using secure mode: */
+ 	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SRC_ADDR_SW_STATUS(pipe), 0);
+ 
+-	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_PHASE_STEP_X(pipe), phasex_step);
+-	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_PHASE_STEP_Y(pipe), phasey_step);
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_PHASE_STEP_X(pipe),
++			phasex_step[0]);
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_PHASE_STEP_Y(pipe),
++			phasey_step[0]);
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_CR_PHASE_STEP_X(pipe),
++			phasex_step[1]);
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_CR_PHASE_STEP_Y(pipe),
++			phasey_step[1]);
+ 	mdp5_write(mdp5_kms, REG_MDP5_PIPE_DECIMATION(pipe),
+ 			MDP5_PIPE_DECIMATION_VERT(vdecm) |
+ 			MDP5_PIPE_DECIMATION_HORZ(hdecm));
+-	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_CONFIG(pipe),
+-			MDP5_PIPE_SCALE_CONFIG_SCALEX_MIN_FILTER(SCALE_FILTER_NEAREST) |
+-			MDP5_PIPE_SCALE_CONFIG_SCALEY_MIN_FILTER(SCALE_FILTER_NEAREST) |
+-			MDP5_PIPE_SCALE_CONFIG_SCALEX_CR_FILTER(SCALE_FILTER_NEAREST) |
+-			MDP5_PIPE_SCALE_CONFIG_SCALEY_CR_FILTER(SCALE_FILTER_NEAREST) |
+-			MDP5_PIPE_SCALE_CONFIG_SCALEX_MAX_FILTER(SCALE_FILTER_NEAREST) |
+-			MDP5_PIPE_SCALE_CONFIG_SCALEY_MAX_FILTER(SCALE_FILTER_NEAREST));
++	mdp5_write(mdp5_kms, REG_MDP5_PIPE_SCALE_CONFIG(pipe), config);
 +
- #endif /* __MDP_KMS_H__ */
++	if (MDP_FORMAT_IS_YUV(format))
++		csc_enable(mdp5_kms, pipe,
++				mdp_get_default_csc_cfg(CSC_YUV2RGB));
++	else
++		csc_disable(mdp5_kms, pipe);
+ 
+ 	set_scanout_locked(plane, fb);
+ 
 diff --git a/drivers/gpu/drm/msm/msm_fb.c b/drivers/gpu/drm/msm/msm_fb.c
-index 84dec16..d1a7a45 100644
+index d1a7a45..6b573e6 100644
 --- a/drivers/gpu/drm/msm/msm_fb.c
 +++ b/drivers/gpu/drm/msm/msm_fb.c
-@@ -24,7 +24,7 @@
- struct msm_framebuffer {
- 	struct drm_framebuffer base;
- 	const struct msm_format *format;
--	struct drm_gem_object *planes[3];
-+	struct drm_gem_object *planes[MAX_PLANE];
- };
- #define to_msm_framebuffer(x) container_of(x, struct msm_framebuffer, base)
+@@ -122,7 +122,7 @@ uint32_t msm_framebuffer_iova(struct drm_framebuffer *fb, int id, int plane)
+ 	struct msm_framebuffer *msm_fb = to_msm_framebuffer(fb);
+ 	if (!msm_fb->planes[plane])
+ 		return 0;
+-	return msm_gem_iova(msm_fb->planes[plane], id);
++	return msm_gem_iova(msm_fb->planes[plane], id) + fb->offsets[plane];
+ }
  
-diff --git a/drivers/gpu/drm/msm/msm_kms.h b/drivers/gpu/drm/msm/msm_kms.h
-index 7fb4876..6a28835 100644
---- a/drivers/gpu/drm/msm/msm_kms.h
-+++ b/drivers/gpu/drm/msm/msm_kms.h
-@@ -23,6 +23,8 @@
- 
- #include "msm_drv.h"
- 
-+#define MAX_PLANE	4
-+
- /* As there are different display controller blocks depending on the
-  * snapdragon version, the kms support is split out and the appropriate
-  * implementation is loaded at runtime.  The kms module is responsible
+ struct drm_gem_object *msm_framebuffer_bo(struct drm_framebuffer *fb, int plane)
 -- 
 Qualcomm Innovation Center, Inc.
 
