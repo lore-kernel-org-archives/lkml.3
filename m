@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaLHNyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 08:54:20 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:57701 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751969AbaLHNyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 08:54:18 -0500
-Message-ID: <5485AD63.6090308@st.com>
-Date: Mon, 8 Dec 2014 14:53:39 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755574AbaLHN4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 08:56:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:42809 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150AbaLHN4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 08:56:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,538,1413270000"; 
+   d="scan'208";a="644232159"
+Date: Mon, 8 Dec 2014 14:56:15 +0100
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
+        josh.triplett@intel.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Will Arthur <will.c.arthur@intel.com>,
+        tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v8 6/8] tpm: TPM 2.0 baseline support
+Message-ID: <20141208135615.GC30303@intel.com>
+References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1417559480-13757-7-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <547E7553.2050608@linux.vnet.ibm.com>
+ <201412050013.19082.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>
-Cc: <devicetree@vger.kernel.org>, <kernel@stlinux.com>,
-        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>,
-        <broonie@kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [STLinux Kernel] [PATCH v3 0/4] spi: st: New driver for ST's
- SPI Controller
-References: <1418043214-14324-1-git-send-email-lee.jones@linaro.org> <11694915.sCOqLZA7N1@wuerfel>
-In-Reply-To: <11694915.sCOqLZA7N1@wuerfel>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-08_01:2014-12-08,2014-12-07,1970-01-01 signatures=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201412050013.19082.PeterHuewe@gmx.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 05, 2014 at 12:13:18AM +0100, Peter Hüwe wrote:
+> Am Mittwoch, 3. Dezember 2014, 03:28:35 schrieb Stefan Berger:
+> > On 12/02/2014 05:31 PM, Jarkko Sakkinen wrote:
+> > > +
+> > > +/**
+> > > + * tpm2_startup() - send startup command to the TPM chip
+> > > + * @chip:		TPM chip to use.
+> > > + * @startup_type	startup type. The value is either
+> > > + *			TPM_SU_CLEAR or TPM_SU_STATE.
+> > > + *
+> > > + * 0 is returned when the operation is successful. If a negative number
+> > > is + * returned it remarks a POSIX error code. If a positive number is
+> > > returned + * it remarks a TPM error.
+> > > + */
+> > > +int tpm2_startup(struct tpm_chip *chip, __be16 startup_type)
+> > > +{
+> > > +	struct tpm2_cmd cmd;
+> > > +
+> > > +	cmd.header.in = tpm2_startup_header;
+> > > +
+> > > +	cmd.params.startup_in.startup_type = startup_type;
+> > > +	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
+> > > +				"attempting to start the TPM");
+> > > +}
+> > 
+> > I suppose you need to send this command because your firmware does not
+> > do it ?Following TPM1.2 I guess the BIOS / UEFI should send this instead
+> > and sending it later would actually be wrong. Hm, I don't find from
+> > where you are calling this... do you need it ? Can you remove it?
+> > 
+> >     Stefan
+> 
+> Hi,
+> 
+> I think it would be good to send a TPM2_Startup if the TPM sends a 
+> TPM_RC_INITIALIZE (0x100) - so it becomes atleast usable.
+> Of course the BIOS/UEFI/Firmware should send the TPM2_Startup, but if there is 
+> no such thing, I would prefer Linux to do it, rather than nobody.
+> (analog: This was done for embedded platforms with TPM1.2).
+> 
+> In the current situation (v9) it is not possible to use the TPM2 on a machine 
+> without bios integration. :( (so I cannot test here :( )
 
-On 12/08/2014 02:22 PM, Arnd Bergmann wrote:
-> On Monday 08 December 2014 12:53:30 Lee Jones wrote:
->> This is a new driver which controls the SPI component of ST's
->> Synchronous Serial Controller (SSC).
->>
-> How does this related to the i2c driver for drivers/i2c/busses/i2c-st.c?
-> Could you have the same piece of hardware do one or the other mode
-> depending on pin configuration, or is each instance hardwired to
-> a particular mode?
-This is the same IP, that can be configured either in SPI or I2C.
+Should the place be if sending self-test fails? I think the type should
+be TPM2_SU_CLEAR. Do you agree?
 
->
-> Is there any code worth sharing between the two drivers?
-No, except a couple of registers, they are managed in a ways.
+All other issues are now fixed except this and STS3 bit issue that I 
+look for next. In my github there is tpm2-v10 branch now with fixes
+on top. I squash the fixes right after these two remaining issues are
+fixed.
 
-The way it is used, a single SSC instance can only be used either in SPI 
-or I2C mode on a board,
-so I think it wouldn't make sense to create a MFD driver to manage it.
+> Peter
 
-Kr,
-Maxime
->
-> 	Arnd
->
-> _______________________________________________
-> Kernel mailing list
-> Kernel@stlinux.com
-> http://www.stlinux.com/mailman/listinfo/kernel
-
+/Jarkko
