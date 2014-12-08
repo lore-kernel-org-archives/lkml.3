@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468AbaLHOEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:04:37 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:54652 "EHLO
+	id S1755503AbaLHOEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:04:51 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:54655 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaLHOEe (ORCPT
+	with ESMTP id S1754888AbaLHOEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:04:34 -0500
+	Mon, 8 Dec 2014 09:04:35 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
         <linux@arm.linux.org.uk>
 CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v15 4/7] ARM: kprobes: disallow probing stack consuming instructions
-Date: Mon, 8 Dec 2014 22:00:35 +0800
-Message-ID: <1418047238-52624-5-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v15 0/7] ARM: kprobes: OPTPROBES and other improvements.
+Date: Mon, 8 Dec 2014 22:00:31 +0800
+Message-ID: <1418047238-52624-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1418047238-52624-1-git-send-email-wangnan0@huawei.com>
-References: <1418047238-52624-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
@@ -26,171 +24,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prohibits probing instructions for which the stack
-requirements are unable to be determined statically. Some test cases
-are found not work again after the modification, this patch also
-removes them.
+This is v15 patch series of kprobeopt related code. V14 uses
+stop_machine() incorrectly, this version fixes it.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Reviewed-by: Jon Medhurst <tixy@linaro.org>
+Previous discussion can be found from:
 
-v1 -> v2:
- - Use MAX_STACK_SIZE macro instead of hard coded stack size.
+https://lkml.org/lkml/2014/12/8/21
+https://lkml.org/lkml/2014/12/4/942
+https://lkml.org/lkml/2014/12/4/4
+https://lkml.org/lkml/2014/12/1/64
+https://lkml.org/lkml/2014/11/22/18
+https://lkml.org/lkml/2014/11/21/55
+https://lkml.org/lkml/2014/11/18/26
+https://lkml.org/lkml/2014/11/19/31
+https://lkml.org/lkml/2014/11/18/41
+https://lkml.org/lkml/2014/10/25/48
+https://lkml.org/lkml/2014/10/22/254
+https://lkml.org/lkml/2014/8/27/255
+https://lkml.org/lkml/2014/8/12/12
+https://lkml.org/lkml/2014/8/8/992
+https://lkml.org/lkml/2014/8/8/5
+https://lkml.org/lkml/2014/8/5/63
 
-v2 -> v3:
- - Commit message improvements.
+Jon Medhurst (1):
+  ARM: kprobes: Add test cases for stack consuming instructions
 
-v3 -> v4:
- - Commit message improvements.
+Masami Hiramatsu (1):
+  kprobes: Pass the original kprobe for preparing optimized kprobe
 
-v4 -> v5:
- - Move to arch/arm/probes.
----
- arch/arm/include/asm/kprobes.h     |  1 -
- arch/arm/include/asm/probes.h      | 12 ++++++++++++
- arch/arm/kernel/entry-armv.S       |  3 ++-
- arch/arm/probes/kprobes/core.c     |  9 +++++++++
- arch/arm/probes/kprobes/test-arm.c | 16 ++++++++++------
- 5 files changed, 33 insertions(+), 8 deletions(-)
+Wang Nan (5):
+  ARM: probes: move all probe code to dedicate directory
+  ARM: kprobes: introduces checker
+  ARM: kprobes: collects stack consumption for store instructions
+  ARM: kprobes: disallow probing stack consuming instructions
+  ARM: kprobes: enable OPTPROBES for ARM 32
 
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index 49fa0df..56f9ac6 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -22,7 +22,6 @@
- 
- #define __ARCH_WANT_KPROBES_INSN_SLOT
- #define MAX_INSN_SIZE			2
--#define MAX_STACK_SIZE			64	/* 32 would probably be OK */
- 
- #define flush_insn_slot(p)		do { } while (0)
- #define kretprobe_blacklist_size	0
-diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-index ccf9af3..f0a1ee8 100644
---- a/arch/arm/include/asm/probes.h
-+++ b/arch/arm/include/asm/probes.h
-@@ -19,6 +19,8 @@
- #ifndef _ASM_PROBES_H
- #define _ASM_PROBES_H
- 
-+#ifndef __ASSEMBLY__
-+
- typedef u32 probes_opcode_t;
- 
- struct arch_probes_insn;
-@@ -41,4 +43,14 @@ struct arch_probes_insn {
- 	int stack_space;
- };
- 
-+#endif /* __ASSEMBLY__ */
-+
-+/*
-+ * We assume one instruction can consume at most 64 bytes stack, which is
-+ * 'push {r0-r15}'. Instructions consume more or unknown stack space like
-+ * 'str r0, [sp, #-80]' and 'str r0, [sp, r1]' should be prohibit to probe.
-+ * Both kprobe and jprobe use this macro.
-+ */
-+#define MAX_STACK_SIZE			64
-+
- #endif
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 2f5555d..672b219 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -31,6 +31,7 @@
- 
- #include "entry-header.S"
- #include <asm/entry-macro-multi.S>
-+#include <asm/probes.h>
- 
- /*
-  * Interrupt handling.
-@@ -249,7 +250,7 @@ __und_svc:
- 	@ If a kprobe is about to simulate a "stmdb sp..." instruction,
- 	@ it obviously needs free stack space which then will belong to
- 	@ the saved context.
--	svc_entry 64
-+	svc_entry MAX_STACK_SIZE
- #else
- 	svc_entry
- #endif
-diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
-index 74f3dc3..3a58db4 100644
---- a/arch/arm/probes/kprobes/core.c
-+++ b/arch/arm/probes/kprobes/core.c
-@@ -115,6 +115,15 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 		break;
- 	}
- 
-+	/*
-+	 * Never instrument insn like 'str r0, [sp, +/-r1]'. Also, insn likes
-+	 * 'str r0, [sp, #-68]' should also be prohibited.
-+	 * See __und_svc.
-+	 */
-+	if ((p->ainsn.stack_space < 0) ||
-+			(p->ainsn.stack_space > MAX_STACK_SIZE))
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
-diff --git a/arch/arm/probes/kprobes/test-arm.c b/arch/arm/probes/kprobes/test-arm.c
-index d9a1255..fdeb300 100644
---- a/arch/arm/probes/kprobes/test-arm.c
-+++ b/arch/arm/probes/kprobes/test-arm.c
-@@ -476,7 +476,8 @@ void kprobe_arm_test_cases(void)
- 	TEST_GROUP("Extra load/store instructions")
- 
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
--	TEST_RPR(  "streqh	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")
-+	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
-+	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
- 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
- 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
-@@ -565,7 +566,8 @@ void kprobe_arm_test_cases(void)
- 
- #if __LINUX_ARM_ARCH__ >= 5
- 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
--	TEST_RPR(  "strccd	r",8, VAL2,", [r",13,0, ", r",12,48,"]")
-+	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
-+	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
- 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
- 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
-@@ -638,13 +640,15 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
- 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")	\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
-+	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
- 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
- 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 32,", lsr #2]")\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
-+	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
- 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
-@@ -668,12 +672,12 @@ void kprobe_arm_test_cases(void)
- 
- 	LOAD_STORE("")
- 	TEST_P(   "str	pc, [r",0,0,", #15*4]")
--	TEST_R(   "str	pc, [sp, r",2,15*4,"]")
-+	TEST_UNSUPPORTED(   "str	pc, [sp, r2]")
- 	TEST_BF(  "ldr	pc, [sp, #15*4]")
- 	TEST_BF_R("ldr	pc, [sp, r",2,15*4,"]")
- 
- 	TEST_P(   "str	sp, [r",0,0,", #13*4]")
--	TEST_R(   "str	sp, [sp, r",2,13*4,"]")
-+	TEST_UNSUPPORTED(   "str	sp, [sp, r2]")
- 	TEST_BF(  "ldr	sp, [sp, #13*4]")
- 	TEST_BF_R("ldr	sp, [sp, r",2,13*4,"]")
- 
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/{kernel => include/asm}/insn.h            |   0
+ arch/arm/include/asm/kprobes.h                     |  30 +-
+ arch/arm/{kernel => include/asm}/patch.h           |   0
+ arch/arm/include/asm/probes.h                      |  13 +
+ arch/arm/kernel/Makefile                           |  16 +-
+ arch/arm/kernel/entry-armv.S                       |   3 +-
+ arch/arm/kernel/ftrace.c                           |   3 +-
+ arch/arm/kernel/jump_label.c                       |   5 +-
+ arch/arm/kernel/patch.c                            |   3 +-
+ arch/arm/probes/Makefile                           |   7 +
+ .../{kernel/probes-arm.c => probes/decode-arm.c}   |  12 +-
+ .../{kernel/probes-arm.h => probes/decode-arm.h}   |   7 +-
+ .../probes-thumb.c => probes/decode-thumb.c}       |  16 +-
+ .../probes-thumb.h => probes/decode-thumb.h}       |  10 +-
+ arch/arm/{kernel/probes.c => probes/decode.c}      |  74 ++++-
+ arch/arm/{kernel/probes.h => probes/decode.h}      |  13 +-
+ arch/arm/probes/kprobes/Makefile                   |  12 +
+ .../kprobes-arm.c => probes/kprobes/actions-arm.c} |   9 +-
+ .../kprobes/actions-common.c}                      |   4 +-
+ .../kprobes/actions-thumb.c}                       |  10 +-
+ arch/arm/probes/kprobes/checkers-arm.c             |  99 +++++++
+ arch/arm/probes/kprobes/checkers-common.c          | 101 +++++++
+ arch/arm/probes/kprobes/checkers-thumb.c           | 110 +++++++
+ arch/arm/probes/kprobes/checkers.h                 |  54 ++++
+ .../{kernel/kprobes.c => probes/kprobes/core.c}    |  49 +++-
+ .../{kernel/kprobes.h => probes/kprobes/core.h}    |  12 +-
+ arch/arm/probes/kprobes/opt-arm.c                  | 317 +++++++++++++++++++++
+ .../kprobes/test-arm.c}                            |  31 +-
+ .../kprobes-test.c => probes/kprobes/test-core.c}  |   8 +-
+ .../kprobes-test.h => probes/kprobes/test-core.h}  |   2 +-
+ .../kprobes/test-thumb.c}                          |  16 +-
+ arch/arm/probes/uprobes/Makefile                   |   2 +
+ .../uprobes-arm.c => probes/uprobes/actions-arm.c} |   6 +-
+ .../{kernel/uprobes.c => probes/uprobes/core.c}    |   8 +-
+ .../{kernel/uprobes.h => probes/uprobes/core.h}    |   0
+ arch/x86/kernel/kprobes/opt.c                      |   3 +-
+ include/linux/kprobes.h                            |   3 +-
+ kernel/kprobes.c                                   |   4 +-
+ 40 files changed, 976 insertions(+), 98 deletions(-)
+ rename arch/arm/{kernel => include/asm}/insn.h (100%)
+ rename arch/arm/{kernel => include/asm}/patch.h (100%)
+ create mode 100644 arch/arm/probes/Makefile
+ rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
+ rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (93%)
+ rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (98%)
+ rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (90%)
+ rename arch/arm/{kernel/probes.c => probes/decode.c} (85%)
+ rename arch/arm/{kernel/probes.h => probes/decode.h} (97%)
+ create mode 100644 arch/arm/probes/kprobes/Makefile
+ rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (98%)
+ rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/kprobes/checkers-arm.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-common.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-thumb.c
+ create mode 100644 arch/arm/probes/kprobes/checkers.h
+ rename arch/arm/{kernel/kprobes.c => probes/kprobes/core.c} (94%)
+ rename arch/arm/{kernel/kprobes.h => probes/kprobes/core.h} (79%)
+ create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+ rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (97%)
+ rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
+ rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (99%)
+ rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/uprobes/Makefile
+ rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (98%)
+ rename arch/arm/{kernel/uprobes.c => probes/uprobes/core.c} (97%)
+ rename arch/arm/{kernel/uprobes.h => probes/uprobes/core.h} (100%)
+
 -- 
 1.8.4
 
