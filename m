@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaLHQSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:18:25 -0500
-Received: from mout.gmx.net ([212.227.15.19]:62283 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756031AbaLHQSX convert rfc822-to-8bit (ORCPT
+	id S1756069AbaLHQSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:18:34 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:60602 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031AbaLHQSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:18:23 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20141208135615.GC30303@intel.com>
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417559480-13757-7-git-send-email-jarkko.sakkinen@linux.intel.com> <547E7553.2050608@linux.vnet.ibm.com> <201412050013.19082.PeterHuewe@gmx.de> <20141208135615.GC30303@intel.com>
+	Mon, 8 Dec 2014 11:18:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [tpmdd-devel] [PATCH v8 6/8] tpm: TPM 2.0 baseline support
-From: peterhuewe@gmx.de
-Date: Mon, 08 Dec 2014 17:18:06 +0100
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
-        josh.triplett@intel.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Will Arthur <will.c.arthur@intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Message-ID: <279e9a5e-05a9-4826-ada1-899fdcd11cea@email.android.com>
-X-Provags-ID: V03:K0:cAmhlthkXTIEpZstGGvI0Cgrbc3eqBGQgVIo6FD4GrmTP3OPPpx
- agc5E5zgkAVV2S+G2TKP8D1ln3SXVIyZiOvXBW5msZ+J6Zi2tMRrBswV+RC/g9iuV+Fbi30
- XZq7Nc7UkHugAE5tTYGd/scazJOoDwnIBC5aflF7m15+jjGtvBxAmt8pt3g7RZ/jJlWksqs
- kaOdqLHWxnumTRK0MPuBQ==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141208141750.GR20350@phenom.ffwll.local>
+References: <1417976957-15049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20141208084228.GI20350@phenom.ffwll.local>
+	<CA+gsUGSM43z6AXi0-evJni_fDX_=rjj6gBOCZmhLrqjyUhZeFg@mail.gmail.com>
+	<20141208141750.GR20350@phenom.ffwll.local>
+Date: Mon, 8 Dec 2014 14:18:30 -0200
+Message-ID: <CA+gsUGRHkU4zdZSGer=Qr5LXMs7QeaFrhU2-1O5TiO76koO0cw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] gpu: drm: i915: intel_display.c: Remove
+ unused function
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Paulo Zanoni <przanoni@gmail.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Damien Lespiau <damien.lespiau@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi 
-
-On 8. Dezember 2014 14:56:15 MEZ, Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com> wrote:
->On Fri, Dec 05, 2014 at 12:13:18AM +0100, Peter Hüwe wrote:
->> Am Mittwoch, 3. Dezember 2014, 03:28:35 schrieb Stefan Berger:
->> > On 12/02/2014 05:31 PM, Jarkko Sakkinen wrote:
->> > > +
->> > > +/**
->> > > + * tpm2_startup() - send startup command to the TPM chip
->> > > + * @chip:		TPM chip to use.
->> > > + * @startup_type	startup type. The value is either
->> > > + *			TPM_SU_CLEAR or TPM_SU_STATE.
->> > > + *
->> > > + * 0 is returned when the operation is successful. If a negative
->number
->> > > is + * returned it remarks a POSIX error code. If a positive
->number is
->> > > returned + * it remarks a TPM error.
->> > > + */
->> > > +int tpm2_startup(struct tpm_chip *chip, __be16 startup_type)
->> > > +{
->> > > +	struct tpm2_cmd cmd;
->> > > +
->> > > +	cmd.header.in = tpm2_startup_header;
->> > > +
->> > > +	cmd.params.startup_in.startup_type = startup_type;
->> > > +	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
->> > > +				"attempting to start the TPM");
->> > > +}
->> > 
->> > I suppose you need to send this command because your firmware does
->not
->> > do it ?Following TPM1.2 I guess the BIOS / UEFI should send this
->instead
->> > and sending it later would actually be wrong. Hm, I don't find from
->> > where you are calling this... do you need it ? Can you remove it?
->> > 
->> >     Stefan
->> 
->> Hi,
->> 
->> I think it would be good to send a TPM2_Startup if the TPM sends a 
->> TPM_RC_INITIALIZE (0x100) - so it becomes atleast usable.
->> Of course the BIOS/UEFI/Firmware should send the TPM2_Startup, but if
->there is 
->> no such thing, I would prefer Linux to do it, rather than nobody.
->> (analog: This was done for embedded platforms with TPM1.2).
->> 
->> In the current situation (v9) it is not possible to use the TPM2 on a
->machine 
->> without bios integration. :( (so I cannot test here :( )
+2014-12-08 12:17 GMT-02:00 Daniel Vetter <daniel@ffwll.ch>:
+> On Mon, Dec 08, 2014 at 10:32:49AM -0200, Paulo Zanoni wrote:
+>> 2014-12-08 6:42 GMT-02:00 Daniel Vetter <daniel@ffwll.ch>:
+>> > On Sun, Dec 07, 2014 at 07:29:17PM +0100, Rickard Strandqvist wrote:
+>> >> Remove the function intel_output_name() that is not used anywhere.
+>> >>
+>> >> This was partially found by using a static code analysis program called cppcheck.
+>> >>
+>> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> >
+>> > Queued for 3.20, thanks for the patch.
+>>
+>> This function was created for the "DDI personality" patches. We merged
+>> the function but never ended up merging the patch containing the
+>> callers...
 >
->Should the place be if sending self-test fails? I think the type should
->be TPM2_SU_CLEAR. Do you agree?
->
+> Oops, I've thought this is a renmant from the very first days of kms that
+> somehow stuck around. That's what I get for once not using git blame
+> excessively :( Want me to drop the patch again?
 
-Yes. If the first command returns "invalid post init" or whatever it is called in tpm20 speech the driver should send the startup clear.
+I am not opposed to the removal of an unused function: I understand
+the value in the removal, and I also understand the reasons to keep
+it. I was just pointing the reason of why we got here: we merged patch
+1/2 but ended up never merging patch 2/2 because we always spot some
+additional work required and it's a very low priority bug. If this
+function is removed, the next person to try to ressurrect the ddi
+personality patch can quickly resurrect it or even write a new
+implementation from scratch. It is your decision :)
 
 
-Not sure if we should send a startup state in the resume case (like on tpm1.2)
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 
-And also it might make sense to send a tpm_shutdown? (If we aren't already) I think even on a machine with bios integration we have to send this?
 
 
->All other issues are now fixed except this and STS3 bit issue that I 
->look for next. In my github there is tpm2-v10 branch now with fixes
->on top. I squash the fixes right after these two remaining issues are
->fixed.
->
->> Peter
->
->/Jarkko
-
-Peter
 -- 
-Sent from my mobile.
+Paulo Zanoni
