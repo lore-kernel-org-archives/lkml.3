@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771AbaLHWKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 17:10:52 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:34291 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaLHWKt (ORCPT
+	id S1755836AbaLHWK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 17:10:57 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:49321 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150AbaLHWKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 17:10:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
-	<87h9xez20g.fsf@x220.int.ebiederm.org>
-	<CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
-	<87mw75ygwp.fsf@x220.int.ebiederm.org>
-	<CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
-	<87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
-	<874mtdyexp.fsf_-_@x220.int.ebiederm.org>
-	<CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
-	<87a935u3nj.fsf@x220.int.ebiederm.org>
-	<CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
-	<87388xodlj.fsf@x220.int.ebiederm.org>
-	<CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
-	<87h9x5re41.fsf_-_@x220.int.ebiederm.org>
-Date: Mon, 08 Dec 2014 16:08:32 -0600
-In-Reply-To: <87h9x5re41.fsf_-_@x220.int.ebiederm.org> (Eric W. Biederman's
-	message of "Mon, 08 Dec 2014 16:06:06 -0600")
-Message-ID: <87y4qhpzfj.fsf_-_@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 8 Dec 2014 17:10:53 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: nokia_h4p on 3.16+
+Date: Mon, 8 Dec 2014 23:10:50 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: sre@debian.org, sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, balbi@ti.com,
+        Greg KH <greg@kroah.com>, marcel@holtmann.org
+References: <20141208204735.GA21599@amd>
+In-Reply-To: <20141208204735.GA21599@amd>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18HFlsM+cJJhJfs3tH6m3286gPUOP4k4JA=
-X-SA-Exim-Connect-IP: 67.3.210.55
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 796 ms - load_scoreonly_sql: 0.06 (0.0%),
-	signal_user_changed: 6 (0.8%), b_tie_ro: 4.5 (0.6%), parse: 1.40 (0.2%),
-	extract_message_metadata: 17 (2.2%), get_uri_detail_list: 1.20 (0.2%),
-	tests_pri_-1000: 10 (1.2%), tests_pri_-950: 1.79 (0.2%), tests_pri_-900: 1.44
-	(0.2%), tests_pri_-400: 38 (4.7%), check_bayes: 36 (4.6%), b_tokenize: 10
-	(1.3%), b_tok_get_all: 7 (0.9%), b_comp_prob: 2.6 (0.3%), b_tok_touch_all: 12
-	(1.5%), b_finish: 2.1 (0.3%), tests_pri_0: 711 (89.3%), tests_pri_500: 5
-	(0.7%), rewrite_mail: 0.00 (0.0%)
-Subject: [CFT][PATCH 4/7] userns: Check euid no fsuid when establishing an unprivileged uid mapping
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed;
+  boundary="nextPart2059630.uyX7N60L8D";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412082310.50742@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--nextPart2059630.uyX7N60L8D
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-setresuid allows the euid to be set to any of uid, euid, suid, and
-fsuid.  Therefor it is safe to allow an unprivileged user to map their
-euid and use CAP_SETUID privileged with exactly that uid, as no new
-credentials can be obtained.
+On Monday 08 December 2014 21:47:35 Pavel Machek wrote:
+> Hi!
+>=20
+> It seems commit:
+>=20
+> commit bd5dc09f557547399cd44d0a1224df7ff64e4a6b
+> Author: Felipe Balbi <balbi@ti.com>
+> Date:   Wed Apr 23 09:58:28 2014 -0500
+>=20
+>     serial: fix UART_IIR_ID
+>=20
+>     UART IRQ Identification bitfield is 3
+>         bits long (bits 3:1) but current mask only
+> 	    masks 2 bits. Fix it.
+>=20
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> breaks bluetooth driver on n900. (drivers/staging/nokia_h4p).
+>=20
+> Pali, you may want to revert the patch.
+>=20
+> That is good news, because reverting it on 3.18-rcX brings h4p
+> back, too (and as machine boots on nfsroot, debugging should
+> be possible.)
+>=20
+> Best regards,
+> 									Pavel
 
-I can not find a combination of existing system calls that allows
-setting uid, euid, suid, and fsuid from the fsuid making the previous
-use of fsuid for allowing unprivileged mappings a bug.
+Pavel, maybe there is some unhandled iir value in function
+static irqreturn_t hci_h4p_interrupt(int irq, void *data)
+which cause that driver is not working?
 
-This is part of a fix for CVE-2014-8989.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Cc: stable@vger.kernel.org
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- kernel/user_namespace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--nextPart2059630.uyX7N60L8D
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 8e7c87162171..da1eeb927b21 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -819,7 +819,7 @@ static bool new_idmap_permitted(const struct file *file,
- 		u32 id = new_map->extent[0].lower_first;
- 		if (cap_setid == CAP_SETUID) {
- 			kuid_t uid = make_kuid(ns->parent, id);
--			if (uid_eq(uid, file->f_cred->fsuid))
-+			if (uid_eq(uid, file->f_cred->euid))
- 				return true;
- 		}
- 	}
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlSGIeoACgkQi/DJPQPkQ1KpqgCdH1h+RIcLY3baLr7N+8fJNycK
+eacAnAs+bBPFUeizvbnw2XGfTuHVIc+a
+=/GXN
+-----END PGP SIGNATURE-----
+
+--nextPart2059630.uyX7N60L8D--
