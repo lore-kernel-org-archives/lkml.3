@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647AbaLHPf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 10:35:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53060 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaLHPf4 convert rfc822-to-8bit (ORCPT
+	id S1755826AbaLHPhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 10:37:08 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:45346 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755600AbaLHPhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 10:35:56 -0500
+	Mon, 8 Dec 2014 10:37:04 -0500
+Date: Mon, 8 Dec 2014 16:37:01 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, gregkh@linuxfoundation.org,
+        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-gpio@vger.kernel.org, Rajaram Regupathy <rera@cypress.com>
+Subject: Re: [PATCH v4 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
+ Bridge controller
+Message-ID: <20141208153701.GD14346@localhost>
+References: <1417241944-17799-1-git-send-email-muth@cypress.com>
 MIME-Version: 1.0
-In-Reply-To: <201412081622.25541@pali>
-References: <201411271506.20457@pali>
-	<201412061402.21514@pali>
-	<CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
-	<201412081622.25541@pali>
-Date: Mon, 8 Dec 2014 23:35:53 +0800
-Message-ID: <CACVXFVMUubNWKrZeRSNF5+1hdrrMJ26FGFzm0g8DWbmKrsboWw@mail.gmail.com>
-Subject: Re: wl1251: NVS firmware data
-From: Ming Lei <ming.lei@canonical.com>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417241944-17799-1-git-send-email-muth@cypress.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 11:22 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Monday 08 December 2014 16:18:18 Ming Lei wrote:
->> On Sat, Dec 6, 2014 at 9:02 PM, Pali Rohár
-> <pali.rohar@gmail.com> wrote:
->> > On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
->> >  /**
->> >
->> > + * request_firmware_prefer_user: - prefer usermode helper
->> > for loading firmware + * @firmware_p: pointer to firmware
->> > image
->> > + * @name: name of firmware file
->> > + * @device: device for which firmware is being loaded
->> > + *
->> > + * This function works pretty much like request_firmware(),
->> > but it prefer + * usermode helper. If usermode helper fails
->> > then it fallback to direct access. + * Usefull for dynamic
->> > or model specific firmware data. + **/
->> > +int request_firmware_prefer_user(const struct firmware
->> > **firmware_p, +                           const char *name,
->> > struct device *device) +{
->> > +       int ret;
->> > +       __module_get(THIS_MODULE);
->> > +       ret = _request_firmware(firmware_p, name, device,
->> > +                               FW_OPT_UEVENT |
->> > FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
->> > +       return ret;
->> > +}
->> > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
->>
->> I'd like to introduce request_firmware_user() which only
->> requests firmware from user space, and this way is simpler
->> and more flexible since we have request_firmware_direct()
->> already.
->>
->> Thanks,
->> Ming Lei
->
-> Ming, for wl1251 NVS data we need to load use usermode helper and
-> fallback to direct load. So I think it is better to handle this
-> request in firmware code and not in driver.
+On Sat, Nov 29, 2014 at 11:49:04AM +0530, Muthu Mani wrote:
+> Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
+> CYUSBS234 USB-Serial Bridge controller.
+> 
+> Details about the device can be found at:
+> http://www.cypress.com/?rID=84126
+> 
+> Signed-off-by: Muthu Mani <muth@cypress.com>
+> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+> ---
 
-Please do that in driver and don't mess firmware loader.
+This patch as well as the other two patches in the series is white-space
+damaged. Please always make sure to run your patches through
+checkpatch.pl before submission (and/or fix your mailer).
 
-With introducing request_firmware_user(), it is even possible to
-clean up firmware loader further.
+Also use git-send-email when submitting your series so that the
+individual patches get threaded properly.
+
+And always increase (or add a "resend" prefix) when resending. I got two
+v4 series in my inbox. No idea what's the difference, if any.
 
 Thanks,
-Ming Lei
+Johan
