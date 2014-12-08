@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894AbaLHJvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:51:19 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:6422 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754055AbaLHJvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:51:18 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Hillf Danton'" <hillf.zj@alibaba-inc.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 8 Dec 2014 17:51:15 +0800
-Subject: RE: [PATCH] mm:add VM_BUG_ON() for page_mapcount()
-Thread-Topic: [PATCH] mm:add VM_BUG_ON() for page_mapcount()
-Thread-Index: AdASyaRYNK5Lt1HlQ1KFwSk6V3BFwAAAs8Hw
-Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313F8@CNBJMBX05.corpusers.net>
-References: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
-In-Reply-To: <010b01d012ca$05244060$0f6cc120$@alibaba-inc.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754900AbaLHJwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:52:07 -0500
+Received: from sauhun.de ([89.238.76.85]:39663 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752765AbaLHJwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:52:05 -0500
+Date: Mon, 8 Dec 2014 10:51:39 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Addy Ke <addy.ke@rock-chips.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: designware: Fix falling time bindings doc
+Message-ID: <20141208095139.GA1088@katana>
+References: <1417805379-8999-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <1417805379-8999-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB89pPsL024190
 
-> -----Original Message-----
-> From: Hillf Danton [mailto:hillf.zj@alibaba-inc.com]
-> Sent: Monday, December 08, 2014 5:33 PM
-> To: Wang, Yalin
-> Cc: linux-kernel; linux-mm@kvack.org; linux-arm-kernel@lists.infradead.org;
-> Andrew Morton; Hillf Danton
-> Subject: Re: [PATCH] mm:add VM_BUG_ON() for page_mapcount()
-> 
-> >
-> > This patch add VM_BUG_ON() for slab page, because _mapcount is an
-> > union with slab struct in struct page, avoid access _mapcount if this
-> > page is a slab page.
-> > Also remove the unneeded bracket.
-> >
-> > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> > ---
-> >  include/linux/mm.h | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h index
-> > 11b65cf..34124c4 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -373,7 +373,8 @@ static inline void reset_page_mapcount(struct page
-> > *page)
-> >
-> >  static inline int page_mapcount(struct page *page)  {
-> > -	return atomic_read(&(page)->_mapcount) + 1;
-> > +	VM_BUG_ON(PageSlab(page));
-> 
-> s/ VM_BUG_ON/ VM_BUG_ON_PAGE/ ?
-Yes, I will send again .
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Dec 05, 2014 at 10:49:39AM -0800, Doug Anderson wrote:
+> In (6468276 i2c: designware: make SCL and SDA falling time
+> configurable) new device tree properties were added for setting the
+> falling time of SDA and SCL.  The device tree bindings doc had a typo
+> in it: it forgot the "-ns" suffix for both properies in the prose of
+> the bindings.
+>=20
+> I assume this is a typo because:
+> * The source code includes the "-ns"
+> * The example in the bindings includes the "-ns".
+>=20
+> Fix the typo.
+>=20
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Fixes: 6468276b2206 ("i2c: designware: make SCL and SDA falling time conf=
+igurable")
+
+Applied to for-next and added stable, thanks!
+
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUhXSrAAoJEBQN5MwUoCm20HQP/jcWHm32P7hLUIadcCH0pSaO
+HrVbgasKdBAYsyQW55xKV2xQc/01keMXWaNZWti/uBRdoTBVjvkuSyykN+gQBGHu
+5HOFE1QvA3h72gF5pMSFiG5YxCd5S4gL+W7cej1w/FD2T3D9AJjEl6uNHuwwJxgC
+SGyBx2rohKF8InMHOn6RVCXRjr5IjTTpjhZpdkFIZfwKvJtOAFnuYn9bfoHcu5QT
+lM2jW56aaW9qfPp8+59/Ln5VcwaR29/chZ/3e0uRKY1m5QaST2fUaRC5zo0+Ijh1
+WvVkpJS8y41E/Hy9/qXqJFfdioZP0sYFG6UTlKIpG4KQidBUjixvH3xkjW0rskWo
+eraLquoZfUc7gBlkRvW0gMRULdlEXqM/7BfomIT+eXJMTbIJuxywZB1QhUlYz756
+BaapgNJ+VFSK4+eednS/9O+EqI7XqmjyFzQhhqNasSBOk2NEaGP0hPvW8vaMAfTR
+ZmlWpHpSIUgAk8A2uOeniNWV/x7CQjj7+AgByvOrOkNTe22z0XJFT/B3H3Nu9bj4
+mWRT4gODbUigZ6fuwOOAL2Kka9PamNLd1Vmbud1DRBdREpuvuljnoLqr1DxO86gZ
+4J6/Z2P73ZDpMhk2a2mJ46PsZo0J6XKepDhRKkOxI64fEIXkk4PUqvrhK9x1U8uY
+Ss4MbKo6QrnWDyv1s1A9
+=SrVj
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
