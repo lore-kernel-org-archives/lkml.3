@@ -1,91 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845AbaLHQA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 11:00:26 -0500
-Received: from mail-by2on0129.outbound.protection.outlook.com ([207.46.100.129]:3024
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750908AbaLHQAX convert rfc822-to-8bit (ORCPT
+	id S1755920AbaLHQBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 11:01:06 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:39529 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202AbaLHQBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 11:00:23 -0500
-From: Muthu Mani <muth@cypress.com>
-To: Johan Hovold <johan@kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>
-Subject: RE: [PATCH v4 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Thread-Topic: [PATCH v4 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Thread-Index: AQHQC5xRLcajWp5gcU6XRxdPQz74M5yF4mWAgAAC7UA=
-Date: Mon, 8 Dec 2014 16:00:13 +0000
-Message-ID: <BN1PR06MB069088C07483AEA527DD338CC640@BN1PR06MB069.namprd06.prod.outlook.com>
-References: <1417241944-17799-1-git-send-email-muth@cypress.com>
- <20141208153701.GD14346@localhost>
-In-Reply-To: <20141208153701.GD14346@localhost>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [121.243.89.10]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR0601MB724;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR0601MB724;
-x-forefront-prvs: 041963B986
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(164054003)(43544003)(24454002)(51164003)(199003)(51704005)(20776003)(54606007)(99396003)(66066001)(33656002)(101416001)(31966008)(54206007)(19580405001)(19580395003)(86362001)(76176999)(87936001)(54356999)(62966003)(77156002)(120916001)(50986999)(92566001)(2656002)(110136001)(105586002)(106116001)(106356001)(99286002)(107046002)(122556002)(40100003)(68736005)(97736003)(21056001)(74316001)(46102003)(76576001)(102836002)(4396001)(15975445007);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR0601MB724;H:BN1PR06MB069.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Dec 2014 11:01:03 -0500
+Message-ID: <5485CB37.7050609@linaro.org>
+Date: Mon, 08 Dec 2014 16:00:55 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 3.18-rc4 v12 0/5] arm: Implement arch_trigger_all_cpu_backtrace
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1417191374-26719-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1417191374-26719-1-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, Nov 29, 2014 at 11:49:04AM +0530, Muthu Mani wrote:
-> > Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
-> > CYUSBS234 USB-Serial Bridge controller.
-> >
-> > Details about the device can be found at:
-> > http://www.cypress.com/?rID=84126
-> >
-> > Signed-off-by: Muthu Mani <muth@cypress.com>
-> > Signed-off-by: Rajaram Regupathy <rera@cypress.com>
-> > ---
->
-> This patch as well as the other two patches in the series is white-space
-> damaged. Please always make sure to run your patches through
-> checkpatch.pl before submission (and/or fix your mailer).
->
-> Also use git-send-email when submitting your series so that the individual
-> patches get threaded properly.
+On 28/11/14 16:16, Daniel Thompson wrote:
+> Hi Thomas, Hi Jason: Patches 1 to 3 are for you.
+> 
+> This patchset modifies the GIC driver to allow it, on supported
+> platforms, to route IPI interrupts to FIQ and uses this feature to
+> implement arch_trigger_all_cpu_backtrace for arm.
 
-Sorry about the inconvenience.
-I ran checkpatch.pl for all the patches before I submitted them using git-send-email.
-checkpatch doesn't show any error.
+Are the irq parts of this patchset looking OK now?
 
-I used the following command to submit patch. Please let me know if anything wrong.
-$ git format-patch -s -n -v4 master..Driver_v4
-$ git send-email --smtp-encryption=tls --smtp-server=<mail-server> --smtp-user=muth@cypress.com --smtp-server-port=<port#> --to="Samuel Ortiz <sameo@linux.intel.com>" --to="Lee Jones <lee.jones@linaro.org>" --to="Wolfram Sang <wsa@the-dreams.de>" --to="Linus Walleij <linus.walleij@linaro.org>" --to="Alexandre Courbot <gnurou@gmail.com>" --to="gregkh@linuxfoundation.org"  --to="Johan Hovold <johan@kernel.org>" --cc="linux-usb@vger.kernel.org"  --cc="linux-kernel@vger.kernel.org" --cc="linux-i2c@vger.kernel.org" --cc="linux-gpio@vger.kernel.org" v4-0001-mfd-add-support-for-Cypress-CYUSBS234-USB-Serial-.patch
 
->
-> And always increase (or add a "resend" prefix) when resending. I got two
-> v4 series in my inbox. No idea what's the difference, if any.
+Daniel.
 
-In the second v4 patch, I added Greg KH and usb group. There is no code changes.
-I will take care when I resend again.
 
-Thanks,
-Muthu
+> 
+> On platforms not capable of supporting FIQ the signal to generate a
+> backtrace we fall back to using IRQ for propagation instead (relying on
+> a timeout to avoid wedging the CPU requesting the backtrace if other
+> CPUs are not responsive).
+> 
+> It has been tested on two systems capable of supporting grouping
+> (Freescale i.MX6 and STiH416) and two that do not (vexpress-a9 and
+> Qualcomm Snapdragon 600).
+> 
+> v12:
+> 
+> * Squash first two patches into a single one and re-describe
+>   (Thomas Gleixner).
+> 
+> * Improve description of "irqchip: gic: Make gic_raise_softirq FIQ-safe"
+>   (Thomas Gleixner).
+> 
+> v11:
+> 
+> * Optimized gic_raise_softirq() by replacing a register read with
+>   a memory read (Jason Cooper).
+> 
+> v10:
+> 
+> * Add a further patch to optimize away some of the locking on systems
+>   where CONFIG_BL_SWITCHER is not set (Marc Zyngier). Compiles OK with
+>   exynos_defconfig (which is the only defconfig to set this option).
+> 
+> * Whitespace fixes in patch 4. That patch previously used spaces for
+>   alignment of new constants but the rest of the file used tabs.
+> 
+> v9:
+> 
+> * Improved documentation and structure of initial patch (now initial
+>   two patches) to make gic_raise_softirq() safe to call from FIQ
+>   (Thomas Gleixner).
+> 
+> * Avoid masking interrupts during gic_raise_softirq(). The use of the
+>   read lock makes this redundant (because we can safely re-enter the
+>   function).
+> 
+> v8:
+> 
+> * Fixed build on arm64 causes by a spurious include file in irq-gic.c.
+> 
+> v7-2 (accidentally released twice with same number):
+> 
+> * Fixed boot regression on vexpress-a9 (reported by Russell King).
+> 
+> * Rebased on v3.18-rc3; removed one patch from set that is already
+>   included in mainline.
+> 
+> * Dropped arm64/fiq.h patch from the set (still useful but not related
+>   to issuing backtraces).
+> 
+> v7:
+> 
+> * Re-arranged code within the patch series to fix a regression
+>   introduced midway through the series and corrected by a later patch
+>   (testing by Olof's autobuilder). Tested offending patch in isolation
+>   using defconfig identified by the autobuilder.
+> 
+> v6:
+> 
+> * Renamed svc_entry's call_trace argument to just trace (example code
+>   from Russell King).
+> 
+> * Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
+>   King).
+> 
+> * Modified usr_entry to optional avoid calling into the trace code and
+>   used this in FIQ entry from usr path. Modified corresponding exit code
+>   to avoid calling into trace code and the scheduler (example code from
+>   Russell King).
+> 
+> * Ensured the default FIQ register state is restored when the default
+>   FIQ handler is reinstalled (example code from Russell King).
+> 
+> * Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
+>   a default FIQ handler.
+> 
+> * Re-instated fiq_safe_migration_lock and associated logic in
+>   gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
+>   in the console unlock logic.
+> 
+> v5:
+> 
+> * Rebased on 3.17-rc4.
+> 
+> * Removed a spurious line from the final "glue it together" patch
+>   that broke the build.
+> 
+> v4:
+> 
+> * Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
+>   Pitre).
+> 
+> * Really fix bad pt_regs pointer generation in __fiq_abt.
+> 
+> * Remove fiq_safe_migration_lock and associated logic in
+>   gic_raise_softirq() (review of Russell King)
+> 
+> * Restructured to introduce the default FIQ handler first, before the
+>   new features (review of Russell King).
+> 
+> v3:
+> 
+> * Removed redundant header guards from arch/arm64/include/asm/fiq.h
+>   (review of Catalin Marinas).
+> 
+> * Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
+>   Pitre).
+> 
+> v2:
+> 
+> * Restructured to sit nicely on a similar FYI patchset from Russell
+>   King. It now effectively replaces the work in progress final patch
+>   with something much more complete.
+> 
+> * Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+>   (review of Nicolas Pitre)
+> 
+> * Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+>   being acknowledged by the IRQ handler does still exist but should be
+>   harmless because the IRQ handler will still wind up calling
+>   ipi_cpu_backtrace().
+> 
+> * Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+>   becomes a platform feature (although the use of non-maskable
+>   interrupts to implement it is best effort rather than guaranteed).
+> 
+> * Better comments highlighting usage of RAZ/WI registers (and parts of
+>   registers) in the GIC code.
+> 
+> Changes *before* v1:
+> 
+> * This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+>   arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+>   the new structure. For historic details see:
+>         https://lkml.org/lkml/2014/9/2/227
+> 
+> * Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+>   In fixing this we also remove the useless indirection previously
+>   found in the fiq_handler macro.
+> 
+> * Make default fiq handler "always on" by migrating from fiq.c to
+>   traps.c and replace do_unexp_fiq with the new handler (review
+>   of Russell King).
+> 
+> * Add arm64 version of fiq.h (review of Russell King)
+> 
+> * Removed conditional branching and code from irq-gic.c, this is
+>   replaced by much simpler code that relies on the GIC specification's
+>   heavy use of read-as-zero/write-ignored (review of Russell King)
+> 
+> 
+> Daniel Thompson (5):
+>   irqchip: gic: Optimize locking in gic_raise_softirq
+>   irqchip: gic: Make gic_raise_softirq FIQ-safe
+>   irqchip: gic: Introduce plumbing for IPI FIQ
+>   ARM: add basic support for on-demand backtrace of other CPUs
+>   arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+> 
+>  arch/arm/include/asm/irq.h      |   5 +
+>  arch/arm/include/asm/smp.h      |   3 +
+>  arch/arm/kernel/smp.c           |  64 +++++++++++++
+>  arch/arm/kernel/traps.c         |   8 +-
+>  drivers/irqchip/irq-gic.c       | 203 +++++++++++++++++++++++++++++++++++++---
+>  include/linux/irqchip/arm-gic.h |   8 ++
+>  6 files changed, 275 insertions(+), 16 deletions(-)
+> 
+> --
+> 1.9.3
+> 
 
->
-> Thanks,
-> Johan
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
