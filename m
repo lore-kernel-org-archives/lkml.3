@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaLHGtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 01:49:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34614 "EHLO
+	id S1754184AbaLHGtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 01:49:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34609 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047AbaLHGtS (ORCPT
+	with ESMTP id S1751969AbaLHGtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 01:49:18 -0500
-Date: Sun, 7 Dec 2014 22:48:59 -0800
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-23f0981bbd89fcc1496d0490ec39ca7c91599e32@git.kernel.org>
-Cc: hpa@zytor.com, namhyung@kernel.org, jolsa@redhat.com, acme@redhat.com,
-        tglx@linutronix.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        mingo@kernel.org
-Reply-To: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@redhat.com,
-        tglx@linutronix.de, mingo@kernel.org, jolsa@redhat.com, hpa@zytor.com,
-        namhyung@kernel.org
-In-Reply-To: <1415844328-4884-7-git-send-email-andi@firstfloor.org>
-References: <1415844328-4884-7-git-send-email-andi@firstfloor.org>
+	Mon, 8 Dec 2014 01:49:16 -0500
+Date: Sun, 7 Dec 2014 22:48:29 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-4087d11cd9455cd28da0795504451d1188633a0d@git.kernel.org>
+Cc: paulus@samba.org, dsahern@gmail.com, tglx@linutronix.de,
+        fweisbec@gmail.com, acme@redhat.com, namhyung.kim@lge.com,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, namhyung@kernel.org,
+        hpa@zytor.com, jolsa@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl
+Reply-To: jolsa@redhat.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, hpa@zytor.com, andi@firstfloor.org,
+        tglx@linutronix.de, dsahern@gmail.com, paulus@samba.org,
+        acme@redhat.com, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung.kim@lge.com
+In-Reply-To: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
+References: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf callchain:
-  Enable printing the srcline in the history
-Git-Commit-ID: 23f0981bbd89fcc1496d0490ec39ca7c91599e32
+Subject: [tip:perf/core] perf hists browser:
+  Print overhead percent value for first-level callchain
+Git-Commit-ID: 4087d11cd9455cd28da0795504451d1188633a0d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,98 +38,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  23f0981bbd89fcc1496d0490ec39ca7c91599e32
-Gitweb:     http://git.kernel.org/tip/23f0981bbd89fcc1496d0490ec39ca7c91599e32
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 12 Nov 2014 18:05:24 -0800
+Commit-ID:  4087d11cd9455cd28da0795504451d1188633a0d
+Gitweb:     http://git.kernel.org/tip/4087d11cd9455cd28da0795504451d1188633a0d
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 24 Nov 2014 17:13:26 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Nov 2014 18:03:46 -0300
+CommitDate: Mon, 24 Nov 2014 11:28:48 -0300
 
-perf callchain: Enable printing the srcline in the history
+perf hists browser: Print overhead percent value for first-level callchain
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+Currently perf report on TUI doesn't print percent for first-level
+callchain entry.
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
+I guess it (wrongly) assumes that there's only a single callchain in the
+first level.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
+This patch fixes it by handling the first level callchains same as
+others - if it's not 100% it should print the percent value.
 
-Contains fixes from Namhyung Kim
+Also it'll affect other callchains in the other way around - if it's
+100% (single callchain) it should not print the percentage.
 
-v2: Refactor code into common function
-v3: Fix GTK build
-v4: Rebase
+Before:
+  -   30.95%     6.84%  abc2     abc2              [.] a
+     - a
+        - 70.00% c
+           - 100.00% apic_timer_interrupt
+                smp_apic_timer_interrupt
+                local_apic_timer_interrupt
+                hrtimer_interrupt
+                ...
+        + 30.00% b
+     + __libc_start_main
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+After:
+  -   30.95%     6.84%  abc2     abc2              [.] a
+     - 77.90% a
+        - 70.00% c
+           - apic_timer_interrupt
+             smp_apic_timer_interrupt
+             local_apic_timer_interrupt
+             hrtimer_interrupt
+             ...
+        + 30.00% b
+     + 22.10% __libc_start_main
+
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1415844328-4884-7-git-send-email-andi@firstfloor.org
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1416816807-6495-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c | 11 ++++++++++-
- tools/perf/util/callchain.h |  1 +
- tools/perf/util/srcline.c   |  6 ++++--
- 3 files changed, 15 insertions(+), 3 deletions(-)
+ tools/perf/ui/browsers/hists.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 38da69c..b6624ae 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -815,7 +815,16 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 	int printed;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 12c17c5..8d22905 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -542,8 +542,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 	struct rb_node *node;
+ 	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
+ 	u64 new_total;
++	bool need_percent;
  
- 	if (cl->ms.sym) {
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+		if (callchain_param.key == CCKEY_ADDRESS &&
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s",
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
- 	} else
- 		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+ 	node = rb_first(root);
++	need_percent = !!rb_next(node);
++
+ 	while (node) {
+ 		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
+ 		struct rb_node *next = rb_next(node);
+@@ -560,7 +563,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
  
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3e1ed15..3f15847 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -70,6 +70,7 @@ extern struct callchain_param callchain_param;
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char		       *srcline;
- 	struct list_head	list;
- };
+ 			if (first)
+ 				first = false;
+-			else if (level > 1)
++			else if (need_percent)
+ 				extra_offset = LEVEL_OFFSET_STEP;
  
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 77c1806..ac877f9 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
+ 			folded_sign = callchain_list__folded(chain);
+@@ -573,7 +576,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 			str = callchain_list__sym_name(chain, bf, sizeof(bf),
+ 						       browser->show_dso);
  
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
+-			if (was_first && level > 1) {
++			if (was_first && need_percent) {
+ 				double percent = cumul * 100.0 / total;
  
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
+ 				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
+@@ -790,6 +793,13 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			.is_current_entry = current_entry,
+ 		};
  
- void free_srcline(char *srcline)
++		if (callchain_param.mode == CHAIN_GRAPH_REL) {
++			if (symbol_conf.cumulate_callchain)
++				total = entry->stat_acc->period;
++			else
++				total = entry->stat.period;
++		}
++
+ 		printed += hist_browser__show_callchain(browser,
+ 					&entry->sorted_chain, 1, row, total,
+ 					hist_browser__show_callchain_entry, &arg,
