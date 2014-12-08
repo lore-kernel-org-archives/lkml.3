@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaLHIOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 03:14:47 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:45638 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467AbaLHIOp (ORCPT
+	id S1754204AbaLHISI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 03:18:08 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:38655 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaLHISG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 03:14:45 -0500
-Date: Mon, 8 Dec 2014 08:14:39 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Athira Lekshmi <andnlnbn18@gmail.com>
-Cc: rogerable@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Drivers: memstick: host: Fixed missing a blank line
- warning
-Message-ID: <20141208081439.GA3951@x1>
-References: <1417943669-4057-1-git-send-email-andnlnbn18@gmail.com>
+	Mon, 8 Dec 2014 03:18:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417943669-4057-1-git-send-email-andnlnbn18@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417623842-14331-7-git-send-email-jolsa@kernel.org>
+References: <1417623842-14331-1-git-send-email-jolsa@kernel.org> <1417623842-14331-7-git-send-email-jolsa@kernel.org>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 8 Dec 2014 17:17:44 +0900
+X-Google-Sender-Auth: URs8BI-js0lpEi9iSrNgiu45s-c
+Message-ID: <CAM9d7cg7EdhQ8f_yA_aHrOgbM9axW1sr+Jzw+Mfwr1kkwQZGpg@mail.gmail.com>
+Subject: Re: [PATCH 6/8] perf data: Switch to multiple cpu stream files
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not a bad attempt.
-
-The subject line should match the subsystem.  You can see what that is
-by issuing `git log --oneline -- drivers/memstick/` (supplement
-drivers/memstick for the subsystem that you're submitting to).
-
-> Added a new line after declaration to fix the warning message
-> 'Missing a blank line after declarations'
-> 
-> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
-> ---
->  drivers/memstick/host/rtsx_usb_ms.c |    1 +
->  1 file changed, 1 insertion(+)
-
-Apart from my comment at the top (which a kind maintainer can fix for
-you on this occasion I'm sure ;) ), the patch looks good:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-Now make 3 such changes (you can use checkpatch on some other files)
-and send them as a patch-set.
-
-> diff --git a/drivers/memstick/host/rtsx_usb_ms.c b/drivers/memstick/host/rtsx_usb_ms.c
-> index a7282b7..cefd745 100644
-> --- a/drivers/memstick/host/rtsx_usb_ms.c
-> +++ b/drivers/memstick/host/rtsx_usb_ms.c
-> @@ -59,6 +59,7 @@ static inline struct device *ms_dev(struct rtsx_usb_ms *host)
->  static inline void ms_clear_error(struct rtsx_usb_ms *host)
->  {
->  	struct rtsx_ucr *ucr = host->ucr;
+On Thu, Dec 4, 2014 at 1:24 AM, Jiri Olsa <jolsa@kernel.org> wrote:
+> +static int setup_streams(struct ctf_writer *cw, struct perf_session *session)
+> +{
+> +       struct ctf_stream **stream;
+> +       struct perf_header *ph = &session->header;
+> +       int ncpus;
 > +
->  	rtsx_usb_ep0_write_register(ucr, CARD_STOP,
->  				  MS_STOP | MS_CLR_ERR,
->  				  MS_STOP | MS_CLR_ERR);
+> +       /*
+> +        * Try to get the number of cpus used in the data file,
+> +        * if not present fallback to the MAX_CPUS.
+> +        */
+> +       if (!ph)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I think this check is meaningless since perf_header struct is embedded
+in perf_session so it shouldn't be NULL when refered from a session..
+
+Thanks,
+Namhyung
+
+
+> +               ncpus = MAX_CPUS;
+> +       else
+> +               ncpus = ph->env.nr_cpus_avail;
+> +
+> +       stream = zalloc(sizeof(*stream) * ncpus);
+> +       if (!stream) {
+> +               pr_err("Failed to allocate streams.\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       cw->stream     = stream;
+> +       cw->stream_cnt = ncpus;
+> +       return 0;
+> +}
