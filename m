@@ -1,101 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaLHJSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 04:18:35 -0500
-Received: from smtprelay0233.hostedemail.com ([216.40.44.233]:50689 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752151AbaLHJSd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 04:18:33 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:4250:4321:4605:5007:6119:6261:7903:10004:10400:10429:10430:10431:10450:10455:10848:11026:11232:11473:11658:11914:12296:12438:12517:12519:12679:12740:13069:13311:13357:19903:19904:19997:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: burn76_2d4b625e63b15
-X-Filterd-Recvd-Size: 2853
-Message-ID: <1418030309.31745.37.camel@perches.com>
-Subject: Re: [PATCH 6/20] TTY: fix misspelling of current function in string
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux@rasmusvillemoes.dk,
-        linux-kernel@vger.kernel.org
-Date: Mon, 08 Dec 2014 01:18:29 -0800
-In-Reply-To: <548565FC.1020908@suse.cz>
-References: <1417980062-25151-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1417980062-25151-7-git-send-email-Julia.Lawall@lip6.fr>
-	 <548565FC.1020908@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1754481AbaLHJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 04:18:59 -0500
+Received: from bes.se.axis.com ([195.60.68.10]:58672 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754410AbaLHJS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 04:18:57 -0500
+Message-ID: <1418030317.6459.8.camel@lnxlarper.se.axis.com>
+Subject: Re: [PATCH] Revert "MIPS: Remove race window in page fault handling"
+From: Lars Persson <lars.persson@axis.com>
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "paul.burton@imgtec.com" <paul.burton@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "blogic@openwrt.org" <blogic@openwrt.org>,
+        "markos.chandras@imgtec.com" <markos.chandras@imgtec.com>
+Date: Mon, 8 Dec 2014 10:18:37 +0100
+In-Reply-To: <54822685.8070504@imgtec.com>
+References: <20141203032542.15388.17340.stgit@linux-yegoshin>
+	 <1417599104.10996.16.camel@lnxlarper.se.axis.com>
+	 <20141203134226.GC16063@linux-mips.org>
+	 <1417615394.10198.3.camel@lnxlarper.se.axis.com>
+	 <5481158D.1000409@imgtec.com>
+	 <1417771976.8400.8.camel@lnxlarper.se.axis.com>
+	 <54822685.8070504@imgtec.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-08 at 09:49 +0100, Jiri Slaby wrote:
-> On 12/07/2014, 08:20 PM, Julia Lawall wrote:
-> > Replace the last argument of serial_paranoia_check by the actual function
-> > name.
-[]
-> > diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-[]
-> > @@ -931,7 +931,7 @@ static void rs_send_xchar(struct tty_struct *tty, char ch)
-> >  	struct serial_state *info = tty->driver_data;
-> >          unsigned long flags;
-> >  
-> > -	if (serial_paranoia_check(info, tty->name, "rs_send_char"))
-> > +	if (serial_paranoia_check(info, tty->name, "rs_send_xchar"))
+Hi
+
+I have reconstructed the stack trace on the 3.14 kernel where we caught
+the problem.
+
+The call path was __do_fault() -> set_pte_at(). In later kernels it
+corresponds to the do_set_pte().
+
+You are right that there are calls to flush_icache_page(). I did not dig
+into the code enough to check if page_mapped() will return true at that
+point. If it does, then your proposed patch for flush_icache_page is a
+better fix.
+
+- Lars
+
+On fre, 2014-12-05 at 22:41 +0100, Leonid Yegoshin wrote:
+> Lars,
 > 
-> I wonder, why not to use __func__ here too?
+> On 12/05/2014 01:32 AM, Lars Persson wrote:
+> > Hi
+> >
+> > Our setup includes both a non-DMA block device and a compressing
+> > file-system (UBIFS). A flush_dcache_page() is issued by UBIFS so your
+> > patch fixes another problem that we do not hit.
+> >
+> > The stack trace is not available now. Do we need it for any further
+> > analysis ? I think the mechanism of the race window is understood and it
+> > depends on the __flush_dcache_page() deciding that the flush should be
+> > postponed.
+> 
+> Unfortunately, the research of original case is still needed.
+> I looked into all cases of update_mmu_cache() besides HUGE page support 
+> and NUMA, and I see:
+> 
+> 1.  insert_pfn()
+>      It is used to put a special page (read - VDSO) into memory map. No 
+> cache flush is needed here because page is done and flushed during 
+> system boot.
+> 
+> 2.  do_wp_page(), first occurrence
+>      It has flush_cache_page() before it sets PTE in 
+> ptep_set_access_flags(). This flush is unconditional and affects all caches.
+> 
+> 3.  do_wp_page(), second case
+>      It is done after preparing a clear new page or after COW. COW has 
+> an appropriate cache flush of destination in copy_user_highpage(). The 
+> immediate use of cleared new page as instruction (you had SIGILL, 
+> right?)... hm-m, something wrong in application in this case.
+> 
+> 4.  do_swap_page()
+>      Well, it may be a case of flush_icache_page() is not used (see 
+> below) and page is taken from non-DMA swap. But I also recommend to look 
+> into
+> 
+>          http://patchwork.linux-mips.org/patch/7615/
+> 
+> there is a bug in swap entry number presentation and it may affect your 
+> system.
+> 
+> 5.  do_anonymous_page()
+>      The similar to case (3) - cleared new page, using of it as 
+> instruction page may point to some app problem.
+> 
+> 6.  do_set_pte()
+>      It also has flush_icache_page() which may have impact if not 
+> implemented, see below.
+> 
+> 7.  handle_pte_fault()
+>      Page is not touched and cache flush is NO-OP.
+> 
+> 8.  remove_migration_pte()
+>      Well, it is a place for suspicion. But it should not run in 
+> parallel with any running thread - dirtying page while other thread is 
+> running is a way to disaster.
+> 
+> So, you see - if I understand it correctly, there is no place for 
+> failure... besides application misbehaviour or potential kernel bug in 
+> migration. Of course, I may miss something and that is a reason why 
+> stack trace is desirable.
+> 
+> 
+> > I think the mechanism of the race window is understood and it
+> > depends on the __flush_dcache_page() deciding that the flush should be
+> > postponed.
+> 
+> As I remember, you said you use HIGHMEM patch, right? It changes a 
+> little __flush_dcache_page() and flush of any mapped page is not 
+> postponed anymore. So, it has an immediate effect for application pages.
+> 
+> - Leonid.
+> 
+> >
+> >
+> > - Lars
+> >
+> > On Fri, 2014-12-05 at 03:16 +0100, Leonid Yegoshin wrote:
+> >> (repeat mesg, first one went to wrong place)
+> >>
+> >> Lars,
+> >>
+> >> Do you have a stack trace or so then you found the second VPE between
+> >> set_pte_at and update_mmu_cache?
+> >> It would be interesting how it happens - generally, to get a consistent
+> >> SIGILL in applications due to misbehaviour of memory subsystem, the bug
+> >> in FS is not enough.
+> >>
+> >> Hold on - do you use non-DMA file system?
+> >> If so, I advice you to try this simple patch:
+> >>
+> >>       Author: Leonid Yegoshin <yegoshin@mips.com>
+> >>       Date:   Tue Apr 2 14:20:37 2013 -0700
+> >>
+> >>       MIPS: (opt) Fix of reading I-pages from non-DMA FS devices for ID
+> >> cache separation
+> >>
+> >>       This optional fix provides a D-cache flush for instruction code
+> >> pages on
+> >>       page faults. In case of non-DMA block device a driver doesn't know
+> >> that it
+> >>       reads I-page and doesn't flush D-cache generally on systems without
+> >>       cache aliasing. And that takes toll during page fault of
+> >> instruction pages.
+> >>
+> >>       It is not a perfect fix, it should be considered as a temporary fix.
+> >>       The permanent fix would track page origin in page cache and flushes
+> >> D-cache
+> >>       during reception of page from driver only but not at each page fault.
+> >>       It is not done yet.
+> >>
+> >>       Change-Id: I43f5943d6ce0509729179615f6b81e77803a34ac
+> >>       Author: Leonid Yegoshin <yegoshin@mips.com>
+> >>       Signed-off-by: Leonid Yegoshin <yegoshin@mips.com>(imported from
+> >> commit 6ebd22eb7a3d9873582ebe990a77094f971652ee)(imported from commit
+> >> 0caf3b4a1eebb64572e81e4df6fdb3abf12c70
+> >>
+> >> arch/mips/include/asm/cacheflush.h:
+> >>
+> >>      @@ -61,6 +61,9 @@ static inline void flush_anon_page(struct
+> >> vm_area_struct *vma,
+> >>       static inline void flush_icache_page(struct vm_area_struct *vma,
+> >>              struct page *page)
+> >>       {
+> >>      +       if (cpu_has_dc_aliases ||
+> >>      +           ((vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc))
+> >>      +               __flush_dcache_page(page);
+> >>       }
+> >>
+> >>       extern void (*flush_icache_range)(unsigned long start, unsigned
+> >> long end);
+> >>
+> >>
+> >> It fixed crash problems with non-DMA FS in a couple of our customers.
+> >> Without it the non-DMA root FS crashes are catastrophic in aliasing
+> >> systems but it is still a problem for I-cache too but much rare.
+> >>
+> >> Unfortunately, it is also a performance hit, however is less than run a
+> >> page cache flush at each PTE setup. On 12/03/2014 06:03 AM, Lars Persson
+> >> wrote:
+> >>> It is the flush_dcache_page() that was called from the file-system
+> >>> reading the page contents into memory.
+> >>>
+> >>> - Lars
+> >>>
+> >>>
+> >
+> >
+> 
 
-Nearly identical functions are used in amiserial and cyclades.
-Disabled in amiserial, enabled in cyclades.
-
-It might be better to add it to some file like
-drivers/tty/debug_utils.h
-
-It'd probably be better to change:
-
-static inline int serial_paranoia_check(struct serial_state *info,
-					char *name, const char *routine)
-{
-#ifdef SERIAL_PARANOIA_CHECK
-	static const char *badmagic =
-		"Warning: bad magic number for serial struct (%s) in %s\n";
-	static const char *badinfo =
-		"Warning: null async_struct for (%s) in %s\n";
-
-	if (!info) {
-		printk(badinfo, name, routine);
-		return 1;
-	}
-	if (info->magic != SERIAL_MAGIC) {
-		printk(badmagic, name, routine);
-		return 1;
-	}
-#endif
-	return 0;
-}
-
-to something like:
-
-static inline int serial_paranoia_check(struct serial_state *info, char *name)
-{
-#ifdef SERIAL_PARANOIA_CHECK
-	if (!info) {
-		pr_warn("async_struct for (%s) is NULL in %pf\n",
-			name, __builtin_return_address(0));
-		return 1;
-	}
-	if (info->magic != SERIAL_MAGIC) {
-		pr_warn("serial struct (%s) has bad magic number in %pf\n",
-			name, __builtin_return_address(0));
-		return 1;
-	}
-#endif
-	return 0;
-}
-
-and remove all the function names from the callers.
 
 
