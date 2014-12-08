@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216AbaLHLAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 06:00:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35095 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaLHLAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 06:00:40 -0500
-Message-ID: <548584CC.7010603@ti.com>
-Date: Mon, 8 Dec 2014 13:00:28 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755238AbaLHLBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 06:01:22 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8291 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755076AbaLHLBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 06:01:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,537,1413270000"; 
+   d="scan'208";a="644162243"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        jaime.91@hotmail.es
+Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that provides 8+ output devices
+In-Reply-To: <548505D2.8030904@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com> <52FC8C01.1040002@intel.com> <20140213100814.GM14909@nuc-i3427.alporthouse.com> <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com> <53045DD1.5010406@intel.com> <20140219073339.GA30685@srcf.ucam.org> <5304725A.3020909@intel.com> <20140304144504.GE17001@phenom.ffwll.local> <548505D2.8030904@intel.com>
+User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 08 Dec 2014 13:00:55 +0200
+Message-ID: <8761dmo17c.fsf@intel.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] video / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-References: <19160360.7uJRUqlDQg@vostro.rjw.lan>
-In-Reply-To: <19160360.7uJRUqlDQg@vostro.rjw.lan>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 08 Dec 2014, Aaron Lu <aaron.lu@intel.com> wrote:
+> We have a new bug report that has the same problem:
+> https://bugzilla.kernel.org/show_bug.cgi?id=88941
+>
+> The posted patch solves the problem. I know it's not perfect, but it
+> doesn't seem it would do any harm to existing systems so should be safe.
+>
+> Better, if someone can shed some light on how this should be properly
+> handled, that would be great.
 
-On 06/12/14 04:36, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->=20
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
->=20
-> The alternative of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME may be
-> replaced with CONFIG_PM too.
->=20
-> Make these changes in 2 files under drivers/video/.
->=20
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->=20
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME =
-if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via th=
-e
-> linux-pm tree).
->=20
-> Please let me know if it is OK to take this one into linux-pm.
+There was a bug report that I can't find right now that had a similar
+problem. I wrote a few patches, even somewhat polished ones (that I now
+pushed to [1] for reference) to handle extended DIDL. Unfortunately this
+didn't help the bug reporter because the right one was beyond the
+extended DIDL too, so I don't think I even sent these to the list.
 
-Does not seem to conflict with fbdev changes, so:
-
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-
- Tomi
+Anyway, just one more data point. This might help your reporter, so
+worth a try. But it doesn't solve everything.
 
 
+BR,
+Jani.
 
---FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+>
+> Thanks,
+> Aaron
+>
+> On 03/04/2014 10:45 PM, Daniel Vetter wrote:
+>> On Wed, Feb 19, 2014 at 04:59:06PM +0800, Aaron Lu wrote:
+>>> On 02/19/2014 03:33 PM, Matthew Garrett wrote:
+>>>> On Wed, Feb 19, 2014 at 03:31:29PM +0800, Aaron Lu wrote:
+>>>>
+>>>>> DID2 is in system memory region and has some assigned value like 0x400
+>>>>> when we read it. For this case it is easy since there is only one output
+>>>>> device that is of type LVDS so we can match it to connector of type eDP
+>>>>> or LVDS, suppose there is only one such connector. But for output
+>>>>> devices' whose _ADR has the value of 0x301, 0x302, etc. I have no idea
+>>>>> how to match them up to the connectors of that type as we can't be sure
+>>>>> the probe order we have used in i915 driver is the same as BIOS'.
+>>>>
+>>>> Non-standard _ADR values are assigend by the GPU vendor, so Intel should 
+>>>> be able to provide you with the correct interpretations.
+>>>
+>>> It doesn't seem the _ADR value has to be the format defined by _DOD, as
+>>> the example of the ACPI spec gives:
+>>> Method (_ADR, 0) {
+>>>     return(0x0100)
+>>> }
+>>> So that is not the problem here.
+>>>
+>>> The problem is, we don't have any way of matching an ACPI output device
+>>> node to a drm connector of the same type when there are more than 1 of
+>>> those with the same type, i.e. we don't know how the index value are
+>>> assigned by BIOS.
+>> 
+>> I've thought the OpRegion spec has some additional fields in there
+>> indicating the port number, which we could match up at least on modern
+>> platforms (where there's only ever port A-E). But that's very hazy
+>> recollection from a really old OpRegion spec, i.e. I have no bloody clue
+>> at all ;-)
+>> 
+>> If I misremember this then we need to start on a begging tour again and
+>> ask the windows guys how this is all supposed to work ...
+>> -Daniel
+>> 
+>
 
-iQIcBAEBAgAGBQJUhYTMAAoJEPo9qoy8lh71uXgQAIV22jLyJQL+DkDsmDE8buTT
-tB0GkxxDqm/Z1HtO0BjDYxuDKNDlgJ3kPBCHOqi+aKxLM+Y71v8BdTpOY4UVDfPX
-AX3oklbRazxLFeCWlFSNQ2oMXKFms1CuvQd2jRo98X3sYniP1Vt4mmcqlebW8dco
-7GHFO/jgYnmpKrU5wz/CQeAvHSdaH5ArYb++uDWvvoOM1oKwA0+loNx3McJS2QSC
-TqC20xR39Wu9m63gB6sa27tyhmRHb7XBdcXaVg3ubozfO+2oPKMP/6wupeT0nXUP
-wl6V6tR6C3ZdRuyCe+HmOTXsFaUCWdosRWijaDIO762Rts9NnuThRjYN1AFLfQKC
-IumkjFWXdHfsE+0R5nmcXAFha3UybMM/AtFS8l2tSieJMe/wQlo6ilk1NycCvfHA
-Blf+Co2bCTmKEY241jNmQixw1Rkb5a0XAiL/wYVh2m86NIYf3ZvoOOWamAShNPkc
-jXJdTrTTioMp9rEiqp1yHq4Cy7Qz3nyE0vCQHKzYHgsZFjAURl4hiJjHoqZ8ss8F
-2PNEGK8Myy0R+8ArLdkVsmvS/jnXLW0n5PW/2xsP0Kb1SBGgDqR2Ob5YP3NvH9IL
-VS2YfcyUa4dCADgAodBwRUjXsc4o2gUyMbQubxMurhcYv+bFx7TB0SuJrlRpltnR
-nnttB9xQ9l43dRi31QxO
-=zUcK
------END PGP SIGNATURE-----
-
---FRLHTuixXLWp3cwBRuTDNWWCmoWeGjcVg--
+-- 
+Jani Nikula, Intel Open Source Technology Center
