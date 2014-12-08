@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378AbaLHSqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 13:46:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59259 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347AbaLHSqh (ORCPT
+	id S932308AbaLHSs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 13:48:26 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:22658 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243AbaLHSsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 13:46:37 -0500
-Date: Mon, 8 Dec 2014 18:46:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141208184632.GG22149@ZenIV.linux.org.uk>
-References: <20141204202011.GO29748@ZenIV.linux.org.uk>
- <20141208164650.GB29028@node.dhcp.inet.fi>
- <20141208175805.GB22149@ZenIV.linux.org.uk>
- <20141208180824.GC22149@ZenIV.linux.org.uk>
- <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
- <20141208182012.GE22149@ZenIV.linux.org.uk>
- <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
+	Mon, 8 Dec 2014 13:48:24 -0500
+X-IronPort-AV: E=Sophos;i="5.07,540,1413270000"; 
+   d="scan'208";a="52541873"
+Message-ID: <5485F26E.6050506@broadcom.com>
+Date: Mon, 8 Dec 2014 10:48:14 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] Add gpio support to Broadcom Cygnus SoC
+References: <Ray Jui <rjui@broadcom.com> <1418064468-8512-1-git-send-email-rjui@broadcom.com> <1418064468-8512-2-git-send-email-rjui@broadcom.com>
+In-Reply-To: <1418064468-8512-2-git-send-email-rjui@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:37:51AM -0800, Linus Torvalds wrote:
+Sorry. Please ignore this particular cover letter. It accidentally got 
+sent along with other v3 patches.
 
-> How about we make "kernel_read()" just clear O_DIRECT? Does that fix
-> it to just use copies?
-
-Umm...  clearing O_DIRECT on struct file that might have other references
-to it isn't nice, to put it mildly...
-
-Frankly, stopping iov_iter_get_pages() on the first page in vmalloc/module
-space looks like the sanest strategy anyway.  We'd get the same behaviour
-as we used to, and as for finit_module(2), well... put "fails if given
-an O_DIRECT descriptor" and be done with that.
-
-Alternatively, we can really go for
-	page = is_vmalloc_or_module_addr(addr) ? vmalloc_to_page(addr)
-						: virt_to_page(addr)
-	*pages++ = get_page(page);
-and have the fucker work.  Stability is up to the caller, of course -
-reading into buffer that might get freed (and reused) under you has much
-worse problems...
+On 12/8/2014 10:47 AM, Ray Jui wrote:
+> This patchset contains the initial GPIO support for the Broadcom Cygnus SoC.
+> Cygnus has 3 GPIO controllers: 1) the ASIU GPIO; 2) the chipCommonG GPIO;
+> and 3) the ALWAYS-ON GPIO. All 3 types of GPIO controllers are supported by
+> the same Cygnus GPIO driver
+>
+> Changes from v1:
+>   - Get rid of inline qualifier
+>   - Get rid of redundant check in the ISR
+>   - Other minor fixes to imrove code readability
+>
+> Ray Jui (5):
+>    gpio: Cygnus: define Broadcom Cygnus GPIO binding
+>    gpio: Cygnus: add GPIO driver
+>    ARM: mach-bcm: Enable GPIO support for Cygnus
+>    ARM: dts: enable GPIO for Broadcom Cygnus
+>    MAINTAINERS: Entry for Cygnus GPIO driver
+>
+>   .../devicetree/bindings/gpio/brcm,cygnus-gpio.txt  |   85 +++
+>   MAINTAINERS                                        |    7 +
+>   arch/arm/boot/dts/bcm-cygnus.dtsi                  |   30 +
+>   arch/arm/mach-bcm/Kconfig                          |    1 +
+>   drivers/gpio/Kconfig                               |   11 +
+>   drivers/gpio/Makefile                              |    1 +
+>   drivers/gpio/gpio-bcm-cygnus.c                     |  712 ++++++++++++++++++++
+>   7 files changed, 847 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
+>   create mode 100644 drivers/gpio/gpio-bcm-cygnus.c
+>
