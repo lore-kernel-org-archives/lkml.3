@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaLHORH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 09:17:07 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:52872 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaLHORF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 09:17:05 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] powerpc32/chrp: fix section mismatch warning
-Message-Id: <20141208141644.8D8741A5D5C@localhost.localdomain>
-Date: Mon,  8 Dec 2014 15:16:44 +0100 (CET)
+	id S932142AbaLHORW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 09:17:22 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34466 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLHORT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 09:17:19 -0500
+Date: Mon, 8 Dec 2014 15:17:50 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Paulo Zanoni <przanoni@gmail.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Damien Lespiau <damien.lespiau@gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] gpu: drm: i915: intel_display.c: Remove
+ unused function
+Message-ID: <20141208141750.GR20350@phenom.ffwll.local>
+Mail-Followup-To: Paulo Zanoni <przanoni@gmail.com>,
+	Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Damien Lespiau <damien.lespiau@gmail.com>
+References: <1417976957-15049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141208084228.GI20350@phenom.ffwll.local>
+ <CA+gsUGSM43z6AXi0-evJni_fDX_=rjj6gBOCZmhLrqjyUhZeFg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+gsUGSM43z6AXi0-evJni_fDX_=rjj6gBOCZmhLrqjyUhZeFg@mail.gmail.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a section mismatch warning
+On Mon, Dec 08, 2014 at 10:32:49AM -0200, Paulo Zanoni wrote:
+> 2014-12-08 6:42 GMT-02:00 Daniel Vetter <daniel@ffwll.ch>:
+> > On Sun, Dec 07, 2014 at 07:29:17PM +0100, Rickard Strandqvist wrote:
+> >> Remove the function intel_output_name() that is not used anywhere.
+> >>
+> >> This was partially found by using a static code analysis program called cppcheck.
+> >>
+> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> >
+> > Queued for 3.20, thanks for the patch.
+> 
+> This function was created for the "DDI personality" patches. We merged
+> the function but never ended up merging the patch containing the
+> callers...
 
-WARNING: vmlinux.o(.text+0x213b6): Section mismatch in reference from the function chrp_init_early() to the variable .init.data:boot_command_line
-The function chrp_init_early() references
-the variable __initdata boot_command_line.
-This is often because chrp_init_early lacks a __initdata 
-annotation or the annotation of boot_command_line is wrong.
-
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-
----
- arch/powerpc/platforms/chrp/setup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/platforms/chrp/setup.c b/arch/powerpc/platforms/chrp/setup.c
-index 5b77b19..d5d1ea5 100644
---- a/arch/powerpc/platforms/chrp/setup.c
-+++ b/arch/powerpc/platforms/chrp/setup.c
-@@ -253,7 +253,7 @@ static void briq_restart(char *cmd)
-  * But unfortunately, the firmware does not connect /chosen/{stdin,stdout}
-  * the the built-in serial node. Instead, a /failsafe node is created.
-  */
--static void chrp_init_early(void)
-+static __init void chrp_init_early(void)
- {
- 	struct device_node *node;
- 	const char *property;
+Oops, I've thought this is a renmant from the very first days of kms that
+somehow stuck around. That's what I get for once not using git blame
+excessively :( Want me to drop the patch again?
+-Daniel
 -- 
-2.1.0
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
