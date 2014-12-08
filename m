@@ -1,151 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbaLHMDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 07:03:19 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55743 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111AbaLHMDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 07:03:18 -0500
-Message-ID: <5485936F.20901@linux.vnet.ibm.com>
-Date: Mon, 08 Dec 2014 17:32:55 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jingchang.lu@freescale.com" <jingchang.lu@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH V2] tick-broadcast: Register for hrtimer based broadcast
- as the fallback broadcast mode
-References: <20141208065513.3075.48721.stgit@preeti.in.ibm.com> <20141208104828.GA21680@leverpostej>
-In-Reply-To: <20141208104828.GA21680@leverpostej>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120812-0029-0000-0000-0000015B5969
+	id S1755315AbaLHMD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 07:03:59 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33645 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbaLHMD6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 07:03:58 -0500
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Xunlei Pang <pang.xunlei@linaro.org>
+Subject: [PATCH 1/2] rtc/ab8500: set uie_unsupported flag
+Date: Mon,  8 Dec 2014 20:03:06 +0800
+Message-Id: <1418040187-5372-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 04:18 PM, Mark Rutland wrote:
-> Hi Preeti,
-> 
-> On Mon, Dec 08, 2014 at 06:55:43AM +0000, Preeti U Murthy wrote:
->> Commit 5d1638acb9f6 ('tick: Introduce hrtimer based broadcast') added a
->> hrtimer based broadcast mode for those platforms in which local timers stop
->> when CPUs enter deep idle states. The commit expected the platforms to
->> register for this mode explicitly when they lacked a better external device
->> to wake up CPUs in deep idle. Given that more platforms are beginning to use
->> this mode, we can avoid the call to set it up on every platform that requires
->> it, by registering for the hrtimer based broadcast mode in the core code if
->> no better broadcast device is available.
->>
->> This commit also helps detect cases where the platform fails to register for
->> a broadcast device but invokes the help of one when entering deep idle states.
->> Currently we do not handle this situation at all and call the broadcast clock
->> device without checking for its existence. This patch will handle such buggy
->> cases properly.
->>
->> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
-> I've just given this a go on an arm64 platform (Juno) without any
-> system-wide clock_event_devices registered, and everything works well
-> with CPUs entering and exiting idle states where the cpu-local timers
-> lose state. So:
-> 
-> Tested-by: Mark Rutland <mark.rutland@arm.com>
+Currently, ab8500 doesn't set uie_unsupported of rtc_device, while
+it doesn't support UIE, see ab8500_rtc_set_alarm().
 
-Thanks!
+Thus, when going through rtc_update_irq_enable()->rtc_timer_enqueue(),
+there's a chance it has an alarm timer1 queued before which is going to
+fired, so this update timer2 will be queued because it isn't the leftmost
+one, which means rtc_timer_enqueue() will return 0.
 
-> 
-> One minor thing I noticed when testing was that
-> /sys/devices/system/clockevents/broadcast/name contained "(null)",
-> because we never set the name field on the clock_event_device. It's
-> always been that way, but now might be a good time to change that to
-> something like "broadcast_hrtimer".
+This will result in two problems:
+1) UIE EMUL will not be used.
+2) When the alarm timer1 is fired, in rtc_timer_do_work() timer2 will
+   fail to set the alarm time, so this rtc will disfunctional due to
+   timer2 with the earliest expires in the timerqueue.
 
-You mean /sys/devices/system/clockevents/broadcast/current_device right?
+So, rtc drivers must set this flag if they don't support UIE.
 
-> 
-> [...]
-> 
->> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
->> index 2e4cb67..91754b0 100644
->> --- a/include/linux/clockchips.h
->> +++ b/include/linux/clockchips.h
->> @@ -187,11 +187,11 @@ extern int tick_receive_broadcast(void);
->>  #endif
->>  
->>  #if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
->> -extern void tick_setup_hrtimer_broadcast(void);
->> +extern int __init tick_setup_hrtimer_broadcast(void);
->>  extern int tick_check_broadcast_expired(void);
->>  #else
->>  static inline int tick_check_broadcast_expired(void) { return 0; }
->> -static inline void tick_setup_hrtimer_broadcast(void) {};
->> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
->>  #endif
->>  
->>  #ifdef CONFIG_GENERIC_CLOCKEVENTS
->> @@ -207,7 +207,7 @@ static inline void clockevents_resume(void) {}
->>  
->>  static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
->>  static inline int tick_check_broadcast_expired(void) { return 0; }
->> -static inline void tick_setup_hrtimer_broadcast(void) {};
->> +static inline int __init tick_setup_hrtimer_broadcast(void) { return 0; }
-> 
-> With the initcall moved to the driver we have no external users of
-> tick_setup_hrtimer_broadcast, so I think we can remove the prototype
-> entirely from clockchips.h...
-> 
->>  #endif
->>  
->> diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
->> index eb682d5..5c35995 100644
->> --- a/kernel/time/tick-broadcast-hrtimer.c
->> +++ b/kernel/time/tick-broadcast-hrtimer.c
->> @@ -98,9 +98,11 @@ static enum hrtimer_restart bc_handler(struct hrtimer *t)
->>  	return HRTIMER_RESTART;
->>  }
->>  
->> -void tick_setup_hrtimer_broadcast(void)
->> +int __init tick_setup_hrtimer_broadcast(void)
-> 
-> ...and make it static here.
+Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+---
+ drivers/rtc/rtc-ab8500.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Yep will do. Sorry I overlooked this.
-
-> 
->>  {
->>  	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
->>  	bctimer.function = bc_handler;
->>  	clockevents_register_device(&ce_broadcast_hrtimer);
->> +	return 0;
->>  }
->> +early_initcall(tick_setup_hrtimer_broadcast);
-> 
-> Otherwise this looks good to me, thanks for putting this together!
-
-Thanks a lot for the review! Will send out the patch with the above
-corrections.
-
-Regards
-Preeti U Murthy
-> 
-> Mark.
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+diff --git a/drivers/rtc/rtc-ab8500.c b/drivers/rtc/rtc-ab8500.c
+index 727e2f5..866e0ef 100644
+--- a/drivers/rtc/rtc-ab8500.c
++++ b/drivers/rtc/rtc-ab8500.c
+@@ -504,6 +504,8 @@ static int ab8500_rtc_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
++	rtc->uie_unsupported = 1;
++
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
