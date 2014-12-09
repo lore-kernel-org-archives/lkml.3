@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaLIA3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 19:29:16 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62155 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaLIA3P (ORCPT
+	id S1756076AbaLIAdq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 19:33:46 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58712 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257AbaLIAdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 19:29:15 -0500
-Date: Mon, 8 Dec 2014 16:29:11 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: George McCollister <george.mccollister@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial: add nt124 usb to serial driver
-Message-ID: <20141209002911.GA3003@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	George McCollister <george.mccollister@gmail.com>,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 19:33:45 -0500
+Date: Mon, 08 Dec 2014 19:33:39 -0500 (EST)
+Message-Id: <20141208.193339.887400229085902375.davem@davemloft.net>
+To: mst@redhat.com
+Cc: linux-kernel@vger.kernel.org, cornelia.huck@de.ibm.com, rusty@au1.ibm.com,
+        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        dahi@linux.vnet.ibm.com
+Subject: Re: [PATCH v8 00/50] linux: towards virtio-1 guest support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141208085850.GA19418@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	<20141208085850.GA19418@redhat.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 08 Dec 2014 16:33:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-George,
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 8 Dec 2014 10:58:50 +0200
 
-On Mon, Dec 08, 2014 at 05:24:17PM -0600, George McCollister wrote:
-> This driver is for the NovaTech 124 4x serial expansion board for the
-> NovaTech OrionLXm.
+> On Mon, Dec 01, 2014 at 06:02:42PM +0200, Michael S. Tsirkin wrote:
+>> David, assuming patches are acceptable, I'd like them all to be merged through
+>> virtio or vhost trees to avoid dependency headaches.  Could you please ack
+>> doing that for net related patches, especially these:
+>> 	  tun: move internal flag defines out of uapi
+>> 	  tun: drop most type defines
+>> 	  tun: add VNET_LE flag
+>> 	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+>> 	  macvtap: TUN_VNET_HDR support
+>> 	  vhost/scsi: partial virtio 1.0 support
+>> 	  af_packet: virtio 1.0 stubs
+>> Alternatively, I can prepare a tree with virtio changes and merge
+>> that into your net-next - if Rusty approves, or keeps
+>> silence :)
 > 
-> Firmware source code can be found here:
-> https://github.com/novatechweb/nt124
-> 
-> Signed-off-by: George McCollister <george.mccollister@gmail.com>
-> ---
->  drivers/usb/serial/Kconfig  |   9 +
->  drivers/usb/serial/Makefile |   1 +
->  drivers/usb/serial/nt124.c  | 429 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 439 insertions(+)
->  create mode 100644 drivers/usb/serial/nt124.c
-> 
-> diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-[...]
+> David, Rusty - ping.
+> Are both of you ok withmerging this through the vhost tree?
 
-It applies to next without any errors, there are no checkpatch issues
-other than recommending updating the MAINTAINERS file, and I can't find
-any other obvious problems.  Looks good to me.
-
-Reviewed-by: Jeremiah Mahler <jmmahler@gmail.com>
-
--- 
-- Jeremiah Mahler
+No objections on my side.
