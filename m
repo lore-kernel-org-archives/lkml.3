@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbaLIMXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:23:39 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49900 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756257AbaLIMXi (ORCPT
+	id S1756792AbaLIMYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:24:45 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53585 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756257AbaLIMYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:23:38 -0500
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: [PATCH v3] CPU hotplug: active_writer not woken up in some cases - deadlock
-Date: Tue,  9 Dec 2014 13:23:31 +0100
-Message-Id: <1418127811-22629-1-git-send-email-dahi@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120912-0005-0000-0000-000002637074
+	Tue, 9 Dec 2014 07:24:43 -0500
+Message-ID: <5486EA00.6080901@huawei.com>
+Date: Tue, 9 Dec 2014 20:24:32 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH 2/6] PCI/MSI: add hooks to populate the msi_domain field
+References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com> <1418069543-21969-3-git-send-email-marc.zyngier@arm.com> <5486585B.40000@huawei.com> <5486C8BA.8030608@arm.com> <5486E3BF.70703@huawei.com> <5486E747.4010804@arm.com>
+In-Reply-To: <5486E747.4010804@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-grace periods") introduced another problem that can easily be reproduced by
-starting/stopping cpus in a loop.
+>>> Well, this is not supposed to be a perfect solution yet, but instead a
+>>> basis for discussion. What I'd like to find out is:
+>>>
+>>> - What is the minimum granularity for associating a device with its MSI
+>>> domain in existing platforms?
+>>
+>> PCI device, after Gerry's msi irq domain patchset which now in linux-next,
+>> in x86, we will find msi irq domain by pci_dev.
+> 
+> Are you *really* associating the MSI domain on a per pci-device basis?
+> That is, you have devices on the same PCI bus talking to different MSI hw?
 
-E.g.:
-  for i in `seq 5000`; do
-      echo 1 > /sys/devices/system/cpu/cpu1/online
-      echo 0 > /sys/devices/system/cpu/cpu1/online
-  done
+Yes.
 
-Will result in:
-  INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-  Call Trace:
-  ([<00000000006a028e>] __schedule+0x406/0x91c)
-   [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-   [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-   [<0000000000131232>] cpu_up+0xb6/0xd4
-   [<00000000004a5720>] device_online+0x80/0xc0
-   [<00000000004a57f0>] online_store+0x90/0xb0
-  ...
+> 
+>> I generally agree your first patch which associate basic device with msi irq domain.
+>>
+>>> - What topology data structures do you use to find out what MSI
+>>> controller a device should be matched with?
+>>
+>> Now only arm and arm64 use msi controller to setup/teardown msi irqs,
+>> in arm, now msi controller saved in pci_sys_data, and for arm64, it seems
+>> to be saved in pci_bus. For a more common method to find msi controller/irq domain,
+>> I prefer pci_dev/device.
+> 
+> Forget about msi_controller, the whole goal of this series is to make it
+> obsolete. On your x86 platform, what how do you identify which MSI
+> domain should be associated with a given PCI device? Surely you must
+> have a set of data structures or ACPI tables which give you that
+> information.
 
-And a deadlock.
+Yes, by ACPI DMAR table.
 
-Problem is that if the last ref in put_online_cpus() can't get the
-cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
-active_writer might never be woken up, therefore never exiting the loop in
-cpu_hotplug_begin().
+> 
+>>> - What in-tree platform already has this requirements?
+>>
+>> As mentioned above, x86 does.
+> 
+> Let me rephrase that in a non-ambiguous manner: can you point me to a
+> file implementing this in mainline?
 
-This fix wakes up the active_writer proactively. The writer already goes back to
-sleep if the ref count isn't already down to 0, so this should be fine.
+Please refer to arch/x86/kernel/apic/msi.c  native_setup_msi_irqs()  in linux-next tree.
 
-In order to avoid many potential races, we have to:
-- Protect current_writer by a spin lock. When holding this lock we can be sure
-  that the writer won't vainsh or change. (use-after-free)
-- Increment the cpu_hotplug.puts_pending count before we test for an
-  active_writer. (otherwise a wakeup might get lost)
-- Move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
-  condition check. (otherwise a wakeup might get lost)
+Thanks!
+Yijing.
 
-Can't reproduce it with this fix.
+> 
+> Thanks,
+> 
+> 	M.
+> 
 
-Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
----
- kernel/cpu.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 90a3d01..7489b7a 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -58,6 +58,7 @@ static int cpu_hotplug_disabled;
- 
- static struct {
- 	struct task_struct *active_writer;
-+	spinlock_t awr_lock; /* protects active_writer from being changed */
- 	struct mutex lock; /* Synchronizes accesses to refcount, */
- 	/*
- 	 * Also blocks the new readers during
-@@ -72,6 +73,7 @@ static struct {
- #endif
- } cpu_hotplug = {
- 	.active_writer = NULL,
-+	.awr_lock = __SPIN_LOCK_UNLOCKED(cpu_hotplug.awr_lock),
- 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
- 	.refcount = 0,
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -116,7 +118,13 @@ void put_online_cpus(void)
- 	if (cpu_hotplug.active_writer == current)
- 		return;
- 	if (!mutex_trylock(&cpu_hotplug.lock)) {
-+		/* inc before testing for active_writer to not lose wake ups */
- 		atomic_inc(&cpu_hotplug.puts_pending);
-+		spin_lock(&cpu_hotplug.awr_lock);
-+		/* we might be the last one */
-+		if (unlikely(cpu_hotplug.active_writer))
-+			wake_up_process(cpu_hotplug.active_writer);
-+		spin_unlock(&cpu_hotplug.awr_lock);
- 		cpuhp_lock_release();
- 		return;
- 	}
-@@ -156,20 +164,24 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
-  */
- void cpu_hotplug_begin(void)
- {
-+	spin_lock(&cpu_hotplug.awr_lock);
- 	cpu_hotplug.active_writer = current;
-+	spin_unlock(&cpu_hotplug.awr_lock);
- 
- 	cpuhp_lock_acquire();
- 	for (;;) {
- 		mutex_lock(&cpu_hotplug.lock);
-+		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (atomic_read(&cpu_hotplug.puts_pending)) {
- 			int delta;
- 
- 			delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
- 			cpu_hotplug.refcount -= delta;
- 		}
--		if (likely(!cpu_hotplug.refcount))
-+		if (likely(!cpu_hotplug.refcount)) {
-+			__set_current_state(TASK_RUNNING);
- 			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
-+		}
- 		mutex_unlock(&cpu_hotplug.lock);
- 		schedule();
- 	}
-@@ -177,7 +189,9 @@ void cpu_hotplug_begin(void)
- 
- void cpu_hotplug_done(void)
- {
-+	spin_lock(&cpu_hotplug.awr_lock);
- 	cpu_hotplug.active_writer = NULL;
-+	spin_unlock(&cpu_hotplug.awr_lock);
- 	mutex_unlock(&cpu_hotplug.lock);
- 	cpuhp_lock_release();
- }
 -- 
-1.8.5.5
+Thanks!
+Yijing
 
