@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaLIVR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:17:29 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:50418 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaLIVRP (ORCPT
+	id S1752389AbaLIVUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:20:16 -0500
+Received: from [87.106.208.187] ([87.106.208.187]:60865 "EHLO
+	mail.holtmann.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaLIVUN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:17:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
-References: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
-Date: Tue, 9 Dec 2014 19:17:14 -0200
-Message-ID: <CAOMZO5B0WcR-=__QzCzD86oocuj--uhq+QYj3o1WU05JO-Qyfw@mail.gmail.com>
-Subject: Re: da9052-regulator fails to probe in linux-next
-From: Fabio Estevam <festevam@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Dec 2014 16:20:13 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: __hci_cmd_sync() not suitable for nokia h4p
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20141209201328.GA18003@amd>
+Date: Tue, 9 Dec 2014 22:19:00 +0100
+Cc: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>, sre@debian.org,
+        Sebastian Reichel <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, tony@atomide.com,
+        khilman@kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<ivo.g.dimitrov.75@gmail.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7EFD3C33-E503-4FB6-BCCF-52836080ABD6@holtmann.org>
+References: <20141209190210.GA15641@amd> <304050AD-DB11-4A2B-A1F7-8B1BBB5F04F0@holtmann.org> <20141209201328.GA18003@amd>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 6:41 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> Hi,
->
-> In linux-next I am no longer able to get da9052 regulator driver
-> probed on a imx53-qsb board:
->
-> [    0.128665] da9052-regulator da9052-regulator: invalid regulator ID specified
-> [    0.128786] da9052-regulator: probe of da9052-regulator failed with error -22
-> [    0.128957] ------------[ cut here ]------------
-> [    0.129010] WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:31
-> sysfs_warn_dup+0x5c/0x7c()
-> [    0.129043] sysfs: cannot create duplicate filename
-> '/devices/platform/soc/60000000.aips/63fc8000.i2c/i2c-0/0-0048/da9052-regulator
-> '
-> .....
->
-> With kernel 3.18 it probes fine. Haven't bisected yet, but if anyone
-> has any ideas, please let me know.
+Hi Pavel,
 
-Seem like this issue is not specific to the da9052 regulator.
+>>> Major problem with Nokia H4P driver was, that it uses custom functions
+>>> instead of __hci_cmd_sync().
+> 
+>> the __hci_cmd_sync is for sending HCI commands and not low-level
+>> protocol transports like H:4 or similar. So you want to separate the
+>> actual transport of HCI from the firmware loading.
+> 
+> The TODO file says:
+> 
+> # > +
+> # > +     skb_queue_tail(&info->txq, fw_skb);
+> # > +     spin_lock_irqsave(&info->lock, flags);
+> # > +     hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
+> # > +                     UART_IER_THRI);
+> # > +     spin_unlock_irqrestore(&info->lock, flags);
+> # > +}
+> # 
+> # and as I explained before, this crazy can not continue. Bluetooth drivers can provide a
+> # +hdev->setup callback for loading firmware and doing other setup details. You can just
+> # +bring up the HCI transport. We are providing __hci_cmd_sync for easy loading of the
+> # +firmware. Especially if the firmware just consists of HCI commands. Which is clearly the
+> # +case with the Nokia firmware files.
+> 
+> ...so I take it you (and thus TODO) were wrong and __hci_cmd_sync is
+> not suitable after all?
 
-On a imx6q-wandboard we can see the internal anatop regulators being
-probed on linux-next 20141031:
-http://arm-soc.lixom.net/bootlogs/next/next-20141031/wandboard-arm-imx_v6_v7_defconfig.html
+__hci_cmd_sync is to be used in hdev->setup where you load the firmware. However when hdev->setup is run, we expect that the HCI transport is fully up and running and that the driver takes care of the transport. That is done via hdev->send and hci_recv_frame.
 
-[    0.072014] vdd1p1: 800 <--> 1375 mV at 1100 mV
-[    0.073027] vdd3p0: 2800 <--> 3150 mV at 3000 mV
-[    0.073933] vdd2p5: 2000 <--> 2750 mV at 2400 mV
-[    0.074888] vddarm: 725 <--> 1450 mV at 1150 mV
-[    0.075935] vddpu: 725 <--> 1450 mV at 1150 mV
-[    0.076897] vddsoc: 725 <--> 1450 mV at 1200 mV
+> But I don't understand what you want me to do at this point. I guess
+> skb_queue_tail+hci_h4p_outb should be moved to a helper function
+> (that's easy), and I already moved initialization to hci_setup().
+> 
+> nokia_core.c uses test_bit(HCI_RUNNING, &info->hdev->flags) to tell
+> between initialization and data traffic, but I guess that's fine?
 
+I have no idea on how much more I can explain this. There should be code in the driver that handles the HCI transport. That means init of the transport and sending and receiving HCI frames. And then there is the piece to load the firmware etc. These are two independent things.
 
-,but since next-20141103 they do not probe anymore:
-http://arm-soc.lixom.net/bootlogs/next/next-20141103/wandboard-arm-imx_v6_v7_defconfig.html
+Look at how btusb.c is doing this. We only run __hci_cmd_sync there. The details on how commands and events are going over USB are not handling hdev->setup. That is done by the basics of the driver.
+
+What needs to be done is the bring up of the device including the proper UART settings and speed and then just run the firmware downloads. All firmware files on the Nokia devices where just HCI commands with vendor specific details. Some from CSR, some from Broadcom and some from TI. You can actually decode them if you really want to. Shouldn't be that hard.
+
+Regards
+
+Marcel
+
