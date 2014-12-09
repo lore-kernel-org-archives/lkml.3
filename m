@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaLIKO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:14:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755114AbaLIKOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:14:54 -0500
-Date: Tue, 9 Dec 2014 11:14:16 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
-Message-ID: <20141209101416.GB2516@krava.brq.redhat.com>
-References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
- <1417623842-14331-2-git-send-email-jolsa@kernel.org>
- <CAM9d7cixHgGqiLu0c8zrbEU6aLNdvhwC0vne4zcd8OZjQkCV1Q@mail.gmail.com>
+	id S1756459AbaLIKPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:15:08 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:33386 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756370AbaLIKPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:15:03 -0500
+Message-ID: <5486CB9F.6030804@hitachi.com>
+Date: Tue, 09 Dec 2014 19:14:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7cixHgGqiLu0c8zrbEU6aLNdvhwC0vne4zcd8OZjQkCV1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Wang Nan <wangnan0@huawei.com>, lizefan@huawei.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Re: [PATCH v14 7/7] ARM: kprobes: enable OPTPROBES for ARM
+ 32
+References: <1418020040-68977-1-git-send-email-wangnan0@huawei.com> <1418020131-69375-1-git-send-email-wangnan0@huawei.com> <1418036666.3647.33.camel@linaro.org> <5485886E.2060303@huawei.com> <1418039451.3647.48.camel@linaro.org>
+In-Reply-To: <1418039451.3647.48.camel@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 05:07:23PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Thu, Dec 4, 2014 at 1:23 AM, Jiri Olsa <jolsa@kernel.org> wrote:
-> > +ifndef NO_LIBBABELTRACE
-> > +  # for linking with debug library, run like:
-> > +  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libdw/
-> 
-> s/libdw/libbabeltrace/
+(2014/12/08 20:50), Jon Medhurst (Tixy) wrote:> arch_optimize_kprobes is calling __arch_optimize_kprobes, which is
+> iterating over a list of probes and removing each one in turn, if this
+> is happening on multiple cpu's simultaneously, it's not clear to me that
+> such an operation is safe. list_del_init calls __list_del which does
+>
+> 	next->prev = prev;
+> 	prev->next = next;
+>
+> so what happens if another cpu is at the same time updating any of those
+> list entries? Without even fully analysing the code I can see that with
+> the fact that the list handling helpers have no memory barriers, that
+> the above two lines could be seen to execute in the reverse order, e.g.
+>
+> 	prev->next = next;
+> 	next->prev = prev;
+>
+> so another CPU could find and delete next before this one has finished
+> doing so. Would the list end up in a consistent state where no loops
+> develop and no probes are missed? I don't know the answer and a full
+> analysis would be complicated, but my gut feeling is that if a cpu can
+> observe the links in the list in an inconsistent state then only bad
+> things can result.
 
-ouch.. copy&paste crap ;-)
+Just a comment, arch_optimize_kprobes() are only called under
+kprobe_mutex held. No concurrent update happens :)
 
-> 
-> 
-> > +  ifdef LIBBABELTRACE_DIR
-> > +    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
-> > +    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
-> > +  endif
-> > +  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
-> > +  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
-> > +endif
-> > +
-> >  # include ARCH specific config
-> >  -include $(src-perf)/arch/$(ARCH)/Makefile
-> >
-> > @@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =                        \
-> >         stackprotector-all              \
-> >         timerfd                         \
-> >         libdw-dwarf-unwind              \
-> > +       libbabeltrace                   \
-> >         zlib
-> >
-> >  LIB_FEATURE_TESTS =                    \
-> > @@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =                 \
-> >         libslang                        \
-> >         libunwind                       \
-> >         libdw-dwarf-unwind              \
-> > +       libbabeltrace                   \
-> >         zlib
-> >
-> >  VF_FEATURE_TESTS =                     \
-> > @@ -661,6 +674,17 @@ else
-> >    NO_PERF_READ_VDSOX32 := 1
-> >  endif
-> >
-> > +ifndef NO_LIBBABELTRACE
-> > +  ifeq ($(feature-libbabeltrace), 0)
-> > +    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-dev);
-> 
-> It seems that Ubuntu has libbabeltrace-ctf-dev package.
+Thank you,
 
-ok
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-thanks,
-jirka
+
