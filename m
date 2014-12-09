@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaLISuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:50:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33936 "EHLO mx1.redhat.com"
+	id S1751779AbaLISy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:54:59 -0500
+Received: from omr1.cc.vt.edu ([198.82.141.52]:53874 "EHLO omr1.cc.vt.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252AbaLISup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:50:45 -0500
-Date: Tue, 9 Dec 2014 20:50:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2] virtio_ccw: minor enhancements
-Message-ID: <20141209185035.GA19260@redhat.com>
-References: <1418133187-12436-1-git-send-email-mst@redhat.com>
- <20141209182753.632da537.cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209182753.632da537.cornelia.huck@de.ibm.com>
+	id S1751043AbaLISy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:54:57 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Eric Dumazet <edumazet@google.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: linux-next 20141208 - net/sched/sch_fq_codel.c:97 suspicious RCU
+In-Reply-To: Your message of "Tue, 09 Dec 2014 10:07:31 -0800."
+             <CANn89iJAN815z3TefSjj0uZyQQyH-wTiAckt3WeMc-F7DRgpKA@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <6468.1418147500@turing-police.cc.vt.edu>
+            <CANn89iJAN815z3TefSjj0uZyQQyH-wTiAckt3WeMc-F7DRgpKA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1418151288_3854P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 09 Dec 2014 13:54:48 -0500
+Message-ID: <9914.1418151288@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 06:27:53PM +0100, Cornelia Huck wrote:
-> On Tue, 9 Dec 2014 15:53:32 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > Two enhancements for virtio_ccw, on top of latest 1.0 patchset
-> > 
-> > Cornelia Huck (1):
-> >   virtio_ccw: finalize_features error handling
-> > 
-> > Michael S. Tsirkin (1):
-> >   virtio_ccw: future-proof finalize_features
-> > 
-> >  drivers/s390/kvm/virtio_ccw.c | 18 +++++++++++-------
-> >  1 file changed, 11 insertions(+), 7 deletions(-)
-> > 
-> 
-> I tried to run this as a guest kernel with my virtio-1 qemu branch +
-> your revision patch on top and it at least boots :) More testing
-> tomorrow.
+--==_Exmh_1418151288_3854P
+Content-Type: text/plain; charset=us-ascii
 
-It's best if you pick my tree from git.
-vhost-next branch.
+On Tue, 09 Dec 2014 10:07:31 -0800, Eric Dumazet said:
+> On Tue, Dec 9, 2014 at 9:51 AM, Valdis Kletnieks
 
+> > commit 46e5da40aec256155cfedee96dd21a75da941f2c
+> > Author: John Fastabend <john.fastabend@gmail.com>
+> > Date:   Fri Sep 12 20:04:52 2014 -0700
+>
+> Well, its a (harmless) typo : this should really be an
+> rcu_dereference_bh() instead of rcu_dereference()
+
+You want a patch, or you got it already?
+
+
+--==_Exmh_1418151288_3854P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVIdFeAdmEQWDXROgAQI76g//eRKu5vEoYsqvWueWLLtx8QNwAPBDSKoG
+hXvkwd7ud3me1wCibHmcsyzI8YkA+8ZD1QkrSSbPWdWWAngOFM9ZLwmYRzzEeZ90
+qMyprtml8HYNoL5ij1W0Su2Z1KhwIbXrrAWe+NL/HNZymVjR0aV+g4T/eHJ0APOC
+99I6yJm9yCU1mpnoidDhHuUC0oPSJX5PQK5Kq71jfan/dAQ7XLaHZrqapJw0v9aV
+z7+FV0NjzcCAQPYKumgDnEmzpYnDYdQlMGqm/yHM3yQ2bNnn3eVf6/3WHRm/P+Zy
+tLSw+oJ73yWWLrl5WBylLANe7K8B2c7aH3pT5NMai12JsZ9psr2pDA+7M/vZvIye
+cvb0Y3vWXip9Jhc+rKQLdJjttSpaYOceZtZ6+n0uuwWvNbiKGkoDBNDHx09RrvTb
+e39vtvToABvNjVPIANVtzALvWl18TvPJTniZwKVpXrspwxoS4kLx2/mYgFLosznn
+48Q/Kgw7yoqfIvFrixOaE/p9gw4UDn8C79VWdy5wXzBibK3HoHQlDuDWX3vKacv7
+HagOYvKTR1JodDXrlxkVdleNcuvZYj9R940DVFh/HUyZuhucByGYroTk5UeXNKun
+ChS7dMYSaSZxkmeikMrrVMJSIk9i9AOwyWTV4CvIv+QU9zBhhaG5PbQaLMVhfStT
+TeJTVpdo81o=
+=r3YD
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1418151288_3854P--
