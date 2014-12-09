@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaLISy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:54:59 -0500
-Received: from omr1.cc.vt.edu ([198.82.141.52]:53874 "EHLO omr1.cc.vt.edu"
+	id S1751941AbaLISzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:55:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37259 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbaLISy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:54:57 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Eric Dumazet <edumazet@google.com>
-Cc: John Fastabend <john.r.fastabend@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: linux-next 20141208 - net/sched/sch_fq_codel.c:97 suspicious RCU
-In-Reply-To: Your message of "Tue, 09 Dec 2014 10:07:31 -0800."
-             <CANn89iJAN815z3TefSjj0uZyQQyH-wTiAckt3WeMc-F7DRgpKA@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <6468.1418147500@turing-police.cc.vt.edu>
-            <CANn89iJAN815z3TefSjj0uZyQQyH-wTiAckt3WeMc-F7DRgpKA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418151288_3854P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 09 Dec 2014 13:54:48 -0500
-Message-ID: <9914.1418151288@turing-police.cc.vt.edu>
+	id S1750862AbaLISzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:55:32 -0500
+Date: Tue, 9 Dec 2014 20:55:16 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, dahi@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
+Message-ID: <20141209185516.GB19260@redhat.com>
+References: <1418042769-25539-1-git-send-email-mst@redhat.com>
+ <1418042769-25539-5-git-send-email-mst@redhat.com>
+ <20141209120123.117ccfac.cornelia.huck@de.ibm.com>
+ <20141209122118.GF3993@redhat.com>
+ <20141209182319.20ce2dec.cornelia.huck@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209182319.20ce2dec.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418151288_3854P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Dec 09, 2014 at 06:23:19PM +0100, Cornelia Huck wrote:
+> On Tue, 9 Dec 2014 14:21:18 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > On Tue, Dec 09, 2014 at 12:01:23PM +0100, Cornelia Huck wrote:
+> > > On Mon, 8 Dec 2014 15:06:03 +0200
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > > > diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> > > > index 789275f..f9f87ba 100644
+> > > > --- a/drivers/s390/kvm/virtio_ccw.c
+> > > > +++ b/drivers/s390/kvm/virtio_ccw.c
+> > > > @@ -758,6 +758,13 @@ static int virtio_ccw_finalize_features(struct virtio_device *vdev)
+> > > >  	struct virtio_feature_desc *features;
+> > > >  	struct ccw1 *ccw;
+> 
+> This needs
+> 
+> +	struct virtio_device *vdev = &vcdev->vdev;
+> 
+> to make it compile :)
+> 
+> > > > 
+> > > > +	if (vcdev->revision == 1 &&
+> > > 
+> > > If we decide to keep this check, it should be for rev >= 1, though.
+> > 
+> > Fine, though this is theoretical, right?
+> > Ican change this with a patch on top.
+> > 
+> > > > +	    !__virtio_test_bit(vdev, VIRTIO_F_VERSION_1)) {
+> > > > +		dev_err(&vdev->dev, "virtio: device uses revision 1 "
+> > > > +			"but does not have VIRTIO_F_VERSION_1\n");
+> > > > +		return -EINVAL;
+> > > > +	}
+> > > > +
+> > > >  	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
+> > > >  	if (!ccw)
+> > > >  		return 0;
+> > > 
+> > > I'm still not convinced by this change: I'd prefer to allow rev 1
+> > > without VERSION_1, especially as the core makes all its decisions based
+> > > upon VERSION_1.
+> > 
+> > At the moment, but this is an implementation detail.
+> > This is exactly why I want this hard requirement in code.
+> > 
+> > 
+> > > Unless someone else has a good argument in favour of
+> > > this change.
+> > 
+> > 
+> > Let's not commit to something we are not sure we
+> > can support.
+> > 
+> > We can always remove this code, but once we release
+> > guest we won't be able to drop it.
+> > 
+> 
+> OK, with your qemu patch on the host side this seems to be fine. No
+> further objections from me for now.
 
-On Tue, 09 Dec 2014 10:07:31 -0800, Eric Dumazet said:
-> On Tue, Dec 9, 2014 at 9:51 AM, Valdis Kletnieks
 
-> > commit 46e5da40aec256155cfedee96dd21a75da941f2c
-> > Author: John Fastabend <john.fastabend@gmail.com>
-> > Date:   Fri Sep 12 20:04:52 2014 -0700
->
-> Well, its a (harmless) typo : this should really be an
-> rcu_dereference_bh() instead of rcu_dereference()
+I fixed up my tree and pushed, so it should be good for testing now.
 
-You want a patch, or you got it already?
-
-
---==_Exmh_1418151288_3854P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVIdFeAdmEQWDXROgAQI76g//eRKu5vEoYsqvWueWLLtx8QNwAPBDSKoG
-hXvkwd7ud3me1wCibHmcsyzI8YkA+8ZD1QkrSSbPWdWWAngOFM9ZLwmYRzzEeZ90
-qMyprtml8HYNoL5ij1W0Su2Z1KhwIbXrrAWe+NL/HNZymVjR0aV+g4T/eHJ0APOC
-99I6yJm9yCU1mpnoidDhHuUC0oPSJX5PQK5Kq71jfan/dAQ7XLaHZrqapJw0v9aV
-z7+FV0NjzcCAQPYKumgDnEmzpYnDYdQlMGqm/yHM3yQ2bNnn3eVf6/3WHRm/P+Zy
-tLSw+oJ73yWWLrl5WBylLANe7K8B2c7aH3pT5NMai12JsZ9psr2pDA+7M/vZvIye
-cvb0Y3vWXip9Jhc+rKQLdJjttSpaYOceZtZ6+n0uuwWvNbiKGkoDBNDHx09RrvTb
-e39vtvToABvNjVPIANVtzALvWl18TvPJTniZwKVpXrspwxoS4kLx2/mYgFLosznn
-48Q/Kgw7yoqfIvFrixOaE/p9gw4UDn8C79VWdy5wXzBibK3HoHQlDuDWX3vKacv7
-HagOYvKTR1JodDXrlxkVdleNcuvZYj9R940DVFh/HUyZuhucByGYroTk5UeXNKun
-ChS7dMYSaSZxkmeikMrrVMJSIk9i9AOwyWTV4CvIv+QU9zBhhaG5PbQaLMVhfStT
-TeJTVpdo81o=
-=r3YD
------END PGP SIGNATURE-----
-
---==_Exmh_1418151288_3854P--
+-- 
+MST
