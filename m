@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaLIFK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 00:10:26 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:47826 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaLIFKZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 00:10:25 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: wl1251: NVS firmware data
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1418078493.31640.4.camel@dcbw.local>
-Date: Tue, 9 Dec 2014 06:10:20 +0100
-Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
+	id S1751128AbaLIFXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 00:23:54 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:16198 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750719AbaLIFXx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 00:23:53 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'acme@redhat.com'" <acme@redhat.com>, "'bp@suse.de'" <bp@suse.de>,
+        "'mingo@kernel.org'" <mingo@kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 9 Dec 2014 13:23:27 +0800
+Subject: [PATCH V2] fix build error for vm tools
+Thread-Topic: [PATCH V2] fix build error for vm tools
+Thread-Index: AdATYUom+tPgr1R5SteFN9dl+uERSQADuoaA
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313FD@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E688B313FC@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313FC@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <2546C295-8A84-4399-B93D-CC65C812903C@holtmann.org>
-References: <201411271506.20457@pali> <201412081811.46943@pali> <30072B9E-2495-4F90-AC91-9C0D7E08F44E@holtmann.org> <201412082015.18501@pali> <1418066813.1350.18.camel@dcbw.local> <5485FF17.1070504@gmail.com> <1418078493.31640.4.camel@dcbw.local>
-To: Dan Williams <dcbw@redhat.com>
-X-Mailer: Apple Mail (2.1993)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+This patch fix the build error when make like this:
+make O=/xx/x vm
 
->>> a) change driver to prefer a new "wl1251-nvs-n900.bin" file, but fall
->>> back to "wl1251-nvs.bin" if the first one isn't present
->>> b) have a "wl1251-cal-nvs-update" service that, if wl1521-nvs-n900.bin
->>> is *not* present mounts the CAL MTD, reads the data, writes it out into
->>> wl1521-nvs-n900.bin, and the rmmod/modprobes the driver
->>> 
->>> and done?  Stuff that's not N900 just wouldn't ship the update service
->>> and would proceed like none of this happened.
->>> 
->>> Dan
->>> 
->>> 
->> 
->> That would mean that the driver should not be built-in, as afaik we 
->> cannot rmmod built-in drivers. Sure, it will work after a reboot, but 
->> this is a bit hacky, agree?
->> 
->> Also, new NVS file needs to be loaded when fcc regulation changes(flying 
->> abroad), so that would mean that the device would be outside of those 
->> until reboot (in case of built-in driver)
-> 
-> Regulatory stuff needs to be hooked into CRDA or the existing regulatory
-> codepaths, not some other path.  So when cfg80211 sets the regulatory
-> domain on the driver the driver needs to get the necessary NVS data.
-> Either the NVS for every domain (which cannot be a lot of them) gets
-> hardcoded into the driver, and then selected based on what cfg80211
-> says, or the driver needs to ask userspace for the NVS data based on
-> what cfg80211 says.  In all cases, cfg80211 drives the regulatory domain
-> [1].
-> 
-> a) How many regulatory domains does the driver support, how much data is
-> there for each domain, and can that be put into the driver instead of
-> getting it from the CAL partition?
-> 
-> b) what do *other* (non-N900) wl1251 devices do for regulatory data?
-> 
-> Dan
-> 
-> [1] unless there's some *restriction* hardcoded into the EEPROM of the
-> device, which in the case of the N900 there isn't, since the regulatory
-> data changes based on the MCC/MNC of the cellular side.
+use $(OUTPUT) to generate to the right place.
 
-and even these ones would all work just fine. The regulatory handling of cfg80211 is already multi-layer anyway. I will intersect from the driver provided information and userspace provided information.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ tools/vm/Makefile | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-I mean if userspace can just make up some NVS data to change the regulatory enforcement or let cfg80211 do it for you, there is no difference. So the real question is why bother with this at all in the first place. We already have a solution that does exactly what you want. Use CRDA and be done with it.
-
-And calibration data should be rather static for each device. It might differ from device a to device b, but on device a it would stay the same. These calibration data are normally programmed at the factory line and then never changed again.
-
-For me this sounds all a bit like that everybody is buying into this NVS file solution for everything and now trying to hack that into something workable. But nobody actually looks at the existing solutions out there and really tries to fix the mess that Nokia and TI left behind for this chipset.
-
-Regards
-
-Marcel
-
+diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+index 3d907da..2847345 100644
+--- a/tools/vm/Makefile
++++ b/tools/vm/Makefile
+@@ -1,22 +1,24 @@
+ # Makefile for vm tools
+ #
++include ../scripts/Makefile.include
+ TARGETS=page-types slabinfo
+ 
+ LIB_DIR = ../lib/api
+-LIBS = $(LIB_DIR)/libapikfs.a
++LIBS = $(OUTPUT)../lib/api/libapikfs.a
+ 
+ CC = $(CROSS_COMPILE)gcc
+ CFLAGS = -Wall -Wextra -I../lib/
+ LDFLAGS = $(LIBS)
+ 
++all: $(TARGETS)
+ $(TARGETS): $(LIBS)
+ 
+ $(LIBS):
+-	make -C $(LIB_DIR)
++	$(call descend,../lib/api libapikfs.a)
+ 
+ %: %.c
+-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
++	$(CC) $(CFLAGS) -o $(OUTPUT)$@ $< $(LDFLAGS)
+ 
+ clean:
+-	$(RM) page-types slabinfo
++	$(RM) $(OUTPUT)page-types $(OUTPUT)slabinfo
+ 	make -C $(LIB_DIR) clean
+-- 
+2.1.3
