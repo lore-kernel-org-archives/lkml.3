@@ -1,44 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaLISK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:10:58 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37075 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaLISK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:10:57 -0500
-Date: Tue, 09 Dec 2014 13:10:53 -0500 (EST)
-Message-Id: <20141209.131053.2026868499542642866.davem@davemloft.net>
-To: m-karicheri2@ti.com
-Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        robh+dt@kernel.org, grant.likely@linaro.org, sandeep_n@ti.com,
-        santosh.shilimkar@kernel.org
-Subject: Re: [PATCH v7 2/3] net: Add Keystone NetCP ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1417556503-22290-3-git-send-email-m-karicheri2@ti.com>
-References: <1417556503-22290-1-git-send-email-m-karicheri2@ti.com>
-	<1417556503-22290-3-git-send-email-m-karicheri2@ti.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 10:10:56 -0800 (PST)
+	id S1752060AbaLISSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:18:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54020 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005AbaLISSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:18:52 -0500
+Date: Tue, 9 Dec 2014 19:18:45 +0100
+From: Jan Kara <jack@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Jan Kara <jack@suse.cz>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: protect set_page_dirty() from ongoing truncation
+Message-ID: <20141209181845.GA22569@quack.suse.cz>
+References: <1417791166-32226-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417791166-32226-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Karicheri <m-karicheri2@ti.com>
-Date: Tue, 2 Dec 2014 16:41:42 -0500
+On Fri 05-12-14 09:52:44, Johannes Weiner wrote:
+> Tejun, while reviewing the code, spotted the following race condition
+> between the dirtying and truncation of a page:
+> 
+> __set_page_dirty_nobuffers()       __delete_from_page_cache()
+>   if (TestSetPageDirty(page))
+>                                      page->mapping = NULL
+> 				     if (PageDirty())
+> 				       dec_zone_page_state(page, NR_FILE_DIRTY);
+> 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>     if (page->mapping)
+>       account_page_dirtied(page)
+>         __inc_zone_page_state(page, NR_FILE_DIRTY);
+> 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> 
+> which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+> 
+> Dirtiers usually lock out truncation, either by holding the page lock
+> directly, or in case of zap_pte_range(), by pinning the mapcount with
+> the page table lock held.  The notable exception to this rule, though,
+> is do_wp_page(), for which this race exists.  However, do_wp_page()
+> already waits for a locked page to unlock before setting the dirty
+> bit, in order to prevent a race where clear_page_dirty() misses the
+> page bit in the presence of dirty ptes.  Upgrade that wait to a fully
+> locked set_page_dirty() to also cover the situation explained above.
+> 
+> Afterwards, the code in set_page_dirty() dealing with a truncation
+> race is no longer needed.  Remove it.
+> 
+> Reported-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@vger.kernel.org>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-> +static void set_pkt_info_le(u32 buff, u32 buff_len, u32 ndesc,
-> +			    struct knav_dma_desc *desc)
-> +{
-> +	desc->buff_len = cpu_to_le32(buff_len);
-> +	desc->buff = cpu_to_le32(buff);
-> +	desc->next_desc = cpu_to_le32(ndesc);
-> +}
+								Honza
 
-The members of knav_dma_desc are "u32", so you are going to get tons of
-static checker warnings from trying to assign cpu_to_le32()'s result
-(which is a le32) into them.
+> ---
+>  include/linux/writeback.h |  1 -
+>  mm/memory.c               | 27 +++++++++++++++++----------
+>  mm/page-writeback.c       | 43 ++++++++++++-------------------------------
+>  3 files changed, 29 insertions(+), 42 deletions(-)
+> 
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index a219be961c0a..00048339c23e 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -177,7 +177,6 @@ int write_cache_pages(struct address_space *mapping,
+>  		      struct writeback_control *wbc, writepage_t writepage,
+>  		      void *data);
+>  int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
+> -void set_page_dirty_balance(struct page *page);
+>  void writeback_set_ratelimit(void);
+>  void tag_pages_for_writeback(struct address_space *mapping,
+>  			     pgoff_t start, pgoff_t end);
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 3e503831e042..72d998eb0438 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2150,17 +2150,24 @@ reuse:
+>  		if (!dirty_page)
+>  			return ret;
+>  
+> -		/*
+> -		 * Yes, Virginia, this is actually required to prevent a race
+> -		 * with clear_page_dirty_for_io() from clearing the page dirty
+> -		 * bit after it clear all dirty ptes, but before a racing
+> -		 * do_wp_page installs a dirty pte.
+> -		 *
+> -		 * do_shared_fault is protected similarly.
+> -		 */
+>  		if (!page_mkwrite) {
+> -			wait_on_page_locked(dirty_page);
+> -			set_page_dirty_balance(dirty_page);
+> +			struct address_space *mapping;
+> +			int dirtied;
+> +
+> +			lock_page(dirty_page);
+> +			dirtied = set_page_dirty(dirty_page);
+> +			VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page);
+> +			mapping = dirty_page->mapping;
+> +			unlock_page(dirty_page);
+> +
+> +			if (dirtied && mapping) {
+> +				/*
+> +				 * Some device drivers do not set page.mapping
+> +				 * but still dirty their pages
+> +				 */
+> +				balance_dirty_pages_ratelimited(mapping);
+> +			}
+> +
+>  			/* file_update_time outside page_lock */
+>  			if (vma->vm_file)
+>  				file_update_time(vma->vm_file);
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 19ceae87522d..437174a2aaa3 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1541,16 +1541,6 @@ pause:
+>  		bdi_start_background_writeback(bdi);
+>  }
+>  
+> -void set_page_dirty_balance(struct page *page)
+> -{
+> -	if (set_page_dirty(page)) {
+> -		struct address_space *mapping = page_mapping(page);
+> -
+> -		if (mapping)
+> -			balance_dirty_pages_ratelimited(mapping);
+> -	}
+> -}
+> -
+>  static DEFINE_PER_CPU(int, bdp_ratelimits);
+>  
+>  /*
+> @@ -2123,32 +2113,25 @@ EXPORT_SYMBOL(account_page_dirtied);
+>   * page dirty in that case, but not all the buffers.  This is a "bottom-up"
+>   * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
+>   *
+> - * Most callers have locked the page, which pins the address_space in memory.
+> - * But zap_pte_range() does not lock the page, however in that case the
+> - * mapping is pinned by the vma's ->vm_file reference.
+> - *
+> - * We take care to handle the case where the page was truncated from the
+> - * mapping by re-checking page_mapping() inside tree_lock.
+> + * The caller must ensure this doesn't race with truncation.  Most will simply
+> + * hold the page lock, but e.g. zap_pte_range() calls with the page mapped and
+> + * the pte lock held, which also locks out truncation.
+>   */
+>  int __set_page_dirty_nobuffers(struct page *page)
+>  {
+>  	if (!TestSetPageDirty(page)) {
+>  		struct address_space *mapping = page_mapping(page);
+> -		struct address_space *mapping2;
+>  		unsigned long flags;
+>  
+>  		if (!mapping)
+>  			return 1;
+>  
+>  		spin_lock_irqsave(&mapping->tree_lock, flags);
+> -		mapping2 = page_mapping(page);
+> -		if (mapping2) { /* Race with truncate? */
+> -			BUG_ON(mapping2 != mapping);
+> -			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
+> -			account_page_dirtied(page, mapping);
+> -			radix_tree_tag_set(&mapping->page_tree,
+> -				page_index(page), PAGECACHE_TAG_DIRTY);
+> -		}
+> +		BUG_ON(page_mapping(page) != mapping);
+> +		WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
+> +		account_page_dirtied(page, mapping);
+> +		radix_tree_tag_set(&mapping->page_tree, page_index(page),
+> +				   PAGECACHE_TAG_DIRTY);
+>  		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+>  		if (mapping->host) {
+>  			/* !PageAnon && !swapper_space */
+> @@ -2305,12 +2288,10 @@ int clear_page_dirty_for_io(struct page *page)
+>  		/*
+>  		 * We carefully synchronise fault handlers against
+>  		 * installing a dirty pte and marking the page dirty
+> -		 * at this point. We do this by having them hold the
+> -		 * page lock at some point after installing their
+> -		 * pte, but before marking the page dirty.
+> -		 * Pages are always locked coming in here, so we get
+> -		 * the desired exclusion. See mm/memory.c:do_wp_page()
+> -		 * for more comments.
+> +		 * at this point.  We do this by having them hold the
+> +		 * page lock while dirtying the page, and pages are
+> +		 * always locked coming in here, so we get the desired
+> +		 * exclusion.
+>  		 */
+>  		if (TestClearPageDirty(page)) {
+>  			dec_zone_page_state(page, NR_FILE_DIRTY);
+> -- 
+> 2.1.3
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
