@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738AbaLIL61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:58:27 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:58032 "EHLO
+	id S1756757AbaLIL6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:58:33 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58038 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991AbaLIL6Y (ORCPT
+	with ESMTP id S1756742AbaLIL62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:58:24 -0500
+	Tue, 9 Dec 2014 06:58:28 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>, Olof Johansson <olof@lixom.net>
 Cc: Doug Anderson <dianders@chromium.org>,
@@ -14,9 +14,9 @@ Cc: Doug Anderson <dianders@chromium.org>,
         Gwendal Grignou <gwendal@google.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 1/6] mfd: cros_ec: Use fixed size arrays to transfer data with the EC
-Date: Tue,  9 Dec 2014 12:57:43 +0100
-Message-Id: <1418126268-12532-2-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 3/6] platform/chrome: Add Chrome OS EC userspace device interface
+Date: Tue,  9 Dec 2014 12:57:45 +0100
+Message-Id: <1418126268-12532-4-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418126268-12532-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1418126268-12532-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -24,219 +24,436 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct cros_ec_command will be used as an ioctl() argument for the
-API to control the ChromeOS EC from user-space. So the data structure
-has to be 64-bit safe to make it compatible between 32 and 64 binaries
-avoiding the need for a compat ioctl interface. Since pointers are self
-aligned to different byte boundaries, use fixed size arrays instead of
-pointers for transferring ingoing and outgoing data with the controller.
+From: Bill Richardson <wfrichar@chromium.org>
 
-Also, re-arrange struct members by decreasing alignment requirements to
-reduce the needing padding size.
+This patch adds a device interface to access the
+Chrome OS Embedded Controller from user-space.
 
+Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+Reviewed-by: Simon Glass <sjg@google.com>
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
-Hello,
+Changes since v1:
+ - The cros_ec_dev driver does not belong to drivers/mfd (Lee Jones)
+ - Don't call class_create in the probe function (Gwendal Grignou)
+ - Don't use the deprecated register_chrdev() function (Gwendal Grignou)
+ - Remove struct cros_ec_device *ec global variable (Lee Jones)
+ - Arrange structures to be 64-bit safe instead using the IOCTL compact API
+   (Alan Cox)
+ - Use _CHARDEV instead of _DEV as a postfix to denote that is a character
+   device user-space interface (Lee Jones)
+ - Remove the CROS_CLASS_NAME define and just use the name directly (Lee Jones)
+ - Remove unncessary include headers (Lee Jones)
+ - Add a newline when appropiate and remove double new lines (Lee Jones)
+ - If *offset == 0, there is no need to do *offset +=, just use = (Lee Jones)
+ - Use dev_err() instead of pr_err() when possible (Lee Jones)
+ - Remove unnecesary goto and just return an error instead (Lee Jones)
+ - Don't set .owner to THIS_MODULE since that is made by the core (Lee Jones)
+ - Document the ioctl number used in Documentation/ioctl/ioctl-number.txt
 
-I chose EC_PROTO2_MAX_PARAM_SIZE as the maximum length for the input and
-output buffers since I see that is what is assumed in the cros_ec driver
-as the maximum lengths. But the downstream kernel has also suppport for
-the EC host command protocol v3 even though there is currently no bus
-specific code to handle v3 packets. So I wonder if this is a good max
-len or if a different size should be used instead to support v2 and v3.
+ Documentation/ioctl/ioctl-number.txt  |   1 +
+ drivers/platform/chrome/Kconfig       |  14 +-
+ drivers/platform/chrome/Makefile      |   1 +
+ drivers/platform/chrome/cros_ec_dev.c | 268 ++++++++++++++++++++++++++++++++++
+ drivers/platform/chrome/cros_ec_dev.h |  47 ++++++
+ 5 files changed, 328 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.c
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.h
 
-Best regards,
-Javier
-
-Changes since v1: None, new patch.
-
- drivers/i2c/busses/i2c-cros-ec-tunnel.c | 51 +++++++--------------------------
- drivers/input/keyboard/cros_ec_keyb.c   | 13 +++++----
- drivers/mfd/cros_ec.c                   | 15 +++++-----
- include/linux/mfd/cros_ec.h             |  8 +++---
- 4 files changed, 29 insertions(+), 58 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-cros-ec-tunnel.c b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-index 875c22a..fa8dedd 100644
---- a/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-+++ b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-@@ -182,72 +182,41 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
- 	const u16 bus_num = bus->remote_bus;
- 	int request_len;
- 	int response_len;
--	u8 *request = NULL;
--	u8 *response = NULL;
- 	int result;
--	struct cros_ec_command msg;
-+	struct cros_ec_command msg = { };
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 8136e1f..51f4221 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -321,6 +321,7 @@ Code  Seq#(hex)	Include File		Comments
+ 0xDB	00-0F	drivers/char/mwave/mwavepub.h
+ 0xDD	00-3F	ZFCP device driver	see drivers/s390/scsi/
+ 					<mailto:aherrman@de.ibm.com>
++0xEC	00-01	drivers/platform/chrome/cros_ec_dev.h	ChromeOS EC driver
+ 0xF3	00-3F	drivers/usb/misc/sisusbvga/sisusb.h	sisfb (in development)
+ 					<mailto:thomas@winischhofer.net>
+ 0xF4	00-1F	video/mbxfb.h		mbxfb
+diff --git a/drivers/platform/chrome/Kconfig b/drivers/platform/chrome/Kconfig
+index 440ed77..75dc514 100644
+--- a/drivers/platform/chrome/Kconfig
++++ b/drivers/platform/chrome/Kconfig
+@@ -4,7 +4,7 @@
  
- 	request_len = ec_i2c_count_message(i2c_msgs, num);
- 	if (request_len < 0) {
- 		dev_warn(dev, "Error constructing message %d\n", request_len);
--		result = request_len;
--		goto exit;
-+		return request_len;
- 	}
+ menuconfig CHROME_PLATFORMS
+ 	bool "Platform support for Chrome hardware"
+-	depends on X86
++	depends on X86 || ARM
+ 	---help---
+ 	  Say Y here to get to see options for platform support for
+ 	  various Chromebooks and Chromeboxes. This option alone does
+@@ -16,8 +16,7 @@ if CHROME_PLATFORMS
+ 
+ config CHROMEOS_LAPTOP
+ 	tristate "Chrome OS Laptop"
+-	depends on I2C
+-	depends on DMI
++	depends on I2C && DMI && X86
+ 	---help---
+ 	  This driver instantiates i2c and smbus devices such as
+ 	  light sensors and touchpads.
+@@ -27,6 +26,7 @@ config CHROMEOS_LAPTOP
+ 
+ config CHROMEOS_PSTORE
+ 	tristate "Chrome OS pstore support"
++	depends on X86
+ 	---help---
+ 	  This module instantiates the persistent storage on x86 ChromeOS
+ 	  devices. It can be used to store away console logs and crash
+@@ -38,5 +38,13 @@ config CHROMEOS_PSTORE
+ 	  If you have a supported Chromebook, choose Y or M here.
+ 	  The module will be called chromeos_pstore.
+ 
++config CROS_EC_CHARDEV
++        tristate "Chrome OS Embedded Controller userspace device interface"
++        depends on MFD_CROS_EC
++        ---help---
++          This driver adds support to talk with the ChromeOS EC from userspace.
 +
- 	response_len = ec_i2c_count_response(i2c_msgs, num);
- 	if (response_len < 0) {
- 		/* Unexpected; no errors should come when NULL response */
- 		dev_warn(dev, "Error preparing response %d\n", response_len);
--		result = response_len;
--		goto exit;
--	}
--
--	if (request_len <= ARRAY_SIZE(bus->request_buf)) {
--		request = bus->request_buf;
--	} else {
--		request = kzalloc(request_len, GFP_KERNEL);
--		if (request == NULL) {
--			result = -ENOMEM;
--			goto exit;
--		}
--	}
--	if (response_len <= ARRAY_SIZE(bus->response_buf)) {
--		response = bus->response_buf;
--	} else {
--		response = kzalloc(response_len, GFP_KERNEL);
--		if (response == NULL) {
--			result = -ENOMEM;
--			goto exit;
--		}
-+		return response_len;
- 	}
++          If you have a supported Chromebook, choose Y or M here.
++          The module will be called cros_ec_dev.
  
--	result = ec_i2c_construct_message(request, i2c_msgs, num, bus_num);
-+	result = ec_i2c_construct_message(msg.outdata, i2c_msgs, num, bus_num);
- 	if (result)
--		goto exit;
-+		return result;
+ endif # CHROMEOS_PLATFORMS
+diff --git a/drivers/platform/chrome/Makefile b/drivers/platform/chrome/Makefile
+index 2b860ca..10f1361 100644
+--- a/drivers/platform/chrome/Makefile
++++ b/drivers/platform/chrome/Makefile
+@@ -1,3 +1,4 @@
  
- 	msg.version = 0;
- 	msg.command = EC_CMD_I2C_PASSTHRU;
--	msg.outdata = request;
- 	msg.outsize = request_len;
--	msg.indata = response;
- 	msg.insize = response_len;
- 
- 	result = cros_ec_cmd_xfer(bus->ec, &msg);
- 	if (result < 0)
--		goto exit;
-+		return result;
- 
--	result = ec_i2c_parse_response(response, i2c_msgs, &num);
-+	result = ec_i2c_parse_response(msg.indata, i2c_msgs, &num);
- 	if (result < 0)
--		goto exit;
-+		return result;
- 
- 	/* Indicate success by saying how many messages were sent */
--	result = num;
--exit:
--	if (request != bus->request_buf)
--		kfree(request);
--	if (response != bus->response_buf)
--		kfree(response);
--
--	return result;
-+	return num;
- }
- 
- static u32 ec_i2c_functionality(struct i2c_adapter *adap)
-diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
-index ffa989f..769f8f7 100644
---- a/drivers/input/keyboard/cros_ec_keyb.c
-+++ b/drivers/input/keyboard/cros_ec_keyb.c
-@@ -148,16 +148,19 @@ static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
- 
- static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
- {
+ obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+ obj-$(CONFIG_CHROMEOS_PSTORE)	+= chromeos_pstore.o
++obj-$(CONFIG_CROS_EC_CHARDEV)	+= cros_ec_dev.o
+diff --git a/drivers/platform/chrome/cros_ec_dev.c b/drivers/platform/chrome/cros_ec_dev.c
+new file mode 100644
+index 0000000..04cc8eb
+--- /dev/null
++++ b/drivers/platform/chrome/cros_ec_dev.c
+@@ -0,0 +1,268 @@
++/*
++ * cros_ec_dev - expose the Chrome OS Embedded Controller to user-space
++ *
++ * Copyright (C) 2014 Google, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/fs.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/uaccess.h>
++
++#include "cros_ec_dev.h"
++
++/* Device variables */
++#define CROS_MAX_DEV 128
++static struct class *cros_class;
++static int ec_major;
++
++/* Basic communication */
++static int ec_get_version(struct cros_ec_device *ec, char *str, int maxlen)
++{
++	struct ec_response_get_version *resp;
++	static const char * const current_image_name[] = {
++		"unknown", "read-only", "read-write", "invalid",
++	};
++	struct cros_ec_command msg = {
++		.version = 0,
++		.command = EC_CMD_GET_VERSION,
++		.outdata = { 0 },
++		.outsize = 0,
++		.indata = { 0 },
++		.insize = sizeof(*resp),
++	};
 +	int ret;
- 	struct cros_ec_command msg = {
--		.version = 0,
- 		.command = EC_CMD_MKBP_STATE,
--		.outdata = NULL,
--		.outsize = 0,
--		.indata = kb_state,
- 		.insize = ckdev->cols,
- 	};
- 
--	return cros_ec_cmd_xfer(ckdev->ec, &msg);
-+	ret = cros_ec_cmd_xfer(ckdev->ec, &msg);
++
++	ret = cros_ec_cmd_xfer(ec, &msg);
 +	if (ret < 0)
 +		return ret;
 +
-+	memcpy(kb_state, msg.indata, ckdev->cols);
++	if (msg.result != EC_RES_SUCCESS) {
++		snprintf(str, maxlen,
++			 "%s\nUnknown EC version: EC returned %d\n",
++			 CROS_EC_DEV_VERSION, msg.result);
++		return 0;
++	}
++
++	resp = (struct ec_response_get_version *)msg.indata;
++	if (resp->current_image >= ARRAY_SIZE(current_image_name))
++		resp->current_image = 3; /* invalid */
++
++	snprintf(str, maxlen, "%s\n%s\n%s\n\%s\n", CROS_EC_DEV_VERSION,
++		 resp->version_string_ro, resp->version_string_rw,
++		 current_image_name[resp->current_image]);
 +
 +	return 0;
- }
- 
- static irqreturn_t cros_ec_keyb_irq(int irq, void *data)
-diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-index fc0c81e..c872e1b 100644
---- a/drivers/mfd/cros_ec.c
-+++ b/drivers/mfd/cros_ec.c
-@@ -74,15 +74,11 @@ int cros_ec_cmd_xfer(struct cros_ec_device *ec_dev,
- 	ret = ec_dev->cmd_xfer(ec_dev, msg);
- 	if (msg->result == EC_RES_IN_PROGRESS) {
- 		int i;
--		struct cros_ec_command status_msg;
--		struct ec_response_get_comms_status status;
-+		struct cros_ec_command status_msg = { };
-+		struct ec_response_get_comms_status *status;
- 
--		status_msg.version = 0;
- 		status_msg.command = EC_CMD_GET_COMMS_STATUS;
--		status_msg.outdata = NULL;
--		status_msg.outsize = 0;
--		status_msg.indata = (uint8_t *)&status;
--		status_msg.insize = sizeof(status);
-+		status_msg.insize = sizeof(*status);
- 
- 		/*
- 		 * Query the EC's status until it's no longer busy or
-@@ -98,7 +94,10 @@ int cros_ec_cmd_xfer(struct cros_ec_device *ec_dev,
- 			msg->result = status_msg.result;
- 			if (status_msg.result != EC_RES_SUCCESS)
- 				break;
--			if (!(status.flags & EC_COMMS_STATUS_PROCESSING))
++}
 +
-+			status = (struct ec_response_get_comms_status *)
-+				 status_msg.indata;
-+			if (!(status->flags & EC_COMMS_STATUS_PROCESSING))
- 				break;
- 		}
- 	}
-diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-index 0e166b9..71675b1 100644
---- a/include/linux/mfd/cros_ec.h
-+++ b/include/linux/mfd/cros_ec.h
-@@ -38,20 +38,20 @@ enum {
- /*
-  * @version: Command version number (often 0)
-  * @command: Command to send (EC_CMD_...)
-- * @outdata: Outgoing data to EC
-  * @outsize: Outgoing length in bytes
-- * @indata: Where to put the incoming data from EC
-  * @insize: Max number of bytes to accept from EC
-  * @result: EC's response to the command (separate from communication failure)
-+ * @outdata: Outgoing data to EC
-+ * @indata: Where to put the incoming data from EC
-  */
- struct cros_ec_command {
- 	uint32_t version;
- 	uint32_t command;
--	uint8_t *outdata;
- 	uint32_t outsize;
--	uint8_t *indata;
- 	uint32_t insize;
- 	uint32_t result;
-+	uint8_t outdata[EC_PROTO2_MAX_PARAM_SIZE];
-+	uint8_t indata[EC_PROTO2_MAX_PARAM_SIZE];
- };
- 
- /**
++/* Device file ops */
++static int ec_device_open(struct inode *inode, struct file *filp)
++{
++	filp->private_data = container_of(inode->i_cdev,
++					  struct cros_ec_device, cdev);
++	return 0;
++}
++
++static int ec_device_release(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++
++static ssize_t ec_device_read(struct file *filp, char __user *buffer,
++			      size_t length, loff_t *offset)
++{
++	struct cros_ec_device *ec = filp->private_data;
++	char msg[sizeof(struct ec_response_get_version) +
++		 sizeof(CROS_EC_DEV_VERSION)];
++	size_t count;
++	int ret;
++
++	if (*offset != 0)
++		return 0;
++
++	ret = ec_get_version(ec, msg, sizeof(msg));
++	if (ret)
++		return ret;
++
++	count = min(length, strlen(msg));
++
++	if (copy_to_user(buffer, msg, count))
++		return -EFAULT;
++
++	*offset = count;
++	return count;
++}
++
++/* Ioctls */
++static long ec_device_ioctl_xcmd(struct cros_ec_device *ec, void __user *arg)
++{
++	long ret;
++	struct cros_ec_command s_cmd = { };
++
++	if (copy_from_user(&s_cmd, arg, sizeof(s_cmd)))
++		return -EFAULT;
++
++	ret = cros_ec_cmd_xfer(ec, &s_cmd);
++	/* Only copy data to userland if data was received. */
++	if (ret < 0)
++		return ret;
++
++	if (copy_to_user(arg, &s_cmd, sizeof(s_cmd)))
++		return -EFAULT;
++
++	return 0;
++}
++
++static long ec_device_ioctl_readmem(struct cros_ec_device *ec, void __user *arg)
++{
++	struct cros_ec_readmem s_mem = { };
++	long num;
++
++	/* Not every platform supports direct reads */
++	if (!ec->cmd_readmem)
++		return -ENOTTY;
++
++	if (copy_from_user(&s_mem, arg, sizeof(s_mem)))
++		return -EFAULT;
++
++	num = ec->cmd_readmem(ec, s_mem.offset, s_mem.bytes, s_mem.buffer);
++	if (num <= 0)
++		return num;
++
++	if (copy_to_user((void __user *)arg, &s_mem, sizeof(s_mem)))
++		return -EFAULT;
++
++	return 0;
++}
++
++static long ec_device_ioctl(struct file *filp, unsigned int cmd,
++			    unsigned long arg)
++{
++	struct cros_ec_device *ec = filp->private_data;
++
++	if (_IOC_TYPE(cmd) != CROS_EC_DEV_IOC)
++		return -ENOTTY;
++
++	switch (cmd) {
++	case CROS_EC_DEV_IOCXCMD:
++		return ec_device_ioctl_xcmd(ec, (void __user *)arg);
++	case CROS_EC_DEV_IOCRDMEM:
++		return ec_device_ioctl_readmem(ec, (void __user *)arg);
++	}
++
++	return -ENOTTY;
++}
++
++/* Module initialization */
++static const struct file_operations fops = {
++	.open = ec_device_open,
++	.release = ec_device_release,
++	.read = ec_device_read,
++	.unlocked_ioctl = ec_device_ioctl,
++};
++
++static int ec_device_probe(struct platform_device *pdev)
++{
++	struct cros_ec_device *ec = dev_get_drvdata(pdev->dev.parent);
++	int retval = -ENOTTY;
++	dev_t devno = MKDEV(ec_major, 0);
++
++	/* Instantiate it (and remember the EC) */
++	cdev_init(&ec->cdev, &fops);
++
++	retval = cdev_add(&ec->cdev, devno, 1);
++	if (retval) {
++		dev_err(&pdev->dev, ": failed to add character device\n");
++		return retval;
++	}
++
++	ec->vdev = device_create(cros_class, NULL, devno, ec,
++				 CROS_EC_DEV_NAME);
++	if (IS_ERR(ec->vdev)) {
++		retval = PTR_ERR(ec->vdev);
++		dev_err(&pdev->dev, ": failed to create device\n");
++		cdev_del(&ec->cdev);
++		return retval;
++	}
++
++	return 0;
++}
++
++static int ec_device_remove(struct platform_device *pdev)
++{
++	struct cros_ec_device *ec = dev_get_drvdata(pdev->dev.parent);
++
++	device_destroy(cros_class, MKDEV(ec_major, 0));
++	cdev_del(&ec->cdev);
++	return 0;
++}
++
++static struct platform_driver cros_ec_dev_driver = {
++	.driver = {
++		.name = "cros-ec-dev",
++	},
++	.probe = ec_device_probe,
++	.remove = ec_device_remove,
++};
++
++static int __init cros_ec_dev_init(void)
++{
++	int ret;
++	dev_t dev = 0;
++
++	cros_class = class_create(THIS_MODULE, "chromeos");
++	if (IS_ERR(cros_class)) {
++		pr_err(CROS_EC_DEV_NAME ": failed to register device class\n");
++		return PTR_ERR(cros_class);
++	}
++
++	/* Get a range of minor numbers (starting with 0) to work with */
++	ret = alloc_chrdev_region(&dev, 0, CROS_MAX_DEV, CROS_EC_DEV_NAME);
++	if (ret < 0) {
++		pr_err(CROS_EC_DEV_NAME ": alloc_chrdev_region() failed\n");
++		goto failed_chrdevreg;
++	}
++	ec_major = MAJOR(dev);
++
++	/* Register the driver */
++	ret = platform_driver_register(&cros_ec_dev_driver);
++	if (ret < 0) {
++		pr_warn(CROS_EC_DEV_NAME ": can't register driver: %d\n", ret);
++		goto failed_devreg;
++	}
++	return 0;
++
++failed_devreg:
++	unregister_chrdev_region(MKDEV(ec_major, 0), CROS_MAX_DEV);
++failed_chrdevreg:
++	class_destroy(cros_class);
++	return ret;
++}
++
++static void __exit cros_ec_dev_exit(void)
++{
++	platform_driver_unregister(&cros_ec_dev_driver);
++	unregister_chrdev(ec_major, CROS_EC_DEV_NAME);
++	class_destroy(cros_class);
++}
++
++module_init(cros_ec_dev_init);
++module_exit(cros_ec_dev_exit);
++
++MODULE_AUTHOR("Bill Richardson <wfrichar@chromium.org>");
++MODULE_DESCRIPTION("Userspace interface to the Chrome OS Embedded Controller");
++MODULE_VERSION("1.0");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/platform/chrome/cros_ec_dev.h b/drivers/platform/chrome/cros_ec_dev.h
+new file mode 100644
+index 0000000..15c54c4
+--- /dev/null
++++ b/drivers/platform/chrome/cros_ec_dev.h
+@@ -0,0 +1,47 @@
++/*
++ * cros_ec_dev - expose the Chrome OS Embedded Controller to userspace
++ *
++ * Copyright (C) 2014 Google, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _CROS_EC_DEV_H_
++#define _CROS_EC_DEV_H_
++
++#include <linux/ioctl.h>
++#include <linux/types.h>
++#include <linux/mfd/cros_ec.h>
++
++#define CROS_EC_DEV_NAME "cros_ec"
++#define CROS_EC_DEV_VERSION "1.0.0"
++
++/*
++ * @offset: within EC_LPC_ADDR_MEMMAP region
++ * @bytes: number of bytes to read. zero means "read a string" (including '\0')
++ *         (at most only EC_MEMMAP_SIZE bytes can be read)
++ * @buffer: where to store the result
++ * ioctl returns the number of bytes read, negative on error
++ */
++struct cros_ec_readmem {
++	uint32_t offset;
++	uint32_t bytes;
++	uint8_t buffer[EC_MEMMAP_SIZE];
++};
++
++#define CROS_EC_DEV_IOC       0xEC
++#define CROS_EC_DEV_IOCXCMD   _IOWR(CROS_EC_DEV_IOC, 0, struct cros_ec_command)
++#define CROS_EC_DEV_IOCRDMEM  _IOWR(CROS_EC_DEV_IOC, 1, struct cros_ec_readmem)
++
++#endif /* _CROS_EC_DEV_H_ */
 -- 
 2.1.0
 
