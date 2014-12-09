@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaLIH7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 02:59:39 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:43389 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaLIH7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 02:59:38 -0500
-Date: Tue, 9 Dec 2014 08:59:30 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some
- cases - deadlock
-Message-ID: <20141209085930.6b831850@thinkpad-w530>
-In-Reply-To: <20141208212236.GU25340@linux.vnet.ibm.com>
-References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141208212236.GU25340@linux.vnet.ibm.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1752497AbaLIIHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:07:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42423 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039AbaLIIHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 03:07:21 -0500
+Date: Tue, 9 Dec 2014 09:07:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrew Duggan <aduggan@synaptics.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Amordea Whiteoak <amordea@gmail.com>
+Subject: Re: [PATCH] HID: rmi: Check for additional ACM registers appended
+ to F11 data report
+In-Reply-To: <1418079720-11766-1-git-send-email-aduggan@synaptics.com>
+Message-ID: <alpine.LNX.2.00.1412090907010.14413@pobox.suse.cz>
+References: <1418079720-11766-1-git-send-email-aduggan@synaptics.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120907-0021-0000-0000-0000021096AF
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The compiler is within its rights to optimize the active_writer local
-> variable out of existence, thus re-introducing the possible race with
-> the writer that can pass a NULL pointer to wake_up_process().  So you
-> really need the ACCESS_ONCE() on the read from cpu_hotplug.active_writer.
-> Please see http://lwn.net/Articles/508991/ for more information why
-> this is absolutely required.
+On Mon, 8 Dec 2014, Andrew Duggan wrote:
 
-You're absolutely right, saw your reply on the other patch just after I sent
-this version ...
-
-So if you agree with the change below, I'll send an updated version!
-
+> If a touchpad reports the F11 data40 register then this indicates that the touchpad reports
+> additional ACM (Accidental Contact Mitigation) data after the F11 data in the HID attention
+> report. These additional bytes shift the position of the F30 button data causing the driver
+> to incorrectly report button state when this functionality is present. This patch accounts
+> for the additional data in the report.
 > 
-> > +		if (unlikely(active_writer))
-> > +			wake_up_process(active_writer);
-> >  		cpuhp_lock_release();
-> >  		return;
-> >  	}
-> > @@ -161,15 +167,17 @@ void cpu_hotplug_begin(void)
-> >  	cpuhp_lock_acquire();
-> >  	for (;;) {
-> >  		mutex_lock(&cpu_hotplug.lock);
-> > +		__set_current_state(TASK_UNINTERRUPTIBLE);
+> Fixes:
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1398533
 > 
-> You lost me on this one.  How does this help?
-> 
-> 							Thanx, Paul
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
 
-Imagine e.g. the following (simplified) scenario:
+Applied to hid.git#for-3.19/rmi. Thanks,
 
-CPU1                               CPU2
-----------------------------------------------------------------------------
-!mutex_trylock(&cpu_hotplug.lock) |
-                                  | cpu_hotplug.puts_pending == 0
-cpu_hotplug.puts_pending++;       |
-                                  | cpu_hotplug.refcount != 0
-wake_up_process(active_writer)
-                                  | __set_current_state(TASK_UNINTERRUPTIBLE);
-                                  | schedule();
-                                  | /* will never be woken up */
-
-Therefore we have to move the condition check inside the 
-  __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
-section to not miss any wake ups when the condition is satisfied.
-
-So wake_up_process() will either see TASK_RUNNING and do nothing or see
-TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
-fact be woken up again.
-
-
-Thanks a lot!
-
-David
-
+-- 
+Jiri Kosina
+SUSE Labs
