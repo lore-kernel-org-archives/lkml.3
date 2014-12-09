@@ -1,326 +1,988 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbaLIMbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:31:45 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:53500 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604AbaLIMbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:31:43 -0500
-Date: Tue, 9 Dec 2014 13:31:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/asm tree changes for v3.19
-Message-ID: <20141209123138.GA29062@gmail.com>
+	id S1756840AbaLIMdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:33:15 -0500
+Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:52011 "EHLO
+	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756604AbaLIMdM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 07:33:12 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <5486EBFF.7060304@topic.nl>
+Date: Tue, 9 Dec 2014 13:33:03 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <mturquette@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] Add TI CDCE925 I2C controlled clock synthesizer driver
+References: <1414151815-21736-2-git-send-email-mike.looijmans@topic.nl> <1417677976-4218-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1417677976-4218-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-
-Please pull the latest x86-asm-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asm-for-linus
-
-   # HEAD: 3736708f034ae1e8c62789ed737e8b90d5b40210 x86: Replace seq_printf() with seq_puts()
-
-Misc changes:
-
- - context switch micro-optimization
- - debug printout micro-optimization
- - comment enhancements and typo fix
-
- Thanks,
-
-	Ingo
-
------------------->
-Andy Lutomirski (2):
-      sched/x86_64: Don't save flags on context switch
-      sched/x86: Add a comment clarifying LDT context switching
-
-Nicholas Mc Guire (1):
-      x86/asm: Fix typo in arch/x86/kernel/asm_offset_64.c
-
-Rasmus Villemoes (1):
-      x86: Replace seq_printf() with seq_puts()
+﻿Just a ping to ask for attention. Anyone care to review, comment or otherwise 
+provide some feedback?
 
 
- arch/x86/include/asm/mmu_context.h | 11 ++++++++++-
- arch/x86/include/asm/switch_to.h   | 12 ++++++++----
- arch/x86/kernel/asm-offsets_64.c   |  1 -
- arch/x86/kernel/cpu/proc.c         | 10 +++++-----
- arch/x86/kernel/irq.c              | 30 +++++++++++++++---------------
- arch/x86/mm/pat.c                  |  2 +-
- arch/x86/platform/uv/tlb_uv.c      | 26 ++++++++++++--------------
- 7 files changed, 51 insertions(+), 41 deletions(-)
+On 12/04/2014 08:26 AM, Mike Looijmans wrote:
+> This driver supports the TI CDCE925 programmable clock synthesizer.
+> The chip contains two PLLs with spread-spectrum clocking support and
+> five output dividers. The driver only supports the following setup,
+> and uses a fixed setting for the output muxes:
+>    Y1 is derived from the input clock
+>    Y2 and Y3 derive from PLL1
+>    Y4 and Y5 derive from PLL2
+> Given a target output frequency, the driver will set the PLL and
+> divider to best approximate the desired output.
+>
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> ---
+>
+> v2: Coding style check
+>      Add devicetree binding documentation
+>
+>   .../devicetree/bindings/clock/cdce925.txt          |   61 ++
+>   drivers/clk/Kconfig                                |   17 +
+>   drivers/clk/Makefile                               |    1 +
+>   drivers/clk/clk-cdce925.c                          |  792 ++++++++++++++++++++
+>   4 files changed, 871 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/clock/cdce925.txt
+>   create mode 100644 drivers/clk/clk-cdce925.c
+>
+> diff --git a/Documentation/devicetree/bindings/clock/cdce925.txt b/Documentation/devicetree/bindings/clock/cdce925.txt
+> new file mode 100644
+> index 0000000..0eac770
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/cdce925.txt
+> @@ -0,0 +1,61 @@
+> +Binding for TO CDCE925 programmable I2C clock synthesizers.
+> +
+> +Reference
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +[2] http://www.ti.com/product/cdce925
+> +
+> +Required properties:
+> + - compatible: Shall be one of "cdce925", "cdce925pw",
+> + - reg: I2C device address.
+> + - clocks: Points to a fixed parent clock that provides the input frequency.
+> + - #clock-cells: From common clock bindings: Shall be 1.
+> +
+> +Optional properties:
+> + - xtal-load-pf: Crystal load-capacitor value to fine-tune performance on a
+> +                 board, or to compensate for external influences.
+> +
+> +
+> +For each connected output Y1 through Y5, a child node should be provided. Each
+> +child node must have the following properties:
+> + - #clock-cells: From common clock bindings: Shall be 0.
+> +Optional properties for the output nodes:
+> + - clock-frequency: Output frequency to generate. This defines the output
+> +		    frequency set during boot. It can be reprogrammed during
+> +		    runtime through the common clock framework.
+> +
+> +For both PLL1 and PLL2 an optional child node can be used to specify spread
+> +spectrum clocking parameters.
+> +  - spread-spectrum: SSC mode as defined in the data sheet.
+> +  - spread-spectrum-center: Use "centered" mode instead of "max" mode. When this
+> +    is present, the clock runs at the requested frequency on average.
+> +
+> +
+> +Example:
+> +
+> +	clockgen: cdce925pw@64 {
+> +		compatible = "cdce925";
+> +		reg = <0x64>;
+> +		clocks = <&xtal_27Mhz>;
+> +		xtal-load-pf = <5>;
+> +		#clock-cells = <1>;
+> +		/* PLL options to get SSC 1% centered */
+> +		PLL2 {
+> +			spread-spectrum = <4>;
+> +			spread-spectrum-center;
+> +		};
+> +		/* Outputs calculate mux and divider settings */
+> +		Y1 {
+> +			#clock-cells = <0>;
+> +			clock-frequency = <27000>;
+> +		};
+> +		audio_clock: Y2 {
+> +			#clock-cells = <0>;
+> +			clock-frequency = <12288000>; /* SPDIF audio */
+> +		};
+> +		hdmi_pixel_clock: Y4 {
+> +			#clock-cells = <0>;
+> +			clock-frequency = <148500000>; /* HD-video */
+> +		};
+> +	};
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 455fd17..4e474b3 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -77,6 +77,23 @@ config COMMON_CLK_SI570
+>   	  This driver supports Silicon Labs 570/571/598/599 programmable
+>   	  clock generators.
+>
+> +config COMMON_CLK_CDCE925
+> +	tristate "Clock driver for TI CDCE925 devices"
+> +	depends on I2C
+> +	depends on OF
+> +	select REGMAP_I2C
+> +	help
+> +	---help---
+> +	  This driver supports the TI CDCE925 programmable clock synthesizer.
+> +	  The chip contains two PLLs with spread-spectrum clocking support and
+> +	  five output dividers. The driver only supports the following setup,
+> +	  and uses a fixed setting for the output muxes.
+> +	  Y1 is derived from the input clock
+> +	  Y2 and Y3 derive from PLL1
+> +	  Y4 and Y5 derive from PLL2
+> +	  Given a target output frequency, the driver will set the PLL and
+> +	  divider to best approximate the desired output.
+> +
+>   config COMMON_CLK_S2MPS11
+>   	tristate "Clock driver for S2MPS1X/S5M8767 MFD"
+>   	depends on MFD_SEC_CORE
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index d5fba5b..c476066 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -35,6 +35,7 @@ obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
+>   obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
+>   obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
+>   obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
+> +obj-$(CONFIG_COMMON_CLK_CDCE925)	+= clk-cdce925.o
+>   obj-$(CONFIG_CLK_TWL6040)		+= clk-twl6040.o
+>   obj-$(CONFIG_ARCH_U300)			+= clk-u300.o
+>   obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
+> diff --git a/drivers/clk/clk-cdce925.c b/drivers/clk/clk-cdce925.c
+> new file mode 100644
+> index 0000000..faa867f
+> --- /dev/null
+> +++ b/drivers/clk/clk-cdce925.c
+> @@ -0,0 +1,792 @@
+> +/*
+> + * Driver for TI Dual PLL CDCE925 clock synthesizer
+> + *
+> + * This driver always connects the Y1 to the input clock, Y2/Y3 to PLL1
+> + * and Y4/Y5 to PLL2. PLL frequency is set on a first-come-first-serve
+> + * basis. Clients can directly request any frequency that the chip can
+> + * deliver using the standard clk framework. In addition, the device can
+> + * be configured and activated via the devicetree.
+> + *
+> + * Copyright (C) 2014, Topic Embedded Products
+> + * Licenced under GPL
+> + */
+> +#include <linux/clk-provider.h>
+> +#include <linux/clk-private.h>
+> +#include <linux/delay.h>
+> +#include <linux/module.h>
+> +#include <linux/i2c.h>
+> +#include <linux/regmap.h>
+> +#include <linux/slab.h>
+> +#include <linux/gcd.h>
+> +
+> +/* The chip has 2 PLLs which can be routed through dividers to 5 outputs.
+> + * Model this as 2 PLL clocks which are parents to the outputs.
+> + */
+> +#define NUMBER_OF_PLLS	2
+> +#define NUMBER_OF_OUTPUTS	5
+> +
+> +#define CDCE925_REG_GLOBAL1	0x01
+> +#define CDCE925_REG_Y1SPIPDIVH	0x02
+> +#define CDCE925_REG_PDIVL	0x03
+> +#define CDCE925_REG_XCSEL	0x05
+> +/* PLL parameters start at 0x10, steps of 0x10 */
+> +#define CDCE925_OFFSET_PLL	0x10
+> +/* Add CDCE925_OFFSET_PLL * (pll) to these registers before sending */
+> +#define CDCE925_PLL_MUX_OUTPUTS	0x14
+> +#define CDCE925_PLL_MULDIV	0x18
+> +
+> +#define CDCE925_PLL_FREQUENCY_MIN	 80000000
+> +#define CDCE925_PLL_FREQUENCY_MAX	230000000
+> +struct clk_cdce925_chip;
+> +
+> +struct clk_cdce925_output {
+> +	struct clk_hw hw;
+> +	struct clk_cdce925_chip *chip;
+> +	u8 index;
+> +	u16 pdiv; /* 1..127 for Y2-Y5; 1..1023 for Y1 */
+> +};
+> +#define to_clk_cdce925_output(_hw) \
+> +	container_of(_hw, struct clk_cdce925_output, hw)
+> +
+> +struct clk_cdce925_pll {
+> +	struct clk_hw hw;
+> +	struct clk_cdce925_chip *chip;
+> +	u8 index;
+> +	u16 m;   /* 1..511 */
+> +	u16 n;   /* 1..4095 */
+> +};
+> +#define to_clk_cdce925_pll(_hw)	container_of(_hw, struct clk_cdce925_pll, hw)
+> +
+> +struct clk_cdce925_chip {
+> +	struct regmap *regmap;
+> +	struct i2c_client *i2c_client;
+> +	struct clk_cdce925_pll pll[NUMBER_OF_PLLS];
+> +	struct clk_cdce925_output clk[NUMBER_OF_OUTPUTS];
+> +};
+> +
+> +/* ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** */
+> +
+> +static unsigned long cdce925_pll_calculate_rate(unsigned long parent_rate,
+> +	u16 n, u16 m)
+> +{
+> +	if ((!m || !n) || (m == n))
+> +		return parent_rate; /* In bypass mode runs at same frequency */
+> +	return mult_frac(parent_rate, (unsigned long)n, (unsigned long)m);
+> +}
+> +
+> +static unsigned long cdce925_pll_recalc_rate(struct clk_hw *hw,
+> +		unsigned long parent_rate)
+> +{
+> +	/* Output frequency of PLL is Fout = (Fin/Pdiv)*(N/M) */
+> +	struct clk_cdce925_pll *data = to_clk_cdce925_pll(hw);
+> +
+> +	return cdce925_pll_calculate_rate(parent_rate, data->n, data->m);
+> +}
+> +
+> +static int cdce925_pll_find_rate(unsigned long rate,
+> +		unsigned long parent_rate, u16 *n, u16 *m)
+> +{
+> +	if (rate <= parent_rate) {
+> +		/* Can always deliver parent_rate in bypass mode */
+> +		rate = parent_rate;
+> +		*n = 0;
+> +		*m = 0;
+> +	} else {
+> +		/* In PLL mode, need to apply min/max range */
+> +		unsigned long un;
+> +		unsigned long um;
+> +		unsigned long g;
+> +
+> +		if (rate < CDCE925_PLL_FREQUENCY_MIN)
+> +			rate = CDCE925_PLL_FREQUENCY_MIN;
+> +		else if (rate > CDCE925_PLL_FREQUENCY_MAX)
+> +			rate = CDCE925_PLL_FREQUENCY_MAX;
+> +
+> +		g = gcd(rate, parent_rate);
+> +		um = parent_rate / g;
+> +		un = rate / g;
+> +		/* When outside hw range, reduce to fit (rounding errors) */
+> +		while ((un > 4095) || (um > 511)) {
+> +			un >>= 1;
+> +			um >>= 1;
+> +		}
+> +		if (un == 0)
+> +			un = 1;
+> +		if (um == 0)
+> +			um = 1;
+> +
+> +		*n = un;
+> +		*m = um;
+> +	}
+> +
+> +	pr_debug("%s(%lu,%lu) n=%u m=%u\n",
+> +			__func__, rate, parent_rate, *n, *m);
+> +
+> +	return 0;
+> +}
+> +
+> +static long cdce925_pll_round_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long *parent_rate)
+> +{
+> +	struct clk_cdce925_pll *data = to_clk_cdce925_pll(hw);
+> +	u16 n, m;
+> +	int ret;
+> +
+> +	pr_debug("%s (index=%d parent_rate=%lu rate=%lu)\n", __func__,
+> +		data->index, *parent_rate, rate);
+> +	ret = cdce925_pll_find_rate(rate, *parent_rate, &n, &m);
+> +	return (long)cdce925_pll_calculate_rate(*parent_rate, n, m);
+> +}
+> +
+> +static int cdce925_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long parent_rate)
+> +{
+> +	struct clk_cdce925_pll *data = to_clk_cdce925_pll(hw);
+> +
+> +	if (!rate || (rate == parent_rate)) {
+> +		data->m = 0; /* Bypass mode */
+> +		data->n = 0;
+> +		return 0;
+> +	}
+> +
+> +	if ((rate < CDCE925_PLL_FREQUENCY_MIN) ||
+> +		(rate > CDCE925_PLL_FREQUENCY_MAX)) {
+> +		pr_debug("%s: rate %lu outside PLL range.\n", __func__, rate);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (rate < parent_rate) {
+> +		pr_debug("%s: rate %lu less than parent rate %lu.\n", __func__,
+> +			rate, parent_rate);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return cdce925_pll_find_rate(rate, parent_rate, &data->n, &data->m);
+> +}
+> +
+> +
+> +/* calculate p = max(0, 4 - int(log2 (n/m))) */
+> +static u8 cdce925_pll_calc_p(u16 n, u16 m)
+> +{
+> +	u8 p;
+> +	u16 r = n / m;
+> +
+> +	if (r >= 16)
+> +		return 0;
+> +	p = 4;
+> +	while (r > 1) {
+> +		r >>= 1;
+> +		--p;
+> +	}
+> +	return p;
+> +}
+> +
+> +/* Returns VCO range bits for VCO1_0_RANGE */
+> +static u8 cdce925_pll_calc_range_bits(struct clk_hw *hw, u16 n, u16 m)
+> +{
+> +	struct clk *parent = clk_get_parent(hw->clk);
+> +	unsigned long rate = clk_get_rate(parent);
+> +
+> +	rate = mult_frac(rate, (unsigned long)n, (unsigned long)m);
+> +	if (rate >= 175000000)
+> +		return 0x3;
+> +	if (rate >= 150000000)
+> +		return 0x02;
+> +	if (rate >= 125000000)
+> +		return 0x01;
+> +	return 0x00;
+> +}
+> +
+> +/* I2C clock, hence everything must happen in (un)prepare because this
+> + * may sleep */
+> +static int cdce925_pll_prepare(struct clk_hw *hw)
+> +{
+> +	struct clk_cdce925_pll *data = to_clk_cdce925_pll(hw);
+> +	u16 n = data->n;
+> +	u16 m = data->m;
+> +	u16 r;
+> +	u8 q;
+> +	u8 p;
+> +	u16 nn;
+> +	u8 pll[4]; /* Bits are spread out over 4 byte registers */
+> +	u8 reg_ofs = data->index * CDCE925_OFFSET_PLL;
+> +	unsigned i;
+> +
+> +	pr_debug("%s: index=%d\n", __func__, data->index);
+> +
+> +	if ((!m || !n) || (m == n)) {
+> +		/* Set PLL mux to bypass mode, leave the rest as is */
+> +		regmap_update_bits(data->chip->regmap,
+> +			reg_ofs + CDCE925_PLL_MUX_OUTPUTS, 0x80, 0x80);
+> +	} else {
+> +		/* According to data sheet: */
+> +		/* p = max(0, 4 - int(log2 (n/m))) */
+> +		p = cdce925_pll_calc_p(n, m);
+> +		/* nn = n * 2^p */
+> +		nn = n * BIT(p);
+> +		/* q = int(nn/m) */
+> +		q = nn / m;
+> +		if ((q < 16) || (1 > 64)) {
+> +			pr_debug("%s invalid q=%d\n", __func__, q);
+> +			return -EINVAL;
+> +		}
+> +		r = nn - (m*q);
+> +		if (r > 511) {
+> +			pr_debug("%s invalid r=%d\n", __func__, r);
+> +			return -EINVAL;
+> +		}
+> +		pr_debug("%s n=%d m=%d p=%d q=%d r=%d\n", __func__,
+> +			n, m, p, q, r);
+> +		/* encode into register bits */
+> +		pll[0] = n >> 4;
+> +		pll[1] = ((n & 0x0F) << 4) | ((r >> 5) & 0x0F);
+> +		pll[2] = ((r & 0x1F) << 3) | ((q >> 3) & 0x07);
+> +		pll[3] = ((q & 0x07) << 5) | (p << 2) |
+> +				cdce925_pll_calc_range_bits(hw, n, m);
+> +		/* Write to registers */
+> +		for (i = 0; i < ARRAY_SIZE(pll); ++i)
+> +			regmap_write(data->chip->regmap,
+> +				reg_ofs + CDCE925_PLL_MULDIV + i, pll[i]);
+> +		/* Enable PLL */
+> +		regmap_update_bits(data->chip->regmap,
+> +			reg_ofs + CDCE925_PLL_MUX_OUTPUTS, 0x80, 0x00);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void cdce925_pll_unprepare(struct clk_hw *hw)
+> +{
+> +	struct clk_cdce925_pll *data = to_clk_cdce925_pll(hw);
+> +	u8 reg_ofs = data->index * CDCE925_OFFSET_PLL;
+> +
+> +	pr_debug("%s: index=%d\n", __func__, data->index);
+> +	regmap_update_bits(data->chip->regmap,
+> +			reg_ofs + CDCE925_PLL_MUX_OUTPUTS, 0x80, 0x80);
+> +}
+> +
+> +static const struct clk_ops cdce925_pll_ops = {
+> +	.prepare = cdce925_pll_prepare,
+> +	.unprepare = cdce925_pll_unprepare,
+> +	.recalc_rate = cdce925_pll_recalc_rate,
+> +	.round_rate = cdce925_pll_round_rate,
+> +	.set_rate = cdce925_pll_set_rate,
+> +};
+> +
+> +
+> +static void cdce925_clk_set_pdiv(struct clk_cdce925_output *data, u16 pdiv)
+> +{
+> +	pr_debug("%s: index=%d pdiv=%d\n", __func__, data->index, pdiv);
+> +	switch (data->index) {
+> +	case 0:
+> +		regmap_update_bits(data->chip->regmap,
+> +			CDCE925_REG_Y1SPIPDIVH,
+> +			0x03, (pdiv >> 8) & 0x03);
+> +		regmap_write(data->chip->regmap, 0x03, pdiv & 0xFF);
+> +		break;
+> +	case 1:
+> +		regmap_update_bits(data->chip->regmap, 0x16, 0x7F, pdiv);
+> +		break;
+> +	case 2:
+> +		regmap_update_bits(data->chip->regmap, 0x17, 0x7F, pdiv);
+> +		break;
+> +	case 3:
+> +		regmap_update_bits(data->chip->regmap, 0x26, 0x7F, pdiv);
+> +		break;
+> +	case 4:
+> +		regmap_update_bits(data->chip->regmap, 0x27, 0x7F, pdiv);
+> +		break;
+> +	}
+> +}
+> +
+> +static void cdce925_clk_activate(struct clk_cdce925_output *data)
+> +{
+> +	pr_debug("%s: index=%d\n", __func__, data->index);
+> +	switch (data->index) {
+> +	case 0:
+> +		regmap_update_bits(data->chip->regmap,
+> +			CDCE925_REG_Y1SPIPDIVH, 0x0c, 0x0c);
+> +		break;
+> +	case 1:
+> +	case 2:
+> +		regmap_update_bits(data->chip->regmap, 0x14, 0x03, 0x03);
+> +		break;
+> +	case 3:
+> +	case 4:
+> +		regmap_update_bits(data->chip->regmap, 0x24, 0x03, 0x03);
+> +		break;
+> +	}
+> +}
+> +
+> +static int cdce925_clk_prepare(struct clk_hw *hw)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +
+> +	pr_debug("%s: index=%d\n", __func__, data->index);
+> +	cdce925_clk_set_pdiv(data, data->pdiv);
+> +	cdce925_clk_activate(data);
+> +	return 0;
+> +}
+> +
+> +static void cdce925_clk_unprepare(struct clk_hw *hw)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +
+> +	pr_debug("%s: index=%d\n", __func__, data->index);
+> +	/* Disable clock by setting divider to "0" */
+> +	cdce925_clk_set_pdiv(data, 0);
+> +}
+> +
+> +static unsigned long cdce925_clk_recalc_rate(struct clk_hw *hw,
+> +		unsigned long parent_rate)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +
+> +	pr_debug("%s: index=%d parent_rate=%lu pdiv=%d\n", __func__,
+> +		data->index, parent_rate, data->pdiv);
+> +	if (data->pdiv)
+> +		return parent_rate / data->pdiv;
+> +	return 0;
+> +}
+> +
+> +static u16 cdce925_calc_divider(unsigned long rate,
+> +		unsigned long parent_rate)
+> +{
+> +	if (rate >= parent_rate) {
+> +		return 1;
+> +	} else if (rate) {
+> +		unsigned long divider = DIV_ROUND_CLOSEST(parent_rate, rate);
+> +
+> +		if (divider > 0x7F) /* TODO: Y1 has 10-bit divider */
+> +			divider = 0x7F;
+> +		return (u16)divider;
+> +	} else {
+> +		return 0;
+> +	}
+> +}
+> +
+> +static unsigned long cdce925_clk_best_parent_rate(
+> +	struct clk_hw *hw, unsigned long rate)
+> +{
+> +	struct clk *pll = clk_get_parent(hw->clk);
+> +	struct clk *root = clk_get_parent(pll);
+> +	unsigned long root_rate = clk_get_rate(root);
+> +	unsigned long best_rate_error = rate;
+> +	u16 pdiv_min;
+> +	u16 pdiv_max;
+> +	u16 pdiv_best;
+> +	u16 pdiv_now;
+> +
+> +	if (root_rate % rate == 0)
+> +		return root_rate; /* Don't need the PLL, use bypass */
+> +
+> +	pdiv_min = (u16)max(1u, DIV_ROUND_UP(CDCE925_PLL_FREQUENCY_MIN, rate));
+> +	pdiv_max = (u16)min(127u, CDCE925_PLL_FREQUENCY_MAX / rate);
+> +
+> +	if (pdiv_min > pdiv_max)
+> +		return 0; /* No can do? */
+> +
+> +	pdiv_best = pdiv_min;
+> +	for (pdiv_now = pdiv_min; pdiv_now < pdiv_max; ++pdiv_now) {
+> +		unsigned long target_rate = rate * pdiv_now;
+> +		long pll_rate = clk_round_rate(pll, target_rate);
+> +		unsigned long actual_rate;
+> +		unsigned long rate_error;
+> +
+> +		if (pll_rate <= 0)
+> +			continue;
+> +		actual_rate = pll_rate / pdiv_now;
+> +		rate_error = abs((long)actual_rate - (long)rate);
+> +		if (rate_error < best_rate_error) {
+> +			pdiv_best = pdiv_now;
+> +			best_rate_error = rate_error;
+> +		}
+> +		/* TODO: Consider PLL frequency based on smaller n/m values
+> +		 * and pick the better one if the error is equal */
+> +	}
+> +
+> +	return rate * pdiv_best;
+> +}
+> +
+> +static long cdce925_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long *parent_rate)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +	unsigned long l_parent_rate = *parent_rate;
+> +	u16 divider = cdce925_calc_divider(rate, l_parent_rate);
+> +
+> +	pr_debug("%s (index=%d parent_rate=%lu rate=%lu)\n", __func__,
+> +		data->index, l_parent_rate, rate);
+> +	if (l_parent_rate / divider != rate) {
+> +		l_parent_rate = cdce925_clk_best_parent_rate(hw, rate);
+> +		divider = cdce925_calc_divider(rate, l_parent_rate);
+> +		*parent_rate = l_parent_rate;
+> +	}
+> +	pr_debug("%s parent_rate=%lu pdiv=%u\n", __func__,
+> +		l_parent_rate, divider);
+> +	if (divider)
+> +		return (long)(l_parent_rate / divider);
+> +	return 0;
+> +}
+> +
+> +static int cdce925_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long parent_rate)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +
+> +	data->pdiv = cdce925_calc_divider(rate, parent_rate);
+> +	pr_debug("%s (index=%d parent_rate=%lu rate=%lu div=%d)\n", __func__,
+> +		data->index, parent_rate, rate, data->pdiv);
+> +	return 0;
+> +}
+> +
+> +static const struct clk_ops cdce925_clk_ops = {
+> +	.prepare = cdce925_clk_prepare,
+> +	.unprepare = cdce925_clk_unprepare,
+> +	.recalc_rate = cdce925_clk_recalc_rate,
+> +	.round_rate = cdce925_clk_round_rate,
+> +	.set_rate = cdce925_clk_set_rate,
+> +};
+> +
+> +
+> +static u16 cdce925_y1_calc_divider(unsigned long rate,
+> +		unsigned long parent_rate)
+> +{
+> +	if (rate >= parent_rate)
+> +		return 1;
+> +	else if (rate) {
+> +		unsigned long divider = DIV_ROUND_CLOSEST(parent_rate, rate);
+> +
+> +		if (divider > 0x3FF) /* Y1 has 10-bit divider */
+> +			divider = 0x3FF;
+> +		return (u16)divider;
+> +	} else
+> +		return 0;
+> +}
+> +
+> +static long cdce925_clk_y1_round_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long *parent_rate)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +	unsigned long l_parent_rate = *parent_rate;
+> +	u16 divider = cdce925_y1_calc_divider(rate, l_parent_rate);
+> +
+> +	pr_debug("%s (index=%d parent_rate=%lu rate=%lu pdiv=%u)\n", __func__,
+> +		data->index, l_parent_rate, rate, divider);
+> +	if (divider)
+> +		return (long)(l_parent_rate / divider);
+> +	return 0;
+> +}
+> +
+> +static int cdce925_clk_y1_set_rate(struct clk_hw *hw, unsigned long rate,
+> +		unsigned long parent_rate)
+> +{
+> +	struct clk_cdce925_output *data = to_clk_cdce925_output(hw);
+> +
+> +	data->pdiv = cdce925_y1_calc_divider(rate, parent_rate);
+> +	pr_debug("%s (index=%d parent_rate=%lu rate=%lu div=%d)\n", __func__,
+> +		data->index, parent_rate, rate, data->pdiv);
+> +	return 0;
+> +}
+> +
+> +static const struct clk_ops cdce925_clk_y1_ops = {
+> +	.prepare = cdce925_clk_prepare,
+> +	.unprepare = cdce925_clk_unprepare,
+> +	.recalc_rate = cdce925_clk_recalc_rate,
+> +	.round_rate = cdce925_clk_y1_round_rate,
+> +	.set_rate = cdce925_clk_y1_set_rate,
+> +};
+> +
+> +
+> +static struct regmap_config cdce925_regmap_config = {
+> +	.name = "configuration0",
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.cache_type = REGCACHE_RBTREE,
+> +	.max_register = 0x2F,
+> +};
+> +
+> +#define CDCE925_I2C_COMMAND_BLOCK_TRANSFER	0x00
+> +#define CDCE925_I2C_COMMAND_BYTE_TRANSFER	0x80
+> +
+> +static int cdce925_regmap_i2c_write(
+> +	void *context, const void *data, size_t count)
+> +{
+> +	struct device *dev = context;
+> +	struct i2c_client *i2c = to_i2c_client(dev);
+> +	int ret;
+> +	u8 reg_data[2];
+> +
+> +	if (count != 2)
+> +		return -ENOTSUPP;
+> +
+> +	/* First byte is command code */
+> +	reg_data[0] = CDCE925_I2C_COMMAND_BYTE_TRANSFER | ((u8 *)data)[0];
+> +	reg_data[1] = ((u8 *)data)[1];
+> +
+> +	dev_dbg(&i2c->dev, "%s(%u) %#x %#x\n", __func__, count,
+> +			reg_data[0], reg_data[1]);
+> +
+> +	ret = i2c_master_send(i2c, reg_data, count);
+> +	if (likely(ret == count))
+> +		return 0;
+> +	else if (ret < 0)
+> +		return ret;
+> +	else
+> +		return -EIO;
+> +}
+> +
+> +static int cdce925_regmap_i2c_read(void *context,
+> +	   const void *reg, size_t reg_size, void *val, size_t val_size)
+> +{
+> +	struct device *dev = context;
+> +	struct i2c_client *i2c = to_i2c_client(dev);
+> +	struct i2c_msg xfer[2];
+> +	int ret;
+> +	u8 reg_data[2];
+> +
+> +	if (reg_size != 1)
+> +		return -ENOTSUPP;
+> +
+> +	xfer[0].addr = i2c->addr;
+> +	xfer[0].flags = 0;
+> +	xfer[0].buf = reg_data;
+> +	if (val_size == 1) {
+> +		reg_data[0] =
+> +			CDCE925_I2C_COMMAND_BYTE_TRANSFER | ((u8 *)reg)[0];
+> +		xfer[0].len = 1;
+> +	} else {
+> +		reg_data[0] =
+> +			CDCE925_I2C_COMMAND_BLOCK_TRANSFER | ((u8 *)reg)[0];
+> +		reg_data[1] = val_size;
+> +		xfer[0].len = 2;
+> +	}
+> +
+> +	xfer[1].addr = i2c->addr;
+> +	xfer[1].flags = I2C_M_RD;
+> +	xfer[1].len = val_size;
+> +	xfer[1].buf = val;
+> +
+> +	ret = i2c_transfer(i2c->adapter, xfer, 2);
+> +	if (likely(ret == 2)) {
+> +		dev_dbg(&i2c->dev, "%s(%u, %u) %#x %#x\n", __func__,
+> +				reg_size, val_size, reg_data[0], *((u8 *)val));
+> +		return 0;
+> +	} else if (ret < 0)
+> +		return ret;
+> +	else
+> +		return -EIO;
+> +}
+> +
+> +/* The CDCE925 uses a funky way to read/write registers. Bulk mode is
+> + * just weird, so just use the single byte mode exclusively. */
+> +static struct regmap_bus regmap_cdce925_bus = {
+> +	.write = cdce925_regmap_i2c_write,
+> +	.read = cdce925_regmap_i2c_read,
+> +};
+> +
+> +static int cdce925_probe(struct i2c_client *client,
+> +		const struct i2c_device_id *id)
+> +{
+> +	struct clk_cdce925_chip *data;
+> +	struct device_node *node = client->dev.of_node;
+> +	const char *parent_name;
+> +	struct clk_init_data init;
+> +	struct clk *clk;
+> +	u32 value;
+> +	int i;
+> +	int err;
+> +	struct device_node *np_output;
+> +	char child_name[6];
+> +
+> +	dev_dbg(&client->dev, "%s\n", __func__);
+> +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->i2c_client = client;
+> +	data->regmap = devm_regmap_init(&client->dev, &regmap_cdce925_bus,
+> +			&client->dev, &cdce925_regmap_config);
+> +	if (IS_ERR(data->regmap)) {
+> +		dev_err(&client->dev, "failed to allocate register map\n");
+> +		return PTR_ERR(data->regmap);
+> +	}
+> +	i2c_set_clientdata(client, data);
+> +
+> +	parent_name = of_clk_get_parent_name(node, 0);
+> +	if (!parent_name) {
+> +		dev_err(&client->dev, "missing parent clock\n");
+> +		return -ENODEV;
+> +	}
+> +	dev_dbg(&client->dev, "parent is: %s\n", parent_name);
+> +
+> +	if (of_property_read_u32(node, "xtal-load-pf", &value) == 0)
+> +		regmap_write(data->regmap,
+> +			CDCE925_REG_XCSEL, (value << 3) & 0xF8);
+> +	/* PWDN bit */
+> +	regmap_update_bits(data->regmap, CDCE925_REG_GLOBAL1, BIT(4), 0);
+> +
+> +	/* Set input source for Y1 to be the XTAL */
+> +	regmap_update_bits(data->regmap, 0x02, BIT(7), 0);
+> +
+> +	init.ops = &cdce925_pll_ops;
+> +	init.flags = 0;
+> +	init.parent_names = &parent_name;
+> +	init.num_parents = parent_name ? 1 : 0;
+> +
+> +	/* Register PLL clocks */
+> +	for (i = 0; i < NUMBER_OF_PLLS; ++i) {
+> +		init.name = kasprintf(GFP_KERNEL, "%s.pll%d",
+> +			client->dev.of_node->name, i);
+> +		data->pll[i].chip = data;
+> +		data->pll[i].hw.init = &init;
+> +		data->pll[i].index = i;
+> +		clk = devm_clk_register(&client->dev, &data->pll[i].hw);
+> +		kfree(init.name); /* clock framework made a copy of the name */
+> +		if (IS_ERR(clk)) {
+> +			dev_err(&client->dev, "Failed register PLL %d\n", i);
+> +			err = PTR_ERR(clk);
+> +			goto error;
+> +		}
+> +		sprintf(child_name, "PLL%d", i+1);
+> +		np_output = of_get_child_by_name(node, child_name);
+> +		if (!np_output)
+> +			continue;
+> +		if (!of_property_read_u32(np_output,
+> +			"clock-frequency", &value)) {
+> +			err = clk_set_rate(clk, value);
+> +			if (err)
+> +				dev_err(&client->dev,
+> +					"unable to set PLL frequency %ud\n",
+> +					value);
+> +		}
+> +		if (!of_property_read_u32(np_output,
+> +			"spread-spectrum", &value)) {
+> +			u8 flag = of_property_read_bool(np_output,
+> +				"spread-spectrum-center") ? 0x80 : 0x00;
+> +			regmap_update_bits(data->regmap,
+> +				0x16 + (i*CDCE925_OFFSET_PLL),
+> +				0x80, flag);
+> +			regmap_update_bits(data->regmap,
+> +				0x12 + (i*CDCE925_OFFSET_PLL),
+> +				0x07, value & 0x07);
+> +		}
+> +	}
+> +
+> +	/* Register output clock Y1 */
+> +	init.ops = &cdce925_clk_y1_ops;
+> +	init.flags = 0;
+> +	init.num_parents = 1;
+> +	init.parent_names = &parent_name; /* Mux Y1 to input */
+> +	init.name = kasprintf(GFP_KERNEL, "%s.Y1", client->dev.of_node->name);
+> +	data->clk[0].chip = data;
+> +	data->clk[0].hw.init = &init;
+> +	data->clk[0].index = 0;
+> +	data->clk[0].pdiv = 1;
+> +	clk = devm_clk_register(&client->dev, &data->clk[0].hw);
+> +	kfree(init.name); /* clock framework made a copy of the name */
+> +	if (IS_ERR(clk)) {
+> +		dev_err(&client->dev, "clock registration Y1 failed\n");
+> +		err = PTR_ERR(clk);
+> +		goto error;
+> +	}
+> +
+> +	/* Register output clocks Y2 .. Y5*/
+> +	init.ops = &cdce925_clk_ops;
+> +	init.flags = CLK_SET_RATE_PARENT;
+> +	init.num_parents = 1;
+> +	for (i = 1; i < NUMBER_OF_OUTPUTS; ++i) {
+> +		init.name = kasprintf(GFP_KERNEL, "%s.Y%d",
+> +			client->dev.of_node->name, i+1);
+> +		data->clk[i].chip = data;
+> +		data->clk[i].hw.init = &init;
+> +		data->clk[i].index = i;
+> +		data->clk[i].pdiv = 1;
+> +		switch (i) {
+> +		case 1:
+> +		case 2:
+> +			/* Mux Y2/3 to PLL1 */
+> +			init.parent_names = &data->pll[0].hw.clk->name;
+> +			break;
+> +		case 3:
+> +		case 4:
+> +			/* Mux Y4/5 to PLL2 */
+> +			init.parent_names = &data->pll[1].hw.clk->name;
+> +			break;
+> +		}
+> +		clk = devm_clk_register(&client->dev, &data->clk[i].hw);
+> +		kfree(init.name); /* clock framework made a copy of the name */
+> +		if (IS_ERR(clk)) {
+> +			dev_err(&client->dev, "clock registration failed\n");
+> +			err = PTR_ERR(clk);
+> +			goto error;
+> +		}
+> +	}
+> +
+> +	/* Fetch settings from devicetree, if any */
+> +	for (i = 0; i < NUMBER_OF_OUTPUTS; ++i) {
+> +		sprintf(child_name, "Y%d", i+1);
+> +		np_output = of_get_child_by_name(node, child_name);
+> +		if (!np_output) {
+> +			/* Disable unlisted/unused clock outputs explicitly */
+> +			cdce925_clk_unprepare(&data->clk[i].hw);
+> +			continue;
+> +		}
+> +		clk = data->clk[i].hw.clk;
+> +		if (!of_property_read_u32(np_output,
+> +			"clock-frequency", &value)) {
+> +			err = clk_set_rate(clk, value);
+> +			if (err)
+> +				dev_err(&client->dev,
+> +					"unable to set frequency %ud\n",
+> +					value);
+> +		}
+> +		if (of_property_read_bool(np_output, "clock-enabled")) {
+> +			err = clk_prepare_enable(clk);
+> +			if (err)
+> +				dev_err(&client->dev,
+> +					"Failed to enable clock %s\n",
+> +					init.name);
+> +		} else {
+> +			cdce925_clk_unprepare(&data->clk[i].hw);
+> +		}
+> +		err = of_clk_add_provider(np_output,
+> +			of_clk_src_simple_get, clk);
+> +		if (err)
+> +			dev_err(&client->dev,
+> +				"unable to add clock provider '%s'\n",
+> +				init.name);
+> +	}
+> +
+> +	return 0;
+> +
+> +error:
+> +	return err;
+> +}
+> +
+> +static const struct i2c_device_id cdce925_id[] = {
+> +	{ "cdce925", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, cdce925_id);
+> +
+> +static const struct of_device_id clk_cdce925_of_match[] = {
+> +	{ .compatible = "cdce925pw" },
+> +	{ .compatible = "cdce925" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, clk_cdce925_of_match);
+> +
+> +static struct i2c_driver cdce925_driver = {
+> +	.driver = {
+> +		.name = "cdce925",
+> +		.of_match_table = of_match_ptr(clk_cdce925_of_match),
+> +	},
+> +	.probe		= cdce925_probe,
+> +	.id_table	= cdce925_id,
+> +};
+> +module_i2c_driver(cdce925_driver);
+> +
+> +MODULE_AUTHOR("Mike Looijmans <mike.looijmans@topic.nl>");
+> +MODULE_DESCRIPTION("cdce925 driver");
+> +MODULE_LICENSE("GPL");
+>
 
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index 166af2a8e865..04478103df37 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -53,7 +53,16 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
- 
--		/* Load the LDT, if the LDT is different: */
-+		/*
-+		 * Load the LDT, if the LDT is different.
-+		 *
-+		 * It's possible leave_mm(prev) has been called.  If so,
-+		 * then prev->context.ldt could be out of sync with the
-+		 * LDT descriptor or the LDT register.  This can only happen
-+		 * if prev->context.ldt is non-null, since we never free
-+		 * an LDT.  But LDTs can't be shared across mms, so
-+		 * prev->context.ldt won't be equal to next->context.ldt.
-+		 */
- 		if (unlikely(prev->context.ldt != next->context.ldt))
- 			load_LDT_nolock(&next->context);
- 	}
-diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
-index d7f3b3b78ac3..751bf4b7bf11 100644
---- a/arch/x86/include/asm/switch_to.h
-+++ b/arch/x86/include/asm/switch_to.h
-@@ -79,12 +79,12 @@ do {									\
- #else /* CONFIG_X86_32 */
- 
- /* frame pointer must be last for get_wchan */
--#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
--#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
-+#define SAVE_CONTEXT    "pushq %%rbp ; movq %%rsi,%%rbp\n\t"
-+#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp\t"
- 
- #define __EXTRA_CLOBBER  \
- 	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
--	  "r12", "r13", "r14", "r15"
-+	  "r12", "r13", "r14", "r15", "flags"
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
- #define __switch_canary							  \
-@@ -100,7 +100,11 @@ do {									\
- #define __switch_canary_iparam
- #endif	/* CC_STACKPROTECTOR */
- 
--/* Save restore flags to clear handle leaking NT */
-+/*
-+ * There is no need to save or restore flags, because flags are always
-+ * clean in kernel mode, with the possible exception of IOPL.  Kernel IOPL
-+ * has no effect.
-+ */
- #define switch_to(prev, next, last) \
- 	asm volatile(SAVE_CONTEXT					  \
- 	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
-diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
-index e7c798b354fa..4f9359f36bb7 100644
---- a/arch/x86/kernel/asm-offsets_64.c
-+++ b/arch/x86/kernel/asm-offsets_64.c
-@@ -48,7 +48,6 @@ int main(void)
- 
- #define ENTRY(entry) OFFSET(pt_regs_ ## entry, pt_regs, entry)
- 	ENTRY(bx);
--	ENTRY(bx);
- 	ENTRY(cx);
- 	ENTRY(dx);
- 	ENTRY(sp);
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 5433658e598d..e7d8c7608471 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -72,7 +72,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	if (c->x86_mask || c->cpuid_level >= 0)
- 		seq_printf(m, "stepping\t: %d\n", c->x86_mask);
- 	else
--		seq_printf(m, "stepping\t: unknown\n");
-+		seq_puts(m, "stepping\t: unknown\n");
- 	if (c->microcode)
- 		seq_printf(m, "microcode\t: 0x%x\n", c->microcode);
- 
-@@ -92,12 +92,12 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	show_cpuinfo_core(m, c, cpu);
- 	show_cpuinfo_misc(m, c);
- 
--	seq_printf(m, "flags\t\t:");
-+	seq_puts(m, "flags\t\t:");
- 	for (i = 0; i < 32*NCAPINTS; i++)
- 		if (cpu_has(c, i) && x86_cap_flags[i] != NULL)
- 			seq_printf(m, " %s", x86_cap_flags[i]);
- 
--	seq_printf(m, "\nbugs\t\t:");
-+	seq_puts(m, "\nbugs\t\t:");
- 	for (i = 0; i < 32*NBUGINTS; i++) {
- 		unsigned int bug_bit = 32*NCAPINTS + i;
- 
-@@ -118,7 +118,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	seq_printf(m, "address sizes\t: %u bits physical, %u bits virtual\n",
- 		   c->x86_phys_bits, c->x86_virt_bits);
- 
--	seq_printf(m, "power management:");
-+	seq_puts(m, "power management:");
- 	for (i = 0; i < 32; i++) {
- 		if (c->x86_power & (1 << i)) {
- 			if (i < ARRAY_SIZE(x86_power_flags) &&
-@@ -131,7 +131,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 		}
- 	}
- 
--	seq_printf(m, "\n\n");
-+	seq_puts(m, "\n\n");
- 
- 	return 0;
- }
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 922d28581024..6307a0f0cf17 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -59,78 +59,78 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "%*s: ", prec, "NMI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->__nmi_count);
--	seq_printf(p, "  Non-maskable interrupts\n");
-+	seq_puts(p, "  Non-maskable interrupts\n");
- #ifdef CONFIG_X86_LOCAL_APIC
- 	seq_printf(p, "%*s: ", prec, "LOC");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_timer_irqs);
--	seq_printf(p, "  Local timer interrupts\n");
-+	seq_puts(p, "  Local timer interrupts\n");
- 
- 	seq_printf(p, "%*s: ", prec, "SPU");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_spurious_count);
--	seq_printf(p, "  Spurious interrupts\n");
-+	seq_puts(p, "  Spurious interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "PMI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_perf_irqs);
--	seq_printf(p, "  Performance monitoring interrupts\n");
-+	seq_puts(p, "  Performance monitoring interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "IWI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_irq_work_irqs);
--	seq_printf(p, "  IRQ work interrupts\n");
-+	seq_puts(p, "  IRQ work interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "RTR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->icr_read_retry_count);
--	seq_printf(p, "  APIC ICR read retries\n");
-+	seq_puts(p, "  APIC ICR read retries\n");
- #endif
- 	if (x86_platform_ipi_callback) {
- 		seq_printf(p, "%*s: ", prec, "PLT");
- 		for_each_online_cpu(j)
- 			seq_printf(p, "%10u ", irq_stats(j)->x86_platform_ipis);
--		seq_printf(p, "  Platform interrupts\n");
-+		seq_puts(p, "  Platform interrupts\n");
- 	}
- #ifdef CONFIG_SMP
- 	seq_printf(p, "%*s: ", prec, "RES");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_resched_count);
--	seq_printf(p, "  Rescheduling interrupts\n");
-+	seq_puts(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
- 					irq_stats(j)->irq_tlb_count);
--	seq_printf(p, "  Function call interrupts\n");
-+	seq_puts(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
--	seq_printf(p, "  TLB shootdowns\n");
-+	seq_puts(p, "  TLB shootdowns\n");
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	seq_printf(p, "%*s: ", prec, "TRM");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_thermal_count);
--	seq_printf(p, "  Thermal event interrupts\n");
-+	seq_puts(p, "  Thermal event interrupts\n");
- #endif
- #ifdef CONFIG_X86_MCE_THRESHOLD
- 	seq_printf(p, "%*s: ", prec, "THR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_threshold_count);
--	seq_printf(p, "  Threshold APIC interrupts\n");
-+	seq_puts(p, "  Threshold APIC interrupts\n");
- #endif
- #ifdef CONFIG_X86_MCE
- 	seq_printf(p, "%*s: ", prec, "MCE");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", per_cpu(mce_exception_count, j));
--	seq_printf(p, "  Machine check exceptions\n");
-+	seq_puts(p, "  Machine check exceptions\n");
- 	seq_printf(p, "%*s: ", prec, "MCP");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
--	seq_printf(p, "  Machine check polls\n");
-+	seq_puts(p, "  Machine check polls\n");
- #endif
- #if IS_ENABLED(CONFIG_HYPERV) || defined(CONFIG_XEN)
- 	seq_printf(p, "%*s: ", prec, "THR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
--	seq_printf(p, "  Hypervisor callback interrupts\n");
-+	seq_puts(p, "  Hypervisor callback interrupts\n");
- #endif
- 	seq_printf(p, "%*s: %10u\n", prec, "ERR", atomic_read(&irq_err_count));
- #if defined(CONFIG_X86_IO_APIC)
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 657438858e83..c7eddbe6a612 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -824,7 +824,7 @@ static void *memtype_seq_start(struct seq_file *seq, loff_t *pos)
- {
- 	if (*pos == 0) {
- 		++*pos;
--		seq_printf(seq, "PAT memtype list:\n");
-+		seq_puts(seq, "PAT memtype list:\n");
- 	}
- 
- 	return memtype_get_idx(*pos);
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3968d67d366b..ab4062c5953c 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1367,20 +1367,18 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 
- 	cpu = *(loff_t *)data;
- 	if (!cpu) {
--		seq_printf(file,
--		 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
--		seq_printf(file,
--			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
--		seq_printf(file,
--			"numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
--		seq_printf(file,
--			"rok resetp resett giveup sto bz throt disable ");
--		seq_printf(file,
--			"enable wars warshw warwaits enters ipidis plugged ");
--		seq_printf(file,
--			"ipiover glim cong swack recv rtime all one mult ");
--		seq_printf(file,
--			"none retry canc nocan reset rcan\n");
-+		seq_puts(file,
-+			 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
-+		seq_puts(file, "remotehub numuvhubs numuvhubs16 numuvhubs8 ");
-+		seq_puts(file,
-+			 "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
-+		seq_puts(file,
-+			 "rok resetp resett giveup sto bz throt disable ");
-+		seq_puts(file,
-+			 "enable wars warshw warwaits enters ipidis plugged ");
-+		seq_puts(file,
-+			 "ipiover glim cong swack recv rtime all one mult ");
-+		seq_puts(file, "none retry canc nocan reset rcan\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		bcp = &per_cpu(bau_control, cpu);
+
+
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+System Expert
+
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Topic zoekt gedreven (embedded) software specialisten!
+http://topic.nl/vacatures/topic-zoekt-software-engineers/
+
