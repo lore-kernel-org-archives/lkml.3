@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501AbaLIKZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:25:42 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:51774 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260AbaLIKZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:25:40 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-1d-5486ce218cc3
-Message-id: <5486CE1F.9010102@samsung.com>
-Date: Tue, 09 Dec 2014 11:25:35 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+	id S1756500AbaLIK1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:27:43 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:49210 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755326AbaLIK1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:27:41 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v9 04/19] mfd: max77693: adjust
- max77693_led_platform_data
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-5-git-send-email-j.anaszewski@samsung.com>
- <20141209085047.GR3951@x1> <5486BC44.7010602@samsung.com>
- <20141209100413.GW3951@x1>
-In-reply-to: <20141209100413.GW3951@x1>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4VV3Fc20hBh8aRSw2zljPanF050Qm
-	i+tfnrNa9L9ZyGpx7tVKRouzTW/YLe5/PcpocXnXHDaLrW/WMVr0bNjKarH0+kUmi7unjrJZ
-	TJi+lsWide8Rdovdu56yWhx+085qcWb/SjYHQY8189Ywelzu62Xy2DnrLrvHyuVf2DwOf13I
-	4rFpVSebx51re9g89sz/werRt2UVo8eK1d/ZPT5vkgvgjuKySUnNySxLLdK3S+DK+PQ7u+Cj
-	cMWEl0eYGxj7BLoYOTkkBEwkFq24wQphi0lcuLeerYuRi0NIYCmjROuDxYwQzkdGiUXrZzKD
-	VPEKaEk0P5/DDmKzCKhKfHx6DaybTcBQ4ueL10wgtqhAhMSf0/tYIeoFJX5MvsfSxcjBISKg
-	InHujTnITGaBycwSR++tYQOpERYIkdjwbD4zxLIHjBLvf28EW8ApoC7xecE/RhCbWcBM4lHL
-	OmYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTE
-	4ZcdjIuPWR1iFOBgVOLhNVdsDRFiTSwrrsw9xCjBwawkwjvlaFuIEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBsZ5d1cVX9GW/3tDSumAX03T6kip52yX92oWHt6ys3WR7C6bshuuosVipd2Pz+8T
-	9vi/1nTztEj+xe4XQxtuTHuz+2DJ7tXeUyZN0f8Vv6lFctNB++jGWbEHGMoNwkxtX87IPjWz
-	ofK+hJJguOwM2wpt0fXfXKX//nt4l3ef8qPsI5MuBjMuyL+mxFKckWioxVxUnAgA/WeqvKEC	AAA=
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 4/5] ARM: dts: add rk3288 usb PHY
+Date: Tue, 09 Dec 2014 11:26:21 +0100
+Message-ID: <1433902.kJO8gnlzYm@phil>
+User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <1418093554-30671-1-git-send-email-lyz@rock-chips.com>
+References: <1418093554-30671-1-git-send-email-lyz@rock-chips.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 11:04 AM, Lee Jones wrote:
-> On Tue, 09 Dec 2014, Jacek Anaszewski wrote:
->
->> On 12/09/2014 09:50 AM, Lee Jones wrote:
->>> On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
->>>
->>>> Add "label" array for Device Tree strings with the name of a LED device
->>>> and make flash_timeout a two element array, for caching the sub-led
->>>> related flash timeout. Added is also an array for caching pointers to the
->>>> sub-nodes representing sub-leds.
->>>>
->>>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> Cc: Chanwoo Choi <cw00.choi@samsung.com>
->>>> Cc: Lee Jones <lee.jones@linaro.org>
->>>> ---
->>>>   include/linux/mfd/max77693.h |    4 +++-
->>>>   1 file changed, 3 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
->>>> index f0b6585..c80ee99 100644
->>>> --- a/include/linux/mfd/max77693.h
->>>> +++ b/include/linux/mfd/max77693.h
->>>> @@ -88,16 +88,18 @@ enum max77693_led_boost_mode {
->>>>   };
->>>>
->>>>   struct max77693_led_platform_data {
->>>> +	const char *label[2];
->>>>   	u32 fleds[2];
->>>>   	u32 iout_torch[2];for_each_available_child_of_node
->>>>   	u32 iout_flash[2];
->>>>   	u32 trigger[2];
->>>>   	u32 trigger_type[2];
->>>> +	u32 flash_timeout[2];
->>>>   	u32 num_leds;
->>>>   	u32 boost_mode;
->>>> -	u32 flash_timeout;
->>>>   	u32 boost_vout;
->>>>   	u32 low_vsys;
->>>> +	struct device_node *sub_nodes[2];
->>>
->>> I haven't seen anyone do this before.  Why can't you use the provided
->>> OF functions to traverse through your tree?
->>
->> I use for_each_available_child_of_node when parsing DT node, but I
->> need to cache the pointer to sub-node to be able to use it later
->> when it needs to be passed to V4L2 sub-device which is then
->> asynchronously matched by the phandle to sub-node.
->>
->> If it is not well seen to cache it in the platform data then
->> I will find different way to accomplish this.
->
-> I haven't seen the end-driver for this, but why can't you use that
-> device's of_node pointer?
+Hi,
 
-Maybe it is indeed a good idea. I could pass the of_node pointer
-and the sub-led identifier to the V4L2 sub-device and there look
-for the sub-node containing relevant identifier. The downside
-would be only that for_each_available_child_of_node would
-have to be called twice - in the led driver and in the V4L2 sub-device.
-I think that we can live with it.
+Am Dienstag, 9. Dezember 2014, 10:52:34 schrieb Yunzhi Li:
+> This patch adds a device_node for RK3288 SoC usb phy. It also
+> defines the phy to be used by three usb controllers: usb_host0/1
+> and usb_otg.
+> 
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+> 
+> ---
+> 
+> Changes in v4:
+> - Add phy subnodes.
+> 
+> Changes in v3: None
+> 
+>  arch/arm/boot/dts/rk3288.dtsi | 27 +++++++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 874e66d..2db2d12 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -329,12 +329,35 @@
+>  		status = "disabled";
+>  	};
+> 
+> +	usbphy: phy {
 
-Thanks for the hint.
+the nodes in the dts are ordered by address, please move it accordingly. I 
+guess a good position might be to have the "phy" before the "pinctrl" node.
 
-Best Regards,
-Jacek Anaszewski
+Also please reorder the properties a bit to have the "compatible" at the top 
+of the list, like
+
+		compatible = "rockchip,rk3288-usb-phy";
+		rockchip,grf = <&grf>;
+		#phy-cells = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+
+		subnodes...
+
+
+Thanks
+Heiko
+
+> +		#phy-cells = <1>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "rockchip,rk3288-usb-phy";
+> +		rockchip,grf = <&grf>;
+> +		status = "disabled";
+> +
+> +		usb-phy@0 {
+> +			reg = <0>;
+> +		};
+> +
+> +		usb-phy@1 {
+> +			reg = <1>;
+> +		};
+> +
+> +		usb-phy@2 {
+> +			reg = <2>;
+> +		};
+> +	};
+> +
+>  	usb_host0_ehci: usb@ff500000 {
+>  		compatible = "generic-ehci";
+>  		reg = <0xff500000 0x100>;
+>  		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+>  		clocks = <&cru HCLK_USBHOST0>;
+>  		clock-names = "usbhost";
+> +		phys = <&usbphy 1>;
+> +		phy-names = "usb";
+>  		status = "disabled";
+>  	};
+> 
+> @@ -347,6 +370,8 @@
+>  		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+>  		clocks = <&cru HCLK_USBHOST1>;
+>  		clock-names = "otg";
+> +		phys = <&usbphy 2>;
+> +		phy-names = "usb2-phy";
+>  		status = "disabled";
+>  	};
+> 
+> @@ -357,6 +382,8 @@
+>  		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+>  		clocks = <&cru HCLK_OTG0>;
+>  		clock-names = "otg";
+> +		phys = <&usbphy 0>;
+> +		phy-names = "usb2-phy";
+>  		status = "disabled";
+>  	};
+
