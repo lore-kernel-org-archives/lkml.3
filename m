@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaLISlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:41:39 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37394 "EHLO
+	id S1752069AbaLISpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:45:50 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37445 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaLISlh (ORCPT
+	with ESMTP id S1750862AbaLISpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:41:37 -0500
-Date: Tue, 09 Dec 2014 13:41:35 -0500 (EST)
-Message-Id: <20141209.134135.1917776346032039917.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next] r8152: redefine REALTEK_USB_DEVICE
+	Tue, 9 Dec 2014 13:45:49 -0500
+Date: Tue, 09 Dec 2014 13:45:47 -0500 (EST)
+Message-Id: <20141209.134547.1067254735927828157.davem@davemloft.net>
+To: linux@rasmusvillemoes.dk
+Cc: grundler@parisc-linux.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: tulip: Remove private "strncmp"
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-106-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-106-Taiwan-albertk@realtek.com>
+In-Reply-To: <1417689040-14958-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1417689040-14958-1-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 10:41:37 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 10:45:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Thu, 4 Dec 2014 10:43:11 +0800
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Date: Thu,  4 Dec 2014 11:30:40 +0100
 
-> Redefine REALTEK_USB_DEVICE for the desired USB interface for probe().
-> There are three USB interfaces for the device. USB_CLASS_COMM and
-> USB_CLASS_CDC_DATA are for ECM mode (config #2). USB_CLASS_VENDOR_SPEC
-> is for the vendor mode (config #1). However, we are not interesting
-> in USB_CLASS_CDC_DATA for probe(), so redefine REALTEK_USB_DEVICE
-> to ignore the USB interface class of USB_CLASS_CDC_DATA.
+> The comment says that the built-in strncmp didn't work. That is not
+> surprising, as apparently "str" semantics are not really what is
+> wanted (hint: de4x5_strncmp only stops when two different bytes are
+> encountered or the end is reached; not if either byte happens to be
+> 0). de4x5_strncmp is actually a memcmp (except for the signature and
+> that bytes are not necessarily treated as unsigned char); since only
+> the boolean value of the result is used we can just replace
+> de4x5_strncmp with memcmp.
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-Applied.
+Applied, thanks.
