@@ -1,136 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490AbaLIOQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:16:40 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:11064 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaLIONN (ORCPT
+	id S1757560AbaLIOSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:18:15 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:45816 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757225AbaLIOSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:13:13 -0500
-X-AuditID: cbfee68d-f79296d000004278-0b-54870374db66
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        rafael.j.wysocki@intel.com, a.kesavan@samsung.com,
-        tomasz.figa@gmail.com, b.zolnierkie@samsung.com,
-        k.kozlowski@samsung.com, cw00.choi@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv2 7/7] ARM: dts: exynos: Add PPMU dt node to
- Exynos3250-based Rinato board
-Date: Tue, 09 Dec 2014 23:13:06 +0900
-Message-id: <1418134386-14681-8-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1418134386-14681-1-git-send-email-cw00.choi@samsung.com>
-References: <1418134386-14681-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsWyRsSkULeEuT3EoKVb3+LxmsVMFhtnrGe1
-	uP7lOavF/CPnWC1evzC06F1wlc3ibNMbdotNj6+xWlzeNYfN4nPvEUaLGef3MVncblzBZvF4
-	xVt2i1W7/jA68HnsnHWX3WPxnpdMHpuX1Hv0bVnF6PF5k1wAaxSXTUpqTmZZapG+XQJXxpEr
-	c5kKOnkr7lxoY25g3MLVxcjJISFgItF5cAkrhC0mceHeejYQW0hgKaPEpLdyMDV3Zkxl72Lk
-	AoovYpRY9e8oC4TTxCTxZtdusG42AS2J/S9ugHWLCFhJnP7fwQxSxCxwnkliycL9QA4Hh7BA
-	gsTTBhaQGhYBVYmNR9czgYR5BVwlbnaKQSxTkFi2fCbYSE4BN4mm3Y0sEAe5Snw40Qp2hITA
-	KXaJy7/Os0PMEZD4NvkQC8gcCQFZiU0HmCHmSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFhnrF
-	ibnFpXnpesn5uZsYgXFy+t+z3h2Mtw9YH2IU4GBU4uHVsGwLEWJNLCuuzD3EaAq0YSKzlGhy
-	PjAa80riDY3NjCxMTUyNjcwtzZTEeRWlfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYNSv
-	Elg9VelT363rRwMe2a01vKl17uz3zb4nr2RWzi3MfR3x6qQ3nw/3vJoOr9X7Z2n5/i6+cz/8
-	fMCM/AWci9c4lfFbl1/9e+fyh3L52Pt/NLQes79XFzNK8eB0luVyP7UhbtH1SzbXVv2K3WDy
-	aV4kt93j1Wu+/r544/iVPrlPlicrV0ucSghXYinOSDTUYi4qTgQAJG+Hzo4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t9jAd0S5vYQg/Ot6haP1yxmstg4Yz2r
-	xfUvz1kt5h85x2rx+oWhRe+Cq2wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8niduMKNovH
-	K96yW6za9YfRgc9j56y77B6L97xk8ti8pN6jb8sqRo/Pm+QCWKMaGG0yUhNTUosUUvOS81My
-	89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgA5VUihLzCkFCgUkFhcr6dthmhAa
-	4qZrAdMYoesbEgTXY2SABhLWMGYcuTKXqaCTt+LOhTbmBsYtXF2MnBwSAiYSd2ZMZYewxSQu
-	3FvP1sXIxSEksIhRYtW/oywQThOTxJtdu1lBqtgEtCT2v7jBBmKLCFhJnP7fwQxSxCxwnkli
-	ycL9QA4Hh7BAgsTTBhaQGhYBVYmNR9czgYR5BVwlbnaKQSxTkFi2fCbYSE4BN4mm3Y1g5UJA
-	JR9OtLJPYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Dp9J7WBc2WBxiFGAg1GJ
-	h1fTsi1EiDWxrLgy9xCjBAezkgjvlKNAId6UxMqq1KL8+KLSnNTiQ4ymQEdNZJYSTc4Hpoi8
-	knhDYxMzI0sjc0MLI2NzJXFeJXugJoH0xJLU7NTUgtQimD4mDk6pBkbefpOoezV7d0zce9Y3
-	+tIMgQ/SayqdPHZcYTmxXOhfatPiyBlnGSs/HdzWbNk9wfRcZMWN44GXLlXOPVih19epyvoi
-	3v8Zl+yJvb8NLc9mnlA9mnaXvVYkwaT0NcfT/uWvpsxzUb8+Yd6u7j/fPq5QjbFv/9J4jdeR
-	yfLLJN7b+iFMZd6Su6WUWIozEg21mIuKEwH5kB5r2QIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 9 Dec 2014 09:18:13 -0500
+Date: Tue, 9 Dec 2014 00:03:37 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Rui Zhang <rui.zhang@intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] thermal-soc management updates for v3.19 #3
+Message-ID: <20141209040336.GB2245@developer>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add PPMU dt node to Exynos3250-base Rinato board. The PPMU dt node
-is used to get the utilization of DMC0/DMC1/CPU Block.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos3250-rinato.dts | 55 +++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+--hQiwHBbRI9kgIhsi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-index 7789442..9a0ffe4 100644
---- a/arch/arm/boot/dts/exynos3250-rinato.dts
-+++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-@@ -542,6 +542,61 @@
- 	status = "okay";
- };
- 
-+&ppmu_cpu {
-+	status = "okay";
-+
-+	events {
-+		ppmu_cpu_0: ppmu-cpu-pmcnt0 {
-+			event-name = "ppmu-cpu-pmcnt0";
-+		};
-+
-+		ppmu_cpu_1: ppmu-cpu-pmcnt1 {
-+			event-name = "ppmu-cpu-pmcnt1";
-+		};
-+
-+		ppmu_cpu_2: ppmu-cpu-pmcnt2 {
-+			event-name = "ppmu-cpu-pmcnt2";
-+		};
-+
-+		ppmu_cpu_3: ppmu-cpu-pmcnt3 {
-+			event-name = "ppmu-cpu-pmcnt3";
-+		};
-+	};
-+};
-+
-+&ppmu_dmc0 {
-+	status = "okay";
-+
-+	events {
-+		ppmu_dmc0_0: ppmu-dmc0-pmcnt0 {
-+			event-name = "ppmu-dmc0-pmcnt0";
-+		};
-+
-+
-+		ppmu_dmc0_1: ppmu-dmc0-pmcnt1 {
-+			event-name = "ppmu-dmc0-pmcnt1";
-+		};
-+
-+		ppmu_dmc0_2: ppmu-dmc0-pmcnt2 {
-+			event-name = "ppmu-dmc0-pmcnt2";
-+		};
-+
-+		ppmu_dmc0_3: ppmu-dmc0-pmcnt3 {
-+			event-name = "ppmu-dmc0-pmcnt3";
-+		};
-+	};
-+};
-+
-+&ppmu_dmc1 {
-+	status = "okay";
-+
-+	events {
-+		ppmu_dmc1_3: ppmu-dmc1-pmcnt3 {
-+			event-name = "ppmu-dmc1-pmcnt3";
-+		};
-+	};
-+};
-+
- &xusbxti {
- 	clock-frequency = <24000000>;
- };
--- 
-1.8.5.5
+Hello Rui,
 
+Please pull from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git fixes
+
+to receive Thermal-SoC Management updates for v3.19 with top-most
+
+9a3031dc3e7a5edfeb52ae8951f8bcd927351854:
+
+  thermal:core:fix: Check return code of the ->get_max_state() callback (2014-12-08 21:32:56 -0400)
+
+on top of 88910638717dd195cff1dd1ea74772b159632bba:
+
+  Merge tag 'staging-3.18-rc7' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging (2014-11-28 16:08:09 -0800)
+
+Specifics:
+
+- In this pull, I am including a series of fixes that was supposed to make 3.18, but I decided
+to send them for v3.19. I left for v3.19 because the required changes modified a couple of APIs.
+Therefore, the redesign had to be done properly. The major fix here is to have proper sequencing
+between cpufreq layer and cpu cooling registration. A take away of this fix is an improvement in
+the thermal drivers code. Thermal drivers that require cpu cooling do not need to check for
+cpufreq layer. The requirement now is to propagate the error code, if any, while registering
+cpu cooling device. Thanks to Viresh for implementing the required CPUfreq changes.
+- While in the subject, Viresh took the opportunity to review the cpu cooling code from a
+cpufreq layer user perspective, which resulted in several cleanups.
+- The content in this pull depends on CPUfreq refactoring done by Viresh, which is part of
+the pull sent by Rafael J. W.:
+https://lkml.org/lkml/2014/12/8/704
+
+BR,
+
+----------------------------------------------------------------
+Eduardo Valentin (1):
+      thermal: cpu_cooling: check for the readiness of cpufreq layer
+
+Lukasz Majewski (1):
+      thermal:core:fix: Check return code of the ->get_max_state() callback
+
+Viresh Kumar (25):
+      thermal: db8500: pass cpu_present_mask to cpufreq_cooling_register()
+      thermal: imx: pass cpu_present_mask to cpufreq_cooling_register()
+      thermal: exynos: pass cpu_present_mask to cpufreq_cooling_register()
+      thermal: cpu_cooling: random comment fixups
+      thermal: cpu_cooling: fix doc comment over struct cpufreq_cooling_device
+      thermal: cpu_cooling: Add comment to clarify relation between cooling state and frequency
+      thermal: cpu_cooling: Pass variable instead of its type to sizeof()
+      thermal: cpu_cooling: no need to set cpufreq_state to zero
+      thermal: cpu_cooling: no need to set cpufreq_dev to NULL
+      thermal: cpu_cooling: no need to initialze 'ret'
+      thermal: cpu_cooling: propagate error returned by idr_alloc()
+      thermal: cpu_cooling: Don't match min/max frequencies for all CPUs on cooling register
+      thermal: cpu_cooling: don't iterate over all allowed_cpus to update cpufreq policy
+      thermal: cpu_cooling: Don't check is_cpufreq_valid()
+      thermal: cpu_cooling: do error handling at the bottom in __cpufreq_cooling_register()
+      thermal: cpu_cooling: initialize 'cpufreq_val' on registration
+      thermal: cpu_cooling: Merge cpufreq_apply_cooling() into cpufreq_set_cur_state()
+      thermal: cpu_cooling: remove unnecessary wrapper get_cpu_frequency()
+      thermal: cpu_cooling: find max level during device registration
+      thermal: cpu_cooling: get_property() doesn't need to support GET_MAXL anymore
+      thermal: cpu_cooling: use cpufreq_dev_list instead of cpufreq_dev_count
+      thermal: cpu_cooling: Pass 'cpufreq_dev' to get_property()
+      thermal: cpu_cooling: Store frequencies in descending order
+      thermal: cpu_cooling: Use cpufreq_dev->freq_table for finding level/freq
+      thermal: cpu_cooling: update copyright tags
+
+ drivers/thermal/cpu_cooling.c                      | 360 ++++++++-------------
+ drivers/thermal/db8500_cpufreq_cooling.c           |  10 +-
+ drivers/thermal/imx_thermal.c                      |   9 +-
+ drivers/thermal/samsung/exynos_thermal_common.c    |  12 +-
+ drivers/thermal/samsung/exynos_tmu.c               |   5 +-
+ drivers/thermal/thermal_core.c                     |   6 +-
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c |   6 -
+ 7 files changed, 152 insertions(+), 256 deletions(-)
+
+--hQiwHBbRI9kgIhsi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUhnSQAAoJEMLUO4d9pOJW+KYIAJv72U5Q77J3EtFPKtFRLc/Z
+wWoFQCEOnT348fldncC3hDKYGcSyop7B0btZM0H1kY7dKO91SKMgOdHdx5u7a6gu
+QvAAn8wCg0Mwy7oJKrsvvhDwkGzZ6ypM9/6hQB8RkDe4VLGHlbJRaDnsj+hY44g7
+rVc0B0CnPeWUCDnj5eXV4KiqLAtBZrvG1gDa5bnaL9OYihh+j5ukFEptXeHjE2Ku
++hj5uXNOWZXQldquaFNNPgq9358b82Mmq1m+EcyF6PPV2wceRLGx3LO/z2g+YT7A
+FlVe4WMrzxLv2/Zk1CdLGK9xs9xU5+cz4loiJ9pTcNRuCyS5i0hZu9mS/hdB/BQ=
+=oHhd
+-----END PGP SIGNATURE-----
+
+--hQiwHBbRI9kgIhsi--
