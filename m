@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaLIUWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:22:10 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:39736 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671AbaLIUWH convert rfc822-to-8bit (ORCPT
+	id S1752874AbaLIUXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:23:10 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:38048 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742AbaLIUXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:22:07 -0500
-From: Peter Korsgaard <peter@korsgaard.com>
-To: Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org
-Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
-References: <20140331122323.GC6044@type.bordeaux.inria.fr>
-	<20141015231545.GD3719@type.youpi.perso.aquilenet.fr>
-	<201410160129.22012@pali> <201412091812.08575@pali>
-Date: Tue, 09 Dec 2014 21:22:03 +0100
-In-Reply-To: <201412091812.08575@pali> ("Pali =?utf-8?Q?Roh=C3=A1r=22's?=
- message of "Tue, 9 Dec
-	2014 18:12:08 +0100")
-Message-ID: <87mw6wshec.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	Tue, 9 Dec 2014 15:23:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5486BBB1.3040405@linaro.org>
+References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com>
+ <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com> <5486BBB1.3040405@linaro.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 9 Dec 2014 12:22:45 -0800
+X-Google-Sender-Auth: Qm5wyVhoJHtgGr9v8t94HIEIzRU
+Message-ID: <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH v3 2/2] x86, arm64, platform, xen, kconfig:
+ add xen defconfig helper
+To: Julien Grall <julien.grall@linaro.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, josh@joshtriplett.org, sam@ravnborg.org,
+        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mtosatti@redhat.com, Pekka Enberg <penberg@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        David Rientjes <rientjes@google.com>, xen-devel@lists.xenproject.org,
+        Borislav Petkov <bp@suse.de>, David Vrabel <david.vrabel@citrix.com>,
+        Benjamin Poirier <bpoirier@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Pali" == Pali Rohár <pali.rohar@gmail.com> writes:
+On Tue, Dec 9, 2014 at 1:06 AM, Julien Grall <julien.grall@linaro.org> wrote:
+> Hello Luis,
+>
+> On 08/12/2014 23:05, Luis R. Rodriguez wrote:
+>>
+>> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
+>> new file mode 100644
+>> index 0000000..0d0eb6d
+>> --- /dev/null
+>> +++ b/kernel/configs/xen.config
+>> +CONFIG_XEN_MCE_LOG=y
+>
+>
+> MCE is x86 specific.
 
-Hi,
+That's what I thought too but its available for arm64, so should we
+fix that Kconfig to depend on x86?
 
->> There are more people who would like to see this patch in
- >> mainline kernel and we are waiting for you.
+>> +CONFIG_XEN_HAVE_PVMMU=y
+>
+>
+> We don't have PVMMU support on ARM. Shouldn't you move this config in
+> architecture specific code?
 
- > Dmitry: ping!
+If you are sure then yes.
 
- > I would like you to remind you this patch which is waiting for 
- > your review since April 2014!
-
-Hah, I'm pretty sure it dates back to 2010 atleast.
-
--- 
-Bye, Peter Korsgaard
+ Luis
