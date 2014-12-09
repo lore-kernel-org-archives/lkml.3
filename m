@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296AbaLIRMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 12:12:15 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:55045 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaLIRMM (ORCPT
+	id S1751323AbaLIRMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 12:12:21 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41165 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaLIRMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 12:12:12 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
-Date: Tue, 9 Dec 2014 18:12:08 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
-Cc: David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org
-References: <20140331122323.GC6044@type.bordeaux.inria.fr> <20141015231545.GD3719@type.youpi.perso.aquilenet.fr> <201410160129.22012@pali>
-In-Reply-To: <201410160129.22012@pali>
+	Tue, 9 Dec 2014 12:12:17 -0500
+Date: Tue, 9 Dec 2014 09:01:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v3] CPU hotplug: active_writer not woken up in some cases
+ - deadlock
+Message-ID: <20141209170155.GC25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418127811-22629-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141209141903.GB25340@linux.vnet.ibm.com>
+ <20141209172427.4bde12a7@thinkpad-w530>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart36366578.3qX4xnMeRb";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412091812.08575@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209172427.4bde12a7@thinkpad-w530>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120917-0029-0000-0000-0000063E442D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart36366578.3qX4xnMeRb
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 09, 2014 at 05:24:27PM +0100, David Hildenbrand wrote:
+> > On Tue, Dec 09, 2014 at 01:23:31PM +0100, David Hildenbrand wrote:
+> > > Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
+> > > grace periods") introduced another problem that can easily be reproduced by
+> > > starting/stopping cpus in a loop.
+> > > 
+> > > E.g.:
+> > >   for i in `seq 5000`; do
+> > >       echo 1 > /sys/devices/system/cpu/cpu1/online
+> > >       echo 0 > /sys/devices/system/cpu/cpu1/online
+> > >   done
+> > > 
+> > > Will result in:
+> > >   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
+> > >   Call Trace:
+> > >   ([<00000000006a028e>] __schedule+0x406/0x91c)
+> > >    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
+> > >    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
+> > >    [<0000000000131232>] cpu_up+0xb6/0xd4
+> > >    [<00000000004a5720>] device_online+0x80/0xc0
+> > >    [<00000000004a57f0>] online_store+0x90/0xb0
+> > >   ...
+> > > 
+> > > And a deadlock.
+> > > 
+> > > Problem is that if the last ref in put_online_cpus() can't get the
+> > > cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
+> > > active_writer might never be woken up, therefore never exiting the loop in
+> > > cpu_hotplug_begin().
+> > > 
+> > > This fix wakes up the active_writer proactively. The writer already goes back to
+> > > sleep if the ref count isn't already down to 0, so this should be fine.
+> > > 
+> > > In order to avoid many potential races, we have to:
+> > > - Protect current_writer by a spin lock. When holding this lock we can be sure
+> > >   that the writer won't vainsh or change. (use-after-free)
+> > > - Increment the cpu_hotplug.puts_pending count before we test for an
+> > >   active_writer. (otherwise a wakeup might get lost)
+> > > - Move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
+> > >   condition check. (otherwise a wakeup might get lost)
+> > > 
+> > > Can't reproduce it with this fix.
+> > 
+> > Would wait_event()/wake_up() work for the wakeup-writer case?
+> 
+> Thanks! Was also thinking about wait queues. Will investigate if that can help
+> to beautify this :)
 
-On Thursday 16 October 2014 01:29:21 Pali Roh=C3=A1r wrote:
-> On Thursday 16 October 2014 01:15:45 Samuel Thibault wrote:
-> > Pali Roh=C3=A1r, le Sun 12 Oct 2014 16:52:08 +0200, a =C3=A9crit :
-> > > I would like to ask if something was changed and if this
-> > > patch (in any way) is going to mainline kernel.
-> >=20
-> > Well, the latest news I got from Dmity was on 12 Apr 2014,
-> > to which I answered, and never got more news since then.=20
-> > I'm indeed starting to wonder whether it'll ever get
-> > applied at all, after the several years it has been
-> > waiting.  It's no use trying to contribute to free software
-> > if
-> > review/discussion etc. doesn't happen.
-> >=20
-> > Samuel
->=20
-> Dmitry, ping!
-> https://lkml.org/lkml/2014/4/16/725
->=20
-> There are more people who would like to see this patch in
-> mainline kernel and we are waiting for you.
+Looking forward to seeing it.  ;-)
 
-Dmitry: ping!
+							Thanx, Paul
 
-I would like you to remind you this patch which is waiting for=20
-your review since April 2014!
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart36366578.3qX4xnMeRb
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSHLWgACgkQi/DJPQPkQ1LpGwCfYIgofJwsDPrxTz+Sqr6em092
-biwAoLzZCyLd4Pv6VWZcFCr6zR9zPZU+
-=m3HS
------END PGP SIGNATURE-----
-
---nextPart36366578.3qX4xnMeRb--
