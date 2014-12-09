@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515AbaLID1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 22:27:40 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36934 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257AbaLID1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 22:27:39 -0500
-Message-ID: <54866C18.1050203@huawei.com>
-Date: Tue, 9 Dec 2014 11:27:20 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755414AbaLIDgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 22:36:24 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16015 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751520AbaLIDgX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 22:36:23 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'acme@redhat.com'" <acme@redhat.com>, "'bp@suse.de'" <bp@suse.de>,
+        "'mingo@kernel.org'" <mingo@kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 9 Dec 2014 11:36:17 +0800
+Subject: [PATCH] fix build error for vm tools
+Thread-Topic: [PATCH] fix build error for vm tools
+Thread-Index: AdATYUom+tPgr1R5SteFN9dl+uERSQ==
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313FC@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-tip-commits@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH V2] x86/mm: Fix zone ranges boot printout
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
-V2:
-	-fix building warnings of min(...).
+This patch fix the build error when make like this:
+make O=/xx/x vm
 
-This is the usual physical memory layout boot printout:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
-[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
-[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
-...
+use $(OUTPUT) to generate to the right place.
 
-This is the log when we set "mem=2G" on the boot cmdline:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
-
-This patch fixes the printout, the following log shows the right ranges:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 ---
- arch/x86/mm/init.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/vm/Makefile | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..963945d 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -674,10 +674,12 @@ void __init zone_sizes_init(void)
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+index 3d907da..28d4bd9 100644
+--- a/tools/vm/Makefile
++++ b/tools/vm/Makefile
+@@ -1,9 +1,10 @@
+ # Makefile for vm tools
+ #
++include ../scripts/Makefile.include
+ TARGETS=page-types slabinfo
  
- #ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-+	max_zone_pfns[ZONE_DMA]		= min_t(unsigned long,
-+						max_low_pfn, MAX_DMA_PFN);
- #endif
- #ifdef CONFIG_ZONE_DMA32
--	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-+	max_zone_pfns[ZONE_DMA32]	= min_t(unsigned long,
-+						max_low_pfn, MAX_DMA32_PFN);
- #endif
- 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
- #ifdef CONFIG_HIGHMEM
+ LIB_DIR = ../lib/api
+-LIBS = $(LIB_DIR)/libapikfs.a
++LIBS = $(OUTPUT)../lib/api/libapikfs.a
+ 
+ CC = $(CROSS_COMPILE)gcc
+ CFLAGS = -Wall -Wextra -I../lib/
+@@ -12,11 +13,11 @@ LDFLAGS = $(LIBS)
+ $(TARGETS): $(LIBS)
+ 
+ $(LIBS):
+-	make -C $(LIB_DIR)
++	$(call descend,../lib/api libapikfs.a)
+ 
+ %: %.c
+-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
++	$(CC) $(CFLAGS) -o $(OUTPUT)$@ $< $(LDFLAGS)
+ 
+ clean:
+-	$(RM) page-types slabinfo
++	$(RM) $(OUTPUT)page-types $(OUTPUT)slabinfo
+ 	make -C $(LIB_DIR) clean
 -- 
-2.0.0
-
-
+2.1.3
