@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388AbaLIJO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:14:59 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38952 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaLIJOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:14:54 -0500
-Date: Tue, 9 Dec 2014 10:14:47 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, peterz@infradead.org, oleg@redhat.com,
-        bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some cases
- - deadlock
-Message-ID: <20141209091447.GD4362@osiris>
-References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
- <20141208212236.GU25340@linux.vnet.ibm.com>
- <20141209085930.6b831850@thinkpad-w530>
+	id S1756151AbaLIJPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:15:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30077 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754980AbaLIJPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:15:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="495920277"
+Message-ID: <5486BDA0.3000801@intel.com>
+Date: Tue, 09 Dec 2014 17:15:12 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209085930.6b831850@thinkpad-w530>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120909-0017-0000-0000-000002232F66
+To: Jani Nikula <jani.nikula@linux.intel.com>,
+        Dmitry Tunin <hanipouspilot@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+CC: "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        jaime.91@hotmail.es, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915/opregion: work around buggy	firmware
+ that provides 8+ output devices
+References: <52FAE504.8020001@intel.com> <20140212103156.GC5298@nuc-i3427.alporthouse.com> <52FC8C01.1040002@intel.com> <20140213100814.GM14909@nuc-i3427.alporthouse.com> <CAKMK7uGN3Of2VU6_LsSLh041kkx4TrhyH0H8zvE-PRvOtzJgfg@mail.gmail.com> <53045DD1.5010406@intel.com> <20140219073339.GA30685@srcf.ucam.org> <5304725A.3020909@intel.com> <20140304144504.GE17001@phenom.ffwll.local> <548505D2.8030904@intel.com> <8761dmo17c.fsf@intel.com> <87388qo119.fsf@intel.com>
+In-Reply-To: <87388qo119.fsf@intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 08:59:30AM +0100, David Hildenbrand wrote:
-> > The compiler is within its rights to optimize the active_writer local
-> > variable out of existence, thus re-introducing the possible race with
-> > the writer that can pass a NULL pointer to wake_up_process().  So you
-> > really need the ACCESS_ONCE() on the read from cpu_hotplug.active_writer.
-> > Please see http://lwn.net/Articles/508991/ for more information why
-> > this is absolutely required.
+On 12/08/2014 07:04 PM, Jani Nikula wrote:
+> On Mon, 08 Dec 2014, Jani Nikula <jani.nikula@linux.intel.com> wrote:
+>> On Mon, 08 Dec 2014, Aaron Lu <aaron.lu@intel.com> wrote:
+>>> We have a new bug report that has the same problem:
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=88941
+>>>
+>>> The posted patch solves the problem. I know it's not perfect, but it
+>>> doesn't seem it would do any harm to existing systems so should be safe.
+>>>
+>>> Better, if someone can shed some light on how this should be properly
+>>> handled, that would be great.
+>>
+>> There was a bug report that I can't find right now that had a similar
+>> problem. I wrote a few patches, even somewhat polished ones (that I now
+>> pushed to [1] for reference) to handle extended DIDL. Unfortunately this
+>> didn't help the bug reporter because the right one was beyond the
+>> extended DIDL too, so I don't think I even sent these to the list.
+>>
+>> Anyway, just one more data point. This might help your reporter, so
+>> worth a try. But it doesn't solve everything.
 > 
-> You're absolutely right, saw your reply on the other patch just after I sent
-> this version ...
-> 
-> So if you agree with the change below, I'll send an updated version!
-> 
-> > 
-> > > +		if (unlikely(active_writer))
-> > > +			wake_up_process(active_writer);
-> > >  		cpuhp_lock_release();
-> > >  		return;
-> > >  	}
-> > > @@ -161,15 +167,17 @@ void cpu_hotplug_begin(void)
-> > >  	cpuhp_lock_acquire();
-> > >  	for (;;) {
-> > >  		mutex_lock(&cpu_hotplug.lock);
-> > > +		__set_current_state(TASK_UNINTERRUPTIBLE);
-> > 
-> > You lost me on this one.  How does this help?
-> > 
-> > 							Thanx, Paul
-> 
-> Imagine e.g. the following (simplified) scenario:
-> 
-> CPU1                               CPU2
-> ----------------------------------------------------------------------------
-> !mutex_trylock(&cpu_hotplug.lock) |
->                                   | cpu_hotplug.puts_pending == 0
-> cpu_hotplug.puts_pending++;       |
->                                   | cpu_hotplug.refcount != 0
-> wake_up_process(active_writer)
->                                   | __set_current_state(TASK_UNINTERRUPTIBLE);
->                                   | schedule();
->                                   | /* will never be woken up */
-> 
-> Therefore we have to move the condition check inside the 
->   __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
-> section to not miss any wake ups when the condition is satisfied.
-> 
-> So wake_up_process() will either see TASK_RUNNING and do nothing or see
-> TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
-> fact be woken up again.
+> [1] http://cgit.freedesktop.org/~jani/drm/log/?h=didl
 
-Or the third alternative would be that 'active_writer' which was running
-on CPU2 already terminated and wake_up_process() has a non-NULL pointer to
-task_struct which is already dead.
-Or is there anything that prevents this use-after-free race?
+Thanks for the info, I've asked Dmitry to give it a try.
+
+Regards,
+Aaron
 
