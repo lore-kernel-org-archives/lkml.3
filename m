@@ -1,172 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbaLIGav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 01:30:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:34504 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaLIGat (ORCPT
+	id S1753454AbaLIGcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 01:32:04 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:40414 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750752AbaLIGcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 01:30:49 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-b3-548697097ebf
-Message-id: <54869708.6000303@samsung.com>
-Date: Tue, 09 Dec 2014 15:30:32 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
-        arnd@arndb.de, olof@lixom.net, catalin.marinas@arm.com,
-        will.deacon@arm.com, s.nawrocki@samsung.com, tomasz.figa@gmail.com,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        chanho61.park@samsung.com, geunsik.lim@samsung.com,
-        sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Inha Song <ideal.song@samsung.com>
-Subject: Re: [PATCH 03/19] clk: samsung: exynos5433: Add clocks for CMU_PERIC
- domain
-References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
- <1417510196-6714-4-git-send-email-cw00.choi@samsung.com>
- <54858C13.8020704@samsung.com> <54864C90.9040205@samsung.com>
- <548692ED.4080301@samsung.com>
-In-reply-to: <548692ED.4080301@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsWyRsSkUJdzeluIwd9XchaP1yxmsvg76Ri7
-	xftlPYwWl/drW8w/co7V4s+EVjaLXX/vM1pMuj+BxeLGrzZWi94FV9kszja9YbfY9Pgaq8Xl
-	XXPYLGac3wfUf+cfm8XS6xeZLE5d/8xmsWjrF3aLw2/aWS1mTH7JZrFq1x9Gi5cfT7A4iHms
-	mbeG0eP3r0mMHjtn3WX32Lyk3uPKiSZWj74tqxg9Pm+SC2CP4rJJSc3JLEst0rdL4Mr4vmc2
-	c8EFhYrFV06yNjCukupi5OSQEDCReLZrKjOELSZx4d56ti5GLg4hgaWMEkse/GGFKTracZ8F
-	IjGdUWLxsjlMEM5rIOfgArB2XgEtiSeLNrKD2CwCqhIHGj+zgNhsQPH9L26wgdiiAmESK6df
-	YYGoF5T4MfkemC0ioC3RefkeK8hQZoFFLBIfP+wAaxAGauiZ9oIdYtsDRomDn48CbePg4ATq
-	uHw0GMRkFtCTuH9RC6ScWUBeYvOat8wg5RICRzgkZq3eywZxkIDEt8mHWEDqJQRkJTYdgHpZ
-	UuLgihssExjFZiE5aRbC1FlIpi5gZF7FKJpakFxQnJReZKJXnJhbXJqXrpecn7uJEZgcTv97
-	NmEH470D1ocYBTgYlXh4NSzbQoRYE8uKK3MPMZoCHTGRWUo0OR+YgvJK4g2NzYwsTE1MjY3M
-	Lc2UxHlfS/0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cA4+eR93xiuH9nBeXebN2783XtG
-	7s5e41CzJ3fv3Qm98SfZxIQrtfOcrPHiRdU8HK5LPD87NPFEnEqo+J1w+NS1hjfCnh37V7Pe
-	OjCVOzSlsE7R3iNuXtb+fduuHHrYv+ZbtnrS7jTbGUdaeFfePrx6rpjz/ki+72WsWze1nvx5
-	Zleo5vNLuw74KLEUZyQaajEXFScCAOURLBYJAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jQV3O6W0hBiseCFs8XrOYyeLvpGPs
-	Fu+X9TBaXN6vbTH/yDlWiz8TWtksdv29z2gx6f4EFosbv9pYLXoXXGWzONv0ht1i0+NrrBaX
-	d81hs5hxfh9Q/51/bBZLr19ksjh1/TObxaKtX9gtDr9pZ7WYMfklm8WqXX8YLV5+PMHiIOax
-	Zt4aRo/fvyYxeuycdZfdY/OSeo8rJ5pYPfq2rGL0+LxJLoA9qoHRJiM1MSW1SCE1Lzk/JTMv
-	3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoNSWFssScUqBQQGJxsZK+HaYJoSFu
-	uhYwjRG6viFBcD1GBmggYQ1jxvc9s5kLLihULL5ykrWBcZVUFyMnh4SAicTRjvssELaYxIV7
-	69m6GLk4hASmM0osXjaHCcJ5DeQcXMAMUsUroCXxZNFGdhCbRUBV4kDjZ7BuNqD4/hc32EBs
-	UYEwiZXTr7BA1AtK/Jh8D8wWEdCW6Lx8jxVkKLPAIhaJjx92gDUIAzX0THvBDrHtAaPEwc9H
-	gbZxcHACdVw+GgxiMgvoSdy/qAVSziwgL7F5zVvmCYwCs5CsmIVQNQtJ1QJG5lWMoqkFyQXF
-	Sem5hnrFibnFpXnpesn5uZsYwannmdQOxpUNFocYBTgYlXh4NS3bQoRYE8uKK3MPMUpwMCuJ
-	8N6vAwrxpiRWVqUW5ccXleakFh9iNAUGwERmKdHkfGBazCuJNzQ2MTOyNDI3tDAyNlcS51Wy
-	B2oSSE8sSc1OTS1ILYLpY+LglGpgdE87o6w5M9fzoHVG+s0Lsjd5m3X0bv9l9Jxc57+VpbRJ
-	cVH3w4TOdH6f/AL9H2ni7tdeT3FfsK3y484Npw4x3LuaXXL6xcTko7euvsh9onwx5fS39t1b
-	+aPD4l9JHD27wH12caf1Za1fJi7phzb1ztSr8mP4IqXAnBLoynTqcL165uFAk/uOSizFGYmG
-	WsxFxYkAWJCNGlMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 9 Dec 2014 01:32:02 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+CC: Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Eddie Huang =?UTF-8?Q?=28=E9=BB=83=E6=99=BA=E5=82=91=29?= 
+	<eddie.huang@mediatek.com>
+In-Reply-To: <20141208162140.GN16185@e104818-lin.cambridge.arm.com>
+References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
+	 <1417776064.14380.17.camel@mtksdaap41>
+	 <20141208162140.GN16185@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 9 Dec 2014 14:31:58 +0800
+Message-ID: <1418106718.32622.31.camel@mtksdaap41>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 03:13 PM, Pankaj Dubey wrote:
+On Mon, 2014-12-08 at 16:21 +0000, Catalin Marinas wrote:
+> On Fri, Dec 05, 2014 at 10:41:04AM +0000, Yingjoe Chen wrote:
+> > On Sun, 2014-11-23 at 23:02 -0800, Sonny Rao wrote: 
+> > > This is a bug fix for using physical arch timers when
+> > > the arch_timer_use_virtual boolean is false.  It restores the
+> > > arch_counter_get_cntpct() function after removal in
+> > > 
+> > > 0d651e4e "clocksource: arch_timer: use virtual counters"
+> > > 
+> > > We need this on certain ARMv7 systems which are architected like this:
+> > > diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> > > index f190971..b1fa4e6 100644
+> > > --- a/arch/arm64/include/asm/arch_timer.h
+> > > +++ b/arch/arm64/include/asm/arch_timer.h
+> > > @@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
+> > >  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+> > >  }
+> > >  
+> > > +static inline u64 arch_counter_get_cntpct(void)
+> > > +{
+> > > +	/*
+> > > +	 * AArch64 kernel and user space mandate the use of CNTVCT.
+> > > +	 */
+> > > +	BUG();
+> > > +	return 0;
+> > > +}
+> > > +
+> > >  static inline u64 arch_counter_get_cntvct(void)
+> > >  {
+> > >  	u64 cval;
+> > 
+> > I tested this on an arm64 platform and system fail to boot when apply
+> > this patch.
+> > 
+> > The boot loader start kernel at EL2, so is_hyp_mode_available() will be
+> > true and we will use physical timer. Without this patch,
+> > arch_timer_read_counter set to arch_counter_get_cntvct even when we use
+> > physical timer which is incorrect but at least system will boot.
 > 
+> So on arm64 we want to use CNTVCT all the time, even if we start the
+> kernel at EL2. This is the counter that gets exposed to user via vdso.
+> When the kernel boots at EL2, we initialise CNTVOFF to 0, so we know
+> that CNTVCT == CNTPCT. However, I would still prefer to use CNTVCT even
+> in such case to spot possible firmware issues with not restoring CNTVOFF
+> when coming out of suspend (one particular case of suspend which does
+> not require a different kernel entry point).
 > 
-> On Tuesday 09 December 2014 06:42 AM, Chanwoo Choi wrote:
->> Hi Pankaj,
->>
->> On 12/08/2014 08:31 PM, Pankaj Dubey wrote:
->>> Hi Chanwoo,
->>>
->>> On Tuesday 02 December 2014 02:19 PM, Chanwoo Choi wrote:
->>>> This patch adds missing divider/gate clocks of CMU_PERIC domain
->>>> which includes I2S/PCM/SPDIF/PWM/SLIMBUS IPs. The SPI/I2S may use
->>>> external input clock which has 'ioclk_*' prefix.
->>>>
->>>> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
->>>> Cc: Tomasz Figa <tomasz.figa@gmail.com>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> [ideal.song: Change clk flags of to pclk_gpio_* clk, pclk_gpio_* should be always on.]
->>>> Signed-off-by: Inha Song <ideal.song@samsung.com>
->>>> Acked-by: Inki Dae <inki.dae@samsung.com>
->>>> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
->>>> ---
->>>>    drivers/clk/samsung/clk-exynos5433.c   | 80 +++++++++++++++++++++++++++++++++-
->>>>    include/dt-bindings/clock/exynos5433.h | 34 ++++++++++++++-
->>>>    2 files changed, 112 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
->>>> index 88e8cac..a48b36c 100644
->>>> --- a/drivers/clk/samsung/clk-exynos5433.c
->>>> +++ b/drivers/clk/samsung/clk-exynos5433.c
->>>> @@ -256,6 +256,14 @@ static struct samsung_fixed_rate_clock top_fixed_clks[] __initdata = {
->>>>        FRATE(0, "ioclk_audiocdclk0", NULL, CLK_IS_ROOT, 100000000),
->>>>        /* Xi2s1SDI input clock for SPDIF */
->>>>        FRATE(0, "ioclk_spdif_extclk", NULL, CLK_IS_ROOT, 100000000),
->>>> +    /* XspiCLK[4:0] input clock for SPI */
->>>> +    FRATE(0, "ioclk_spi4_clk_in", NULL, CLK_IS_ROOT, 50000000),
->>>> +    FRATE(0, "ioclk_spi3_clk_in", NULL, CLK_IS_ROOT, 50000000),
->>>> +    FRATE(0, "ioclk_spi2_clk_in", NULL, CLK_IS_ROOT, 50000000),
->>>> +    FRATE(0, "ioclk_spi1_clk_in", NULL, CLK_IS_ROOT, 50000000),
->>>> +    FRATE(0, "ioclk_spi0_clk_in", NULL, CLK_IS_ROOT, 50000000),
->>>> +    /* Xi2s1SCLK input clock for I2S1_BCLK */
->>>> +    FRATE(0, "ioclk_i2s1_bclk_in", NULL, CLK_IS_ROOT, 12288000),
->>>>    };
->>>>
->>>>    static struct samsung_mux_clock top_mux_clks[] __initdata = {
->>>> @@ -760,6 +768,7 @@ CLK_OF_DECLARE(exynos5433_cmu_mif, "samsung,exynos5433-cmu-mif",
->>>>     * Register offset definitions for CMU_PERIC
->>>>     */
->>>>    #define DIV_PERIC            0x0600
->>>> +#define DIV_STAT_PERIC            0x0700
->>>>    #define ENABLE_ACLK_PERIC        0x0800
->>>>    #define ENABLE_PCLK_PERIC0        0x0900
->>>>    #define ENABLE_PCLK_PERIC1        0x0904
->>>> @@ -770,6 +779,7 @@ CLK_OF_DECLARE(exynos5433_cmu_mif, "samsung,exynos5433-cmu-mif",
->>>>
->>>>    static unsigned long peric_clk_regs[] __initdata = {
->>>>        DIV_PERIC,
->>>> +    DIV_STAT_PERIC,
->>>
->>> IMO, this line should have been added in first place itself when you added peric_clk_regs.
->>
->> Why? I want to locate it according to address base.
+> > I think we still need this function on arm64. We should add BUG() to
+> > arch_timer_init instead, maybe something like this:
+> > 
+> > @@ -708,9 +708,12 @@ static void __init arch_timer_init(struct device_node *np)
+> >  	 * If we cannot rely on firmware initializing the timer registers then
+> >  	 * we should use the physical timers instead.
+> >  	 */
+> > -	if (IS_ENABLED(CONFIG_ARM) &&
+> > -	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+> > +	if (of_property_read_bool(np, "arm,cpu-registers-not-fw-configured")) {
+> > +		if (IS_ENABLED(CONFIG_ARM64))
+> > +			BUG();
+> > +		else
+> >  			arch_timer_use_virtual = false;
+> > +	}
 > 
-> Since DIV_PERIC and DIV_STAT_PERIC both has same address base, why not to add DIV_STAT_PERIC at the same place when you added DIV_PERIC?
+> We could be more tolerant (give people a chance to check their DT):
+> 
+> 	if (!WARN_ON(IS_ENABLED(CONFIG_ARM64)))
+> 		arch_timer_use_virtual = false;
+> 
+> In addition, we can define arch_counter_get_cntpct to always read CNTVCT
+> (not that nice but maybe it looks better with a comment):
+> 
+> /*
+>  * AArch64 kernel and user space mandate the use of CNTVCT.
+>  */
+> #define arch_counter_get_cntpct	arch_counter_get_cntvct
+> 
+> (or any better suggestion to avoid reading CNTPCT on arm64)
+> 
 
-I mean the register offset instead of address base.
-DIV_PERIC(0x0600) is less than DIV_STAT_PERIC(0x0700).
-So, I want to locate DIV_STAT_PERIC on behind DIV_PERIC in ascending order.
+I'm not sure about this. arch_timer_use_virtual is false, indicate we
+are using physical timer, the function name suggest it will read
+physical timer, but actually it is reading virtual timer. It sure will
+create confusion when one need to debug.
 
-But, It is just minor issue.
+We are using physical timer because arch_timer_init() will check
+is_hyp_mode_available(), and use physical timer if it is avaliable. For
+arm64, if we want to use virtual timer even in HYP mode, how about this
+change:
 
-Best Regards,
-Chanwoo Choi
+@@ -720,7 +723,8 @@ static void __init arch_timer_init(struct device_node *np)
+         * If no interrupt provided for virtual timer, we'll have to
+         * stick to the physical timer. It'd better be accessible...
+         */
+-       if (is_hyp_mode_available() || !arch_timer_ppi[VIRT_PPI]) {
++       if ((IS_ENABLED(CONFIG_ARM) && is_hyp_mode_available()) ||
++           !arch_timer_ppi[VIRT_PPI]) {
+                arch_timer_use_virtual = false;
 
-> 
-> Anyways, this was just my opinion as I don't see any dependency why we should add it here? I left this up to you.
-> 
->>
->>>
->>>>        ENABLE_ACLK_PERIC,
->>>>        ENABLE_PCLK_PERIC0,
->>>>        ENABLE_PCLK_PERIC1,
->>>> @@ -779,14 +789,57 @@ static unsigned long peric_clk_regs[] __initdata = {
->>>>        ENABLE_IP_PERIC2,
->>>>    };
->>>>
->>>> +static struct samsung_div_clock peric_div_clks[] __initdata = {
->>>> +    /* DIV_PERIC */
->>>> +    DIV(CLK_DIV_SCLK_SCI, "div_sclk_sci", "fin_pll", DIV_PERIC, 4, 8),
->>>
->>> As per UM I have DIV_SCLK_SCI has 4 bit wide as [7:4] please cross verify.
->>
->> You're right. It is my mistake. I'll fix it.
->>
->> Best Regards,
->> Chanwoo Choi
->>
-> Thanks,
-> Pankaj Dubey
-> 
+                if (!arch_timer_ppi[PHYS_SECURE_PPI] ||
+
+Maybe also add some WARN_ON for arm64 here to make sure we never set
+arch_timer_use_virtual to false for ARM64.
+
+Joe.C
+
 
