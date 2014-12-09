@@ -1,512 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520AbaLIOQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:16:45 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:11064 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaLIONK (ORCPT
+	id S1757534AbaLIOQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:16:50 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63619 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010AbaLIOQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:13:10 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-76-548703746e0f
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        rafael.j.wysocki@intel.com, a.kesavan@samsung.com,
-        tomasz.figa@gmail.com, b.zolnierkie@samsung.com,
-        k.kozlowski@samsung.com, cw00.choi@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv2 4/7] devfreq: event: Add exynos-ppmu devfreq event driver
-Date: Tue, 09 Dec 2014 23:13:03 +0900
-Message-id: <1418134386-14681-5-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1418134386-14681-1-git-send-email-cw00.choi@samsung.com>
-References: <1418134386-14681-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkRLeEuT3EYOl1GYvHaxYzWWycsZ7V
-	4vqX56wW84+cY7V4/cLQonfBVTaLs01v2C02Pb7GanF51xw2i8+9RxgtZpzfx2Rxu3EFm8Xj
-	FW/ZLVbt+sPowOexc9Zddo/Fe14yeWxeUu/Rt2UVo8fnTXIBrFFcNimpOZllqUX6dglcGW96
-	HrEVLMqomLXSs4FxZ1gXIyeHhICJxIWFS9kgbDGJC/fWA9lcHEICSxklll98xAxX1L2AHSKx
-	iFFi+p+3UE4Tk8SbXbtZQarYBLQk9r+4ATZKRMBK4vT/DmaQImaB80wSSxbuBxslLOAv8Wj2
-	QSYQm0VAVeLXz1NgDbwCrhIzr2+HukNBYtnymWBDOQXcJJp2N7KA2EJANR9OtIJtlhA4xS7R
-	uf48C8QgAYlvkw8B2RxACVmJTQegzpaUOLjiBssERuEFjAyrGEVTC5ILipPSi0z0ihNzi0vz
-	0vWS83M3MQJj5fS/ZxN2MN47YH2IUYCDUYmHV8OyLUSINbGsuDL3EKMp0IaJzFKiyfnAiMwr
-	iTc0NjOyMDUxNTYytzRTEud9LfUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOjDGdoWd4S
-	zUeMd+SsTs8I6crpNzH1yElyschhypj9zbqu86PVkb7VxWornyUrZX77vs/wZlrYw5ALnkc9
-	tCSmKLEX81VUiBY7fW1d5H2kc2uGWCTDmanfLjrl9HNOedb9gm31gysnc2X+vnnVHqbhoCsw
-	f8emdWtPfo9frCF4d1b4WWkpszYlluKMREMt5qLiRABYK8zAkAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAd0S5vYQgwMzBC0er1nMZLFxxnpW
-	i+tfnrNazD9yjtXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF7cYVbBaP
-	V7xlt1i16w+jA5/Hzll32T0W73nJ5LF5Sb1H35ZVjB6fN8kFsEY1MNpkpCampBYppOYl56dk
-	5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAB2qpFCWmFMKFApILC5W0rfDNCE0
-	xE3XAqYxQtc3JAiux8gADSSsYcx40/OIrWBRRsWslZ4NjDvDuhg5OSQETCQudC9gh7DFJC7c
-	W8/WxcjFISSwiFFi+p+37BBOE5PEm127WUGq2AS0JPa/uMEGYosIWEmc/t/BDFLELHCeSWLJ
-	wv3MIAlhAX+JR7MPMoHYLAKqEr9+ngJr4BVwlZh5fTsbxDoFiWXLZ4IN5RRwk2ja3cgCYgsB
-	1Xw40co+gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgSHwmtYNxZYPFIUYBDkYl
-	Hl5Ny7YQIdbEsuLK3EOMEhzMSiK8U44ChXhTEiurUovy44tKc1KLDzGaAl01kVlKNDkfmCTy
-	SuINjU3MjCyNzA0tjIzNlcR5leyBmgTSE0tSs1NTC1KLYPqYODilGhjzf7C1qD66bhTRdtbg
-	+eVw76cpe2cXqCx+eeqIp6HvHibrrhTJF4EbGJbohXGGOev3HJ4eF1FUdunlZmaZBSoxd54L
-	rFq55rHCx0sCLBvXfbpXx5Uq/3EVx0exKzeFzkbWvl/6XjjqZ+A36ewbRp8yuy89Z2SsNn+7
-	9et05U3Nzwr3xkv/DZNWYinOSDTUYi4qTgQAMeoqkNoCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 9 Dec 2014 09:16:47 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux390@de.ibm.com (supporter:S390),
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Jens Freimann <jfrei@linux.vnet.ibm.com>,
+        linux-s390@vger.kernel.org (open list:S390),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
+Date: Tue,  9 Dec 2014 09:16:46 -0500
+Message-Id: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add exynos-ppmu devfreq event driver to provider raw data about
-the utilization of each IP in Exynos SoC series.
+Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
+is a compile time failure if srcu is used when not enabled. This was decided to
+be better than waiting until link time for a failure to occur.
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Also make including kvm_host.h conditional on CONFIG_KVM being enabled. This
+prevents build failures as KVM is dependent on SRCU.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> [for s390 parts]
+CC: Josh Triplett <josh@joshtriplett.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/devfreq/Kconfig             |   9 +
- drivers/devfreq/event/Makefile      |   1 +
- drivers/devfreq/event/exynos-ppmu.c | 409 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 419 insertions(+)
- create mode 100644 drivers/devfreq/event/exynos-ppmu.c
+ arch/s390/kernel/asm-offsets.c |  7 ++++++-
+ include/linux/notifier.h       | 47 ++++++++++++++++++++++++------------------
+ include/linux/srcu.h           |  6 +++++-
+ 3 files changed, 38 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index 4d15b62..d4559f7 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -89,4 +89,13 @@ config ARM_EXYNOS5_BUS_DEVFREQ
+diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
+index ef279a1..055334d 100644
+--- a/arch/s390/kernel/asm-offsets.c
++++ b/arch/s390/kernel/asm-offsets.c
+@@ -7,12 +7,15 @@
+ #define ASM_OFFSETS_C
  
- comment "DEVFREQ Event Drivers"
+ #include <linux/kbuild.h>
+-#include <linux/kvm_host.h>
+ #include <linux/sched.h>
+ #include <asm/idle.h>
+ #include <asm/vdso.h>
+ #include <asm/pgtable.h>
  
-+config DEVFREQ_EVENT_EXYNOS_PPMU
-+	bool "EXYNOS PPMU (Performance Profiling Monitoring Unit) DEVFREQ event Driver"
-+	depends on ARCH_EXYNOS
-+	select PM_OPP
-+	help
-+	 This add the DEVFREQ event driver for Exynos SoC. It provides PPMU
-+	 (Performance Profiling Monitoring Unit) counters to estimate the
-+	 utilization of each module.
++#ifdef CONFIG_KVM
++#include <linux/kvm_host.h>
++#endif
 +
- endif # PM_DEVFREQ
-diff --git a/drivers/devfreq/event/Makefile b/drivers/devfreq/event/Makefile
-index dc56005..be146ea 100644
---- a/drivers/devfreq/event/Makefile
-+++ b/drivers/devfreq/event/Makefile
-@@ -1 +1,2 @@
- # Exynos DEVFREQ Event Drivers
-+obj-$(CONFIG_DEVFREQ_EVENT_EXYNOS_PPMU) += exynos-ppmu.o
-diff --git a/drivers/devfreq/event/exynos-ppmu.c b/drivers/devfreq/event/exynos-ppmu.c
-new file mode 100644
-index 0000000..2706f23
---- /dev/null
-+++ b/drivers/devfreq/event/exynos-ppmu.c
-@@ -0,0 +1,409 @@
-+/*
-+ * exynos_ppmu.c - EXYNOS PPMU (Performance Profiling Monitoring Units) support
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author : Chanwoo Choi <cw00.choi@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This driver is based on drivers/devfreq/exynos/exynos_ppmu.c
+ /*
+  * Make sure that the compiler is new enough. We want a compiler that
+  * is known to work with the "Q" assembler constraint.
+@@ -182,8 +185,10 @@ int main(void)
+ 	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
+ 	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
+ 	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
++#ifdef CONFIG_KVM
+ 	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
+ 	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
++#endif /* CONFIG_KVM */
+ #endif /* CONFIG_32BIT */
+ 	return 0;
+ }
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index d14a4c3..fe4f02a 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -47,6 +47,8 @@
+  * runtime initialization.
+  */
+ 
++struct notifier_block;
++
+ typedef	int (*notifier_fn_t)(struct notifier_block *nb,
+ 			unsigned long action, void *data);
+ 
+@@ -70,12 +72,6 @@ struct raw_notifier_head {
+ 	struct notifier_block __rcu *head;
+ };
+ 
+-struct srcu_notifier_head {
+-	struct mutex mutex;
+-	struct srcu_struct srcu;
+-	struct notifier_block __rcu *head;
+-};
+-
+ #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
+ 		spin_lock_init(&(name)->lock);	\
+ 		(name)->head = NULL;		\
+@@ -88,11 +84,6 @@ struct srcu_notifier_head {
+ 		(name)->head = NULL;		\
+ 	} while (0)
+ 
+-/* srcu_notifier_heads must be initialized and cleaned up dynamically */
+-extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+-#define srcu_cleanup_notifier_head(name)	\
+-		cleanup_srcu_struct(&(name)->srcu);
+-
+ #define ATOMIC_NOTIFIER_INIT(name) {				\
+ 		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
+ 		.head = NULL }
+@@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+ 		.head = NULL }
+ #define RAW_NOTIFIER_INIT(name)	{				\
+ 		.head = NULL }
+-/* srcu_notifier_heads cannot be initialized statically */
+ 
+ #define ATOMIC_NOTIFIER_HEAD(name)				\
+ 	struct atomic_notifier_head name =			\
+@@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int blocking_notifier_chain_cond_register(
+ 		struct blocking_notifier_head *nh,
+@@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
+ 		struct notifier_block *nb);
+ extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
+ 		struct notifier_block *nb);
+-extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
+-		struct notifier_block *nb);
+ 
+ extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ 		unsigned long val, void *v);
+@@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 		unsigned long val, void *v);
+ extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
+ 	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+-extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-		unsigned long val, void *v);
+-extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+-	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+ 
+ #define NOTIFY_DONE		0x0000		/* Don't care */
+ #define NOTIFY_OK		0x0001		/* Suits me */
+@@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
+ 
+ extern struct blocking_notifier_head reboot_notifier_list;
+ 
++#ifdef CONFIG_SRCU
++
++struct srcu_notifier_head {
++	struct mutex mutex;
++	struct srcu_struct srcu;
++	struct notifier_block __rcu *head;
++};
++
++/* srcu_notifier_heads must be initialized and cleaned up dynamically
++ * srcu_notifier_heads cannot be initialized statically
 + */
-+
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/suspend.h>
-+#include <linux/devfreq.h>
-+
-+#define PPMU_ENABLE             BIT(0)
-+#define PPMU_DISABLE            0x0
-+#define PPMU_CYCLE_RESET        BIT(1)
-+#define PPMU_COUNTER_RESET      BIT(2)
-+
-+#define PPMU_ENABLE_COUNT0      BIT(0)
-+#define PPMU_ENABLE_COUNT1      BIT(1)
-+#define PPMU_ENABLE_COUNT2      BIT(2)
-+#define PPMU_ENABLE_COUNT3      BIT(3)
-+#define PPMU_ENABLE_CYCLE       BIT(31)
-+
-+#define PPMU_CNTENS		0x10
-+#define PPMU_FLAG		0x50
-+#define PPMU_CCNT_OVERFLOW	BIT(31)
-+#define PPMU_CCNT		0x100
-+
-+#define PPMU_PMCNT0		0x110
-+#define PPMU_PMCNT_OFFSET	0x10
-+#define PMCNT_OFFSET(x)		(PPMU_PMCNT0 + (PPMU_PMCNT_OFFSET * x))
-+
-+#define PPMU_BEVT0SEL		0x1000
-+#define PPMU_BEVTSEL_OFFSET	0x100
-+#define PPMU_BEVTSEL(x)		(PPMU_BEVT0SEL + (x * PPMU_BEVTSEL_OFFSET))
-+
-+#define RD_DATA_COUNT		0x5
-+#define WR_DATA_COUNT		0x6
-+#define RDWR_DATA_COUNT		0x7
-+
-+enum ppmu_counter {
-+	PPMU_PMNCNT0,
-+	PPMU_PMNCNT1,
-+	PPMU_PMNCNT2,
-+	PPMU_PMNCNT3,
-+	PPMU_PMNCNT_MAX,
-+};
-+
-+/* Platform data */
-+struct exynos_ppmu_data {
-+	struct devfreq *devfreq;
-+	struct devfreq_event_dev **event_dev;
-+	struct devfreq_event_desc *desc;
-+	unsigned int num_events;
-+
-+	struct device *dev;
-+	struct clk *clk_ppmu;
-+	struct mutex lock;
-+
-+	struct __exynos_ppmu {
-+		void __iomem *hw_base;
-+		unsigned int ccnt;
-+		unsigned int event[PPMU_PMNCNT_MAX];
-+		unsigned int count[PPMU_PMNCNT_MAX];
-+		unsigned long long ns;
-+		ktime_t reset_time;
-+		bool ccnt_overflow;
-+		bool count_overflow[PPMU_PMNCNT_MAX];
-+	} ppmu;
-+};
-+
-+struct __exynos_ppmu_events {
-+	char *name;
-+	int id;
-+} ppmu_events[] = {
-+	{ "ppmu-dmc0-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-dmc0-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-dmc0-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-dmc0-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-dmc1-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-dmc1-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-dmc1-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-dmc1-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-cpu-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-cpu-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-cpu-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-cpu-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-rightbus-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-rightbus-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-rightbus-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-rightbus-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-leftbus-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-leftbus-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-leftbus-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-leftbus-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-camif-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-camif-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-camif-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-camif-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-lcd0-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-lcd0-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-lcd0-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-lcd0-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-g3d-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-g3d-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-g3d-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-g3d-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-mfc-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-mfc-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-mfc-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-mfc-pmcnt3", PPMU_PMNCNT3 },
-+
-+	{ "ppmu-fsys-pmcnt0", PPMU_PMNCNT0 },
-+	{ "ppmu-fsys-pmcnt1", PPMU_PMNCNT1 },
-+	{ "ppmu-fsys-pmcnt2", PPMU_PMNCNT2 },
-+	{ "ppmu-fsys-pmcnt3", PPMU_PMNCNT3 },
-+	{ /* sentinel */ },
-+};
-+
-+static int exynos_ppmu_enable(struct devfreq_event_dev *event_dev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+
-+	__raw_writel(PPMU_ENABLE, exynos_ppmu->ppmu.hw_base);
-+
-+	return 0;
-+}
-+
-+static int exynos_ppmu_disable(struct devfreq_event_dev *event_dev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+
-+	__raw_writel(PPMU_DISABLE, exynos_ppmu->ppmu.hw_base);
-+
-+	return 0;
-+}
-+
-+static bool exynos_ppmu_is_enabled(struct devfreq_event_dev *event_dev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+	int val;
-+
-+	val = __raw_readl(exynos_ppmu->ppmu.hw_base);
-+	if (val & PPMU_ENABLE)
-+		return true;
-+
-+	return false;
-+}
-+
-+static int exynos_ppmu_find_ppmu_id(struct devfreq_event_dev *event_dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(ppmu_events); i++)
-+		if (!strcmp(event_dev->desc->name, ppmu_events[i].name))
-+			return ppmu_events[i].id;
-+
-+	return -EINVAL;
-+}
-+
-+static int exynos_ppmu_set_event(struct devfreq_event_dev *event_dev,
-+				enum devfreq_event_type event_type)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+	void __iomem *ppmu_base = exynos_ppmu->ppmu.hw_base;
-+	int id = exynos_ppmu_find_ppmu_id(event_dev);
-+
-+	__raw_writel(RDWR_DATA_COUNT, ppmu_base + PPMU_BEVTSEL(id));
-+
-+	return 0;
-+}
-+
-+static int exynos_ppmu_get_event(struct devfreq_event_dev *event_dev,
-+				enum devfreq_event_type event_type,
-+				int *total_event)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+	void __iomem *ppmu_base = exynos_ppmu->ppmu.hw_base;
-+	int id = exynos_ppmu_find_ppmu_id(event_dev);
-+	int cnt, total_cnt;
-+
-+	total_cnt = __raw_readl(ppmu_base + PPMU_CCNT);
-+
-+	if (id == PPMU_PMNCNT3)
-+		cnt = ((__raw_readl(ppmu_base + PMCNT_OFFSET(id)) << 8) |
-+			  __raw_readl(ppmu_base + PMCNT_OFFSET(id + 1)));
-+	else
-+		cnt = __raw_readl(ppmu_base + PMCNT_OFFSET(id));
-+
-+	*total_event = total_cnt;
-+
-+	return cnt;
-+}
-+
-+static int exynos_ppmu_reset(struct devfreq_event_dev *event_dev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = event_dev_get_drvdata(event_dev);
-+	void __iomem *ppmu_base = exynos_ppmu->ppmu.hw_base;
-+
-+	__raw_writel(PPMU_CYCLE_RESET | PPMU_COUNTER_RESET, ppmu_base);
-+	__raw_writel(PPMU_ENABLE_CYCLE  |
-+		     PPMU_ENABLE_COUNT0 |
-+		     PPMU_ENABLE_COUNT1 |
-+		     PPMU_ENABLE_COUNT2 |
-+		     PPMU_ENABLE_COUNT3,
-+		     ppmu_base + PPMU_CNTENS);
-+	__raw_writel(PPMU_ENABLE, exynos_ppmu->ppmu.hw_base);
-+
-+	return 0;
-+}
-+
-+static struct devfreq_event_ops exynos_ppmu_ops = {
-+	.enable		= exynos_ppmu_enable,
-+	.disable	= exynos_ppmu_disable,
-+	.is_enabled	= exynos_ppmu_is_enabled,
-+	.set_event	= exynos_ppmu_set_event,
-+	.get_event	= exynos_ppmu_get_event,
-+	.reset		= exynos_ppmu_reset,
-+};
-+
-+static int of_get_devfreq_events(struct device_node *np,
-+				struct exynos_ppmu_data *exynos_ppmu)
-+{
-+	struct devfreq_event_desc *desc;
-+	struct device *dev = exynos_ppmu->dev;
-+	struct device_node *events_np, *node;
-+	int i, j, count;
-+
-+	events_np = of_find_node_by_name(np, "events");
-+	if (!events_np) {
-+		dev_err(dev, "Failed to find ppmus sub-node\n");
-+		return -EINVAL;
-+	}
-+
-+	count = of_get_child_count(events_np);
-+	desc = devm_kzalloc(dev, sizeof(struct devfreq_event_desc) * count,
-+			      GFP_KERNEL);
-+	if (!desc)
-+		return -ENOMEM;
-+	exynos_ppmu->num_events = count;
-+
-+	j = 0;
-+	for_each_child_of_node(events_np, node) {
-+		for (i = 0; i < ARRAY_SIZE(ppmu_events); i++) {
-+			if (!of_node_cmp(node->name, ppmu_events[i].name))
-+				break;
-+		}
-+
-+		if (i == ARRAY_SIZE(ppmu_events)) {
-+			dev_warn(dev,
-+				"don't know how to configure events : %s\n",
-+				node->name);
-+			continue;
-+		}
-+		desc[j].ops = &exynos_ppmu_ops;
-+		desc[j].driver_data = exynos_ppmu;
-+		desc[j].event_type |= DEVFREQ_EVENT_TYPE_RAW_DATA;
-+		of_property_read_string(node, "event-name", &desc[j].name);
-+		j++;
-+	}
-+	exynos_ppmu->desc = desc;
-+
-+	return 0;
-+}
-+
-+static int exynos_ppmu_parse_dt(struct exynos_ppmu_data *exynos_ppmu)
-+{
-+	struct device *dev = exynos_ppmu->dev;
-+	struct device_node *np = dev->of_node;
-+	int ret = 0;
-+
-+	if (!np) {
-+		dev_err(dev, "Failed to find devicetree node\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Maps the memory mapped IO to control PPMU register */
-+	exynos_ppmu->ppmu.hw_base = of_iomap(np, 0);
-+	if (IS_ERR_OR_NULL(exynos_ppmu->ppmu.hw_base)) {
-+		dev_err(dev, "Failed to map memory region\n");
-+		ret = -EINVAL;
-+		goto err_iomap;
-+	}
-+
-+	/* FIXME: Get the clock of ppmu and enable this clock */
-+	exynos_ppmu->clk_ppmu = devm_clk_get(dev, "ppmu");
-+	if (IS_ERR(exynos_ppmu->clk_ppmu))
-+		dev_warn(dev, "Failed to get PPMU clock\n");
-+
-+	ret = of_get_devfreq_events(np, exynos_ppmu);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to parse exynos ppmu dt node\n");
-+		goto err_clock;
-+	}
-+
-+	return 0;
-+
-+err_clock:
-+	clk_disable_unprepare(exynos_ppmu->clk_ppmu);
-+err_iomap:
-+	iounmap(exynos_ppmu->ppmu.hw_base);
-+
-+	return ret;
-+}
-+
-+static int exynos_ppmu_probe(struct platform_device *pdev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu;
-+	struct devfreq_event_dev **event_dev;
-+	struct devfreq_event_desc *desc;
-+	int i, ret = 0, size;
-+
-+	/* Allocate the memory of exynos_ppmu_data and initialize it */
-+	exynos_ppmu = devm_kzalloc(&pdev->dev, sizeof(struct exynos_ppmu_data),
-+				   GFP_KERNEL);
-+	if (!exynos_ppmu)
-+		return -ENOMEM;
-+
-+	mutex_init(&exynos_ppmu->lock);
-+	exynos_ppmu->dev = &pdev->dev;
-+
-+	/* Parse dt data to get resource */
-+	ret = exynos_ppmu_parse_dt(exynos_ppmu);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to parse DT node for resource\n");
-+		return ret;
-+	}
-+	desc = exynos_ppmu->desc;
-+
-+	size = sizeof(struct devfreq_event_dev *) * exynos_ppmu->num_events;
-+	exynos_ppmu->event_dev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-+	if (!exynos_ppmu->event_dev) {
-+		dev_err(&pdev->dev,
-+			"Failed to allocate memory devfreq_event_dev list\n");
-+		return -ENOMEM;
-+	}
-+	event_dev = exynos_ppmu->event_dev;
-+	platform_set_drvdata(pdev, exynos_ppmu);
-+
-+	for (i = 0; i < exynos_ppmu->num_events; i++) {
-+		event_dev[i] = devfreq_add_event_device(&pdev->dev, &desc[i]);
-+		if (IS_ERR(event_dev)) {
-+			ret = PTR_ERR(event_dev);
-+			dev_err(&pdev->dev, "Failed to add devfreq evt dev\n");
-+			goto err;
-+		}
-+	}
-+
-+	return 0;
-+err:
-+	clk_disable_unprepare(exynos_ppmu->clk_ppmu);
-+	iounmap(exynos_ppmu->ppmu.hw_base);
-+
-+	return ret;
-+}
-+
-+static int exynos_ppmu_remove(struct platform_device *pdev)
-+{
-+	struct exynos_ppmu_data *exynos_ppmu = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(exynos_ppmu->clk_ppmu);
-+	iounmap(exynos_ppmu->ppmu.hw_base);
-+
-+	/* Remove devfreq instance */
-+	devfreq_remove_device(exynos_ppmu->devfreq);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id exynos_ppmu_id_match[] = {
-+	{ .compatible = "samsung,exynos-ppmu", },
-+	{ /* sentinel */ },
-+};
-+
-+static struct platform_driver exynos_ppmu_driver = {
-+	.probe	= exynos_ppmu_probe,
-+	.remove	= exynos_ppmu_remove,
-+	.driver = {
-+		.name	= "exynos-ppmu",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = exynos_ppmu_id_match,
-+	},
-+};
-+
-+module_platform_driver(exynos_ppmu_driver);
-+
-+MODULE_DESCRIPTION("EXYNOS PPMU(Performance Profiling Monitoring Unit) driver");
-+MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:exynos-ppmu");
++extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
++#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
++
++extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
++		struct notifier_block *nb);
++extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++		unsigned long val, void *v);
++extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
++	unsigned long val, void *v, int nr_to_call, int *nr_calls);
++
++#endif /* CONFIG_SRCU */
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_NOTIFIER_H */
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index 9cfd962..ed9c389 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -26,6 +26,8 @@
+  *
+  */
+ 
++#ifdef CONFIG_SRCU
++
+ #ifndef _LINUX_SRCU_H
+ #define _LINUX_SRCU_H
+ 
+@@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
+ 	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+ }
+ 
+-#endif
++#endif /* _LINUX_SRCU_H */
++
++#endif /* CONFIG_SRCU */
 -- 
-1.8.5.5
+1.9.1
 
