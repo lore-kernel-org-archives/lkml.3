@@ -1,180 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386AbaLIO7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:59:55 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:47055 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757211AbaLIO7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:59:53 -0500
-Message-ID: <54870E56.7000909@arm.com>
-Date: Tue, 09 Dec 2014 14:59:34 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1757417AbaLIPBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:01:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:6724 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754265AbaLIPBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:01:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,545,1413270000"; 
+   d="scan'208";a="650966659"
+Message-ID: <54870DEE.6050000@linux.intel.com>
+Date: Tue, 09 Dec 2014 22:57:50 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH 2/6] PCI/MSI: add hooks to populate the msi_domain field
-References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com> <1418069543-21969-3-git-send-email-marc.zyngier@arm.com> <5486585B.40000@huawei.com> <5486C8BA.8030608@arm.com> <5486E3BF.70703@huawei.com> <5486E747.4010804@arm.com> <5486EF4E.5020704@linux.intel.com> <5487012B.4040505@arm.com> <54870302.5050703@linux.intel.com> <548706E9.8080701@arm.com> <548708CC.5000405@linux.intel.com>
-In-Reply-To: <548708CC.5000405@linux.intel.com>
-Content-Type: text/plain; charset=utf-8
+To: Dan Carpenter <dan.carpenter@oracle.com>, Joerg Roedel <joro@8bytes.org>
+CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] iommu/amd: fix a small leak in irq_remapping_alloc()
+References: <20141206135257.GB17278@mwanda>
+In-Reply-To: <20141206135257.GB17278@mwanda>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/14 14:35, Jiang Liu wrote:
-> On 2014/12/9 22:27, Marc Zyngier wrote:
->> On 09/12/14 14:11, Jiang Liu wrote:
->>> On 2014/12/9 22:03, Marc Zyngier wrote:
->>>> Hi Gerry,
->>>>
->>>> On 09/12/14 12:47, Jiang Liu wrote:
->>>>> On 2014/12/9 20:12, Marc Zyngier wrote:
->>>>>> Yijing,
->>>>>>
->>>>>> On 09/12/14 11:57, Yijing Wang wrote:
->>>>>>>>>> +void __weak pcibios_set_phb_msi_domain(struct pci_bus *bus)
->>>>>>>>>> +{
->>>>>>>>>> +}
->>>>>>>>>> +
->>>>>>>>>> +static void pci_set_bus_msi_domain(struct pci_bus *bus)
->>>>>>>>>> +{
->>>>>>>>>> +	struct pci_dev *bridge = bus->self;
->>>>>>>>>> +
->>>>>>>>>> +	if (!bridge)
->>>>>>>>>> +		pcibios_set_phb_msi_domain(bus);
->>>>>>>>>> +	else
->>>>>>>>>> +		dev_set_msi_domain(&bus->dev, dev_get_msi_domain(&bridge->dev));
->>>>>>>>>> +}
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> Hi Marc, we can not assume pci devices under same phb share the same msi irq domain,
->>>>>>>>> now in x86, pci devices under the same phb may associate different msi irq domain.
->>>>>>>
->>>>>>> Hi Marc,
->>>>>>>
->>>>>>>>
->>>>>>>> Well, this is not supposed to be a perfect solution yet, but instead a
->>>>>>>> basis for discussion. What I'd like to find out is:
->>>>>>>>
->>>>>>>> - What is the minimum granularity for associating a device with its MSI
->>>>>>>> domain in existing platforms?
->>>>>>>
->>>>>>> PCI device, after Gerry's msi irq domain patchset which now in linux-next,
->>>>>>> in x86, we will find msi irq domain by pci_dev.
->>>>>>
->>>>>> Are you *really* associating the MSI domain on a per pci-device basis?
->>>>>> That is, you have devices on the same PCI bus talking to different MSI hw?
->>>>> Hi Marc,
->>>>> 	This is a little wild:(
->>>>> 	On x86 platform with Intel VT-d(not the case for AMD-v),
->>>>> interrupt remapping is tight to DMA remapping (IOMMU) unit.
->>>>> For most common cases, IOMMU unit manages PCI bus and its sub-hierarchy.
->>>>> But it may also manage a specific PCI device. This is typically used to
->>>>> provide QoS for audio device by using dedicated IOMMU unit to avoid
->>>>> resource contention on DMA remapping tables. BIOS uses ACPI table to
->>>>> report PCI bus/device to IOMMU unit mapping relationship. (To be honest,
->>>>> I have no really experience with such a hardware platform yet, just for
->>>>> theoretical analysis)
->>>>> 	On the other hand, we now support hierarchy irqdomain. So to
->>>>> support per-PCI IOMMU unit case, we need maintain irqdomain at PCI
->>>>> device level.
->>>>> 	This piece of code from your [4/6] is flexible enough, which
->>>>> retrieves msi_domain from PCI device, then fallback to PCI bus,
->>>>> then fallback to platform specific method.
->>>>> 	domain = dev_get_msi_domain(&dev->dev);
->>>>> 	if (!domain && dev->bus->msi)
->>>>>  		domain = dev->bus->msi->domain;
->>>>>  	if (!domain)
->>>>>  		domain = arch_get_pci_msi_domain(dev);
->>>>
->>>> OK. But what I'd really like to see is a way to setup the
->>>> device<->domain binding as early as possible, without having to use more
->>>> conditional code in pci_msi_get_domain.
->>>>
->>>> IOW, can we do something similar to what pci_set_bus_msi_domain and
->>>> pci_set_msi_domain do in this patch?
->>> Hi Marc,
->>> 	I have checked x86 code, we could set pci_dev->msi_domain
->>> when creating PCI devices, just need to find some hook points
->>> into PCI core next step. If arch code doesn't set pci_dev->msi_domain,
->>> PCI MSI core may provide a default way to set pci_dev->msi_domain.
->>> This may make the implementation simpler, I guess:)
->>
->> Right. So following your earlier suggestion, I could make
->> pci_set_msi_domain a weak symbol and let arch code override this.
->>
->> My preference would have been to have arch code to create a set of
->> arch-independent data structures describing the topology, and use that
->> for everything, but maybe that's a bit ambitious for a start.
->>
->> I'll rework the series to make the symbols weak.
-> Hi Marc,
-> 	I think we may not need the weak symbol at all. With following
-> draft patch, the PCI MSI core may simply do:
-> 	if (pci_dev->dev.msi_domain == NULL)
-> 		dev_set_msi_domain(&dev->dev,
-> 			 dev_get_msi_domain(&dev->bus->dev));
-> -----------------------------------------------------------------------
-> Note: the patch won't pass compilation, just to show the key idea:)
+On 2014/12/6 21:52, Dan Carpenter wrote:
+> There is a memory leak here that was detected by Smatch:
 > 
-> diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-> index da163da5fdee..8147d25d4349 100644
-> --- a/arch/x86/kernel/apic/msi.c
-> +++ b/arch/x86/kernel/apic/msi.c
-> @@ -67,6 +67,23 @@ static struct irq_chip pci_msi_controller = {
->         .flags                  = IRQCHIP_SKIP_SET_WAKE,
->  };
+> 	drivers/iommu/amd_iommu.c:4261 irq_remapping_alloc()
+> 	warn: possible memory leak of 'data'
 > 
-> +struct irq_domain *x86_get_pci_msi_domain(struct pci_dev *dev)
-> +{
-> +       struct irq_domain *domain;
-> +       struct irq_alloc_info info;
-> +
-> +       init_irq_alloc_info(&info, NULL);
-> +       info.type = X86_IRQ_ALLOC_TYPE_MSI;
-> +       info.msi_dev = dev;
-> +       domain = irq_remapping_get_irq_domain(&info);
-> +       if (domain == NULL)
-> +               domain = msi_default_domain;
-> +       if (domain == NULL)
-> +               domain = ERR_PTR(-ENOSYS);
-> +
-> +       return domain;
-> +}
-> +
->  int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
->  {
->         struct irq_domain *domain;
-> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-> index 7b20bccf3648..a26f30a8bb8f 100644
-> --- a/arch/x86/pci/common.c
-> +++ b/arch/x86/pci/common.c
-> @@ -652,6 +652,9 @@ int pcibios_add_device(struct pci_dev *dev)
->                 pa_data = data->next;
->                 iounmap(data);
->         }
-> +
-> +       dev->dev.msi_domain = x86_get_pci_msi_domain(dev);
-> +
->         return 0;
->  }
+> It happens if you hit the "if (!irq_data || !cfg) {" on the first
+> iteration through the loop.  The original code was a bit weird.  For
+> example, it treated the first allocation as a special case for some
+> reason. Anyway I cleaned it up a bit.
+> 
+> Fixes: ecf87b38d902 ('iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain')
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Please review this carefully.  I haven't tested it.
+Hi Dan,
+	Thanks for fixing this leakage, it also makes code clearer.
+The strange code is wreckage of original code, should be cleaned up:)
+Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-Right. So you set the msi_domain using the pcibios_add_device callback.
-That will require some minimal surgery (the call to pci_set_msi_domain
-happens before the pcibios call, so it needs to be relocated after), but
-that seems like a sensible solution to me.
-
-Thanks!
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+> 
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index 35a38db..3bb69e4 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -4208,11 +4208,6 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	ret = -ENOMEM;
+> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> -	if (!data)
+> -		goto out_free_parent;
+> -
+>  	if (info->type == X86_IRQ_ALLOC_TYPE_IOAPIC) {
+>  		if (get_irq_table(devid, true))
+>  			index = info->ioapic_pin;
+> @@ -4223,7 +4218,6 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
+>  	}
+>  	if (index < 0) {
+>  		pr_warn("Failed to allocate IRTE\n");
+> -		kfree(data);
+>  		goto out_free_parent;
+>  	}
+>  
+> @@ -4232,14 +4226,16 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
+>  		cfg = irqd_cfg(irq_data);
+>  		if (!irq_data || !cfg) {
+>  			ret = -EINVAL;
+> -			goto out_free_data;
+> +			goto out_unwind_loop;
+>  		}
+>  
+> -		if (i > 0) {
+> -			data = kzalloc(sizeof(*data), GFP_KERNEL);
+> -			if (!data)
+> -				goto out_free_data;
+> +
+> +		data = kzalloc(sizeof(*data), GFP_KERNEL);
+> +		if (!data) {
+> +			ret = -ENOMEM;
+> +			goto out_unwind_loop;
+>  		}
+> +
+>  		irq_data->hwirq = (devid << 16) + i;
+>  		irq_data->chip_data = data;
+>  		irq_data->chip = &amd_ir_chip;
+> @@ -4248,8 +4244,8 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
+>  	}
+>  	return 0;
+>  
+> -out_free_data:
+> -	for (i--; i >= 0; i--) {
+> +out_unwind_loop:
+> +	while (--i >= 0) {
+>  		irq_data = irq_domain_get_irq_data(domain, virq + i);
+>  		if (irq_data)
+>  			kfree(irq_data->chip_data);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
