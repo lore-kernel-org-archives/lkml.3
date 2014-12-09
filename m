@@ -1,122 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400AbaLIO3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:29:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaLIO3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:29:37 -0500
-Date: Tue, 9 Dec 2014 11:59:25 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org, ak@linux.intel.com,
-        acme@kernel.org
-Subject: Re: perf tests: Fix attr tests size values interrupt
-Message-ID: <20141209135924.GE2406@redhat.com>
-References: <1411559322-16548-1-git-send-email-eranian@google.com>
- <1411559322-16548-2-git-send-email-eranian@google.com>
- <20141121212631.GF5395@redhat.com>
- <20141209133031.GC2406@redhat.com>
- <20141209133947.GD2406@redhat.com>
- <20141209135301.GC6784@krava.brq.redhat.com>
+	id S1757378AbaLIOlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:41:15 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:47239 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaLIOlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 09:41:13 -0500
+Date: Tue, 9 Dec 2014 14:41:00 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v9 04/19] mfd: max77693: adjust
+ max77693_led_platform_data
+Message-ID: <20141209144100.GA3951@x1>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-5-git-send-email-j.anaszewski@samsung.com>
+ <20141209085047.GR3951@x1>
+ <5486BC44.7010602@samsung.com>
+ <20141209100413.GW3951@x1>
+ <5486CE1F.9010102@samsung.com>
+ <20141209135017.GY3951@x1>
+ <548700DE.2050208@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141209135301.GC6784@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <548700DE.2050208@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 09, 2014 at 02:53:01PM +0100, Jiri Olsa escreveu:
-> On Tue, Dec 09, 2014 at 11:39:47AM -0200, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Dec 09, 2014 at 11:30:31AM -0200, Arnaldo Carvalho de Melo escreveu:
-> > > Em Fri, Nov 21, 2014 at 07:26:31PM -0200, Arnaldo Carvalho de Melo escreveu:
-> > > > Em Wed, Sep 24, 2014 at 01:48:37PM +0200, Stephane Eranian escreveu:
-> > > > > This patch also adds a new ABI version
-> > > > > PERF_ATTR_SIZE_VER4 because we extend
-> > > > > the perf_event_attr struct with a new u64
-> > > > > field.
-> >  
-> > > I think this problem is also related to this changeset:
-> >  
-> > > [root@zoo ~]# perf test -v 15
-> > > 15: struct perf_event_attr setup                           :
-> > <SNIP>
-> > > running '/home/acme/libexec/perf-core/tests/attr/test-stat-default'
-> > > expected size=96, got 104
-> > > FAILED '/home/acme/libexec/perf-core/tests/attr/test-stat-default' -
-> > > match failure
-> > > test child finished with 0
-> > > ---- end ----
-> > > struct perf_event_attr setup: Ok
-> > > [root@zoo ~]# uname -r
-> > > 3.17.3-200.fc20.x86_64
-> > > [root@zoo ~]#
-> > > 
-> > > Checking if this is just a matter of updating the test entry.
-> > 
-> > Well, here I think that size variable needs to somehow be tested against
-> > the value of another field, the ABI one, so that for each ABI we test
-> > against the rightsize, that is, after this cset, 8 bytes (sizeof u64)
-> > bigger, Jiri?
-> 
-> well this patch enlarged the perf_event_attr
-> so the test needs to be adjusted like in patch below
+On Tue, 09 Dec 2014, Jacek Anaszewski wrote:
 
-Ok, got it, since the perf.data file is generated in the test, it will
-have the current value, that now is 104, ok, applying your patch.
+> On 12/09/2014 02:50 PM, Lee Jones wrote:
+> >On Tue, 09 Dec 2014, Jacek Anaszewski wrote:
+> >
+> >>On 12/09/2014 11:04 AM, Lee Jones wrote:
+> >>>On Tue, 09 Dec 2014, Jacek Anaszewski wrote:
+> >>>
+> >>>>On 12/09/2014 09:50 AM, Lee Jones wrote:
+> >>>>>On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
+> >>>>>
+> >>>>>>Add "label" array for Device Tree strings with the name of a LED device
+> >>>>>>and make flash_timeout a two element array, for caching the sub-led
+> >>>>>>related flash timeout. Added is also an array for caching pointers to the
+> >>>>>>sub-nodes representing sub-leds.
+> >>>>>>
+> >>>>>>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> >>>>>>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>>>>>Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> >>>>>>Cc: Lee Jones <lee.jones@linaro.org>
+> >>>>>>---
+> >>>>>>  include/linux/mfd/max77693.h |    4 +++-
+> >>>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>>>>>
+> >>>>>>diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
+> >>>>>>index f0b6585..c80ee99 100644
+> >>>>>>--- a/include/linux/mfd/max77693.h
+> >>>>>>+++ b/include/linux/mfd/max77693.h
+> >>>>>>@@ -88,16 +88,18 @@ enum max77693_led_boost_mode {
+> >>>>>>  };
+> >>>>>>
+> >>>>>>  struct max77693_led_platform_data {
+> >>>>>>+	const char *label[2];
+> >>>>>>  	u32 fleds[2];
+> >>>>>>  	u32 iout_torch[2];for_each_available_child_of_node
+> >>>>>>  	u32 iout_flash[2];
+> >>>>>>  	u32 trigger[2];
+> >>>>>>  	u32 trigger_type[2];
+> >>>>>>+	u32 flash_timeout[2];
+> >>>>>>  	u32 num_leds;
+> >>>>>>  	u32 boost_mode;
+> >>>>>>-	u32 flash_timeout;
+> >>>>>>  	u32 boost_vout;
+> >>>>>>  	u32 low_vsys;
+> >>>>>>+	struct device_node *sub_nodes[2];
+> >>>>>
+> >>>>>I haven't seen anyone do this before.  Why can't you use the provided
+> >>>>>OF functions to traverse through your tree?
+> >>>>
+> >>>>I use for_each_available_child_of_node when parsing DT node, but I
+> >>>>need to cache the pointer to sub-node to be able to use it later
+> >>>>when it needs to be passed to V4L2 sub-device which is then
+> >>>>asynchronously matched by the phandle to sub-node.
+> >>>>
+> >>>>If it is not well seen to cache it in the platform data then
+> >>>>I will find different way to accomplish this.
+> >>>
+> >>>I haven't seen the end-driver for this, but why can't you use that
+> >>>device's of_node pointer?
+> >>
+> >>Maybe it is indeed a good idea. I could pass the of_node pointer
+> >>and the sub-led identifier to the V4L2 sub-device and there look
+> >>for the sub-node containing relevant identifier. The downside
+> >>would be only that for_each_available_child_of_node would
+> >>have to be called twice - in the led driver and in the V4L2 sub-device.
+> >>I think that we can live with it.
+> >
+> >Are the LED and V4L2 drivers children of this MFD?  If so, you can use
+> >the of_compatible attribute in struct mfd_cell to populate the each
+> >child's of_node dynamically i.e. the MFD core will do that for you.
+> >
+> 
+> V4L2 driver wraps LED driver. This way the LED device can be
+> controlled with use of two interfaces - LED subsystem sysfs
+> and V4L2 Flash. This is the aim of the whole patch set.
+> 
+> I've thought it over again and it seems that I will need to cache
+> somewhere these sub_nodes pointers. They have to be easily accessible
+> for the V4L2 sub-device as it can be asynchronously registered
+> or unregistered within V4L2 media device. Sub-devices are matched
+> basing on the sub-node phandle.
 
-Thanks,
+Not quite getting this.  Can you explain this in another way please?
 
-- Arnaldo
- 
-> [jolsa@krava perf]$ ./perf test attr -vv
-> 15: struct perf_event_attr setup                           :
-> --- start ---
-> test child forked, pid 9719
-> running './tests/attr/test-stat-group1'
->   'PERF_TEST_ATTR=/tmp/tmp4drvul ./perf stat -o /tmp/tmp4drvul/perf.data -e '{cycles,instructions}' kill >/dev/null 2>&1' ret 1 
-> expected size=96, got 104
-> FAILED './tests/attr/test-stat-group1' - match failure
-> 
-> jirka
-> 
-> 
-> ---
-> Following change adjusted 'struct perf_event_attr', but let
-> the attr test's sizes untouched:
->   60e2364e60e8 perf: Add ability to sample machine state on interrupt
-> 
-> Adjusting test size values for attr test.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
-> diff --git a/tools/perf/tests/attr/base-record b/tools/perf/tests/attr/base-record
-> index f710b92ccff6..d3095dafed36 100644
-> --- a/tools/perf/tests/attr/base-record
-> +++ b/tools/perf/tests/attr/base-record
-> @@ -5,7 +5,7 @@ group_fd=-1
->  flags=0|8
->  cpu=*
->  type=0|1
-> -size=96
-> +size=104
->  config=0
->  sample_period=4000
->  sample_type=263
-> diff --git a/tools/perf/tests/attr/base-stat b/tools/perf/tests/attr/base-stat
-> index dc3ada2470c0..872ed7e24c7c 100644
-> --- a/tools/perf/tests/attr/base-stat
-> +++ b/tools/perf/tests/attr/base-stat
-> @@ -5,7 +5,7 @@ group_fd=-1
->  flags=0|8
->  cpu=*
->  type=0
-> -size=96
-> +size=104
->  config=0
->  sample_period=0
->  sample_type=0
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
