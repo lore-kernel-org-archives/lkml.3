@@ -1,120 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703AbaLIMVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:21:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756257AbaLIMVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:21:32 -0500
-Date: Tue, 9 Dec 2014 14:21:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, dahi@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
-Message-ID: <20141209122118.GF3993@redhat.com>
-References: <1418042769-25539-1-git-send-email-mst@redhat.com>
- <1418042769-25539-5-git-send-email-mst@redhat.com>
- <20141209120123.117ccfac.cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209120123.117ccfac.cornelia.huck@de.ibm.com>
+	id S1756762AbaLIMXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:23:39 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49900 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756257AbaLIMXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 07:23:38 -0500
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com, borntraeger@de.ibm.com,
+        rafael.j.wysocki@intel.com, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
+Subject: [PATCH v3] CPU hotplug: active_writer not woken up in some cases - deadlock
+Date: Tue,  9 Dec 2014 13:23:31 +0100
+Message-Id: <1418127811-22629-1-git-send-email-dahi@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120912-0005-0000-0000-000002637074
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 12:01:23PM +0100, Cornelia Huck wrote:
-> On Mon, 8 Dec 2014 15:06:03 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > What does it mean if rev 1 device does not set
-> > VIRTIO_F_VERSION_1? E.g. is it native endian?
-> 
-> My understanding is that revision only determines the set of channel
-> commands supported by the device, and their payload. IOW, it just
-> governs the transport-specific way to communicate; things like
-> endianness are independent of that and only governed by the VERSION_1
-> bit which has rev 1 as a pre-req.
+Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
+grace periods") introduced another problem that can easily be reproduced by
+starting/stopping cpus in a loop.
 
-Well, that's a valid interpretation but it says so nowhere.
+E.g.:
+  for i in `seq 5000`; do
+      echo 1 > /sys/devices/system/cpu/cpu1/online
+      echo 0 > /sys/devices/system/cpu/cpu1/online
+  done
 
-virtio 1.0 spec explicitly says VERSION_1 must be set.
-virtio legacy explicitly said revision is 0.
+Will result in:
+  INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
+  Call Trace:
+  ([<00000000006a028e>] __schedule+0x406/0x91c)
+   [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
+   [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
+   [<0000000000131232>] cpu_up+0xb6/0xd4
+   [<00000000004a5720>] device_online+0x80/0xc0
+   [<00000000004a57f0>] online_store+0x90/0xb0
+  ...
 
-And that is all.
+And a deadlock.
 
-We can go ahead and extend spec to support these configurations
-in virtio 1.1.
+Problem is that if the last ref in put_online_cpus() can't get the
+cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
+active_writer might never be woken up, therefore never exiting the loop in
+cpu_hotplug_begin().
 
-Meanwhile, implementing random behaviour in guests will make
-us support it forever.
+This fix wakes up the active_writer proactively. The writer already goes back to
+sleep if the ref count isn't already down to 0, so this should be fine.
 
+In order to avoid many potential races, we have to:
+- Protect current_writer by a spin lock. When holding this lock we can be sure
+  that the writer won't vainsh or change. (use-after-free)
+- Increment the cpu_hotplug.puts_pending count before we test for an
+  active_writer. (otherwise a wakeup might get lost)
+- Move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
+  condition check. (otherwise a wakeup might get lost)
 
-> > 
-> > Let's not even try to drive such devices:
-> > fail attempts to finalize features.
-> > virtio core will detect this and bail out.
-> 
-> Of course, we can still make the decision to refuse non-VERSION_1
-> devices if rev 1 has been negotiated, but I'm still not quite sure what
-> this buys us.
+Can't reproduce it with this fix.
 
-less configurations to support.
+Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+---
+ kernel/cpu.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/s390/kvm/virtio_ccw.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-> > index 789275f..f9f87ba 100644
-> > --- a/drivers/s390/kvm/virtio_ccw.c
-> > +++ b/drivers/s390/kvm/virtio_ccw.c
-> > @@ -758,6 +758,13 @@ static int virtio_ccw_finalize_features(struct virtio_device *vdev)
-> >  	struct virtio_feature_desc *features;
-> >  	struct ccw1 *ccw;
-> > 
-> > +	if (vcdev->revision == 1 &&
-> 
-> If we decide to keep this check, it should be for rev >= 1, though.
-
-Fine, though this is theoretical, right?
-Ican change this with a patch on top.
-
-> > +	    !__virtio_test_bit(vdev, VIRTIO_F_VERSION_1)) {
-> > +		dev_err(&vdev->dev, "virtio: device uses revision 1 "
-> > +			"but does not have VIRTIO_F_VERSION_1\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> >  	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
-> >  	if (!ccw)
-> >  		return 0;
-> 
-> I'm still not convinced by this change: I'd prefer to allow rev 1
-> without VERSION_1, especially as the core makes all its decisions based
-> upon VERSION_1.
-
-At the moment, but this is an implementation detail.
-This is exactly why I want this hard requirement in code.
-
-
-> Unless someone else has a good argument in favour of
-> this change.
-
-
-Let's not commit to something we are not sure we
-can support.
-
-We can always remove this code, but once we release
-guest we won't be able to drop it.
-
-
-
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 90a3d01..7489b7a 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -58,6 +58,7 @@ static int cpu_hotplug_disabled;
+ 
+ static struct {
+ 	struct task_struct *active_writer;
++	spinlock_t awr_lock; /* protects active_writer from being changed */
+ 	struct mutex lock; /* Synchronizes accesses to refcount, */
+ 	/*
+ 	 * Also blocks the new readers during
+@@ -72,6 +73,7 @@ static struct {
+ #endif
+ } cpu_hotplug = {
+ 	.active_writer = NULL,
++	.awr_lock = __SPIN_LOCK_UNLOCKED(cpu_hotplug.awr_lock),
+ 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+ 	.refcount = 0,
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -116,7 +118,13 @@ void put_online_cpus(void)
+ 	if (cpu_hotplug.active_writer == current)
+ 		return;
+ 	if (!mutex_trylock(&cpu_hotplug.lock)) {
++		/* inc before testing for active_writer to not lose wake ups */
+ 		atomic_inc(&cpu_hotplug.puts_pending);
++		spin_lock(&cpu_hotplug.awr_lock);
++		/* we might be the last one */
++		if (unlikely(cpu_hotplug.active_writer))
++			wake_up_process(cpu_hotplug.active_writer);
++		spin_unlock(&cpu_hotplug.awr_lock);
+ 		cpuhp_lock_release();
+ 		return;
+ 	}
+@@ -156,20 +164,24 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
+  */
+ void cpu_hotplug_begin(void)
+ {
++	spin_lock(&cpu_hotplug.awr_lock);
+ 	cpu_hotplug.active_writer = current;
++	spin_unlock(&cpu_hotplug.awr_lock);
+ 
+ 	cpuhp_lock_acquire();
+ 	for (;;) {
+ 		mutex_lock(&cpu_hotplug.lock);
++		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		if (atomic_read(&cpu_hotplug.puts_pending)) {
+ 			int delta;
+ 
+ 			delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
+ 			cpu_hotplug.refcount -= delta;
+ 		}
+-		if (likely(!cpu_hotplug.refcount))
++		if (likely(!cpu_hotplug.refcount)) {
++			__set_current_state(TASK_RUNNING);
+ 			break;
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
++		}
+ 		mutex_unlock(&cpu_hotplug.lock);
+ 		schedule();
+ 	}
+@@ -177,7 +189,9 @@ void cpu_hotplug_begin(void)
+ 
+ void cpu_hotplug_done(void)
+ {
++	spin_lock(&cpu_hotplug.awr_lock);
+ 	cpu_hotplug.active_writer = NULL;
++	spin_unlock(&cpu_hotplug.awr_lock);
+ 	mutex_unlock(&cpu_hotplug.lock);
+ 	cpuhp_lock_release();
+ }
 -- 
-MST
+1.8.5.5
+
