@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaLIPsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 10:48:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50997 "EHLO mx1.redhat.com"
+	id S932284AbaLIPsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:48:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55755 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757101AbaLIPse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 10:48:34 -0500
+	id S1757524AbaLIPsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:48:38 -0500
 From: Vitaly Kuznetsov <vkuznets@redhat.com>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>
-Subject: [PATCH 1/5] Tools: hv: add mising fcopyd to the Makefile
-Date: Tue,  9 Dec 2014 16:48:19 +0100
-Message-Id: <1418140103-11854-2-git-send-email-vkuznets@redhat.com>
+Subject: [PATCH 5/5] Tools: hv: do not add redundant '/' in hv_start_fcopy()
+Date: Tue,  9 Dec 2014 16:48:23 +0100
+Message-Id: <1418140103-11854-6-git-send-email-vkuznets@redhat.com>
 In-Reply-To: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
 References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fcopyd in missing in the Makefile, add it there.
+We don't need to add additional '/' to smsg->path_name as snprintf("%s/%s")
+does the right thing. Without the patch we get doubled '//' in the log message.
 
 Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 ---
- tools/hv/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/hv/hv_fcopy_daemon.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tools/hv/Makefile b/tools/hv/Makefile
-index bd22f78..99ffe61 100644
---- a/tools/hv/Makefile
-+++ b/tools/hv/Makefile
-@@ -5,9 +5,9 @@ PTHREAD_LIBS = -lpthread
- WARNINGS = -Wall -Wextra
- CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
+diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+index 1a23872..9445d8f 100644
+--- a/tools/hv/hv_fcopy_daemon.c
++++ b/tools/hv/hv_fcopy_daemon.c
+@@ -43,12 +43,6 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
+ 	int error = HV_E_FAIL;
+ 	char *q, *p;
  
--all: hv_kvp_daemon hv_vss_daemon
-+all: hv_kvp_daemon hv_vss_daemon hv_fcopy_daemon
- %: %.c
- 	$(CC) $(CFLAGS) -o $@ $^
- 
- clean:
--	$(RM) hv_kvp_daemon hv_vss_daemon
-+	$(RM) hv_kvp_daemon hv_vss_daemon hv_fcopy_daemon
+-	/*
+-	 * If possile append a path seperator to the path.
+-	 */
+-	if (strlen((char *)smsg->path_name) < (W_MAX_PATH - 2))
+-		strcat((char *)smsg->path_name, "/");
+-
+ 	p = (char *)smsg->path_name;
+ 	snprintf(target_fname, sizeof(target_fname), "%s/%s",
+ 		 (char *)smsg->path_name, (char *)smsg->file_name);
 -- 
 1.9.3
 
