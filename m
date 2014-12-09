@@ -1,33 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbaLIQRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:17:44 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53327 "EHLO
+	id S932481AbaLIQSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 11:18:31 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53332 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274AbaLIQRm (ORCPT
+	with ESMTP id S932274AbaLIQSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:17:42 -0500
-Date: Tue, 9 Dec 2014 16:17:17 +0000
+	Tue, 9 Dec 2014 11:18:30 -0500
+Date: Tue, 9 Dec 2014 16:18:12 +0000
 From: Mark Brown <broonie@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Heiko Stuebner <heiko@sntech.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-spi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Message-ID: <20141209161717.GL1934@sirena.org.uk>
-References: <2091649.zj2SIBdzpD@vostro.rjw.lan>
+To: weiyj_lk@163.com
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141209161812.GM1934@sirena.org.uk>
+References: <1418131191-4736-1-git-send-email-weiyj_lk@163.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7l042bGvurpep9Wg"
+	protocol="application/pgp-signature"; boundary="KSyhVCl2eeZHT0Rn"
 Content-Disposition: inline
-In-Reply-To: <2091649.zj2SIBdzpD@vostro.rjw.lan>
+In-Reply-To: <1418131191-4736-1-git-send-email-weiyj_lk@163.com>
 X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 86.171.30.28
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] SPI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Subject: Re: [PATCH -next] regulator: rk808: Fix sparse non static symbol
+ warnings
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,38 +33,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---7l042bGvurpep9Wg
+--KSyhVCl2eeZHT0Rn
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Dec 06, 2014 at 03:30:23AM +0100, Rafael J. Wysocki wrote:
+On Tue, Dec 09, 2014 at 09:19:51PM +0800, weiyj_lk@163.com wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Fixes the following sparse warnings:
 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
+Applied, thanks.
 
-> Please let me know if it is OK to take this one into linux-pm.
-
-Acked-by: Mark Brown <broonie@kernel.org>
-
-if you fix the subject line to resemble the style for the subsystem
-(spi: ) - using normal subject line styles really helps spot relevant
-mails in the inbox.
-
---7l042bGvurpep9Wg
+--KSyhVCl2eeZHT0Rn
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUhyCMAAoJECTWi3JdVIfQZDAH/jxHEqTaZq0PSH+i6f7lKHTd
-VaFYWWOA+kv50Djh9WSr8mXVKMqOPtWFG30RDRPW3aNwVguDmPgkQ5gDLBsVIxAN
-GSMkMqe5+dnR7T5O6JkUIg3lEw2DATtifuX4Jv5mJpqcTPdKNPxD5HFiNpHsg3Z+
-GkWeAy4taukU5J/fCf+WJOaBySnigOTfHCctD2uqMrLTo6zl9zSpI8tFX7ldRk12
-E6zVNCHaexLuKpHQmuwEO3O+sQyIeQyBqpg+U/ya0DU0d6ufK45PmB9+zMmbI2OZ
-V3o5atUqSD9vWw3aT6dPgsvub5Jgx0GMS7utBdoIAqevtPWRlyQ2msG1aY44Zlc=
-=nKwU
+iQEcBAEBAgAGBQJUhyDDAAoJECTWi3JdVIfQ1gkH/2aSF1wX/EmCKytlDl+Cxulb
+XbS66CM1q25ypmdMQeERVCkUNrB3LIS2Pte4u6nG+HxYkW8H6buxkeKArqQDo7iU
+FsYhH0cNrnRwaEqbePyxfWau95U8FwRPsq4afK3Pfyu1wWh9WFDqbYoWBplBZ7Qw
+AexaO4pKzfvCYQ6LnaxPY4/QcsQhEzCw5xaSyto1+RXWxIiXKewBAW+s7sUqBYng
+IwCTn8AyIpl+TR7ToVLD6XRUwJaj/qhMTzF5FI8nPF1lRRpej3HRdn6D4sc+Kh9l
+9+OLqdCvjLZ4xP8d7M+ClVz2m8QWWTHY3Tv0ZXFatNbuggBhNPq6CdT/eg7nCQc=
+=efDN
 -----END PGP SIGNATURE-----
 
---7l042bGvurpep9Wg--
+--KSyhVCl2eeZHT0Rn--
