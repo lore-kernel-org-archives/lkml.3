@@ -1,104 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117AbaLIEIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 23:08:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59394 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195AbaLIEIK (ORCPT
+	id S1756503AbaLIE07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 23:26:59 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:52827 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaLIE06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 23:08:10 -0500
-Date: Mon, 8 Dec 2014 23:08:06 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: wl1251: NVS firmware data
-Message-ID: <20141209040806.GA1257@kroah.com>
-References: <201411271506.20457@pali>
- <CACVXFVPOLfDuqc0nLb-zM8vH618DLXy0xtZbUOn5_XvdxRZSDw@mail.gmail.com>
- <20141208163714.GA31169@kroah.com>
- <201412081747.30965@pali>
- <20141208205721.GA14895@kroah.com>
- <CACVXFVO+pX29UE53EDP4va0hoWQw8h0E9Ji9t3OL=e0FyERxyA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVO+pX29UE53EDP4va0hoWQw8h0E9Ji9t3OL=e0FyERxyA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Dec 2014 23:26:58 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: balbi@ti.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <5a749e80bfc252dba4a86883b90f8071>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: balbi@ti.com, paulz@synopsys.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Yunzhi Li <lyz@rock-chips.com>
+Subject: [Resend PATCH v4 3/5] usb: dwc2: add generic PHY
+Date: Tue,  9 Dec 2014 12:26:26 +0800
+Message-Id: <1418099186-2489-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 08:48:28AM +0800, Ming Lei wrote:
-> On Tue, Dec 9, 2014 at 4:57 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Dec 08, 2014 at 05:47:30PM +0100, Pali Rohár wrote:
-> >> On Monday 08 December 2014 17:37:14 Greg Kroah-Hartman wrote:
-> >> > On Mon, Dec 08, 2014 at 11:18:18PM +0800, Ming Lei wrote:
-> >> > > On Sat, Dec 6, 2014 at 9:02 PM, Pali Rohár
-> >> <pali.rohar@gmail.com> wrote:
-> >> > > > On Saturday 06 December 2014 13:49:54 Pavel Machek wrote:
-> >> > > >  /**
-> >> > > >
-> >> > > > + * request_firmware_prefer_user: - prefer usermode helper
-> >> > > > for loading firmware + * @firmware_p: pointer to firmware
-> >> > > > image
-> >> > > > + * @name: name of firmware file
-> >> > > > + * @device: device for which firmware is being loaded
-> >> > > > + *
-> >> > > > + * This function works pretty much like
-> >> > > > request_firmware(), but it prefer + * usermode helper. If
-> >> > > > usermode helper fails then it fallback to direct access.
-> >> > > > + * Usefull for dynamic or model specific firmware data.
-> >> > > > + **/
-> >> > > > +int request_firmware_prefer_user(const struct firmware
-> >> > > > **firmware_p, +                           const char
-> >> > > > *name, struct device *device) +{
-> >> > > > +       int ret;
-> >> > > > +       __module_get(THIS_MODULE);
-> >> > > > +       ret = _request_firmware(firmware_p, name, device,
-> >> > > > +                               FW_OPT_UEVENT |
-> >> > > > FW_OPT_PREFER_USER); +       module_put(THIS_MODULE);
-> >> > > > +       return ret;
-> >> > > > +}
-> >> > > > +EXPORT_SYMBOL_GPL(request_firmware_prefer_user);
-> >> > >
-> >> > > I'd like to introduce request_firmware_user() which only
-> >> > > requests firmware from user space, and this way is simpler
-> >> > > and more flexible since we have request_firmware_direct()
-> >> > > already.
-> >> >
-> >> > Why would a driver care about what program provides the
-> >> > firmware?  It shouldn't at all, and we want to get rid of the
-> >> > userspace firmware loader, not encourage drivers to use it
-> >> > "exclusively" at all.
-> >> >
-> >>
-> >> Do not remove it! Without userspace firmware loader it is
-> >> impossible to load dynamic firmware files.
-> >
-> > You should not be loading "dynamic" firmware files with the firmware
-> > interface, as that's not a "firmware" file anymore, it's a "special
-> > binary file that my driver needs to be created and sent into the
-> > kernel."
-> 
-> It is reasonable to put firmware somewhere instead of default
-> search path, maybe in network.
+Get PHY parameters from devicetree and power off usb PHY during
+system suspend.
 
-That's why we allow you to change the firmware search path at build
-time, and kernel boot time (or firmware class module load time.)  To do
-this on a per-firmware-file basis is crazy.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-thanks,
+---
+Hi Felipe,
+	Sorry for my mistake, I have fixed the commit log.
 
-greg k-h
+Changes in v4: None
+Changes in v3:
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
+
+ drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
+ drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 200168e..2601c61 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ {
+ 	struct device *dev = hsotg->dev;
+ 	struct s3c_hsotg_plat *plat = dev->platform_data;
+-	struct phy *phy;
+-	struct usb_phy *uphy;
+ 	struct s3c_hsotg_ep *eps;
+ 	int epnum;
+ 	int ret;
+@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ 	hsotg->phyif = GUSBCFG_PHYIF16;
+ 
+ 	/*
+-	 * Attempt to find a generic PHY, then look for an old style
+-	 * USB PHY, finally fall back to pdata
++	 * If platform probe couldn't find a generic PHY or an old style
++	 * USB PHY, fall back to pdata
+ 	 */
+-	phy = devm_phy_get(dev, "usb2-phy");
+-	if (IS_ERR(phy)) {
+-		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-		if (IS_ERR(uphy)) {
+-			/* Fallback for pdata */
+-			plat = dev_get_platdata(dev);
+-			if (!plat) {
+-				dev_err(dev,
+-				"no platform data or transceiver defined\n");
+-				return -EPROBE_DEFER;
+-			}
+-			hsotg->plat = plat;
+-		} else
+-			hsotg->uphy = uphy;
+-	} else {
+-		hsotg->phy = phy;
++	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
++		plat = dev_get_platdata(dev);
++		if (!plat) {
++			dev_err(dev,
++			"no platform data or transceiver defined\n");
++			return -EPROBE_DEFER;
++		}
++		hsotg->plat = plat;
++	} else if (hsotg->phy) {
+ 		/*
+ 		 * If using the generic PHY framework, check if the PHY bus
+ 		 * width is 8-bit and set the phyif appropriately.
+ 		 */
+-		if (phy_get_bus_width(phy) == 8)
++		if (phy_get_bus_width(hsotg->phy) == 8)
+ 			hsotg->phyif = GUSBCFG_PHYIF8;
+ 	}
+ 
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index 6a795aa..ae095f0 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	struct dwc2_core_params defparams;
+ 	struct dwc2_hsotg *hsotg;
+ 	struct resource *res;
++	struct phy *phy;
++	struct usb_phy *uphy;
+ 	int retval;
+ 	int irq;
+ 
+@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 
+ 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+ 
++	/*
++	 * Attempt to find a generic PHY, then look for an old style
++	 * USB PHY
++	 */
++	phy = devm_phy_get(&dev->dev, "usb2-phy");
++	if (IS_ERR(phy)) {
++		hsotg->phy = NULL;
++		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
++		if (IS_ERR(uphy))
++			hsotg->uphy = NULL;
++		else
++			hsotg->uphy = uphy;
++	} else {
++		hsotg->phy = phy;
++		phy_power_on(hsotg->phy);
++		phy_init(hsotg->phy);
++	}
++
+ 	spin_lock_init(&hsotg->lock);
+ 	mutex_init(&hsotg->init_mutex);
+ 	retval = dwc2_gadget_init(hsotg, irq);
+@@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_suspend(dwc2);
++	} else {
++		if (dwc2->lx_state == DWC2_L0)
++			return 0;
++		phy_exit(dwc2->phy);
++		phy_power_off(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+@@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_resume(dwc2);
++	} else {
++		phy_power_on(dwc2->phy);
++		phy_init(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+-- 
+2.0.0
+
+
