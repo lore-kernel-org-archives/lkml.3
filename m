@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaLIUfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:35:04 -0500
-Received: from prod-mail-xrelay08.akamai.com ([96.6.114.112]:38279 "EHLO
-	prod-mail-xrelay08.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751211AbaLIUfC (ORCPT
+	id S1751700AbaLIUg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:36:59 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39537 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaLIUg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:35:02 -0500
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 15:35:02 EST
-From: "Young, David" <dayoung@akamai.com>
-To: Shuah Khan <shuahkhan@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "shuahkh@osg.samsung.com" <shuahkh@osg.samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 9 Dec 2014 15:25:42 -0500
-Subject: RE: selftests: question about git repos containing selftest.
-Thread-Topic: selftests: question about git repos containing selftest.
-Thread-Index: AdAT7ahW6T+t1iLKQVe4YGcF8W2QfAAAHVvw
-Message-ID: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796C21@USMBX1.msg.corp.akamai.com>
-References: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796BF2@USMBX1.msg.corp.akamai.com>
-	<20141209194602.GB20166@kroah.com>
- <CAKocOOMGoCtDjG24cJhkrJ=EyhbW-qy6=v5pJaRBeSPZuvZWfA@mail.gmail.com>
-In-Reply-To: <CAKocOOMGoCtDjG24cJhkrJ=EyhbW-qy6=v5pJaRBeSPZuvZWfA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 9 Dec 2014 15:36:57 -0500
 MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.11.1412092103270.16275@nanos>
+References: <1418140999-29092-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1412092103270.16275@nanos>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Tue, 9 Dec 2014 15:36:26 -0500
+Message-ID: <CAJhHMCAORzK4Yc-DrEmFxwwyWwxWTCQzv1WKd1M6+YiEn9HKiA@mail.gmail.com>
+Subject: Re: [RFC PATCH] smpboot: Check for successfull allocation of cpumask vars
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Igor Mammedov <imammedo@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB9KZENT001553
 
-Thanks, I was definitely looking at the master branch of linux-kselftest.
-
-There are still more changes in linux-next repo, should those be considered as "in progress"?
-
--dave
-
------Original Message-----
-From: Shuah Khan [mailto:shuahkhan@gmail.com] 
-Sent: Tuesday, December 09, 2014 3:21 PM
-To: Greg KH
-Cc: Young, David; linux-api@vger.kernel.org; shuahkh@osg.samsung.com; linux-kernel@vger.kernel.org
-Subject: Re: selftests: question about git repos containing selftest.
-
-On Tue, Dec 9, 2014 at 12:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Dec 09, 2014 at 02:22:42PM -0500, Young, David wrote:
->> Greetings,
->>
->> I'm trying out the new kernel selftests and was looking for the "bleeding edge" repository to clone.  According to the wiki https://kselftest.wiki.kernel.org/ this is the appropriate repo:
->> git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest.g
->> it
->>
->> However, I am finding newer and more frequent changes are in linux-next.
->> https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
->>
->> Which should I clone for the most fresh changes?
+On Tue, Dec 9, 2014 at 3:10 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 9 Dec 2014, Pranith Kumar wrote:
+>> zalloc_cpumask_var() can return 0 on allocation failure when
+>> CONFIG_CPUMASK_OFFSTACK is set. Check for the return value and WARN() on failure
+>> of an allocation in such cases.
 >
-> Are you sure you are looking at the correct branch for that git repo?
-> Which one were you using?
+> And that warning helps in which way?
+>
+> It just prints a completely useless backtrace and breaks out of the
+> loop, but it does not prevent that later on code will trip over the
+> non allocated per cpu data.
 >
 
-Please find the patches slated for 3.19--rc1 in fixes branch. These are the ones that get pulled into linux-next for integration testing.
+I agree. May be just a pr_warn() saying that an allocation failed perhaps?
 
--- Shuah
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+To prevent further accesses, we can clear the cpu bit from the cpu
+masks(online/possible/present) for the failed cpu and continue trying
+to allocate for other cpus. We don't break out of the loop. Removing
+the cpu from the cpu masks will disable accesses of the non allocated
+per cpu data.
+
+What do you suggest we do in such cases?
+-- 
+Pranith
