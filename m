@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaLIVtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:49:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaLIVtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:49:21 -0500
-Date: Tue, 9 Dec 2014 23:49:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, cornelia.huck@de.ibm.com
-Subject: Re: [PATCH 0/2] virtio_ccw: minor enhancements
-Message-ID: <20141209214907.GA13855@redhat.com>
-References: <1418133187-12436-1-git-send-email-mst@redhat.com>
+	id S1753306AbaLIVu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:50:29 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:52646 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaLIVu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 16:50:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418133187-12436-1-git-send-email-mst@redhat.com>
+In-Reply-To: <54854FB2.8080206@linaro.org>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+ <3957412.IooRKpIXjW@wuerfel> <20141121180825.GD6578@google.com>
+ <2178540.dTppAIY2rE@wuerfel> <54854FB2.8080206@linaro.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 9 Dec 2014 14:50:05 -0700
+Message-ID: <CAErSpo6cUuEK41wD33Uyzb5Y5yFp+jKVVvWLrZ0dO1iuYv8GjQ@mail.gmail.com>
+Subject: Re: [PATCH 6/6] pci, acpi: Share ACPI PCI config space accessors.
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        Rafael Wysocki <rjw@rjwysocki.net>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linaro-acpi@lists.linaro.org, linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>, x86 <x86@kernel.org>,
+        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Hanjun Guo <hanjun.guo@linaro.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yijing Wang <wangyijing@huawei.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty, I guess you are busy.
+On Mon, Dec 8, 2014 at 12:13 AM, Tomasz Nowicki
+<tomasz.nowicki@linaro.org> wrote:
 
-I'd like to send all these patch series combined to Linus.  To see what
-I have queued, you can check the vhost-next branch in my tree.
+> What would be next steps regarding this patch set? I am not sure we have
+> reached a consensus on weak vs #ifdef choice.
 
-Will wait until tomorrow to give you a chance to respond.
+I work through the list at
+https://patchwork.ozlabs.org/project/linux-pci/list/ in FIFO order, so
+you don't need to do anything else except poke me to move faster :)
 
+The weak/ifdef question is relatively minor and easily changed, so I
+wouldn't worry about it yet.
 
-On Tue, Dec 09, 2014 at 03:53:32PM +0200, Michael S. Tsirkin wrote:
-> Two enhancements for virtio_ccw, on top of latest 1.0 patchset
-> 
-> Cornelia Huck (1):
->   virtio_ccw: finalize_features error handling
-> 
-> Michael S. Tsirkin (1):
->   virtio_ccw: future-proof finalize_features
-> 
->  drivers/s390/kvm/virtio_ccw.c | 18 +++++++++++-------
->  1 file changed, 11 insertions(+), 7 deletions(-)
-> 
-> -- 
-> MST
-> 
+Bjorn
