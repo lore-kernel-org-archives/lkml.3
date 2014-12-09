@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaLIUPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:15:07 -0500
-Received: from mail-bl2on0078.outbound.protection.outlook.com ([65.55.169.78]:54048
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752721AbaLIUPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:15:03 -0500
-From: <atull@opensource.altera.com>
-To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <rdunlap@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
-        Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v4 3/6] ARM: socfpga: defconfig: enable fpga manager
-Date: Tue, 9 Dec 2014 14:14:47 -0600
-Message-ID: <1418156090-23578-4-git-send-email-atull@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
-References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+	id S1752508AbaLIUVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:21:05 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:33732 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaLIUVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 15:21:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR05CA0079.namprd05.prod.outlook.com (10.141.20.49) To
- DM2PR0301MB1245.namprd03.prod.outlook.com (25.160.219.22)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1245;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB1245;
-X-Forefront-PRVS: 0420213CCD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(50466002)(86152002)(31966008)(19580395003)(101416001)(64706001)(47776003)(20776003)(92566001)(2201001)(50226001)(86362001)(4396001)(21056001)(76176999)(66066001)(50986999)(69596002)(19580405001)(42186005)(68736005)(48376002)(53416004)(87976001)(97736003)(62966003)(81156004)(106356001)(89996001)(122386002)(40100003)(107046002)(229853001)(120916001)(46102003)(99396003)(105586002)(33646002)(77156002)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1245;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1245;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <20141209194602.GB20166@kroah.com>
+References: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796BF2@USMBX1.msg.corp.akamai.com>
+	<20141209194602.GB20166@kroah.com>
+Date: Tue, 9 Dec 2014 13:21:01 -0700
+Message-ID: <CAKocOOMGoCtDjG24cJhkrJ=EyhbW-qy6=v5pJaRBeSPZuvZWfA@mail.gmail.com>
+Subject: Re: selftests: question about git repos containing selftest.
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Young, David" <dayoung@akamai.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "shuahkh@osg.samsung.com" <shuahkh@osg.samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Tull <atull@opensource.altera.com>
+On Tue, Dec 9, 2014 at 12:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Dec 09, 2014 at 02:22:42PM -0500, Young, David wrote:
+>> Greetings,
+>>
+>> I'm trying out the new kernel selftests and was looking for the "bleeding edge" repository to clone.  According to the wiki https://kselftest.wiki.kernel.org/ this is the appropriate repo:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest.git
+>>
+>> However, I am finding newer and more frequent changes are in linux-next.
+>> https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+>>
+>> Which should I clone for the most fresh changes?
+>
+> Are you sure you are looking at the correct branch for that git repo?
+> Which one were you using?
+>
 
-Enable FPGA manager for Altera socfpga.
+Please find the patches slated for 3.19--rc1 in fixes branch. These
+are the ones that
+get pulled into linux-next for integration testing.
 
-Signed-off-by: Alan Tull <atull@opensource.altera.com>
----
- arch/arm/configs/socfpga_defconfig |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/configs/socfpga_defconfig b/arch/arm/configs/socfpga_defconfig
-index a2956c3..2740057 100644
---- a/arch/arm/configs/socfpga_defconfig
-+++ b/arch/arm/configs/socfpga_defconfig
-@@ -86,6 +86,10 @@ CONFIG_USB_DWC2=y
- CONFIG_USB_DWC2_HOST=y
- CONFIG_MMC=y
- CONFIG_MMC_DW=y
-+CONFIG_STAGING=y
-+CONFIG_FPGA=y
-+CONFIG_FPGA_MGR_SYSFS=y
-+CONFIG_FPGA_MGR_ALTERA=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT2_FS_XATTR=y
- CONFIG_EXT2_FS_POSIX_ACL=y
--- 
-1.7.9.5
-
+-- Shuah
