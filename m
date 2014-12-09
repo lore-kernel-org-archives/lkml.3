@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677AbaLIKU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:20:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52358 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaLIKSa (ORCPT
+	id S1756694AbaLIKVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:21:18 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:35784 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092AbaLIKVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:18:30 -0500
-Date: Tue, 9 Dec 2014 02:17:36 -0800
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-78bff1c8684fb94f1ae7283688f90188b53fc433@git.kernel.org>
-Cc: paulmck@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de,
-        Waiman.Long@hp.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, jeremy@goop.org
-Reply-To: jeremy@goop.org, hpa@zytor.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Waiman.Long@hp.com, peterz@infradead.org, tglx@linutronix.de,
-        oleg@redhat.com, paulmck@linux.vnet.ibm.com
-In-Reply-To: <20141201213417.GA5842@redhat.com>
-References: <20141201213417.GA5842@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] x86/ticketlock: Fix spin_unlock_wait()
-  livelock
-Git-Commit-ID: 78bff1c8684fb94f1ae7283688f90188b53fc433
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 9 Dec 2014 05:21:16 -0500
+Date: Tue, 9 Dec 2014 11:21:08 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
+        rafael.j.wysocki@intel.com, peterz@infradead.org, oleg@redhat.com,
+        bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some cases
+ - deadlock
+Message-ID: <20141209102108.GE4362@osiris>
+References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141208212236.GU25340@linux.vnet.ibm.com>
+ <20141209085930.6b831850@thinkpad-w530>
+ <20141209091447.GD4362@osiris>
+ <20141209111101.201e3544@thinkpad-w530>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141209111101.201e3544@thinkpad-w530>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120910-0017-0000-0000-000002237FD3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  78bff1c8684fb94f1ae7283688f90188b53fc433
-Gitweb:     http://git.kernel.org/tip/78bff1c8684fb94f1ae7283688f90188b53fc433
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Mon, 1 Dec 2014 22:34:17 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Dec 2014 11:36:44 +0100
+On Tue, Dec 09, 2014 at 11:11:01AM +0100, David Hildenbrand wrote:
+> > > Therefore we have to move the condition check inside the 
+> > >   __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
+> > > section to not miss any wake ups when the condition is satisfied.
+> > > 
+> > > So wake_up_process() will either see TASK_RUNNING and do nothing or see
+> > > TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
+> > > fact be woken up again.
+> > 
+> > Or the third alternative would be that 'active_writer' which was running
+> > on CPU2 already terminated and wake_up_process() has a non-NULL pointer to
+> > task_struct which is already dead.
+> > Or is there anything that prevents this use-after-free race?
+> 
+> Hmmm ... I think that is also a valid scenario.
+> That would mean we need soemthing like this:
+> 
+>  void put_online_cpus(void)
+>  {
+> + struct task_struct *awr;
+> +
+>         if (cpu_hotplug.active_writer == current)
+>                 return;
+>         if (!mutex_trylock(&cpu_hotplug.lock)) {
+> +         awr = ACCESS_ONCE(cpu_hotplug.active_writer);
+> +         if (unlikely(awr))
+> +                 get_task_struct(awr);
 
-x86/ticketlock: Fix spin_unlock_wait() livelock
+How would this solve the problem?
 
-arch_spin_unlock_wait() looks very suboptimal, to the point I
-think this is just wrong and can lead to livelock: if the lock
-is heavily contended we can never see head == tail.
-
-But we do not need to wait for arch_spin_is_locked() == F. If it
-is locked we only need to wait until the current owner drops
-this lock. So we could simply spin until old_head !=
-lock->tickets.head in this case, but .head can overflow and thus
-we can't check "unlocked" only once before the main loop.
-
-Also, the "unlocked" check can ignore TICKET_SLOWPATH_FLAG bit.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Paul E.McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Link: http://lkml.kernel.org/r/20141201213417.GA5842@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/spinlock.h | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index bf156de..abc34e9 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -184,8 +184,20 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- 
- static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- {
--	while (arch_spin_is_locked(lock))
-+	__ticket_t head = ACCESS_ONCE(lock->tickets.head);
-+
-+	for (;;) {
-+		struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
-+		/*
-+		 * We need to check "unlocked" in a loop, tmp.head == head
-+		 * can be false positive because of overflow.
-+		 */
-+		if (tmp.head == (tmp.tail & ~TICKET_SLOWPATH_FLAG) ||
-+		    tmp.head != head)
-+			break;
-+
- 		cpu_relax();
-+	}
- }
- 
- /*
