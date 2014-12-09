@@ -1,210 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534AbaLIOQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:16:50 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63619 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaLIOQr (ORCPT
+	id S1757549AbaLIORI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:17:08 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:33989 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbaLIORE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:16:47 -0500
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux390@de.ibm.com (supporter:S390),
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        linux-s390@vger.kernel.org (open list:S390),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
-Date: Tue,  9 Dec 2014 09:16:46 -0500
-Message-Id: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 9 Dec 2014 09:17:04 -0500
+Date: Tue, 9 Dec 2014 00:02:28 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Rui Zhang <rui.zhang@intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] thermal-soc management updates for v3.19 #2
+Message-ID: <20141209040226.GA2245@developer>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
-is a compile time failure if srcu is used when not enabled. This was decided to
-be better than waiting until link time for a failure to occur.
 
-Also make including kvm_host.h conditional on CONFIG_KVM being enabled. This
-prevents build failures as KVM is dependent on SRCU.
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> [for s390 parts]
-CC: Josh Triplett <josh@joshtriplett.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- arch/s390/kernel/asm-offsets.c |  7 ++++++-
- include/linux/notifier.h       | 47 ++++++++++++++++++++++++------------------
- include/linux/srcu.h           |  6 +++++-
- 3 files changed, 38 insertions(+), 22 deletions(-)
+Hello Rui,
 
-diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
-index ef279a1..055334d 100644
---- a/arch/s390/kernel/asm-offsets.c
-+++ b/arch/s390/kernel/asm-offsets.c
-@@ -7,12 +7,15 @@
- #define ASM_OFFSETS_C
- 
- #include <linux/kbuild.h>
--#include <linux/kvm_host.h>
- #include <linux/sched.h>
- #include <asm/idle.h>
- #include <asm/vdso.h>
- #include <asm/pgtable.h>
- 
-+#ifdef CONFIG_KVM
-+#include <linux/kvm_host.h>
-+#endif
-+
- /*
-  * Make sure that the compiler is new enough. We want a compiler that
-  * is known to work with the "Q" assembler constraint.
-@@ -182,8 +185,10 @@ int main(void)
- 	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
- 	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
- 	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
-+#ifdef CONFIG_KVM
- 	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
- 	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
-+#endif /* CONFIG_KVM */
- #endif /* CONFIG_32BIT */
- 	return 0;
- }
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index d14a4c3..fe4f02a 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -47,6 +47,8 @@
-  * runtime initialization.
-  */
- 
-+struct notifier_block;
-+
- typedef	int (*notifier_fn_t)(struct notifier_block *nb,
- 			unsigned long action, void *data);
- 
-@@ -70,12 +72,6 @@ struct raw_notifier_head {
- 	struct notifier_block __rcu *head;
- };
- 
--struct srcu_notifier_head {
--	struct mutex mutex;
--	struct srcu_struct srcu;
--	struct notifier_block __rcu *head;
--};
--
- #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
- 		spin_lock_init(&(name)->lock);	\
- 		(name)->head = NULL;		\
-@@ -88,11 +84,6 @@ struct srcu_notifier_head {
- 		(name)->head = NULL;		\
- 	} while (0)
- 
--/* srcu_notifier_heads must be initialized and cleaned up dynamically */
--extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
--#define srcu_cleanup_notifier_head(name)	\
--		cleanup_srcu_struct(&(name)->srcu);
--
- #define ATOMIC_NOTIFIER_INIT(name) {				\
- 		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
- 		.head = NULL }
-@@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
- 		.head = NULL }
- #define RAW_NOTIFIER_INIT(name)	{				\
- 		.head = NULL }
--/* srcu_notifier_heads cannot be initialized statically */
- 
- #define ATOMIC_NOTIFIER_HEAD(name)				\
- 	struct atomic_notifier_head name =			\
-@@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
- 		struct notifier_block *nb);
- extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
- 		struct notifier_block *nb);
--extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
--		struct notifier_block *nb);
- 
- extern int blocking_notifier_chain_cond_register(
- 		struct blocking_notifier_head *nh,
-@@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
- 		struct notifier_block *nb);
- extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
- 		struct notifier_block *nb);
--extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
--		struct notifier_block *nb);
- 
- extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
- 		unsigned long val, void *v);
-@@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
- 		unsigned long val, void *v);
- extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
- 	unsigned long val, void *v, int nr_to_call, int *nr_calls);
--extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
--		unsigned long val, void *v);
--extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
--	unsigned long val, void *v, int nr_to_call, int *nr_calls);
- 
- #define NOTIFY_DONE		0x0000		/* Don't care */
- #define NOTIFY_OK		0x0001		/* Suits me */
-@@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
- 
- extern struct blocking_notifier_head reboot_notifier_list;
- 
-+#ifdef CONFIG_SRCU
-+
-+struct srcu_notifier_head {
-+	struct mutex mutex;
-+	struct srcu_struct srcu;
-+	struct notifier_block __rcu *head;
-+};
-+
-+/* srcu_notifier_heads must be initialized and cleaned up dynamically
-+ * srcu_notifier_heads cannot be initialized statically
-+ */
-+extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-+#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
-+
-+extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-+		struct notifier_block *nb);
-+extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-+		struct notifier_block *nb);
-+extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-+		unsigned long val, void *v);
-+extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-+	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-+
-+#endif /* CONFIG_SRCU */
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_NOTIFIER_H */
-diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-index 9cfd962..ed9c389 100644
---- a/include/linux/srcu.h
-+++ b/include/linux/srcu.h
-@@ -26,6 +26,8 @@
-  *
-  */
- 
-+#ifdef CONFIG_SRCU
-+
- #ifndef _LINUX_SRCU_H
- #define _LINUX_SRCU_H
- 
-@@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
- 	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
- }
- 
--#endif
-+#endif /* _LINUX_SRCU_H */
-+
-+#endif /* CONFIG_SRCU */
--- 
-1.9.1
+(sorry for duplicates, now copying the list)
 
+Please pull from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.=
+git linus
+
+to receive Thermal-SoC Management updates for v3.19 with top-most
+
+184a4bf623fa587067851d25435fcb2f41de445b:
+
+  thermal: of: Extend current of-thermal.c code to allow setting emulated t=
+emp (2014-12-08 21:10:00 -0400)
+
+on top of e920f9b632a687834de5a78c60ac5c4c62327b1d:
+
+  thermal: armada: Remove support for A375-Z1 SoC (2014-11-24 16:55:42 -040=
+0)
+
+Specifics:
+
+Continuing the content for thermal-soc, I am sending now a specific extensi=
+on in OF thermal.
+In this pull, we have a change that extends the of thermal to allow drivers=
+ to register and use
+its functionality in a better way. The content here does not exploits therm=
+al core. The new=20
+API entries are intended to only access and properly implement the function=
+alities already
+implemented in thermal core.
+
+BR,
+
+Eduardo Valentin
+
+----------------------------------------------------------------
+Lukasz Majewski (5):
+      thermal: of: Extend of-thermal.c to provide number of trip points
+      thermal: of: Extend of-thermal.c to provide check if trip point is va=
+lid
+      thermal: of: Rename struct __thermal_trip to struct thermal_trip
+      thermal: of: Extend of-thermal to export table of trip points
+      thermal: of: Extend current of-thermal.c code to allow setting emulat=
+ed temp
+
+ drivers/thermal/of-thermal.c   | 109 ++++++++++++++++++++++++++++++++++---=
+----
+ drivers/thermal/thermal_core.h |  18 +++++++
+ include/linux/thermal.h        |  18 +++++++
+ 3 files changed, 127 insertions(+), 18 deletions(-)
+
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUhnRKAAoJEMLUO4d9pOJWf1cH/3hJ3Duu2Inq7FXcQwiovKYy
+LDm4CJbgUXVe6+PpcdeKJTQCnKK2aEeFeLhdohgvPGhVuThC5lR98jg1RkqFnheG
+9Ff2TuSbf7OG1NUNDnnog03GTx6Ea4gedcyXmLrhbVu3PTH50j7ySZXwxmgBcMp0
+6UnHYA5b4SLuPIgX9/nKlR1MmwwqY60CERV+Y/aULnYeCI/tuOtcayaGgpOszz9v
+Z08t6Dn/4yAwgV8GUJOKbfilprQ9vuP3aMMsV2GEoIGosdNb20tG7nECtyccVVPX
+W1THbV15YIbn3aUFIPMVyIXBerTkz25sAqrGnnsQm/0Y2wKfvHXXHZ9rdAIPwy4=
+=nXlx
+-----END PGP SIGNATURE-----
+
+--rwEMma7ioTxnRzrJ--
