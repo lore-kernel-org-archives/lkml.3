@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaLIHxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 02:53:55 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:42884 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaLIHxx (ORCPT
+	id S1753851AbaLIH42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 02:56:28 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:34472 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaLIH40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 02:53:53 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-52-5486aa8e3c5a
-From: Weijie Yang <weijie.yang@samsung.com>
-To: iamjoonsoo.kim@lge.com
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        "'Rik van Riel'" <riel@redhat.com>, vbabka@suse.cz,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 3/3] mm: page_alloc: remove redundant
- set_freepage_migratetype() calls
-Date: Tue, 09 Dec 2014 15:51:49 +0800
-Message-id: <000301d01385$45554a60$cfffdf20$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdAThOXndSR1bMOBR/Grhkzhgg6a2Q==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgG7/qrYQg4sfWCzmrF/DZrF6k6/F
-	yu5mNovLu+awWdxb85/VYvK7Z4wWy76+Z7f4e2U9i8Xsxj5Giycn/rM4cHkcfvOe2WPnrLvs
-	HptWdbJ5bPo0id2j6+0VJo8TM36zeLzfd5XN48yCI+wem09Xe3zeJBfAFcVlk5Kak1mWWqRv
-	l8CVser1I/aCbbwVD6a4NzC2cncxcnBICJhI/Jhf38XICWSKSVy4t56ti5GLQ0hgEaPEpNPX
-	mSGcP4wSVx/2MIFUsQloS9zt38gKYosISEmc+n6CEaSIWWARk8S53udgRcICERKv571jBrFZ
-	BFQlXq7aB9bAK2An0bByPhOELSjxY/I9FpArmAXUJaZMyQUJMwvIS2xe85YZ4jh1iUd/dSFW
-	6Uls7mhggSgRl9h45BbLBEaBWUgGzUIYNAvJoFlIOhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L
-	10vOz93ECI6hZ1I7GFc2WBxiFOBgVOLh1bRsCxFiTSwrrsw9xCjBwawkwqu0FCjEm5JYWZVa
-	lB9fVJqTWnyIUZqDRUmcV8keKCWQnliSmp2aWpBaBJNl4uCUamA8++KJE6vV+9i63J87XW/l
-	iV45zfzamfn4pDcmby/7T518LD8k7PeTDb15m79o+UbaMOk8m3164Wuv9Yf4Fvj4rlLSO+6w
-	Yflt75VLJU1e2TBbmcpyrVp9fHq+dc4G1szdrOXX9x9eordZUSKu9u80jakes5z0jESfVesw
-	veQIWDdLad4O4a5nSizFGYmGWsxFxYkAtFRT+50CAAA=
+	Tue, 9 Dec 2014 02:56:26 -0500
+Date: Tue, 9 Dec 2014 15:56:19 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+Message-ID: <20141209075619.GA23327@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+ <1418079372.13358.9.camel@kernel.crashing.org>
+ <CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
+ <20141209001119.GA24661@shangw>
+ <20141209022601.GA16207@richard>
+ <CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120907-0033-0000-0000-000000B274FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The freepage_migratetype is a temporary cached value which represents
-the free page's pageblock migratetype. Now we use it in two scenarios:
+On Mon, Dec 08, 2014 at 11:20:59PM -0800, Yinghai Lu wrote:
+>On Mon, Dec 8, 2014 at 6:26 PM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
+>> On Tue, Dec 09, 2014 at 11:11:19AM +1100, Gavin Shan wrote:
+>>>
+>>>I'm going to give it a spin and Richard, could you please apply Yinghai's
+>>>patch to see if your SRIOV code can work properly?
+>>>
+>>
+>> I did a quick test on my machine. This patch doesn't affect the MMIO
+>> allocation on out platform, so SRIOV works fine.
+>>
+>> I will spend more time to read the patch to get more understanding about the
+>> problem.
+>
+>Hi Marek,
+>
+>Can you boot following branch with "debug ignore_loglevel pci=realloc"
+>on your setup?
+>
+>git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>for-pci-allocate-fit-3.18
+>
+>it has
+>8f74af9: PCI, x86: Allocate mmio near end of free range
+>1ff91c1: PCI: Don't allocate small resource in big free space.
+>108b43b: resources: Add allocate_resource_fit()
+>b6a22f0: resources: Make find_resource could return just fit resource
+>cf50e16: resources: Split out __allocate_resource()
+>
+>on top the v3.18, and it will allocate resource in fit way.
 
-1. Use it as a cached value in page freeing path. This cached value
-is temporary and non-100% update, which help us decide which pcp
-freelist and buddy freelist the page should go rather than using
-get_pfnblock_migratetype() to save some instructions.
-When there is race between page isolation and free path, we need use
-additional method to get a accurate value to put the free pages to
-the correct freelist and get a precise free pages statistics.
+Hi, Yinghai
 
-2. Use it in page alloc path to update NR_FREE_CMA_PAGES statistics.
+Just spent some time to understand the problem and your patch.
 
-This patch aims at the scenario 1 and removes two redundant
-set_freepage_migratetype() calls, which will make sense in the hot path.
+Two comments to this patch:
+1. realloc_head is not necessary here
+2. In case we have two MEM BAR under a bus, one is MEM64|PREF and one is PREF,
+after this patch, the MEM64 flag will be cleared, right? If so, this may fall
+back to the same situation in bug 74151.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/page_alloc.c |    2 --
- 1 file changed, 2 deletions(-)
+I am looking at the bugzilla and try to understand the root cause for this
+allocation failure. Currently I don't get the reason. In my mind, the resource
+will be sized in the non-pref bridge window. But seems not. I have asked more
+info in the bugzilla, so that I could understand the problem. (Yeah, maybe I
+am not that smart, if one of you would help me understand the problem, I am
+happy to offer you a cup of coffee :-) )
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 616a2c9..99af01a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -775,7 +775,6 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	migratetype = get_pfnblock_migratetype(page, pfn);
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
--	set_freepage_migratetype(page, migratetype);
- 	free_one_page(page_zone(page), page, pfn, order, migratetype);
- 	local_irq_restore(flags);
- }
-@@ -1024,7 +1023,6 @@ int move_freepages(struct zone *zone,
- 		order = page_order(page);
- 		list_move(&page->lru,
- 			  &zone->free_area[order].free_list[migratetype]);
--		set_freepage_migratetype(page, migratetype);
- 		page += 1 << order;
- 		pages_moved += 1 << order;
- 	}
+Bjorin,
+
+As you mentioned in another thread, "5b28541552ef is taking the wrong
+approach". (http://www.spinics.net/lists/linux-pci/msg37374.html) Maybe I
+don't catch it clearly. Put a 32bit prefetchable resource in a 32bit
+non-prefetchable bridge window is a bad idea? But in my mind, if the bridge
+prefetchable window is 64bit, we can't put a 32bit prefetchable resource in
+it.
+
+I am trying to catch up with the updates of the bug, if I missed something
+just let me know.
+
+>
+>Thanks
+>
+>Yinghai
+
 -- 
-1.7.10.4
-
+Richard Yang
+Help you, Help me
 
