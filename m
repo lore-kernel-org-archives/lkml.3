@@ -1,85 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933AbaLINLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 08:11:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:33759 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234AbaLINLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 08:11:14 -0500
-Date: Tue, 9 Dec 2014 10:11:04 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "Liang, Kan" <kan.liang@intel.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20141209131104.GC4189@kernel.org>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
- <20141204142330.GB10406@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
- <20141204155142.GD18689@kernel.org>
- <20141204160213.GB18631@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F0770167E1F0@shsmsx102.ccr.corp.intel.com>
- <20141209122708.GA4189@kernel.org>
- <20141209125305.GE2516@krava.brq.redhat.com>
+	id S1756959AbaLINLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:11:40 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54355 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940AbaLINLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 08:11:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141209125305.GE2516@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5485DADF.7020109@nvidia.com>
+References: <1555621726.710701418024675477.JavaMail.weblogic@epmlwas04c> <5485DADF.7020109@nvidia.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 9 Dec 2014 22:11:16 +0900
+Message-ID: <CAAVeFu+ZK_RpHqVQbbqJQV_8NWD3ShHMpNw0RmfFVK0Nykt+oQ@mail.gmail.com>
+Subject: Re: [RFC RESEND 0/3] Add watermark support to devfreq
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "tomeu.vizoso@collabora.com" <tomeu.vizoso@collabora.com>,
+        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "srasal@nvidia.com" <srasal@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 09, 2014 at 01:53:05PM +0100, Jiri Olsa escreveu:
-> On Tue, Dec 09, 2014 at 09:27:08AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Dec 04, 2014 at 04:18:56PM +0000, Liang, Kan escreveu:
-> > > > On Thu, Dec 04, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
-> > > > > > Jiri Wrote:
-> > > > > > > looks ok to me..
-> > > > > > Thanks for the review.
-> > > > > > > I'll test it once I get hands on Haswel server again, I guess we
-> > > > > > > wait for the kernel change to go in first anyway, right?
-> > > > > > I'm not sure, let's ask Peter.
-> > > > > > Peter?
-> > > > > Would be good to go in one pull request, so that whoever pulls it has
-> > > > > the chance to test the kernel feature with the accompanying tooling bits.
-> > > > also there's user part dependency on kernel.. soem new define IIRC
-> > > Oh, right. We have to let them go in together.
-> > The ones that are just prep patches I am merging now, Jiri, can I stick
-> > an Acked-by to the non-LBR related ones?
- 
-> I guess u mean just this one? 
-> 2803   T Dec 02 kan.liang@intel (3.4K) ├─>[PATCH V5 2/3] perf tool: Move cpumode resolve code to add_callchain_ip
+On Tue, Dec 9, 2014 at 2:07 AM, Arto Merilainen <amerilainen@nvidia.com> wrote:
+> Hi MyungJoo,
+>
+> Thank for your answer, see my answers inline.
+>
+> On 12/08/2014 09:44 AM, MyungJoo Ham wrote:
+>>
+>> Please let me start with somewhat naive high-level question:
+>>    What do you mean by watermark in this context?
+>
+>
+> Sorry for poor choice of naming. "Load threshold interrupt" might be more
+> appropriate. The idea of the series here is to add an ability to program
+> hardware to give interrupts when the current load value goes above (or
+> below) certain threshold(s). I will revisit the naming.
 
-There is another I split from, iirc 1/3, that is unrelated to that
-patch, fixing '-g fp' usage that became invalid after a patch from you:
+I personally like the watermark naming and think it is a pretty good
+analogy to what this series is doing, but your call.
 
-https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=f70b4e39de4ef25aade966c0dfc69cfb97091be9
- 
-> yep, ack
-> 
-> jirka
-> 
-> >  
-> > > I have verified that the V8 kernel part patch is compatible with both latest
-> > > tip and latest perf/core. We don't need to rebase.
-> > > The user perf tool for tip is not updated yet. We need to merge latest
-> > > perf/core to tip before applying user part patch.
-> > > 
-> > > Do you have more comments for the code?
-> > > 
-> > > The latest kernel and user part codes are here.
-> > > https://lkml.org/lkml/2014/11/6/432
-> > > https://lkml.org/lkml/2014/12/2/396
-> > > 
-> > > Thanks,
-> > > Kan
+>
+>> Other itching points include:
+>> - devfreq_watermark_event() was declared but has never been used.
+>>      Who is supposed to call this function?
+>
+>
+> The device profile is responsible to call this function from an interrupt
+> handler. I will document this.
+>
+>> - Is enum watermark_type supposed to be used out of /drivers/devfreq/* ?
+>
+>
+> Yes, the idea is to use the enumerations for informing the type of the
+> event. I.e. from interrupt handler we might call:
+>   devfreq_watermark_event(devfreq, ACTMON_INTR_BELOW_WMARK);
+>
+>> - Could you please watermark-specific interfaces (set_high/low_wmark) into
+>>      its own public header file? (e.g.,
+>> /include/linux/devfreq/governor_wmark.h)
+>>    I think we can create another (governor_simpleondemand.h) in there as
+>> well
+>>      in order to have threshold values configured by device drivers.
+>>    Adding governor-specific configurations into devfreq.h seems not
+>>      appropriate especially when we expect that we may need many different
+>>      governors.
+
+Considering that watermarking is a pretty common technique for the
+kind of work that devfreq is attempting to cover (implementing
+event-driven frequency scaling vs. polling-driven as current devfreq
+does), doesn't it make sense to turn it into a core devfreq feature? I
+don't think devfreq can be that easily extended and doing so might
+make things messier than they are.
+
+>
+>
+> I am not convinced that creating two separate interfaces is better than
+> extending a single centralised interface. Let us first consider the
+> compatibility...:
+>
+> First, in trivial case the device driver does not implement the threshold
+> feature. Obviously we cannot use threshold based governor for scaling but
+> all existing polling based governors will work as earlier.
+>
+> Second, let us assume that we have a device that supports threshold
+> interrupts and the driver has implemented the required set_h/l_wmark
+> interrupts and calls devfreq_watermark_event() when we get an interrupt.
+> This device can therefore use wmark_simple and wmark_active governors. In
+> addition to the wmark governors, we may choose to use a polling based
+> governor. With current approach the polling governor simply ignores the
+> events and leaves the thresholds "as is".
+>
+> In short, I would not be concerned on compatibility. From governor side it
+> should be ok to ignore an event. In addition, it is ok from governor
+> initialization to fail in case the device driver does not implement all
+> required features.
+>
+>
+> I am also afraid that initialisation makes two-communication-paths approach
+> tricky. In code you likely could have..:
+>   devfreq_add_device(dev, &pdata->devfreq, "wmark_simple", &extra_fns);
+>
+> .. but what happens if we wish to change the governor on the fly through
+> sysfs? In worst case this is targeting to a governor that requires its own
+> data field in initialisation.
+>
+>>
+>>    OR..
+>>
+>>    This seems that you can keep set_h/l_wmark functions exposed to
+>>      drivers/devfreq/* only. Therefore, having
+>> /drivers/devfreq/governor_wmark.h
+>>      should be sufficient as well, which should be more neat than the
+>> above.
+>>    The callbacks are to be defined by the devfreq drivers, aren't they?
+>
+>
+> set_h/l_wmark callbacks should be implemented by the device profiles (the
+> device drivers themselves) for setting the thresholds on hardware. These are
+> not devfreq/governor private functions but something that should be
+> implemented inside the device driver.
+>
+>>
+>> - The event name, "DEVFREQ_GOV_WMARK", defined in governor.h, seems to be
+>>      more appropriate if it is named "DEVFREQ_GOV_INTERNAL" as we won't
+>> need
+>>      to define event names for each govornor's internal needs.
+>>
+>>    OR.. for more generality,
+>>      we may define a macro like:
+>>
+>> #define DEVFREQ_GOV_INTERNAL(value)     ((0x1 << 31) | (value))
+>> #define GET_DEVFREQ_GOV_INTERNAL(event) ((event) & ~(0x1 << 31))
+>
+>
+> This should work.
+>
+>>
+>> - In general, I would love to see governors with minimal intervention on
+>>      the framework core/main code, especially when it is not beneficial to
+>>      other governors. Unlike cpufreq, we may contain many different types
+>> of
+>>      devices in devfreq, which has the potential to accompany many
+>> different
+>>      governors.
+>>
+>
+> I would like to see is that we could easily take advantage of hardware
+> features and not let framework limit us too much. :-)
+>
+> For example, Tomeu has been working on ACTMON driver that measures memory
+> transfers (please refer to "Add support for Tegra Activity Monitor" series).
+> This hardware block is capable of generating interrupts based on activity
+> and hence by factoring the series properly, we could use the same governor
+> from the series in different places easily. Without proper interfacing
+> everyone ends up duplicating the code.
+
+Indeed. Watermarking support would make the ACTMON driver simpler and
+easier to integrate with all the governors that devfreq currently has.
+Without core support for it, it could only interact properly with its
+own, dedicated governor.
+
+MyungJoo, the issue of having this feature in the core vs. having it
+as a devfreq "extension" aside, do you agree with the core idea? An
+informl ack for the idea would allow us to start leveraging this for
+the ACTMON driver. With a concrete user it will make it easier for
+everyone to understand how the pieces should fit together.
