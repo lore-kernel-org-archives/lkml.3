@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580AbaLIEj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 23:39:29 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:9865 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755533AbaLIEj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 23:39:28 -0500
-Message-ID: <54867CFA.8040304@fb.com>
-Date: Mon, 8 Dec 2014 21:39:22 -0700
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756597AbaLIEnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 23:43:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46866 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755667AbaLIEnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 23:43:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="426754271"
+Date: Tue, 9 Dec 2014 10:13:17 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141209044317.GU16827@intel.com>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+ <20141208141807.GC8739@lukather>
+ <20141208162843.GP16827@intel.com>
+ <20141208183853.GG8739@lukather>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-mq: prevent unmapped hw queue from being scheduled
-References: <1417606684-20907-1-git-send-email-ming.lei@canonical.com> <CACVXFVMzQ8TkxsiUujUZR0E=0Lx=BtZ2BsLmhCTHk8D9dr8rag@mail.gmail.com>
-In-Reply-To: <CACVXFVMzQ8TkxsiUujUZR0E=0Lx=BtZ2BsLmhCTHk8D9dr8rag@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-09_01:2014-12-08,2014-12-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=6.3289928853294e-12 kscore.compositescore=0
- circleOfTrustscore=26.0548541350743 compositescore=0.986137415400633
- urlsuspect_oldscore=0.986137415400633 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.986137415400633 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412090049
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d01dLTUuW90fS44H"
+Content-Disposition: inline
+In-Reply-To: <20141208183853.GG8739@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 05:41 PM, Ming Lei wrote:
-> On Wed, Dec 3, 2014 at 7:38 PM, Ming Lei <ming.lei@canonical.com> wrote:
->> When one hardware queue has no mapped software queues, it
->> shouldn't have been scheduled. Otherwise WARNING or OOPS
->> can triggered.
->>
->> blk_mq_hw_queue_mapped() helper is introduce for fixing
->> the problem.
->>
->> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> ---
->>   block/blk-mq.c |    8 ++++++--
->>   block/blk-mq.h |    5 +++++
->>   2 files changed, 11 insertions(+), 2 deletions(-)
->>
->> diff --git a/block/blk-mq.c b/block/blk-mq.c
->> index c95abc6..c916ad0 100644
->> --- a/block/blk-mq.c
->> +++ b/block/blk-mq.c
->> @@ -599,7 +599,7 @@ static void blk_mq_rq_timer(unsigned long priv)
->>                   * If not software queues are currently mapped to this
->>                   * hardware queue, there's nothing to check
->>                   */
->> -               if (!hctx->nr_ctx || !hctx->tags)
->> +               if (!blk_mq_hw_queue_mapped(hctx))
->>                          continue;
->>
->>                  blk_mq_tag_busy_iter(hctx, blk_mq_check_expired, &data);
->> @@ -819,7 +819,8 @@ static int blk_mq_hctx_next_cpu(struct blk_mq_hw_ctx *hctx)
->>
->>   void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
->>   {
->> -       if (unlikely(test_bit(BLK_MQ_S_STOPPED, &hctx->state)))
->> +       if (unlikely(test_bit(BLK_MQ_S_STOPPED, &hctx->state) ||
->> +           !blk_mq_hw_queue_mapped(hctx)))
->>                  return;
->>
->>          if (!async) {
->> @@ -926,6 +927,9 @@ static void blk_mq_delay_work_fn(struct work_struct *work)
->>
->>   void blk_mq_delay_queue(struct blk_mq_hw_ctx *hctx, unsigned long msecs)
->>   {
->> +       if (unlikely(!blk_mq_hw_queue_mapped(hctx)))
->> +               return;
->> +
->>          kblockd_schedule_delayed_work_on(blk_mq_hctx_next_cpu(hctx),
->>                          &hctx->delay_work, msecs_to_jiffies(msecs));
->>   }
->> diff --git a/block/blk-mq.h b/block/blk-mq.h
->> index d567d52..206230e 100644
->> --- a/block/blk-mq.h
->> +++ b/block/blk-mq.h
->> @@ -115,4 +115,9 @@ static inline void blk_mq_set_alloc_data(struct blk_mq_alloc_data *data,
->>          data->hctx = hctx;
->>   }
->>
->> +static inline bool blk_mq_hw_queue_mapped(struct blk_mq_hw_ctx *hctx)
->> +{
->> +       return hctx->nr_ctx && hctx->tags;
->> +}
->> +
->>   #endif
->
-> Gentle ping...
 
-Picked up for 3.19, sorry for the delay. I'm curious how this queue gets 
-scheduled, though. My worry here would be that we are masking a bug that 
-should be fixed separately.
+--d01dLTUuW90fS44H
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Jens Axboe
+On Mon, Dec 08, 2014 at 07:38:53PM +0100, Maxime Ripard wrote:
+> On Mon, Dec 08, 2014 at 09:58:43PM +0530, Vinod Koul wrote:
+> I totally understand your point. And I actually am a bit uncomfortable
+> merging this so late too, and I'd actually prefer to have it merged
+> for 3.20. But this is a huge patchset, and I'd really like to avoid
+> rebasing it forever.
+>=20
+> I'll send a v6, with your patches, as soon as 3.19-rc1 is out. This
+> will be my last rebase of this serie. If these patches are not merged
+> then, then I will just give up on this cleanup, and probably any
+> subsequent ones.
+Since I have applied them to a topic branch, I don't think we you to rebase
+and resend. Git does a pretty good job at rebasing so I will rebase
+this branch on top of -rc1 and merge. Fixes can keep coming on top of this
+one.
 
+So these patches are applied, and will show up in -next after -rc1. Thank
+you for the work you put in this.
+
+Last night, I thought of giving it a try so temporarily merged this to my
+next. SFR found bunch of issues with it (mostly due to dependencies in
+users) so lets keep fixing those..
+
+--=20
+~Vinod
+
+
+--d01dLTUuW90fS44H
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUhn3lAAoJEHwUBw8lI4NHIGUP/A1RL/ZQY/EDZGMf34wY1NY8
+GrhyqxAbveX/rqIOfMqy90R2MbXN9gc6i7NCNBOC+BQ35TRsy8ZdmTswBZcyMNda
+Y0ghtXgIZ6WszMRIYgGWXBSzpXVVfB4OOJGKpB7c29xDHF6o8lb/C8hK0TiYafdg
+X0hm76nM7EBk+MjyCAoqgAupWqLiHFjG+40evOuo9BxtTHq7Hd7eSdYvEcRiJAGD
+jpM3/TG2jy3S59hPdKrPYQZqqX+Tt7rdsALNu9IAE1DKfDjXQ/gMBW5MeISmcPRv
+gqwJOmXN6cHMJQ1NuSsff7+homr5gBwav99HQEkn94X3heerMUkVH8Y7HeVq+lSW
+Rlr6NL1W6PXrprYLybXHP42XvaFELNDeICOGt2oDW6O16H0leo08+mkCJS9mEQTQ
+ToZeF6uF743UfhOWusraMvCdmnXJCz2PupS8VKLH/4F+Zsw34EmFlTDLL2T1NfID
+NWKjPyhUF1X2QgbtnptiNCeeKek4jWjomEWnI1FxS11GhxAsL9Zp1cK339dBnM4h
+2tj4rTd0BLFc+i3JO03ZJQBDvp8vjakpk6jeyrgHglF22f9jplu9oguvxmzdX7ls
+0GYkWP2mI7Zn4Rl/iD2NByNIcPMVzKe5iHLNKD37NDP5uV3L7TU1/TPgeE1735yE
+lDFjnxLR8OQd9ya8+Sx5
+=H0YF
+-----END PGP SIGNATURE-----
+
+--d01dLTUuW90fS44H--
