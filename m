@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503AbaLIUC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:02:26 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50804 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751397AbaLIUCZ (ORCPT
+	id S1752542AbaLIUHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:07:32 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:37053 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaLIUHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:02:25 -0500
-Message-ID: <1418155343.2058.99.camel@x220>
-Subject: [PATCH] nios2: enable "make defconfig"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: nios2-dev@lists.rocketboards.org, linux-kernel@vger.kernel.org
-Date: Tue, 09 Dec 2014 21:02:23 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Dec 2014 20:02:23.0864 (UTC) FILETIME=[0C514780:01D013EB]
-X-RcptDomain: vger.kernel.org
+	Tue, 9 Dec 2014 15:07:31 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH 0/3] i8k: Rework fan_mult and fan_max code
+Date: Tue,  9 Dec 2014 21:06:58 +0100
+Message-Id: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running "make defconfig" currently fails for nios2:
-    $ make ARCH=nios2 defconfig
-    scripts/kconfig/conf --defconfig Kconfig
-    ***
-    *** Can't find default configuration "arch/nios2/defconfig"!
-    ***
-    make[1]: *** [defconfig] Error 1
-    make: *** [defconfig] Error 2
+This patch series adds autodetection of fan_mult and fan_max.
 
-Add a definition for KBUILD_DEFCONFIG to the nios2's main Makefile to
-enable this make target.
+Pali Rohár (3):
+  i8k: cosmetic: distinguish between fan speed and fan rpm
+  i8k: Autodetect maximal fan speed and fan RPM multiplier
+  i8k: Remove laptop specific config data (fan_mult, fan_max) from
+    driver
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- arch/nios2/Makefile | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/char/i8k.c       |  258 ++++++++++++++++++++++------------------------
+ include/uapi/linux/i8k.h |    4 +-
+ 2 files changed, 129 insertions(+), 133 deletions(-)
 
-diff --git a/arch/nios2/Makefile b/arch/nios2/Makefile
-index e142c9ee51fa..2328f82ba2a8 100644
---- a/arch/nios2/Makefile
-+++ b/arch/nios2/Makefile
-@@ -14,6 +14,8 @@
- # Nios2 port by Wind River Systems Inc trough:
- #   fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
- 
-+KBUILD_DEFCONFIG := 3c120_defconfig
-+
- UTS_SYSNAME = Linux
- 
- export MMU
 -- 
-1.9.3
+1.7.9.5
 
