@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566AbaLIGi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 01:38:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12469 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaLIGi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 01:38:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,543,1413270000"; 
-   d="scan'208";a="634823531"
-Date: Tue, 9 Dec 2014 12:09:12 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: =?iso-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor
- allocation failure
-Message-ID: <20141209063912.GZ16827@intel.com>
-References: <1416924617-15939-1-git-send-email-j@bitron.ch>
- <1418057426.5069.6.camel@bitron.ch>
- <20141208171923.GS16827@intel.com>
- <2395334.C7dbfKWGeP@avalon>
- <20141208175044.GT16827@intel.com>
+	id S1753576AbaLIGj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 01:39:27 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:18642 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751226AbaLIGj0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 01:39:26 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'acme@redhat.com'" <acme@redhat.com>, "'bp@suse.de'" <bp@suse.de>,
+        "'mingo@kernel.org'" <mingo@kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 9 Dec 2014 14:39:23 +0800
+Subject: [PATCH V3] fix build error for vm tools
+Thread-Topic: [PATCH V3] fix build error for vm tools
+Thread-Index: AdATYUom+tPgr1R5SteFN9dl+uERSQADuoaAAAKiEzA=
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313FF@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E688B313FC@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E688B313FD@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313FD@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141208175044.GT16827@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 11:20:44PM +0530, Vinod Koul wrote:
-> On Mon, Dec 08, 2014 at 07:40:15PM +0200, Laurent Pinchart wrote:
-> > > > [GIT PULL FOR v3.19] R-Car DMA engine driver
-> > > > http://www.spinics.net/lists/linux-sh/msg37764.html
-> > > 
-> > > And I dont seem to have this request in my Inbox :(
-> > > Yes I do see it in archieves, so not sure how this is not present, not sure
-> > > if the servers mangeled it!!
-> > 
-> > I haven't CC'ed you, I'll make sure to do so next time. The mail should still 
-> > have reached you through the mailing list though (I assume you're subscribed 
-> > to dmaengine@vger.kernel.org ;-)).
-> Yes I am, so should have reached me even though i wasnt cced
-> I do see email reaching me from list without me being in CC, but then it
-> wont hit my inbox and go to ML folder :)
-> So generally its a good practice to CC relvant folks, lots of folks do ask
-> that if ML is high volume
+This patch fix the build error when make like this:
+make O=/xx/x vm
 
-Hey Laurent,
+use $(OUTPUT) to generate to the right place.
 
-I see that the oddity in commitlogs with change since artifacts after SOB,
-can you please fix that up
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ tools/lib/api/Makefile |  2 +-
+ tools/vm/Makefile      | 14 +++++++++-----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
-	commit 43dc9ba2b51ccb9124bf6fed614c5053500592a6
-	Author: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-	Date:   Sat Jul 19 00:05:14 2014 +0200
-
-	    dmaengine: rcar-dmac: Cache hardware descriptors memory
-
-	    Unlike DMA transfers descriptors that are preallocated and cached,
-	    memory used to store hardware descriptors is allocated and freed with
-	    the DMA coherent allocation API for every transfer. Besides degrading
-	    performances, this creates a CMA stress test that seems to cause issues.
-	    Running dmatest with the noverify option produces
-
-	    [   50.066539] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
-	    [   50.235180] alloc_contig_range test_pages_isolated(6b848, 6b84e) failed
-	    [   52.964584] alloc_contig_range test_pages_isolated(6b847, 6b848) failed
-	    [   54.127113] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
-	    [   56.270253] alloc_contig_range test_pages_isolated(6b84c, 6b850) failed
-
-	    The root cause needs to be fixed, but in the meantime, as a workaround
-	    and a performance improvement, cache hardware descriptors.
-
-	    Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-	    Tested-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-
-	    ---
-
-	    Changes since v2:
-
-	    - Typo fixes
-	    - Align allocated hwdesc size to page size
-	    - Ignore allocated hwdesc memory when the transfer doesn't use hwdescs
-
-	commit feb2e9f12b1a4a871b1d3eb2e2f44255510a79d3
-	Author: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-	Date:   Wed Jul 16 23:15:48 2014 +0200
-
-	    dmaengine: rcar-dmac: Implement support for hardware descriptor lists
-
-	    The DMAC supports hardware-based auto-configuration from descriptor
-	    lists. This reduces the number of interrupts required for processing a
-	    DMA transfer. Support that mode in the driver.
-
-	    Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-	    Tested-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-
-	    ---
-
-	    Changes since v2:
-
-	    - Typo fixes
-	    - Use GFP_NOWAIT to allocate hardware descriptors
-	    - Clear descriptor stage end interrupt when halting the channel
-
-and many more...
-
-Thanks
+diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
+index 36c08b1..a1c598d 100644
+--- a/tools/lib/api/Makefile
++++ b/tools/lib/api/Makefile
+@@ -44,6 +44,6 @@ $(OUTPUT)%.o: %.S libapi_dirs
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+ 
+ clean:
+-	$(call QUIET_CLEAN, libapi) $(RM) $(LIB_OBJS) $(LIBFILE)
++	$(call QUIET_CLEAN, libapi) $(RM) $(LIB_OBJS) $(OUTPUT)$(LIBFILE)
+ 
+ .PHONY: clean
+diff --git a/tools/vm/Makefile b/tools/vm/Makefile
+index 3d907da..7e3fc9f 100644
+--- a/tools/vm/Makefile
++++ b/tools/vm/Makefile
+@@ -1,22 +1,26 @@
+ # Makefile for vm tools
+ #
++include ../scripts/Makefile.include
+ TARGETS=page-types slabinfo
+ 
+ LIB_DIR = ../lib/api
+-LIBS = $(LIB_DIR)/libapikfs.a
++LIBS = $(OUTPUT)../lib/api/libapikfs.a
+ 
+ CC = $(CROSS_COMPILE)gcc
+ CFLAGS = -Wall -Wextra -I../lib/
+ LDFLAGS = $(LIBS)
+ 
++all: $(TARGETS)
+ $(TARGETS): $(LIBS)
+ 
+ $(LIBS):
+-	make -C $(LIB_DIR)
++	$(call descend,../lib/api libapikfs.a)
+ 
+ %: %.c
+-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
++	$(CC) $(CFLAGS) -o $(OUTPUT)$@ $< $(LDFLAGS)
+ 
+ clean:
+-	$(RM) page-types slabinfo
+-	make -C $(LIB_DIR) clean
++	$(RM) $(OUTPUT)page-types $(OUTPUT)slabinfo
++	$(call descend,../lib/api clean)
++
++.PHONY: all clean
 -- 
-~Vinod
-
+2.1.3
