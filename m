@@ -1,33 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436AbaLIBoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 20:44:11 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59143 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261AbaLIBoJ (ORCPT
+	id S1755948AbaLIB44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 20:56:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60356 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaLIB4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 20:44:09 -0500
-Date: Mon, 08 Dec 2014 20:44:06 -0500 (EST)
-Message-Id: <20141208.204406.966912203746787140.davem@davemloft.net>
-To: hau@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 0/2] r8169:change hardware setting
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1417510111-3568-1-git-send-email-hau@realtek.com>
-References: <1417510111-3568-1-git-send-email-hau@realtek.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 08 Dec 2014 17:44:08 -0800 (PST)
+	Mon, 8 Dec 2014 20:56:54 -0500
+Date: Tue, 9 Dec 2014 01:56:51 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+Message-ID: <20141209015651.GI22149@ZenIV.linux.org.uk>
+References: <20141204202011.GO29748@ZenIV.linux.org.uk>
+ <20141208164650.GB29028@node.dhcp.inet.fi>
+ <20141208175805.GB22149@ZenIV.linux.org.uk>
+ <20141208180824.GC22149@ZenIV.linux.org.uk>
+ <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
+ <20141208182012.GE22149@ZenIV.linux.org.uk>
+ <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
+ <20141208184632.GG22149@ZenIV.linux.org.uk>
+ <CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
+ <20141208192816.GH22149@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141208192816.GH22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chunhao Lin <hau@realtek.com>
-Date: Tue, 2 Dec 2014 16:48:29 +0800
+On Mon, Dec 08, 2014 at 07:28:17PM +0000, Al Viro wrote:
+> On Mon, Dec 08, 2014 at 10:57:31AM -0800, Linus Torvalds wrote:
+> > So the whole "get_page()" thing is broken. Iterating over pages in a
+> > KVEC is simply wrong, wrong, wrong. It needs to fail.
+> 
+> Well, _that_ is easy to do, of course...  E.g. by replacing that thing in
+> iov_iter_get_pages()/iov_iter_get_pages_alloc() with ({ return -EFAULT; })
+> will do it.
 
-> This patch series contains two hardware setting modification to prevent
-> hardware become abnormal.
+OK, folded and pushed (i.e. in vfs.git#iov_iter and vfs.git#for-next).
+Matches earlier behaviour; oops reproducer is easy -
 
-Series applied, thanks.
+dd if=/dev/zero of=foo.ko bs=4096 count=1
+cat >a.c <<'EOF'
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+main()
+{
+        int fd = open("foo.ko", 00040000);
+        syscall(__NR_finit_module, fd, "", 0);
+}
+EOF
+gcc a.c
+strace ./a.out
+
+Correct behaviour (both the mainline and this series with fixes folded):
+open("foo.ko", O_RDONLY|O_DIRECT)       = 3
+finit_module(3, "", 0)                  = -1 EFAULT (Bad address)
+Incorrect one:
+open("foo.ko", O_RDONLY|O_DIRECT)       = 3
+finit_module(3, "", 0 <unfinished ...>
++++ killed by SIGKILL +++
+Killed
+
+with that oops reproduced.  Not sure if it's a proper LTP or xfstests fodder,
+but anyway, here it is.
+
+Incremental from previous for-next is
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index e0605c1..a1599ca 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -560,15 +560,7 @@ ssize_t iov_iter_get_pages(struct iov_iter *i,
+ 		get_page(*pages = v.bv_page);
+ 		return v.bv_len;
+ 	}),({
+-		unsigned long addr = (unsigned long)v.iov_base, end;
+-		size_t len = v.iov_len + (*start = addr & (PAGE_SIZE - 1));
+-
+-		if (len > maxpages * PAGE_SIZE)
+-			len = maxpages * PAGE_SIZE;
+-		addr &= ~(PAGE_SIZE - 1);
+-		for (end = addr + len; addr < end; addr += PAGE_SIZE)
+-			get_page(*pages++ = virt_to_page(addr));
+-		return len - *start;
++		return -EFAULT;
+ 	})
+ 	)
+ 	return 0;
+@@ -622,18 +614,7 @@ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
+ 		get_page(*p = v.bv_page);
+ 		return v.bv_len;
+ 	}),({
+-		unsigned long addr = (unsigned long)v.iov_base, end;
+-		size_t len = v.iov_len + (*start = addr & (PAGE_SIZE - 1));
+-		int n;
+-
+-		addr &= ~(PAGE_SIZE - 1);
+-		n = DIV_ROUND_UP(len, PAGE_SIZE);
+-		*pages = p = get_pages_array(n);
+-		if (!p)
+-			return -ENOMEM;
+-		for (end = addr + len; addr < end; addr += PAGE_SIZE)
+-			get_page(*p++ = virt_to_page(addr));
+-		return len - *start;
++		return -EFAULT;
+ 	})
+ 	)
+ 	return 0;
