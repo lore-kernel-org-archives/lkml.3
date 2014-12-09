@@ -1,91 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbaLICss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:48:48 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:44800 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaLICsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:48:47 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <e357b04914f1a5bf439faa2f6f82ea37>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        lyz@rock-chips.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: [PATCH v4 2/5] Documentation: bindings: add doc for the Rockchip usb PHY
-Date: Tue,  9 Dec 2014 10:48:13 +0800
-Message-Id: <1418093293-30557-1-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
+	id S1756462AbaLICtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:49:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12174 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206AbaLICtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 21:49:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,542,1413270000"; 
+   d="scan'208";a="644583485"
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Gerd Hoffmann <kraxel@redhat.com>,
+        "Song, Jike" <jike.song@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Haron, Sandra" <sandra.haron@intel.com>
+Subject: RE: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
+ GVT-g(full GPU virtualization) for KVM
+Thread-Topic: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of
+ Intel GVT-g(full GPU virtualization) for KVM
+Thread-Index: AQHQEGiLR9sn/FTTFEy+ONRxxlNBGJyAcNAAgAYSpgA=
+Date: Tue, 9 Dec 2014 02:49:06 +0000
+Message-ID: <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
+References: <547FC5DE.4010701@intel.com>
+ <1417769421.11297.37.camel@nilsson.home.kraxel.org>
+ <5481AD24.3000703@redhat.com>
+In-Reply-To: <5481AD24.3000703@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB92o1q2029282
 
-Document the bindings of the Rockchip usb PHY driver.
+Here is some background of this KVMGT release:
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+- the major purpose is for early experiment of this technique in KVM, and 
+throw out issues about adding in-kernel device model (or mediated pass-through 
+framework) in KVM.
 
----
+- KVMGT shares 90% code as XenGT, regarding to vGPU device model. The
+only difference is the in-kernel dm interface. The vGPU device model will be
+split and integrated in i915 driver. It will register to in-kernel dm framework
+provided either by Xen or KVM at boot time. Upstreaming of vGPU device
+model is already in progress, with valuable comments received from i915 
+community. However the refactoring mostly happen in XenGT repo now 
 
-Changes in v4:
-- Updata description for phy device tree subnode.
+- Now we have XenGT/KVMGT separately maintained, and KVMGT lags
+behind XenGT regarding to features and qualities. Likely you'll continue
+see stale code (like Xen inst decoder) for some time. In the future we
+plan to maintain a single kernel repo for both, so KVMGT can share
+same quality as XenGT once KVM in-kernel dm framework is stable.
 
-Changes in v3: None
+- Regarding to Qemu hacks, KVMGT really doesn't have any different 
+requirements as what have been discussed for GPU pass-through, e.g. 
+about ISA bridge. Our implementation is based on an old Qemu repo, 
+and honestly speaking not cleanly developed, because we know we
+can leverage from GPU pass-through support once it's in Qemu. At 
+that time we'll leverage the same logic with minimal changes to 
+hook KVMGT mgmt. APIs (e.g. create/destroy a vGPU instance). So
+we can ignore this area for now. :-)
 
- .../devicetree/bindings/phy/rockchip-usb-phy.txt   | 32 ++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+Thanks
+Kevin
 
-diff --git a/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
-new file mode 100644
-index 0000000..0b725e4
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
-@@ -0,0 +1,32 @@
-+ROCKCHIP USB2 PHY
-+
-+Required properties:
-+ - compatible: rockchip,rk3288-usb-phy
-+ - rockchip,grf : phandle to the syscon managing the "general
-+   register files"
-+ - #phy-cells: should be 1
-+ - #address-cells: should be 1
-+ - #size-cells: should be 0
-+
-+Sub-nodes:
-+Each PHY should be represented as a sub-node.
-+
-+Sub-nodes
-+required properties:
-+- reg: the PHY number
-+		"0" - PHY connect to OTG controller
-+		"1" - PHY connect to HOST0 controller
-+		"2" - PHY connect to HOST1 controller
-+
-+Optional Properties:
-+- clocks : phandle + clock specifier for the phy clocks
-+
-+Example:
-+
-+usbphy: phy {
-+	#phy-cells = <1>;
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	compatible = "rockchip,rk3288-usb-phy";
-+	rockchip,grf = <&grf>;
-+};
--- 
-2.0.0
-
-
+> From: Paolo Bonzini
+> Sent: Friday, December 05, 2014 9:04 PM
+> 
+> 
+> 
+> On 05/12/2014 09:50, Gerd Hoffmann wrote:
+> > A few comments on the kernel stuff (brief look so far, also
+> > compile-tested only, intel gfx on my test machine is too old).
+> >
+> >  * Noticed the kernel bits don't even compile when configured as
+> >    module.  Everything (vgt, i915, kvm) must be compiled into the
+> >    kernel.
+> 
+> I'll add that the patch is basically impossible to review with all the
+> XenGT bits still in.  For example, the x86 emulator seems to be
+> unnecessary for KVMGT, but I am not 100% sure.
+> 
+> I would like a clear understanding of why/how Andrew Barnes was able to
+> do i915 passthrough (GVT-d) without hacking the ISA bridge, and why this
+> does not apply to GVT-g.
+> 
+> Paolo
+> 
+> >  * Design approach still seems to be i915 on vgt not the other way
+> >    around.
+> >
+> > Qemu/SeaBIOS bits:
+> >
+> > I've seen the host bridge changes identity from i440fx to
+> > copy-pci-ids-from-host.  Guess the reason for this is that seabios uses
+> > this device to figure whenever it is running on i440fx or q35.  Correct?
+> >
+> > What are the exact requirements for the device?  Must it match the host
+> > exactly, to not confuse the guest intel graphics driver?  Or would
+> > something more recent -- such as the q35 emulation qemu has -- be good
+> > enough to make things work (assuming we add support for the
+> > graphic-related pci config space registers there)?
+> >
+> > The patch also adds a dummy isa bridge at 0x1f.  Simliar question here:
+> > What exactly is needed here?  Would things work if we simply use the q35
+> > lpc device here?
+> >
+> > more to come after I've read the paper linked above ...
+> >
+> > cheers,
+> >   Gerd
+> >
+> >
+> > _______________________________________________
+> > Intel-gfx mailing list
+> > Intel-gfx@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> >
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
