@@ -1,225 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbaLIRDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 12:03:07 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:33779 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176AbaLIRDE (ORCPT
+	id S1757644AbaLIRDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 12:03:11 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57798 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757579AbaLIRDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 12:03:04 -0500
-Date: Tue, 9 Dec 2014 09:02:55 -0800
+	Tue, 9 Dec 2014 12:03:07 -0500
+Date: Tue, 9 Dec 2014 09:02:38 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Josh Triplett <josh@joshtriplett.org>,
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        "open list:S390" <linux-s390@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
-Message-ID: <20141209170255.GE25340@linux.vnet.ibm.com>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] tiny_rcu: directly force QS when call_rcu_[bh|sched]()
+ on idle_task
+Message-ID: <20141209170238.GD25340@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
+References: <5486C42F.7010407@cn.fujitsu.com>
+ <1418118815-13423-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
+In-Reply-To: <1418118815-13423-1-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120917-0029-0000-0000-0000063E2C00
+x-cbid: 14120917-0017-0000-0000-000006F5873B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 09:16:46AM -0500, Pranith Kumar wrote:
-> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
-> is a compile time failure if srcu is used when not enabled. This was decided to
-> be better than waiting until link time for a failure to occur.
+On Tue, Dec 09, 2014 at 05:53:34PM +0800, Lai Jiangshan wrote:
+> For RCU in UP, context-switch = QS = GP, thus we can force a
+> context-switch when any call_rcu_[bh|sched]() is happened on idle_task.
+> After doing so, rcu_idle/irq_enter/exit() are useless, so we can simply
+> make these functions empty.
 > 
-> Also make including kvm_host.h conditional on CONFIG_KVM being enabled. This
-> prevents build failures as KVM is dependent on SRCU.
+> More important, this change does not change the functionality logically.
+> Note: raise_softirq(RCU_SOFTIRQ)/rcu_sched_qs() in rcu_idle_enter() and
+> outmost rcu_irq_exit() will have to wake up the ksoftirqd
+> (due to in_interrupt() == 0).
+> 
+> Before this patch		After this patch:
+> call_rcu_sched() in idle;	call_rcu_sched() in idle
+> 				  set resched
+> do other stuffs;		do other stuffs
+> outmost rcu_irq_exit()		outmost rcu_irq_exit() (empty function)
+>   (or rcu_idle_enter())		  (or rcu_idle_enter(), also empty function)
+> 				start to resched. (see above)
+>   rcu_sched_qs()		rcu_sched_qs()
+>     QS,and GP and advance cb	  QS,and GP and advance cb
+>     wake up the ksoftirqd	    wake up the ksoftirqd
+>       set resched
+> resched to ksoftirqd (or other)	resched to ksoftirqd (or other)
+> 
+> These two code patches are almost the same.
+> 
+> Size changed after patched:
+> 
+> size kernel/rcu/tiny-old.o kernel/rcu/tiny-patched.o
+>    text	   data	    bss	    dec	    hex	filename
+>    3449	    206	      8	   3663	    e4f	kernel/rcu/tiny-old.o
+>    2406	    144	      8	   2558	    9fe	kernel/rcu/tiny-patched.o
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
 Queued for testing, thank you!
 
 							Thanx, Paul
 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> [for s390 parts]
-> CC: Josh Triplett <josh@joshtriplett.org>
-> CC: Lai Jiangshan <laijs@cn.fujitsu.com>
-> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > ---
->  arch/s390/kernel/asm-offsets.c |  7 ++++++-
->  include/linux/notifier.h       | 47 ++++++++++++++++++++++++------------------
->  include/linux/srcu.h           |  6 +++++-
->  3 files changed, 38 insertions(+), 22 deletions(-)
+>  kernel/rcu/rcu.h         |    6 +++
+>  kernel/rcu/tiny.c        |   99 +++------------------------------------------
+>  kernel/rcu/tiny_plugin.h |    2 +-
+>  kernel/rcu/tree.c        |    6 ---
+>  4 files changed, 14 insertions(+), 99 deletions(-)
 > 
-> diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
-> index ef279a1..055334d 100644
-> --- a/arch/s390/kernel/asm-offsets.c
-> +++ b/arch/s390/kernel/asm-offsets.c
-> @@ -7,12 +7,15 @@
->  #define ASM_OFFSETS_C
+> diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+> index 07bb02e..80adef7 100644
+> --- a/kernel/rcu/rcu.h
+> +++ b/kernel/rcu/rcu.h
+> @@ -137,4 +137,10 @@ int rcu_jiffies_till_stall_check(void);
 > 
->  #include <linux/kbuild.h>
-> -#include <linux/kvm_host.h>
->  #include <linux/sched.h>
->  #include <asm/idle.h>
->  #include <asm/vdso.h>
->  #include <asm/pgtable.h>
+>  void rcu_early_boot_tests(void);
 > 
-> +#ifdef CONFIG_KVM
-> +#include <linux/kvm_host.h>
-> +#endif
-> +
->  /*
->   * Make sure that the compiler is new enough. We want a compiler that
->   * is known to work with the "Q" assembler constraint.
-> @@ -182,8 +185,10 @@ int main(void)
->  	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
->  	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
->  	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
-> +#ifdef CONFIG_KVM
->  	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
->  	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
-> +#endif /* CONFIG_KVM */
->  #endif /* CONFIG_32BIT */
->  	return 0;
->  }
-> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-> index d14a4c3..fe4f02a 100644
-> --- a/include/linux/notifier.h
-> +++ b/include/linux/notifier.h
-> @@ -47,6 +47,8 @@
->   * runtime initialization.
->   */
-> 
-> +struct notifier_block;
-> +
->  typedef	int (*notifier_fn_t)(struct notifier_block *nb,
->  			unsigned long action, void *data);
-> 
-> @@ -70,12 +72,6 @@ struct raw_notifier_head {
->  	struct notifier_block __rcu *head;
->  };
-> 
-> -struct srcu_notifier_head {
-> -	struct mutex mutex;
-> -	struct srcu_struct srcu;
-> -	struct notifier_block __rcu *head;
-> -};
-> -
->  #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
->  		spin_lock_init(&(name)->lock);	\
->  		(name)->head = NULL;		\
-> @@ -88,11 +84,6 @@ struct srcu_notifier_head {
->  		(name)->head = NULL;		\
->  	} while (0)
-> 
-> -/* srcu_notifier_heads must be initialized and cleaned up dynamically */
-> -extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-> -#define srcu_cleanup_notifier_head(name)	\
-> -		cleanup_srcu_struct(&(name)->srcu);
-> -
->  #define ATOMIC_NOTIFIER_INIT(name) {				\
->  		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
->  		.head = NULL }
-> @@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
->  		.head = NULL }
->  #define RAW_NOTIFIER_INIT(name)	{				\
->  		.head = NULL }
-> -/* srcu_notifier_heads cannot be initialized statically */
-> 
->  #define ATOMIC_NOTIFIER_HEAD(name)				\
->  	struct atomic_notifier_head name =			\
-> @@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
->  		struct notifier_block *nb);
->  extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
->  		struct notifier_block *nb);
-> -extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-> -		struct notifier_block *nb);
-> 
->  extern int blocking_notifier_chain_cond_register(
->  		struct blocking_notifier_head *nh,
-> @@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
->  		struct notifier_block *nb);
->  extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
->  		struct notifier_block *nb);
-> -extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-> -		struct notifier_block *nb);
-> 
->  extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
->  		unsigned long val, void *v);
-> @@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
->  		unsigned long val, void *v);
->  extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
->  	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> -extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> -		unsigned long val, void *v);
-> -extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> -	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> 
->  #define NOTIFY_DONE		0x0000		/* Don't care */
->  #define NOTIFY_OK		0x0001		/* Suits me */
-> @@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
-> 
->  extern struct blocking_notifier_head reboot_notifier_list;
-> 
-> +#ifdef CONFIG_SRCU
-> +
-> +struct srcu_notifier_head {
-> +	struct mutex mutex;
-> +	struct srcu_struct srcu;
-> +	struct notifier_block __rcu *head;
-> +};
-> +
-> +/* srcu_notifier_heads must be initialized and cleaned up dynamically
-> + * srcu_notifier_heads cannot be initialized statically
+> +/*
+> + * This function really isn't for public consumption, but RCU is special in
+> + * that context switches can allow the state machine to make progress.
 > + */
-> +extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-> +#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
+> +extern void resched_cpu(int cpu);
 > +
-> +extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-> +		struct notifier_block *nb);
-> +extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-> +		struct notifier_block *nb);
-> +extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> +		unsigned long val, void *v);
-> +extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> +	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> +
-> +#endif /* CONFIG_SRCU */
-> +
->  #endif /* __KERNEL__ */
->  #endif /* _LINUX_NOTIFIER_H */
-> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> index 9cfd962..ed9c389 100644
-> --- a/include/linux/srcu.h
-> +++ b/include/linux/srcu.h
-> @@ -26,6 +26,8 @@
->   *
+>  #endif /* __LINUX_RCU_H */
+> diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+> index 805b6d5..85287ec 100644
+> --- a/kernel/rcu/tiny.c
+> +++ b/kernel/rcu/tiny.c
+> @@ -47,54 +47,14 @@ static void __call_rcu(struct rcu_head *head,
+>  		       void (*func)(struct rcu_head *rcu),
+>  		       struct rcu_ctrlblk *rcp);
+> 
+> -static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+> -
+>  #include "tiny_plugin.h"
+> 
+> -/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcu/tree.c. */
+> -static void rcu_idle_enter_common(long long newval)
+> -{
+> -	if (newval) {
+> -		RCU_TRACE(trace_rcu_dyntick(TPS("--="),
+> -					    rcu_dynticks_nesting, newval));
+> -		rcu_dynticks_nesting = newval;
+> -		return;
+> -	}
+> -	RCU_TRACE(trace_rcu_dyntick(TPS("Start"),
+> -				    rcu_dynticks_nesting, newval));
+> -	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
+> -		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
+> -
+> -		RCU_TRACE(trace_rcu_dyntick(TPS("Entry error: not idle task"),
+> -					    rcu_dynticks_nesting, newval));
+> -		ftrace_dump(DUMP_ALL);
+> -		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+> -			  current->pid, current->comm,
+> -			  idle->pid, idle->comm); /* must be idle task! */
+> -	}
+> -	rcu_sched_qs(); /* implies rcu_bh_inc() */
+> -	barrier();
+> -	rcu_dynticks_nesting = newval;
+> -}
+> -
+>  /*
+>   * Enter idle, which is an extended quiescent state if we have fully
+> - * entered that mode (i.e., if the new value of dynticks_nesting is zero).
+> + * entered that mode.
 >   */
+>  void rcu_idle_enter(void)
+>  {
+> -	unsigned long flags;
+> -	long long newval;
+> -
+> -	local_irq_save(flags);
+> -	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
+> -	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
+> -	    DYNTICK_TASK_NEST_VALUE)
+> -		newval = 0;
+> -	else
+> -		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
+> -	rcu_idle_enter_common(newval);
+> -	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_idle_enter);
 > 
-> +#ifdef CONFIG_SRCU
+> @@ -103,55 +63,14 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+>   */
+>  void rcu_irq_exit(void)
+>  {
+> -	unsigned long flags;
+> -	long long newval;
+> -
+> -	local_irq_save(flags);
+> -	newval = rcu_dynticks_nesting - 1;
+> -	WARN_ON_ONCE(newval < 0);
+> -	rcu_idle_enter_common(newval);
+> -	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_irq_exit);
+> 
+> -/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcu/tree.c. */
+> -static void rcu_idle_exit_common(long long oldval)
+> -{
+> -	if (oldval) {
+> -		RCU_TRACE(trace_rcu_dyntick(TPS("++="),
+> -					    oldval, rcu_dynticks_nesting));
+> -		return;
+> -	}
+> -	RCU_TRACE(trace_rcu_dyntick(TPS("End"), oldval, rcu_dynticks_nesting));
+> -	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
+> -		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
+> -
+> -		RCU_TRACE(trace_rcu_dyntick(TPS("Exit error: not idle task"),
+> -			  oldval, rcu_dynticks_nesting));
+> -		ftrace_dump(DUMP_ALL);
+> -		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+> -			  current->pid, current->comm,
+> -			  idle->pid, idle->comm); /* must be idle task! */
+> -	}
+> -}
+> -
+>  /*
+>   * Exit idle, so that we are no longer in an extended quiescent state.
+>   */
+>  void rcu_idle_exit(void)
+>  {
+> -	unsigned long flags;
+> -	long long oldval;
+> -
+> -	local_irq_save(flags);
+> -	oldval = rcu_dynticks_nesting;
+> -	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
+> -	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
+> -		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
+> -	else
+> -		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+> -	rcu_idle_exit_common(oldval);
+> -	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_idle_exit);
+> 
+> @@ -160,15 +79,6 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+>   */
+>  void rcu_irq_enter(void)
+>  {
+> -	unsigned long flags;
+> -	long long oldval;
+> -
+> -	local_irq_save(flags);
+> -	oldval = rcu_dynticks_nesting;
+> -	rcu_dynticks_nesting++;
+> -	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
+> -	rcu_idle_exit_common(oldval);
+> -	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(rcu_irq_enter);
+> 
+> @@ -179,7 +89,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
+>   */
+>  bool notrace __rcu_is_watching(void)
+>  {
+> -	return rcu_dynticks_nesting;
+> +	return true;
+>  }
+>  EXPORT_SYMBOL(__rcu_is_watching);
+> 
+> @@ -347,6 +257,11 @@ static void __call_rcu(struct rcu_head *head,
+>  	rcp->curtail = &head->next;
+>  	RCU_TRACE(rcp->qlen++);
+>  	local_irq_restore(flags);
 > +
->  #ifndef _LINUX_SRCU_H
->  #define _LINUX_SRCU_H
-> 
-> @@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
->  	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+> +	if (unlikely(is_idle_task(current))) {
+> +		/* force scheduling for rcu_sched_qs() */
+> +		resched_cpu(0);
+> +	}
 >  }
 > 
-> -#endif
-> +#endif /* _LINUX_SRCU_H */
-> +
-> +#endif /* CONFIG_SRCU */
+>  /*
+> diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
+> index 858c565..b5fc5e5 100644
+> --- a/kernel/rcu/tiny_plugin.h
+> +++ b/kernel/rcu/tiny_plugin.h
+> @@ -147,7 +147,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
+>  	js = ACCESS_ONCE(rcp->jiffies_stall);
+>  	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
+>  		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
+> -		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
+> +		       rcp->name, rcp->ticks_this_gp, DYNTICK_TASK_EXIT_IDLE,
+>  		       jiffies - rcp->gp_start, rcp->qlen);
+>  		dump_stack();
+>  	}
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 3f5dd16..b5ef579 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -940,12 +940,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
+>  }
+> 
+>  /*
+> - * This function really isn't for public consumption, but RCU is special in
+> - * that context switches can allow the state machine to make progress.
+> - */
+> -extern void resched_cpu(int cpu);
+> -
+> -/*
+>   * Return true if the specified CPU has passed through a quiescent
+>   * state by virtue of being in or having passed through an dynticks
+>   * idle state since the last call to dyntick_save_progress_counter()
 > -- 
-> 1.9.1
+> 1.7.4.4
 > 
 
