@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaLIW6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:58:46 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37456 "EHLO
+	id S1754972AbaLIW7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:59:46 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37450 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949AbaLIWuj (ORCPT
+	with ESMTP id S1753653AbaLIWuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Dec 2014 17:50:39 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/25] iov_iter.c: convert iov_iter_get_pages_alloc() to iterate_all_kinds
-Date: Tue,  9 Dec 2014 22:50:18 +0000
-Message-Id: <1418165438-2205-5-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH 02/25] iov_iter.c: iterate_and_advance
+Date: Tue,  9 Dec 2014 22:50:15 +0000
+Message-Id: <1418165438-2205-2-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
 References: <20141209224928.GL22149@ZenIV.linux.org.uk>
@@ -22,146 +22,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
+same as iterate_all_kinds, but iterator is moved to the position past
+the last byte we'd handled.
+
+iov_iter_advance() converted to it
+
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/iov_iter.c | 107 ++++++++++++++++++++++++----------------------------------
- 1 file changed, 45 insertions(+), 62 deletions(-)
+ mm/iov_iter.c | 104 ++++++++++++++++------------------------------------------
+ 1 file changed, 28 insertions(+), 76 deletions(-)
 
 diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 75e29ef..3214b9b 100644
+index 798fcb4..e91bf0a 100644
 --- a/mm/iov_iter.c
 +++ b/mm/iov_iter.c
-@@ -428,43 +428,6 @@ void iov_iter_init(struct iov_iter *i, int direction,
+@@ -70,6 +70,33 @@
+ 	}							\
  }
- EXPORT_SYMBOL(iov_iter_init);
  
--static ssize_t get_pages_alloc_iovec(struct iov_iter *i,
--		   struct page ***pages, size_t maxsize,
--		   size_t *start)
--{
--	size_t offset = i->iov_offset;
--	const struct iovec *iov = i->iov;
--	size_t len;
--	unsigned long addr;
--	void *p;
--	int n;
--	int res;
--
--	len = iov->iov_len - offset;
--	if (len > i->count)
--		len = i->count;
--	if (len > maxsize)
--		len = maxsize;
--	addr = (unsigned long)iov->iov_base + offset;
--	len += *start = addr & (PAGE_SIZE - 1);
--	addr &= ~(PAGE_SIZE - 1);
--	n = (len + PAGE_SIZE - 1) / PAGE_SIZE;
--	
--	p = kmalloc(n * sizeof(struct page *), GFP_KERNEL);
--	if (!p)
--		p = vmalloc(n * sizeof(struct page *));
--	if (!p)
--		return -ENOMEM;
--
--	res = get_user_pages_fast(addr, n, (i->type & WRITE) != WRITE, p);
--	if (unlikely(res < 0)) {
--		kvfree(p);
--		return res;
--	}
--	*pages = p;
--	return (res == n ? len : res * PAGE_SIZE) - *start;
--}
--
- static void memcpy_from_page(char *to, struct page *page, size_t offset, size_t len)
++#define iterate_and_advance(i, n, v, I, B) {			\
++	size_t skip = i->iov_offset;				\
++	if (unlikely(i->type & ITER_BVEC)) {			\
++		const struct bio_vec *bvec;			\
++		struct bio_vec v;				\
++		iterate_bvec(i, n, v, bvec, skip, (B))		\
++		if (skip == bvec->bv_len) {			\
++			bvec++;					\
++			skip = 0;				\
++		}						\
++		i->nr_segs -= bvec - i->bvec;			\
++		i->bvec = bvec;					\
++	} else {						\
++		const struct iovec *iov;			\
++		struct iovec v;					\
++		iterate_iovec(i, n, v, iov, skip, (I))		\
++		if (skip == iov->iov_len) {			\
++			iov++;					\
++			skip = 0;				\
++		}						\
++		i->nr_segs -= iov - i->iov;			\
++		i->iov = iov;					\
++	}							\
++	i->count -= n;						\
++	i->iov_offset = skip;					\
++}
++
+ static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
  {
- 	char *from = kmap_atomic(page);
-@@ -622,27 +585,6 @@ static size_t zero_bvec(size_t bytes, struct iov_iter *i)
+ 	size_t skip, copy, left, wanted;
+@@ -366,42 +393,6 @@ static size_t zero_iovec(size_t bytes, struct iov_iter *i)
  	return wanted - bytes;
  }
  
--static ssize_t get_pages_alloc_bvec(struct iov_iter *i,
--		   struct page ***pages, size_t maxsize,
--		   size_t *start)
+-static void advance_iovec(struct iov_iter *i, size_t bytes)
 -{
--	const struct bio_vec *bvec = i->bvec;
--	size_t len = bvec->bv_len - i->iov_offset;
--	if (len > i->count)
--		len = i->count;
--	if (len > maxsize)
--		len = maxsize;
--	*start = bvec->bv_offset + i->iov_offset;
+-	BUG_ON(i->count < bytes);
 -
--	*pages = kmalloc(sizeof(struct page *), GFP_KERNEL);
--	if (!*pages)
--		return -ENOMEM;
+-	if (likely(i->nr_segs == 1)) {
+-		i->iov_offset += bytes;
+-		i->count -= bytes;
+-	} else {
+-		const struct iovec *iov = i->iov;
+-		size_t base = i->iov_offset;
+-		unsigned long nr_segs = i->nr_segs;
 -
--	get_page(**pages = bvec->bv_page);
+-		/*
+-		 * The !iov->iov_len check ensures we skip over unlikely
+-		 * zero-length segments (without overruning the iovec).
+-		 */
+-		while (bytes || unlikely(i->count && !iov->iov_len)) {
+-			int copy;
 -
--	return len;
+-			copy = min(bytes, iov->iov_len - base);
+-			BUG_ON(!i->count || i->count < copy);
+-			i->count -= copy;
+-			bytes -= copy;
+-			base += copy;
+-			if (iov->iov_len == base) {
+-				iov++;
+-				nr_segs--;
+-				base = 0;
+-			}
+-		}
+-		i->iov = iov;
+-		i->iov_offset = base;
+-		i->nr_segs = nr_segs;
+-	}
 -}
 -
- size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
-@@ -777,14 +719,55 @@ ssize_t iov_iter_get_pages(struct iov_iter *i,
+ /*
+  * Fault in the first iovec of the given iov_iter, to a maximum length
+  * of bytes. Returns 0 on success, or non-zero if the memory could not be
+@@ -685,42 +676,6 @@ static size_t zero_bvec(size_t bytes, struct iov_iter *i)
+ 	return wanted - bytes;
  }
- EXPORT_SYMBOL(iov_iter_get_pages);
  
-+static struct page **get_pages_array(size_t n)
-+{
-+	struct page **p = kmalloc(n * sizeof(struct page *), GFP_KERNEL);
-+	if (!p)
-+		p = vmalloc(n * sizeof(struct page *));
-+	return p;
-+}
-+
- ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
- 		   struct page ***pages, size_t maxsize,
+-static void advance_bvec(struct iov_iter *i, size_t bytes)
+-{
+-	BUG_ON(i->count < bytes);
+-
+-	if (likely(i->nr_segs == 1)) {
+-		i->iov_offset += bytes;
+-		i->count -= bytes;
+-	} else {
+-		const struct bio_vec *bvec = i->bvec;
+-		size_t base = i->iov_offset;
+-		unsigned long nr_segs = i->nr_segs;
+-
+-		/*
+-		 * The !iov->iov_len check ensures we skip over unlikely
+-		 * zero-length segments (without overruning the iovec).
+-		 */
+-		while (bytes || unlikely(i->count && !bvec->bv_len)) {
+-			int copy;
+-
+-			copy = min(bytes, bvec->bv_len - base);
+-			BUG_ON(!i->count || i->count < copy);
+-			i->count -= copy;
+-			bytes -= copy;
+-			base += copy;
+-			if (bvec->bv_len == base) {
+-				bvec++;
+-				nr_segs--;
+-				base = 0;
+-			}
+-		}
+-		i->bvec = bvec;
+-		i->iov_offset = base;
+-		i->nr_segs = nr_segs;
+-	}
+-}
+-
+ static ssize_t get_pages_bvec(struct iov_iter *i,
+ 		   struct page **pages, size_t maxsize, unsigned maxpages,
  		   size_t *start)
+@@ -849,10 +804,7 @@ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
+ 
+ void iov_iter_advance(struct iov_iter *i, size_t size)
  {
 -	if (i->type & ITER_BVEC)
--		return get_pages_alloc_bvec(i, pages, maxsize, start);
+-		advance_bvec(i, size);
 -	else
--		return get_pages_alloc_iovec(i, pages, maxsize, start);
-+	struct page **p;
-+
-+	if (maxsize > i->count)
-+		maxsize = i->count;
-+
-+	if (!maxsize)
-+		return 0;
-+
-+	iterate_all_kinds(i, maxsize, v, ({
-+		unsigned long addr = (unsigned long)v.iov_base;
-+		size_t len = v.iov_len + (*start = addr & (PAGE_SIZE - 1));
-+		int n;
-+		int res;
-+
-+		addr &= ~(PAGE_SIZE - 1);
-+		n = DIV_ROUND_UP(len, PAGE_SIZE);
-+		p = get_pages_array(n);
-+		if (!p)
-+			return -ENOMEM;
-+		res = get_user_pages_fast(addr, n, (i->type & WRITE) != WRITE, p);
-+		if (unlikely(res < 0)) {
-+			kvfree(p);
-+			return res;
-+		}
-+		*pages = p;
-+		return (res == n ? len : res * PAGE_SIZE) - *start;
-+	0;}),({
-+		/* can't be more than PAGE_SIZE */
-+		*start = v.bv_offset;
-+		*pages = p = get_pages_array(1);
-+		if (!p)
-+			return -ENOMEM;
-+		get_page(*p = v.bv_page);
-+		return v.bv_len;
-+	})
-+	)
-+	return 0;
+-		advance_iovec(i, size);
++	iterate_and_advance(i, size, v, 0, 0)
  }
- EXPORT_SYMBOL(iov_iter_get_pages_alloc);
+ EXPORT_SYMBOL(iov_iter_advance);
  
 -- 
 2.1.3
