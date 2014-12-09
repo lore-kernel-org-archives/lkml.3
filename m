@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaLIIqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:46:37 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:45192 "EHLO
-	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752530AbaLIIqg (ORCPT
+	id S1753891AbaLIIrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:47:17 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:57427 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaLIIrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:46:36 -0500
-X-Greylist: delayed 1619 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 03:46:35 EST
-Date: Tue, 9 Dec 2014 09:19:34 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Robert Yang <hachyang@gmail.com>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ryang <ryang@hach.com>
-Subject: Re: [PATCH 1/1] Watchdog: Fixed the watchdog close/stop logic - only close the watchdog if the magic character was received and the magic close is supported.
-Message-ID: <20141209081934.GN8811@spo001.leaseweb.nl>
-References: <1418060711-47872-1-git-send-email-hachyang@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418060711-47872-1-git-send-email-hachyang@gmail.com>
-User-Agent: Mutt/1.4.1i
+	Tue, 9 Dec 2014 03:47:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
+Subject: Re: [PATCH] misc: Increase available dyanmic minors
+Date: Tue, 09 Dec 2014 09:46:36 +0100
+Message-ID: <3419037.dh84oOupWY@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418079710-30968-1-git-send-email-keith.busch@intel.com>
+References: <1418079710-30968-1-git-send-email-keith.busch@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:sZZkoReGyrvoRyRq9Zw8TEMj5LLUhKhgu2k6fjaIl2nMCX23PE9
+ /ESlRmfnJQJ+lr11B4x88RiBlLwLdg0JsxCg8FiLPaiUQkxp5OihhrJxlXHxNZEYsHpYjZR
+ u7rXUh6lrmODJkFmDPLv1gamiYfojm/R2ExZeBrN7lYAMPAGm+CxRy5SUdKycug4ol6ESbM
+ OVm7vVh4iqYi8tDKvBLcw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryang,
-
-> From: ryang <ryang@hach.com>
+On Monday 08 December 2014 16:01:50 Keith Busch wrote:
+> This increases the number of available miscellaneous character device
+> dynamic minors from 63 to the max minor, 1M.
 > 
-> Signed-off-by: ryang <ryang@hach.com>
-> ---
->  drivers/watchdog/watchdog_dev.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> Dynamic minor previously started at 63 and went down to zero. That's not
+> enough in some situations, and also eventually creates a collision with
+> 'psaux' misc device. This patch starts minors at the last defined misc
+> minor (255) and works up to the max possible.
 > 
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index 6aaefba..73793d8 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -471,8 +471,8 @@ static int watchdog_release(struct inode *inode, struct file *file)
->  	 */
->  	if (!test_bit(WDOG_ACTIVE, &wdd->status))
->  		err = 0;
-> -	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-> -		 !(wdd->info->options & WDIOF_MAGICCLOSE))
-> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) &&
-> +		(wdd->info->options & WDIOF_MAGICCLOSE))
->  		err = watchdog_stop(wdd);
->  
->  	/* If the watchdog was not stopped, send a keepalive ping */
-> -- 
+> Signed-off-by: Keith Busch <keith.busch@intel.com>
 
-There is no reason for this change; you either have:
-1) WDIOF_MAGICCLOSE is not supported and thus watchog may be stopped.
-2) If a watchdog daemon crashes and thus closes the watchdog device (and thus it did not sent a Magic Char) then the watchdog should not be stopped but needs to reboot the system.
+I guess this will break support for ancient user space tools, and
+possibly also old file systems that do not support more than 8-bit
+minor numbers. I would assume that it's ok, but you definitely have
+to mention in the changelog that things might break and how you
+have concluded that this is safe enough.
 
-Kind regards,
-Wim.
+If you cannot come up with a good reasoning, it might be better
+to combine both and use up the traditional dynamic minor numbers
+before using the >255 range.
 
+	Arnd
