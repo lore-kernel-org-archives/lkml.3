@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaLIKTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:19:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755992AbaLIKTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:19:08 -0500
-Date: Tue, 9 Dec 2014 11:18:28 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 6/8] perf data: Switch to multiple cpu stream files
-Message-ID: <20141209101828.GD2516@krava.brq.redhat.com>
-References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
- <1417623842-14331-7-git-send-email-jolsa@kernel.org>
- <CAM9d7cg7EdhQ8f_yA_aHrOgbM9axW1sr+Jzw+Mfwr1kkwQZGpg@mail.gmail.com>
+	id S1756645AbaLIKTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:19:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52396 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284AbaLIKTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:19:17 -0500
+Date: Tue, 9 Dec 2014 02:18:51 -0800
+From: tip-bot for Dan Carpenter <tipbot@zytor.com>
+Message-ID: <tip-e10abb2f770eeb673d23c19980216b0fb62b4f50@git.kernel.org>
+Cc: oleg@redhat.com, tglx@linutronix.de, luto@amacapital.net,
+        dan.carpenter@oracle.com, dave.hansen@linux.intel.com,
+        mingo@kernel.org, hpa@zytor.com, masami.hiramatsu.pt@hitachi.com,
+        linux-kernel@vger.kernel.org
+Reply-To: hpa@zytor.com, masami.hiramatsu.pt@hitachi.com, mingo@kernel.org,
+        dave.hansen@linux.intel.com, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com, oleg@redhat.com, tglx@linutronix.de,
+        luto@amacapital.net
+In-Reply-To: <20141125172114.GA24535@mwanda>
+References: <20141125172114.GA24535@mwanda>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mpx] x86_64/traps: Fix always true condition
+Git-Commit-ID: e10abb2f770eeb673d23c19980216b0fb62b4f50
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAM9d7cg7EdhQ8f_yA_aHrOgbM9axW1sr+Jzw+Mfwr1kkwQZGpg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 05:17:44PM +0900, Namhyung Kim wrote:
-> On Thu, Dec 4, 2014 at 1:24 AM, Jiri Olsa <jolsa@kernel.org> wrote:
-> > +static int setup_streams(struct ctf_writer *cw, struct perf_session *session)
-> > +{
-> > +       struct ctf_stream **stream;
-> > +       struct perf_header *ph = &session->header;
-> > +       int ncpus;
-> > +
-> > +       /*
-> > +        * Try to get the number of cpus used in the data file,
-> > +        * if not present fallback to the MAX_CPUS.
-> > +        */
-> > +       if (!ph)
-> 
-> I think this check is meaningless since perf_header struct is embedded
-> in perf_session so it shouldn't be NULL when refered from a session..
+Commit-ID:  e10abb2f770eeb673d23c19980216b0fb62b4f50
+Gitweb:     http://git.kernel.org/tip/e10abb2f770eeb673d23c19980216b0fb62b4f50
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Tue, 25 Nov 2014 20:21:14 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Dec 2014 12:06:59 +0100
 
-right, it's actually different in the git, I used:
+x86_64/traps: Fix always true condition
 
-        if (!ph || !ph->env.nr_cpus_avail)
-                ncpus = MAX_CPUS;
+We should be checking IS_ERR() here.  PTR_ERR() is always true.
 
-I attached slightyl older version in email :-\
+Fixes: fe3d197f8431 ('x86, mpx: On-demand kernel allocation of
+bounds tables')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20141125172114.GA24535@mwanda
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/traps.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-anyway, I'll send v2 shortly 
-
-thanks,
-jirka
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 651d5d4..f73fc4a 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -323,7 +323,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+ 		break; /* Success, it was handled */
+ 	case 1: /* Bound violation. */
+ 		info = mpx_generate_siginfo(regs, xsave_buf);
+-		if (PTR_ERR(info)) {
++		if (IS_ERR(info)) {
+ 			/*
+ 			 * We failed to decode the MPX instruction.  Act as if
+ 			 * the exception was not caused by MPX.
