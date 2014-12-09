@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaLIPsr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 10:48:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55755 "EHLO mx1.redhat.com"
+	id S932222AbaLIPsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:48:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55684 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757524AbaLIPsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 10:48:38 -0500
+	id S1757066AbaLIPsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:48:33 -0500
 From: Vitaly Kuznetsov <vkuznets@redhat.com>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>
-Subject: [PATCH 5/5] Tools: hv: do not add redundant '/' in hv_start_fcopy()
-Date: Tue,  9 Dec 2014 16:48:23 +0100
-Message-Id: <1418140103-11854-6-git-send-email-vkuznets@redhat.com>
+Subject: [PATCH 2/5] Tools: hv: remove unused bytes_written from kvp_update_file()
+Date: Tue,  9 Dec 2014 16:48:20 +0100
+Message-Id: <1418140103-11854-3-git-send-email-vkuznets@redhat.com>
 In-Reply-To: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
 References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to add additional '/' to smsg->path_name as snprintf("%s/%s")
-does the right thing. Without the patch we get doubled '//' in the log message.
+fwrite() does not actually return the number of bytes written and
+this value is being ignored anyway and ferror() is being called to
+check for an error. As we assign to this variable and never use it
+we get the following compile-time warning:
+hv_kvp_daemon.c:149:9: warning: variable ‘bytes_written’ set but not used [-Wunused-but-set-variable]
+
+Remove bytes_written completely.
 
 Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 ---
- tools/hv/hv_fcopy_daemon.c | 6 ------
- 1 file changed, 6 deletions(-)
+ tools/hv/hv_kvp_daemon.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-index 1a23872..9445d8f 100644
---- a/tools/hv/hv_fcopy_daemon.c
-+++ b/tools/hv/hv_fcopy_daemon.c
-@@ -43,12 +43,6 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
- 	int error = HV_E_FAIL;
- 	char *q, *p;
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 6a6432a..5a274ca 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -147,7 +147,6 @@ static void kvp_release_lock(int pool)
+ static void kvp_update_file(int pool)
+ {
+ 	FILE *filep;
+-	size_t bytes_written;
  
--	/*
--	 * If possile append a path seperator to the path.
--	 */
--	if (strlen((char *)smsg->path_name) < (W_MAX_PATH - 2))
--		strcat((char *)smsg->path_name, "/");
--
- 	p = (char *)smsg->path_name;
- 	snprintf(target_fname, sizeof(target_fname), "%s/%s",
- 		 (char *)smsg->path_name, (char *)smsg->file_name);
+ 	/*
+ 	 * We are going to write our in-memory registry out to
+@@ -163,8 +162,7 @@ static void kvp_update_file(int pool)
+ 		exit(EXIT_FAILURE);
+ 	}
+ 
+-	bytes_written = fwrite(kvp_file_info[pool].records,
+-				sizeof(struct kvp_record),
++	fwrite(kvp_file_info[pool].records, sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
+ 
+ 	if (ferror(filep) || fclose(filep)) {
 -- 
 1.9.3
 
