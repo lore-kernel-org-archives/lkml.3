@@ -1,281 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644AbaLIRDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 12:03:11 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57798 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757579AbaLIRDH (ORCPT
+	id S1757635AbaLIRIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 12:08:54 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55494 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176AbaLIRIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 12:03:07 -0500
-Date: Tue, 9 Dec 2014 09:02:38 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] tiny_rcu: directly force QS when call_rcu_[bh|sched]()
- on idle_task
-Message-ID: <20141209170238.GD25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5486C42F.7010407@cn.fujitsu.com>
- <1418118815-13423-1-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 9 Dec 2014 12:08:53 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 0/7] Fixes for ALPS trackstick
+Date: Tue, 9 Dec 2014 18:08:48 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Vadim Klishko <vadim@cirque.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418118815-13423-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120917-0017-0000-0000-000006F5873B
+Content-Type: multipart/signed;
+  boundary="nextPart2496229.AcOt0lCa9i";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412091808.49071@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 05:53:34PM +0800, Lai Jiangshan wrote:
-> For RCU in UP, context-switch = QS = GP, thus we can force a
-> context-switch when any call_rcu_[bh|sched]() is happened on idle_task.
-> After doing so, rcu_idle/irq_enter/exit() are useless, so we can simply
-> make these functions empty.
-> 
-> More important, this change does not change the functionality logically.
-> Note: raise_softirq(RCU_SOFTIRQ)/rcu_sched_qs() in rcu_idle_enter() and
-> outmost rcu_irq_exit() will have to wake up the ksoftirqd
-> (due to in_interrupt() == 0).
-> 
-> Before this patch		After this patch:
-> call_rcu_sched() in idle;	call_rcu_sched() in idle
-> 				  set resched
-> do other stuffs;		do other stuffs
-> outmost rcu_irq_exit()		outmost rcu_irq_exit() (empty function)
->   (or rcu_idle_enter())		  (or rcu_idle_enter(), also empty function)
-> 				start to resched. (see above)
->   rcu_sched_qs()		rcu_sched_qs()
->     QS,and GP and advance cb	  QS,and GP and advance cb
->     wake up the ksoftirqd	    wake up the ksoftirqd
->       set resched
-> resched to ksoftirqd (or other)	resched to ksoftirqd (or other)
-> 
-> These two code patches are almost the same.
-> 
-> Size changed after patched:
-> 
-> size kernel/rcu/tiny-old.o kernel/rcu/tiny-patched.o
->    text	   data	    bss	    dec	    hex	filename
->    3449	    206	      8	   3663	    e4f	kernel/rcu/tiny-old.o
->    2406	    144	      8	   2558	    9fe	kernel/rcu/tiny-patched.o
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+--nextPart2496229.AcOt0lCa9i
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Queued for testing, thank you!
+On Friday 14 November 2014 20:38:19 Pali Roh=C3=A1r wrote:
+> This patch series fix detection and identifying trackstick on
+> machines with ALPS devices. Last patch split trackstick and
+> bare PS/2 mouse packets between dev2 and dev3 input devices
+> which make sure that driver will send only trackstick data to
+> trackstick input device.
+>=20
+> Pali Roh=C3=A1r (7):
+>   input: alps: Set correct name of psmouse device in
+> alps_init() input: alps: Move trackstick detection to
+> alps_hw_init_* input: alps: Move alps_dolphin_get_device_area
+> into alps_hw_init_dolphin_v1
+>   input: alps: Use NULL instead dummy argument for
+> alps_identify input: alps: Fix name, product and version of
+> dev2 input device input: alps: Add sanity checks for non
+> DualPoint devices input: alps: Do not report both trackstick
+> and external PS/2 mouse data to one input device
+>=20
+>  drivers/input/mouse/alps.c |  361
+> +++++++++++++++++++++++++++++++-------------
+> drivers/input/mouse/alps.h |   14 +-
+>  2 files changed, 264 insertions(+), 111 deletions(-)
 
-							Thanx, Paul
+Hi Dmitry, now when 3.18 was released, can you review this patch=20
+series for 3.19?
 
-> ---
->  kernel/rcu/rcu.h         |    6 +++
->  kernel/rcu/tiny.c        |   99 +++------------------------------------------
->  kernel/rcu/tiny_plugin.h |    2 +-
->  kernel/rcu/tree.c        |    6 ---
->  4 files changed, 14 insertions(+), 99 deletions(-)
-> 
-> diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-> index 07bb02e..80adef7 100644
-> --- a/kernel/rcu/rcu.h
-> +++ b/kernel/rcu/rcu.h
-> @@ -137,4 +137,10 @@ int rcu_jiffies_till_stall_check(void);
-> 
->  void rcu_early_boot_tests(void);
-> 
-> +/*
-> + * This function really isn't for public consumption, but RCU is special in
-> + * that context switches can allow the state machine to make progress.
-> + */
-> +extern void resched_cpu(int cpu);
-> +
->  #endif /* __LINUX_RCU_H */
-> diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-> index 805b6d5..85287ec 100644
-> --- a/kernel/rcu/tiny.c
-> +++ b/kernel/rcu/tiny.c
-> @@ -47,54 +47,14 @@ static void __call_rcu(struct rcu_head *head,
->  		       void (*func)(struct rcu_head *rcu),
->  		       struct rcu_ctrlblk *rcp);
-> 
-> -static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
-> -
->  #include "tiny_plugin.h"
-> 
-> -/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcu/tree.c. */
-> -static void rcu_idle_enter_common(long long newval)
-> -{
-> -	if (newval) {
-> -		RCU_TRACE(trace_rcu_dyntick(TPS("--="),
-> -					    rcu_dynticks_nesting, newval));
-> -		rcu_dynticks_nesting = newval;
-> -		return;
-> -	}
-> -	RCU_TRACE(trace_rcu_dyntick(TPS("Start"),
-> -				    rcu_dynticks_nesting, newval));
-> -	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
-> -		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
-> -
-> -		RCU_TRACE(trace_rcu_dyntick(TPS("Entry error: not idle task"),
-> -					    rcu_dynticks_nesting, newval));
-> -		ftrace_dump(DUMP_ALL);
-> -		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-> -			  current->pid, current->comm,
-> -			  idle->pid, idle->comm); /* must be idle task! */
-> -	}
-> -	rcu_sched_qs(); /* implies rcu_bh_inc() */
-> -	barrier();
-> -	rcu_dynticks_nesting = newval;
-> -}
-> -
->  /*
->   * Enter idle, which is an extended quiescent state if we have fully
-> - * entered that mode (i.e., if the new value of dynticks_nesting is zero).
-> + * entered that mode.
->   */
->  void rcu_idle_enter(void)
->  {
-> -	unsigned long flags;
-> -	long long newval;
-> -
-> -	local_irq_save(flags);
-> -	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
-> -	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
-> -	    DYNTICK_TASK_NEST_VALUE)
-> -		newval = 0;
-> -	else
-> -		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-> -	rcu_idle_enter_common(newval);
-> -	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_idle_enter);
-> 
-> @@ -103,55 +63,14 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
->   */
->  void rcu_irq_exit(void)
->  {
-> -	unsigned long flags;
-> -	long long newval;
-> -
-> -	local_irq_save(flags);
-> -	newval = rcu_dynticks_nesting - 1;
-> -	WARN_ON_ONCE(newval < 0);
-> -	rcu_idle_enter_common(newval);
-> -	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_irq_exit);
-> 
-> -/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcu/tree.c. */
-> -static void rcu_idle_exit_common(long long oldval)
-> -{
-> -	if (oldval) {
-> -		RCU_TRACE(trace_rcu_dyntick(TPS("++="),
-> -					    oldval, rcu_dynticks_nesting));
-> -		return;
-> -	}
-> -	RCU_TRACE(trace_rcu_dyntick(TPS("End"), oldval, rcu_dynticks_nesting));
-> -	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
-> -		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
-> -
-> -		RCU_TRACE(trace_rcu_dyntick(TPS("Exit error: not idle task"),
-> -			  oldval, rcu_dynticks_nesting));
-> -		ftrace_dump(DUMP_ALL);
-> -		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-> -			  current->pid, current->comm,
-> -			  idle->pid, idle->comm); /* must be idle task! */
-> -	}
-> -}
-> -
->  /*
->   * Exit idle, so that we are no longer in an extended quiescent state.
->   */
->  void rcu_idle_exit(void)
->  {
-> -	unsigned long flags;
-> -	long long oldval;
-> -
-> -	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
-> -	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
-> -	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
-> -		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
-> -	else
-> -		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
-> -	rcu_idle_exit_common(oldval);
-> -	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_idle_exit);
-> 
-> @@ -160,15 +79,6 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
->   */
->  void rcu_irq_enter(void)
->  {
-> -	unsigned long flags;
-> -	long long oldval;
-> -
-> -	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
-> -	rcu_dynticks_nesting++;
-> -	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
-> -	rcu_idle_exit_common(oldval);
-> -	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_irq_enter);
-> 
-> @@ -179,7 +89,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
->   */
->  bool notrace __rcu_is_watching(void)
->  {
-> -	return rcu_dynticks_nesting;
-> +	return true;
->  }
->  EXPORT_SYMBOL(__rcu_is_watching);
-> 
-> @@ -347,6 +257,11 @@ static void __call_rcu(struct rcu_head *head,
->  	rcp->curtail = &head->next;
->  	RCU_TRACE(rcp->qlen++);
->  	local_irq_restore(flags);
-> +
-> +	if (unlikely(is_idle_task(current))) {
-> +		/* force scheduling for rcu_sched_qs() */
-> +		resched_cpu(0);
-> +	}
->  }
-> 
->  /*
-> diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
-> index 858c565..b5fc5e5 100644
-> --- a/kernel/rcu/tiny_plugin.h
-> +++ b/kernel/rcu/tiny_plugin.h
-> @@ -147,7 +147,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
->  	js = ACCESS_ONCE(rcp->jiffies_stall);
->  	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
->  		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
-> -		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
-> +		       rcp->name, rcp->ticks_this_gp, DYNTICK_TASK_EXIT_IDLE,
->  		       jiffies - rcp->gp_start, rcp->qlen);
->  		dump_stack();
->  	}
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 3f5dd16..b5ef579 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -940,12 +940,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
->  }
-> 
->  /*
-> - * This function really isn't for public consumption, but RCU is special in
-> - * that context switches can allow the state machine to make progress.
-> - */
-> -extern void resched_cpu(int cpu);
-> -
-> -/*
->   * Return true if the specified CPU has passed through a quiescent
->   * state by virtue of being in or having passed through an dynticks
->   * idle state since the last call to dyntick_save_progress_counter()
-> -- 
-> 1.7.4.4
-> 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
+--nextPart2496229.AcOt0lCa9i
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSHLKEACgkQi/DJPQPkQ1K+iACgmcBsbXB8Dtbp8JnOZFe/cqeA
+ZcgAoLYjFGzsNX2DvvdmsmBKFJveWCFF
+=Fgg9
+-----END PGP SIGNATURE-----
+
+--nextPart2496229.AcOt0lCa9i--
