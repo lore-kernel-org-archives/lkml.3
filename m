@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaLIXNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:13:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21798 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152AbaLIXNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:13:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,548,1413270000"; 
-   d="scan'208";a="645118485"
-Message-ID: <5487820C.4030801@intel.com>
-Date: Tue, 09 Dec 2014 15:13:16 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754566AbaLIXNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:13:52 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:51962 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471AbaLIXNu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 18:13:50 -0500
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-CC: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] fix suspicious rcu_dereference_check in net/sched/sch_fq_codel.c
-References: <58905.1418159750@turing-police.cc.vt.edu> <1418161372.27198.11.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1418161372.27198.11.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo5tZU=zBKNDt2UtUE_AMG3zzrdq2CX2A4ZL7tdLELXgqA@mail.gmail.com>
+References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo5tZU=zBKNDt2UtUE_AMG3zzrdq2CX2A4ZL7tdLELXgqA@mail.gmail.com>
+Date: Tue, 9 Dec 2014 15:13:49 -0800
+X-Google-Sender-Auth: oQl5-n9IT7G053HyEcTsdGhcnZE
+Message-ID: <CAE9FiQWLaNSsFTWEpWRFR4xTd0hKOwENdQR7N6T=K65VM+vDQg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non mem64
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 01:42 PM, Eric Dumazet wrote:
-> On Tue, 2014-12-09 at 16:15 -0500, Valdis Kletnieks wrote:
->> commit 46e5da40ae (net: qdisc: use rcu prefix and silence
->>  sparse warnings) triggers a spurious warning:
->>
->> net/sched/sch_fq_codel.c:97 suspicious rcu_dereference_check() usage!
->>
->> The code should be using the _bh variant of rcu_dereference.
->>
->> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
->> ---
->>  net/sched/sch_fq_codel.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> 
-> Thanks !
-> 
-> 
+On Tue, Dec 9, 2014 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Dec 9, 2014 at 2:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> +       list_for_each_entry(window, &bridge->windows, list) {
+>> +               res = window->res;
+>> +               if (resource_type(res) == IORESOURCE_MEM ||
+>> +                   res->end > 0xffffffff) {
+>> +                       bridge->has_mem64_res = true;
+>
+> This is an interesting idea, but I think you're checking CPU addresses
+> here, and you need to check PCI bus addresses.
 
-Great thanks for finding/fixing!
+Looks like those IBM platforms have res > 4g, but pci bus address < 4g.
+If we check pci bus address, and then we would break those platforms.
 
-Acked-by: John Fastabend <john.r.fastabend@intel.com>
+Yinghai
