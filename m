@@ -1,79 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaLIUjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:39:36 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:37908 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaLIUjd (ORCPT
+	id S1752619AbaLIUko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:40:44 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:35412 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaLIUkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:39:33 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 1/3] i8k: cosmetic: distinguish between fan speed and fan rpm
-Date: Tue, 9 Dec 2014 21:39:29 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <1418155621-21644-2-git-send-email-pali.rohar@gmail.com> <20141209202304.GB22176@roeck-us.net>
-In-Reply-To: <20141209202304.GB22176@roeck-us.net>
+	Tue, 9 Dec 2014 15:40:40 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+	<87h9xez20g.fsf@x220.int.ebiederm.org>
+	<CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+	<87mw75ygwp.fsf@x220.int.ebiederm.org>
+	<CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+	<87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
+	<874mtdyexp.fsf_-_@x220.int.ebiederm.org>
+	<CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
+	<87a935u3nj.fsf@x220.int.ebiederm.org>
+	<CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
+	<87388xodlj.fsf@x220.int.ebiederm.org>
+	<CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
+	<87h9x5re41.fsf_-_@x220.int.ebiederm.org>
+	<87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
+	<CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com>
+	<87ppbtn4mv.fsf@x220.int.ebiederm.org>
+	<CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
+	<87a92xn2io.fsf@x220.int.ebiederm.org>
+	<87r3w8liw4.fsf@x220.int.ebiederm.org>
+	<87iohklfvj.fsf_-_@x220.int.ebiederm.org>
+Date: Tue, 09 Dec 2014 14:38:23 -0600
+In-Reply-To: <87iohklfvj.fsf_-_@x220.int.ebiederm.org> (Eric W. Biederman's
+	message of "Tue, 09 Dec 2014 14:36:48 -0600")
+Message-ID: <87d27slfsw.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1656747.372KvTXkKk";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412092139.29655@pali>
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19zBAf7EY/T8TGw58Y+yjYH54i0SzhmtYo=
+X-SA-Exim-Connect-IP: 67.3.210.55
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ******;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 375 ms - load_scoreonly_sql: 0.05 (0.0%),
+	signal_user_changed: 3.1 (0.8%), b_tie_ro: 2.2 (0.6%), parse: 0.88 (0.2%),
+	extract_message_metadata: 12 (3.2%), get_uri_detail_list: 1.97 (0.5%),
+	tests_pri_-1000: 6 (1.7%), tests_pri_-950: 1.34 (0.4%), tests_pri_-900: 1.15
+	(0.3%), tests_pri_-400: 28 (7.5%), check_bayes: 27 (7.1%), b_tokenize: 8
+	(2.3%), b_tok_get_all: 8 (2.2%), b_comp_prob: 2.0 (0.5%), b_tok_touch_all:
+	4.1 (1.1%), b_finish: 2.4 (0.6%), tests_pri_0: 312 (83.4%), tests_pri_500: 6
+	(1.7%), rewrite_mail: 0.00 (0.0%)
+Subject: [CFT][PATCH 2/8] userns: Don't allow setgroups until a gid mapping has been setablished
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1656747.372KvTXkKk
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Tuesday 09 December 2014 21:23:04 Guenter Roeck wrote:
-> On Tue, Dec 09, 2014 at 09:06:59PM +0100, Pali Roh=C3=A1r wrote:
-> > Driver mix speed and rpm. Fan speed is value (0, 1, 2) which
-> > is used for configuring fan. This patch change comments,
-> > function names and other definitions so code should be
-> > unambiguous now.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > ---
-> > This patch is cosmetic and does not bring any change to
-> > code.
->=20
-> For me "speed" and "rpm" are synonyms. So you are not really
-> clarifying anything. If anything, you make the code even more
-> confusing.
->=20
-> Guenter
+setgroups is unique in not needing a valid mapping before it can be called,
+in the case of setgroups(0, NULL) which drops all supplemental groups.
 
-Ok, what do you want to use instead "speed" and "rpm" to make it=20
-clear? We have function which returns RPM and other functions=20
-which get/set fan speed value (which is 0, 1 or 2). And new=20
-function (from patch 2) returns nominal RPM for fan speed value.
+The design of the user namespace assumes that CAP_SETGID can not actually
+be used until a gid mapping is established.  Therefore add a helper function
+to see if the user namespace gid mapping has been established and call
+that function in the setgroups permission check.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+This is part of the fix for CVE-2014-8989, being able to drop groups
+without privilege using user namespaces.
 
---nextPart1656747.372KvTXkKk
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Cc: stable@vger.kernel.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ include/linux/user_namespace.h |  5 +++++
+ kernel/groups.c                |  4 +++-
+ kernel/user_namespace.c        | 14 ++++++++++++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index e95372654f09..8d493083486a 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -63,6 +63,7 @@ extern const struct seq_operations proc_projid_seq_operations;
+ extern ssize_t proc_uid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_gid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_projid_map_write(struct file *, const char __user *, size_t, loff_t *);
++extern bool userns_may_setgroups(const struct user_namespace *ns);
+ #else
+ 
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+@@ -87,6 +88,10 @@ static inline void put_user_ns(struct user_namespace *ns)
+ {
+ }
+ 
++static inline bool userns_may_setgroups(const struct user_namespace *ns)
++{
++	return true;
++}
+ #endif
+ 
+ #endif /* _LINUX_USER_H */
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 02d8a251c476..664411f171b5 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -6,6 +6,7 @@
+ #include <linux/slab.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
++#include <linux/user_namespace.h>
+ #include <asm/uaccess.h>
+ 
+ /* init to 2 - one for init_task, one to ensure it is never freed */
+@@ -217,7 +218,8 @@ bool may_setgroups(void)
+ {
+ 	struct user_namespace *user_ns = current_user_ns();
+ 
+-	return ns_capable(user_ns, CAP_SETGID);
++	return ns_capable(user_ns, CAP_SETGID) &&
++		userns_may_setgroups(user_ns);
+ }
+ 
+ /*
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index b99c862a2e3f..27c8dab48c07 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -843,6 +843,20 @@ static bool new_idmap_permitted(const struct file *file,
+ 	return false;
+ }
+ 
++bool userns_may_setgroups(const struct user_namespace *ns)
++{
++	bool allowed;
++
++	mutex_lock(&id_map_mutex);
++	/* It is not safe to use setgroups until a gid mapping in
++	 * the user namespace has been established.
++	 */
++	allowed = ns->gid_map.nr_extents != 0;
++	mutex_unlock(&id_map_mutex);
++
++	return allowed;
++}
++
+ static void *userns_get(struct task_struct *task)
+ {
+ 	struct user_namespace *user_ns;
+-- 
+1.9.1
 
-iEYEABECAAYFAlSHXgEACgkQi/DJPQPkQ1I5UwCghp4HxXvki9SiSLA/eDCN00sn
-NzUAn3MHBsEmUn1lWXG0aaW4KY5OLVJo
-=+/oj
------END PGP SIGNATURE-----
-
---nextPart1656747.372KvTXkKk--
