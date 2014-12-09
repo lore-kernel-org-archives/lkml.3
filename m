@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087AbaLIF0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 00:26:06 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:60321 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaLIF0D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 00:26:03 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: wl1251: NVS firmware data
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <201412090027.46485@pali>
-Date: Tue, 9 Dec 2014 06:25:59 +0100
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ming Lei <ming.lei@canonical.com>, Pavel Machek <pavel@ucw.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BB715185-F9EC-4FE6-8F23-79F47CE5BE04@holtmann.org>
-References: <201411271506.20457@pali> <201412081747.30965@pali> <20141208205721.GA14895@kroah.com> <201412090027.46485@pali>
-To: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	id S1752172AbaLIFaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 00:30:03 -0500
+Received: from ozlabs.org ([103.22.144.67]:33494 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719AbaLIFaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 00:30:01 -0500
+Message-ID: <1418102997.527.3.camel@concordia>
+Subject: Re: [PATCH] arch: powerpc: kernel: vio.c:  Remove unused function
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Alistair Popple <alistair@popple.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walter <dwalter@google.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Date: Tue, 09 Dec 2014 16:29:57 +1100
+In-Reply-To: <1417991502-20223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1417991502-20223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali,
-
->> Use your own custom usermode helper for stuff like this, not
->> the firmware interface.  But use a binary sysfs file if you
->> want, that seems to make sense for it...
->> 
->> greg k-h
+On Sun, 2014-12-07 at 23:31 +0100, Rickard Strandqvist wrote:
+> Remove the function cmo_high_show() that is not used anywhere.
 > 
-> Patch for telling permanent mac address from userspace via sysfs 
-> file was rejected for inclusion into mainline kernel.
+> This was partially found by using a static code analysis program called cppcheck.
 > 
-> So I do not think that now maintainers of network subsystem allow 
-> it for nvs data...
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  arch/powerpc/kernel/vio.c |    5 -----
+>  1 file changed, 5 deletions(-)
 > 
-> https://lkml.org/lkml/2013/12/8/35
+> diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+> index 5bfdab9..11657d2 100644
+> --- a/arch/powerpc/kernel/vio.c
+> +++ b/arch/powerpc/kernel/vio.c
+> @@ -1032,11 +1032,6 @@ viobus_cmo_pool_rd_attr(reserve, size);
+>  viobus_cmo_pool_rd_attr(excess, size);
+>  viobus_cmo_pool_rd_attr(excess, free);
+>  
+> -static ssize_t cmo_high_show(struct bus_type *bt, char *buf)
+> -{
+> -	return sprintf(buf, "%lu\n", vio_cmo.high);
+> -}
 
-this magic sysfs that has to be written to at the right time of the boot process to make this all work is something that will not work. I does not work for WiFi and it does not work for Bluetooth. Seems the discussion come full circle now and we are back to square one.
 
-The problem is that either the driver does not register the device with mac80211 until it gets the MAC address provided by userspace or mac80211 should get an unconfigured state. The unconfigured state is something telling userspace that the device is present, but needs a few extra configuration information before it can become useful.
+from ../arch/powerpc/kernel/vio.c:17:
+../arch/powerpc/kernel/vio.c:1046:20: error: 'cmo_high_show' undeclared here (not in a function)
+static BUS_ATTR_RW(cmo_high);
+^
+../include/linux/sysfs.h:76:10: note: in definition of macro '__ATTR'
+.show = _show,      \
+^
+../include/linux/device.h:53:42: note: in expansion of macro '__ATTR_RW'
+struct bus_attribute bus_attr_##_name = __ATTR_RW(_name)
+^
+../arch/powerpc/kernel/vio.c:1046:8: note: in expansion of macro 'BUS_ATTR_RW'
+static BUS_ATTR_RW(cmo_high);
+^
 
-For Bluetooth, I went the later route. Mainly because the missing address is such a generic problem that solving it in the core makes a lot more sense. The driver just tells the core that it has no address for this device and provides a custom callback to configure the address when provided. After that everything resumes as normal.
+cheers
 
-However userspace gets informed when an unconfigured device gets added and at boot it can just query the list of unconfigured devices, or at runtime wait to be told there is a new unconfigured device that needs its attention. And then just provide the information. Once all information are present, the devices disappears as unconfigured and shows up as configured device ready for normal operation.
-
-https://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/mgmt-api.txt#n2006
-http://permalink.gmane.org/gmane.linux.bluez.kernel/50716
-
-Can something similar be added to cfg80211 + nl80211. It bet it can, but that is up to Johannes to decide and someone to actually do the work and implement it.
-
-Regards
-
-Marcel
 
