@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396AbaLICoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:44:16 -0500
-Received: from lucky1.263xmail.com ([211.157.147.132]:59910 "EHLO
+	id S1756380AbaLICss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:48:48 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:44800 "EHLO
 	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaLICoB (ORCPT
+	with ESMTP id S1752455AbaLICsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:44:01 -0500
+	Mon, 8 Dec 2014 21:48:47 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 1
 X-MAIL-DELIVERY: 0
 X-KSVirus-check: 0
 X-ABS-CHECKED: 4
 X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <e3252f627f14a0fc517f6141c8638e85>
+X-UNIQUE-TAG: <e357b04914f1a5bf439faa2f6f82ea37>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
-        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v4 0/5] Patches to add support for Rockchip usb PHYs.
-Date: Tue,  9 Dec 2014 10:43:16 +0800
-Message-Id: <1418093001-30443-1-git-send-email-lyz@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        lyz@rock-chips.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
+Subject: [PATCH v4 2/5] Documentation: bindings: add doc for the Rockchip usb PHY
+Date: Tue,  9 Dec 2014 10:48:13 +0800
+Message-Id: <1418093293-30557-1-git-send-email-lyz@rock-chips.com>
 X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Document the bindings of the Rockchip usb PHY driver.
 
-Patches to add support for Rockchip usb phys.Add a new Rockchip
-usb phy driver and modify dwc2 controller driver to make dwc2
-platform devices support a generic PHY framework driver. This
-patch set has been tested on my rk3288-evb and power off the usb
-phys would reduce about 60mW power budget in total during sustem
-suspend.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+
+---
 
 Changes in v4:
-- Get number of PHYs from device tree.
-- Model each PHY as subnode of the phy provider node.
 - Updata description for phy device tree subnode.
-- Add phy subnodes.
 
-Changes in v3:
-- Use BIT macro instead of bit shift ops.
-- Rename the config entry to PHY_ROCKCHIP_USB.
+Changes in v3: None
 
-Yunzhi Li (5):
-  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
-  Documentation: bindings: add doc for the Rockchip usb PHY
-  usb: dwc2: add generic PHY framework support for dwc2 usb controler
-    platform driver.
-  ARM: dts: add rk3288 usb PHY
-  ARM: dts: Enable usb PHY on rk3288-evb board
-
- .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  32 ++++
- arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
- arch/arm/boot/dts/rk3288.dtsi                      |  27 +++
- drivers/phy/Kconfig                                |   7 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-rockchip-usb.c                     | 211 +++++++++++++++++++++
- drivers/usb/dwc2/gadget.c                          |  33 ++--
- drivers/usb/dwc2/platform.c                        |  36 +++-
- 8 files changed, 328 insertions(+), 23 deletions(-)
+ .../devicetree/bindings/phy/rockchip-usb-phy.txt   | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
- create mode 100644 drivers/phy/phy-rockchip-usb.c
 
+diff --git a/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+new file mode 100644
+index 0000000..0b725e4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+@@ -0,0 +1,32 @@
++ROCKCHIP USB2 PHY
++
++Required properties:
++ - compatible: rockchip,rk3288-usb-phy
++ - rockchip,grf : phandle to the syscon managing the "general
++   register files"
++ - #phy-cells: should be 1
++ - #address-cells: should be 1
++ - #size-cells: should be 0
++
++Sub-nodes:
++Each PHY should be represented as a sub-node.
++
++Sub-nodes
++required properties:
++- reg: the PHY number
++		"0" - PHY connect to OTG controller
++		"1" - PHY connect to HOST0 controller
++		"2" - PHY connect to HOST1 controller
++
++Optional Properties:
++- clocks : phandle + clock specifier for the phy clocks
++
++Example:
++
++usbphy: phy {
++	#phy-cells = <1>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	compatible = "rockchip,rk3288-usb-phy";
++	rockchip,grf = <&grf>;
++};
 -- 
 2.0.0
 
