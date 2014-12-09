@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913AbaLIQrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:47:39 -0500
-Received: from mail-bn1on0114.outbound.protection.outlook.com ([157.56.110.114]:16209
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757891AbaLIQrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:47:36 -0500
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <rafael.j.wysocki@intel.com>
-CC: <cooloney@gmail.com>, <grant.likely@linaro.org>,
-        <jean-michel.hautbois@vodalys.com>, <festevam@gmail.com>,
-        <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] leds: leds-gpio: Fix the "default-state" property check
-Date: Tue, 9 Dec 2014 14:31:54 -0200
-Message-ID: <1418142714-29794-1-git-send-email-fabio.estevam@freescale.com>
+	id S1757785AbaLIQqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 11:46:21 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:49400 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757759AbaLIQqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 11:46:19 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB9GkHlu026814, This message is accepted by code: ctloc85258
+From: Chunhao Lin <hau@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Chunhao Lin <hau@realtek.com>
+Subject: [PATCH net-next 4/9] r8169:update rtl8411 ephy parameter
+Date: Wed, 10 Dec 2014 00:45:58 +0800
+Message-ID: <1418143563-7652-5-git-send-email-hau@realtek.com>
 X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(36756003)(77156002)(21056001)(77096005)(48376002)(110136001)(64706001)(20776003)(47776003)(50466002)(62966003)(68736005)(120916001)(99396003)(92566001)(86362001)(89996001)(81156004)(87936001)(107046002)(2351001)(50226001)(50986999)(104016003)(4396001)(31966008)(19580395003)(33646002)(229853001)(97736003)(46102003)(105606002)(69596002)(19580405001)(6806004)(106466001)(84676001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB244;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+In-Reply-To: <1418143563-7652-1-git-send-email-hau@realtek.com>
+References: <1418143563-7652-1-git-send-email-hau@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB244;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:BL2PR03MB244;
-X-Forefront-PRVS: 0420213CCD
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Fabio.Estevam@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB244;
-X-OriginatorOrg: freescale.com
+X-Originating-IP: [172.21.71.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a43f2cbbb009f9 ("leds: leds-gpio: Make use of device property API")
-caused a regression by reading the incorrect string for the "default-state"
-property.
+Update rtl8411 ephy parameter to improve pcie compatibility.
 
-Fix the property string check to restore the original behaviour.
-
-Fixes: a43f2cbbb009 (leds: leds-gpio: Make use of device property API)
-Reported-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Chunhao Lin <hau@realtek.com>
 ---
- drivers/leds/leds-gpio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/realtek/r8169.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-index 8a8ba11..7ea1ea42 100644
---- a/drivers/leds/leds-gpio.c
-+++ b/drivers/leds/leds-gpio.c
-@@ -203,7 +203,7 @@ static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
- 		fwnode_property_read_string(child, "linux,default-trigger",
- 					    &led.default_trigger);
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 9c946df..bb5a3ba 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5904,17 +5904,19 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
  
--		if (!fwnode_property_read_string(child, "linux,default_state",
-+		if (!fwnode_property_read_string(child, "default-state",
- 						 &state)) {
- 			if (!strcmp(state, "keep"))
- 				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+ static void rtl_hw_start_8411(struct rtl8169_private *tp)
+ {
+-	static const struct ephy_info e_info_8168f_1[] = {
++	static const struct ephy_info e_info_8411[] = {
+ 		{ 0x06, 0x00c0,	0x0020 },
+ 		{ 0x0f, 0xffff,	0x5200 },
+ 		{ 0x1e, 0x0000,	0x4000 },
+-		{ 0x19, 0x0000,	0x0224 }
++		{ 0x19, 0x0000,	0x0224 },
++		{ 0x00, 0x0000,	0x0008 },
++		{ 0x0c, 0x3df0,	0x0200 }
+ 	};
+ 
+ 	rtl_hw_start_8168f(tp);
+ 	rtl_pcie_state_l2l3_enable(tp, false);
+ 
+-	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
++	rtl_ephy_init(tp, e_info_8411, ARRAY_SIZE(e_info_8411));
+ 
+ 	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000, ERIAR_EXGMAC);
+ }
 -- 
 1.9.1
 
