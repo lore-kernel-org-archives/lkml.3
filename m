@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaLIVET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:04:19 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37155 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaLIVER (ORCPT
+	id S1752683AbaLIVEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:04:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52285 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752130AbaLIVEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:04:17 -0500
-Date: Tue, 9 Dec 2014 21:04:14 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: the next chunk of iov_iter-net stuff for review
-Message-ID: <20141209210414.GJ22149@ZenIV.linux.org.uk>
-References: <20141125205911.GA29748@ZenIV.linux.org.uk>
- <20141126.122727.1791815907895724977.davem@davemloft.net>
- <20141205055623.GQ29748@ZenIV.linux.org.uk>
- <20141209.150732.158834258918114526.davem@davemloft.net>
+	Tue, 9 Dec 2014 16:04:51 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-scsi@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: Re: [PATCH] SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Tue, 09 Dec 2014 22:26:24 +0100
+Message-ID: <2376741.OhfndhC6F0@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5486948D.1060807@intel.com>
+References: <3237237.IIIiULdqDt@vostro.rjw.lan> <5486948D.1060807@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209.150732.158834258918114526.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 03:07:32PM -0500, David Miller wrote:
-> From: Al Viro <viro@ZenIV.linux.org.uk>
-> Date: Fri, 5 Dec 2014 05:56:23 +0000
+On Tuesday, December 09, 2014 02:19:57 PM Aaron Lu wrote:
+> On 12/04/2014 09:22 AM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> > selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> > depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> > CONFIG_PM.
+> > 
+> > Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+> > drivers/scsi/ and in include/scsi/scsi_device.h.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> > PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> > linux-pm tree).
+> > 
+> > Please let me know if it is OK to take this one into linux-pm.
+> > 
+> > ---
+> >  drivers/scsi/scsi_pm.c           |    4 ++--
+> >  drivers/scsi/scsi_priv.h         |    5 ++---
+> >  drivers/scsi/ufs/ufshcd-pci.c    |   11 ++++-------
+> >  drivers/scsi/ufs/ufshcd-pltfrm.c |   11 ++++-------
+> >  include/scsi/scsi_device.h       |    4 ++--
+> >  5 files changed, 14 insertions(+), 21 deletions(-)
+> > 
+> > Index: linux-pm/drivers/scsi/scsi_pm.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/scsi/scsi_pm.c
+> > +++ linux-pm/drivers/scsi/scsi_pm.c
+> > @@ -213,7 +213,7 @@ static int scsi_bus_restore(struct devic
+> >  
+> >  #endif /* CONFIG_PM_SLEEP */
+> >  
+> > -#ifdef CONFIG_PM_RUNTIME
+> > +#ifdef CONFIG_PM
+> >  
+> >  static int sdev_runtime_suspend(struct device *dev)
+> >  {
+> > @@ -338,7 +338,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
+> >  #define scsi_runtime_resume	NULL
+> >  #define scsi_runtime_idle	NULL
+> >  
+> > -#endif /* CONFIG_PM_RUNTIME */
+> > +#endif /* CONFIG_PM */
+> >  
+> >  const struct dev_pm_ops scsi_bus_pm_ops = {
+> >  	.prepare =		scsi_bus_prepare,
 > 
-> > 	OK, here's the tentative next batch (covers most of the ->recvmsg()
-> > side of conversion).  That's on top of merge of net-next#master with
-> > vfs#iov_iter (the latter had been posted earlier today, Cc'd to netdev among
-> > other places).  This series corresponds to vfs#for-davem.  Review and comments
-> > would be very welcome...
+> Just one nitpeak: since scsi_pm.o is only compiled when CONFIG_PM is
+> set, I think we can skip the #ifdef CONFIG_PM ... #endif macro in this
+> file now. I mean something like this:
+
+Ah, right, I overlooked that, thanks!
+
+I've folded the below into the SCSI patch.
+
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index 7454498..9e43ae1 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -213,8 +213,6 @@ static int scsi_bus_restore(struct device *dev)
+>  
+>  #endif /* CONFIG_PM_SLEEP */
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> -
+>  static int sdev_runtime_suspend(struct device *dev)
+>  {
+>  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+> @@ -332,14 +330,6 @@ void scsi_autopm_put_host(struct Scsi_Host *shost)
+>  	pm_runtime_put_sync(&shost->shost_gendev);
+>  }
+>  
+> -#else
+> -
+> -#define scsi_runtime_suspend	NULL
+> -#define scsi_runtime_resume	NULL
+> -#define scsi_runtime_idle	NULL
+> -
+> -#endif /* CONFIG_PM_RUNTIME */
+> -
+>  const struct dev_pm_ops scsi_bus_pm_ops = {
+>  	.prepare =		scsi_bus_prepare,
+>  	.suspend =		scsi_bus_suspend,
 > 
-> Al, what's the state of this?  The iov_iter rewrite had some changes
-> recently.
+> Thanks,
+> Aaron
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Well, I've got no comments whatsoever on the networking side of things;
-might mean that everything's fine, might mean that everyone had been too
-polite to say it's shite, might be something in between...  FWIW, changes
-in iov_iter do not affect any of those patches, so the stuff posted
-for review is unchanged by those.
-
-> Also, never assume I just know what GIT url to pull from, always
-> explicitly state where you want me to pull changes from.
-
-Sure, but that was just a call for review.  _If_ you think that those patches
-are OK, the URL is
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-davem
-(and it pulls the fixed variant of iov_iter, otherwise it's exactly the same
-as when I posted those).
-
-FWIW, this stuff seems to work here, but I'd really like to hear at least
-something before asking to pull.  As it is, your mail is the first reply of
-any kind...
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
