@@ -1,135 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462AbaLICtx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:49:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12174 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206AbaLICtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:49:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,542,1413270000"; 
-   d="scan'208";a="644583485"
-From: "Tian, Kevin" <kevin.tian@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Gerd Hoffmann <kraxel@redhat.com>,
-        "Song, Jike" <jike.song@intel.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: RE: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
- GVT-g(full GPU virtualization) for KVM
-Thread-Topic: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of
- Intel GVT-g(full GPU virtualization) for KVM
-Thread-Index: AQHQEGiLR9sn/FTTFEy+ONRxxlNBGJyAcNAAgAYSpgA=
-Date: Tue, 9 Dec 2014 02:49:06 +0000
-Message-ID: <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
-References: <547FC5DE.4010701@intel.com>
- <1417769421.11297.37.camel@nilsson.home.kraxel.org>
- <5481AD24.3000703@redhat.com>
-In-Reply-To: <5481AD24.3000703@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1756494AbaLICu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:50:56 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:58826 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023AbaLICuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 21:50:55 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: paulz@synopsys.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <e2f131d7666d45765a449f5f464988f8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dianders@chromium.org,
+        huangtao@rock-chips.com, zyw@rock-chips.com, cf@rock-chips.com,
+        linux-rockchip@lists.infradead.org
+Cc: Yunzhi Li <lyz@rock-chips.com>
+Subject: [PATCH v4 3/5] usb: dwc2: add generic PHY framework support for dwc2 usb controler platform driver.
+Date: Tue,  9 Dec 2014 10:50:27 +0800
+Message-Id: <1418093427-30614-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB92o1q2029282
 
-Here is some background of this KVMGT release:
+Get PHY parameters from devicetree and power off usb PHY during
+system suspend.
 
-- the major purpose is for early experiment of this technique in KVM, and 
-throw out issues about adding in-kernel device model (or mediated pass-through 
-framework) in KVM.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
 
-- KVMGT shares 90% code as XenGT, regarding to vGPU device model. The
-only difference is the in-kernel dm interface. The vGPU device model will be
-split and integrated in i915 driver. It will register to in-kernel dm framework
-provided either by Xen or KVM at boot time. Upstreaming of vGPU device
-model is already in progress, with valuable comments received from i915 
-community. However the refactoring mostly happen in XenGT repo now 
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-- Now we have XenGT/KVMGT separately maintained, and KVMGT lags
-behind XenGT regarding to features and qualities. Likely you'll continue
-see stale code (like Xen inst decoder) for some time. In the future we
-plan to maintain a single kernel repo for both, so KVMGT can share
-same quality as XenGT once KVM in-kernel dm framework is stable.
+Changes in v3:
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
 
-- Regarding to Qemu hacks, KVMGT really doesn't have any different 
-requirements as what have been discussed for GPU pass-through, e.g. 
-about ISA bridge. Our implementation is based on an old Qemu repo, 
-and honestly speaking not cleanly developed, because we know we
-can leverage from GPU pass-through support once it's in Qemu. At 
-that time we'll leverage the same logic with minimal changes to 
-hook KVMGT mgmt. APIs (e.g. create/destroy a vGPU instance). So
-we can ignore this area for now. :-)
+---
 
-Thanks
-Kevin
+Changes in v4: None
+Changes in v3: None
 
-> From: Paolo Bonzini
-> Sent: Friday, December 05, 2014 9:04 PM
-> 
-> 
-> 
-> On 05/12/2014 09:50, Gerd Hoffmann wrote:
-> > A few comments on the kernel stuff (brief look so far, also
-> > compile-tested only, intel gfx on my test machine is too old).
-> >
-> >  * Noticed the kernel bits don't even compile when configured as
-> >    module.  Everything (vgt, i915, kvm) must be compiled into the
-> >    kernel.
-> 
-> I'll add that the patch is basically impossible to review with all the
-> XenGT bits still in.  For example, the x86 emulator seems to be
-> unnecessary for KVMGT, but I am not 100% sure.
-> 
-> I would like a clear understanding of why/how Andrew Barnes was able to
-> do i915 passthrough (GVT-d) without hacking the ISA bridge, and why this
-> does not apply to GVT-g.
-> 
-> Paolo
-> 
-> >  * Design approach still seems to be i915 on vgt not the other way
-> >    around.
-> >
-> > Qemu/SeaBIOS bits:
-> >
-> > I've seen the host bridge changes identity from i440fx to
-> > copy-pci-ids-from-host.  Guess the reason for this is that seabios uses
-> > this device to figure whenever it is running on i440fx or q35.  Correct?
-> >
-> > What are the exact requirements for the device?  Must it match the host
-> > exactly, to not confuse the guest intel graphics driver?  Or would
-> > something more recent -- such as the q35 emulation qemu has -- be good
-> > enough to make things work (assuming we add support for the
-> > graphic-related pci config space registers there)?
-> >
-> > The patch also adds a dummy isa bridge at 0x1f.  Simliar question here:
-> > What exactly is needed here?  Would things work if we simply use the q35
-> > lpc device here?
-> >
-> > more to come after I've read the paper linked above ...
-> >
-> > cheers,
-> >   Gerd
-> >
-> >
-> > _______________________________________________
-> > Intel-gfx mailing list
-> > Intel-gfx@lists.freedesktop.org
-> > http://lists.freedesktop.org/mailman/listinfo/intel-gfx
-> >
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
+ drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 200168e..2601c61 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ {
+ 	struct device *dev = hsotg->dev;
+ 	struct s3c_hsotg_plat *plat = dev->platform_data;
+-	struct phy *phy;
+-	struct usb_phy *uphy;
+ 	struct s3c_hsotg_ep *eps;
+ 	int epnum;
+ 	int ret;
+@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ 	hsotg->phyif = GUSBCFG_PHYIF16;
+ 
+ 	/*
+-	 * Attempt to find a generic PHY, then look for an old style
+-	 * USB PHY, finally fall back to pdata
++	 * If platform probe couldn't find a generic PHY or an old style
++	 * USB PHY, fall back to pdata
+ 	 */
+-	phy = devm_phy_get(dev, "usb2-phy");
+-	if (IS_ERR(phy)) {
+-		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-		if (IS_ERR(uphy)) {
+-			/* Fallback for pdata */
+-			plat = dev_get_platdata(dev);
+-			if (!plat) {
+-				dev_err(dev,
+-				"no platform data or transceiver defined\n");
+-				return -EPROBE_DEFER;
+-			}
+-			hsotg->plat = plat;
+-		} else
+-			hsotg->uphy = uphy;
+-	} else {
+-		hsotg->phy = phy;
++	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
++		plat = dev_get_platdata(dev);
++		if (!plat) {
++			dev_err(dev,
++			"no platform data or transceiver defined\n");
++			return -EPROBE_DEFER;
++		}
++		hsotg->plat = plat;
++	} else if (hsotg->phy) {
+ 		/*
+ 		 * If using the generic PHY framework, check if the PHY bus
+ 		 * width is 8-bit and set the phyif appropriately.
+ 		 */
+-		if (phy_get_bus_width(phy) == 8)
++		if (phy_get_bus_width(hsotg->phy) == 8)
+ 			hsotg->phyif = GUSBCFG_PHYIF8;
+ 	}
+ 
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index 6a795aa..ae095f0 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	struct dwc2_core_params defparams;
+ 	struct dwc2_hsotg *hsotg;
+ 	struct resource *res;
++	struct phy *phy;
++	struct usb_phy *uphy;
+ 	int retval;
+ 	int irq;
+ 
+@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 
+ 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+ 
++	/*
++	 * Attempt to find a generic PHY, then look for an old style
++	 * USB PHY
++	 */
++	phy = devm_phy_get(&dev->dev, "usb2-phy");
++	if (IS_ERR(phy)) {
++		hsotg->phy = NULL;
++		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
++		if (IS_ERR(uphy))
++			hsotg->uphy = NULL;
++		else
++			hsotg->uphy = uphy;
++	} else {
++		hsotg->phy = phy;
++		phy_power_on(hsotg->phy);
++		phy_init(hsotg->phy);
++	}
++
+ 	spin_lock_init(&hsotg->lock);
+ 	mutex_init(&hsotg->init_mutex);
+ 	retval = dwc2_gadget_init(hsotg, irq);
+@@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_suspend(dwc2);
++	} else {
++		if (dwc2->lx_state == DWC2_L0)
++			return 0;
++		phy_exit(dwc2->phy);
++		phy_power_off(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+@@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_resume(dwc2);
++	} else {
++		phy_power_on(dwc2->phy);
++		phy_init(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+-- 
+2.0.0
+
+
