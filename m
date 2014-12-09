@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428AbaLICVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:21:41 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:60276 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755745AbaLICVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:21:40 -0500
-Date: Tue, 9 Dec 2014 04:21:35 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141209022135.GA992@node.dhcp.inet.fi>
-References: <20141208164650.GB29028@node.dhcp.inet.fi>
- <20141208175805.GB22149@ZenIV.linux.org.uk>
- <20141208180824.GC22149@ZenIV.linux.org.uk>
- <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
- <20141208182012.GE22149@ZenIV.linux.org.uk>
- <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
- <20141208184632.GG22149@ZenIV.linux.org.uk>
- <CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
- <20141208192816.GH22149@ZenIV.linux.org.uk>
- <20141209015651.GI22149@ZenIV.linux.org.uk>
+	id S1755731AbaLIC0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:26:12 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54512 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaLIC0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 21:26:10 -0500
+Date: Tue, 9 Dec 2014 10:26:01 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>, weiyang@linux.vnet.ibm.com,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+Message-ID: <20141209022601.GA16207@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+ <1418079372.13358.9.camel@kernel.crashing.org>
+ <CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
+ <20141209001119.GA24661@shangw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141209015651.GI22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20141209001119.GA24661@shangw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120902-0025-0000-0000-000000AE781E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 01:56:51AM +0000, Al Viro wrote:
-> On Mon, Dec 08, 2014 at 07:28:17PM +0000, Al Viro wrote:
-> > On Mon, Dec 08, 2014 at 10:57:31AM -0800, Linus Torvalds wrote:
-> > > So the whole "get_page()" thing is broken. Iterating over pages in a
-> > > KVEC is simply wrong, wrong, wrong. It needs to fail.
-> > 
-> > Well, _that_ is easy to do, of course...  E.g. by replacing that thing in
-> > iov_iter_get_pages()/iov_iter_get_pages_alloc() with ({ return -EFAULT; })
-> > will do it.
-> 
-> OK, folded and pushed (i.e. in vfs.git#iov_iter and vfs.git#for-next).
-> Matches earlier behaviour; oops reproducer is easy -
-> 
-> dd if=/dev/zero of=foo.ko bs=4096 count=1
-> cat >a.c <<'EOF'
-> #define _GNU_SOURCE
-> #include <unistd.h>
-> #include <fcntl.h>
-> #include <sys/stat.h>
-> #include <sys/syscall.h>
-> main()
-> {
->         int fd = open("foo.ko", 00040000);
->         syscall(__NR_finit_module, fd, "", 0);
-> }
-> EOF
-> gcc a.c
-> strace ./a.out
-> 
-> Correct behaviour (both the mainline and this series with fixes folded):
-> open("foo.ko", O_RDONLY|O_DIRECT)       = 3
-> finit_module(3, "", 0)                  = -1 EFAULT (Bad address)
-> Incorrect one:
-> open("foo.ko", O_RDONLY|O_DIRECT)       = 3
-> finit_module(3, "", 0 <unfinished ...>
-> +++ killed by SIGKILL +++
-> Killed
-> 
-> with that oops reproduced.  Not sure if it's a proper LTP or xfstests fodder,
-> but anyway, here it is.
-> 
-> Incremental from previous for-next is
+On Tue, Dec 09, 2014 at 11:11:19AM +1100, Gavin Shan wrote:
+>On Mon, Dec 08, 2014 at 03:59:54PM -0800, Yinghai Lu wrote:
+>>On Mon, Dec 8, 2014 at 2:56 PM, Benjamin Herrenschmidt
+>><benh@kernel.crashing.org> wrote:
+>>> On Mon, 2014-12-08 at 13:52 -0800, Yinghai Lu wrote:
+>>>> 2. or scan the children resource other than ROM to clear bridge MEM_64
+>>>>    for mmio pref.
+>>>>
+>>>> The patch is using second way so will keep child mmio pref into bridge
+>>>> mmio pref range.
+>>>
+>>> That means that having a single ROM BAR that is 32-bit and prefetchable
+>>> will downgrade the entire window to 32-bit ? That's not going to work
+>>> either.
+>>
+>>the ROM BAR get skipped during the checking.
+>>
+>>+                       if (i != PCI_ROM_RESOURCE)
+>>+                               mem64_mask &= r->flags & IORESOURCE_MEM_64;
+>>+               }
+>>
+>>>
+>>> I have GPUs with 16G BARs for example... suddenly they don't fit
+>>> anaymore because we downgraded the window to 32 bit because somewhere
+>>> there's a 32-bit pref resource ?
+>>>
+>>> That will break more than it fixes...
+>>
+>>Please check if this patch break your platform. I tried on my setup on
+>>x86. and it is still
+>>working on 64 bit resource allocation.
+>>
+>
+>I'm going to give it a spin and Richard, could you please apply Yinghai's
+>patch to see if your SRIOV code can work properly?
+>
 
-Works for me.
+Yinghai & Gavin,
+
+I did a quick test on my machine. This patch doesn't affect the MMIO
+allocation on out platform, so SRIOV works fine.
+
+I will spend more time to read the patch to get more understanding about the
+problem.
+
+>Thanks,
+>Gavin
 
 -- 
- Kirill A. Shutemov
+Richard Yang
+Help you, Help me
+
