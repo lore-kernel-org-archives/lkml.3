@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbaLIX1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:27:24 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:34175 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784AbaLIX1W (ORCPT
+	id S1754689AbaLIXfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:35:51 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44979 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147AbaLIXft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:27:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <54875D99.6070301@linaro.org>
-References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com>
- <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com>
- <5486BBB1.3040405@linaro.org> <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
- <54875D99.6070301@linaro.org>
+	Tue, 9 Dec 2014 18:35:49 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 9 Dec 2014 15:27:00 -0800
-X-Google-Sender-Auth: UbsU3D83yuLv8vbBt1BeOH27czw
-Message-ID: <CAB=NE6UCQXzUVU2tpZxiYXEp+77rtsfhFpLFKvb8371iK8FJBA@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH v3 2/2] x86, arm64, platform, xen, kconfig:
- add xen defconfig helper
-To: Julien Grall <julien.grall@linaro.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, josh@joshtriplett.org, sam@ravnborg.org,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mtosatti@redhat.com, Pekka Enberg <penberg@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        David Rientjes <rientjes@google.com>, xen-devel@lists.xenproject.org,
-        Borislav Petkov <bp@suse.de>, David Vrabel <david.vrabel@citrix.com>,
-        Benjamin Poirier <bpoirier@suse.de>
-Content-Type: text/plain; charset=UTF-8
+To: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org
+Cc: bpoirier@suse.de, x86@kernel.org, kvm@vger.kernel.org,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2 1/2] x86, platform, xen, kconfig: clarify kvmconfig is for kvm
+Date: Tue,  9 Dec 2014 15:35:37 -0800
+Message-Id: <1418168138-6425-2-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 12:37 PM, Julien Grall <julien.grall@linaro.org> wrote:
-> On 09/12/14 20:22, Luis R. Rodriguez wrote:
->> On Tue, Dec 9, 2014 at 1:06 AM, Julien Grall <julien.grall@linaro.org> wrote:
->>> Hello Luis,
->>>
->>> On 08/12/2014 23:05, Luis R. Rodriguez wrote:
->>>>
->>>> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
->>>> new file mode 100644
->>>> index 0000000..0d0eb6d
->>>> --- /dev/null
->>>> +++ b/kernel/configs/xen.config
->>>> +CONFIG_XEN_MCE_LOG=y
->>>
->>>
->>> MCE is x86 specific.
->>
->> That's what I thought too but its available for arm64, so should we
->> fix that Kconfig to depend on x86?
->
-> Are you sure? On the Linus's repo I have:
->
-> config XEN_MCE_LOG
->         bool "Xen platform mcelog"
->         depends on XEN_DOM0 && X86_64 && X86_MCE
->
-> Anyway, the MCE interface in the hypervisor is implemented in arch/x86
-> not in common code.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-OK I'll move to x86.
+We'll be adding options for xen as well.
 
->>>> +CONFIG_XEN_HAVE_PVMMU=y
->>>
->>>
->>> We don't have PVMMU support on ARM. Shouldn't you move this config in
->>> architecture specific code?
->>
->> If you are sure then yes.
->
-> I'm 100% sure. MMU is handled by the hardware on ARM.
->
-> Thinking a bit more about this option. CONFIG_XEN_HAVE_PVMMU can't be
-> selected by the user. It's automatically added per platform (for
-> instance see arch/x86/xen/Kconfig).
->
-> So maybe it should not even appear in the one of the fragment configs?
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: penberg@kernel.org
+Cc: levinsasha928@gmail.com
+Cc: mtosatti@redhat.com
+Cc: fengguang.wu@intel.com
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ scripts/kconfig/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And I'll remove this one.
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 9645c07..ff612b0 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -141,7 +141,7 @@ help:
+ 	@echo  '  randconfig	  - New config with random answer to all options'
+ 	@echo  '  listnewconfig   - List new options'
+ 	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
+-	@echo  '  kvmconfig	  - Enable additional options for guest kernel support'
++	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
+ 	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
+ 
+ # lxdialog stuff
+-- 
+2.1.1
 
- Luis
