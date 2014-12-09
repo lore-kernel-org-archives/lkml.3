@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaLIUNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:13:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40643 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116AbaLIUNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:13:31 -0500
-Date: Tue, 9 Dec 2014 21:13:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>, sre@debian.org,
-        Sebastian Reichel <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, tony@atomide.com,
-        khilman@kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<ivo.g.dimitrov.75@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: __hci_cmd_sync() not suitable for nokia h4p
-Message-ID: <20141209201328.GA18003@amd>
-References: <20141209190210.GA15641@amd>
- <304050AD-DB11-4A2B-A1F7-8B1BBB5F04F0@holtmann.org>
+	id S1752673AbaLIUOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:14:51 -0500
+Received: from mail-bl2on0067.outbound.protection.outlook.com ([65.55.169.67]:3697
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752323AbaLIUOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 15:14:49 -0500
+From: <atull@opensource.altera.com>
+To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v4 0/6] FPGA Manager Framework
+Date: Tue, 9 Dec 2014 14:14:44 -0600
+Message-ID: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <304050AD-DB11-4A2B-A1F7-8B1BBB5F04F0@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR05CA0079.namprd05.prod.outlook.com (10.141.20.49) To
+ DM2PR0301MB1245.namprd03.prod.outlook.com (25.160.219.22)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1245;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB1245;
+X-Forefront-PRVS: 0420213CCD
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(50466002)(86152002)(31966008)(19580395003)(101416001)(64706001)(47776003)(20776003)(92566001)(2201001)(50226001)(86362001)(4396001)(21056001)(66066001)(50986999)(69596002)(19580405001)(42186005)(68736005)(48376002)(53416004)(87976001)(97736003)(62966003)(81156004)(106356001)(89996001)(122386002)(40100003)(107046002)(229853001)(120916001)(46102003)(99396003)(105586002)(33646002)(77156002)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1245;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1245;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Alan Tull <atull@opensource.altera.com>
 
-> > Major problem with Nokia H4P driver was, that it uses custom functions
-> > instead of __hci_cmd_sync().
+Improvements in this v3 and v4:
 
->  the __hci_cmd_sync is for sending HCI commands and not low-level
-> protocol transports like H:4 or similar. So you want to separate the
-> actual transport of HCI from the firmware loading.
+I've moved the driver to drivers/staging.
 
-The TODO file says:
+I'm including the altera low level driver, defconfig changes, and
+DTS changes - everything to make it work on socfpga platform.
 
-# > +
-# > +     skb_queue_tail(&info->txq, fw_skb);
-# > +     spin_lock_irqsave(&info->lock, flags);
-# > +     hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-# > +                     UART_IER_THRI);
-# > +     spin_unlock_irqrestore(&info->lock, flags);
-# > +}
-# 
-# and as I explained before, this crazy can not continue. Bluetooth drivers can provide a
-# +hdev->setup callback for loading firmware and doing other setup details. You can just
-# +bring up the HCI transport. We are providing __hci_cmd_sync for easy loading of the
-# +firmware. Especially if the firmware just consists of HCI commands. Which is clearly the
-# +case with the Nokia firmware files.
+Fixed things in the framework that were left over from my original
+version (that Michal started with) that was a character driver.
+In particular, make the device be present in the fpga_manager struct,
+not as a pointer, so container_of will work.
 
-...so I take it you (and thus TODO) were wrong and __hci_cmd_sync is
-not suitable after all?
+Since not enough of the Device Tree Overlays code is in the main
+kernel yet, I'm leaving out the (small) changes to make this accept
+notifications when a device tree overlay is accepted.  That can
+wait a little until enough of is in that it can build and work.
+That is a little disappointing to leave it out for now because
+it was very cool and, I think, more Linux-like than this is by
+itself.
 
-But I don't understand what you want me to do at this point. I guess
-skb_queue_tail+hci_h4p_outb should be moved to a helper function
-(that's easy), and I already moved initialization to hci_setup().
+Alan Tull (6):
+  doc: add bindings document for altera fpga manager
+  arm: dts: socfpga: add altera fpga manager
+  ARM: socfpga: defconfig: enable fpga manager
+  fpga manager: add sysfs interface document
+  staging: fpga manager: framework core
+  staging: fpga manager: add driver for altera socfpga manager
 
-nokia_core.c uses test_bit(HCI_RUNNING, &info->hdev->flags) to tell
-between initialization and data traffic, but I guess that's fine?
+ Documentation/ABI/testing/sysfs-class-fpga-manager |   38 +
+ .../devicetree/bindings/fpga/altera-fpga-mgr.txt   |   17 +
+ arch/arm/boot/dts/socfpga.dtsi                     |   10 +
+ arch/arm/configs/socfpga_defconfig                 |    4 +
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ drivers/staging/fpga/Kconfig                       |   27 +
+ drivers/staging/fpga/Makefile                      |   11 +
+ drivers/staging/fpga/altera.c                      |  789 ++++++++++++++++++++
+ drivers/staging/fpga/fpga-mgr.c                    |  485 ++++++++++++
+ include/linux/fpga-mgr.h                           |  104 +++
+ 11 files changed, 1488 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-manager
+ create mode 100644 Documentation/devicetree/bindings/fpga/altera-fpga-mgr.txt
+ create mode 100644 drivers/staging/fpga/Kconfig
+ create mode 100644 drivers/staging/fpga/Makefile
+ create mode 100644 drivers/staging/fpga/altera.c
+ create mode 100644 drivers/staging/fpga/fpga-mgr.c
+ create mode 100644 include/linux/fpga-mgr.h
 
-Best regards,
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.9.5
+
