@@ -1,149 +1,549 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaLIWy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:54:56 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37463 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958AbaLIWuk (ORCPT
+	id S1754774AbaLIWzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:55:00 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:37882 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbaLIWy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:40 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/25] iov_iter.c: convert copy_to_iter() to iterate_and_advance
-Date: Tue,  9 Dec 2014 22:50:22 +0000
-Message-Id: <1418165438-2205-9-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
-References: <20141209224928.GL22149@ZenIV.linux.org.uk>
+	Tue, 9 Dec 2014 17:54:56 -0500
+Message-ID: <1418165693.6540.5.camel@u64>
+Subject: [PATCH  v3] Perf Bench: Locking Microbenchmark
+From: Tuan Bui <tuan.d.bui@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: dbueso@suse.de, a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
+        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
+        mingo@kernel.org, Tuan Bui <tuan.d.bui@hp.com>
+Date: Tue, 09 Dec 2014 14:54:53 -0800
+Organization: HP
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] Perf Bench: Locking Microbenchmark
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
+a micro benchmark that stresses locking contention in the kernel with
+creat(2) system call by spawning multiple processes to spam this system
+call.  This workload generate similar results and contentions in AIM7
+fserver workload but can generate outputs within seconds.
+
+With the creat system call the contention vary on what locks are used
+in the particular file system. I have ran this benchmark only on ext4
+and xfs file system.
+
+Running the creat workload on ext4 show contention in the mutex lock
+that is used by ext4_orphan_add() and ext4_orphan_del() to add or delete
+an inode from the list of inodes. At the same time running the creat
+workload on xfs show contention in the spinlock that is used by
+xsf_log_commit_cil() to commit a transaction to the Committed Item List.
+
+Here is a comparison of this benchmark with AIM7 running fserver workload
+at 500-1000 users along with a perf trace running on ext4 file system.
+
+Test machine is a 8-sockets 80 cores Westmere system HT-off on v3.17-rc6.
+
+	AIM7		AIM7		perf-bench	perf-bench
+Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
+500	119668.25	239.34		104249		208
+600	126074.90	210.12		106136		176
+700	128662.42	183.80		106175		151
+800	119822.05	149.78		106290		132
+900	106150.25	117.94		105230		116
+1000	104681.29	104.68		106489		106
+
+Perf report for AIM7 fserver:
+14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
+4.98%	reaim  		reaim			[.] add_long
+4.98%	reaim  		reaim			[.] add_int
+4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
+...
+
+Perf report of perf bench locking vfs
+22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
+5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
+5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
+5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
+...
+
+Example:
+
+[root@u64 ~]# perf bench
+Usage:
+        perf bench [<common options>] <collection> <benchmark> [<options>]
+
+        # List of all available benchmark collections:
+
+         sched: Scheduler and IPC benchmarks
+           mem: Memory access benchmarks
+          numa: NUMA scheduling and MM benchmarks
+         futex: Futex stressing benchmarks
+       locking: Kernel locking benchmarks
+           all: All benchmarks
+
+[root@u64 ~]# perf bench locking
+
+        # List of available benchmarks for collection 'locking':
+
+           vfs: Benchmark vfs using creat(2)
+           all: Run all benchmarks in this suite
+
+[root@u64 ~]# perf bench locking vfs
+# Running 'locking/vfs' benchmark:
+
+   100 processes: throughput = 342506 average opts/sec all processes
+   100 processes: throughput = 3425 average opts/sec per process
+
+   200 processes: throughput = 341309 average opts/sec all processes
+   200 processes: throughput = 1706 average opts/sec per process
+   ...
+
+Changes since v2:
+- Added code to clean up tmp files when user issue sigint.
+- Added a tmp directory that hold all tmp files generated by benchmark.
+- Edited changelog to include example output per Arnaldo's request.
+
+Changes since v1:
+- Added -j options to specified jobs per processes.
+- Change name of microbenchmark from creat to vfs.
+- Change all instances of threads to proccess.
+
+Signed-off-by: Tuan Bui <tuan.d.bui@hp.com>
 ---
- mm/iov_iter.c | 91 ++++++-----------------------------------------------------
- 1 file changed, 9 insertions(+), 82 deletions(-)
+ tools/perf/Documentation/perf-bench.txt |   8 +
+ tools/perf/Makefile.perf                |   1 +
+ tools/perf/bench/bench.h                |   1 +
+ tools/perf/bench/locking.c              | 336 ++++++++++++++++++++++++++++++++
+ tools/perf/builtin-bench.c              |   8 +
+ 5 files changed, 354 insertions(+)
+ create mode 100644 tools/perf/bench/locking.c
 
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 791429d..66665449 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -97,51 +97,6 @@
- 	i->iov_offset = skip;					\
- }
+diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+index f6480cb..5c0c8e7 100644
+--- a/tools/perf/Documentation/perf-bench.txt
++++ b/tools/perf/Documentation/perf-bench.txt
+@@ -58,6 +58,9 @@ SUBSYSTEM
+ 'futex'::
+ 	Futex stressing benchmarks.
  
--static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
--{
--	size_t skip, copy, left, wanted;
--	const struct iovec *iov;
--	char __user *buf;
--
--	if (unlikely(bytes > i->count))
--		bytes = i->count;
--
--	if (unlikely(!bytes))
--		return 0;
--
--	wanted = bytes;
--	iov = i->iov;
--	skip = i->iov_offset;
--	buf = iov->iov_base + skip;
--	copy = min(bytes, iov->iov_len - skip);
--
--	left = __copy_to_user(buf, from, copy);
--	copy -= left;
--	skip += copy;
--	from += copy;
--	bytes -= copy;
--	while (unlikely(!left && bytes)) {
--		iov++;
--		buf = iov->iov_base;
--		copy = min(bytes, iov->iov_len);
--		left = __copy_to_user(buf, from, copy);
--		copy -= left;
--		skip = copy;
--		from += copy;
--		bytes -= copy;
--	}
--
--	if (skip == iov->iov_len) {
--		iov++;
--		skip = 0;
--	}
--	i->count -= wanted - bytes;
--	i->nr_segs -= iov - i->iov;
--	i->iov = iov;
--	i->iov_offset = skip;
--	return wanted - bytes;
--}
--
- static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
-@@ -360,51 +315,23 @@ static void memzero_page(struct page *page, size_t offset, size_t len)
- 	kunmap_atomic(addr);
- }
++'locking'::
++        Locking stressing benchmarks that produce similar result as AIM7 fserver.
++
+ 'all'::
+ 	All benchmark subsystems.
  
--static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
-+size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
- {
--	size_t skip, copy, wanted;
--	const struct bio_vec *bvec;
--
-+	char *from = addr;
- 	if (unlikely(bytes > i->count))
- 		bytes = i->count;
+@@ -213,6 +216,11 @@ Suite for evaluating wake calls.
+ *requeue*::
+ Suite for evaluating requeue calls.
  
- 	if (unlikely(!bytes))
- 		return 0;
++SUITES FOR 'locking'
++~~~~~~~~~~~~~~~~~~
++*vfs*::
++Suite for evaluating vfs locking contention through creat(2).
++
+ SEE ALSO
+ --------
+ linkperf:perf[1]
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 262916f..c8bee04 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -443,6 +443,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
++BUILTIN_OBJS += $(OUTPUT)bench/locking.o
  
--	wanted = bytes;
--	bvec = i->bvec;
--	skip = i->iov_offset;
--	copy = min_t(size_t, bytes, bvec->bv_len - skip);
--
--	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
--	skip += copy;
--	from += copy;
--	bytes -= copy;
--	while (bytes) {
--		bvec++;
--		copy = min(bytes, (size_t)bvec->bv_len);
--		memcpy_to_page(bvec->bv_page, bvec->bv_offset, from, copy);
--		skip = copy;
--		from += copy;
--		bytes -= copy;
--	}
--	if (skip == bvec->bv_len) {
--		bvec++;
--		skip = 0;
--	}
--	i->count -= wanted - bytes;
--	i->nr_segs -= bvec - i->bvec;
--	i->bvec = bvec;
--	i->iov_offset = skip;
--	return wanted - bytes;
--}
-+	iterate_and_advance(i, bytes, v,
-+		__copy_to_user(v.iov_base, (from += v.iov_len) - v.iov_len,
-+			       v.iov_len),
-+		memcpy_to_page(v.bv_page, v.bv_offset,
-+			       (from += v.bv_len) - v.bv_len, v.bv_len)
-+	)
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index 3c4dd44..19468c5 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -34,6 +34,7 @@ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
++extern int bench_locking_vfs(int argc, const char **argv, const char *prefix);
  
--size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
--{
--	if (i->type & ITER_BVEC)
--		return copy_to_iter_bvec(addr, bytes, i);
--	else
--		return copy_to_iter_iovec(addr, bytes, i);
-+	return bytes;
- }
- EXPORT_SYMBOL(copy_to_iter);
+ #define BENCH_FORMAT_DEFAULT_STR	"default"
+ #define BENCH_FORMAT_DEFAULT		0
+diff --git a/tools/perf/bench/locking.c b/tools/perf/bench/locking.c
+new file mode 100644
+index 0000000..70222bb
+--- /dev/null
++++ b/tools/perf/bench/locking.c
+@@ -0,0 +1,336 @@
++/*
++ * locking.c
++ *
++ * Simple micro benchmark that stress kernel locking contention with
++ * creat(2) system call by spawning multiple processes to call
++ * this system call.
++ *
++ * Results output are average operations/sec for all processes and
++ * average operations/sec per process.
++ *
++ * Tuan Bui <tuan.d.bui@hp.com>
++ */
++
++#include "../perf.h"
++#include "../util/util.h"
++#include "../util/stat.h"
++#include "../util/parse-options.h"
++#include "../util/header.h"
++#include "bench.h"
++
++#include <err.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <unistd.h>
++#include <sys/resource.h>
++#include <linux/futex.h>
++#include <sys/mman.h>
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <signal.h>
++#include <dirent.h>
++
++#define NOTSET -1
++struct worker {
++	pid_t pid;
++	unsigned int order_id;
++	char str[50];
++};
++
++struct timeval start, end, total;
++static unsigned int start_nr = 100;
++static unsigned int end_nr = 1100;
++static unsigned int increment_by = 100;
++static int bench_dur = NOTSET;
++static int num_jobs = NOTSET;
++static bool run_jobs;
++static int n_pro;
++
++/* Shared variables between fork processes*/
++unsigned int *finished, *setup;
++unsigned long long *shared_workers;
++char *tmp_dir;
++pid_t *p_id;
++/* all processes will block on the same futex */
++u_int32_t *futex;
++
++static const struct option options[] = {
++	OPT_UINTEGER('s', "start", &start_nr, "Number of processes to start"),
++	OPT_UINTEGER('e', "end", &end_nr, "Number of processes to end"),
++	OPT_UINTEGER('i', "increment", &increment_by, "Numbers of processes to increment)"),
++	OPT_INTEGER('r', "runtime", &bench_dur, "Specify benchmark runtime in seconds"),
++	OPT_INTEGER('j', "jobs", &num_jobs, "Specify number of jobs per process"),
++	OPT_END()
++};
++
++static const char * const bench_locking_vfs_usage[] = {
++	"perf bench locking vfs <options>",
++	NULL
++};
++
++/* Clean up if SIGINT is raised */
++static void sigint_handler(int sig __maybe_unused,
++			siginfo_t *info __maybe_unused,
++			void *uc __maybe_unused)
++{
++	DIR *dir;
++	struct dirent *file;
++	char fp[50];
++	int i;
++
++	/* If child process exit*/
++	if (getpid() != *p_id)
++		exit(0);
++	/* if parent process wait for all child processes to exit and then clean up */
++	else {
++		/* Wait for all child processes exit before cleaning up the dir */
++		for (i = 0; i < n_pro; i++)
++			wait(NULL);
++
++		dir = opendir(tmp_dir);
++		if (dir == NULL)
++			err(EXIT_FAILURE, "opendir");
++		while ((file = readdir(dir))) {
++			sprintf(fp, "%s/%s", tmp_dir, file->d_name);
++			unlink(fp);
++		}
++		if ((rmdir(tmp_dir)) < 0)
++			err(EXIT_FAILURE, "rmdir");
++		exit(0);
++	}
++}
++
++/* Running bench vfs workload */
++static void *run_bench_vfs(struct worker *workers)
++{
++	int fd;
++	unsigned long long nr_ops = 0;
++	int jobs = num_jobs;
++
++	sprintf(workers->str, "%s/%d-XXXXXX", tmp_dir, getpid());
++	if ((mkstemp(workers->str)) < 0)
++		err(EXIT_FAILURE, "mkstemp");
++
++	/* Signal to parent process and wait till all processes/ are ready run */
++	setup[workers->order_id] = 1;
++	syscall(SYS_futex, futex, FUTEX_WAIT, 0, NULL, NULL, 0);
++
++	/* Start of the benchmark keep looping till parent process signal completion */
++	while ((run_jobs ? (jobs > 0) : (!*finished))) {
++		fd = creat(workers->str, S_IRWXU);
++		if (fd < 0)
++			err(EXIT_FAILURE, "creat");
++		nr_ops++;
++		if (run_jobs)
++			jobs--;
++		close(fd);
++	}
++
++	if ((unlink(workers->str)) < 0)
++		err(EXIT_FAILURE, "unlink");
++	shared_workers[workers->order_id] = nr_ops;
++	setup[workers->order_id] = 0;
++	exit(0);
++}
++
++/* Setting shared variable finished and shared_workers */
++static void setup_shared(void)
++{
++	unsigned int *finished_tmp, *setup_tmp;
++	unsigned long long *shared_workers_tmp;
++	u_int32_t *futex_tmp;
++
++
++	/* finished shared var is use to signal start and end of benchmark */
++	finished_tmp = (void *)mmap(0, sizeof(unsigned int), PROT_READ|PROT_WRITE,
++			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (finished_tmp == (void *) -1)
++		err(EXIT_FAILURE, "mmap finished");
++	finished = finished_tmp;
++
++	/* shared_workers is an array of ops perform by each process */
++	shared_workers_tmp = (void *)mmap(0, sizeof(unsigned long long)*end_nr,
++			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (shared_workers_tmp == (void *) -1)
++		err(EXIT_FAILURE, "mmap shared_workers");
++	shared_workers = shared_workers_tmp;
++
++	/* setup is use for each processes to signal that it is done
++	 * setting up for the benchmark and is ready to run */
++	setup_tmp = (void *)mmap(0, sizeof(unsigned int)*end_nr,
++			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (setup_tmp == (void *) -1)
++		err(EXIT_FAILURE, "mmap setup");
++	setup = setup_tmp;
++
++	/* Processes will sleep on this futex until all other processes
++	 * are done setting up and are ready to run */
++	futex_tmp = (void *)mmap(0, sizeof(u_int32_t), PROT_READ|PROT_WRITE,
++			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (futex_tmp == (void *) -1)
++		err(EXIT_FAILURE, "mmap futex");
++	futex = futex_tmp;
++	(*futex) = 0;
++
++	/* Setting a tmp dir for all processes to write to */
++	tmp_dir = (void *)mmap(0, sizeof(char) * 255, PROT_READ|PROT_WRITE,
++			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (tmp_dir == (void *) -1)
++		err(EXIT_FAILURE, "mmap finished");
++
++	/* Setting up parent id to handle sigint */
++	p_id = (void *)mmap(0, sizeof(pid_t), PROT_READ|PROT_WRITE,
++			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (p_id == (void *) -1)
++		err(EXIT_FAILURE, "mmap p_id");
++	*p_id = getpid();
++
++	/* Creating tmp dir for all process to write to */
++	sprintf(tmp_dir, "%d-XXXXXX", *p_id);
++	if ((mkdtemp(tmp_dir)) == NULL)
++		err(EXIT_FAILURE, "mkdtemp");
++}
++
++/* Freeing shared variables */
++static void free_resources(void)
++{
++	if ((rmdir(tmp_dir)) == -1)
++		err(EXIT_FAILURE, "rmdir");
++
++	if ((munmap(finished, sizeof(unsigned int)) == -1))
++		err(EXIT_FAILURE, "munmap finished");
++
++	if ((munmap(shared_workers, sizeof(unsigned long long) * end_nr) == -1))
++		err(EXIT_FAILURE, "munmap shared_workers");
++
++	if ((munmap(setup, sizeof(unsigned int) * end_nr) == -1))
++		err(EXIT_FAILURE, "munmap setup");
++
++	if ((munmap(futex, sizeof(u_int32_t))) == -1)
++		err(EXIT_FAILURE, "munmap futex");
++
++	if ((munmap(tmp_dir, sizeof(char) * 50) == -1))
++		err(EXIT_FAILURE, "munmap tmp_dir");
++
++	if ((munmap(p_id, sizeof(pid_t)) == -1))
++		err(EXIT_FAILURE, "munmap p_id");
++}
++
++/* Start to spawn workers and wait till all workers have been
++ * created before starting workload */
++static void spawn_workers(void *(*bench_ptr) (struct worker *))
++{
++	pid_t child;
++	unsigned int i, j, k;
++	struct worker workers;
++	unsigned long long total_ops;
++	unsigned int total_workers;
++
++	setup_shared();
++
++	/* This loop through all the run each is increment by increment_by */
++	for (i = start_nr; i <= end_nr; i += increment_by) {
++
++		for (j = 0; j < i; j++) {
++			if (!fork())
++				break;
++		}
++
++		child = getpid();
++		/* Initialize child worker struct and run benchmark */
++		if (child != *p_id) {
++			workers.order_id = j;
++			workers.pid = child;
++			bench_ptr(&workers);
++		}
++		/* Parent to sleep during the duration of benchmark */
++		else{
++			n_pro = i;
++			/* Make sure all child process are created and setup
++			 * before starting benchmark for bench_dur durations */
++			do {
++				total_workers = 0;
++				for (k = 0; k < i; k++)
++					total_workers = total_workers + setup[k];
++			} while (total_workers != i);
++
++			/* Wake up all sleeping process to run the benchmark */
++			(*futex) = 1;
++			syscall(SYS_futex, futex, FUTEX_WAKE, i, NULL, NULL, 0);
++
++			/* If run time parameters is set */
++			if (!run_jobs) {
++				/* All proccesses are ready signal them to run */
++				gettimeofday(&start, NULL);
++				sleep(bench_dur);
++				(*finished) = 1;
++				gettimeofday(&end, NULL);
++				timersub(&end, &start, &total);
++
++				for (k = 0; k < i; k++)
++					wait(NULL);
++			}
++			/* If jobs per proccesses is set */
++			else {
++				/* All proccesses are ready signal them to run */
++				gettimeofday(&start, NULL);
++				/* Wait for all process to terminate before getting outputs */
++				for (k = 0; k < i; k++)
++					wait(NULL);
++				gettimeofday(&end, NULL);
++				timersub(&end, &start, &total);
++			}
++
++			/* Sum up all the ops by each process and report */
++			total_ops = 0;
++			for (k = 0; k < i; k++)
++				total_ops = total_ops + shared_workers[k];
++
++			printf("\n%6d processes: throughput = %llu average opts/sec all processes\n",
++				i, (total_ops / (!total.tv_sec ? 1 : total.tv_sec)));
++
++			printf("%6d processes: throughput = %llu average opts/sec per process\n",
++				i, ((total_ops/(!total.tv_sec ? 1 : total.tv_sec))/(!i ? 1 : i)));
++
++			/* Reset back to 0 for next run */
++			(*finished) = 0;
++			(*futex) = 0;
++		}
++	}
++	free_resources();
++}
++
++int bench_locking_vfs(int argc, const char **argv,
++			const char *prefix __maybe_unused)
++{
++	struct sigaction sa;
++
++	sigfillset(&sa.sa_mask);
++	sa.sa_sigaction = sigint_handler;
++	sa.sa_flags = SA_SIGINFO;
++	sigaction(SIGINT, &sa, NULL);
++
++	argc = parse_options(argc, argv, options, bench_locking_vfs_usage, 0);
++
++	/* If errors parsing options */
++	if (argc || ((bench_dur != NOTSET) && (num_jobs != NOTSET))) {
++		usage_with_options(bench_locking_vfs_usage, options);
++		exit(EXIT_FAILURE);
++	}
++	/* If both run time and job per process is set */
++	if (argc || ((bench_dur != NOTSET) && (num_jobs != NOTSET))) {
++		fprintf(stderr, "\n runtime and jobs options can not both be specified\n");
++		usage_with_options(bench_locking_vfs_usage, options);
++		exit(EXIT_FAILURE);
++	}
++
++	/* If both run time and jobs options is not set default to run time only*/
++	if ((bench_dur == NOTSET) && (num_jobs == NOTSET))
++		bench_dur = 5;
++
++	if (num_jobs != NOTSET)
++		run_jobs = true;
++
++	spawn_workers(run_bench_vfs);
++	return 0;
++}
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index b9a56fa..fdfb089 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -63,6 +63,13 @@ static struct bench futex_benchmarks[] = {
+ 	{ NULL,		NULL,						NULL			}
+ };
  
++static struct bench locking_benchmarks[] = {
++	{ "vfs",	"Benchmark vfs using creat(2)",			bench_locking_vfs	},
++	{ "all",        "Run all benchmarks in this suite",		NULL			},
++	{ NULL,		NULL,						NULL			}
++};
++
++
+ struct collection {
+ 	const char	*name;
+ 	const char	*summary;
+@@ -76,6 +83,7 @@ static struct collection collections[] = {
+ 	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
+ #endif
+ 	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
++	{"locking",     "Kernel locking benchmarks",                    locking_benchmarks      },
+ 	{ "all",	"All benchmarks",				NULL			},
+ 	{ NULL,		NULL,						NULL			}
+ };
 -- 
-2.1.3
+1.9.1
+
+
 
