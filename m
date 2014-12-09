@@ -1,74 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaLIW5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:57:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43373 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963AbaLIWuk (ORCPT
+	id S1754906AbaLIW6s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:58:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37452 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655AbaLIWuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:40 -0500
-Date: Tue, 9 Dec 2014 14:50:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Ingo Molnar <mingo@kernel.org>, <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-tip-commits@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH V2] x86/mm: Fix zone ranges boot printout
-Message-Id: <20141209145038.6253a2b99379bfb1255fa95e@linux-foundation.org>
-In-Reply-To: <54866C18.1050203@huawei.com>
-References: <54866C18.1050203@huawei.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Dec 2014 17:50:39 -0500
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 03/25] iov_iter.c: convert iov_iter_npages() to iterate_all_kinds
+Date: Tue,  9 Dec 2014 22:50:16 +0000
+Message-Id: <1418165438-2205-3-git-send-email-viro@ZenIV.linux.org.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
+References: <20141209224928.GL22149@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014 11:27:20 +0800 Xishi Qiu <qiuxishi@huawei.com> wrote:
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-> Changelog:
-> V2:
-> 	-fix building warnings of min(...).
->
-> ...
->
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -674,10 +674,12 @@ void __init zone_sizes_init(void)
->  	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
->  
->  #ifdef CONFIG_ZONE_DMA
-> -	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-> +	max_zone_pfns[ZONE_DMA]		= min_t(unsigned long,
-> +						max_low_pfn, MAX_DMA_PFN);
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ mm/iov_iter.c | 73 ++++++++++++++++-------------------------------------------
+ 1 file changed, 19 insertions(+), 54 deletions(-)
 
-MAX_DMA_PFN has type int.
-
->  #endif
->  #ifdef CONFIG_ZONE_DMA32
-> -	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-> +	max_zone_pfns[ZONE_DMA32]	= min_t(unsigned long,
-> +						max_low_pfn, MAX_DMA32_PFN);
-
-MAX_DMA32_PFN has type UL (I think?) so there's no need for min_t here.
-
->  #endif
->  	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
->  #ifdef CONFIG_HIGHMEM
-
-
-Let's try to get the types correct, rather than hacking around fixing
-up fallout from earlier incorrect type choices?
-
-What is the type of a pfn?  Unsigned long, generally, when we bother
-thinking about it.
-
-So how about we make MAX_DMA_PFN have type UL?  I assume that fixes the
-warning?
-
-If we do this, we should also be able to undo the min_t hackery in
-arch/x86/kernel/e820.c:memblock_find_dma_reserve().
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index e91bf0a..bc666e7 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -493,32 +493,6 @@ static ssize_t get_pages_alloc_iovec(struct iov_iter *i,
+ 	return (res == n ? len : res * PAGE_SIZE) - *start;
+ }
+ 
+-static int iov_iter_npages_iovec(const struct iov_iter *i, int maxpages)
+-{
+-	size_t offset = i->iov_offset;
+-	size_t size = i->count;
+-	const struct iovec *iov = i->iov;
+-	int npages = 0;
+-	int n;
+-
+-	for (n = 0; size && n < i->nr_segs; n++, iov++) {
+-		unsigned long addr = (unsigned long)iov->iov_base + offset;
+-		size_t len = iov->iov_len - offset;
+-		offset = 0;
+-		if (unlikely(!len))	/* empty segment */
+-			continue;
+-		if (len > size)
+-			len = size;
+-		npages += (addr + len + PAGE_SIZE - 1) / PAGE_SIZE
+-			  - addr / PAGE_SIZE;
+-		if (npages >= maxpages)	/* don't bother going further */
+-			return maxpages;
+-		size -= len;
+-		offset = 0;
+-	}
+-	return min(npages, maxpages);
+-}
+-
+ static void memcpy_from_page(char *to, struct page *page, size_t offset, size_t len)
+ {
+ 	char *from = kmap_atomic(page);
+@@ -715,30 +689,6 @@ static ssize_t get_pages_alloc_bvec(struct iov_iter *i,
+ 	return len;
+ }
+ 
+-static int iov_iter_npages_bvec(const struct iov_iter *i, int maxpages)
+-{
+-	size_t offset = i->iov_offset;
+-	size_t size = i->count;
+-	const struct bio_vec *bvec = i->bvec;
+-	int npages = 0;
+-	int n;
+-
+-	for (n = 0; size && n < i->nr_segs; n++, bvec++) {
+-		size_t len = bvec->bv_len - offset;
+-		offset = 0;
+-		if (unlikely(!len))	/* empty segment */
+-			continue;
+-		if (len > size)
+-			len = size;
+-		npages++;
+-		if (npages >= maxpages)	/* don't bother going further */
+-			return maxpages;
+-		size -= len;
+-		offset = 0;
+-	}
+-	return min(npages, maxpages);
+-}
+-
+ size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
+ {
+@@ -862,9 +812,24 @@ EXPORT_SYMBOL(iov_iter_get_pages_alloc);
+ 
+ int iov_iter_npages(const struct iov_iter *i, int maxpages)
+ {
+-	if (i->type & ITER_BVEC)
+-		return iov_iter_npages_bvec(i, maxpages);
+-	else
+-		return iov_iter_npages_iovec(i, maxpages);
++	size_t size = i->count;
++	int npages = 0;
++
++	if (!size)
++		return 0;
++
++	iterate_all_kinds(i, size, v, ({
++		unsigned long p = (unsigned long)v.iov_base;
++		npages += DIV_ROUND_UP(p + v.iov_len, PAGE_SIZE)
++			- p / PAGE_SIZE;
++		if (npages >= maxpages)
++			return maxpages;
++	0;}),({
++		npages++;
++		if (npages >= maxpages)
++			return maxpages;
++	})
++	)
++	return npages;
+ }
+ EXPORT_SYMBOL(iov_iter_npages);
+-- 
+2.1.3
 
