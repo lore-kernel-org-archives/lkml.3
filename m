@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948AbaLIB44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 20:56:56 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60356 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbaLIB4y (ORCPT
+	id S1756262AbaLIB7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 20:59:41 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:61493 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaLIB7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 20:56:54 -0500
-Date: Tue, 9 Dec 2014 01:56:51 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
-Message-ID: <20141209015651.GI22149@ZenIV.linux.org.uk>
-References: <20141204202011.GO29748@ZenIV.linux.org.uk>
- <20141208164650.GB29028@node.dhcp.inet.fi>
- <20141208175805.GB22149@ZenIV.linux.org.uk>
- <20141208180824.GC22149@ZenIV.linux.org.uk>
- <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
- <20141208182012.GE22149@ZenIV.linux.org.uk>
- <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
- <20141208184632.GG22149@ZenIV.linux.org.uk>
- <CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
- <20141208192816.GH22149@ZenIV.linux.org.uk>
+	Mon, 8 Dec 2014 20:59:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141208192816.GH22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141208142217.GA1831@e104805>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+	<1417806260-9264-7-git-send-email-javi.merino@arm.com>
+	<CAOh2x==BKyS08th2d4r0Q2UGqhzAwj6sqOgFsH6J0pWup+OU_A@mail.gmail.com>
+	<20141208125033.GB2980@e104805>
+	<CAKohpokM_8Qm5YH0Xb=n95bP94Qreqpcd1fAyCD2W5u9Pd=ndg@mail.gmail.com>
+	<20141208142217.GA1831@e104805>
+Date: Tue, 9 Dec 2014 07:29:39 +0530
+Message-ID: <CAKohpomy7=v_qE3B_+hhwdUE8MCJkV7gzmPpUOb==t1BuZAnAA@mail.gmail.com>
+Subject: Re: [RFC PATCH v6 6/9] thermal: cpu_cooling: implement the power
+ cooling device API
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Javi Merino <javi.merino@arm.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>, Mark Brown <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 07:28:17PM +0000, Al Viro wrote:
-> On Mon, Dec 08, 2014 at 10:57:31AM -0800, Linus Torvalds wrote:
-> > So the whole "get_page()" thing is broken. Iterating over pages in a
-> > KVEC is simply wrong, wrong, wrong. It needs to fail.
-> 
-> Well, _that_ is easy to do, of course...  E.g. by replacing that thing in
-> iov_iter_get_pages()/iov_iter_get_pages_alloc() with ({ return -EFAULT; })
-> will do it.
+On 8 December 2014 at 19:52, Javi Merino <javi.merino@arm.com> wrote:
+> Ok, changed it into:
+>
+>         cpu = cpumask_any(&cpufreq_device->allowed_cpus);
+>         dev = get_cpu_device(cpu);
+>         if (!dev) {
+>                 dev_warn(&cpufreq_device->cool_dev->device,
+>                         "No cpu device for cpu %d\n", cpu);
+>                 ret = -EINVAL;
+>                 goto unlock;
+>         }
+>
+>         num_opps = dev_pm_opp_get_opp_count(dev);
+>         if (num_opps <= 0) {
+>                 ret = (num_opps < 0)? num_opps : -EINVAL;
+>                 goto unlock;
+>         }
 
-OK, folded and pushed (i.e. in vfs.git#iov_iter and vfs.git#for-next).
-Matches earlier behaviour; oops reproducer is easy -
+And this might not work. This is what I said in the first reply.
 
-dd if=/dev/zero of=foo.ko bs=4096 count=1
-cat >a.c <<'EOF'
-#define _GNU_SOURCE
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/syscall.h>
-main()
-{
-        int fd = open("foo.ko", 00040000);
-        syscall(__NR_finit_module, fd, "", 0);
-}
-EOF
-gcc a.c
-strace ./a.out
+So, a bit lengthy reply now :)
 
-Correct behaviour (both the mainline and this series with fixes folded):
-open("foo.ko", O_RDONLY|O_DIRECT)       = 3
-finit_module(3, "", 0)                  = -1 EFAULT (Bad address)
-Incorrect one:
-open("foo.ko", O_RDONLY|O_DIRECT)       = 3
-finit_module(3, "", 0 <unfinished ...>
-+++ killed by SIGKILL +++
-Killed
+Every cpu has a device struct associated with it. When cpufreq
+core initializes drivers, they ask for mapping (initializing) the opps.
+At that point we pass policy->cpu to opp core. OPP core doesn't
+know which cores share clock line (I am trying to solve that [1]) and
+so it just initializes the OPPs for policy->cpu. Let us say it cpuX.
 
-with that oops reproduced.  Not sure if it's a proper LTP or xfstests fodder,
-but anyway, here it is.
+Now there will be few more CPUs which are going to share clock
+line with it and hence will use the same OPPs. In thermal core,
+you got clip_cpus which is exactly the masks of all these CPUs
+sharing clock line.
 
-Incremental from previous for-next is
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index e0605c1..a1599ca 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -560,15 +560,7 @@ ssize_t iov_iter_get_pages(struct iov_iter *i,
- 		get_page(*pages = v.bv_page);
- 		return v.bv_len;
- 	}),({
--		unsigned long addr = (unsigned long)v.iov_base, end;
--		size_t len = v.iov_len + (*start = addr & (PAGE_SIZE - 1));
--
--		if (len > maxpages * PAGE_SIZE)
--			len = maxpages * PAGE_SIZE;
--		addr &= ~(PAGE_SIZE - 1);
--		for (end = addr + len; addr < end; addr += PAGE_SIZE)
--			get_page(*pages++ = virt_to_page(addr));
--		return len - *start;
-+		return -EFAULT;
- 	})
- 	)
- 	return 0;
-@@ -622,18 +614,7 @@ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
- 		get_page(*p = v.bv_page);
- 		return v.bv_len;
- 	}),({
--		unsigned long addr = (unsigned long)v.iov_base, end;
--		size_t len = v.iov_len + (*start = addr & (PAGE_SIZE - 1));
--		int n;
--
--		addr &= ~(PAGE_SIZE - 1);
--		n = DIV_ROUND_UP(len, PAGE_SIZE);
--		*pages = p = get_pages_array(n);
--		if (!p)
--			return -ENOMEM;
--		for (end = addr + len; addr < end; addr += PAGE_SIZE)
--			get_page(*p++ = virt_to_page(addr));
--		return len - *start;
-+		return -EFAULT;
- 	})
- 	)
- 	return 0;
+If the OPP layer is good enough, then above code can work. But
+because right now the OPPs are mapped to just cpuX, passing
+any other cpu from clip_cpus will fail as it doesn't have any associated
+OPPs.
+
+Now what I asked you is to use the CPU for which
+__cpufreq_cooling_register() is called. Normally we are calling
+__cpufreq_cooling_register() for the CPU for which OPPs are
+registered (but people might call it up for other CPUs as well)..
+
+So, using that cpu *might* have worked here.
+
+Now the earlier loop you used was good to get this information,
+but it wasn't consistent and so I objected.
+
+What you should do:
+
+- Create another routine to find the cpu for which OPPs are bound
+to
+-  And save the cpu_dev for it in the global struct for cpu_cooling
+- reuse it wherever required.
+
+--
+viresh
+
+[1] https://www.marc.info/?t=141769172100002&r=1&w=2
