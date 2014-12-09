@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402AbaLIOOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:14:25 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:12702 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbaLIONd (ORCPT
+	id S932266AbaLIOOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:14:37 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58202 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394AbaLIOOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:13:33 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-8b-5487038ad938
-Message-id: <54870389.7070203@samsung.com>
-Date: Tue, 09 Dec 2014 15:13:29 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Andrzej Hajda <a.hajda@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH/RFC v9 06/19] DT: Add documentation for the mfd Maxim
- max77693
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-7-git-send-email-j.anaszewski@samsung.com>
- <20141204100706.GP14746@valkosipuli.retiisi.org.uk>
- <54804840.4030202@samsung.com>
- <20141209140927.GL15559@valkosipuli.retiisi.org.uk>
-In-reply-to: <20141209140927.GL15559@valkosipuli.retiisi.org.uk>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xK7pdzO0hBjdPalvcWneO1WLjjPWs
-	Fkd3TmSyuP7lOavF/CNAsf43C1ktzr1ayWhxtukNu8X9r0cZLS7vmsNmsfXNOkaLng1bWS2W
-	Xr/IZHH31FE2iwnT17JYtO49wm6xe9dTVovDb9pZLc7sX8nmIOyxZt4aRo/Lfb1MHjtn3WX3
-	WLn8C5vH4a8LWTw2repk87hzbQ+bx575P1g9+rasYvRYsfo7u8fnTXIB3FFcNimpOZllqUX6
-	dglcGZuevGQvaGSv+PlqGnsD4xHWLkZODgkBE4l/s6ZA2WISF+6tZ+ti5OIQEljKKLFgx1kW
-	COcjo0TfjllsIFW8AloSi4GWgdgsAqoSTbu+sIDYbAKGEj9fvGYCsUUFIiT+nN7HClEvKPFj
-	8j2wGhEBNYmnmx6CDWUWeMws0bZyNViRsECIxNb9p6G2TWGS6HtwmhEkwSngIPH0/0awImYB
-	a4mVk7YxQtjyEpvXvGWewCgwC8mSWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/
-	dxMjJD6/7GBcfMzqEKMAB6MSD6+5YmuIEGtiWXFl7iFGCQ5mJRHeKUfbQoR4UxIrq1KL8uOL
-	SnNSiw8xMnFwSjUwqv2ROTft8eIpDdOWT7y+d3Vt1J5Lme5vszoSEnuuu+7vSzq4TWNtaZuA
-	64acFt5lSSIinGsVViyalnVo7ZTdG21XyngzHH9lG55T/cL86Af2h1t/zVq1OPzkp0vdPlPC
-	Qy9FZ78/2Hby3tcbk+dLKSq3qrZWFHxxNdkrzJ9v5/Oh348la/q840osxRmJhlrMRcWJANdd
-	0vWtAgAA
+	Tue, 9 Dec 2014 09:14:33 -0500
+Message-ID: <548703C4.1030300@collabora.com>
+Date: Tue, 09 Dec 2014 15:14:28 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] Add support for Tegra Activity Monitor
+References: <1417709696-29281-1-git-send-email-tomeu.vizoso@collabora.com> <CAAVeFuJkpuWocEDTfSAK7_UfhZvqOfYJY6sLgsy9i+KcMAkbCQ@mail.gmail.com>
+In-Reply-To: <CAAVeFuJkpuWocEDTfSAK7_UfhZvqOfYJY6sLgsy9i+KcMAkbCQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sakari,
-
-On 12/09/2014 03:09 PM, Sakari Ailus wrote:
-> Hi Jacek,
->
-> On Thu, Dec 04, 2014 at 12:40:48PM +0100, Jacek Anaszewski wrote:
->>>> +			the flash/torch.
->>>> +- maxim,trigger : Array of flags indicating which trigger can activate given led
->>>> +	in order: fled1, fled2.
->>>> +	Possible flag values (can be combined):
->>>> +		MAX77693_LED_TRIG_FLASHEN - FLASHEN pin of the chip,
->>>> +		MAX77693_LED_TRIG_TORCHEN - TORCHEN pin of the chip,
->>>> +		MAX77693_LED_TRIG_SOFTWARE - software via I2C command.
->>>
->>> Is there a need to prevent strobing using a certain method? Just wondering.
+On 12/09/2014 06:38 AM, Alexandre Courbot wrote:
+> On Fri, Dec 5, 2014 at 1:14 AM, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+>> Hello,
 >>
->> In some cases it could be convenient to prevent some options through
->> device tree.
->
-> Do you have that need now?
->
-> If not, I'd propose to postpone this and add it only if there ever is one.
->
+>> this v3 addresses the comments that the devfreq implementation got, namely:
+>>
+>> * Address misc. style issues found by Thierry and Alexander
+>> * Added helpers for register i/o
+>> * Further documented the structs
+>> * Enable the ACTMON after the IRQ handler has been installed
+>> * Disable the ACTMON before removing the IRQ handler
+>> * Add governor in a subsys initcall
+>>
+>> There's an open question on whether some functionality currently in this
+>> devfreq driver should be moved into the devfreq framework, but without knowing
+>> of other SoC family that would benefit from it, I'm reticent. It would be
+>> great to hear from the devfreq maintainers if they have any plans regarding
+>> this, or if they have any suggestion.
+> 
+> I cannot make a thorough review because of the problem I mentioned in
+> patch 3/3, but I am guessing this series is converging towards what we
+> want. Now the main question will be how we can leverage Arto's
+> watermark series for this one. I am ready to bet that doing so can
+> reduce quite a lot of code.
+> 
+> Since you are likely to be the first user of the watermarking feature,
+> could you comment on its potential shortcomings and whatever needs to
+> be fixed to best implement ACTMON support using it? I will try to push
+> it myself, but you are obviously in a better position to understand
+> what is needed.
 
-No, I don't. So let's postpone it.
+Sure, I'm still playing with the idea, but I have sent a few questions
+to that thread already.
 
-Best Regards,
-Jacek Anaszewski
+Cheers,
+
+Tomeu
+
+> Thanks!
+> 
+
