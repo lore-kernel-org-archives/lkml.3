@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaLIWur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:50:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37472 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaLIWuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:40 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/25] copy_from_iter_nocache()
-Date: Tue,  9 Dec 2014 22:50:26 +0000
-Message-Id: <1418165438-2205-13-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
-References: <20141209224928.GL22149@ZenIV.linux.org.uk>
+	id S1754189AbaLIWwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:52:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57586 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753213AbaLIWwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 17:52:00 -0500
+Date: Tue, 9 Dec 2014 23:51:57 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH] x86-64, doc: update to account for file shuffling
+Message-ID: <20141209225157.GM25677@wotan.suse.de>
+References: <1418079241-4362-1-git-send-email-mcgrof@do-not-panic.com> <20141209172709.GC4147@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209172709.GC4147@pd.tnic>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+On Tue, Dec 09, 2014 at 06:27:09PM +0100, Borislav Petkov wrote:
+> On Mon, Dec 08, 2014 at 02:54:01PM -0800, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > While at it, also refer to the 32 bit entry file.
+> > 
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Borislav Petkov <bp@suse.de>
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: linux-doc@vger.kernel.org
+> > Cc: x86@kernel.org
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > ---
+> >  Documentation/x86/entry_64.txt | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+> > index bc7226e..4796392 100644
+> > --- a/Documentation/x86/entry_64.txt
+> > +++ b/Documentation/x86/entry_64.txt
+> > @@ -7,9 +7,11 @@ http://lkml.kernel.org/r/<20110529191055.GC9835%40elte.hu>
+> >  The x86 architecture has quite a few different ways to jump into
+> >  kernel code.  Most of these entry points are registered in
+> >  arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S
+> > -and arch/x86/ia32/ia32entry.S.
+> > +for 64-bit, arch/x86/kernel/entry_32.S for 32-bit and finally
+> > +arch/x86/ia32/ia32entry.S which allows to run legacy 32-bit programs
+> > +under a 64-bit kernel.
+> 
+> Make that "... which implements the 32-bit compatibility syscall entry
+> points and thus provides for 32-bit processes to execute syscalls when
+> running on 64-bit kernels."
+> 
+> Or something like that. In any case, a bit more precise sounds better to
+> me.
 
-BTW, do we want memcpy_nocache()?
+OK thanks for the review.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- include/linux/uio.h |  1 +
- mm/iov_iter.c       | 21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
-
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index c567655..bd8569a 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -83,6 +83,7 @@ size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i);
- size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i);
- size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
-+size_t copy_from_iter_nocache(void *addr, size_t bytes, struct iov_iter *i);
- size_t iov_iter_zero(size_t bytes, struct iov_iter *);
- unsigned long iov_iter_alignment(const struct iov_iter *i);
- void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 88c052e..a1599ca 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -399,6 +399,27 @@ size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
- }
- EXPORT_SYMBOL(copy_from_iter);
- 
-+size_t copy_from_iter_nocache(void *addr, size_t bytes, struct iov_iter *i)
-+{
-+	char *to = addr;
-+	if (unlikely(bytes > i->count))
-+		bytes = i->count;
-+
-+	if (unlikely(!bytes))
-+		return 0;
-+
-+	iterate_and_advance(i, bytes, v,
-+		__copy_from_user_nocache((to += v.iov_len) - v.iov_len,
-+					 v.iov_base, v.iov_len),
-+		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
-+				 v.bv_offset, v.bv_len),
-+		memcpy((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
-+	)
-+
-+	return bytes;
-+}
-+EXPORT_SYMBOL(copy_from_iter_nocache);
-+
- size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
--- 
-2.1.3
-
+ Luis
