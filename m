@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499AbaLIQYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:24:39 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:60974 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380AbaLIQYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:24:37 -0500
-Date: Tue, 9 Dec 2014 17:24:27 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v3] CPU hotplug: active_writer not woken up in some
- cases - deadlock
-Message-ID: <20141209172427.4bde12a7@thinkpad-w530>
-In-Reply-To: <20141209141903.GB25340@linux.vnet.ibm.com>
-References: <1418127811-22629-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141209141903.GB25340@linux.vnet.ibm.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1757531AbaLIQ17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 11:27:59 -0500
+Received: from mail-bn1bon0074.outbound.protection.outlook.com ([157.56.111.74]:40582
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753775AbaLIQ15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 11:27:57 -0500
+X-Greylist: delayed 1216 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 11:27:57 EST
+From: <atull@opensource.altera.com>
+To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v3 0/3] FPGA Manager Framework
+Date: Tue, 9 Dec 2014 10:27:58 -0600
+Message-ID: <1418142481-6167-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120916-0021-0000-0000-00000212DE1A
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY1PR00CA0015.namprd00.prod.outlook.com (25.160.102.25) To
+ DM2PR0301MB1248.namprd03.prod.outlook.com (25.160.219.25)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1248;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB1248;
+X-Forefront-PRVS: 0420213CCD
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(229853001)(107046002)(33646002)(122386002)(99396003)(62966003)(77156002)(46102003)(68736005)(105586002)(81156004)(106356001)(4396001)(50226001)(101416001)(40100003)(120916001)(31966008)(97736003)(19580395003)(87976001)(19580405001)(50466002)(48376002)(66066001)(86362001)(21056001)(92566001)(2201001)(20776003)(86152002)(47776003)(64706001)(50986999)(89996001)(69596002)(53416004)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1248;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1248;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Dec 09, 2014 at 01:23:31PM +0100, David Hildenbrand wrote:
-> > Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-> > grace periods") introduced another problem that can easily be reproduced by
-> > starting/stopping cpus in a loop.
-> > 
-> > E.g.:
-> >   for i in `seq 5000`; do
-> >       echo 1 > /sys/devices/system/cpu/cpu1/online
-> >       echo 0 > /sys/devices/system/cpu/cpu1/online
-> >   done
-> > 
-> > Will result in:
-> >   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-> >   Call Trace:
-> >   ([<00000000006a028e>] __schedule+0x406/0x91c)
-> >    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-> >    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-> >    [<0000000000131232>] cpu_up+0xb6/0xd4
-> >    [<00000000004a5720>] device_online+0x80/0xc0
-> >    [<00000000004a57f0>] online_store+0x90/0xb0
-> >   ...
-> > 
-> > And a deadlock.
-> > 
-> > Problem is that if the last ref in put_online_cpus() can't get the
-> > cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
-> > active_writer might never be woken up, therefore never exiting the loop in
-> > cpu_hotplug_begin().
-> > 
-> > This fix wakes up the active_writer proactively. The writer already goes back to
-> > sleep if the ref count isn't already down to 0, so this should be fine.
-> > 
-> > In order to avoid many potential races, we have to:
-> > - Protect current_writer by a spin lock. When holding this lock we can be sure
-> >   that the writer won't vainsh or change. (use-after-free)
-> > - Increment the cpu_hotplug.puts_pending count before we test for an
-> >   active_writer. (otherwise a wakeup might get lost)
-> > - Move setting of TASK_UNINTERRUPTIBLE in cpu_hotplug_begin() above the
-> >   condition check. (otherwise a wakeup might get lost)
-> > 
-> > Can't reproduce it with this fix.
-> 
-> Would wait_event()/wake_up() work for the wakeup-writer case?
-> 
-> 							Thanx, Paul
-> 
+From: Alan Tull <atull@opensource.altera.com>
 
-Thanks! Was also thinking about wait queues. Will investigate if that can help
-to beautify this :)
+Improvements in this version:
 
-David
+Fixed things in the framework that were left over from my original
+version that was a character driver.  In particular, make the
+struct device be present in the fpga_manager struct, not as a
+pointer, so container_of will work.
+
+Also rewrote the part that handles DT notifications.  Now this
+section takes notifications instead of being another device to
+load/unload.
+
+Still want to integrate bridge enable/disable with this, but
+that's not done yet.
+
+Alan Tull (3):
+  fpga manager: add sysfs interface document
+  fpga manager: framework core
+  fpga manager: device tree overlay support
+
+ Documentation/ABI/testing/sysfs-class-fpga-manager |   38 ++
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    1 +
+ drivers/fpga/Kconfig                               |   28 +
+ drivers/fpga/Makefile                              |   10 +
+ drivers/fpga/fpga-mgr.c                            |  587 ++++++++++++++++++++
+ include/linux/fpga-mgr.h                           |  107 ++++
+ 7 files changed, 773 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-manager
+ create mode 100644 drivers/fpga/Kconfig
+ create mode 100644 drivers/fpga/Makefile
+ create mode 100644 drivers/fpga/fpga-mgr.c
+ create mode 100644 include/linux/fpga-mgr.h
+
+-- 
+1.7.9.5
 
