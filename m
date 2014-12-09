@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaLIQPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:15:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:47126 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296AbaLIQPh (ORCPT
+	id S932407AbaLIQPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 11:15:55 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53317 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932296AbaLIQPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:15:37 -0500
-Date: Tue, 9 Dec 2014 16:15:11 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: psci: Fix build breakage without PM_SLEEP
-Message-ID: <20141209161511.GI31129@e104818-lin.cambridge.arm.com>
-References: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
- <2290734.BRljGaICu4@wuerfel>
- <1418128689.19339.3.camel@AMDC1943>
+	Tue, 9 Dec 2014 11:15:52 -0500
+Date: Tue, 9 Dec 2014 16:15:20 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        Jaroslav Kysela <perex@perex.cz>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Paul Handrigan <Paul.Handrigan@cirrus.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Timur Tabi <timur@tabi.org>,
+        Nicolin Chen <nicoleotsuka@gmail.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Message-ID: <20141209161520.GK1934@sirena.org.uk>
+References: <2064254.7lXiTpmK64@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vk/v8fjDPiDepTtA"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418128689.19339.3.camel@AMDC1943>
+In-Reply-To: <2064254.7lXiTpmK64@vostro.rjw.lan>
+X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 86.171.30.28
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] sound / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 12:38:09PM +0000, Krzysztof Kozlowski wrote:
-> On wto, 2014-12-09 at 13:29 +0100, Arnd Bergmann wrote:
-> > On Tuesday 09 December 2014 12:48:36 Krzysztof Kozlowski wrote:
-> > > Fix build failure of defconfig when PM_SLEEP is disabled (e.g. by
-> > > disabling SUSPEND) and CPU_IDLE enabled:
-> > > 
-> > > arch/arm64/kernel/psci.c:543:2: error: unknown field ‘cpu_suspend’ specified in initializer
-> > >   .cpu_suspend = cpu_psci_cpu_suspend,
-> > >   ^
-> > > arch/arm64/kernel/psci.c:543:2: warning: initialization from incompatible pointer type [enabled by default]
-> > > arch/arm64/kernel/psci.c:543:2: warning: (near initialization for ‘cpu_psci_ops.cpu_prepare’) [enabled by default]
-> > > make[1]: *** [arch/arm64/kernel/psci.o] Error 1
-> > > 
-> > > The cpu_operations.cpu_suspend field exists only if ARM64_CPU_SUSPEND is
-> > > defined, not CPU_IDLE.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > 
-> > 
-> > No objection to fixing this obvious build bug, but why do we even have
-> > an ARM64_CPU_SUSPEND option? On ARM32 we only have the respective option
-> > because we have a random collection of platform specific drivers that
-> > use the symbols, but that's not the case on ARM64.
-> 
-> I believe because of cpuidle. It's the same as on ARM32: the cpu_suspend
-> is used by both PM_SLEEP and CPU_IDLE.
 
-I guess at some point we can replace (as a separate patch)
-ARM64_CPU_SUSPEND with PM_SLEEP.
+--vk/v8fjDPiDepTtA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But what I don't fully understand, we can enable CPU_IDLE without
-ARM64_CPU_SUSPEND. However, the cpuidle-arm64.c driver will fail to
-link since it calls cpu_suspend(). Wouldn't it be better if
-ARM64_CPU_SUSPEND depends on CPU_PM (or replaced by it) rather than
-PM_SLEEP?
+On Sat, Dec 06, 2014 at 03:46:27AM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>=20
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
 
-Can we allow deeper idle states when CONFIG_SUSPEND is disabled? I see
-CONFIG_SUSPEND related to suspend-to-RAM (system standby) rather than
-CPU idle, in which case we may want to allow cpu_suspend when only
-CPU_IDLE is enabled (which implies CONFIG_CPU_PM).
+Acked-by: Mark Brown <broonie@kernel.org>
 
--- 
-Catalin
+--vk/v8fjDPiDepTtA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUhyAXAAoJECTWi3JdVIfQ+gAH/RtO167WNmJph1mXUpYcElXu
+I4EZb20uXYY4zTHiKzXAYlq/9zJM+IkpW7+3MSe00lA8hQxD03VzeiocmVamMaJX
+PWXGu6ifGJU0sMv+Zvxejxjd2dlhhr9Rd8z85luIKi/70a+3i6cJIUtit0DxSWD/
+ZSPoPJU/qrsFNVLzUy7iXt0ryYBdEUsnTQCCmekRWPQzkTcfQA1OpCH6dpaS2Pic
+yXhZ4fJwl4oQSOVP/XoRPp7SyBgCskwk/dJnz2WRcHqq2tPQkjsE3XSzIBo957NO
+DCXIvFBfM/YvSJQQHGkU6DGhr7tVJYxFxfea0lmtHxk8wfyA3q7agqUxNyu6WaU=
+=wspE
+-----END PGP SIGNATURE-----
+
+--vk/v8fjDPiDepTtA--
