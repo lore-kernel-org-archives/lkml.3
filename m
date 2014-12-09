@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609AbaLIJYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:24:08 -0500
-Received: from mga03.intel.com ([134.134.136.65]:62845 "EHLO mga03.intel.com"
+	id S1756616AbaLIJYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:24:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44347 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753925AbaLIJYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:24:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,543,1413270000"; 
-   d="scan'208";a="650814943"
-Date: Tue, 9 Dec 2014 14:54:24 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, dmaengine@vger.kernel.org
-Subject: Re: [RESEND PATCH] ioatdma, fix dma mapping errors
-Message-ID: <20141209092424.GC16827@intel.com>
-References: <1414064309-22232-1-git-send-email-prarit@redhat.com>
+	id S1753925AbaLIJYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:24:30 -0500
+Message-ID: <5486BFCB.4040305@suse.cz>
+Date: Tue, 09 Dec 2014 10:24:27 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414064309-22232-1-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Weijie Yang <weijie.yang@samsung.com>, iamjoonsoo.kim@lge.com
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
+        "'Rik van Riel'" <riel@redhat.com>,
+        "'Johannes Weiner'" <hannes@cmpxchg.org>,
+        "'Minchan Kim'" <minchan@kernel.org>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: page_isolation: remove unnecessary freepage_migratetype
+ check for unused page
+References: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
+In-Reply-To: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 07:38:29AM -0400, Prarit Bhargava wrote:
-> This happens because the current ioatdma DMA test code does not check the return
-> value of dma_map_page() calls with dma_mapping_error().  In addition, it was
-> noticed that mapping for the variable dest_dma is free'd before the last use.
-> 
-> This patch fixes these errors by initializing the dma_srcs[] array and checking
-> the returns with dma_mapping_error().
-Please make sure you use the right subsystem name
+On 12/09/2014 08:51 AM, Weijie Yang wrote:
+> when we test the pages in a range is free or not, there is a little
+> chance we encounter some page which is not in buddy but page_count is 0.
+> That means that page could be in the page-freeing path but not in the
+> buddy freelist, such as in pcplist
 
-Applied now, thanks
+This shouldn't happen anymore IMHO. The pageblock is marked as 
+MIGRATE_ISOLATE and then a lru+pcplist drain is performed. Nothing 
+should be left on pcplist - anything newly freed goes directly to free 
+lists. Hm, maybe it could be on lru cache, but that holds a page 
+reference IIRC, so this test won't pass.
 
--- 
-~Vinod
+> or wait for the zone->lock which the
+> tester is holding.
+
+That could maybe happen, but is it worth testing? If yes, please add it 
+in a comment to the code.
+
+> Back to the freepage_migratetype, we use it for a cached value for decide
+> which free-list the page go when freeing page. If the pageblock is isolated
+> the page will go to free-list[MIGRATE_ISOLATE] even if the cached type is
+> not MIGRATE_ISOLATE, the commit ad53f92e(fix incorrect isolation behavior
+> by rechecking migratetype) patch series have ensure this.
+>
+> So the freepage_migratetype check for page_count==0 page in
+> __test_page_isolated_in_pageblock() is meaningless.
+> This patch removes the unnecessary freepage_migratetype check.
+>
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> ---
+>   mm/page_isolation.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 6e5174d..f7c9183 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -223,8 +223,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+>   		page = pfn_to_page(pfn);
+>   		if (PageBuddy(page))
+>   			pfn += 1 << page_order(page);
+> -		else if (page_count(page) == 0 &&
+> -			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
+> +		else if (page_count(page) == 0)
+>   			pfn += 1;
+>   		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
+>   			/*
+>
 
