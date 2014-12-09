@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581AbaLIEql (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 23:46:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6700 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696AbaLIEqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 23:46:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="426754759"
-Date: Tue, 9 Dec 2014 10:17:02 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: linux-next: build failure after merge of the slave-dma tree
-Message-ID: <20141209044702.GV16827@intel.com>
-References: <20141209144817.2df2eb7c@canb.auug.org.au>
+	id S1756523AbaLIEzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 23:55:17 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40622 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaLIEzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 23:55:15 -0500
+Message-ID: <54868070.9070506@roeck-us.net>
+Date: Mon, 08 Dec 2014 20:54:08 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sfyO1m2EN8ZOtJL6"
-Content-Disposition: inline
-In-Reply-To: <20141209144817.2df2eb7c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [GIT PULL] hwmon updates for 3.19
+References: <1418097704-29232-1-git-send-email-linux@roeck-us.net> <CA+55aFyTuO5Nsj7qg_xKo0JT-YCJEvMk2+QGKH_pRb=BYcba2g@mail.gmail.com>
+In-Reply-To: <CA+55aFyTuO5Nsj7qg_xKo0JT-YCJEvMk2+QGKH_pRb=BYcba2g@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.548680B3.0010,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/08/2014 08:32 PM, Linus Torvalds wrote:
+> On Mon, Dec 8, 2014 at 8:01 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>
+>> Please pull hwmon updates for Linux 3.19 from signed tag:
+>>
+>>      git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus-v3.19
+>
+> Yeah, no, that doesn't exist.
+>
+> But this does:
+>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus-3.19
+>
+> Notice the 'v' (or lack-there-of). It took me a while to notice that
+> your two tag-names weren't actually the same.
+>
 
---sfyO1m2EN8ZOtJL6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Oh well. Sorry for that. The tag _was_ supposed to have a 'v' in it.
+I see you pulled anyway - thanks.
 
-On Tue, Dec 09, 2014 at 02:48:17PM +1100, Stephen Rothwell wrote:
-> Hi Vinod,
->=20
-> After merging the slave-dma tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-I did merge the next-20141208 wth this new code and pushed. Found and
-resolved the same merg conflict as you :) Feng'd bot didn't
-find any issues, so am wondering why :)
+And I owe you a beer or two next time I see you.
 
-Neverthless, I am dropping these changes from next.
+Guenter
 
-Thanks for reporting them
-
-> drivers/spi/spi-atmel.c: In function 'atmel_spi_stop_dma':
-> drivers/spi/spi-atmel.c:485:26: error: 'struct dma_device' has no member =
-named 'device_control'
->    as->dma.chan_rx->device->device_control(as->dma.chan_rx,
->                           ^
-> drivers/spi/spi-atmel.c:486:8: error: 'DMA_TERMINATE_ALL' undeclared (fir=
-st use in this function)
->         DMA_TERMINATE_ALL, 0);
->         ^
-> drivers/spi/spi-atmel.c:486:8: note: each undeclared identifier is report=
-ed only once for each function it appears in
-> drivers/spi/spi-atmel.c:488:26: error: 'struct dma_device' has no member =
-named 'device_control'
->    as->dma.chan_tx->device->device_control(as->dma.chan_tx,
->                           ^
-> drivers/usb/musb/ux500_dma.c: In function 'ux500_configure_channel':
-> drivers/usb/musb/ux500_dma.c:124:18: error: 'struct dma_device' has no me=
-mber named 'device_control'
->   dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
->                   ^
-> drivers/usb/musb/ux500_dma.c:124:45: error: 'DMA_SLAVE_CONFIG' undeclared=
- (first use in this function)
->   dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
->                                              ^
-> drivers/usb/musb/ux500_dma.c:124:45: note: each undeclared identifier is =
-reported only once for each function it appears in
-> drivers/usb/musb/ux500_dma.c: In function 'ux500_dma_channel_abort':
-> drivers/usb/musb/ux500_dma.c:249:34: error: 'struct dma_device' has no me=
-mber named 'device_control'
->    ux500_channel->dma_chan->device->
->                                   ^
-> drivers/usb/musb/ux500_dma.c:251:6: error: 'DMA_TERMINATE_ALL' undeclared=
- (first use in this function)
->       DMA_TERMINATE_ALL, 0);
->       ^
->=20
-> Caused by commit f86999789afe ("dmaengine: Remove device_control and
-> device_slave_caps").
->=20
-> I have used the slave-dma tree from next-20141208 for today.
-
---=20
-~Vinod
-
---sfyO1m2EN8ZOtJL6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUhn7GAAoJEHwUBw8lI4NHU3gP/jwWe+LIkM2VBriu1npunK3p
-ge1HaLRpWV4Dpip1LGe6KvhC/IfSn4nZKfupJYCrc/SC/QMlnmaKIQ7c2lHKWllU
-KzRn0IfQHviSHdrgw77UqJ4fCg2igym1JKeodHsTpbTiru27mVGcoKXu5+/rAcV7
-PxOa2CwqQUE3ogAcsAyslyxu2BKJs7dRifTGu/MeNpC1E3JujOJx1WcL6MmRpNL9
-7fPTvb+fPLVjaGGW9Dp2Js+xiSXBtDZ348eLsZMIQkBRKmRAwzeDOmbVnpZIHsjb
-iYwwLsHy9iNqNxm1gYmfExk1vCBX5qdnwawzwHKmSY8ldqL8Bdq3iJQPBe2YE9Dl
-j2ihhBIyO9l77zDpEFH6gKJG2EywjBR++WGAMOr3iWhC3JIYCI9oDa1xs8KfPqeg
-MjqKlODyaDX+aQDQ3DgbyOF+U/i/JcS8RicxUmqEX1PhpOT5zIH/zC7EZJ+nEuXZ
-idC9l62LLAiq1yvtvw+5qG3k++uzd1fE7kHkK556vz0siZv7BgBnTi7YN1rfyhql
-gHfevEtsfH9nUtskTwr8V3l4Js3VHxQ/saVNwId0PhEWHNaWKZpn/uPNLuQ6dZzl
-/5+tyjgXG8WXynCVQCp7ciDkfdSGMGAGrs+HLvvUbehObB9jWtyRQQlTcy0Lh4+m
-n2W1Q+8xRMgxxO/nY0W5
-=kJC8
------END PGP SIGNATURE-----
-
---sfyO1m2EN8ZOtJL6--
