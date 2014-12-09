@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaLIWxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:53:40 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37490 "EHLO
+	id S1754749AbaLIWy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:54:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37463 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983AbaLIWum (ORCPT
+	with ESMTP id S1753958AbaLIWuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:42 -0500
+	Tue, 9 Dec 2014 17:50:40 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 22/25] switch memcpy_to_msg() and skb_copy{,_and_csum}_datagram_msg() to primitives
-Date: Tue,  9 Dec 2014 22:50:35 +0000
-Message-Id: <1418165438-2205-22-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH 09/25] iov_iter.c: convert copy_to_iter() to iterate_and_advance
+Date: Tue,  9 Dec 2014 22:50:22 +0000
+Message-Id: <1418165438-2205-9-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
 References: <20141209224928.GL22149@ZenIV.linux.org.uk>
@@ -22,239 +22,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-... making both non-draining.  That means that tcp_recvmsg() becomes
-non-draining.  And _that_ would break iscsit_do_rx_data() unless we
-	a) make sure tcp_recvmsg() is uniformly non-draining (it is)
-	b) make sure it copes with arbitrary (including shifted)
-iov_iter (it does, all it uses is iov_iter primitives)
-	c) make iscsit_do_rx_data() initialize ->msg_iter only once.
-
-Fortunately, (c) is doable with minimal work and we are rid of one
-the two places where kernel send/recvmsg users would be unhappy with
-non-draining behaviour.
-
-Actually, that makes all but one of ->recvmsg() instances iov_iter-clean.
-The exception is skcipher_recvmsg() and it also isn't hard to convert
-to primitives (iov_iter_get_pages() is needed there).  That'll wait
-a bit - there's some interplay with ->sendmsg() path for that one.
-
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- drivers/target/iscsi/iscsi_target_util.c | 12 +++----
- include/linux/skbuff.h                   | 16 +++-------
- net/core/datagram.c                      | 54 +++++++++++---------------------
- 3 files changed, 28 insertions(+), 54 deletions(-)
+ mm/iov_iter.c | 91 ++++++-----------------------------------------------------
+ 1 file changed, 9 insertions(+), 82 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index ce87ce9..7c6a95b 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1326,21 +1326,19 @@ static int iscsit_do_rx_data(
- 	struct iscsi_conn *conn,
- 	struct iscsi_data_count *count)
- {
--	int data = count->data_length, rx_loop = 0, total_rx = 0, iov_len;
--	struct kvec *iov_p;
-+	int data = count->data_length, rx_loop = 0, total_rx = 0;
- 	struct msghdr msg;
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index 791429d..66665449 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -97,51 +97,6 @@
+ 	i->iov_offset = skip;					\
+ }
  
- 	if (!conn || !conn->sock || !conn->conn_ops)
- 		return -1;
- 
- 	memset(&msg, 0, sizeof(struct msghdr));
--
--	iov_p = count->iov;
--	iov_len	= count->iov_count;
-+	iov_iter_kvec(&msg.msg_iter, READ | ITER_KVEC,
-+		      count->iov, count->iov_count, data);
- 
- 	while (total_rx < data) {
--		rx_loop = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
--					(data - total_rx), MSG_WAITALL);
-+		rx_loop = sock_recvmsg(conn->sock, &msg,
-+				      (data - total_rx), MSG_WAITALL);
- 		if (rx_loop <= 0) {
- 			pr_debug("rx_loop: %d total_rx: %d\n",
- 				rx_loop, total_rx);
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 52cf1bd..4902f2d 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2651,17 +2651,10 @@ int skb_copy_datagram_iter(const struct sk_buff *from, int offset,
- static inline int skb_copy_datagram_msg(const struct sk_buff *from, int offset,
- 					struct msghdr *msg, int size)
- {
--	/* XXX: stripping const */
--	return skb_copy_datagram_iovec(from, offset, (struct iovec *)msg->msg_iter.iov, size);
--}
--int skb_copy_and_csum_datagram_iovec(struct sk_buff *skb, int hlen,
--				     struct iovec *iov);
--static inline int skb_copy_and_csum_datagram_msg(struct sk_buff *skb, int hlen,
--			    struct msghdr *msg)
+-static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
 -{
--	/* XXX: stripping const */
--	return skb_copy_and_csum_datagram_iovec(skb, hlen, (struct iovec *)msg->msg_iter.iov);
-+	return skb_copy_datagram_iter(from, offset, &msg->msg_iter, size);
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+-	char __user *buf;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __copy_to_user(buf, from, copy);
+-	copy -= left;
+-	skip += copy;
+-	from += copy;
+-	bytes -= copy;
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __copy_to_user(buf, from, copy);
+-		copy -= left;
+-		skip = copy;
+-		from += copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
+-
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
+ {
+@@ -360,51 +315,23 @@ static void memzero_page(struct page *page, size_t offset, size_t len)
+ 	kunmap_atomic(addr);
  }
-+int skb_copy_and_csum_datagram_msg(struct sk_buff *skb, int hlen,
-+				   struct msghdr *msg);
- int skb_copy_datagram_from_iter(struct sk_buff *skb, int offset,
- 				 struct iov_iter *from, int len);
- int zerocopy_sg_from_iter(struct sk_buff *skb, struct iov_iter *frm);
-@@ -2697,8 +2690,7 @@ static inline int memcpy_from_msg(void *data, struct msghdr *msg, int len)
  
- static inline int memcpy_to_msg(struct msghdr *msg, void *data, int len)
+-static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
++size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
  {
--	/* XXX: stripping const */
--	return memcpy_toiovec((struct iovec *)msg->msg_iter.iov, data, len);
-+	return copy_to_iter(data, len, &msg->msg_iter) == len ? 0 : -EFAULT;
- }
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
+-
++	char *from = addr;
+ 	if (unlikely(bytes > i->count))
+ 		bytes = i->count;
  
- struct skb_checksum_ops {
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index b6e303b..41075ed 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -615,27 +615,25 @@ int zerocopy_sg_from_iter(struct sk_buff *skb, struct iov_iter *from)
- EXPORT_SYMBOL(zerocopy_sg_from_iter);
- 
- static int skb_copy_and_csum_datagram(const struct sk_buff *skb, int offset,
--				      u8 __user *to, int len,
-+				      struct iov_iter *to, int len,
- 				      __wsum *csump)
- {
- 	int start = skb_headlen(skb);
- 	int i, copy = start - offset;
- 	struct sk_buff *frag_iter;
- 	int pos = 0;
-+	int n;
- 
- 	/* Copy header. */
- 	if (copy > 0) {
--		int err = 0;
- 		if (copy > len)
- 			copy = len;
--		*csump = csum_and_copy_to_user(skb->data + offset, to, copy,
--					       *csump, &err);
--		if (err)
-+		n = csum_and_copy_to_iter(skb->data + offset, copy, csump, to);
-+		if (n != copy)
- 			goto fault;
- 		if ((len -= copy) == 0)
- 			return 0;
- 		offset += copy;
--		to += copy;
- 		pos = copy;
- 	}
- 
-@@ -647,26 +645,22 @@ static int skb_copy_and_csum_datagram(const struct sk_buff *skb, int offset,
- 
- 		end = start + skb_frag_size(frag);
- 		if ((copy = end - offset) > 0) {
--			__wsum csum2;
--			int err = 0;
--			u8  *vaddr;
-+			__wsum csum2 = 0;
- 			struct page *page = skb_frag_page(frag);
-+			u8  *vaddr = kmap(page);
- 
- 			if (copy > len)
- 				copy = len;
--			vaddr = kmap(page);
--			csum2 = csum_and_copy_to_user(vaddr +
--							frag->page_offset +
--							offset - start,
--						      to, copy, 0, &err);
-+			n = csum_and_copy_to_iter(vaddr + frag->page_offset +
-+						  offset - start, copy,
-+						  &csum2, to);
- 			kunmap(page);
--			if (err)
-+			if (n != copy)
- 				goto fault;
- 			*csump = csum_block_add(*csump, csum2, pos);
- 			if (!(len -= copy))
- 				return 0;
- 			offset += copy;
--			to += copy;
- 			pos += copy;
- 		}
- 		start = end;
-@@ -691,7 +685,6 @@ static int skb_copy_and_csum_datagram(const struct sk_buff *skb, int offset,
- 			if ((len -= copy) == 0)
- 				return 0;
- 			offset += copy;
--			to += copy;
- 			pos += copy;
- 		}
- 		start = end;
-@@ -744,20 +737,19 @@ __sum16 __skb_checksum_complete(struct sk_buff *skb)
- EXPORT_SYMBOL(__skb_checksum_complete);
- 
- /**
-- *	skb_copy_and_csum_datagram_iovec - Copy and checksum skb to user iovec.
-+ *	skb_copy_and_csum_datagram_msg - Copy and checksum skb to user iovec.
-  *	@skb: skbuff
-  *	@hlen: hardware length
-- *	@iov: io vector
-+ *	@msg: destination
-  *
-  *	Caller _must_ check that skb will fit to this iovec.
-  *
-  *	Returns: 0       - success.
-  *		 -EINVAL - checksum failure.
-- *		 -EFAULT - fault during copy. Beware, in this case iovec
-- *			   can be modified!
-+ *		 -EFAULT - fault during copy.
-  */
--int skb_copy_and_csum_datagram_iovec(struct sk_buff *skb,
--				     int hlen, struct iovec *iov)
-+int skb_copy_and_csum_datagram_msg(struct sk_buff *skb,
-+				   int hlen, struct msghdr *msg)
- {
- 	__wsum csum;
- 	int chunk = skb->len - hlen;
-@@ -765,28 +757,20 @@ int skb_copy_and_csum_datagram_iovec(struct sk_buff *skb,
- 	if (!chunk)
+ 	if (unlikely(!bytes))
  		return 0;
  
--	/* Skip filled elements.
--	 * Pretty silly, look at memcpy_toiovec, though 8)
--	 */
--	while (!iov->iov_len)
--		iov++;
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-	copy = min_t(size_t, bytes, bvec->bv_len - skip);
 -
--	if (iov->iov_len < chunk) {
-+	if (iov_iter_count(&msg->msg_iter) < chunk) {
- 		if (__skb_checksum_complete(skb))
- 			goto csum_error;
--		if (skb_copy_datagram_iovec(skb, hlen, iov, chunk))
-+		if (skb_copy_datagram_msg(skb, hlen, msg, chunk))
- 			goto fault;
- 	} else {
- 		csum = csum_partial(skb->data, hlen, skb->csum);
--		if (skb_copy_and_csum_datagram(skb, hlen, iov->iov_base,
-+		if (skb_copy_and_csum_datagram(skb, hlen, &msg->msg_iter,
- 					       chunk, &csum))
- 			goto fault;
- 		if (csum_fold(csum))
- 			goto csum_error;
- 		if (unlikely(skb->ip_summed == CHECKSUM_COMPLETE))
- 			netdev_rx_csum_fault(skb->dev);
--		iov->iov_len -= chunk;
--		iov->iov_base += chunk;
- 	}
- 	return 0;
- csum_error:
-@@ -794,7 +778,7 @@ csum_error:
- fault:
- 	return -EFAULT;
- }
--EXPORT_SYMBOL(skb_copy_and_csum_datagram_iovec);
-+EXPORT_SYMBOL(skb_copy_and_csum_datagram_msg);
+-	memcpy_to_page(bvec->bv_page, skip + bvec->bv_offset, from, copy);
+-	skip += copy;
+-	from += copy;
+-	bytes -= copy;
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memcpy_to_page(bvec->bv_page, bvec->bv_offset, from, copy);
+-		skip = copy;
+-		from += copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
++	iterate_and_advance(i, bytes, v,
++		__copy_to_user(v.iov_base, (from += v.iov_len) - v.iov_len,
++			       v.iov_len),
++		memcpy_to_page(v.bv_page, v.bv_offset,
++			       (from += v.bv_len) - v.bv_len, v.bv_len)
++	)
  
- /**
-  * 	datagram_poll - generic datagram poll
+-size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
+-{
+-	if (i->type & ITER_BVEC)
+-		return copy_to_iter_bvec(addr, bytes, i);
+-	else
+-		return copy_to_iter_iovec(addr, bytes, i);
++	return bytes;
+ }
+ EXPORT_SYMBOL(copy_to_iter);
+ 
 -- 
 2.1.3
 
