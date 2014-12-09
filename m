@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbaLIXOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:14:08 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43574 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754222AbaLIXOG (ORCPT
+	id S1754640AbaLIXQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:16:28 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:64383 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808AbaLIXQ0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:14:06 -0500
-X-Sasl-enc: fEp4QeKWBk385PZYFggRAalNuDc+3QXpE+M+bW3Gozyf 1418166845
-Date: Tue, 9 Dec 2014 18:14:05 -0500
-From: Christoph Jaeger <cj@linux.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, yann.morin.1998@free.fr,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 2/3] kconfig: remove undocumented type definition alias
- 'boolean'
-Message-ID: <20141209231405.GC9677@betelgeuse.hsd1.ma.comcast.net>
-References: <cover.1418003065.git.cj@linux.com>
- <1539c3778a0f3533942f69540a9b5b3d1f965bdc.1418003065.git.cj@linux.com>
- <1418064660.2058.11.camel@x220>
- <1418066039.2058.19.camel@x220>
- <5485F923.3090301@redhat.com>
- <1418067685.2058.27.camel@x220>
- <1418070979.2058.52.camel@x220>
- <1418073300.2058.63.camel@x220>
- <5486E1BD.4040809@redhat.com>
+	Tue, 9 Dec 2014 18:16:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5486E1BD.4040809@redhat.com>
-X-Homepage: http://christophjaeger.info
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54877495.9090102@gmail.com>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+	<1418079372.13358.9.camel@kernel.crashing.org>
+	<CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
+	<20141209001119.GA24661@shangw>
+	<20141209022601.GA16207@richard>
+	<CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
+	<54873A45.3050009@gmail.com>
+	<CAErSpo7OXLco+fagqpK00Cc_AGxjEDJO5JDBtr_p92L2tpvs+Q@mail.gmail.com>
+	<CAE9FiQWPGLwQsz5HtW7r0Lrk4DMqfhbmk=ohcBWtWqXAN3mEZw@mail.gmail.com>
+	<54877495.9090102@gmail.com>
+Date: Tue, 9 Dec 2014 15:16:25 -0800
+X-Google-Sender-Auth: NMdVZ75Vdn_ol65GYudxPNZ5coo
+Message-ID: <CAE9FiQXofeVMkGq7r5SqnveSfOcYjmuuSdZB-LAiSXjof2X0Jw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 12:49:17PM +0100, Daniel Borkmann wrote:
-> On 12/08/2014 10:15 PM, Paul Bolle wrote:
-> >On Mon, 2014-12-08 at 21:36 +0100, Paul Bolle wrote:
-> >>On Mon, 2014-12-08 at 20:41 +0100, Paul Bolle wrote:
-> >>>Well, it seems the treewide "boolean" cleanup should be done first.
-> >>>Removing support for "boolean" could than be a second, separate step.
-> >>>Just to ease review.
-> >>
-> >>This appears to have no effect on the .config files I generated for the
-> >>defconfig files in next-20141208. (After porting the patch and changing
-> >>those last booleans to bool, that is.) So that's good.
-> >>
-> >>If you'd resend as two patches on top of linux-next, I might add an
-> >>Acked-by: or a Tested-by:.
-> >
-> >My last mail on this series. To make sure the tree stays buildable that
-> >second patch to drop support for 'boolean' should only be applied a
-> >release or two after the cleanup patch has been applied. Otherwise we're
-> >bound to run into fun build errors in linux-next, and even mainline, for
-> >quite a few commits, aren't we? One tree still using boolean is all it
-> >takes...
-> 
-> Sounds like a good plan, thanks a lot for looking into it, Paul!
-> 
-> Meanwhile, also checkpatch.pl could emit a deprecate warning in case
-> a patch carries Kconfig code with 'boolean' in it, but I leave that
-> up to Christoph to decide. ;)
+On Tue, Dec 9, 2014 at 2:15 PM, Marek Kordík <kordikmarek@gmail.com> wrote:
+> On 12/09/2014 08:42 PM, Yinghai Lu wrote:
+>>
+>> On Tue, Dec 9, 2014 at 10:22 AM, Bjorn Helgaas <bhelgaas@google.com>
+>> wrote:
+>>>
+>>> On Tue, Dec 9, 2014 at 11:07 AM, Marek Kordík <kordikmarek@gmail.com>
+>>> wrote:
+>>>>
+>>>> I have built and booted your branch and it works well. Do you want me to
+>>>> attach some logs?
+>>>> (I am new here and I have read http://www.tux.org/lkml/ and I don't want
+>>
+>> Can you run some graphics benchmark program to check the performance
+>> between
+>> 1.
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>>   branch: for-pci-allocate-fit-3.18
+>>
+>> 2.
+>> v 3.18 + clear mmio64 flags when children device does not support it
+>>
+>>
+> I have run Unigine Heaven benchmark on both versions (I tried version 2.
+> with and also without kernel parameters "debug ignore_loglevel pci=realloc")
+> and the performance of each version was the same (70-71 points). I tried to
+> run this benchmark also with kernel 3.15.10 and the result was 67 points.
+> Tomorrow I can try to run some more benchmarks, today I didn't have much
+> time.
 
-Agree. Thanks for reviewing and testing!
+so putting  mem pref under bridge mem does not cause performance loss?
 
-I'll resend a series on top of linux-next that takes all of your suggestions
-into account.
+Thanks
 
-Thanks,
-Chris
+Yinghai
