@@ -1,122 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaLIW3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:29:46 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:52976 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaLIW3p (ORCPT
+	id S1753492AbaLIWgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:36:54 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:53508 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaLIWgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:29:45 -0500
-Date: Thu, 4 Dec 2014 03:40:44 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Javi Merino <javi.merino@arm.com>, linux-pm@vger.kernel.org
-Subject: Re: [RESEND PATCH v5 3/5] acerhdf: Use bang-bang thermal governor
-Message-ID: <20141204114044.GB100190@vmdeb7>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1417184452-11884-1-git-send-email-peter@piie.net>
- <1417184452-11884-4-git-send-email-peter@piie.net>
- <20141203090436.GC52608@vmdeb7>
- <cone.1417677032.220767.18692.1000@mups>
- <cone.1417677666.882029.18692.1000@mups>
+	Tue, 9 Dec 2014 17:36:53 -0500
+Date: Tue, 9 Dec 2014 22:36:50 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: linux-soc@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>, Allen Martin <amartin@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: [PATCH] soc: tegra: pmc: restrict compilation of suspend-related
+ support to ARM
+Message-ID: <alpine.DEB.2.02.1412092224050.31750@utopia.booyaka.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cone.1417677666.882029.18692.1000@mups>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 08:21:06AM +0100, Peter Feuerer wrote:
-> Hi again,
-> 
-> Peter Feuerer writes:
-> 
-> >Hi Darren,
-> >
-> >thank you very much for your reply.
-> >
-> >
-> >Darren Hart writes:
-> >
-> >>On Fri, Nov 28, 2014 at 03:20:50PM +0100, Peter Feuerer wrote:
-> >>>acerhdf has been doing an on-off fan control using hysteresis by
-> >>>post-manipulating the outcome of thermal subsystem trip point handling.
-> >>>This patch enables acerhdf to use the bang-bang governor, which is
-> >>>intended for on-off controlled fans.
-> >>>
-> >>>Cc: platform-driver-x86@vger.kernel.org
-> >>>Cc: Darren Hart <dvhart@infradead.org>
-> >>>Cc: Andrew Morton <akpm@linux-foundation.org>
-> >>>CC: Zhang Rui <rui.zhang@intel.com>
-> >>>Cc: Andreas Mohr <andi@lisas.de>
-> >>>Cc: Javi Merino <javi.merino@arm.com>
-> >>>Acked-and-tested-by: Borislav Petkov <bp@suse.de>
-> >>>Signed-off-by: Peter Feuerer <peter@piie.net>
-> >>>---
-> >>> drivers/platform/x86/Kconfig   |  3 ++-
-> >>> drivers/platform/x86/acerhdf.c | 36 +++++++++++++++++++++++++++++++-----
-> >>> 2 files changed, 33 insertions(+), 6 deletions(-)
-> >>>
-> >>>diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> >>>index a2eabe6..c173266 100644
-> >>>--- a/drivers/platform/x86/Kconfig
-> >>>+++ b/drivers/platform/x86/Kconfig
-> >>>@@ -38,7 +38,8 @@ config ACER_WMI
-> >>> config ACERHDF
-> >>> 	tristate "Acer Aspire One temperature and fan driver"
-> >>>-	depends on THERMAL && ACPI
-> >>>+	select THERMAL_GOV_BANG_BANG
-> >>
-> >>So we use select sparingly as it does implicit things.
-> >>
-> >>I checked the THERMAL_GOV_BANG_BANG Kconfig entry, and the help says acerhdf
-> >>already depends on it (which it doesn't appear to). Any particular reason to add
-> >>select here instead of adding it as a depends.
-> >>
-> >>Why did you drop THERMAL?
-> >
-> >I had it like this in my first version of patches:
-> >+ depends on THERMAL && ACPI && THERMAL_GOV_BANG_BANG
-> >
-> >But after some discussion with lkml community we ended up with the select
-> >line and dropped THERMAL dependency, as it is implied by
-> >THEMAL_GOV_BANG_BANG.  I'm not so experienced with Kconfig, so I must rely
-> >on the statements of the community in this case.
-> 
-> Just found the link about this discussion I had with Rui and Boris:
-> http://linux-kernel.2935.n7.nabble.com/PATCH-0-4-acerhdf-thermal-adding-new-models-and-appropriate-governor-tp848572p908256.html
-> 
 
-Rui,
+Tegra SoCs with 64-bit ARM support don't currently support deep CPU
+low-power states in mainline Linux.  When this support is added in the
+future, it will probably look rather different from the existing
+32-bit ARM support, since the ARM64 maintainers' strong preference is
+to use PSCI to implement it.
 
-I see you said you agree with the approach to "select THERMAL_GOV_BANG_BANG",
-and I'm OK with that. But that doesn't ensure, as far as I can see, a
-sufficient set of Kconfig dependencies for ACERHDF as THERMAL_GOV_BANG_BANG
-doesn't in turn select THERMAL.
+So, for the time being, prevent the CPU suspend-related code and data
+in the Tegra PMC driver from compiling on ARM64.
 
-While it's unlikely to get ACERHDF available without THERMAL enabled, it does
-look possible. Should this driver also select or depends on THERMAL?
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Thierry Reding <treding@nvidia.com>
+Cc: Allen Martin <amartin@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+---
+Applies on next-20141209.
+Intended for v3.20.
+Boot-tested on Tegra124 Jetson TK1 on next-20141209.
+Also boot-tested on Tegra132 Norrin FFD on next-20141209 + some unrelated 
+patches.
 
-Maybe:
+ drivers/soc/tegra/pmc.c | 7 +++++--
+ include/soc/tegra/pm.h  | 2 +-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-depends on ACPI
-depends on THERMAL
-select THERMAL_GOV_BANG_BANG
-
-?
-
-> [...]
-> 
-> -- 
-> kind regards,
-> --peter;
-> 
-
+diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
+index a2c0ceb95f8f..4bdc654bd747 100644
+--- a/drivers/soc/tegra/pmc.c
++++ b/drivers/soc/tegra/pmc.c
+@@ -739,7 +739,7 @@ static int tegra_pmc_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_SLEEP
++#if defined(CONFIG_PM_SLEEP) && defined(CONFIG_ARM)
+ static int tegra_pmc_suspend(struct device *dev)
+ {
+ 	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
+@@ -753,10 +753,11 @@ static int tegra_pmc_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-#endif
+ 
+ static SIMPLE_DEV_PM_OPS(tegra_pmc_pm_ops, tegra_pmc_suspend, tegra_pmc_resume);
+ 
++#endif
++
+ static const char * const tegra20_powergates[] = {
+ 	[TEGRA_POWERGATE_CPU] = "cpu",
+ 	[TEGRA_POWERGATE_3D] = "3d",
+@@ -894,7 +895,9 @@ static struct platform_driver tegra_pmc_driver = {
+ 		.name = "tegra-pmc",
+ 		.suppress_bind_attrs = true,
+ 		.of_match_table = tegra_pmc_match,
++#if defined(CONFIG_PM_SLEEP) && defined(CONFIG_ARM)
+ 		.pm = &tegra_pmc_pm_ops,
++#endif
+ 	},
+ 	.probe = tegra_pmc_probe,
+ };
+diff --git a/include/soc/tegra/pm.h b/include/soc/tegra/pm.h
+index 30fe2078a547..03909101d4e7 100644
+--- a/include/soc/tegra/pm.h
++++ b/include/soc/tegra/pm.h
+@@ -17,7 +17,7 @@ enum tegra_suspend_mode {
+ 	TEGRA_MAX_SUSPEND_MODE,
+ };
+ 
+-#ifdef CONFIG_PM_SLEEP
++#if defined(CONFIG_PM_SLEEP) && defined(CONFIG_ARM)
+ enum tegra_suspend_mode
+ tegra_pm_validate_suspend_mode(enum tegra_suspend_mode mode);
+ 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+2.1.3
+
