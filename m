@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaLIWys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:54:48 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37484 "EHLO
+	id S1754815AbaLIW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:57:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37462 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978AbaLIWul (ORCPT
+	with ESMTP id S1753957AbaLIWuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:41 -0500
+	Tue, 9 Dec 2014 17:50:39 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 19/25] vmci: propagate msghdr all way down to __qp_memcpy_from_queue()
-Date: Tue,  9 Dec 2014 22:50:32 +0000
-Message-Id: <1418165438-2205-19-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH 08/25] iov_iter.c: convert copy_from_iter() to iterate_and_advance
+Date: Tue,  9 Dec 2014 22:50:21 +0000
+Message-Id: <1418165438-2205-8-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
 References: <20141209224928.GL22149@ZenIV.linux.org.uk>
@@ -22,130 +22,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-... and switch it to memcpy_to_msg()
-
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- drivers/misc/vmw_vmci/vmci_queue_pair.c | 17 +++++++++--------
- include/linux/vmw_vmci_api.h            |  5 +++--
- net/vmw_vsock/vmci_transport.c          |  4 ++--
- 3 files changed, 14 insertions(+), 12 deletions(-)
+ mm/iov_iter.c | 106 +++++++++-------------------------------------------------
+ 1 file changed, 15 insertions(+), 91 deletions(-)
 
-diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-index 1b7b303..7aaaf51 100644
---- a/drivers/misc/vmw_vmci/vmci_queue_pair.c
-+++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
-@@ -27,6 +27,7 @@
- #include <linux/uio.h>
- #include <linux/wait.h>
- #include <linux/vmalloc.h>
-+#include <linux/skbuff.h>
- 
- #include "vmci_handle_array.h"
- #include "vmci_queue_pair.h"
-@@ -429,11 +430,11 @@ static int __qp_memcpy_from_queue(void *dest,
- 			to_copy = size - bytes_copied;
- 
- 		if (is_iovec) {
--			struct iovec *iov = (struct iovec *)dest;
-+			struct msghdr *msg = dest;
- 			int err;
- 
- 			/* The iovec will track bytes_copied internally. */
--			err = memcpy_toiovec(iov, (u8 *)va + page_offset,
-+			err = memcpy_to_msg(msg, (u8 *)va + page_offset,
- 					     to_copy);
- 			if (err != 0) {
- 				if (kernel_if->host)
-@@ -3264,13 +3265,13 @@ EXPORT_SYMBOL_GPL(vmci_qpair_enquev);
-  * of bytes dequeued or < 0 on error.
-  */
- ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
--			  void *iov,
-+			  struct msghdr *msg,
- 			  size_t iov_size,
- 			  int buf_type)
- {
- 	ssize_t result;
- 
--	if (!qpair || !iov)
-+	if (!qpair)
- 		return VMCI_ERROR_INVALID_ARGS;
- 
- 	qp_lock(qpair);
-@@ -3279,7 +3280,7 @@ ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
- 		result = qp_dequeue_locked(qpair->produce_q,
- 					   qpair->consume_q,
- 					   qpair->consume_q_size,
--					   iov, iov_size,
-+					   msg, iov_size,
- 					   qp_memcpy_from_queue_iov,
- 					   true);
- 
-@@ -3308,13 +3309,13 @@ EXPORT_SYMBOL_GPL(vmci_qpair_dequev);
-  * of bytes peeked or < 0 on error.
-  */
- ssize_t vmci_qpair_peekv(struct vmci_qp *qpair,
--			 void *iov,
-+			 struct msghdr *msg,
- 			 size_t iov_size,
- 			 int buf_type)
- {
- 	ssize_t result;
- 
--	if (!qpair || !iov)
-+	if (!qpair)
- 		return VMCI_ERROR_INVALID_ARGS;
- 
- 	qp_lock(qpair);
-@@ -3323,7 +3324,7 @@ ssize_t vmci_qpair_peekv(struct vmci_qp *qpair,
- 		result = qp_dequeue_locked(qpair->produce_q,
- 					   qpair->consume_q,
- 					   qpair->consume_q_size,
--					   iov, iov_size,
-+					   msg, iov_size,
- 					   qp_memcpy_from_queue_iov,
- 					   false);
- 
-diff --git a/include/linux/vmw_vmci_api.h b/include/linux/vmw_vmci_api.h
-index 023430e..5691f75 100644
---- a/include/linux/vmw_vmci_api.h
-+++ b/include/linux/vmw_vmci_api.h
-@@ -24,6 +24,7 @@
- #define VMCI_KERNEL_API_VERSION_2 2
- #define VMCI_KERNEL_API_VERSION   VMCI_KERNEL_API_VERSION_2
- 
-+struct msghdr;
- typedef void (vmci_device_shutdown_fn) (void *device_registration,
- 					void *user_data);
- 
-@@ -75,8 +76,8 @@ ssize_t vmci_qpair_peek(struct vmci_qp *qpair, void *buf, size_t buf_size,
- ssize_t vmci_qpair_enquev(struct vmci_qp *qpair,
- 			  void *iov, size_t iov_size, int mode);
- ssize_t vmci_qpair_dequev(struct vmci_qp *qpair,
--			  void *iov, size_t iov_size, int mode);
--ssize_t vmci_qpair_peekv(struct vmci_qp *qpair, void *iov, size_t iov_size,
-+			  struct msghdr *msg, size_t iov_size, int mode);
-+ssize_t vmci_qpair_peekv(struct vmci_qp *qpair, struct msghdr *msg, size_t iov_size,
- 			 int mode);
- 
- #endif /* !__VMW_VMCI_API_H__ */
-diff --git a/net/vmw_vsock/vmci_transport.c b/net/vmw_vsock/vmci_transport.c
-index c1c0389..20a0ba3 100644
---- a/net/vmw_vsock/vmci_transport.c
-+++ b/net/vmw_vsock/vmci_transport.c
-@@ -1840,9 +1840,9 @@ static ssize_t vmci_transport_stream_dequeue(
- 	int flags)
- {
- 	if (flags & MSG_PEEK)
--		return vmci_qpair_peekv(vmci_trans(vsk)->qpair, msg->msg_iov, len, 0);
-+		return vmci_qpair_peekv(vmci_trans(vsk)->qpair, msg, len, 0);
- 	else
--		return vmci_qpair_dequev(vmci_trans(vsk)->qpair, msg->msg_iov, len, 0);
-+		return vmci_qpair_dequev(vmci_trans(vsk)->qpair, msg, len, 0);
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index 17b7144..791429d 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -142,51 +142,6 @@ static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
+ 	return wanted - bytes;
  }
  
- static ssize_t vmci_transport_stream_enqueue(
+-static size_t copy_from_iter_iovec(void *to, size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, left, wanted;
+-	const struct iovec *iov;
+-	char __user *buf;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	iov = i->iov;
+-	skip = i->iov_offset;
+-	buf = iov->iov_base + skip;
+-	copy = min(bytes, iov->iov_len - skip);
+-
+-	left = __copy_from_user(to, buf, copy);
+-	copy -= left;
+-	skip += copy;
+-	to += copy;
+-	bytes -= copy;
+-	while (unlikely(!left && bytes)) {
+-		iov++;
+-		buf = iov->iov_base;
+-		copy = min(bytes, iov->iov_len);
+-		left = __copy_from_user(to, buf, copy);
+-		copy -= left;
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-
+-	if (skip == iov->iov_len) {
+-		iov++;
+-		skip = 0;
+-	}
+-	i->count -= wanted - bytes;
+-	i->nr_segs -= iov - i->iov;
+-	i->iov = iov;
+-	i->iov_offset = skip;
+-	return wanted - bytes;
+-}
+-
+ static size_t copy_page_to_iter_iovec(struct page *page, size_t offset, size_t bytes,
+ 			 struct iov_iter *i)
+ {
+@@ -444,48 +399,6 @@ static size_t copy_to_iter_bvec(void *from, size_t bytes, struct iov_iter *i)
+ 	return wanted - bytes;
+ }
+ 
+-static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
+-{
+-	size_t skip, copy, wanted;
+-	const struct bio_vec *bvec;
+-
+-	if (unlikely(bytes > i->count))
+-		bytes = i->count;
+-
+-	if (unlikely(!bytes))
+-		return 0;
+-
+-	wanted = bytes;
+-	bvec = i->bvec;
+-	skip = i->iov_offset;
+-
+-	copy = min(bytes, bvec->bv_len - skip);
+-
+-	memcpy_from_page(to, bvec->bv_page, bvec->bv_offset + skip, copy);
+-
+-	to += copy;
+-	skip += copy;
+-	bytes -= copy;
+-
+-	while (bytes) {
+-		bvec++;
+-		copy = min(bytes, (size_t)bvec->bv_len);
+-		memcpy_from_page(to, bvec->bv_page, bvec->bv_offset, copy);
+-		skip = copy;
+-		to += copy;
+-		bytes -= copy;
+-	}
+-	if (skip == bvec->bv_len) {
+-		bvec++;
+-		skip = 0;
+-	}
+-	i->count -= wanted;
+-	i->nr_segs -= bvec - i->bvec;
+-	i->bvec = bvec;
+-	i->iov_offset = skip;
+-	return wanted;
+-}
+-
+ size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
+ {
+ 	if (i->type & ITER_BVEC)
+@@ -497,10 +410,21 @@ EXPORT_SYMBOL(copy_to_iter);
+ 
+ size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
+ {
+-	if (i->type & ITER_BVEC)
+-		return copy_from_iter_bvec(addr, bytes, i);
+-	else
+-		return copy_from_iter_iovec(addr, bytes, i);
++	char *to = addr;
++	if (unlikely(bytes > i->count))
++		bytes = i->count;
++
++	if (unlikely(!bytes))
++		return 0;
++
++	iterate_and_advance(i, bytes, v,
++		__copy_from_user((to += v.iov_len) - v.iov_len, v.iov_base,
++				 v.iov_len),
++		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++				 v.bv_offset, v.bv_len)
++	)
++
++	return bytes;
+ }
+ EXPORT_SYMBOL(copy_from_iter);
+ 
 -- 
 2.1.3
 
