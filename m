@@ -1,252 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaLIKkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:40:42 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:49790 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822AbaLIKkk (ORCPT
+	id S1756388AbaLIKlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:41:39 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42553 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932AbaLIKlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:40:40 -0500
-Date: Tue, 9 Dec 2014 11:40:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] locking tree changes for v3.19
-Message-ID: <20141209104035.GA19970@gmail.com>
+	Tue, 9 Dec 2014 05:41:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418093001-30443-2-git-send-email-lyz@rock-chips.com>
+References: <1418093001-30443-1-git-send-email-lyz@rock-chips.com>
+	<1418093001-30443-2-git-send-email-lyz@rock-chips.com>
+Date: Tue, 9 Dec 2014 11:41:36 +0100
+Message-ID: <CABgxDoJRA4cQBqNBTCSGnnLpcOHqqTuBqcyWQosVv4A_Gx315g@mail.gmail.com>
+Subject: Re: [PATCH v4 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+From: Romain Perier <romain.perier@gmail.com>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>, olof@lixom.net,
+        Tao Huang <huangtao@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, linux-rockchip@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-Please pull the latest core-locking-for-linus git tree from:
+2014-12-09 3:43 GMT+01:00 Yunzhi Li <lyz@rock-chips.com>:
+> Changes in v3:
+> - Use BIT macro instead of bit shift ops.
+> - Rename the config entry to PHY_ROCKCHIP_USB.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
+Contradiction between this , [1] and [2]
+>
+>  drivers/phy/Kconfig            |   7 ++
+>  drivers/phy/Makefile           |   1 +
+>  drivers/phy/phy-rockchip-usb.c | 211 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 219 insertions(+)
+>  create mode 100644 drivers/phy/phy-rockchip-usb.c
+>
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index ccad880..8a39d2a 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
+>         depends on OF
+>         select GENERIC_PHY
+>
+> +config PHY_ROCKCHIP_USB2
+> +       tristate "Rockchip USB2 PHY Driver"
+> +       depends on ARCH_ROCKCHIP && OF
+> +       select GENERIC_PHY
+> +       help
+> +         Enable this to support the Rockchip USB 2.0 PHY.
+> +
 
-   # HEAD: 78bff1c8684fb94f1ae7283688f90188b53fc433 x86/ticketlock: Fix spin_unlock_wait() livelock
+1. The config entry ends by "USB2". Explain that your driver is for
+usb 2.0 in the description is enough, imho.
 
-Two changes: a documentation update and a ticket locks live lock 
-fix.
+>  config PHY_ST_SPEAR1310_MIPHY
+>         tristate "ST SPEAR1310-MIPHY driver"
+>         select GENERIC_PHY
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index aa74f96..8a13f72 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2) += phy-exynos5250-usb2.o
+>  phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)     += phy-s5pv210-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)       += phy-exynos5-usbdrd.o
+>  obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)    += phy-qcom-apq8064-sata.o
+> +obj-$(CONFIG_PHY_ROCKCHIP_USB2) += phy-rockchip-usb.o
 
- Thanks,
+2. and... this :)
 
-	Ingo
-
------------------->
-Nicholas Mc Guire (1):
-      locking/lglocks: Add documentation of current lglocks implementation
-
-Oleg Nesterov (1):
-      x86/ticketlock: Fix spin_unlock_wait() livelock
-
-
- Documentation/locking/lglock.txt | 166 +++++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/spinlock.h  |  14 +++-
- 2 files changed, 179 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/locking/lglock.txt
-
-diff --git a/Documentation/locking/lglock.txt b/Documentation/locking/lglock.txt
-new file mode 100644
-index 000000000000..a6971e34fabe
---- /dev/null
-+++ b/Documentation/locking/lglock.txt
-@@ -0,0 +1,166 @@
-+lglock - local/global locks for mostly local access patterns
-+------------------------------------------------------------
-+
-+Origin: Nick Piggin's VFS scalability series introduced during
-+	2.6.35++ [1] [2]
-+Location: kernel/locking/lglock.c
-+	include/linux/lglock.h
-+Users: currently only the VFS and stop_machine related code
-+
-+Design Goal:
-+------------
-+
-+Improve scalability of globally used large data sets that are
-+distributed over all CPUs as per_cpu elements.
-+
-+To manage global data structures that are partitioned over all CPUs
-+as per_cpu elements but can be mostly handled by CPU local actions
-+lglock will be used where the majority of accesses are cpu local
-+reading and occasional cpu local writing with very infrequent
-+global write access.
-+
-+
-+* deal with things locally whenever possible
-+	- very fast access to the local per_cpu data
-+	- reasonably fast access to specific per_cpu data on a different
-+	  CPU
-+* while making global action possible when needed
-+	- by expensive access to all CPUs locks - effectively
-+	  resulting in a globally visible critical section.
-+
-+Design:
-+-------
-+
-+Basically it is an array of per_cpu spinlocks with the
-+lg_local_lock/unlock accessing the local CPUs lock object and the
-+lg_local_lock_cpu/unlock_cpu accessing a remote CPUs lock object
-+the lg_local_lock has to disable preemption as migration protection so
-+that the reference to the local CPUs lock does not go out of scope.
-+Due to the lg_local_lock/unlock only touching cpu-local resources it
-+is fast. Taking the local lock on a different CPU will be more
-+expensive but still relatively cheap.
-+
-+One can relax the migration constraints by acquiring the current
-+CPUs lock with lg_local_lock_cpu, remember the cpu, and release that
-+lock at the end of the critical section even if migrated. This should
-+give most of the performance benefits without inhibiting migration
-+though needs careful considerations for nesting of lglocks and
-+consideration of deadlocks with lg_global_lock.
-+
-+The lg_global_lock/unlock locks all underlying spinlocks of all
-+possible CPUs (including those off-line). The preemption disable/enable
-+are needed in the non-RT kernels to prevent deadlocks like:
-+
-+                     on cpu 1
-+
-+              task A          task B
-+         lg_global_lock
-+           got cpu 0 lock
-+                 <<<< preempt <<<<
-+                         lg_local_lock_cpu for cpu 0
-+                           spin on cpu 0 lock
-+
-+On -RT this deadlock scenario is resolved by the arch_spin_locks in the
-+lglocks being replaced by rt_mutexes which resolve the above deadlock
-+by boosting the lock-holder.
-+
-+
-+Implementation:
-+---------------
-+
-+The initial lglock implementation from Nick Piggin used some complex
-+macros to generate the lglock/brlock in lglock.h - they were later
-+turned into a set of functions by Andi Kleen [7]. The change to functions
-+was motivated by the presence of multiple lock users and also by them
-+being easier to maintain than the generating macros. This change to
-+functions is also the basis to eliminated the restriction of not
-+being initializeable in kernel modules (the remaining problem is that
-+locks are not explicitly initialized - see lockdep-design.txt)
-+
-+Declaration and initialization:
-+-------------------------------
-+
-+  #include <linux/lglock.h>
-+
-+  DEFINE_LGLOCK(name)
-+  or:
-+  DEFINE_STATIC_LGLOCK(name);
-+
-+  lg_lock_init(&name, "lockdep_name_string");
-+
-+  on UP this is mapped to DEFINE_SPINLOCK(name) in both cases, note
-+  also that as of 3.18-rc6 all declaration in use are of the _STATIC_
-+  variant (and it seems that the non-static was never in use).
-+  lg_lock_init is initializing the lockdep map only.
-+
-+Usage:
-+------
-+
-+From the locking semantics it is a spinlock. It could be called a
-+locality aware spinlock. lg_local_* behaves like a per_cpu
-+spinlock and lg_global_* like a global spinlock.
-+No surprises in the API.
-+
-+  lg_local_lock(*lglock);
-+     access to protected per_cpu object on this CPU
-+  lg_local_unlock(*lglock);
-+
-+  lg_local_lock_cpu(*lglock, cpu);
-+     access to protected per_cpu object on other CPU cpu
-+  lg_local_unlock_cpu(*lglock, cpu);
-+
-+  lg_global_lock(*lglock);
-+     access all protected per_cpu objects on all CPUs
-+  lg_global_unlock(*lglock);
-+
-+  There are no _trylock variants of the lglocks.
-+
-+Note that the lg_global_lock/unlock has to iterate over all possible
-+CPUs rather than the actually present CPUs or a CPU could go off-line
-+with a held lock [4] and that makes it very expensive. A discussion on
-+these issues can be found at [5]
-+
-+Constraints:
-+------------
-+
-+  * currently the declaration of lglocks in kernel modules is not
-+    possible, though this should be doable with little change.
-+  * lglocks are not recursive.
-+  * suitable for code that can do most operations on the CPU local
-+    data and will very rarely need the global lock
-+  * lg_global_lock/unlock is *very* expensive and does not scale
-+  * on UP systems all lg_* primitives are simply spinlocks
-+  * in PREEMPT_RT the spinlock becomes an rt-mutex and can sleep but
-+    does not change the tasks state while sleeping [6].
-+  * in PREEMPT_RT the preempt_disable/enable in lg_local_lock/unlock
-+    is downgraded to a migrate_disable/enable, the other
-+    preempt_disable/enable are downgraded to barriers [6].
-+    The deadlock noted for non-RT above is resolved due to rt_mutexes
-+    boosting the lock-holder in this case which arch_spin_locks do
-+    not do.
-+
-+lglocks were designed for very specific problems in the VFS and probably
-+only are the right answer in these corner cases. Any new user that looks
-+at lglocks probably wants to look at the seqlock and RCU alternatives as
-+her first choice. There are also efforts to resolve the RCU issues that
-+currently prevent using RCU in place of view remaining lglocks.
-+
-+Note on brlock history:
-+-----------------------
-+
-+The 'Big Reader' read-write spinlocks were originally introduced by
-+Ingo Molnar in 2000 (2.4/2.5 kernel series) and removed in 2003. They
-+later were introduced by the VFS scalability patch set in 2.6 series
-+again as the "big reader lock" brlock [2] variant of lglock which has
-+been replaced by seqlock primitives or by RCU based primitives in the
-+3.13 kernel series as was suggested in [3] in 2003. The brlock was
-+entirely removed in the 3.13 kernel series.
-+
-+Link: 1 http://lkml.org/lkml/2010/8/2/81
-+Link: 2 http://lwn.net/Articles/401738/
-+Link: 3 http://lkml.org/lkml/2003/3/9/205
-+Link: 4 https://lkml.org/lkml/2011/8/24/185
-+Link: 5 http://lkml.org/lkml/2011/12/18/189
-+Link: 6 https://www.kernel.org/pub/linux/kernel/projects/rt/
-+        patch series - lglocks-rt.patch.patch
-+Link: 7 http://lkml.org/lkml/2012/3/5/26
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index bf156ded74b5..abc34e95398d 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -184,8 +184,20 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- 
- static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- {
--	while (arch_spin_is_locked(lock))
-+	__ticket_t head = ACCESS_ONCE(lock->tickets.head);
-+
-+	for (;;) {
-+		struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
-+		/*
-+		 * We need to check "unlocked" in a loop, tmp.head == head
-+		 * can be false positive because of overflow.
-+		 */
-+		if (tmp.head == (tmp.tail & ~TICKET_SLOWPATH_FLAG) ||
-+		    tmp.head != head)
-+			break;
-+
- 		cpu_relax();
-+	}
- }
- 
- /*
+Romain
