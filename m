@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaLIJYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:24:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44347 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753925AbaLIJYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:24:30 -0500
-Message-ID: <5486BFCB.4040305@suse.cz>
-Date: Tue, 09 Dec 2014 10:24:27 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756623AbaLIJZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:25:07 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:62438 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986AbaLIJLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:11:48 -0500
+From: Jiada Wang <jiada_wang@mentor.com>
+To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <jiada_wang@mentor.com>, <anton_bondarenko@mentor.com>,
+        <dirk.behme@de.bosch.com>
+Subject: [PATCH v1 06/15] serial: imx: unmap scatter gather list in imx_flush_buffer
+Date: Tue, 9 Dec 2014 18:11:27 +0900
+Message-ID: <1418116296-12082-7-git-send-email-jiada_wang@mentor.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1418116296-12082-1-git-send-email-jiada_wang@mentor.com>
+References: <1418116296-12082-1-git-send-email-jiada_wang@mentor.com>
 MIME-Version: 1.0
-To: Weijie Yang <weijie.yang@samsung.com>, iamjoonsoo.kim@lge.com
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        "'Rik van Riel'" <riel@redhat.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: page_isolation: remove unnecessary freepage_migratetype
- check for unused page
-References: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
-In-Reply-To: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 08:51 AM, Weijie Yang wrote:
-> when we test the pages in a range is free or not, there is a little
-> chance we encounter some page which is not in buddy but page_count is 0.
-> That means that page could be in the page-freeing path but not in the
-> buddy freelist, such as in pcplist
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-This shouldn't happen anymore IMHO. The pageblock is marked as 
-MIGRATE_ISOLATE and then a lru+pcplist drain is performed. Nothing 
-should be left on pcplist - anything newly freed goes directly to free 
-lists. Hm, maybe it could be on lru cache, but that holds a page 
-reference IIRC, so this test won't pass.
+First, reformat the code to exit immediately. This allows us to add
+more code in more readable format.
 
-> or wait for the zone->lock which the
-> tester is holding.
+In case the TX DMA was still running, remove and disable it's resources.
 
-That could maybe happen, but is it worth testing? If yes, please add it 
-in a comment to the code.
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+---
+ drivers/tty/serial/imx.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-> Back to the freepage_migratetype, we use it for a cached value for decide
-> which free-list the page go when freeing page. If the pageblock is isolated
-> the page will go to free-list[MIGRATE_ISOLATE] even if the cached type is
-> not MIGRATE_ISOLATE, the commit ad53f92e(fix incorrect isolation behavior
-> by rechecking migratetype) patch series have ensure this.
->
-> So the freepage_migratetype check for page_count==0 page in
-> __test_page_isolated_in_pageblock() is meaningless.
-> This patch removes the unnecessary freepage_migratetype check.
->
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> ---
->   mm/page_isolation.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index 6e5174d..f7c9183 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -223,8 +223,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
->   		page = pfn_to_page(pfn);
->   		if (PageBuddy(page))
->   			pfn += 1 << page_order(page);
-> -		else if (page_count(page) == 0 &&
-> -			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
-> +		else if (page_count(page) == 0)
->   			pfn += 1;
->   		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
->   			/*
->
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index a0bfccf..e53a058 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1302,10 +1302,17 @@ static void imx_shutdown(struct uart_port *port)
+ static void imx_flush_buffer(struct uart_port *port)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
++	struct scatterlist *sgl = &sport->tx_sgl[0];
+ 
+-	if (sport->dma_is_enabled) {
+-		sport->tx_bytes = 0;
+-		dmaengine_terminate_all(sport->dma_chan_tx);
++	if (!sport->dma_chan_tx)
++		return;
++
++	sport->tx_bytes = 0;
++	dmaengine_terminate_all(sport->dma_chan_tx);
++	if (sport->dma_is_txing) {
++		dma_unmap_sg(sport->port.dev, sgl, sport->dma_tx_nents,
++			     DMA_TO_DEVICE);
++		sport->dma_is_txing = false;
+ 	}
+ }
+ 
+-- 
+1.9.3
 
