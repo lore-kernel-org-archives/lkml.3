@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699AbaLIWyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:54:54 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37478 "EHLO
+	id S1754675AbaLIWyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:54:52 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37479 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972AbaLIWul (ORCPT
+	with ESMTP id S1753975AbaLIWul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Dec 2014 17:50:41 -0500
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: David Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 16/25] ip_generic_getfrag, udplite_getfrag: switch to passing msghdr
-Date: Tue,  9 Dec 2014 22:50:29 +0000
-Message-Id: <1418165438-2205-16-git-send-email-viro@ZenIV.linux.org.uk>
+Subject: [PATCH 17/25] switch tcp_sock->ucopy from iovec (ucopy.iov) to msghdr (ucopy.msg)
+Date: Tue,  9 Dec 2014 22:50:30 +0000
+Message-Id: <1418165438-2205-17-git-send-email-viro@ZenIV.linux.org.uk>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
 References: <20141209224928.GL22149@ZenIV.linux.org.uk>
@@ -24,125 +24,63 @@ From: Al Viro <viro@zeniv.linux.org.uk>
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- include/net/udplite.h | 3 ++-
- net/ipv4/ip_output.c  | 6 +++---
- net/ipv4/raw.c        | 2 +-
- net/ipv4/udp.c        | 4 ++--
- net/ipv6/raw.c        | 2 +-
- net/ipv6/udp.c        | 2 +-
- net/l2tp/l2tp_ip6.c   | 2 +-
- 7 files changed, 11 insertions(+), 10 deletions(-)
+ include/linux/tcp.h  | 2 +-
+ net/ipv4/tcp.c       | 2 +-
+ net/ipv4/tcp_input.c | 7 +++----
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/net/udplite.h b/include/net/udplite.h
-index 9a28a51..d5baaba 100644
---- a/include/net/udplite.h
-+++ b/include/net/udplite.h
-@@ -19,7 +19,8 @@ extern struct udp_table		udplite_table;
- static __inline__ int udplite_getfrag(void *from, char *to, int  offset,
- 				      int len, int odd, struct sk_buff *skb)
- {
--	return memcpy_fromiovecend(to, (struct iovec *) from, offset, len);
-+	struct msghdr *msg = from;
-+	return memcpy_fromiovecend(to, msg->msg_iov, offset, len);
- }
+diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+index f566b85..5d9cc9c 100644
+--- a/include/linux/tcp.h
++++ b/include/linux/tcp.h
+@@ -162,7 +162,7 @@ struct tcp_sock {
+ 	struct {
+ 		struct sk_buff_head	prequeue;
+ 		struct task_struct	*task;
+-		struct iovec		*iov;
++		struct msghdr		*msg;
+ 		int			memory;
+ 		int			len;
+ 	} ucopy;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index dc13a36..4a96f37 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1729,7 +1729,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			if (!user_recv && !(flags & (MSG_TRUNC | MSG_PEEK))) {
+ 				user_recv = current;
+ 				tp->ucopy.task = user_recv;
+-				tp->ucopy.iov = msg->msg_iov;
++				tp->ucopy.msg = msg;
+ 			}
  
- /* Designate sk as UDP-Lite socket */
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 4a929ad..cdedcf1 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -752,14 +752,14 @@ EXPORT_SYMBOL(ip_fragment);
- int
- ip_generic_getfrag(void *from, char *to, int offset, int len, int odd, struct sk_buff *skb)
- {
--	struct iovec *iov = from;
-+	struct msghdr *msg = from;
+ 			tp->ucopy.len = len;
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 69de1a1..075ab4d 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4421,7 +4421,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
+ 			__set_current_state(TASK_RUNNING);
  
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
--		if (memcpy_fromiovecend(to, iov, offset, len) < 0)
-+		if (memcpy_fromiovecend(to, msg->msg_iov, offset, len) < 0)
- 			return -EFAULT;
- 	} else {
- 		__wsum csum = 0;
--		if (csum_partial_copy_fromiovecend(to, iov, offset, len, &csum) < 0)
-+		if (csum_partial_copy_fromiovecend(to, msg->msg_iov, offset, len, &csum) < 0)
- 			return -EFAULT;
- 		skb->csum = csum_block_add(skb->csum, csum, odd);
- 	}
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 5c901eb..5d83bd2 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -478,7 +478,7 @@ static int raw_getfrag(void *from, char *to, int offset, int len, int odd,
+ 			local_bh_enable();
+-			if (!skb_copy_datagram_iovec(skb, 0, tp->ucopy.iov, chunk)) {
++			if (!skb_copy_datagram_msg(skb, 0, tp->ucopy.msg, chunk)) {
+ 				tp->ucopy.len -= chunk;
+ 				tp->copied_seq += chunk;
+ 				eaten = (chunk == skb->len);
+@@ -4941,10 +4941,9 @@ static int tcp_copy_to_iovec(struct sock *sk, struct sk_buff *skb, int hlen)
  
- 	offset -= rfv->hlen;
+ 	local_bh_enable();
+ 	if (skb_csum_unnecessary(skb))
+-		err = skb_copy_datagram_iovec(skb, hlen, tp->ucopy.iov, chunk);
++		err = skb_copy_datagram_msg(skb, hlen, tp->ucopy.msg, chunk);
+ 	else
+-		err = skb_copy_and_csum_datagram_iovec(skb, hlen,
+-						       tp->ucopy.iov);
++		err = skb_copy_and_csum_datagram_msg(skb, hlen, tp->ucopy.msg);
  
--	return ip_generic_getfrag(rfv->msg->msg_iov, to, offset, len, odd, skb);
-+	return ip_generic_getfrag(rfv->msg, to, offset, len, odd, skb);
- }
- 
- static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index dd8e006..13b4dcf8 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1049,7 +1049,7 @@ back_from_confirm:
- 
- 	/* Lockless fast path for the non-corking case. */
- 	if (!corkreq) {
--		skb = ip_make_skb(sk, fl4, getfrag, msg->msg_iov, ulen,
-+		skb = ip_make_skb(sk, fl4, getfrag, msg, ulen,
- 				  sizeof(struct udphdr), &ipc, &rt,
- 				  msg->msg_flags);
- 		err = PTR_ERR(skb);
-@@ -1080,7 +1080,7 @@ back_from_confirm:
- 
- do_append_data:
- 	up->len += ulen;
--	err = ip_append_data(sk, fl4, getfrag, msg->msg_iov, ulen,
-+	err = ip_append_data(sk, fl4, getfrag, msg, ulen,
- 			     sizeof(struct udphdr), &ipc, &rt,
- 			     corkreq ? msg->msg_flags|MSG_MORE : msg->msg_flags);
- 	if (err)
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index 942f67b..11a9283 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -727,7 +727,7 @@ static int raw6_getfrag(void *from, char *to, int offset, int len, int odd,
- 
- 	offset -= rfv->hlen;
- 
--	return ip_generic_getfrag(rfv->msg->msg_iov, to, offset, len, odd, skb);
-+	return ip_generic_getfrag(rfv->msg, to, offset, len, odd, skb);
- }
- 
- static int rawv6_sendmsg(struct kiocb *iocb, struct sock *sk,
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 7f964322..189dc4a 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1312,7 +1312,7 @@ do_append_data:
- 		dontfrag = np->dontfrag;
- 	up->len += ulen;
- 	getfrag  =  is_udplite ?  udplite_getfrag : ip_generic_getfrag;
--	err = ip6_append_data(sk, getfrag, msg->msg_iov, ulen,
-+	err = ip6_append_data(sk, getfrag, msg, ulen,
- 		sizeof(struct udphdr), hlimit, tclass, opt, &fl6,
- 		(struct rt6_info *)dst,
- 		corkreq ? msg->msg_flags|MSG_MORE : msg->msg_flags, dontfrag);
-diff --git a/net/l2tp/l2tp_ip6.c b/net/l2tp/l2tp_ip6.c
-index 2177b96..8611f1b 100644
---- a/net/l2tp/l2tp_ip6.c
-+++ b/net/l2tp/l2tp_ip6.c
-@@ -619,7 +619,7 @@ static int l2tp_ip6_sendmsg(struct kiocb *iocb, struct sock *sk,
- 
- back_from_confirm:
- 	lock_sock(sk);
--	err = ip6_append_data(sk, ip_generic_getfrag, msg->msg_iov,
-+	err = ip6_append_data(sk, ip_generic_getfrag, msg,
- 			      ulen, transhdrlen, hlimit, tclass, opt,
- 			      &fl6, (struct rt6_info *)dst,
- 			      msg->msg_flags, dontfrag);
+ 	if (!err) {
+ 		tp->ucopy.len -= chunk;
 -- 
 2.1.3
 
