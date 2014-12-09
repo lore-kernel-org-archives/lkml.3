@@ -1,312 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaLIGsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 01:48:06 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56018 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaLIGsE (ORCPT
+	id S1752243AbaLIHAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 02:00:15 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8980 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaLIHAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 01:48:04 -0500
-Message-ID: <54869B1C.6050401@hitachi.com>
-Date: Tue, 09 Dec 2014 15:47:56 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 9 Dec 2014 02:00:13 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 08 Dec 2014 22:57:03 -0800
+From: Mark Zhang <markz@nvidia.com>
+To: <pdeschrijver@nvidia.com>, <pgaikwad@nvidia.com>, <mturquette@linaro.org>,
+        <sboyd@codeaurora.org>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>, <gnurou@gmail.com>,
+        <mperttunen@nvidia.com>, <abrestic@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Mark Zhang <markz@nvidia.com>
+Subject: [PATCH] clk: tegra: Define PLLD_DSI and remove dsia(b)_mux
+Date: Tue, 9 Dec 2014 14:59:59 +0800
+Message-ID: <1418108399-7264-1-git-send-email-markz@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: tixy@linaro.org, linux@arm.linux.org.uk, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND][PATCH v15 7/7] ARM: kprobes: enable OPTPROBES for ARM
- 32
-References: <1418047765-53197-1-git-send-email-wangnan0@huawei.com> <1418047765-53197-8-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1418047765-53197-8-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/08 23:09), Wang Nan wrote:
-> This patch introduce kprobeopt for ARM 32.
-> 
-> Limitations:
->  - Currently only kernel compiled with ARM ISA is supported.
-> 
->  - Offset between probe point and optinsn slot must not larger than
->    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->    things complex. Futher patch can make such optimization.
-> 
-> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-> replace probed instruction by a 'b', branch to trampoline code and then
-> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-> to execute kprobe handler. It also emulate/simulate replaced instruction.
-> 
-> When unregistering kprobe, the deferred manner of unoptimizer may leave
-> branch instruction before optimizer is called. Different from x86_64,
-> which only copy the probed insn after optprobe_template_end and
-> reexecute them, this patch call singlestep to emulate/simulate the insn
-> directly. Futher patch can optimize this behavior.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
-> v1 -> v2:
->  - Improvement: if replaced instruction is conditional, generate a
->    conditional branch instruction for it;
->  - Introduces RELATIVEJUMP_OPCODES due to ARM kprobe_opcode_t is 4
->    bytes;
->  - Removes size field in struct arch_optimized_insn;
->  - Use arm_gen_branch() to generate branch instruction;
->  - Remove all recover logic: ARM doesn't use tail buffer, no need
->    recover replaced instructions like x86;
->  - Remove incorrect CONFIG_THUMB checking;
->  - can_optimize() always returns true if address is well aligned;
->  - Improve optimized_callback: using opt_pre_handler();
->  - Bugfix: correct range checking code and improve comments;
->  - Fix commit message.
-> 
-> v2 -> v3:
->  - Rename RELATIVEJUMP_OPCODES to MAX_COPIED_INSNS;
->  - Remove unneeded checking:
->       arch_check_optimized_kprobe(), can_optimize();
->  - Add missing flush_icache_range() in arch_prepare_optimized_kprobe();
->  - Remove unneeded 'return;'.
-> 
-> v3 -> v4:
->  - Use __mem_to_opcode_arm() to translate copied_insn to ensure it
->    works in big endian kernel;
->  - Replace 'nop' placeholder in trampoline code template with
->    '.long 0' to avoid confusion: reader may regard 'nop' as an
->    instruction, but it is value in fact.
-> 
-> v4 -> v5:
->  - Don't optimize stack store operations.
->  - Introduce prepared field to arch_optimized_insn to indicate whether
->    it is prepared. Similar to size field with x86. See v1 -> v2.
-> 
-> v5 -> v6:
->  - Dynamically reserve stack according to instruction.
->  - Rename: kprobes-opt.c -> kprobes-opt-arm.c.
->  - Set op->optinsn.insn after all works are done.
-> 
-> v6 -> v7:
->   - Using checker to check stack consumption.
-> 
-> v7 -> v8:
->   - Small code adjustments.
-> 
-> v8 -> v9:
->   - Utilize original kprobe passed to arch_prepare_optimized_kprobe()
->     to avoid copy ainsn twice.
->   - A bug in arch_prepare_optimized_kprobe() is found and fixed.
-> 
-> v9 -> v10:
->   - Commit message improvements.
-> 
-> v10 -> v11:
->   - Move to arch/arm/probes/, insn.h is moved to arch/arm/include/asm.
->   - Code cleanup.
->   - Bugfix based on Tixy's test result:
->     - Trampoline deal with ARM -> Thumb transision instructions and
->       AEABI stack alignment requirement correctly.
->     - Trampoline code buffer should start at 4 byte aligned address.
->       We enforces it in this series by using macro to wrap 'code' var.
-> 
-> v11 -> v12:
->   - Remove trampoline code stack trick and use r4 to save original
->     stack.
->   - Remove trampoline code buffer alignment trick.
->   - Names of files are changed.
-> 
-> v12 -> v13:
->   - Assume stack always aligned by 4-bytes in any case.
->   - Comments update.
-> 
-> v13 -> v14:
->   - Use stop_machine to wrap arch_optimize_kprobes to avoid a racing.
-> 
-> v14 -> v15:
->   - In v14, stop_machine() wraps a coarse-grained piece of code which
->     makes things complex than it should be. In this version,
->     kprobes_remove_breakpoint() is extracted, core.c and opt-arm.c use it
->     to replace breakpoint to valid instruction. stop_machine() used inside
->     in kprobes_remove_breakpoint().
-> ---
->  arch/arm/Kconfig                        |   1 +
->  arch/arm/{kernel => include/asm}/insn.h |   0
->  arch/arm/include/asm/kprobes.h          |  29 +++
->  arch/arm/kernel/Makefile                |   2 +-
->  arch/arm/kernel/ftrace.c                |   3 +-
->  arch/arm/kernel/jump_label.c            |   3 +-
->  arch/arm/probes/kprobes/Makefile        |   1 +
->  arch/arm/probes/kprobes/core.c          |  26 ++-
->  arch/arm/probes/kprobes/core.h          |   2 +
->  arch/arm/probes/kprobes/opt-arm.c       | 317 ++++++++++++++++++++++++++++++++
->  10 files changed, 372 insertions(+), 12 deletions(-)
->  rename arch/arm/{kernel => include/asm}/insn.h (100%)
->  create mode 100644 arch/arm/probes/kprobes/opt-arm.c
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 89c4b5c..2471240 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -59,6 +59,7 @@ config ARM
->  	select HAVE_MEMBLOCK
->  	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
->  	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
-> +	select HAVE_OPTPROBES if !THUMB2_KERNEL
->  	select HAVE_PERF_EVENTS
->  	select HAVE_PERF_REGS
->  	select HAVE_PERF_USER_STACK_DUMP
-> diff --git a/arch/arm/kernel/insn.h b/arch/arm/include/asm/insn.h
-> similarity index 100%
-> rename from arch/arm/kernel/insn.h
-> rename to arch/arm/include/asm/insn.h
-> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-> index 56f9ac6..50ff3bc 100644
-> --- a/arch/arm/include/asm/kprobes.h
-> +++ b/arch/arm/include/asm/kprobes.h
-> @@ -50,5 +50,34 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
->  int kprobe_exceptions_notify(struct notifier_block *self,
->  			     unsigned long val, void *data);
->  
-> +/* optinsn template addresses */
-> +extern __visible kprobe_opcode_t optprobe_template_entry;
-> +extern __visible kprobe_opcode_t optprobe_template_val;
-> +extern __visible kprobe_opcode_t optprobe_template_call;
-> +extern __visible kprobe_opcode_t optprobe_template_end;
-> +extern __visible kprobe_opcode_t optprobe_template_sub_sp;
-> +extern __visible kprobe_opcode_t optprobe_template_add_sp;
-> +
-> +#define MAX_OPTIMIZED_LENGTH	4
-> +#define MAX_OPTINSN_SIZE				\
-> +	((unsigned long)&optprobe_template_end -	\
-> +	 (unsigned long)&optprobe_template_entry)
-> +#define RELATIVEJUMP_SIZE	4
-> +
-> +struct arch_optimized_insn {
-> +	/*
-> +	 * copy of the original instructions.
-> +	 * Different from x86, ARM kprobe_opcode_t is u32.
-> +	 */
-> +#define MAX_COPIED_INSN	DIV_ROUND_UP(RELATIVEJUMP_SIZE, sizeof(kprobe_opcode_t))
-> +	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
-> +	/* detour code buffer */
-> +	kprobe_opcode_t *insn;
-> +	/*
-> +	 * We always copy one instruction on ARM,
-> +	 * so size will always be 4, and unlike x86, there is no
-> +	 * need for a size field.
-> +	 */
-> +};
->  
->  #endif /* _ARM_KPROBES_H */
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index 40d3e00..1d0f4e7 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -52,7 +52,7 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
->  obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
->  obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
->  # Main staffs in KPROBES are in arch/arm/probes/ .
-> -obj-$(CONFIG_KPROBES)		+= patch.o
-> +obj-$(CONFIG_KPROBES)		+= patch.o insn.o
->  obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
->  obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
->  obj-$(CONFIG_KGDB)		+= kgdb.o
-> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-> index af9a8a9..ec7e332 100644
-> --- a/arch/arm/kernel/ftrace.c
-> +++ b/arch/arm/kernel/ftrace.c
-> @@ -19,8 +19,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/opcodes.h>
->  #include <asm/ftrace.h>
-> -
-> -#include "insn.h"
-> +#include <asm/insn.h>
->  
->  #ifdef CONFIG_THUMB2_KERNEL
->  #define	NOP		0xf85deb04	/* pop.w {lr} */
-> diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-> index c6c73ed..35a8fbb 100644
-> --- a/arch/arm/kernel/jump_label.c
-> +++ b/arch/arm/kernel/jump_label.c
-> @@ -1,8 +1,7 @@
->  #include <linux/kernel.h>
->  #include <linux/jump_label.h>
->  #include <asm/patch.h>
-> -
-> -#include "insn.h"
-> +#include <asm/insn.h>
->  
->  #ifdef HAVE_JUMP_LABEL
->  
-> diff --git a/arch/arm/probes/kprobes/Makefile b/arch/arm/probes/kprobes/Makefile
-> index bc8d504..76a36bf 100644
-> --- a/arch/arm/probes/kprobes/Makefile
-> +++ b/arch/arm/probes/kprobes/Makefile
-> @@ -7,5 +7,6 @@ obj-$(CONFIG_KPROBES)		+= actions-thumb.o checkers-thumb.o
->  test-kprobes-objs		+= test-thumb.o
->  else
->  obj-$(CONFIG_KPROBES)		+= actions-arm.o checkers-arm.o
-> +obj-$(CONFIG_OPTPROBES)		+= opt-arm.o
->  test-kprobes-objs		+= test-arm.o
->  endif
-> diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
-> index 3a58db4..a4ec240 100644
-> --- a/arch/arm/probes/kprobes/core.c
-> +++ b/arch/arm/probes/kprobes/core.c
-> @@ -163,19 +163,31 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
->   * memory. It is also needed to atomically set the two half-words of a 32-bit
->   * Thumb breakpoint.
->   */
-> -int __kprobes __arch_disarm_kprobe(void *p)
-> -{
-> -	struct kprobe *kp = p;
-> -	void *addr = (void *)((uintptr_t)kp->addr & ~1);
-> -
-> -	__patch_text(addr, kp->opcode);
-> +struct patch {
-> +	void *addr;
-> +	unsigned int insn;
-> +};
->  
-> +static int __kprobes_remove_breakpoint(void *data)
-> +{
-> +	struct patch *p = data;
-> +	__patch_text(p->addr, p->insn);
->  	return 0;
->  }
->  
-> +void __kprobes kprobes_remove_breakpoint(void *addr, unsigned int insn)
-> +{
-> +	struct patch p = {
-> +		.addr = addr,
-> +		.insn = insn,
-> +	};
-> +	stop_machine(__kprobes_remove_breakpoint, &p, cpu_online_mask);
-> +}
+PLLD is the only parent for DSIA & DSIB on Tegra124 and
+Tegra132. Besides, BIT 30 in PLLD_MISC register controls
+the output of DSI clock.
 
-Hmm, I think finally we should fix patch_text() in patch.c to forcibly use stop_machine
-by adding "bool stop" parameter, instead of introducing new another patch_text()
-implementation, because we'd better avoid two private "patch" data structures.
-Maybe someday we can find another better solution for self modifying.
-(I actually doesn't like stop_machine() which disturbs real-time processing)
+So this patch removes "dsia_mux" & "dsib_mux", and create
+a new clock "plld_dsi" to represent the DSI clock enable
+control.
 
-The other parts look good to me :)
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Mark Zhang <markz@nvidia.com>
+---
+ drivers/clk/tegra/clk-id.h               |  2 --
+ drivers/clk/tegra/clk-tegra-periph.c     |  2 --
+ drivers/clk/tegra/clk-tegra114.c         | 10 +++++++--
+ drivers/clk/tegra/clk-tegra124.c         | 36 ++++++++++++++------------------
+ include/dt-bindings/clock/tegra124-car.h |  6 +++---
+ 5 files changed, 27 insertions(+), 29 deletions(-)
 
-Thank you!
-
-
+diff --git a/drivers/clk/tegra/clk-id.h b/drivers/clk/tegra/clk-id.h
+index 0011d547a9f7..60738cc954cb 100644
+--- a/drivers/clk/tegra/clk-id.h
++++ b/drivers/clk/tegra/clk-id.h
+@@ -64,10 +64,8 @@ enum clk_id {
+ 	tegra_clk_disp2,
+ 	tegra_clk_dp2,
+ 	tegra_clk_dpaux,
+-	tegra_clk_dsia,
+ 	tegra_clk_dsialp,
+ 	tegra_clk_dsia_mux,
+-	tegra_clk_dsib,
+ 	tegra_clk_dsiblp,
+ 	tegra_clk_dsib_mux,
+ 	tegra_clk_dtv,
+diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
+index 37f32c49674e..1d0acbce6dc6 100644
+--- a/drivers/clk/tegra/clk-tegra-periph.c
++++ b/drivers/clk/tegra/clk-tegra-periph.c
+@@ -537,8 +537,6 @@ static struct tegra_periph_init_data gate_clks[] = {
+ 	GATE("xusb_host", "xusb_host_src", 89, 0, tegra_clk_xusb_host, 0),
+ 	GATE("xusb_ss", "xusb_ss_src", 156, 0, tegra_clk_xusb_ss, 0),
+ 	GATE("xusb_dev", "xusb_dev_src", 95, 0, tegra_clk_xusb_dev, 0),
+-	GATE("dsia", "dsia_mux", 48, 0, tegra_clk_dsia, 0),
+-	GATE("dsib", "dsib_mux", 82, 0, tegra_clk_dsib, 0),
+ 	GATE("emc", "emc_mux", 57, 0, tegra_clk_emc, CLK_IGNORE_UNUSED),
+ 	GATE("sata_cold", "clk_m", 129, TEGRA_PERIPH_ON_APB, tegra_clk_sata_cold, 0),
+ 	GATE("ispb", "clk_m", 3, 0, tegra_clk_ispb, 0),
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index 0b03d2cf7264..d0766423a5d6 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -715,7 +715,6 @@ static struct tegra_clk tegra114_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_sbc2_8] = { .dt_id = TEGRA114_CLK_SBC2, .present = true },
+ 	[tegra_clk_sbc3_8] = { .dt_id = TEGRA114_CLK_SBC3, .present = true },
+ 	[tegra_clk_i2c5] = { .dt_id = TEGRA114_CLK_I2C5, .present = true },
+-	[tegra_clk_dsia] = { .dt_id = TEGRA114_CLK_DSIA, .present = true },
+ 	[tegra_clk_mipi] = { .dt_id = TEGRA114_CLK_MIPI, .present = true },
+ 	[tegra_clk_hdmi] = { .dt_id = TEGRA114_CLK_HDMI, .present = true },
+ 	[tegra_clk_csi] = { .dt_id = TEGRA114_CLK_CSI, .present = true },
+@@ -739,7 +738,6 @@ static struct tegra_clk tegra114_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_dtv] = { .dt_id = TEGRA114_CLK_DTV, .present = true },
+ 	[tegra_clk_ndspeed] = { .dt_id = TEGRA114_CLK_NDSPEED, .present = true },
+ 	[tegra_clk_i2cslow] = { .dt_id = TEGRA114_CLK_I2CSLOW, .present = true },
+-	[tegra_clk_dsib] = { .dt_id = TEGRA114_CLK_DSIB, .present = true },
+ 	[tegra_clk_tsec] = { .dt_id = TEGRA114_CLK_TSEC, .present = true },
+ 	[tegra_clk_xusb_host] = { .dt_id = TEGRA114_CLK_XUSB_HOST, .present = true },
+ 	[tegra_clk_msenc] = { .dt_id = TEGRA114_CLK_MSENC, .present = true },
+@@ -1224,6 +1222,14 @@ static __init void tegra114_periph_clk_init(void __iomem *clk_base,
+ 			       clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
+ 	clks[TEGRA114_CLK_DSIB_MUX] = clk;
+ 
++	clk = tegra_clk_register_periph_gate("dsia", "dsia_mux", 0, clk_base,
++					     0, 48, periph_clk_enb_refcnt);
++	clks[TEGRA114_CLK_DSIA] = clk;
++
++	clk = tegra_clk_register_periph_gate("dsib", "dsib_mux", 0, clk_base,
++					     0, 82, periph_clk_enb_refcnt);
++	clks[TEGRA114_CLK_DSIB] = clk;
++
+ 	/* emc mux */
+ 	clk = clk_register_mux(NULL, "emc_mux", mux_pllmcp_clkm,
+ 			       ARRAY_SIZE(mux_pllmcp_clkm),
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index f5f9baca7bb6..482086326f6f 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -128,7 +128,6 @@ static unsigned long osc_freq;
+ static unsigned long pll_ref_freq;
+ 
+ static DEFINE_SPINLOCK(pll_d_lock);
+-static DEFINE_SPINLOCK(pll_d2_lock);
+ static DEFINE_SPINLOCK(pll_e_lock);
+ static DEFINE_SPINLOCK(pll_re_lock);
+ static DEFINE_SPINLOCK(pll_u_lock);
+@@ -145,11 +144,6 @@ static unsigned long tegra124_input_freq[] = {
+ 	[12] = 260000000,
+ };
+ 
+-static const char *mux_plld_out0_plld2_out0[] = {
+-	"pll_d_out0", "pll_d2_out0",
+-};
+-#define mux_plld_out0_plld2_out0_idx NULL
+-
+ static const char *mux_pllmcp_clkm[] = {
+ 	"pll_m", "pll_c", "pll_p", "clk_m", "pll_m_ud", "pll_c2", "pll_c3",
+ };
+@@ -783,7 +777,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_sbc2] = { .dt_id = TEGRA124_CLK_SBC2, .present = true },
+ 	[tegra_clk_sbc3] = { .dt_id = TEGRA124_CLK_SBC3, .present = true },
+ 	[tegra_clk_i2c5] = { .dt_id = TEGRA124_CLK_I2C5, .present = true },
+-	[tegra_clk_dsia] = { .dt_id = TEGRA124_CLK_DSIA, .present = true },
+ 	[tegra_clk_mipi] = { .dt_id = TEGRA124_CLK_MIPI, .present = true },
+ 	[tegra_clk_hdmi] = { .dt_id = TEGRA124_CLK_HDMI, .present = true },
+ 	[tegra_clk_csi] = { .dt_id = TEGRA124_CLK_CSI, .present = true },
+@@ -809,7 +802,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_soc_therm] = { .dt_id = TEGRA124_CLK_SOC_THERM, .present = true },
+ 	[tegra_clk_dtv] = { .dt_id = TEGRA124_CLK_DTV, .present = true },
+ 	[tegra_clk_i2cslow] = { .dt_id = TEGRA124_CLK_I2CSLOW, .present = true },
+-	[tegra_clk_dsib] = { .dt_id = TEGRA124_CLK_DSIB, .present = true },
+ 	[tegra_clk_tsec] = { .dt_id = TEGRA124_CLK_TSEC, .present = true },
+ 	[tegra_clk_xusb_host] = { .dt_id = TEGRA124_CLK_XUSB_HOST, .present = true },
+ 	[tegra_clk_msenc] = { .dt_id = TEGRA124_CLK_MSENC, .present = true },
+@@ -949,8 +941,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_clk_out_1_mux] = { .dt_id = TEGRA124_CLK_CLK_OUT_1_MUX, .present = true },
+ 	[tegra_clk_clk_out_2_mux] = { .dt_id = TEGRA124_CLK_CLK_OUT_2_MUX, .present = true },
+ 	[tegra_clk_clk_out_3_mux] = { .dt_id = TEGRA124_CLK_CLK_OUT_3_MUX, .present = true },
+-	[tegra_clk_dsia_mux] = { .dt_id = TEGRA124_CLK_DSIA_MUX, .present = true },
+-	[tegra_clk_dsib_mux] = { .dt_id = TEGRA124_CLK_DSIB_MUX, .present = true },
+ };
+ 
+ static struct tegra_devclk devclks[] __initdata = {
+@@ -1112,17 +1102,17 @@ static __init void tegra124_periph_clk_init(void __iomem *clk_base,
+ 					1, 2);
+ 	clks[TEGRA124_CLK_XUSB_SS_DIV2] = clk;
+ 
+-	/* dsia mux */
+-	clk = clk_register_mux(NULL, "dsia_mux", mux_plld_out0_plld2_out0,
+-			       ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
+-			       clk_base + PLLD_BASE, 25, 1, 0, &pll_d_lock);
+-	clks[TEGRA124_CLK_DSIA_MUX] = clk;
++	clk = clk_register_gate(NULL, "plld_dsi", "plld_out0", 0,
++				clk_base + PLLD_MISC, 30, 0, &pll_d_lock);
++	clks[TEGRA124_CLK_PLLD_DSI] = clk;
+ 
+-	/* dsib mux */
+-	clk = clk_register_mux(NULL, "dsib_mux", mux_plld_out0_plld2_out0,
+-			       ARRAY_SIZE(mux_plld_out0_plld2_out0), 0,
+-			       clk_base + PLLD2_BASE, 25, 1, 0, &pll_d2_lock);
+-	clks[TEGRA124_CLK_DSIB_MUX] = clk;
++	clk = tegra_clk_register_periph_gate("dsia", "plld_dsi", 0, clk_base,
++					     0, 48, periph_clk_enb_refcnt);
++	clks[TEGRA124_CLK_DSIA] = clk;
++
++	clk = tegra_clk_register_periph_gate("dsib", "plld_dsi", 0, clk_base,
++					     0, 82, periph_clk_enb_refcnt);
++	clks[TEGRA124_CLK_DSIB] = clk;
+ 
+ 	/* emc mux */
+ 	clk = clk_register_mux(NULL, "emc_mux", mux_pllmcp_clkm,
+@@ -1402,6 +1392,7 @@ static void __init tegra124_clock_apply_init_table(void)
+ static void __init tegra124_clock_init(struct device_node *np)
+ {
+ 	struct device_node *node;
++	u32 plld_base;
+ 
+ 	clk_base = of_iomap(np, 0);
+ 	if (!clk_base) {
+@@ -1445,5 +1436,10 @@ static void __init tegra124_clock_init(struct device_node *np)
+ 	tegra_clk_apply_init_table = tegra124_clock_apply_init_table;
+ 
+ 	tegra_cpu_car_ops = &tegra124_cpu_car_ops;
++
++	/* For Tegra124 & Tegra132, PLLD is the only source for DSIA & DSIB */
++	plld_base = clk_readl(clk_base + PLLD_BASE);
++	plld_base &= ~BIT(25);
++	clk_writel(plld_base, clk_base + PLLD_BASE);
+ }
+ CLK_OF_DECLARE(tegra124, "nvidia,tegra124-car", tegra124_clock_init);
+diff --git a/include/dt-bindings/clock/tegra124-car.h b/include/dt-bindings/clock/tegra124-car.h
+index af9bc9a3ddbc..0e802688c028 100644
+--- a/include/dt-bindings/clock/tegra124-car.h
++++ b/include/dt-bindings/clock/tegra124-car.h
+@@ -296,7 +296,7 @@
+ #define TEGRA124_CLK_PLL_C4 270
+ #define TEGRA124_CLK_PLL_DP 271
+ #define TEGRA124_CLK_PLL_E_MUX 272
+-/* 273 */
++#define TEGRA124_CLK_PLLD_DSI 273
+ /* 274 */
+ /* 275 */
+ /* 276 */
+@@ -333,8 +333,8 @@
+ #define TEGRA124_CLK_CLK_OUT_1_MUX 306
+ #define TEGRA124_CLK_CLK_OUT_2_MUX 307
+ #define TEGRA124_CLK_CLK_OUT_3_MUX 308
+-#define TEGRA124_CLK_DSIA_MUX 309
+-#define TEGRA124_CLK_DSIB_MUX 310
++/* 309 */
++/* 310 */
+ #define TEGRA124_CLK_SOR0_LVDS 311
+ #define TEGRA124_CLK_XUSB_SS_DIV2 312
+ 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.1.5
 
