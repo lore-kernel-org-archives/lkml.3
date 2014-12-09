@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350AbaLIC5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:57:06 -0500
-Received: from lucky1.263xmail.com ([211.157.147.132]:51094 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaLIC5F (ORCPT
+	id S1756465AbaLIC5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:57:53 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:55342 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaLIC5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:57:05 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <ef8d62beb935c96676a89f0efe9814b3>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dianders@chromium.org,
-        huangtao@rock-chips.com, zyw@rock-chips.com, cf@rock-chips.com
-Cc: Yunzhi Li <lyz@rock-chips.com>
-Subject: [PATCH v4 5/5] ARM: dts: Enable usb PHY on rk3288-evb board
-Date: Tue,  9 Dec 2014 10:56:34 +0800
-Message-Id: <1418093794-30771-1-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
+	Mon, 8 Dec 2014 21:57:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <10532762.PXKTQM8KjH@wuerfel>
+References: <1418027967-12923-1-git-send-email-acourbot@nvidia.com> <10532762.PXKTQM8KjH@wuerfel>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 9 Dec 2014 11:57:22 +0900
+Message-ID: <CAAVeFuKOaN5c2OkUDRWYQ_QVH8E1Q0JByRSSrbY_g13takWdAw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: DMA: Fix kzalloc flags in __iommu_alloc_buffer()
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thierry Reding <treding@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable usb PHY for all usb ports on rk3288-evb.
+On Mon, Dec 8, 2014 at 7:24 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 08 December 2014 17:39:27 Alexandre Courbot wrote:
+>> There doesn't seem to be any valid reason to allocate the pages array
+>> with the same flags as the buffer itself. Doing so can eventually lead
+>> to the following safeguard in mm/slab.c to be hit:
+>>
+>> BUG_ON(flags & GFP_SLAB_BUG_MASK);
+>>
+>> This happens when buffers are allocated with __GFP_DMA32 or
+>> __GFP_HIGHMEM.
+>>
+>> Fix this by allocating the pages array with GFP_KERNEL to follow what is
+>> done elsewhere in this file. Using GFP_KERNEL in __iommu_alloc_buffer()
+>> is safe because atomic allocations are handled by __iommu_alloc_atomic().
+>>
+>
+> I think you need to carry over the GFP_ATOMIC flag if that is set by the
+> caller, but not the GFP_HIGHMEM or GFP_DMA32. Not sure if it's better
+> to mask out flags from the caller mask, or to start with GFP_KERNEL
+> and adding in extra bits.
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+I thought the issue of atomicity is already handled by
+__iommu_alloc_buffer's caller (arm_iommu_alloc_attrs):
 
----
+    if (!(gfp & __GFP_WAIT))
+        return __iommu_alloc_atomic(dev, size, handle);
+    ....
+    pages = __iommu_alloc_buffer(dev, size, gfp, attrs);
 
-Changes in v4: None
-Changes in v3: None
-
- arch/arm/boot/dts/rk3288-evb.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index cb83cea..992f323 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -174,6 +174,10 @@
- 	};
- };
- 
-+&usbphy {
-+	status = "okay";
-+};
-+
- &usb_host0_ehci {
- 	status = "okay";
- };
--- 
-2.0.0
-
-
+Isn't the interesting property about GFP_ATOMIC that it does not
+include __GFP_WAIT? I may very well misunderstand the issue, sorry if
+that's the case.
