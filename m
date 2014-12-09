@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183AbaLIJJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:09:33 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55623 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025AbaLIJJ3 (ORCPT
+	id S1754398AbaLIJLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:11:50 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:62422 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaLIJLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:09:29 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-64-5486bc46e033
-Message-id: <5486BC44.7010602@samsung.com>
-Date: Tue, 09 Dec 2014 10:09:24 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v9 04/19] mfd: max77693: adjust
- max77693_led_platform_data
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-5-git-send-email-j.anaszewski@samsung.com>
- <20141209085047.GR3951@x1>
-In-reply-to: <20141209085047.GR3951@x1>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4ZV23PW0hBmsuG1lsnLGe1eLozolM
-	Fte/PGe16H+zkNXi3KuVjBZnm96wW9z/epTR4vKuOWwWW9+sY7To2bCV1WLp9YtMFndPHWWz
-	mDB9LYtF694j7Ba7dz1ltTj8pp3V4sz+lWwOgh5r5q1h9Ljc18vksXPWXXaPlcu/sHkc/rqQ
-	xWPTqk42jzvX9rB57Jn/g9Wjb8sqRo8Vq7+ze3zeJBfAHcVlk5Kak1mWWqRvl8CV8WLVbraC
-	w3wVj969ZW1gvMvdxcjJISFgIjHv3hF2CFtM4sK99WwgtpDAUkaJTac5IOyPjBLfX3mA2LwC
-	WhIHLj5nBbFZBFQl+vccYwax2QQMJX6+eM0EYosKREj8Ob2PFaJeUOLH5HssXYwcHCICKhLn
-	3ph3MXJxMAtMZpY4em8N2C5hgRCJDc/mM4MkhASWMEocOXUa7CBOAXWJw4fPs4DYzAJmEo9a
-	1jFD2PISm9e8ZZ7AKDALyY5ZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk
-	Cr/uYFx6zOoQowAHoxIP7w7FthAh1sSy4srcQ4wSHMxKIrxKS4FCvCmJlVWpRfnxRaU5qcWH
-	GJk4OKUaGHXPVNcbPNx+yemu2605ceL8LOIZfux3FPcbvXjg8NHcbJntauncypVLg6/UBVs8
-	S9l4r1RY61jBnA77eqE0h+0N+88dOhbj9fT+7olJqxZc2aSxgZPZQTZ2WrD4qz0zfBXmdUn+
-	f6L+Ka74RD3f/JmTLwUbsuutUBOdeE53Y3JniLFb1nLfZ0osxRmJhlrMRcWJAPgLrCGgAgAA
+	Tue, 9 Dec 2014 04:11:43 -0500
+From: Jiada Wang <jiada_wang@mentor.com>
+To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <jiada_wang@mentor.com>, <anton_bondarenko@mentor.com>,
+        <dirk.behme@de.bosch.com>
+Subject: [PATCH v1 03/15] serial: imx: remove unneeded imx_transmit_buffer() from imx_start_tx()
+Date: Tue, 9 Dec 2014 18:11:24 +0900
+Message-ID: <1418116296-12082-4-git-send-email-jiada_wang@mentor.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1418116296-12082-1-git-send-email-jiada_wang@mentor.com>
+References: <1418116296-12082-1-git-send-email-jiada_wang@mentor.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 09:50 AM, Lee Jones wrote:
-> On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
->
->> Add "label" array for Device Tree strings with the name of a LED device
->> and make flash_timeout a two element array, for caching the sub-led
->> related flash timeout. Added is also an array for caching pointers to the
->> sub-nodes representing sub-leds.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Chanwoo Choi <cw00.choi@samsung.com>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> ---
->>   include/linux/mfd/max77693.h |    4 +++-
->>   1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
->> index f0b6585..c80ee99 100644
->> --- a/include/linux/mfd/max77693.h
->> +++ b/include/linux/mfd/max77693.h
->> @@ -88,16 +88,18 @@ enum max77693_led_boost_mode {
->>   };
->>
->>   struct max77693_led_platform_data {
->> +	const char *label[2];
->>   	u32 fleds[2];
->>   	u32 iout_torch[2];for_each_available_child_of_node
->>   	u32 iout_flash[2];
->>   	u32 trigger[2];
->>   	u32 trigger_type[2];
->> +	u32 flash_timeout[2];
->>   	u32 num_leds;
->>   	u32 boost_mode;
->> -	u32 flash_timeout;
->>   	u32 boost_vout;
->>   	u32 low_vsys;
->> +	struct device_node *sub_nodes[2];
->
-> I haven't seen anyone do this before.  Why can't you use the provided
-> OF functions to traverse through your tree?
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-I use for_each_available_child_of_node when parsing DT node, but I
-need to cache the pointer to sub-node to be able to use it later
-when it needs to be passed to V4L2 sub-device which is then
-asynchronously matched by the phandle to sub-node.
+Use imx_start_tx() just to enable the TX interrupt. It's the job of the
+TX interrupt ISR to fill the transmit buffer, then. If the transmit buffer
+is empty, the TX interrupt should be executed as soon as the start_tx()
+enables the interrupt, so there is no reason for the extra
+imx_transmit_buffer() call, here. Remove it.
 
-If it is not well seen to cache it in the platform data then
-I will find different way to accomplish this.
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+Signed-off-by: Andy Lowe <andy_lowe@mentor.com>
+---
+ drivers/tty/serial/imx.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-Best Regards,
-Jacek Anaszewski
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 969bc65..be05b75 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -621,9 +621,6 @@ static void imx_start_tx(struct uart_port *port)
+ 			imx_dma_tx(sport);
+ 		return;
+ 	}
+-
+-	if (readl(sport->port.membase + uts_reg(sport)) & UTS_TXEMPTY)
+-		imx_transmit_buffer(sport);
+ }
+ 
+ static irqreturn_t imx_rtsint(int irq, void *dev_id)
+-- 
+1.9.3
+
