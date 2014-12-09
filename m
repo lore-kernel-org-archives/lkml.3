@@ -1,92 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443AbaLILgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:36:15 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:33107 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732AbaLILgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:36:13 -0500
-Date: Tue, 9 Dec 2014 12:35:56 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, peterz@infradead.org, oleg@redhat.com,
-        bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some
- cases - deadlock
-Message-ID: <20141209123556.02cc99c0@thinkpad-w530>
-In-Reply-To: <20141209102108.GE4362@osiris>
-References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141208212236.GU25340@linux.vnet.ibm.com>
-	<20141209085930.6b831850@thinkpad-w530>
-	<20141209091447.GD4362@osiris>
-	<20141209111101.201e3544@thinkpad-w530>
-	<20141209102108.GE4362@osiris>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1756650AbaLILig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:38:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29229 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756310AbaLILie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 06:38:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,544,1413270000"; 
+   d="scan'208";a="650873950"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Eric Auger <eric.auger@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+Thread-Topic: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+Thread-Index: AQHQD8vcosDjl3pN9USQi2WSU5JzyZyFADCA//+nsACAAoGAIA==
+Date: Tue, 9 Dec 2014 11:38:05 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F0022E8ECD@SHSMSX104.ccr.corp.intel.com>
+References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
+	 <1417592394-24343-18-git-send-email-feng.wu@intel.com>
+	 <548069F6.7020308@linaro.org>
+	 <E959C4978C3B6342920538CF579893F0022E2DD7@SHSMSX104.ccr.corp.intel.com>
+ <1418016076.1095.30.camel@bling.home>
+In-Reply-To: <1418016076.1095.30.camel@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120911-0005-0000-0000-00000263398A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB9BckZO031300
 
-> On Tue, Dec 09, 2014 at 11:11:01AM +0100, David Hildenbrand wrote:
-> > > > Therefore we have to move the condition check inside the 
-> > > >   __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
-> > > > section to not miss any wake ups when the condition is satisfied.
-> > > > 
-> > > > So wake_up_process() will either see TASK_RUNNING and do nothing or see
-> > > > TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
-> > > > fact be woken up again.
-> > > 
-> > > Or the third alternative would be that 'active_writer' which was running
-> > > on CPU2 already terminated and wake_up_process() has a non-NULL pointer to
-> > > task_struct which is already dead.
-> > > Or is there anything that prevents this use-after-free race?
-> > 
-> > Hmmm ... I think that is also a valid scenario.
-> > That would mean we need soemthing like this:
-> > 
-> >  void put_online_cpus(void)
-> >  {
-> > + struct task_struct *awr;
-> > +
-> >         if (cpu_hotplug.active_writer == current)
-> >                 return;
-> >         if (!mutex_trylock(&cpu_hotplug.lock)) {
-> > +         awr = ACCESS_ONCE(cpu_hotplug.active_writer);
-> > +         if (unlikely(awr))
-> > +                 get_task_struct(awr);
+
+
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Monday, December 08, 2014 1:21 PM
+> To: Wu, Feng
+> Cc: Eric Auger; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
+> dwmw2@infradead.org; joro@8bytes.org; jiang.liu@linux.intel.com;
+> linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
+> kvm@vger.kernel.org
+> Subject: Re: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
 > 
-> How would this solve the problem?
+> On Mon, 2014-12-08 at 04:58 +0000, Wu, Feng wrote:
+> >
+> > > -----Original Message-----
+> > > From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org]
+> On
+> > > Behalf Of Eric Auger
+> > > Sent: Thursday, December 04, 2014 10:05 PM
+> > > To: Wu, Feng; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> > > x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
+> > > dwmw2@infradead.org; joro@8bytes.org; alex.williamson@redhat.com;
+> > > jiang.liu@linux.intel.com
+> > > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
+> > > kvm@vger.kernel.org
+> > > Subject: Re: [v2 17/25] KVM: kvm-vfio: User API for VT-d Posted-Interrupts
+> > >
+> > > Hi Feng,
+> > > On 12/03/2014 08:39 AM, Feng Wu wrote:
+> > > > This patch adds and documents a new attribute
+> > > > KVM_DEV_VFIO_DEVICE_POSTING_IRQ in KVM_DEV_VFIO_DEVICE
+> group.
+> > > > This new attribute is used for VT-d Posted-Interrupts.
+> > > >
+> > > > When guest OS changes the interrupt configuration for an
+> > > > assigned device, such as, MSI/MSIx data/address fields,
+> > > > QEMU will use this IRQ attribute to tell KVM to update the
+> > > > related IRTE according the VT-d Posted-Interrrupts Specification,
+> > > > such as, the guest vector should be updated in the related IRTE.
+> > > >
+> > > > Signed-off-by: Feng Wu <feng.wu@intel.com>
+> > > > ---
+> > > >  Documentation/virtual/kvm/devices/vfio.txt |    9 +++++++++
+> > > >  include/uapi/linux/kvm.h                   |   10 ++++++++++
+> > > >  2 files changed, 19 insertions(+), 0 deletions(-)
+> > > >
+> > > > diff --git a/Documentation/virtual/kvm/devices/vfio.txt
+> > > b/Documentation/virtual/kvm/devices/vfio.txt
+> > > > index f7aff29..41e12b7 100644
+> > > > --- a/Documentation/virtual/kvm/devices/vfio.txt
+> > > > +++ b/Documentation/virtual/kvm/devices/vfio.txt
+> > > > @@ -42,3 +42,12 @@ activated before VFIO_DEVICE_SET_IRQS has been
+> > > called to trigger the IRQ
+> > > >  or associate an eventfd to it. Unforwarding can only be called while the
+> > > >  signaling has been disabled with VFIO_DEVICE_SET_IRQS. If this
+> condition
+> > > is
+> > > >  not satisfied, the command returns an -EBUSY.
+> > > > +
+> > > > +  KVM_DEV_VFIO_DEVICE_POSTING_IRQ: Use posted interrtups
+> > > mechanism to post
+> > > typo
+> > > > +                                   the IRQ to guests.
+> > > > +For this attribute, kvm_device_attr.addr points to a kvm_vfio_dev_irq
+> > > struct.
+> > > > +
+> > > > +When guest OS changes the interrupt configuration for an assigned
+> device,
+> > > > +such as, MSI/MSIx data/address fields, QEMU will use this IRQ attribute
+> > > > +to tell KVM to update the related IRTE according the VT-d
+> > > Posted-Interrrupts
+> > > > +Specification, such as, the guest vector should be updated in the related
+> > > IRTE.
+> > > For my curiosity are there any restrictions about the instant at which
+> > > the change can be done?
+> > > I do not get here how you deactivate the posting?
+> >
+> > The current method is if the hardware supports interrupts posting, we will
+> > use it instead of interrupts remapping, since it has good performance. Why
+> > do I need deactivate interrupts posting?
+> >
+> > Here is the reply to Alex for the same question:
+> > "In fact, I don't think we need to stop the posted-interrupts. For setting
+> > posted interrupts, we update the related IRTE according to the new
+> > format. If the guest reboots, or unload the drivers, or some other
+> > operations, the msi/msix will be disabled first, in this path, the irq
+> > will be disabled the related IRTE is not used anymore."
+> 
+> Right, and I'm still not sure I agree with that reasoning.  We need to
+> build the kernel interface to be generic, not tailored for a specific
+> userspace.  I don't really feel comfortable having something that can't
+> be disabled via a similar path to it being enabled.  For instance, what
+> about a dynamic debug interface where we want to enable tracing and see
+> each interrupt injected into the guest.  At that point we'd want to
+> disabled posted interrupts and direct KVM injection and route via QEMU.
+> Thanks,
+> 
+> Alex
 
-Although this might fix the problem you addressed, it exposes another one:
+Okay, I will think about this.
 
-CPU1                               CPU2
-----------------------------------------------------------------------------
-!mutex_trylock(&cpu_hotplug.lock) |
-cpu_hotplug.active_writer == 0    |
-awr = 0;                          |
-                                  | cpu_hotplug.active_writer = current
-                                  | __set_current_state(TASK_UNINTERRUPTIBLE);
-                                  | cpu_hotplug.puts_pending == 0
-cpu_hotplug.puts_pending++;       | ...
-                                  | schedule();
-/* no wakeup as awr == 0 */
+Thanks,
+Feng
+> 
+> > > > diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> > > > index a269a42..7d98650 100644
+> > > > --- a/include/uapi/linux/kvm.h
+> > > > +++ b/include/uapi/linux/kvm.h
+> > > > @@ -949,6 +949,7 @@ struct kvm_device_attr {
+> > > >  #define  KVM_DEV_VFIO_DEVICE			2
+> > > >  #define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
+> > > >  #define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
+> > > > +#define   KVM_DEV_VFIO_DEVICE_POSTING_IRQ			3
+> > > Maybe we should align our naming verb vs verbing here?
+> > > Best Regards
+> > > Eric
+> >
+> > No problem, I will align my patch in the next version. Thanks!
+> >
+> > Thanks,
+> > Feng
+> >
+> > > >
+> > > >  enum kvm_device_type {
+> > > >  	KVM_DEV_TYPE_FSL_MPIC_20	= 1,
+> > > > @@ -973,6 +974,15 @@ struct kvm_arch_forwarded_irq {
+> > > >  	__u32 gsi; /* gsi, ie. virtual IRQ number */
+> > > >  };
+> > > >
+> > > > +struct kvm_vfio_dev_irq {
+> > > > +	__u32	argsz;
+> > > > +	__u32	fd;		/* file descriptor of the VFIO device */
+> > > > +	__u32	index;		/* VFIO device IRQ index */
+> > > > +	__u32	start;
+> > > > +	__u32	count;
+> > > > +	__u32	gsi[];		/* gsi, ie. virtual IRQ number */
+> > > > +};
+> > > > +
+> > > >  /*
+> > > >   * ioctls for VM fds
+> > > >   */
+> > > >
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
-So we really need to cpu_hotplug.puts_pending++; before checking for
-cpu_hotplug.active_writer. That in turn can lead to the active_writer struct vanishing.
-
-So we can't get around a lock for cpu_hotplug.active_writer IMHO. Or we have to
-revert the original patch - but that one addressed an rcu problem.
-
-Opinions?
-
-David
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
