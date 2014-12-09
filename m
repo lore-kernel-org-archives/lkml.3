@@ -1,124 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925AbaLIMjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:39:18 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:56881 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756257AbaLIMjQ (ORCPT
+	id S1756796AbaLIMms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:42:48 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:60436 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756575AbaLIMmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:39:16 -0500
-Date: Tue, 9 Dec 2014 14:38:19 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Subject: Re: [PATCH/RFC v9 02/19] Documentation: leds: Add description of LED
- Flash class extension
-Message-ID: <20141209123819.GJ15559@valkosipuli.retiisi.org.uk>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-3-git-send-email-j.anaszewski@samsung.com>
- <20141203170818.GN14746@valkosipuli.retiisi.org.uk>
- <54802C9F.8030101@samsung.com>
+	Tue, 9 Dec 2014 07:42:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54802C9F.8030101@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141209095843.GA3990@pd.tnic>
+References: <20141209095843.GA3990@pd.tnic>
+Date: Tue, 9 Dec 2014 13:42:44 +0100
+Message-ID: <CAKv+Gu_F+o6NKb5JJ8ZQ7AJbjvASeQF1YcuUXv8seOMa5oaxgg@mail.gmail.com>
+Subject: Re: Shorten efi regions output
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-efi <linux-efi@vger.kernel.org>, Laszlo Ersek <lersek@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+On 9 December 2014 at 10:58, Borislav Petkov <bp@alien8.de> wrote:
+> Hi guys,
+>
+> so this decoded EFI regions output is nice but can we shorten it? It
+> sticks too far out in the terminal more than anything else in dmesg and
+> staring at it needs me to resize window and such. It probably is an even
+> bigger problem if one's monitor hasn't switched to higher res early
+> during boot.
+>
+> So here's what I'm seeing with the latest EDKII:
+>
+> [    0.000000] efi: EFI v2.40 by EDK II
+> [    0.000000] efi:  ACPI=0x7ff2d000  ACPI 2.0=0x7ff2d014
+> [    0.000000] efi: mem00: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000000000-0x0000000000001000) (0MB)
+> [    0.000000] efi: mem01: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000001000-0x0000000000002000) (0MB)
+> [    0.000000] efi: mem02: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000002000-0x000000000009f000) (0MB)
+> [    0.000000] efi: mem03: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000000009f000-0x00000000000a0000) (0MB)
+> [    0.000000] efi: mem04: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000100000-0x0000000000820000) (7MB)
+> [    0.000000] efi: mem05: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000820000-0x0000000001000000) (7MB)
+> [    0.000000] efi: mem06: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001000000-0x0000000003cbc000) (44MB)
+> [    0.000000] efi: mem07: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000003cbc000-0x0000000004000000) (3MB)
+> [    0.000000] efi: mem08: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004000000-0x0000000005cbc000) (28MB)
+> [    0.000000] efi: mem09: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000005cbc000-0x000000003fffc000) (931MB)
+> [    0.000000] efi: mem10: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000003fffc000-0x0000000040000000) (0MB)
+> [    0.000000] efi: mem11: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000040000000-0x000000007c000000) (960MB)
+> [    0.000000] efi: mem12: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007c000000-0x000000007c020000) (0MB)
+> [    0.000000] efi: mem13: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007c020000-0x000000007ebc5000) (43MB)
+> [    0.000000] efi: mem14: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebc5000-0x000000007ebfe000) (0MB)
+> [    0.000000] efi: mem15: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebfe000-0x000000007ebff000) (0MB)
+> [    0.000000] efi: mem16: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebff000-0x000000007ec03000) (0MB)
+> [    0.000000] efi: mem17: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec03000-0x000000007ec05000) (0MB)
+> [    0.000000] efi: mem18: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec05000-0x000000007ec06000) (0MB)
+> [    0.000000] efi: mem19: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec06000-0x000000007ec07000) (0MB)
+> [    0.000000] efi: mem20: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec07000-0x000000007ec08000) (0MB)
+> [    0.000000] efi: mem21: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec08000-0x000000007ece7000) (0MB)
+> [    0.000000] efi: mem22: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ece7000-0x000000007ee3b000) (1MB)
+> [    0.000000] efi: mem23: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007ee3b000-0x000000007ee4e000) (0MB)
+> [    0.000000] efi: mem24: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ee4e000-0x000000007fd4e000) (15MB)
+> [    0.000000] efi: mem25: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007fd4e000-0x000000007fece000) (1MB)
+> [    0.000000] efi: mem26: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007fece000-0x000000007fefe000) (0MB)
+> [    0.000000] efi: mem27: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007fefe000-0x000000007ff22000) (0MB)
+> [    0.000000] efi: mem28: [Reserved           |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff22000-0x000000007ff26000) (0MB)
+> [    0.000000] efi: mem29: [ACPI Reclaim Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff26000-0x000000007ff2e000) (0MB)
+> [    0.000000] efi: mem30: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff2e000-0x000000007ff32000) (0MB)
+> [    0.000000] efi: mem31: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff32000-0x000000007ffd0000) (0MB)
+> [    0.000000] efi: mem32: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007ffd0000-0x0000000080000000) (0MB)
+> [    0.000000] efi: mem33: [Runtime Data       |RUN|  |  |  |   |  |  |  |UC] range=[0x00000000fff00000-0x0000000100000000) (1MB)
+>
+> and here's with the proposed changes:
+>
+> * regions get printed first so that vertical alignment gets preserved
+>
+> * memory types come then, with shorter names but still readable (I hope :))
+>
+> * efi mem attributes which are not set do not print the empty string.
+> The vertical bar after "UC" is missing on purpose although this is not
+> that totally correct if the region we're printing doesn't have the UC
+> bit set. Then it would issue "|]" at the end but who cares - I'd like to
+> not complicate this function unnecessarily.
+>
 
-On Thu, Dec 04, 2014 at 10:42:55AM +0100, Jacek Anaszewski wrote:
-> Hi Sakari,
-> 
-> Thanks for the review.
-> 
-> On 12/03/2014 06:08 PM, Sakari Ailus wrote:
-> >Hi Jacek,
-> >
-> >On Wed, Dec 03, 2014 at 05:06:37PM +0100, Jacek Anaszewski wrote:
-> >>The documentation being added contains overall description of the
-> >>LED Flash Class and the related sysfs attributes.
-> >>
-> >>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> >>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>Cc: Bryan Wu <cooloney@gmail.com>
-> >>Cc: Richard Purdie <rpurdie@rpsys.net>
-> >>---
-> >>  Documentation/leds/leds-class-flash.txt |   50 +++++++++++++++++++++++++++++++
-> >>  1 file changed, 50 insertions(+)
-> >>  create mode 100644 Documentation/leds/leds-class-flash.txt
-> >>
-> >>diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
-> >>new file mode 100644
-> >>index 0000000..82e58b1
-> >>--- /dev/null
-> >>+++ b/Documentation/leds/leds-class-flash.txt
-> >>@@ -0,0 +1,50 @@
-> >>+
-> >>+Flash LED handling under Linux
-> >>+==============================
-> >>+
-> >>+Some LED devices support two modes - torch and flash. The modes are
-> >>+supported by the LED class (see Documentation/leds/leds-class.txt)
-> >>+and LED Flash class respectively.
-> >>+
-> >>+In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
-> >>+must be defined in the kernel config. A flash LED driver must register
-> >>+in the LED subsystem with led_classdev_flash_register to gain flash
-> >>+capabilities.
-> >>+
-> >>+Following sysfs attributes are exposed for controlling flash led devices:
-> >>+
-> >>+	- flash_brightness - flash LED brightness in microamperes (RW)
-> >>+	- max_flash_brightness - maximum available flash LED brightness (RO)
-> >>+	- flash_timeout - flash strobe duration in microseconds (RW)
-> >>+	- max_flash_timeout - maximum available flash strobe duration (RO)
-> >>+	- flash_strobe - flash strobe state (RW)
-> >>+	- flash_sync_strobe - one flash device can control more than one
-> >>+			      sub-led; when this atrribute is set to 1
-> >
-> >s/atrribute/attribute/
-> >
-> >>+			      the flash led will be strobed synchronously
-> >>+			      with the other one controlled by the same
-> >>+			      device; flash timeout setting is inherited
-> >>+			      from the led being strobed explicitly and
-> >>+			      flash brightness setting of a sub-led's
-> >>+			      being synchronized is used (RW)
-> >
-> >The flash brightness shouldn't be determined by the strobed LED. If this is
-> >a property of the hardware, then be it, but in general no, it it shouldn't
-> >be an interface requirement. I think this should just say that the strobe is
-> >synchronised.
-> 
-> I intended this to sound exactly as you laid it out above, but maybe it
-> is obscure English. "and flash brightness setting of a sub-led >>>being
-> synchronized<<< is used" - from my point of view the led being
-> synchronized is the one that isn't strobed explicitly. But I'm ok with
-> confining ourselves only to saying that strobe is synchronized.
+I am fine with this change, but I have no strong opinion either way,
+to be honest.
 
-Agreed.
+The |] thing is easily fixed, though.
 
-> >How does the user btw. figure out which flash LEDs may be strobed
-> >synchronously using the LED flash interface?
-> 
-> The flash_sync_strobe argument is absent if synchronized strobe
-> is not available for a LED. The driver defines this by setting
-> newly added LED_DEV_CAP_COMPOUND flag.
+[...]
+> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+> index 8590099ac148..6734072980ee 100644
+> --- a/drivers/firmware/efi/efi.c
+> +++ b/drivers/firmware/efi/efi.c
+[...]
+> @@ -490,15 +490,15 @@ char * __init efi_md_typeattr_format(char *buf, size_t size,
+>                 snprintf(pos, size, "|attr=0x%016llx]",
+>                          (unsigned long long)attr);
+>         else
+> -               snprintf(pos, size, "|%3s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
+> -                        attr & EFI_MEMORY_RUNTIME ? "RUN" : "",
+> -                        attr & EFI_MEMORY_XP      ? "XP"  : "",
+> -                        attr & EFI_MEMORY_RP      ? "RP"  : "",
+> -                        attr & EFI_MEMORY_WP      ? "WP"  : "",
+> -                        attr & EFI_MEMORY_UCE     ? "UCE" : "",
+> -                        attr & EFI_MEMORY_WB      ? "WB"  : "",
+> -                        attr & EFI_MEMORY_WT      ? "WT"  : "",
+> -                        attr & EFI_MEMORY_WC      ? "WC"  : "",
+> -                        attr & EFI_MEMORY_UC      ? "UC"  : "");
+> +               snprintf(pos, size, "|%s%s%s%s%s%s%s%s%s]",
 
-I meant that how does the user figure out which LEDs may be strobed
-synchronously, together. Say, if you have two of these chips and four LEDs,
-then how does it work? :-)
+Drop the leading | here
 
--- 
-Kind regards,
+> +                        attr & EFI_MEMORY_RUNTIME ? "RT|"  : "",
+> +                        attr & EFI_MEMORY_XP      ? "XP|"  : "",
+> +                        attr & EFI_MEMORY_RP      ? "RP|"  : "",
+> +                        attr & EFI_MEMORY_WP      ? "WP|"  : "",
+> +                        attr & EFI_MEMORY_UCE     ? "UCE|" : "",
+> +                        attr & EFI_MEMORY_WB      ? "WB|"  : "",
+> +                        attr & EFI_MEMORY_WT      ? "WT|"  : "",
+> +                        attr & EFI_MEMORY_WC      ? "WC|"  : "",
+> +                        attr & EFI_MEMORY_UC      ? "UC"   : "");
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+and move all the | to the beginning of the string here, including "UC"
+
+
+>         return buf;
+>  }
+> --
+> 2.0.0
+>
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
