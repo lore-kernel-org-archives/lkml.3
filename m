@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaLIVf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:35:56 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17102 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaLIVfD (ORCPT
+	id S1753439AbaLIVho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:37:44 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53601 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195AbaLIVhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:35:03 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        =?UTF-8?q?Marek=20Kord=C3=ADk?= <kordikmarek@gmail.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non mem64
-Date: Tue,  9 Dec 2014 13:34:31 -0800
-Message-Id: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 9 Dec 2014 16:37:43 -0500
+Date: Tue, 9 Dec 2014 21:37:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Message-ID: <20141209213728.GN11764@sirena.org.uk>
+References: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
+ <CAOMZO5B0WcR-=__QzCzD86oocuj--uhq+QYj3o1WU05JO-Qyfw@mail.gmail.com>
+ <20141209212708.GL11764@sirena.org.uk>
+ <CAOMZO5DYuUmc9m65Pssmy+Ak+A__WTLmXY2=+3jQ1ZKQcE5Pew@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w0g8YuYCbDvF0cDN"
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5DYuUmc9m65Pssmy+Ak+A__WTLmXY2=+3jQ1ZKQcE5Pew@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: da9052-regulator fails to probe in linux-next
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we could use bridge 64bit mem pref for children mem pref instead of
-forcing them into bridge mem.
 
-Could help Marek's system as his system is using _CRS, and all mem res is under
-4G.
+--w0g8YuYCbDvF0cDN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-Reported-by: Marek Kordik <kordikmarek@gmail.com>
-Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Tue, Dec 09, 2014 at 07:34:09PM -0200, Fabio Estevam wrote:
 
----
- drivers/pci/host-bridge.c |    7 +++++++
- drivers/pci/pci.h         |    1 +
- drivers/pci/probe.c       |    9 +++++++++
- drivers/pci/setup-bus.c   |    3 +++
- include/linux/pci.h       |    1 +
- 5 files changed, 21 insertions(+)
+> Yes, so here is a cleaner one:
+> http://arm-soc.lixom.net/bootlogs/next/next-20141104/wandboard-arm-imx_v6_v7_defconfig.html
 
-Index: linux-2.6/drivers/pci/host-bridge.c
-===================================================================
---- linux-2.6.orig/drivers/pci/host-bridge.c
-+++ linux-2.6/drivers/pci/host-bridge.c
-@@ -31,6 +31,13 @@ void pci_set_host_bridge_release(struct
- 	bridge->release_data = release_data;
- }
- 
-+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus)
-+{
-+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
-+
-+	return bridge->has_mem64_res;
-+}
-+
- void pcibios_resource_to_bus(struct pci_bus *bus, struct pci_bus_region *region,
- 			     struct resource *res)
- {
-Index: linux-2.6/drivers/pci/pci.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.h
-+++ linux-2.6/drivers/pci/pci.h
-@@ -196,6 +196,7 @@ enum pci_bar_type {
- 	pci_bar_mem64,		/* A 64-bit memory BAR */
- };
- 
-+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus);
- bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
- 				int crs_timeout);
- int pci_setup_device(struct pci_dev *dev);
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -1980,6 +1980,15 @@ struct pci_bus *pci_create_root_bus(stru
- 		dev_info(&b->dev, "root bus resource %pR%s\n", res, bus_addr);
- 	}
- 
-+	list_for_each_entry(window, &bridge->windows, list) {
-+		res = window->res;
-+		if (resource_type(res) == IORESOURCE_MEM ||
-+		    res->end > 0xffffffff) {
-+			bridge->has_mem64_res = true;
-+			break;
-+		}
-+	}
-+
- 	down_write(&pci_bus_sem);
- 	list_add_tail(&b->node, &pci_root_buses);
- 	up_write(&pci_bus_sem);
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -407,6 +407,7 @@ struct pci_host_bridge {
- 	struct list_head windows;	/* pci_host_bridge_windows */
- 	void (*release_fn)(struct pci_host_bridge *);
- 	void *release_data;
-+	bool has_mem64_res;
- };
- 
- #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
-Index: linux-2.6/drivers/pci/setup-bus.c
-===================================================================
---- linux-2.6.orig/drivers/pci/setup-bus.c
-+++ linux-2.6/drivers/pci/setup-bus.c
-@@ -693,6 +693,9 @@ static void pci_bridge_check_ranges(stru
- 		}
- 	}
- 
-+        if (!pcibios_host_bridge_has_mem64_res(bus))
-+                b_res[2].flags &= ~IORESOURCE_MEM_64;
-+
- 	/* double check if bridge does support 64 bit pref */
- 	if (b_res[2].flags & IORESOURCE_MEM_64) {
- 		u32 mem_base_hi, tmp;
+> The anatop regulators is drivers/regulator/pfuze100-regulator.c and
+> the dt description is at:
+> arch/arm/boot/dts/imx6qdl.dtsi
+
+Still not seeing any references to either pfuze100 or vdd (other than
+the external audio CODEC)...
+
+--w0g8YuYCbDvF0cDN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUh2uXAAoJECTWi3JdVIfQsHMH/1fFjBJTgvX6cV4wiO1EM/1H
+4D7rHGB68z5y8VAbC3Z/HatPS56bXHtEpIWhkAYQC1rsOp53Wvkdfiwj2wKr+3/d
+UapH6aenU9uwEiYBGKGoOpbk+36SkuoPvwUuISyZNKFQRi8nFaNTh5v/T96EpGgP
+cvewfrTzB3+tPvQ56+m5bmXnaAjrI3L1X76C2HO46Tig7Dv2moeFB3tv4SQPnwA7
+s2xw+F+JKLHJvL23wwxShtGpsRcdl3yGxayTxRN5Q2T9sPyPmSNIExtRKv0GVd1L
+oPKqVusFfieZtd7zF1j7Z8VAExqKSAgU1nBW/sBNYnxUhC3FnncrghQ/qdNsLd0=
+=JlcF
+-----END PGP SIGNATURE-----
+
+--w0g8YuYCbDvF0cDN--
