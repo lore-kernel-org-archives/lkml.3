@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389AbaLIONi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:13:38 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:49646 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaLIONa (ORCPT
+	id S1757374AbaLIONg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:13:36 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58197 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806AbaLIONc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:13:30 -0500
+	Tue, 9 Dec 2014 09:13:32 -0500
+Message-ID: <54870385.9060405@collabora.com>
+Date: Tue, 09 Dec 2014 15:13:25 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1418093554-30671-1-git-send-email-lyz@rock-chips.com>
-References: <1418093554-30671-1-git-send-email-lyz@rock-chips.com>
-Date: Tue, 9 Dec 2014 15:13:29 +0100
-Message-ID: <CABgxDoJ_anqvD215see84RJ2U04kExyouaN1CNUCTYJ9+XMSig@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] ARM: dts: add rk3288 usb PHY
-From: Romain Perier <romain.perier@gmail.com>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Rob Herring <robh+dt@kernel.org>, "pawel.moll" <pawel.moll@arm.com>,
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree" <ijc+devicetree@hellion.org.uk>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        devicetree <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v3 3/3] ARM: tegra: Add Tegra124 ACTMON support
+References: <1417709696-29281-1-git-send-email-tomeu.vizoso@collabora.com> <1417709696-29281-4-git-send-email-tomeu.vizoso@collabora.com> <CAAVeFu+UZyzF6c+MMnXFAKUbDcw6aan13Sg88c9-YbUsbXYKnw@mail.gmail.com>
+In-Reply-To: <CAAVeFu+UZyzF6c+MMnXFAKUbDcw6aan13Sg88c9-YbUsbXYKnw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/09/2014 06:33 AM, Alexandre Courbot wrote:
+> On Fri, Dec 5, 2014 at 1:14 AM, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+>> Add device node for the ACTMON block to the Tegra124 device tree.
+>>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>
+>> ---
+>>
+>> v3:     * Address misc. style issues found by Thierry and Alexander
+>>         * Added helpers for register i/o
+>>         * Further documented the structs
+>>         * Enable the ACTMON after the IRQ handler has been installed
+>>         * Disable the ACTMON before removing the IRQ handler
+>>         * Add governor in a subsys initcall
+>>
+>> v2:     * Add operating-points property
+>> ---
+>>  arch/arm/boot/dts/tegra124.dtsi        |  23 +
+>>  drivers/devfreq/Kconfig                |   7 +-
+>>  drivers/devfreq/Makefile               |   2 +-
+>>  drivers/devfreq/tegra-actmon-devfreq.c | 777 +++++++++++++++++++++++++++++++++
+>>  drivers/devfreq/tegra-devfreq.c        | 718 ------------------------------
+> 
+> In patch 2/3 you create tegra-devfreq.c, to apparently move it to
+> tegra-actmon-devfreq.c and (seemingly) add somemore lines to it. This
+> makes things difficult to review, and I am almost sure this is a
+> naming mistake - could you fix this and resend?
 
-2014-12-09 3:52 GMT+01:00 Yunzhi Li <lyz@rock-chips.com>:
-> This patch adds a device_node for RK3288 SoC usb phy. It also
-> defines the phy to be used by three usb controllers: usb_host0/1
-> and usb_otg.
->
-> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
->
-> ---
->
+Sorry, I squashed the changes into the wrong commit. Have sent v4 fixing
+this.
 
-Tiny thing: Could you change your short description to "ARM: dts:
-rockchip: add rk3288 usb PHY" ? (as this is the case for all
-devicetree related changes for a specific SoC)
+Cheers,
 
-Thanks,
-Romain
+Tomeu
+
