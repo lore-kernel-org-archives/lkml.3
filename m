@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaLIVxo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:53:44 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:36354 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaLIVxm (ORCPT
+	id S1753274AbaLIVxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:53:52 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:46766 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbaLIVxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:53:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
-References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 9 Dec 2014 14:53:20 -0700
-Message-ID: <CAErSpo5tZU=zBKNDt2UtUE_AMG3zzrdq2CX2A4ZL7tdLELXgqA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non mem64
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Dec 2014 16:53:49 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: soc-dapm: Fix comparison of pointers
+Date: Tue,  9 Dec 2014 22:53:41 +0100
+Message-Id: <1418162021-32229-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 2:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> So we could use bridge 64bit mem pref for children mem pref instead of
-> forcing them into bridge mem.
->
-> Could help Marek's system as his system is using _CRS, and all mem res is under
-> 4G.
->
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-> Reported-by: Marek Kordik <kordikmarek@gmail.com>
-> Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
-> ---
->  drivers/pci/host-bridge.c |    7 +++++++
->  drivers/pci/pci.h         |    1 +
->  drivers/pci/probe.c       |    9 +++++++++
->  drivers/pci/setup-bus.c   |    3 +++
->  include/linux/pci.h       |    1 +
->  5 files changed, 21 insertions(+)
->
-> Index: linux-2.6/drivers/pci/host-bridge.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/host-bridge.c
-> +++ linux-2.6/drivers/pci/host-bridge.c
-> @@ -31,6 +31,13 @@ void pci_set_host_bridge_release(struct
->         bridge->release_data = release_data;
->  }
->
-> +bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus)
-> +{
-> +       struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
-> +
-> +       return bridge->has_mem64_res;
-> +}
-> +
->  void pcibios_resource_to_bus(struct pci_bus *bus, struct pci_bus_region *region,
->                              struct resource *res)
->  {
-> Index: linux-2.6/drivers/pci/pci.h
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/pci.h
-> +++ linux-2.6/drivers/pci/pci.h
-> @@ -196,6 +196,7 @@ enum pci_bar_type {
->         pci_bar_mem64,          /* A 64-bit memory BAR */
->  };
->
-> +bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus);
->  bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
->                                 int crs_timeout);
->  int pci_setup_device(struct pci_dev *dev);
-> Index: linux-2.6/drivers/pci/probe.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/probe.c
-> +++ linux-2.6/drivers/pci/probe.c
-> @@ -1980,6 +1980,15 @@ struct pci_bus *pci_create_root_bus(stru
->                 dev_info(&b->dev, "root bus resource %pR%s\n", res, bus_addr);
->         }
->
-> +       list_for_each_entry(window, &bridge->windows, list) {
-> +               res = window->res;
-> +               if (resource_type(res) == IORESOURCE_MEM ||
-> +                   res->end > 0xffffffff) {
-> +                       bridge->has_mem64_res = true;
+The idiom 'return a - b;' often used in comparison functions is wrong
+unless one is certain the values being compared lie in a sufficiently
+small range. In this case dapm_seq_compare would also return 0 if the
+->dapm pointers happened to differ by a multiple of 2^32.
 
-This is an interesting idea, but I think you're checking CPU addresses
-here, and you need to check PCI bus addresses.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
 
-Bjorn
+Notes:
+    I don't know if the other occurences of the idiom in this function are
+    ok; that depends on whether the values always lie in [0, 2^31-1].
+
+ sound/soc/soc-dapm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index c61cb9cedbcd..a894a7c71557 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -1255,8 +1255,10 @@ static int dapm_seq_compare(struct snd_soc_dapm_widget *a,
+ 	}
+ 	if (a->reg != b->reg)
+ 		return a->reg - b->reg;
+-	if (a->dapm != b->dapm)
+-		return (unsigned long)a->dapm - (unsigned long)b->dapm;
++	if (a->dapm < b->dapm)
++		return -1;
++	if (a->dapm > b->dapm)
++		return 1;
+ 
+ 	return 0;
+ }
+-- 
+2.1.3
+
