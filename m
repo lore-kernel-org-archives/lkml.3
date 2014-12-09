@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362AbaLIJOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:14:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44202 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300AbaLIJOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:14:48 -0500
-Message-ID: <5486BD85.1010903@suse.cz>
-Date: Tue, 09 Dec 2014 10:14:45 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932388AbaLIJO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:14:59 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38952 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300AbaLIJOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:14:54 -0500
+Date: Tue, 9 Dec 2014 10:14:47 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
+        rafael.j.wysocki@intel.com, peterz@infradead.org, oleg@redhat.com,
+        bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some cases
+ - deadlock
+Message-ID: <20141209091447.GD4362@osiris>
+References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141208212236.GU25340@linux.vnet.ibm.com>
+ <20141209085930.6b831850@thinkpad-w530>
 MIME-Version: 1.0
-To: Weijie Yang <weijie.yang@samsung.com>, iamjoonsoo.kim@lge.com
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        "'Rik van Riel'" <riel@redhat.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: page_isolation: remove redundant moving for isolated
- buddy pages
-References: <000101d01384$fac61240$f05236c0$%yang@samsung.com>
-In-Reply-To: <000101d01384$fac61240$f05236c0$%yang@samsung.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209085930.6b831850@thinkpad-w530>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120909-0017-0000-0000-000002232F66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 08:50 AM, Weijie Yang wrote:
-> The commit ad53f92e(fix incorrect isolation behavior by rechecking migratetype)
-> patch series describe the race between page isolation and alloc/free path, and
-> fix the race.
->
-> Now, after the pageblock has been isolated, free buddy pages are already in
-> the free_list[MIGRATE_ISOLATE] and will not be allocated for usage. So the
-> current freepage_migratetype check is unnecessary and it will cause redundant
-> page move. That is to say, even if the buddy page's migratetype is not
-> MIGRATE_ISOLATE, the page is in free_list[MIGRATE_ISOLATE], we just move it
-> from free_list[MIGRATE_ISOLATE] to free_list[MIGRATE_ISOLATE].
->
-> This patch removes the unnecessary freepage_migratetype check and the
-> redundant page moving.
->
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+On Tue, Dec 09, 2014 at 08:59:30AM +0100, David Hildenbrand wrote:
+> > The compiler is within its rights to optimize the active_writer local
+> > variable out of existence, thus re-introducing the possible race with
+> > the writer that can pass a NULL pointer to wake_up_process().  So you
+> > really need the ACCESS_ONCE() on the read from cpu_hotplug.active_writer.
+> > Please see http://lwn.net/Articles/508991/ for more information why
+> > this is absolutely required.
+> 
+> You're absolutely right, saw your reply on the other patch just after I sent
+> this version ...
+> 
+> So if you agree with the change below, I'll send an updated version!
+> 
+> > 
+> > > +		if (unlikely(active_writer))
+> > > +			wake_up_process(active_writer);
+> > >  		cpuhp_lock_release();
+> > >  		return;
+> > >  	}
+> > > @@ -161,15 +167,17 @@ void cpu_hotplug_begin(void)
+> > >  	cpuhp_lock_acquire();
+> > >  	for (;;) {
+> > >  		mutex_lock(&cpu_hotplug.lock);
+> > > +		__set_current_state(TASK_UNINTERRUPTIBLE);
+> > 
+> > You lost me on this one.  How does this help?
+> > 
+> > 							Thanx, Paul
+> 
+> Imagine e.g. the following (simplified) scenario:
+> 
+> CPU1                               CPU2
+> ----------------------------------------------------------------------------
+> !mutex_trylock(&cpu_hotplug.lock) |
+>                                   | cpu_hotplug.puts_pending == 0
+> cpu_hotplug.puts_pending++;       |
+>                                   | cpu_hotplug.refcount != 0
+> wake_up_process(active_writer)
+>                                   | __set_current_state(TASK_UNINTERRUPTIBLE);
+>                                   | schedule();
+>                                   | /* will never be woken up */
+> 
+> Therefore we have to move the condition check inside the 
+>   __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
+> section to not miss any wake ups when the condition is satisfied.
+> 
+> So wake_up_process() will either see TASK_RUNNING and do nothing or see
+> TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
+> fact be woken up again.
 
-With great hope that Joonsoo won't find another corner case J
-
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-
-> ---
->   mm/page_isolation.c |   17 +----------------
->   1 file changed, 1 insertion(+), 16 deletions(-)
->
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index c8778f7..6e5174d 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -221,23 +221,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
->   			continue;
->   		}
->   		page = pfn_to_page(pfn);
-> -		if (PageBuddy(page)) {
-> -			/*
-> -			 * If race between isolatation and allocation happens,
-> -			 * some free pages could be in MIGRATE_MOVABLE list
-> -			 * although pageblock's migratation type of the page
-> -			 * is MIGRATE_ISOLATE. Catch it and move the page into
-> -			 * MIGRATE_ISOLATE list.
-> -			 */
-> -			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
-> -				struct page *end_page;
-> -
-> -				end_page = page + (1 << page_order(page)) - 1;
-> -				move_freepages(page_zone(page), page, end_page,
-> -						MIGRATE_ISOLATE);
-> -			}
-> +		if (PageBuddy(page))
->   			pfn += 1 << page_order(page);
-> -		}
->   		else if (page_count(page) == 0 &&
->   			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
->   			pfn += 1;
->
+Or the third alternative would be that 'active_writer' which was running
+on CPU2 already terminated and wake_up_process() has a non-NULL pointer to
+task_struct which is already dead.
+Or is there anything that prevents this use-after-free race?
 
