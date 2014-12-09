@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaLIWyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:54:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37479 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975AbaLIWul (ORCPT
+	id S1754153AbaLIW4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:56:09 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63642 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaLIWyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:41 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 17/25] switch tcp_sock->ucopy from iovec (ucopy.iov) to msghdr (ucopy.msg)
-Date: Tue,  9 Dec 2014 22:50:30 +0000
-Message-Id: <1418165438-2205-17-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
-References: <20141209224928.GL22149@ZenIV.linux.org.uk>
+	Tue, 9 Dec 2014 17:54:52 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: hpa@zytor.com
+Cc: bpoirier@suse.de, linux-doc@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH v2] x86-64, doc: update to account for file shuffling
+Date: Tue,  9 Dec 2014 14:54:44 -0800
+Message-Id: <1418165684-6226-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+While at it, also refer to the 32 bit entry file.
+
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: x86@kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- include/linux/tcp.h  | 2 +-
- net/ipv4/tcp.c       | 2 +-
- net/ipv4/tcp_input.c | 7 +++----
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ Documentation/x86/entry_64.txt | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index f566b85..5d9cc9c 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -162,7 +162,7 @@ struct tcp_sock {
- 	struct {
- 		struct sk_buff_head	prequeue;
- 		struct task_struct	*task;
--		struct iovec		*iov;
-+		struct msghdr		*msg;
- 		int			memory;
- 		int			len;
- 	} ucopy;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index dc13a36..4a96f37 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1729,7 +1729,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			if (!user_recv && !(flags & (MSG_TRUNC | MSG_PEEK))) {
- 				user_recv = current;
- 				tp->ucopy.task = user_recv;
--				tp->ucopy.iov = msg->msg_iov;
-+				tp->ucopy.msg = msg;
- 			}
+diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+index bc7226e..4a1c5c2 100644
+--- a/Documentation/x86/entry_64.txt
++++ b/Documentation/x86/entry_64.txt
+@@ -7,9 +7,12 @@ http://lkml.kernel.org/r/<20110529191055.GC9835%40elte.hu>
+ The x86 architecture has quite a few different ways to jump into
+ kernel code.  Most of these entry points are registered in
+ arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S
+-and arch/x86/ia32/ia32entry.S.
++for 64-bit, arch/x86/kernel/entry_32.S for 32-bit and finally
++arch/x86/ia32/ia32entry.S which implements the 32-bit compatibility
++syscall entry points and thus provides for 32-bit processes the
++ability to execute syscalls when running on 64-bit kernels.
  
- 			tp->ucopy.len = len;
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 69de1a1..075ab4d 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4421,7 +4421,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
- 			__set_current_state(TASK_RUNNING);
+-The IDT vector assignments are listed in arch/x86/include/irq_vectors.h.
++The IDT vector assignments are listed in arch/x86/include/asm/irq_vectors.h.
  
- 			local_bh_enable();
--			if (!skb_copy_datagram_iovec(skb, 0, tp->ucopy.iov, chunk)) {
-+			if (!skb_copy_datagram_msg(skb, 0, tp->ucopy.msg, chunk)) {
- 				tp->ucopy.len -= chunk;
- 				tp->copied_seq += chunk;
- 				eaten = (chunk == skb->len);
-@@ -4941,10 +4941,9 @@ static int tcp_copy_to_iovec(struct sock *sk, struct sk_buff *skb, int hlen)
+ Some of these entries are:
  
- 	local_bh_enable();
- 	if (skb_csum_unnecessary(skb))
--		err = skb_copy_datagram_iovec(skb, hlen, tp->ucopy.iov, chunk);
-+		err = skb_copy_datagram_msg(skb, hlen, tp->ucopy.msg, chunk);
- 	else
--		err = skb_copy_and_csum_datagram_iovec(skb, hlen,
--						       tp->ucopy.iov);
-+		err = skb_copy_and_csum_datagram_msg(skb, hlen, tp->ucopy.msg);
- 
- 	if (!err) {
- 		tp->ucopy.len -= chunk;
 -- 
-2.1.3
+2.1.1
 
