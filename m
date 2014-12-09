@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886AbaLINGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 08:06:40 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39975 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234AbaLINGj (ORCPT
+	id S1756916AbaLINJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:09:54 -0500
+Received: from v032797.home.net.pl ([89.161.177.31]:52717 "HELO
+	v032797.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755234AbaLINJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 08:06:39 -0500
-Date: Tue, 9 Dec 2014 14:06:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/debug tree change for v3.19
-Message-ID: <20141209130634.GA30749@gmail.com>
+	Tue, 9 Dec 2014 08:09:52 -0500
+Message-ID: <5486F498.30309@elproma.com.pl>
+Date: Tue, 09 Dec 2014 14:09:44 +0100
+From: =?UTF-8?B?SmFudXN6IFXFvHlja2k=?= <j.uzycki@elproma.com.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Subject: Re: [PATCH v2] clk: Add PWM clock driver
+References: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>	 <5480A132.2010103@elproma.com.pl> <54860426.3020400@elproma.com.pl> <1418116533.3107.1.camel@pengutronix.de>
+In-Reply-To: <1418116533.3107.1.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Philipp,
 
-Please pull the latest x86-debug-for-linus git tree from:
+W dniu 2014-12-09 o 10:15, Philipp Zabel pisze:
+> Hi Janusz,
+>
+> Am Montag, den 08.12.2014, 21:03 +0100 schrieb Janusz Użycki:
+>> Hi,
+>>
+>> I've fixed my pwm driver and I can enable 12MHz 50% output using sysfs.
+>> Then I rebased the pwm-clock to 3.14.
+>> I have connected mcp2515 and it works with fixed clock. When I switch
+>> the chip's clock to pwm clock in dt
+>> I get "mcp251x: probe of spi1.2 failed with error -2". I've also added
+>> clock-frequency property
+>> but it didn't help.
+>> When I set the mcp2515 clock to fixed clock again but the clock is not
+>> applied to mcp2515 I get
+>> "mcp251x spi1.2: MCP251x didn't enter in conf mode after reset".
+>> So it looks this is indeed probe error caused likely by dt.
+> Did pwm-clock fail to probe already? Could you check with the patch
+> below?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-debug-for-linus
+Added. clk_pwm_probe() is never called. The pwm-clk driver is built-in. 
+mcp251x is a module.
+mcp251x doesn't trigger pwm-clock dt. I found fixed-clock uses 
+CLK_OF_DECLARE().
+How does it work for you? What is missing?
 
-   # HEAD: 15bae280e412e79d74912c7ae6b6a002444edb1f x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
+The pwm-clock driver set CLK_IS_ROOT and no parents.
+I think it fail the clock on suspend/resume race but I can be wrong.
 
-A defconfig update.
+>> The fixed and pwm clock in DT:
+>>           clocks {
+>>                   #address-cells = <1>;
+>>                   #size-cells = <1>;
+>>                   ranges;
+>>                   mcp251x_xtal_clk: mcp2515_xtal {
+>>                           compatible = "fixed-clock";
+>>                           #clock-cells = <0>;
+>>                           clock-frequency = <12000000>;
+>>                   };
+>>
+>>                   mcp251x_pwm_clk: mcp2515_pwm {
+>>                           compatible = "pwm-clock";
+>>                           #clock-cells = <0>;
+>>                           clock-frequency = <12000000>;
+>>                           clock-output-names = "can_clk";
+>>                           pwms = <&pwm 3 83>;     /* 12MHz = 1 / ~83ns */
+>>                   };
+>>           };
+>>
+>> Also the mentioned frequency recalculation problem appears here.
+>> In the case above recalc value is about 12.048MHz instead of 12.0MHz.
+>> While PWM block is clocked 24MHz and the pwm generates exactly 12MHz
+>> the pwm-clock driver returns drifted value. Using clock-frequency like
+>> fixed-clock does could simply solve the binding problem.
+> Yes, for this case it is very unfortunate that there's only nanosecond
+> resolution for the duty cycle. Adding a clock-frequency property to
+> indicate the real frequency would solve this problem.
 
- Thanks,
+Yes but the property also must be supported by pwm-clock driver.
 
-	Ingo
+best regards
+Janusz
 
------------------->
-Richard Weinberger (1):
-      x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
+>
+> ------8<------
+> diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
+> index 8f747b3..9c13856 100644
+> --- a/drivers/clk/clk-pwm.c
+> +++ b/drivers/clk/clk-pwm.c
+> @@ -63,12 +63,16 @@ int clk_pwm_probe(struct platform_device *pdev)
+>   		return -ENOMEM;
+>   
+>   	pwm = devm_pwm_get(&pdev->dev, NULL);
+> -	if (IS_ERR(pwm))
+> +	if (IS_ERR(pwm)) {
+> +		dev_err(&pdev->dev, "failed to get pwm: %ld\n", PTR_ERR(pwm));
+>   		return PTR_ERR(pwm);
+> +	}
+>   
+>   	ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
+> -	if (ret < 0)
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed to configure pwm: %d\n", ret);
+>   		return ret;
+> +	}
+>   
+>   	init.name = "pwm-clock";
+>   	init.ops = &clk_pwm_ops;
+> @@ -78,11 +82,18 @@ int clk_pwm_probe(struct platform_device *pdev)
+>   	clk_pwm->pwm = pwm;
+>   	clk_pwm->hw.init = &init;
+>   	clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
+> -	if (IS_ERR(clk))
+> +	if (IS_ERR(clk)) {
+> +		dev_err(&pdev->dev, "failed to register clock: %ld\n",
+> +			PTR_ERR(clk));
+>   		return PTR_ERR(clk);
+> +	}
+>   
+> -	return of_clk_add_provider(pdev->dev.of_node,
+> -				   of_clk_src_simple_get, clk);
+> +	ret = of_clk_add_provider(pdev->dev.of_node,
+> +				  of_clk_src_simple_get, clk);
+> +	if (ret)
+> +		dev_err(&pdev->dev, "failed to add clock provider: %d\n", ret);
+> +
+> +	return ret;
+>   }
+>   
+>   int clk_pwm_remove(struct platform_device *pdev)
+>
+>
 
-
- arch/x86/configs/i386_defconfig   | 1 +
- arch/x86/configs/x86_64_defconfig | 1 +
- 2 files changed, 2 insertions(+)
-
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 32d2e7056c87..419819d6dab3 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -8,6 +8,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index a481dd4755d5..4c311ddd973b 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -7,6 +7,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
