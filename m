@@ -1,136 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498AbaLIPsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 10:48:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53480 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757435AbaLIPse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 10:48:34 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>
-Subject: [PATCH 3/5] Tools: hv: address compiler warnings for hv_kvp_daemon.c
-Date: Tue,  9 Dec 2014 16:48:21 +0100
-Message-Id: <1418140103-11854-4-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
-References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+	id S1757566AbaLIPui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:50:38 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37636 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757406AbaLIPug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:50:36 -0500
+Date: Tue, 9 Dec 2014 16:50:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
+ Flash class extension
+Message-ID: <20141209155033.GB21422@amd>
+References: <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
+ <20141129125832.GA315@amd>
+ <547C539A.4010500@samsung.com>
+ <20141201130437.GB24737@amd>
+ <547C7420.4080801@samsung.com>
+ <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
+ <20141206124310.GB3411@amd>
+ <5485D7F8.10807@samsung.com>
+ <20141208201855.GA16648@amd>
+ <5486B8AE.5000408@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5486B8AE.5000408@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch addresses two types of compiler warnings:
-... warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-and
-... warning: pointer targets in passing argument N of ‘kvp_...’ differ in signedness [-Wpointer-sign]
+On Tue 2014-12-09 09:54:06, Jacek Anaszewski wrote:
+> Hi Pavel,
+> 
+> On 12/08/2014 09:18 PM, Pavel Machek wrote:
+> >On Mon 2014-12-08 17:55:20, Jacek Anaszewski wrote:
+> >>On 12/06/2014 01:43 PM, Pavel Machek wrote:
+> >>>
+> >>>>>The format of a sysfs attribute should be concise.
+> >>>>>The error codes are generic and map directly to the V4L2 Flash
+> >>>>>error codes.
+> >>>>>
+> >>>>
+> >>>>Actually I'd like to see those flash fault code defined in LED
+> >>>>subsystem. And V4L2 will just include LED flash header file to use it.
+> >>>>Because flash fault code is not for V4L2 specific but it's a feature
+> >>>>of LED flash devices.
+> >>>>
+> >>>>For clearing error code of flash devices, I think it depends on the
+> >>>>hardware. If most of our LED flash is using reading to clear error
+> >>>>code, we probably can make it simple as this now. But what if some
+> >>>>other LED flash devices are using writing to clear error code? we
+> >>>>should provide a API to that?
+> >>>
+> >>>Actually, we should provide API that makes sense, and that is easy to
+> >>>use by userspace.
+> >>>
+> >>>I believe "read" is called read because it does not change anything,
+> >>>and it should stay that way in /sysfs. You may want to talk to sysfs
+> >>>maintainers if you plan on doing another semantics.
+> >>
+> >>How would you proceed in case of devices which clear their fault
+> >>register upon I2C readout (e.g. AS3645)? In this case read does have
+> >>a side effect. For such devices attribute semantics would have to be
+> >>different than for the devices which don't clear faults on readout.
+> >
+> >No, semantics should be same for all devices.
+> >
+> >If device clears fault register during I2C readout, kernel will simply
+> >gather faults in an variable, and clear them upon write to sysfs file.
+> 
+> This approach would require implementing additional mechanisms on
+> both sides: LED Flash class core and a LED Flash class driver.
+> In the former the sysfs attribute write permissions would have
+> to be decided in the runtime and in the latter caching mechanism
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- tools/hv/hv_kvp_daemon.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+Write attributes at runtime? Why? We can emulate sane and consistent
+behaviour for all the controllers: read gives you list of faults,
+write clears it. We can do it for all the controllers.
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 5a274ca..48a95f9 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -308,7 +308,7 @@ static int kvp_file_init(void)
- 	return 0;
- }
- 
--static int kvp_key_delete(int pool, const char *key, int key_size)
-+static int kvp_key_delete(int pool, const __u8 *key, int key_size)
- {
- 	int i;
- 	int j, k;
-@@ -351,8 +351,8 @@ static int kvp_key_delete(int pool, const char *key, int key_size)
- 	return 1;
- }
- 
--static int kvp_key_add_or_modify(int pool, const char *key, int key_size, const char *value,
--			int value_size)
-+static int kvp_key_add_or_modify(int pool, const __u8 *key, int key_size,
-+				 const __u8 *value, int value_size)
- {
- 	int i;
- 	int num_records;
-@@ -405,7 +405,7 @@ static int kvp_key_add_or_modify(int pool, const char *key, int key_size, const
- 	return 0;
- }
- 
--static int kvp_get_value(int pool, const char *key, int key_size, char *value,
-+static int kvp_get_value(int pool, const __u8 *key, int key_size, __u8 *value,
- 			int value_size)
- {
- 	int i;
-@@ -437,8 +437,8 @@ static int kvp_get_value(int pool, const char *key, int key_size, char *value,
- 	return 1;
- }
- 
--static int kvp_pool_enumerate(int pool, int index, char *key, int key_size,
--				char *value, int value_size)
-+static int kvp_pool_enumerate(int pool, int index, __u8 *key, int key_size,
-+				__u8 *value, int value_size)
- {
- 	struct kvp_record *record;
- 
-@@ -659,7 +659,7 @@ static char *kvp_if_name_to_mac(char *if_name)
- 	char    *p, *x;
- 	char    buf[256];
- 	char addr_file[256];
--	int i;
-+	unsigned int i;
- 	char *mac_addr = NULL;
- 
- 	snprintf(addr_file, sizeof(addr_file), "%s%s%s", "/sys/class/net/",
-@@ -698,7 +698,7 @@ static char *kvp_mac_to_if_name(char *mac)
- 	char    buf[256];
- 	char *kvp_net_dir = "/sys/class/net/";
- 	char dev_id[256];
--	int i;
-+	unsigned int i;
- 
- 	dir = opendir(kvp_net_dir);
- 	if (dir == NULL)
-@@ -748,7 +748,7 @@ static char *kvp_mac_to_if_name(char *mac)
- 
- 
- static void kvp_process_ipconfig_file(char *cmd,
--					char *config_buf, int len,
-+					char *config_buf, unsigned int len,
- 					int element_size, int offset)
- {
- 	char buf[256];
-@@ -766,7 +766,7 @@ static void kvp_process_ipconfig_file(char *cmd,
- 	if (offset == 0)
- 		memset(config_buf, 0, len);
- 	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
--		if ((len - strlen(config_buf)) < (element_size + 1))
-+		if (len < strlen(config_buf) + element_size + 1)
- 			break;
- 
- 		x = strchr(p, '\n');
-@@ -914,7 +914,7 @@ static int kvp_process_ip_address(void *addrp,
- 
- static int
- kvp_get_ip_info(int family, char *if_name, int op,
--		 void  *out_buffer, int length)
-+		 void  *out_buffer, unsigned int length)
- {
- 	struct ifaddrs *ifap;
- 	struct ifaddrs *curp;
-@@ -1017,8 +1017,7 @@ kvp_get_ip_info(int family, char *if_name, int op,
- 					weight += hweight32(&w[i]);
- 
- 				sprintf(cidr_mask, "/%d", weight);
--				if ((length - sn_offset) <
--					(strlen(cidr_mask) + 1))
-+				if (length < sn_offset + strlen(cidr_mask) + 1)
- 					goto gather_ipaddr;
- 
- 				if (sn_offset == 0)
+Only cost is few lines of code in the drivers where hardware clears
+faults at read.
+
+> would have to be implemented per driver. We would have to also
+> consider how to approach the issue in case of sub-leds.
+
+Actually.. sub-leds. That is one physical LED being connected to two
+current sources at the same time, right? 
+
+> The only reason for this overhead is trying to avoid side effects
+> on reading sysfs attribute. After weighing the pros and cons,
+> I am not sure if it is worthwhile.
+
+I am pretty sure.
+
+									Pavel
+
 -- 
-1.9.3
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
