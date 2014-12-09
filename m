@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaLISGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:06:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53890 "EHLO mx2.suse.de"
+	id S1751681AbaLISGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:06:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638AbaLISGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:06:11 -0500
+	id S1751608AbaLISGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:06:09 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
@@ -16,9 +16,9 @@ Cc: Christoph Hellwig <hch@infradead.org>,
         Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
         x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 6/6] livepatch v5: clean up usage of the old and new addresses
-Date: Tue,  9 Dec 2014 19:05:07 +0100
-Message-Id: <1418148307-21434-7-git-send-email-pmladek@suse.cz>
+Subject: [PATCH 5/6] livepatch v5: split init and free code that is done only for loaded modules
+Date: Tue,  9 Dec 2014 19:05:06 +0100
+Message-Id: <1418148307-21434-6-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1418148307-21434-1-git-send-email-pmladek@suse.cz>
 References: <1418148307-21434-1-git-send-email-pmladek@suse.cz>
@@ -26,201 +26,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The situation with variables storing the address of the old and new code
-is not ideal. One is called "func" and the other is called "addr".
-The one is pointer and the other is unsigned long. It makes sense
-from the point of how the values are defined. But it might make problems
-to understand the code when the values are used.
-
-This patch introduces two new variables "old_ip" and "new_ip".
-They have the same type and the name is symmetric. They are supposed
-to carry the address of the mcount call-site that ftrace framework
-operates with. The value is the same as the function address
-on x86 but it might be different on another architectures.
-
-The change is inspired by kGraft that even adds ftrace_function_to_fentry(),
-see https://lkml.org/lkml/2014/4/30/688. The function allows to find the right
-mcount call-site location. This patch uses ftrace_location() that just allows
-to verify that the address is correct. It means that we detect potential problem
-already when the patch in being initialized.
+This patch makes it clear what initialization and freeing steps need to be done
+when an object (module) is being loaded or removed. It will help to maintain
+the module coming and going handlers. Also it will remove duplicated
+code from these handlers.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- include/linux/livepatch.h | 24 ++++++++++++-----------
- kernel/livepatch/core.c   | 49 ++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 53 insertions(+), 20 deletions(-)
+ kernel/livepatch/core.c | 92 ++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 61 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
-index b61fe7402f1f..32f82d798c54 100644
---- a/include/linux/livepatch.h
-+++ b/include/linux/livepatch.h
-@@ -36,8 +36,16 @@ enum klp_state {
-  * struct klp_func - function structure for live patching
-  * @old_name:	name of the function to be patched
-  * @new_func:	pointer to the patched function code
-- * @old_addr:	a hint conveying at what address the old function
-- *		can be found (optional, vmlinux patches only)
-+ * @old_addr:	address of the function to be patched; if predefined then
-+ *		the value is used as a hint conveying at what address
-+ *		the old function can be found; otherwise, the value is
-+ *		located by name with kallsyms; the predefined value makes
-+ *		sense only for vmlinux function and when randomization is
-+ *		disabled
-+ * @old_ip:	address of the mcount call-site for the old function;
-+ *		it is the address that ftrace works with
-+ * @new_ip:	address of the mcount call-sire for the new function;
-+ *		it is the address that ftrace works with
-  * @kobj:	kobject for sysfs resources
-  * @fops:	ftrace operations structure
-  * @state:	tracks function-level patch application state
-@@ -46,15 +54,9 @@ struct klp_func {
- 	/* external */
- 	const char *old_name;
- 	void *new_func;
--	/*
--	 * The old_addr field is optional and can be used to resolve
--	 * duplicate symbol names in the vmlinux object.  If this
--	 * information is not present, the symbol is located by name
--	 * with kallsyms. If the name is not unique and old_addr is
--	 * not provided, the patch application fails as there is no
--	 * way to resolve the ambiguity.
--	 */
- 	unsigned long old_addr;
-+	unsigned long old_ip;
-+	unsigned long new_ip;
- 
- 	/* internal */
- 	struct kobject kobj;
-@@ -88,7 +90,7 @@ struct klp_reloc {
-  * @funcs:	function entries for functions to be patched in the object
-  * @kobj:	kobject for sysfs resources
-  * @mod:	kernel module associated with the patched object
-- * 		(NULL for vmlinux)
-+ *		(NULL for vmlinux)
-  * @state:	tracks object-level patch application state
-  */
- struct klp_object {
 diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-index fe312b9ada78..c54230bf17fe 100644
+index 97a8d4a3d6d8..fe312b9ada78 100644
 --- a/kernel/livepatch/core.c
 +++ b/kernel/livepatch/core.c
-@@ -179,8 +179,8 @@ static int klp_verify_vmlinux_symbol(const char *name, unsigned long addr)
- 	return -EINVAL;
- }
+@@ -590,6 +590,12 @@ static struct kobj_type klp_ktype_func = {
+ 	.sysfs_ops = &kobj_sysfs_ops,
+ };
  
--static int klp_find_verify_func_addr(struct klp_object *obj,
--				     struct klp_func *func)
-+static int klp_find_verify_func_old_addr(struct klp_object *obj,
-+					 struct klp_func *func)
- {
- 	int ret;
- 
-@@ -205,6 +205,36 @@ static int klp_find_verify_func_addr(struct klp_object *obj,
- 	return ret;
- }
- 
-+static int klp_find_verify_func_addresses(struct klp_object *obj,
-+				     struct klp_func *func)
++/* Clean up when a patched object is unloaded */
++static void klp_free_func_loaded(struct klp_func *func)
 +{
++	func->old_addr = 0;
++}
++
+ /*
+  * Free all functions' kobjects in the array up to some limit. When limit is
+  * NULL, all kobjects are freed.
+@@ -603,6 +609,17 @@ static void klp_free_funcs_limited(struct klp_object *obj,
+ 		kobject_put(&func->kobj);
+ }
+ 
++/* Clean up when a patched object is unloaded */
++static void klp_free_object_loaded(struct klp_object *obj)
++{
++	struct klp_func *func;
++
++	obj->mod = NULL;
++
++	for (func = obj->funcs; func->old_name; func++)
++		klp_free_func_loaded(func);
++}
++
+ /*
+  * Free all objects' kobjects in the array up to some limit. When limit is
+  * NULL, all kobjects are freed.
+@@ -626,6 +643,12 @@ static void klp_free_patch(struct klp_patch *patch)
+ 	kobject_put(&patch->kobj);
+ }
+ 
++/* parts of the initialization that is done only when the object is loaded */
++static int klp_init_func_loaded(struct klp_object *obj, struct klp_func *func)
++{
++	return klp_find_verify_func_addr(obj, func);
++}
++
+ static int klp_init_func(struct klp_object *obj, struct klp_func *func)
+ {
+ 	struct ftrace_ops *ops;
+@@ -633,10 +656,6 @@ static int klp_init_func(struct klp_object *obj, struct klp_func *func)
+ 
+ 	func->state = KLP_DISABLED;
+ 
+-	ret = klp_find_verify_func_addr(obj, func);
+-	if (ret)
+-		return ret;
+-
+ 	ops = kzalloc(sizeof(*ops), GFP_KERNEL);
+ 	if (!ops)
+ 		ret = -ENOMEM;
+@@ -656,6 +675,28 @@ static int klp_init_func(struct klp_object *obj, struct klp_func *func)
+ 	return 0;
+ }
+ 
++/* parts of the initialization that is done only when the object is loaded */
++static int klp_init_object_loaded(struct klp_patch *patch,
++				  struct klp_object *obj)
++{
++	struct klp_func *func;
 +	int ret;
 +
-+	ret = klp_find_verify_func_old_addr(obj, func);
-+	if (ret)
-+		return ret;
-+
-+	func->old_ip = ftrace_location(func->old_addr);
-+	if (!func->old_ip) {
-+		pr_err("function '%s' at the address '%lx' can not be patched\n",
-+		       func->old_name, func->old_addr);
-+		return -EINVAL;
++	if (obj->relocs) {
++		ret = klp_write_object_relocations(patch->mod, obj);
++		if (ret)
++			return ret;
 +	}
 +
-+	/*
-+	 * In fact, the new function need not be traceable. This check is
-+	 * used to make sure that the address is a correct mcount call-site.
-+	 */
-+	func->new_ip = ftrace_location((unsigned long)func->new_func);
-+	if (!func->old_ip) {
-+		pr_err("function at the address '%p' can not be used for patching\n",
-+		       func->new_func);
-+		return -EINVAL;
++	for (func = obj->funcs; func->old_name; func++) {
++		ret = klp_init_func_loaded(obj, func);
++		if (ret)
++			return ret;
 +	}
 +
 +	return 0;
 +}
 +
- /*
-  * external symbols are located outside the parent object (where the parent
-  * object is either vmlinux or the kmod being patched).
-@@ -277,7 +307,7 @@ static void notrace klp_ftrace_handler(unsigned long ip,
+ static int klp_init_object(struct klp_patch *patch, struct klp_object *obj)
  {
- 	struct klp_func *func = ops->private;
+ 	struct klp_func *func;
+@@ -669,12 +710,6 @@ static int klp_init_object(struct klp_patch *patch, struct klp_object *obj)
  
--	regs->ip = (unsigned long)func->new_func;
-+	regs->ip = func->new_ip;
- }
+ 	klp_find_object_module(obj);
  
- static int klp_disable_func(struct klp_func *func)
-@@ -287,7 +317,7 @@ static int klp_disable_func(struct klp_func *func)
- 	if (WARN_ON(func->state != KLP_ENABLED))
- 		return -EINVAL;
- 
--	if (WARN_ON(!func->old_addr))
-+	if (WARN_ON(!func->old_ip))
- 		return -EINVAL;
- 
- 	ret = unregister_ftrace_function(func->fops);
-@@ -297,7 +327,7 @@ static int klp_disable_func(struct klp_func *func)
- 		return ret;
+-	if (obj->relocs && klp_is_object_loaded(obj)) {
+-		ret = klp_write_object_relocations(patch->mod, obj);
+-		if (ret)
+-			return ret;
+-	}
+-
+ 	name = klp_is_module(obj) ? obj->name : "vmlinux";
+ 	obj->kobj = kobject_create_and_add(name, &patch->kobj);
+ 	if (!obj->kobj)
+@@ -686,6 +721,12 @@ static int klp_init_object(struct klp_patch *patch, struct klp_object *obj)
+ 			goto free;
  	}
  
--	ret = ftrace_set_filter_ip(func->fops, func->old_addr, 1, 0);
-+	ret = ftrace_set_filter_ip(func->fops, func->old_ip, 1, 0);
- 	if (ret)
- 		pr_warn("function unregister succeeded but failed to clear the filter\n");
++	if (klp_is_object_loaded(obj)) {
++		ret = klp_init_object_loaded(patch, obj);
++		if (ret)
++			goto free;
++	}
++
+ 	return 0;
  
-@@ -310,13 +340,13 @@ static int klp_enable_func(struct klp_func *func)
+ free:
+@@ -802,27 +843,19 @@ int klp_register_patch(struct klp_patch *patch)
+ }
+ EXPORT_SYMBOL_GPL(klp_register_patch);
+ 
+-static void klp_module_notify_coming(struct module *pmod,
++static void klp_module_notify_coming(struct klp_patch *patch,
+ 				     struct klp_object *obj)
  {
+-	struct klp_func *func;
++	struct module *pmod = patch->mod;
+ 	struct module *mod = obj->mod;
  	int ret;
  
--	if (WARN_ON(!func->old_addr))
-+	if (WARN_ON(!func->old_ip))
- 		return -EINVAL;
+ 	pr_notice("applying patch '%s' to loading module '%s'\n",
+ 		  pmod->name, mod->name);
  
- 	if (WARN_ON(func->state != KLP_DISABLED))
- 		return -EINVAL;
+-	if (obj->relocs) {
+-		ret = klp_write_object_relocations(pmod, obj);
+-		if (ret)
+-			goto err;
+-	}
+-
+-	for (func = obj->funcs; func->old_name; func++) {
+-		ret = klp_find_verify_func_addr(obj, func);
+-		if (ret)
+-			goto err;
+-	}
++	ret = klp_init_object_loaded(patch, obj);
++	if (ret)
++		goto err;
  
--	ret = ftrace_set_filter_ip(func->fops, func->old_addr, 0, 0);
-+	ret = ftrace_set_filter_ip(func->fops, func->old_ip, 0, 0);
- 	if (ret) {
- 		pr_err("failed to set ftrace filter for function '%s' (%d)\n",
- 		       func->old_name, ret);
-@@ -327,7 +357,7 @@ static int klp_enable_func(struct klp_func *func)
- 	if (ret) {
- 		pr_err("failed to register ftrace handler for function '%s' (%d)\n",
- 		       func->old_name, ret);
--		ftrace_set_filter_ip(func->fops, func->old_addr, 1, 0);
-+		ftrace_set_filter_ip(func->fops, func->old_ip, 1, 0);
- 	} else {
- 		func->state = KLP_ENABLED;
- 	}
-@@ -594,6 +624,7 @@ static struct kobj_type klp_ktype_func = {
- static void klp_free_func_loaded(struct klp_func *func)
- {
- 	func->old_addr = 0;
-+	func->old_ip = 0;
+ 	ret = klp_enable_object(obj);
+ 	if (!ret)
+@@ -833,10 +866,10 @@ err:
+ 		pmod->name, mod->name, ret);
  }
  
- /*
-@@ -646,7 +677,7 @@ static void klp_free_patch(struct klp_patch *patch)
- /* parts of the initialization that is done only when the object is loaded */
- static int klp_init_func_loaded(struct klp_object *obj, struct klp_func *func)
+-static void klp_module_notify_going(struct module *pmod,
++static void klp_module_notify_going(struct klp_patch *patch,
+ 				    struct klp_object *obj)
  {
--	return klp_find_verify_func_addr(obj, func);
-+	return klp_find_verify_func_addresses(obj, func);
+-	struct klp_func *func;
++	struct module *pmod = patch->mod;
+ 	struct module *mod = obj->mod;
+ 	int ret;
+ 
+@@ -848,10 +881,7 @@ static void klp_module_notify_going(struct module *pmod,
+ 		pr_warn("failed to revert patch '%s' on module '%s' (%d)\n",
+ 			pmod->name, mod->name, ret);
+ 
+-	for (func = obj->funcs; func->old_name; func++)
+-		func->old_addr = 0;
+-
+-	obj->mod = NULL;
++	klp_free_object_loaded(obj);
  }
  
- static int klp_init_func(struct klp_object *obj, struct klp_func *func)
+ static int klp_module_notify(struct notifier_block *nb, unsigned long action,
+@@ -876,9 +906,9 @@ static int klp_module_notify(struct notifier_block *nb, unsigned long action,
+ 
+ 			if (action == MODULE_STATE_COMING) {
+ 				obj->mod = mod;
+-				klp_module_notify_coming(patch->mod, obj);
++				klp_module_notify_coming(patch, obj);
+ 			} else /* MODULE_STATE_GOING */
+-				klp_module_notify_going(patch->mod, obj);
++				klp_module_notify_going(patch, obj);
+ 
+ 			break;
+ 		}
 -- 
 1.8.5.2
 
