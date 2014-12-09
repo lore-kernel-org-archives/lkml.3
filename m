@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaLITye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 14:54:34 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:51873 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaLITyc (ORCPT
+	id S1752526AbaLITyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 14:54:55 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38093 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaLITyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 14:54:32 -0500
-Message-ID: <54875373.50305@de.ibm.com>
-Date: Tue, 09 Dec 2014 20:54:27 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Michael Ellerman <mpe@ellerman.id.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the access_once tree
-References: <20141208222641.40a64946@canb.auug.org.au>
-In-Reply-To: <20141208222641.40a64946@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
+	Tue, 9 Dec 2014 14:54:52 -0500
+Date: Tue, 09 Dec 2014 14:54:47 -0500 (EST)
+Message-Id: <20141209.145447.2234157264287438778.davem@davemloft.net>
+To: elfring@users.sourceforge.net
+Cc: sergei.shtylyov@cogentembedded.com, paulus@samba.org,
+        linux-ppp@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5480DA32.8000201@users.sourceforge.net>
+References: <547C82A6.2030808@users.sourceforge.net>
+	<547CA157.1080401@cogentembedded.com>
+	<5480DA32.8000201@users.sourceforge.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120919-0013-0000-0000-00000226DCD3
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 11:54:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.12.2014 um 12:26 schrieb Stephen Rothwell:
-> Hi Christian,
-> 
-> After merging the acess_once tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
-> 
-> arch/powerpc/mm/hugetlbpage.c: In function 'find_linux_pte_or_hugepte':
-> arch/powerpc/mm/hugetlbpage.c:981:3: error: invalid initializer
->    pud  = ACCESS_ONCE(*pudp);
->    ^
-> arch/powerpc/mm/hugetlbpage.c:993:4: error: invalid initializer
->     pmd  = ACCESS_ONCE(*pmdp);
->     ^
-> 
-> These are preexisting ...
-> 
-> mm/gup.c: In function 'gup_pmd_range':
-> mm/gup.c:929:3: error: invalid initializer
->    pmd_t pmd = ACCESS_ONCE(*pmdp);
->    ^
-> mm/gup.c:929:3: error: (near initialization for 'pmd')
-> 
-> This is from commit f30c59e921f1 ("mm: Update generic gup
-> implementation to handle hugepage directory") from the powerpc-mpe (and
-> powerpc) tree and so will require a merge fix patch (presumable
-> s/ACCESS_ONCE/READ_ONCE/).
-> 
-> I am not sure how many architectures you are trying to cover, but
-> powerpc is one I care about :-)
-> 
-> I have dropped the access_once tree again today, sorry (its too late at
-> night).
-> 
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Thu, 04 Dec 2014 23:03:30 +0100
 
-Next try. I removed the change of ACCESS_ONCE and just left the new interfaces and the simple reworks in the queue.
-I will tackle everything else after rc1 when next should be small again. Keeping fingers crossed....
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Thu, 4 Dec 2014 22:50:28 +0100
+> 
+> Further update suggestions were taken into account before and after a patch
+> was applied from static source code analysis.
 
-Christian
+Generally speaking, it is advisable to not leave error pointers in data
+structures, even if they are about to be free'd up in an error path
+anyways.
 
+Therefore I do not like some of the patches in this series.
+
+Sorry.
