@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaLISHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:07:09 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:52970 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822AbaLISHF (ORCPT
+	id S1751905AbaLISHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:07:35 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:60646 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbaLISHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:07:05 -0500
-Message-ID: <54873A45.3050009@gmail.com>
-Date: Tue, 09 Dec 2014 19:07:01 +0100
-From: =?UTF-8?B?TWFyZWsgS29yZMOtaw==?= <kordikmarek@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 9 Dec 2014 13:07:32 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not support
- it
-References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>	<1418079372.13358.9.camel@kernel.crashing.org>	<CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>	<20141209001119.GA24661@shangw>	<20141209022601.GA16207@richard> <CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <6468.1418147500@turing-police.cc.vt.edu>
+References: <6468.1418147500@turing-police.cc.vt.edu>
+Date: Tue, 9 Dec 2014 10:07:31 -0800
+Message-ID: <CANn89iJAN815z3TefSjj0uZyQQyH-wTiAckt3WeMc-F7DRgpKA@mail.gmail.com>
+Subject: Re: linux-next 20141208 - net/sched/sch_fq_codel.c:97 suspicious RCU
+From: Eric Dumazet <edumazet@google.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 08:20 AM, Yinghai Lu wrote:
-> On Mon, Dec 8, 2014 at 6:26 PM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
->> On Tue, Dec 09, 2014 at 11:11:19AM +1100, Gavin Shan wrote:
->>>
->>> I'm going to give it a spin and Richard, could you please apply Yinghai's
->>> patch to see if your SRIOV code can work properly?
->>>
->>
->> I did a quick test on my machine. This patch doesn't affect the MMIO
->> allocation on out platform, so SRIOV works fine.
->>
->> I will spend more time to read the patch to get more understanding about the
->> problem.
+On Tue, Dec 9, 2014 at 9:51 AM, Valdis Kletnieks
+<Valdis.Kletnieks@vt.edu> wrote:
+> Spotted this in dmesg while investigating why my wireless broke
+> sometime between next-20141201 and next-20141208.  Probably not
+> related, as wireless has been broken on several boot attempts of -1208,
+> but this has popped only once....
 >
-> Hi Marek,
+> Looks like the fault of
 >
-> Can you boot following branch with "debug ignore_loglevel pci=realloc"
-> on your setup?
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-pci-allocate-fit-3.18
->
-> it has
-> 8f74af9: PCI, x86: Allocate mmio near end of free range
-> 1ff91c1: PCI: Don't allocate small resource in big free space.
-> 108b43b: resources: Add allocate_resource_fit()
-> b6a22f0: resources: Make find_resource could return just fit resource
-> cf50e16: resources: Split out __allocate_resource()
->
-> on top the v3.18, and it will allocate resource in fit way.
->
-> Thanks
->
-> Yinghai
->
-Hi Yinghai,
+> commit 46e5da40aec256155cfedee96dd21a75da941f2c
+> Author: John Fastabend <john.fastabend@gmail.com>
+> Date:   Fri Sep 12 20:04:52 2014 -0700
 
-I have built and booted your branch and it works well. Do you want me to 
-attach some logs?
-(I am new here and I have read http://www.tux.org/lkml/ and I don't want 
-to break some rules for attachment size)
-
-Marek
+Well, its a (harmless) typo : this should really be an
+rcu_dereference_bh() instead of rcu_dereference()
