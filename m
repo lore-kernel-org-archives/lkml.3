@@ -1,99 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587AbaLIGPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 01:15:30 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:48371 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602AbaLIGP2 (ORCPT
+	id S1756636AbaLIGPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 01:15:38 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31271 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737AbaLIGPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 01:15:28 -0500
-Date: Tue, 9 Dec 2014 07:15:22 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        "open list:S390" <linux-s390@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] s390: Include kvm_host.h header only if KVM is enabled
-Message-ID: <20141209061522.GB4362@osiris>
-References: <1418070276-24378-1-git-send-email-bobby.prani@gmail.com>
- <20141208235955.GZ25340@linux.vnet.ibm.com>
- <CAJhHMCCCuTVAmMtbpQj-hiPa_spq3sd4vFKcihF+c8=paRVXYA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCCCuTVAmMtbpQj-hiPa_spq3sd4vFKcihF+c8=paRVXYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120906-0005-0000-0000-00000262071D
+	Tue, 9 Dec 2014 01:15:36 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-bd-548693841905
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <001a01d012b4$dfe9d040$9fbd70c0$@samsung.com>
+ <20141208190924.GB18956@jaegeuk-mac02.mot.com>
+In-reply-to: <20141208190924.GB18956@jaegeuk-mac02.mot.com>
+Subject: RE: [f2fs-dev][PATCH 3/4] f2fs: readahead contiguous current summary
+ blocks in checkpoint
+Date: Tue, 09 Dec 2014 14:14:22 +0800
+Message-id: <002201d01377$8709b260$951d1720$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIH47SeaIVpQB8QvHD0CZpaWiJUiAFToJD5nAyFuvA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd2WyW0hBj+fGltc29fIZPFk/Sxm
+	i0uL3C327D3JYnF51xw2B1aPTas62Tx2L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	Gz8vZSxYJVXRMa2JrYFxm2gXIyeHhICJxMz3y9kgbDGJC/fWA9lcHEICixglOr58YIZwfjBK
+	nH33kx2kik1ARWJ5x38mEFtEQE2id98UJpAiZoHJjBKz+u6CJYQEsiR2da9hBrE5Bawlbn7d
+	ARYXFkiROLv3GJjNIqAq8aqpnxHE5hWwlFg1q5sVwhaU+DH5HguIzSygJbF5WxMrhC0vsXnN
+	W2aIUxUkdpx9zQhxhJXEgQ3rmCFqxCU2HrnFMoFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQX
+	FCel5xrpFSfmFpfmpesl5+duYgRHxDPpHYyrGiwOMQpwMCrx8GpYtoUIsSaWFVfmHmKU4GBW
+	EuG9XwcU4k1JrKxKLcqPLyrNSS0+xCjNwaIkzqtkD5QSSE8sSc1OTS1ILYLJMnFwSjUwat1m
+	fzf1zDduu46jd5ecSg9k3b9VdyKztsva2A7Bh0YZi/vd86fMeyT4V1Fj77ZjtizXt97+9l39
+	V/7KGRJ9U1eFzzVpF0syENg2O7xmrWrtqb3Nn/SO7SkUkullnK6Xvv1L3q2XT5ZUpsVHTbMp
+	3qOsbDDPrH5fQ8Wlkg3xvrmpJcvmO1/4o8RSnJFoqMVcVJwIAH7Sq46EAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 09:29:08PM -0500, Pranith Kumar wrote:
-> On Mon, Dec 8, 2014 at 6:59 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, Dec 08, 2014 at 03:24:35PM -0500, Pranith Kumar wrote:
-> >> KVM uses srcu structures because of which CONFIG_KVM selects CONFIG_SRCU. In
-> >> asm-offsets.c, we are including kvm_host.h unconditionally even though
-> >> CONFIG_KVM is not enabled because of which we get errors like follows:
-> >>
-> >>     In file included from arch/s390/kernel/asm-offsets.c:10:0:
-> >> >> include/linux/kvm_host.h:363:21: error: field 'srcu' has incomplete type
-> >>       struct srcu_struct srcu;
-> >>                          ^
-> >> >> include/linux/kvm_host.h:364:21: error: field 'irq_srcu' has incomplete type
-> >>       struct srcu_struct irq_srcu;
-> >>                          ^
-> >>     make[2]: *** [arch/s390/kernel/asm-offsets.s] Error 1
-> >>     make[2]: Target '__build' not remade because of errors.
-> >>     make[1]: *** [prepare0] Error 2
-> >>     make[1]: Target 'prepare' not remade because of errors.
-> >>     make: *** [sub-make] Error 2
-> >>
-> >> This patch fixes these by including kvm_host.h conditionally on CONFIG_KVM.
-> >>
-> >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> >
-> > To make the commits bisectable, we need to combine these two patches,
-> > correct?
-> >
+Hi Jaegeuk,
+
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Tuesday, December 09, 2014 3:09 AM
+> To: Chao Yu
+> Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev][PATCH 3/4] f2fs: readahead contiguous current summary blocks in
+> checkpoint
 > 
-> Yes, if the s390 maintainers raise no objections, I will combine this
-> with the other patch and send it.
+> Hi Chao,
+> 
+> On Mon, Dec 08, 2014 at 03:01:16PM +0800, Chao Yu wrote:
+> > Let's add readahead code for reading contiguous compact/normal summary blocks
+> > in checkpoint, then we will gain better performance in mount procedure.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/checkpoint.c |  2 +-
+> >  fs/f2fs/f2fs.h       |  2 +-
+> >  fs/f2fs/segment.c    | 21 ++++++++++++++++++---
+> >  3 files changed, 20 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > index e0ff75e..aa2a21c 100644
+> > --- a/fs/f2fs/checkpoint.c
+> > +++ b/fs/f2fs/checkpoint.c
+> > @@ -915,7 +915,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control
+> *cpc)
+> >  	ckpt->next_free_nid = cpu_to_le32(last_nid);
+> >
+> >  	/* 2 cp  + n data seg summary + orphan inode blocks */
+> > -	data_sum_blocks = npages_for_summary_flush(sbi);
+> > +	data_sum_blocks = npages_for_summary_flush(sbi, false);
+> >  	if (data_sum_blocks < NR_CURSEG_DATA_TYPE)
+> >  		set_ckpt_flags(ckpt, CP_COMPACT_SUM_FLAG);
+> >  	else
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index d042813..fc88e8a 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -1393,7 +1393,7 @@ void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
+> >  void clear_prefree_segments(struct f2fs_sb_info *);
+> >  void release_discard_addrs(struct f2fs_sb_info *);
+> >  void discard_next_dnode(struct f2fs_sb_info *, block_t);
+> > -int npages_for_summary_flush(struct f2fs_sb_info *);
+> > +int npages_for_summary_flush(struct f2fs_sb_info *, bool);
+> >  void allocate_new_segments(struct f2fs_sb_info *);
+> >  int f2fs_trim_fs(struct f2fs_sb_info *, struct fstrim_range *);
+> >  struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 9a33e34..e3bec6e 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -731,7 +731,7 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi, int type,
+> >  /*
+> >   * Calculate the number of current summary pages for writing
+> >   */
+> > -int npages_for_summary_flush(struct f2fs_sb_info *sbi)
+> > +int npages_for_summary_flush(struct f2fs_sb_info *sbi, bool for_ra)
+> >  {
+> >  	int valid_sum_count = 0;
+> >  	int i, sum_in_page;
+> > @@ -739,8 +739,13 @@ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
+> >  	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+> >  		if (sbi->ckpt->alloc_type[i] == SSR)
+> >  			valid_sum_count += sbi->blocks_per_seg;
+> > -		else
+> > -			valid_sum_count += curseg_blkoff(sbi, i);
+> > +		else {
+> > +			if (unlikely(for_ra))
+> 
+> IMO, unlikely is not appropriate for here.
 
-That's fine with me.
+I suppose that for readonly f2fs image, unlikely is not appropriate, as
+we always execute the if part when mount.
+Anyway, I will remove this and resend the patch.
+Thanks for your review!
 
-> >>  arch/s390/kernel/asm-offsets.c | 7 ++++++-
-> >>  1 file changed, 6 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
-> >> index ef279a1..055334d 100644
-> >> --- a/arch/s390/kernel/asm-offsets.c
-> >> +++ b/arch/s390/kernel/asm-offsets.c
-> >> @@ -7,12 +7,15 @@
-> >>  #define ASM_OFFSETS_C
-> >>
-> >>  #include <linux/kbuild.h>
-> >> -#include <linux/kvm_host.h>
-> >>  #include <linux/sched.h>
-> >>  #include <asm/idle.h>
-> >>  #include <asm/vdso.h>
-> >>  #include <asm/pgtable.h>
-> >>
-> >> +#ifdef CONFIG_KVM
-> >> +#include <linux/kvm_host.h>
-> >> +#endif
-> >> +
+Regards,
+Yu
 
-Even though I'm wondering why linux/kvm_host.h doesn't have such an #ifdef
-included. Not that it would help in this case, but it would help to omit
-the #ifdef around the #include statement here.
+> 
+> Thanks,
 
-Looking a bit further.. so arch/s390/include/asm/kvm_host.h includes
-include/linux/kvm_host.h and vice versa. Nice ;)
 
