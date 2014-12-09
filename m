@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201AbaLIJQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:16:01 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44427 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126AbaLIJPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:15:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="426823187"
-Date: Tue, 9 Dec 2014 14:46:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: dan.j.williams@intel.com, lars@metafoo.de, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        l.czerwinski@samsung.com, kyungmin.park@samsung.com,
-        k.kozlowski@samsung.com, padma.kvr@gmail.com
-Subject: Re: [PATCH v2 0/2] dma: pl330: improve status checking
-Message-ID: <20141209091609.GB16827@intel.com>
-References: <1417767955-5480-1-git-send-email-r.baldyga@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417767955-5480-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756284AbaLIJQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:16:45 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51009 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343AbaLIJOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:14:52 -0500
+From: Dudley Du <dudley.dulixin@gmail.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudley.dulixin@gmail.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v13 12/12] input: cyapa: add acpi device id supported
+Date: Tue,  9 Dec 2014 17:11:44 +0800
+Message-Id: <1418116304-11392-13-git-send-email-dudley.dulixin@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 09:25:53AM +0100, Robert Baldyga wrote:
-> Hi,
-> 
-> This series allows to check DMA transfer residue (number of bytes left
-> to send/receive) by modifying pl330_tx_status() function, when struct
-> dma_tx_state is filled with needed data. It also introduces DMA_PAUSE
-> feature, which allows to halt DMA transfer before termination and read
-> residue without risk of data loss.
-> 
-> This features are needed for proper implementation of DMA transfers,
-> particulary for serial drivers when transfer sizes are unknown and
-> requests on DMA channels are terminated before transfer completion
-> very ofter (it's becouse we terminate then in timeout interrupt to
-> avoid latency which is usually undesirable).
-Applied, thanks
+Add acpi device tree supported.
+acpi device id "CYAP0000" is for old gen3 trackpad devices.
+acpi device id "CYAP0001" is for new gen5 trackpad devices.
+TEST=test on Chromebooks.
 
+Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+---
+ drivers/input/mouse/cyapa.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index ff8cd9b..c992bd6 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+ #include <linux/pm_runtime.h>
++#include <linux/acpi.h>
+ #include "cyapa.h"
+ 
+ 
+@@ -1322,11 +1323,23 @@ static const struct i2c_device_id cyapa_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, cyapa_id_table);
+ 
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id cyapa_acpi_id[] = {
++	{ "CYAP0000", 0 },  /* Gen3 trackpad with 0x67 I2C address. */
++	{ "CYAP0001", 0 },  /* Gen5 trackpad with 0x24 I2C address. */
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, cyapa_acpi_id);
++#endif
++
+ static struct i2c_driver cyapa_driver = {
+ 	.driver = {
+ 		.name = "cyapa",
+ 		.owner = THIS_MODULE,
+ 		.pm = &cyapa_pm_ops,
++#ifdef CONFIG_ACPI
++		.acpi_match_table = ACPI_PTR(cyapa_acpi_id),
++#endif
+ 	},
+ 
+ 	.probe = cyapa_probe,
 -- 
-~Vinod
+1.9.1
 
