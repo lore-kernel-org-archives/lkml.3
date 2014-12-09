@@ -1,812 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576AbaLIQ2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:28:09 -0500
-Received: from mail-bn1bon0088.outbound.protection.outlook.com ([157.56.111.88]:16327
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753775AbaLIQ2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:28:04 -0500
-From: <atull@opensource.altera.com>
-To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <rdunlap@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
-        Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v3 2/3] fpga manager: framework core
-Date: Tue, 9 Dec 2014 10:28:00 -0600
-Message-ID: <1418142481-6167-3-git-send-email-atull@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418142481-6167-1-git-send-email-atull@opensource.altera.com>
-References: <1418142481-6167-1-git-send-email-atull@opensource.altera.com>
+	id S1757592AbaLIQaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 11:30:08 -0500
+Received: from nm44-vm7.bullet.mail.bf1.yahoo.com ([216.109.115.31]:36442 "EHLO
+	nm44-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754626AbaLIQaG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 11:30:06 -0500
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 11:30:06 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.ca;
+	b=UlYiLATdZLdftT5o+7hrDV0srtXeu+qlq4ZmvB2V0sjmVDDMx+qi5JX0bA13nhB6UQUxlrIcRdAbX6NpvgQ3ISKThwzzkfN+7ica7g/HgXSRcz13uo6tiy5+zsR1kluxNl0y39Ggz6Vzh6FDSIMbi20XFe5Il5XTjFKX7sisG1UZA6IKWbL60X2GrODSjxqyAob+5kRz57BdEZqx6RsE/P3IzRgTIORTKmFUsSauIT7s97eYvHxz5p++N8PSQXQlB8tbfd1PK2McW9GCDg034Fvn96IQj/h9aQ8JiR6sMS2QPWHVh4OyU9PhwOKR+ma7fl0J5WjYhggnQRY90BLNhQ==;
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 547550.19114.bm@omp1022.mail.bf1.yahoo.com
+X-YMail-OSG: c72GeEcVM1nsn3lwHukeC4xXoZm3.JRQPOUnR5b.0QvFd2TI8au5L4vmJCJKy8x
+ wX8n0hWCvUAj282hHNcRwliSGG4ZDiQxNjNaMvkrl13_gDOuk.7DwTSxq.CbvIMCoLdTi4N0M6k3
+ PLAk7QK.Xx8npm5SZ7NhrPTDd_u.775E7oaKOhKKuZEsnvkumU8k2EXOK81uhkPc3jfJe2OpgqaM
+ 0edALZERsS_qLI5MS.vGD5_rdb_WecVQcS0IlY5OXc_RPCKEzOJ6Ilczt9Co0fTpaSyH6O8wXLul
+ DcgsbvgE8o7oWdj0AE3i75g.7wLUBj0halEC_6RszW1CQYjZdXQjkajBv6z2r.rqHKFhBK89FP9G
+ dgiSDnx476NKgUUukjv1uEfN8UBrTt6xW.Nf14srxO1AWiT8VFzOcsukOBduHc0C.8hk3MEh8Nry
+ PehM_UklbBxZU9CifoWQEG8i4qDDw5LJcvDry9S07fAG_6w4aDQ.s1Yf9zAXKdk_.Z1cWtCCxsfI
+ uNqgiYu4Yq7VDlPBYN8fuevnwdl2Yc9Gwz1gETRyH_8zV.zqZbNforu.QSoisHcV.5aSh56mYDLw
+ HUdcpxabDIuXB
+Date: Tue, 9 Dec 2014 16:23:54 +0000 (UTC)
+From: Denis Du <dudenis2000@yahoo.ca>
+Reply-To: Denis Du <dudenis2000@yahoo.ca>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <1071981694.7326020.1418142234750.JavaMail.yahoo@jws10644.mail.bf1.yahoo.com>
+In-Reply-To: <20141208222220.GA9912@hudson.localdomain>
+References: <20141208222220.GA9912@hudson.localdomain>
+Subject: Re: [PATCH] TTY: missing a lock to access the ldisk buffer
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR00CA0015.namprd00.prod.outlook.com (25.160.102.25) To
- DM2PR0301MB1248.namprd03.prod.outlook.com (25.160.219.25)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1248;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB1248;
-X-Forefront-PRVS: 0420213CCD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(229853001)(107046002)(33646002)(122386002)(99396003)(62966003)(77156002)(46102003)(68736005)(105586002)(15975445007)(81156004)(106356001)(4396001)(50226001)(101416001)(40100003)(120916001)(31966008)(97736003)(19580395003)(87976001)(19580405001)(50466002)(48376002)(66066001)(86362001)(21056001)(92566001)(2201001)(20776003)(86152002)(47776003)(64706001)(50986999)(89996001)(69596002)(76176999)(53416004)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1248;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1248;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Tull <atull@opensource.altera.com>
+Hi, Jeremiah:
 
-Supports standard ops for low level FPGA drivers.
-Various manufacturors' FPGAs can be supported by adding low
-level drivers.  Each driver needs to register its ops
-using fpga_mgr_register().
+This patch was generated base on 3.12 kernel. But possibly I have a wrong format to put this patch on a plain text. I am working to do a new patch now.
 
-Exports methods of doing operations to program  FPGAs. These
-should be sufficient for individual drivers to request FPGA
-programming directly if desired.
-
-Adds a sysfs interface.  The sysfs interface can be compiled out
-where desired in production builds.
-
-Resume is supported by calling low level driver's resume
-function, then reloading the firmware image.
-
-The following are exported as GPL:
-* fpga_mgr_reset
-   Reset the FGPA.
-
-* fpga_mgr_write
-   Write a image (in buffer) to the FPGA.
-
-* fpga_mgr_firmware_write
-   Request firmware by file name and write it to the FPGA.
-
-* fpga_mgr_name
-   Get name of FPGA manager.
-
-* fpga_mgr_state
-   Get a state of framework as a string.
-
-* fpga_mgr_register and fpga_mgr_remove
-   Register/unregister low level fpga manager driver.
-
-The following sysfs files are created:
-* /sys/class/fpga_manager/<fpga>/name
-  Name of low level driver.
-
-* /sys/class/fpga_manager/<fpga>/firmware
-  Name of FPGA image file to load using firmware class.
-  $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
-
-  read: read back name of image file previous loaded
-  $ cat /sys/class/fpga_manager/<fpga>/firmware
-
-* /sys/class/fpga_manager/<fpga>/reset
-  reset the FPGA
-  $ echo 1 > /sys/class/fpga_manager/<fpga>/reset
-
-* /sys/class/fpga_manager/<fpga>/state
-  State of fpga framework state machine
-
-Signed-off-by: Alan Tull <atull@opensource.altera.com>
----
-v2: s/mangager/manager/
-    check for invalid request_nr
-    add fpga reset interface
-    rework the state code
-    remove FPGA_MGR_FAIL flag
-    add _ERR states to fpga manager states enum
-    low level state op now returns a state enum value
-    initialize framework state from driver state op
-    remove unused fpga read stuff
-    merge sysfs.c into fpga-mgr.c
-    move suspend/resume from bus.c to fpga-mgr.c
-
-v3: Add struct device to fpga_manager (not as a pointer)
-    Add to_fpga_manager
-    Don't get irq in fpga-mgr.c (let low level driver do it)
-    remove from struct fpga_manager: nr, np, parent
-    get rid of fpga_mgr_get_new_minor()
-    simplify fpga_manager_register:
-      reorder parameters
-      use dev instead of pdev
-    get rid of code that used to make more sense when this
-      was a char driver, don't alloc_chrdev_region
-    use a mutex instead of flags
----
- drivers/Kconfig          |    2 +
- drivers/Makefile         |    1 +
- drivers/fpga/Kconfig     |   21 ++
- drivers/fpga/Makefile    |   10 +
- drivers/fpga/fpga-mgr.c  |  485 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fpga-mgr.h |  104 ++++++++++
- 6 files changed, 623 insertions(+)
- create mode 100644 drivers/fpga/Kconfig
- create mode 100644 drivers/fpga/Makefile
- create mode 100644 drivers/fpga/fpga-mgr.c
- create mode 100644 include/linux/fpga-mgr.h
-
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 622fa26..fc45fee 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -34,6 +34,8 @@ source "drivers/message/fusion/Kconfig"
  
- source "drivers/firewire/Kconfig"
- 
-+source "drivers/fpga/Kconfig"
-+
- source "drivers/message/i2o/Kconfig"
- 
- source "drivers/macintosh/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index ebee555..637b9f0 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_RESET_CONTROLLER)	+= reset/
- # default.
- obj-y				+= tty/
- obj-y				+= char/
-+obj-$(CONFIG_FPGA)		+= fpga/
- 
- # gpu/ comes after char for AGP vs DRM startup
- obj-y				+= gpu/
-diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
-new file mode 100644
-index 0000000..e775b17
---- /dev/null
-+++ b/drivers/fpga/Kconfig
-@@ -0,0 +1,21 @@
-+#
-+# FPGA framework configuration
-+#
-+
-+menu "FPGA devices"
-+
-+config FPGA
-+	tristate "FPGA Framework"
-+	help
-+	  Say Y here if you want support for configuring FPGAs from the
-+	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
-+	  manager drivers.
-+
-+config FPGA_MGR_SYSFS
-+	bool "FPGA Manager SysFS Interface"
-+	depends on FPGA
-+	depends on SYSFS
-+	help
-+	  FPGA Manager SysFS interface.
-+
-+endmenu
-diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
-new file mode 100644
-index 0000000..c8a676f
---- /dev/null
-+++ b/drivers/fpga/Makefile
-@@ -0,0 +1,10 @@
-+#
-+# Makefile for the fpga framework and fpga manager drivers.
-+#
-+
-+fpga-mgr-core-y += fpga-mgr.o
-+
-+# Core FPGA Manager Framework
-+obj-$(CONFIG_FPGA)			+= fpga-mgr-core.o
-+
-+# FPGA Manager Drivers
-diff --git a/drivers/fpga/fpga-mgr.c b/drivers/fpga/fpga-mgr.c
-new file mode 100644
-index 0000000..d08cb82
---- /dev/null
-+++ b/drivers/fpga/fpga-mgr.c
-@@ -0,0 +1,485 @@
-+/*
-+ * FPGA Manager Core
-+ *
-+ *  Copyright (C) 2013-2014 Altera Corporation
-+ *
-+ * With code from the mailing list:
-+ * Copyright (C) 2013 Xilinx, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/delay.h>
-+#include <linux/firmware.h>
-+#include <linux/fpga-mgr.h>
-+#include <linux/fs.h>
-+#include <linux/idr.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/pm.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+
-+static DEFINE_MUTEX(fpga_mgr_mutex);
-+static DEFINE_IDA(fpga_mgr_ida);
-+static struct class *fpga_mgr_class;
-+
-+static LIST_HEAD(fpga_manager_list);
-+
-+/*
-+ * Get FPGA state from low level driver
-+ * return value is same enum as fpga_mgr_framework_state
-+ *
-+ * This will be used to initialize framework state
-+ */
-+int fpga_mgr_low_level_state(struct fpga_manager *mgr)
-+{
-+	if (!mgr || !mgr->mops || !mgr->mops->state)
-+		return FPGA_MGR_STATE_UNKNOWN;
-+
-+	return mgr->mops->state(mgr);
-+}
-+
-+/*
-+ * Unlocked version
-+ */
-+static int __fpga_mgr_reset(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (!mgr->mops->reset)
-+		return -EINVAL;
-+
-+	ret = mgr->mops->reset(mgr);
-+
-+	mgr->state = fpga_mgr_low_level_state(mgr);
-+
-+	return ret;
-+}
-+
-+int fpga_mgr_reset(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	ret = __fpga_mgr_reset(mgr);
-+
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_reset);
-+
-+/*
-+ * Unlocked
-+ */
-+static int __fpga_mgr_stage_write_init(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (mgr->mops->write_init) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_INIT;
-+		ret = mgr->mops->write_init(mgr);
-+		if (ret) {
-+			mgr->state = FPGA_MGR_STATE_WRITE_INIT_ERR;
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __fpga_mgr_stage_write(struct fpga_manager *mgr, const char *buf,
-+				  size_t count)
-+{
-+	int ret;
-+
-+	mgr->state = FPGA_MGR_STATE_WRITE;
-+	ret = mgr->mops->write(mgr, buf, count);
-+	if (ret) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_ERR;
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __fpga_mgr_stage_write_complete(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (mgr->mops->write_complete) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE;
-+		ret = mgr->mops->write_complete(mgr);
-+		if (ret) {
-+			mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE_ERR;
-+			return ret;
-+		}
-+	}
-+
-+	mgr->state = fpga_mgr_low_level_state(mgr);
-+
-+	return 0;
-+}
-+
-+static int __fpga_mgr_write(struct fpga_manager *mgr, const char *buf,
-+			    size_t count)
-+{
-+	int ret;
-+
-+	ret = __fpga_mgr_stage_write_init(mgr);
-+	if (ret)
-+		return ret;
-+
-+	ret = __fpga_mgr_stage_write(mgr, buf, count);
-+	if (ret)
-+		return ret;
-+
-+	return __fpga_mgr_stage_write_complete(mgr);
-+}
-+
-+int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-+{
-+	int ret;
-+
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	dev_info(&mgr->dev, "writing buffer to %s\n", mgr->name);
-+
-+	ret = __fpga_mgr_write(mgr, buf, count);
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_write);
-+
-+/*
-+ * Grab lock, request firmware, and write out to the FPGA.
-+ * Update the state before each step to provide info on what step
-+ * failed if there is a failure.
-+ */
-+int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name)
-+{
-+	const struct firmware *fw;
-+	int ret;
-+
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	dev_info(&mgr->dev, "writing %s to %s\n", image_name, mgr->name);
-+
-+	mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ;
-+	ret = request_firmware(&fw, image_name, &mgr->dev);
-+	if (ret) {
-+		mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ_ERR;
-+		goto fw_wr_exit;
-+	}
-+
-+	ret = __fpga_mgr_write(mgr, fw->data, fw->size);
-+	if (ret)
-+		goto fw_wr_exit;
-+
-+	strcpy(mgr->image_name, image_name);
-+
-+fw_wr_exit:
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_firmware_write);
-+
-+int fpga_mgr_name(struct fpga_manager *mgr, char *buf)
-+{
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	return sprintf(buf, "%s\n", mgr->name);
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_name);
-+
-+#if IS_ENABLED(CONFIG_FPGA_MGR_SYSFS)
-+const char *state_str[] = {
-+	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
-+	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
-+	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
-+	[FPGA_MGR_STATE_RESET] =		"reset",
-+
-+	/* write sequence */
-+	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
-+	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
-+	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
-+	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
-+	[FPGA_MGR_STATE_WRITE] =		"write",
-+	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
-+	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
-+	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
-+
-+	[FPGA_MGR_STATE_OPERATING] =		"operating",
-+};
-+
-+/*
-+ * class attributes
-+ */
-+static ssize_t fpga_mgr_name_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	return fpga_mgr_name(mgr, buf);
-+}
-+
-+static ssize_t fpga_mgr_state_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	return sprintf(buf, "%s\n", state_str[mgr->state]);
-+}
-+
-+static ssize_t fpga_mgr_firmware_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	return sprintf(buf, "%s\n", mgr->image_name);
-+}
-+
-+static ssize_t fpga_mgr_firmware_store(struct device *dev,
-+				       struct device_attribute *attr,
-+				       const char *buf, size_t count)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	unsigned int len;
-+	char image_name[NAME_MAX];
-+	int ret;
-+
-+	/* lose terminating \n */
-+	strcpy(image_name, buf);
-+	len = strlen(image_name);
-+	if (image_name[len - 1] == '\n')
-+		image_name[len - 1] = 0;
-+
-+	ret = fpga_mgr_firmware_write(mgr, image_name);
-+	if (ret)
-+		return ret;
-+
-+	return count;
-+}
-+
-+static ssize_t fpga_mgr_reset_store(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	unsigned long val;
-+	int ret;
-+
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val == 1) {
-+		ret = fpga_mgr_reset(mgr);
-+		if (ret)
-+			return ret;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL);
-+static DEVICE_ATTR(state, S_IRUGO, fpga_mgr_state_show, NULL);
-+static DEVICE_ATTR(firmware, S_IRUGO | S_IWUSR,
-+		   fpga_mgr_firmware_show, fpga_mgr_firmware_store);
-+static DEVICE_ATTR(reset, S_IWUSR, NULL, fpga_mgr_reset_store);
-+
-+static struct attribute *fpga_mgr_attrs[] = {
-+	&dev_attr_name.attr,
-+	&dev_attr_state.attr,
-+	&dev_attr_firmware.attr,
-+	&dev_attr_reset.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group fpga_mgr_group = {
-+	.attrs = fpga_mgr_attrs,
-+};
-+
-+const struct attribute_group *fpga_mgr_groups[] = {
-+	&fpga_mgr_group,
-+	NULL,
-+};
-+#else
-+#define fpga_mgr_groups NULL
-+#endif /* CONFIG_FPGA_MGR_SYSFS */
-+
-+static int fpga_mgr_suspend(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	if (mgr->mops->suspend)
-+		return mgr->mops->suspend(mgr);
-+
-+	return 0;
-+}
-+
-+static int fpga_mgr_resume(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	int ret = 0;
-+
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	if (mgr->mops->resume) {
-+		ret = mgr->mops->resume(mgr);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	if (strlen(mgr->image_name) != 0)
-+		fpga_mgr_firmware_write(mgr, mgr->image_name);
-+
-+	return 0;
-+}
-+
-+const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
-+	.suspend	= fpga_mgr_suspend,
-+	.resume		= fpga_mgr_resume,
-+};
-+
-+static void fpga_mgr_dev_release(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	dev_dbg(dev, "releasing '%s'\n", dev_name(dev));
-+	kfree(mgr);
-+}
-+
-+int fpga_mgr_register(struct device *dev, const char *name,
-+		      struct fpga_manager_ops *mops,
-+		      void *priv)
-+{
-+	struct fpga_manager *mgr;
-+	int id, ret;
-+
-+	BUG_ON(!mops || !name || !strlen(name));
-+
-+	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
-+	if (id < 0)
-+		return id;
-+
-+	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
-+	if (!mgr)
-+		return -ENOMEM;
-+
-+	mutex_init(&mgr->lock);
-+
-+	mgr->name = name;
-+	mgr->mops = mops;
-+	mgr->priv = priv;
-+
-+	/*
-+	 * Initialize framework state by requesting low level driver read state
-+	 * from device.  FPGA may be in reset mode or may have been programmed
-+	 * by bootloader or EEPROM.
-+	 */
-+	mgr->state = fpga_mgr_low_level_state(mgr);
-+
-+	INIT_LIST_HEAD(&mgr->list);
-+	mutex_lock(&fpga_mgr_mutex);
-+	list_add(&mgr->list, &fpga_manager_list);
-+	mutex_unlock(&fpga_mgr_mutex);
-+
-+	device_initialize(&mgr->dev);
-+	mgr->dev.class = fpga_mgr_class;
-+	mgr->dev.parent = dev;
-+	mgr->dev.of_node = dev->of_node;
-+	mgr->dev.release = fpga_mgr_dev_release;
-+	mgr->dev.id = id;
-+	dev_set_name(&mgr->dev, "%d", id);
-+	ret = device_add(&mgr->dev);
-+	if (ret)
-+		goto error_device;
-+
-+	dev_info(&mgr->dev, "fpga manager [%s] registered as id %d\n",
-+		 dev_name(&mgr->dev), id);
-+
-+	return 0;
-+
-+error_device:
-+	ida_simple_remove(&fpga_mgr_ida, id);
-+	kfree(mgr);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_register);
-+
-+void fpga_mgr_remove(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	int id;
-+
-+	if (mgr)
-+		id = mgr->dev.id;
-+
-+	device_unregister(dev);
-+
-+	if (mgr) {
-+		if (mgr->mops->fpga_remove)
-+			mgr->mops->fpga_remove(mgr);
-+
-+		mutex_lock(&fpga_mgr_mutex);
-+		list_del(&mgr->list);
-+		mutex_unlock(&fpga_mgr_mutex);
-+		kfree(mgr);
-+		ida_simple_remove(&fpga_mgr_ida, id);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_remove);
-+
-+static int __init fpga_mgr_dev_init(void)
-+{
-+	pr_info("FPGA Manager framework driver\n");
-+
-+	fpga_mgr_class = class_create(THIS_MODULE, "fpga_manager");
-+	if (IS_ERR(fpga_mgr_class))
-+		return PTR_ERR(fpga_mgr_class);
-+
-+	fpga_mgr_class->dev_groups = fpga_mgr_groups;
-+	fpga_mgr_class->pm = &fpga_mgr_dev_pm_ops;
-+
-+	return 0;
-+}
-+
-+static void __exit fpga_mgr_dev_exit(void)
-+{
-+	class_destroy(fpga_mgr_class);
-+	ida_destroy(&fpga_mgr_ida);
-+}
-+
-+MODULE_AUTHOR("Alan Tull <atull@opensource.altera.com>");
-+MODULE_DESCRIPTION("FPGA Manager framework driver");
-+MODULE_LICENSE("GPL v2");
-+
-+subsys_initcall(fpga_mgr_dev_init);
-+module_exit(fpga_mgr_dev_exit);
-diff --git a/include/linux/fpga-mgr.h b/include/linux/fpga-mgr.h
-new file mode 100644
-index 0000000..7ac762c
---- /dev/null
-+++ b/include/linux/fpga-mgr.h
-@@ -0,0 +1,104 @@
-+/*
-+ * FPGA Framework
-+ *
-+ *  Copyright (C) 2013-2014 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/limits.h>
-+#include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+#ifndef _LINUX_FPGA_MGR_H
-+#define _LINUX_FPGA_MGR_H
-+
-+struct fpga_manager;
-+
-+/*
-+ * fpga_manager_ops are the low level functions implemented by a specific
-+ * fpga manager driver.  Leaving any of these out that aren't needed is fine
-+ * as they are all tested for NULL before being called.
-+ */
-+struct fpga_manager_ops {
-+	/* Returns an enum value of the FPGA's state */
-+	int (*state)(struct fpga_manager *mgr);
-+
-+	/* Put FPGA into reset state */
-+	int (*reset)(struct fpga_manager *mgr);
-+
-+	/* Prepare the FPGA to receive confuration data */
-+	int (*write_init)(struct fpga_manager *mgr);
-+
-+	/* Write count bytes of configuration data to the FPGA */
-+	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
-+
-+	/* Return FPGA to default state after writing is done */
-+	int (*write_complete)(struct fpga_manager *mgr);
-+
-+	/* Optional: Set FPGA into a specific state during driver remove */
-+	void (*fpga_remove)(struct fpga_manager *mgr);
-+
-+	int (*suspend)(struct fpga_manager *mgr);
-+
-+	int (*resume)(struct fpga_manager *mgr);
-+};
-+
-+/* Valid states may vary by manufacturer; superset is: */
-+enum fpga_mgr_states {
-+	FPGA_MGR_STATE_UNKNOWN,		/* can't determine state */
-+	FPGA_MGR_STATE_POWER_OFF,	/* FPGA power is off */
-+	FPGA_MGR_STATE_POWER_UP,	/* FPGA reports power is up */
-+	FPGA_MGR_STATE_RESET,		/* FPGA held in reset state */
-+
-+	/* write sequence */
-+	FPGA_MGR_STATE_FIRMWARE_REQ,	/* firmware request in progress */
-+	FPGA_MGR_STATE_FIRMWARE_REQ_ERR, /* firmware request failed */
-+	FPGA_MGR_STATE_WRITE_INIT,	/* preparing FPGA for programming */
-+	FPGA_MGR_STATE_WRITE_INIT_ERR,	/* Error during write_init stage */
-+	FPGA_MGR_STATE_WRITE,		/* FPGA ready to receive image data */
-+	FPGA_MGR_STATE_WRITE_ERR,	/* Error while programming FPGA */
-+	FPGA_MGR_STATE_WRITE_COMPLETE,	/* Doing post programming steps */
-+	FPGA_MGR_STATE_WRITE_COMPLETE_ERR, /* Error during write_complete */
-+
-+	FPGA_MGR_STATE_OPERATING,	/* FPGA is programmed and operating */
-+};
-+
-+struct fpga_manager {
-+	const char *name;
-+	struct device dev;
-+	struct list_head list;
-+	struct mutex lock;
-+	enum fpga_mgr_states state;
-+	char image_name[NAME_MAX];
-+
-+	struct fpga_manager_ops *mops;
-+	void *priv;
-+};
-+
-+#define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
-+
-+#if IS_ENABLED(CONFIG_FPGA)
-+
-+int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name);
-+int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count);
-+int fpga_mgr_name(struct fpga_manager *mgr, char *buf);
-+int fpga_mgr_reset(struct fpga_manager *mgr);
-+int fpga_mgr_register(struct device *pdev, const char *name,
-+		      struct fpga_manager_ops *mops, void *priv);
-+void fpga_mgr_remove(struct device *dev);
-+
-+#endif /* CONFIG_FPGA */
-+#endif /*_LINUX_FPGA_MGR_H */
+Denis Du
+
+
+----- Original Message -----
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Denis Du <dudenis2000@yahoo.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Sent: Monday, December 8, 2014 5:22 PM
+Subject: Re: [PATCH] TTY: missing a lock to access the ldisk buffer
+
+Denis,
+
+This patch won't apply to linux-next 20141208 so I can't test it :-(
+
+Which kernel does this patch apply to?
+
+
+On Mon, Dec 08, 2014 at 08:28:00PM +0000, Denis Du wrote:
+> Hi, Guys:
+> I found that the 3.12 kernel tty layer will lose or corrupt data when having a full-duplex communication, especcially in high baudrate, for example 230k for my OMAP5 uart. Eventually I found there is a lock missing between copy data to ldisc layer buffer and copy data from the same buffer to user space. I believe this issue have been existing since 3.8 kernel(since this kernel , it start to remove most of the spin-locks) and I didn't find any fix even through 3.17 kernel. This patch was tested to be works great with no any data loss again.
+> 
+> 
+> I did try to use the existed lock atomic_read_lock, but it doesn’t work. 
+> 
+> 
+> 
+> Signed-off-by: Hui Du <dudenis2000@yahoo.ca>
+> 
+> 
+> ---
+> 
+> --- drivers/tty/n_tty.c    2014-10-16 16:39:35.909350338 -0400
+> +++ drivers/tty/n_tty.c    2014-10-16 16:49:00.004930469 -0400
+> @@ -124,6 +124,7 @@
+> 
+> struct mutex atomic_read_lock;
+> struct mutex output_lock;
+> +    struct mutex read_buf_lock;
+> };
+> 
+> static inline size_t read_cnt(struct n_tty_data *ldata)
+> @@ -1686,9 +1687,11 @@
+> char *fp, int count)
+> {
+> int room, n;
+> +    struct n_tty_data *ldata = tty->disc_data;
+> 
+> down_read(&tty->termios_rwsem);
+> 
+> +    mutex_lock(&ldata->read_buf_lock);
+> while (1) {
+> room = receive_room(tty);
+> n = min(count, room);
+> @@ -1703,6 +1706,7 @@
+> 
+> tty->receive_room = room;
+> n_tty_check_throttle(tty);
+> +    mutex_unlock(&ldata->read_buf_lock);
+> up_read(&tty->termios_rwsem);
+> }
+> 
+> @@ -1713,7 +1717,7 @@
+> int room, n, rcvd = 0;
+> 
+> down_read(&tty->termios_rwsem);
+> -
+> +    mutex_lock(&ldata->read_buf_lock);
+> while (1) {
+> room = receive_room(tty);
+> n = min(count, room);
+> @@ -1732,6 +1736,7 @@
+> 
+> tty->receive_room = room;
+> n_tty_check_throttle(tty);
+> +    mutex_unlock(&ldata->read_buf_lock);
+> up_read(&tty->termios_rwsem);
+> 
+> return rcvd;
+> @@ -1880,6 +1885,7 @@
+> ldata->overrun_time = jiffies;
+> mutex_init(&ldata->atomic_read_lock);
+> mutex_init(&ldata->output_lock);
+> +    mutex_init(&ldata->read_buf_lock);
+> 
+> tty->disc_data = ldata;
+> reset_buffer_flags(tty->disc_data);
+> @@ -1945,6 +1951,8 @@
+> size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
+> 
+> retval = 0;
+> +
+> +    mutex_lock(&ldata->read_buf_lock);
+> n = min(read_cnt(ldata), N_TTY_BUF_SIZE - tail);
+> n = min(*nr, n);
+> if (n) {
+> @@ -1960,6 +1968,7 @@
+> *b += n;
+> *nr -= n;
+> }
+> +    mutex_unlock(&ldata->read_buf_lock);
+> return retval;
+> }
+> 
+> @@ -1990,6 +1999,8 @@
+> size_t tail;
+> int ret, found = 0;
+> bool eof_push = 0;
+> + 
+> +    mutex_lock(&ldata->read_buf_lock);
+> 
+> /* N.B. avoid overrun if nr == 0 */
+> n = min(*nr, read_cnt(ldata));
+> @@ -2049,6 +2060,8 @@
+> ldata->line_start = ldata->read_tail;
+> tty_audit_push(tty);
+> }
+> +
+> +    mutex_unlock(&ldata->read_buf_lock);
+> return eof_push ? -EAGAIN : 0;
+> }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.9.5
-
+- Jeremiah Mahler
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
