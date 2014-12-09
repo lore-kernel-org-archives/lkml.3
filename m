@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaLIBUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 20:20:35 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:61547 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaLIBUd (ORCPT
+	id S1756283AbaLIBY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 20:24:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59028 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaLIBY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 20:20:33 -0500
-From: Zeng Tao <prime.zeng@huawei.com>
-To: <gregkh@linuxfoundation.org>, <john.stultz@linaro.org>,
-        <ccross@android.com>, <rebecca@android.com>,
-        <fabio.estevam@freescale.com>, <tranmanphong@gmail.com>,
-        <benjamin.gaignard@linaro.org>
-CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: ion: ion_cma_heap: remove ion_cma_get_sgtable
-Date: Tue, 9 Dec 2014 09:19:40 +0800
-Message-ID: <1418087980-221566-1-git-send-email-prime.zeng@huawei.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.67.212.83]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.54864E5C.0058,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 461d0641798ac5e7fddcb6a5b560727d
+	Mon, 8 Dec 2014 20:24:27 -0500
+Date: Mon, 08 Dec 2014 20:24:24 -0500 (EST)
+Message-Id: <20141208.202424.1782433533296173544.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next] hyperv: Add support for vNIC hot removal
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1417469319-7356-1-git-send-email-haiyangz@microsoft.com>
+References: <1417469319-7356-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 08 Dec 2014 17:24:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the temporary code ion_cma_get_sgtable,
-use dma_common_get_sgtable instead
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Mon,  1 Dec 2014 13:28:39 -0800
 
-Signed-off-by: Zeng Tao <prime.zeng@huawei.com>
----
- drivers/staging/android/ion/ion_cma_heap.c | 20 +-------------------
- 1 file changed, 1 insertion(+), 19 deletions(-)
+> This patch adds proper handling of the vNIC hot removal event, which includes
+> a rescind-channel-offer message from the host side that triggers vNIC close and
+> removal. In this case, the notices to the host during close and removal is not
+> necessary because the channel is rescinded. This patch blocks these unnecessary 
+> messages, and lets vNIC removal process complete normally.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
-index f8cabcb..f4211f1 100644
---- a/drivers/staging/android/ion/ion_cma_heap.c
-+++ b/drivers/staging/android/ion/ion_cma_heap.c
-@@ -39,24 +39,6 @@ struct ion_cma_buffer_info {
- 	struct sg_table *table;
- };
- 
--/*
-- * Create scatter-list for the already allocated DMA buffer.
-- * This function could be replaced by dma_common_get_sgtable
-- * as soon as it will avalaible.
-- */
--static int ion_cma_get_sgtable(struct device *dev, struct sg_table *sgt,
--			       void *cpu_addr, dma_addr_t handle, size_t size)
--{
--	struct page *page = virt_to_page(cpu_addr);
--	int ret;
--
--	ret = sg_alloc_table(sgt, 1, GFP_KERNEL);
--	if (unlikely(ret))
--		return ret;
--
--	sg_set_page(sgt->sgl, page, PAGE_ALIGN(size), 0);
--	return 0;
--}
- 
- /* ION CMA heap operations functions */
- static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
-@@ -91,7 +73,7 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
- 	if (!info->table)
- 		goto free_mem;
- 
--	if (ion_cma_get_sgtable
-+	if (dma_common_get_sgtable
- 	    (dev, info->table, info->cpu_addr, info->handle, len))
- 		goto free_table;
- 	/* keep this for memory release */
--- 
-1.9.1
-
+Applied, thanks.
