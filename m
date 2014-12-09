@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845AbaLIIw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:52:28 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:56038 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661AbaLIIw0 (ORCPT
+	id S1754951AbaLIIwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:52:45 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:48864 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaLIIwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:52:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Florian Fainelli <f.fainelli@gmail.com>, Olof Johansson <olof@lixom.net>,
-        arm@kernel.org, Scott Branden <sbranden@broadcom.com>,
-        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
-        mporter@linaro.org
-Subject: Re: [PATCH] ARM: bcm: fix __iomem annotation on kona_smc
-Date: Tue, 09 Dec 2014 09:51:38 +0100
-Message-ID: <3044718.ZPFEmzteVb@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54862498.8080101@gmail.com>
-References: <1418075148-8752-1-git-send-email-olof@lixom.net> <54862498.8080101@gmail.com>
+	Tue, 9 Dec 2014 03:52:25 -0500
+Date: Tue, 9 Dec 2014 08:52:16 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v9 03/19] mfd: max77693: Modify flash cell name
+ identifiers
+Message-ID: <20141209085216.GS3951@x1>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-4-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:QTVxm4wVe+26h3Ygyp15biX5F1dG1HVaBx9RUEfHBgVrsVlNsLa
- wuGj8jhTH7iEW4aj8OZi1wbLc+Bibl3zSPyl431CjMlScGJVcoPaOcNWGbeaPOI7eXu0+bI
- D04ZYrtnxPHIxa1rDWqWVPOfitvMEXCgW4zSdCLZ4lQW+/zEJRtmxI4gIdarT+LjW0CfxTK
- N0xECDYON4lCvSuQyTKoQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417622814-10845-4-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 14:22:16 Florian Fainelli wrote:
-> > diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
-> > index a55a7ec..d506d17 100644
-> > --- a/arch/arm/mach-bcm/bcm_kona_smc.c
-> > +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
-> > @@ -142,7 +142,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
-> >  static void __bcm_kona_smc(void *info)
-> >  {
-> >       struct bcm_kona_smc_data *data = info;
-> > -     u32 *args = bcm_smc_buffer;
-> > +     u32 __iomem *args = bcm_smc_buffer;
+On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
+
+> Change flash cell identifiers from max77693-flash to max77693-led
+> to avoid confusion with NOR/NAND Flash.
 > 
-> Your fix looks good to me, although the original code sounds a little
-> dubious, especially in LPAE environment.
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/max77693.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index a159593..cb14afa 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -53,8 +53,8 @@ static const struct mfd_cell max77693_devs[] = {
+>  		.of_compatible = "maxim,max77693-haptic",
+>  	},
+>  	{
+> -		.name = "max77693-flash",
+> -		.of_compatible = "maxim,max77693-flash",
+> +		.name = "max77693-led",
+> +		.of_compatible = "maxim,max77693-led",
 
-Right, I think it could just use of_iomap() and drop the size
-check. If you want to keep the check, using of_address_to_resource()
-will do the right thing.
+This is fine by me, so long as you've been through the usual
+deprecation procedures or this platform is still WiP.
 
-	Arnd
+>  	},
+>  };
+>  
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
