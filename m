@@ -1,551 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187AbaLIAWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 19:22:44 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2545 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755493AbaLIAWl (ORCPT
+	id S1756058AbaLIAYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 19:24:53 -0500
+Received: from smtprelay0030.hostedemail.com ([216.40.44.30]:49019 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751103AbaLIAYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 19:22:41 -0500
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-leds@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: [PATCH 2/2] leds: add Qualcomm PM8941 WLED driver
-Date: Mon, 8 Dec 2014 16:22:31 -0800
-Message-ID: <1418084551-28946-2-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1418084551-28946-1-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1418084551-28946-1-git-send-email-bjorn.andersson@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 8 Dec 2014 19:24:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:2:41:69:355:379:541:599:800:960:973:979:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2393:2559:2562:2690:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:3871:3872:3873:4117:4250:4321:4383:4605:5007:6119:6261:7514:7875:7903:7974:8531:8660:9010:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:12740:13148:13230:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gold50_6450f116e131d
+X-Filterd-Recvd-Size: 6061
+Message-ID: <1418084686.15957.1.camel@perches.com>
+Subject: Re: [PATCH v2] init: calibrate: fix style issues
+From: Joe Perches <joe@perches.com>
+To: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: rmk+kernel@arm.linux.org.uk, pdeschrijver@nvidia.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 08 Dec 2014 16:24:46 -0800
+In-Reply-To: <54861078.3090606@gmail.com>
+References: <1413048976.16385.37.camel@joe-AO725>
+	 <1413195155-8111-1-git-send-email-rasmuswriedtlarsen@gmail.com>
+	 <54861078.3090606@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
+On Mon, 2014-12-08 at 21:56 +0100, Rasmus Wriedt Larsen wrote:
+> Wanted to bump this patch, as nothing has happened in a long time.
 
-This adds support for the WLED ('White' LED) block on Qualcomm's
-PM8941 PMICs.
+Maybe you need to expand the recipient list.
+Andrew Morton sometimes picks up patches like this.
+Sometimes Jiri Kosina, the trivial maintainer, does.
+Both have been added to the recipient list here.
 
-Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
- drivers/leds/Kconfig            |   8 +
- drivers/leds/Makefile           |   1 +
- drivers/leds/leds-pm8941-wled.c | 466 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 475 insertions(+)
- create mode 100644 drivers/leds/leds-pm8941-wled.c
+> As this is my first linux patch, I was quite hoping to get it accepted :)
+> 
+> On 13/10/14 12:12, Rasmus Wriedt Larsen wrote:
+> > * fix multiple quoted string split across lines style issues
+> > * change printk(KERN_NOTICE to pr_notice
+> > * insert spaces after , in function call
+> > * change two line pr_notice msg to one line (credit: Joe Perches)
+> > 
+> > Signed-off-by: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+> > ---
+> >  init/calibrate.c | 35 ++++++++++++++---------------------
+> >  1 file changed, 14 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/init/calibrate.c b/init/calibrate.c
+> > index ce635dc..d9c8810 100644
+> > --- a/init/calibrate.c
+> > +++ b/init/calibrate.c
+> > @@ -15,7 +15,7 @@ unsigned long lpj_fine;
+> >  unsigned long preset_lpj;
+> >  static int __init lpj_setup(char *str)
+> >  {
+> > -	preset_lpj = simple_strtoul(str,NULL,0);
+> > +	preset_lpj = simple_strtoul(str, NULL, 0);
+> >  	return 1;
+> >  }
+> > 
+> > @@ -40,11 +40,13 @@ static unsigned long calibrate_delay_direct(void)
+> >  	unsigned long good_timer_sum = 0;
+> >  	unsigned long good_timer_count = 0;
+> >  	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
+> > -	int max = -1; /* index of measured_times with max/min values or not set */
+> > +
+> > +	/* index of measured_times with max/min values or not set */
+> > +	int max = -1;
+> >  	int min = -1;
+> >  	int i;
+> > 
+> > -	if (read_current_timer(&pre_start) < 0 )
+> > +	if (read_current_timer(&pre_start) < 0)
+> >  		return 0;
+> > 
+> >  	/*
+> > @@ -95,9 +97,7 @@ static unsigned long calibrate_delay_direct(void)
+> >  		 * >= 12.5% apart, redo calibration.
+> >  		 */
+> >  		if (start >= post_end)
+> > -			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
+> > -					"timer_rate as we had a TSC wrap around"
+> > -					" start=%lu >=post_end=%lu\n",
+> > +			pr_notice("calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
+> >  				start, post_end);
+> >  		if (start < post_end && pre_start != 0 && pre_end != 0 &&
+> >  		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+> > @@ -134,14 +134,12 @@ static unsigned long calibrate_delay_direct(void)
+> >  		good_timer_count = 0;
+> >  		if ((measured_times[max] - estimate) <
+> >  				(estimate - measured_times[min])) {
+> > -			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+> > -					"min bogoMips estimate %d = %lu\n",
+> > +			pr_notice("calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
+> >  				min, measured_times[min]);
+> >  			measured_times[min] = 0;
+> >  			min = max;
+> >  		} else {
+> > -			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+> > -					"max bogoMips estimate %d = %lu\n",
+> > +			pr_notice("calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
+> >  				max, measured_times[max]);
+> >  			measured_times[max] = 0;
+> >  			max = min;
+> > @@ -160,9 +158,8 @@ static unsigned long calibrate_delay_direct(void)
+> > 
+> >  	}
+> > 
+> > -	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+> > -	       "estimate for loops_per_jiffy.\nProbably due to long platform "
+> > -		"interrupts. Consider using \"lpj=\" boot option.\n");
+> > +	pr_notice("%s: failed to reasonably estimate loops_per_jiffy (long platform interrupts?) - perhaps use boot option 'lpj='\n",
+> > +		  __func__);
+> >  	return 0;
+> >  }
+> >  #else
+> > @@ -280,23 +277,19 @@ void calibrate_delay(void)
+> >  	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+> >  		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+> >  		if (!printed)
+> > -			pr_info("Calibrating delay loop (skipped) "
+> > -				"already calibrated this CPU");
+> > +			pr_info("Calibrating delay loop (skipped) already calibrated this CPU");
+> >  	} else if (preset_lpj) {
+> >  		lpj = preset_lpj;
+> >  		if (!printed)
+> > -			pr_info("Calibrating delay loop (skipped) "
+> > -				"preset value.. ");
+> > +			pr_info("Calibrating delay loop (skipped) preset value.. ");
+> >  	} else if ((!printed) && lpj_fine) {
+> >  		lpj = lpj_fine;
+> > -		pr_info("Calibrating delay loop (skipped), "
+> > -			"value calculated using timer frequency.. ");
+> > +		pr_info("Calibrating delay loop (skipped), value calculated using timer frequency.. ");
+> >  	} else if ((lpj = calibrate_delay_is_known())) {
+> >  		;
+> >  	} else if ((lpj = calibrate_delay_direct()) != 0) {
+> >  		if (!printed)
+> > -			pr_info("Calibrating delay using timer "
+> > -				"specific routine.. ");
+> > +			pr_info("Calibrating delay using timer specific routine.. ");
+> >  	} else {
+> >  		if (!printed)
+> >  			pr_info("Calibrating delay loop... ");
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index a210338..9091cf4 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -505,6 +505,14 @@ config LEDS_VERSATILE
- 	  This option enabled support for the LEDs on the ARM Versatile
- 	  and RealView boards. Say Y to enabled these.
- 
-+config LEDS_PM8941_WLED
-+	tristate "LED support for the Qualcomm PM8941 WLED block"
-+	depends on LEDS_CLASS
-+	depends on REGMAP
-+	help
-+	  This option enables support for the 'White' LED block
-+	  on Qualcomm PM8941 PMICs.
-+
- comment "LED Triggers"
- source "drivers/leds/trigger/Kconfig"
- 
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index a2b1647..5474afc 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -56,6 +56,7 @@ obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
- obj-$(CONFIG_LEDS_SYSCON)		+= leds-syscon.o
- obj-$(CONFIG_LEDS_VERSATILE)		+= leds-versatile.o
- obj-$(CONFIG_LEDS_MENF21BMC)		+= leds-menf21bmc.o
-+obj-$(CONFIG_LEDS_PM8941_WLED)		+= leds-pm8941-wled.o
- 
- # LED SPI Drivers
- obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-diff --git a/drivers/leds/leds-pm8941-wled.c b/drivers/leds/leds-pm8941-wled.c
-new file mode 100644
-index 0000000..aa06d0b
---- /dev/null
-+++ b/drivers/leds/leds-pm8941-wled.c
-@@ -0,0 +1,466 @@
-+/* Copyright (c) 2013, Sony Mobile Communications, AB.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/regmap.h>
-+
-+enum pm8941_wled_reg {
-+	PM8941_WLED_REG_VAL_BASE		= 0x40,
-+#define PM8941_WLED_REG_VAL_MAX			0xFFF
-+
-+	PM8941_WLED_REG_MOD_EN			= 0x46,
-+#define PM8941_WLED_REG_MOD_EN_BIT		BIT(7)
-+#define PM8941_WLED_REG_MOD_EN_MASK		BIT(7)
-+
-+	PM8941_WLED_REG_SYNC			= 0x47,
-+#define PM8941_WLED_REG_SYNC_MASK		0x07
-+#define PM8941_WLED_REG_SYNC_LED1		BIT(0)
-+#define PM8941_WLED_REG_SYNC_LED2		BIT(1)
-+#define PM8941_WLED_REG_SYNC_LED3		BIT(2)
-+#define PM8941_WLED_REG_SYNC_ALL		0x07
-+#define PM8941_WLED_REG_SYNC_CLEAR		0x00
-+
-+	PM8941_WLED_REG_FREQ			= 0x4c,
-+#define PM8941_WLED_REG_FREQ_MASK		0x0f
-+
-+	PM8941_WLED_REG_OVP			= 0x4d,
-+#define PM8941_WLED_REG_OVP_MASK		0x03
-+
-+	PM8941_WLED_REG_BOOST			= 0x4e,
-+#define PM8941_WLED_REG_BOOST_MASK		0x07
-+
-+	PM8941_WLED_REG_SINK			= 0x4f,
-+#define PM8941_WLED_REG_SINK_MASK		0xe0
-+#define PM8941_WLED_REG_SINK_SHFT		0x05
-+
-+/* Per-'string' registers below */
-+#define PM8941_WLED_REG_STR_OFFSET		0x10
-+
-+	PM8941_WLED_REG_STR_MOD_EN_BASE		= 0x60,
-+#define PM8941_WLED_REG_STR_MOD_EN		BIT(7)
-+#define PM8941_WLED_REG_STR_MOD_MASK		BIT(7)
-+
-+	PM8941_WLED_REG_STR_SCALE_BASE		= 0x62,
-+#define PM8941_WLED_REG_STR_SCALE_MASK		0x1f
-+
-+	PM8941_WLED_REG_STR_MOD_SRC_BASE	= 0x63,
-+#define PM8941_WLED_REG_STR_MOD_SRC_MASK	0x01
-+#define PM8941_WLED_REG_STR_MOD_SRC_INT		0x00
-+#define PM8941_WLED_REG_STR_MOD_SRC_EXT		0x01
-+
-+	PM8941_WLED_REG_STR_CABC_BASE		= 0x66,
-+#define PM8941_WLED_REG_STR_CABC_MASK		BIT(7)
-+#define PM8941_WLED_REG_STR_CABC_EN		BIT(7)
-+};
-+
-+struct pm8941_wled_config {
-+	u32 i_boost_limit;
-+	u32 ovp;
-+	u32 switch_freq;
-+	u32 num_strings;
-+	u32 i_limit;
-+	bool cs_out_en;
-+	bool ext_gen;
-+	bool cabc_en;
-+};
-+
-+struct pm8941_wled {
-+	struct led_classdev cdev;
-+	struct pm8941_wled_config cfg;
-+	u16 addr;
-+};
-+
-+struct pm8941_wled_context {
-+	struct pm8941_wled wled;
-+	struct regmap *regmap;
-+};
-+
-+static int pm8941_wled_set(struct led_classdev *cdev,
-+			   enum led_brightness value)
-+{
-+	struct pm8941_wled_context *ctx;
-+	struct pm8941_wled *wled;
-+	u8 ctrl = 0;
-+	u16 val;
-+	int rc;
-+	int i;
-+
-+	wled = container_of(cdev, struct pm8941_wled, cdev);
-+	ctx = container_of(wled, struct pm8941_wled_context, wled);
-+
-+	if (value != 0)
-+		ctrl = PM8941_WLED_REG_MOD_EN_BIT;
-+
-+	val = (value * PM8941_WLED_REG_VAL_MAX) / LED_FULL;
-+
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_MOD_EN,
-+			PM8941_WLED_REG_MOD_EN_MASK, ctrl);
-+	if (rc)
-+		return rc;
-+
-+	for (i = 0; i < wled->cfg.num_strings; ++i) {
-+		u8 v[2] = { val & 0xff, (val >> 8) & 0xf };
-+
-+		rc = regmap_bulk_write(ctx->regmap,
-+				wled->addr + PM8941_WLED_REG_VAL_BASE + 2 * i,
-+				v, 2);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_SYNC,
-+			PM8941_WLED_REG_SYNC_MASK, PM8941_WLED_REG_SYNC_ALL);
-+	if (rc)
-+		return rc;
-+
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_SYNC,
-+			PM8941_WLED_REG_SYNC_MASK, PM8941_WLED_REG_SYNC_CLEAR);
-+	return rc;
-+}
-+
-+static void pm8941_wled_set_brightness(struct led_classdev *cdev,
-+				       enum led_brightness value)
-+{
-+	if (pm8941_wled_set(cdev, value)) {
-+		dev_err(cdev->dev, "Unable to set brightness\n");
-+		return;
-+	}
-+	cdev->brightness = value;
-+}
-+
-+static int pm8941_wled_setup(struct pm8941_wled *wled)
-+{
-+	struct pm8941_wled_context *ctx;
-+	int rc;
-+	int i;
-+
-+	ctx = container_of(wled, struct pm8941_wled_context, wled);
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_OVP,
-+			PM8941_WLED_REG_OVP_MASK, wled->cfg.ovp);
-+	if (rc)
-+		return rc;
-+
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_BOOST,
-+			PM8941_WLED_REG_BOOST_MASK, wled->cfg.i_boost_limit);
-+	if (rc)
-+		return rc;
-+
-+	rc = regmap_update_bits(ctx->regmap,
-+			wled->addr + PM8941_WLED_REG_FREQ,
-+			PM8941_WLED_REG_FREQ_MASK, wled->cfg.switch_freq);
-+	if (rc)
-+		return rc;
-+
-+	if (wled->cfg.cs_out_en) {
-+		u8 all = (BIT(wled->cfg.num_strings) - 1)
-+				<< PM8941_WLED_REG_SINK_SHFT;
-+
-+		rc = regmap_update_bits(ctx->regmap,
-+				wled->addr + PM8941_WLED_REG_SINK,
-+				PM8941_WLED_REG_SINK_MASK, all);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	for (i = 0; i < wled->cfg.num_strings; ++i) {
-+		u16 addr = wled->addr + PM8941_WLED_REG_STR_OFFSET * i;
-+
-+		rc = regmap_update_bits(ctx->regmap,
-+				addr + PM8941_WLED_REG_STR_MOD_EN_BASE,
-+				PM8941_WLED_REG_STR_MOD_MASK,
-+				PM8941_WLED_REG_STR_MOD_EN);
-+		if (rc)
-+			return rc;
-+
-+		if (wled->cfg.ext_gen) {
-+			rc = regmap_update_bits(ctx->regmap,
-+					addr + PM8941_WLED_REG_STR_MOD_SRC_BASE,
-+					PM8941_WLED_REG_STR_MOD_SRC_MASK,
-+					PM8941_WLED_REG_STR_MOD_SRC_EXT);
-+			if (rc)
-+				return rc;
-+		}
-+
-+		rc = regmap_update_bits(ctx->regmap,
-+				addr + PM8941_WLED_REG_STR_SCALE_BASE,
-+				PM8941_WLED_REG_STR_SCALE_MASK,
-+				wled->cfg.i_limit);
-+		if (rc)
-+			return rc;
-+
-+		rc = regmap_update_bits(ctx->regmap,
-+				addr + PM8941_WLED_REG_STR_CABC_BASE,
-+				PM8941_WLED_REG_STR_CABC_MASK,
-+				wled->cfg.cabc_en ?
-+					PM8941_WLED_REG_STR_CABC_EN : 0);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct pm8941_wled_config pm8941_wled_config_defaults = {
-+	.i_boost_limit = 3,
-+	.i_limit = 20,
-+	.ovp = 2,
-+	.switch_freq = 5,
-+	.num_strings = 0,
-+	.cs_out_en = false,
-+	.ext_gen = false,
-+	.cabc_en = false,
-+};
-+
-+struct pm8941_wled_var_cfg {
-+	const u32 *values;
-+	u32 (*fn)(u32);
-+	int size;
-+};
-+
-+static const u32 pm8941_wled_i_boost_limit_values[] = {
-+	105, 385, 525, 805, 980, 1260, 1400, 1680,
-+};
-+
-+static const struct pm8941_wled_var_cfg pm8941_wled_i_boost_limit_cfg = {
-+	.values = pm8941_wled_i_boost_limit_values,
-+	.size = ARRAY_SIZE(pm8941_wled_i_boost_limit_values),
-+};
-+
-+static const u32 pm8941_wled_ovp_values[] = {
-+	35, 32, 29, 27,
-+};
-+
-+static const struct pm8941_wled_var_cfg pm8941_wled_ovp_cfg = {
-+	.values = pm8941_wled_ovp_values,
-+	.size = ARRAY_SIZE(pm8941_wled_ovp_values),
-+};
-+
-+static u32 pm8941_wled_num_strings_values_fn(u32 idx)
-+{
-+	return idx + 1;
-+}
-+
-+static const struct pm8941_wled_var_cfg pm8941_wled_num_strings_cfg = {
-+	.fn = pm8941_wled_num_strings_values_fn,
-+	.size = 3,
-+};
-+
-+static u32 pm8941_wled_switch_freq_values_fn(u32 idx)
-+{
-+	return 19200 / (2 * (1 + idx));
-+}
-+
-+static const struct pm8941_wled_var_cfg pm8941_wled_switch_freq_cfg = {
-+	.fn = pm8941_wled_switch_freq_values_fn,
-+	.size = 16,
-+};
-+
-+static const struct pm8941_wled_var_cfg pm8941_wled_i_limit_cfg = {
-+	.size = 26,
-+};
-+
-+static u32 pm8941_wled_values(const struct pm8941_wled_var_cfg *cfg, u32 idx)
-+{
-+	if (idx >= cfg->size)
-+		return UINT_MAX;
-+	if (cfg->fn)
-+		return cfg->fn(idx);
-+	if (cfg->values)
-+		return cfg->values[idx];
-+	return idx;
-+}
-+
-+static int pm8941_wled_configure(struct pm8941_wled *wled, struct device *dev)
-+{
-+	struct pm8941_wled_config *cfg = &wled->cfg;
-+	u32 val;
-+	int rc;
-+	int i;
-+
-+	const struct {
-+		const char *name;
-+		u32 *val_ptr;
-+		const struct pm8941_wled_var_cfg *cfg;
-+	} u32_opts[] = {
-+		{
-+			"qcom,current-boost-limit", &cfg->i_boost_limit,
-+			.cfg = &pm8941_wled_i_boost_limit_cfg,
-+		},
-+		{
-+			"qcom,current-limit", &cfg->i_limit,
-+			.cfg = &pm8941_wled_i_limit_cfg,
-+		},
-+		{
-+			"qcom,ovp", &cfg->ovp,
-+			.cfg = &pm8941_wled_ovp_cfg,
-+		},
-+		{
-+			"qcom,switching-freq", &cfg->switch_freq,
-+			.cfg = &pm8941_wled_switch_freq_cfg,
-+		},
-+		{
-+			"qcom,num-strings", &cfg->num_strings,
-+			.cfg = &pm8941_wled_num_strings_cfg,
-+		},
-+	};
-+	const struct {
-+		const char *name;
-+		bool *val_ptr;
-+	} bool_opts[] = {
-+		{ "qcom,cs-out", &cfg->cs_out_en, },
-+		{ "qcom,ext-gen", &cfg->ext_gen, },
-+		{ "qcom,cabc", &cfg->cabc_en, },
-+	};
-+
-+	if (dev->of_node == NULL) {
-+		dev_err(dev, "no OF node!\n");
-+		return -EINVAL;
-+	}
-+
-+	rc = of_property_read_u32(dev->of_node, "reg", &val);
-+	if (rc || val > 0xffff) {
-+		dev_err(dev, "invalid IO resources\n");
-+		return rc ? rc : -EINVAL;
-+	}
-+	wled->addr = val;
-+
-+	rc = of_property_read_string(dev->of_node, "label", &wled->cdev.name);
-+	if (rc)
-+		wled->cdev.name = dev->of_node->name;
-+
-+	wled->cdev.default_trigger = of_get_property(dev->of_node,
-+			"linux,default-trigger", NULL);
-+
-+	*cfg = pm8941_wled_config_defaults;
-+	for (i = 0; i < ARRAY_SIZE(u32_opts); ++i) {
-+		u32 sel, c;
-+		int j, rj;
-+
-+		rc = of_property_read_u32(dev->of_node, u32_opts[i].name, &val);
-+		if (rc) {
-+			if (rc != -EINVAL) {
-+				dev_err(dev, "error reading '%s'\n",
-+						u32_opts[i].name);
-+				return rc;
-+			}
-+			continue;
-+		}
-+
-+		sel = UINT_MAX;
-+		rj = -1;
-+		c = pm8941_wled_values(u32_opts[i].cfg, 0);
-+		for (j = 0; c != UINT_MAX; ++j) {
-+			if (c <= val && (sel == UINT_MAX || c >= sel)) {
-+				sel = c;
-+				rj = j;
-+			}
-+			c = pm8941_wled_values(u32_opts[i].cfg, j + 1);
-+		}
-+		if (sel == UINT_MAX) {
-+			dev_err(dev, "invalid value for '%s'\n",
-+					u32_opts[i].name);
-+			return rc;
-+		}
-+		if (sel != val) {
-+			dev_warn(dev, "rounding '%s' down to %u\n",
-+					u32_opts[i].name, sel);
-+		}
-+		dev_dbg(dev, "'%s' = %u\n", u32_opts[i].name, sel);
-+		*u32_opts[i].val_ptr = rj;
-+	};
-+
-+	for (i = 0; i < ARRAY_SIZE(bool_opts); ++i) {
-+		if (of_property_read_bool(dev->of_node, bool_opts[i].name))
-+			*bool_opts[i].val_ptr = true;
-+	}
-+
-+	cfg->num_strings = cfg->num_strings + 1;
-+
-+	return 0;
-+}
-+
-+static int pm8941_wled_probe(struct platform_device *pdev)
-+{
-+	struct pm8941_wled_context *ctx;
-+	struct regmap *regmap;
-+	int rc;
-+
-+	regmap = dev_get_regmap(pdev->dev.parent, NULL);
-+	if (!regmap) {
-+		dev_err(&pdev->dev, "Unable to get regmap\n");
-+		return -EINVAL;
-+	}
-+
-+	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-+	if (ctx == NULL)
-+		return -ENOMEM;
-+
-+	ctx->regmap = regmap;
-+
-+	rc = pm8941_wled_configure(&ctx->wled, &pdev->dev);
-+	if (rc)
-+		return rc;
-+
-+	rc = pm8941_wled_setup(&ctx->wled);
-+	if (rc)
-+		return rc;
-+
-+	ctx->wled.cdev.brightness_set = pm8941_wled_set_brightness;
-+
-+	rc = led_classdev_register(&pdev->dev, &ctx->wled.cdev);
-+	if (rc)
-+		return rc;
-+
-+	platform_set_drvdata(pdev, ctx);
-+	dev_info(&pdev->dev, "registered led \"%s\"\n", ctx->wled.cdev.name);
-+
-+	return 0;
-+};
-+
-+static int pm8941_wled_remove(struct platform_device *pdev)
-+{
-+	struct pm8941_wled_context *ctx;
-+
-+	ctx = platform_get_drvdata(pdev);
-+	led_classdev_unregister(&ctx->wled.cdev);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id pm8941_wled_match_table[] = {
-+	{ .compatible = "qcom,pm8941-wled" },
-+	{}
-+};
-+
-+static struct platform_driver pm8941_wled_driver = {
-+	.probe	= pm8941_wled_probe,
-+	.remove = pm8941_wled_remove,
-+	.driver	= {
-+		.name		= "pm8941-wled",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= pm8941_wled_match_table,
-+	},
-+};
-+
-+module_platform_driver(pm8941_wled_driver);
-+
-+MODULE_DESCRIPTION("pm8941 wled driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform: pm8941-wled");
--- 
-1.8.2.2
 
