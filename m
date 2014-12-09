@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385AbaLICUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:20:45 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:13785 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754329AbaLICUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:20:44 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44705543"
-Message-ID: <54865D65.8030906@cn.fujitsu.com>
-Date: Tue, 9 Dec 2014 10:24:37 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756428AbaLICVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:21:41 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:60276 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755745AbaLICVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 21:21:40 -0500
+Date: Tue, 9 Dec 2014 04:21:35 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [RFC][PATCHES] iov_iter.c rewrite
+Message-ID: <20141209022135.GA992@node.dhcp.inet.fi>
+References: <20141208164650.GB29028@node.dhcp.inet.fi>
+ <20141208175805.GB22149@ZenIV.linux.org.uk>
+ <20141208180824.GC22149@ZenIV.linux.org.uk>
+ <CA+55aFxwrH4vsyw2ix=HqDK9Z=fw98xtOL8=57prm8qgVmAFfA@mail.gmail.com>
+ <20141208182012.GE22149@ZenIV.linux.org.uk>
+ <CA+55aFxrrTV-xBbvEzVKsXRVKyvZhQZj-6BNDpTsG4J5k6CJEg@mail.gmail.com>
+ <20141208184632.GG22149@ZenIV.linux.org.uk>
+ <CA+55aFyh0cV+ztK47mu1QN6aF4VvPE1V5zF7_X2TdYxZ38zZRA@mail.gmail.com>
+ <20141208192816.GH22149@ZenIV.linux.org.uk>
+ <20141209015651.GI22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Anton Blanchard <anton@samba.org>, <torvalds@linux-foundation.org>,
-        <akpm@linux-foundation.org>, <peterz@infradead.org>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <tj@kernel.org>,
-        <fengguang.wu@intel.com>, <rafael.j.wysocki@intel.com>,
-        <yuyang.du@intel.com>, <lkp@01.org>, <yuanhan.liu@linux.intel.com>,
-        <pjt@google.com>, <bsegall@google.com>, <daniel@numascale.com>,
-        <subbaram@codeaurora.org>, <computersforpeace@gmail.com>,
-        <sp@datera.io>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] kthread: kthread_bind fails to enforce CPU affinity (fixes
- kernel BUG at kernel/smpboot.c:134!)
-References: <1418009221-12719-1-git-send-email-anton@samba.org> <20141208085405.730577a3@gandalf.local.home>
-In-Reply-To: <20141208085405.730577a3@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209015651.GI22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 09:54 PM, Steven Rostedt wrote:
-> On Mon,  8 Dec 2014 14:27:01 +1100
-> Anton Blanchard <anton@samba.org> wrote:
+On Tue, Dec 09, 2014 at 01:56:51AM +0000, Al Viro wrote:
+> On Mon, Dec 08, 2014 at 07:28:17PM +0000, Al Viro wrote:
+> > On Mon, Dec 08, 2014 at 10:57:31AM -0800, Linus Torvalds wrote:
+> > > So the whole "get_page()" thing is broken. Iterating over pages in a
+> > > KVEC is simply wrong, wrong, wrong. It needs to fail.
+> > 
+> > Well, _that_ is easy to do, of course...  E.g. by replacing that thing in
+> > iov_iter_get_pages()/iov_iter_get_pages_alloc() with ({ return -EFAULT; })
+> > will do it.
 > 
->> I have a busy ppc64le KVM box where guests sometimes hit the infamous
->> "kernel BUG at kernel/smpboot.c:134!" issue during boot:
->>
->> BUG_ON(td->cpu != smp_processor_id());
->>
->> Basically a per CPU hotplug thread scheduled on the wrong CPU. The oops
->> output confirms it:
->>
->> CPU: 0
->> Comm: watchdog/130
->>
->> The issue is in kthread_bind where we set the cpus_allowed mask, but do
->> not touch task_thread_info(p)->cpu. The scheduler assumes the previously
->> scheduled CPU is in the cpus_allowed mask, but in this case we are
->> moving a thread to another CPU so it is not.
->>
+> OK, folded and pushed (i.e. in vfs.git#iov_iter and vfs.git#for-next).
+> Matches earlier behaviour; oops reproducer is easy -
 > 
-> Does this happen always on boot up, and always with the watchdog thread?
+> dd if=/dev/zero of=foo.ko bs=4096 count=1
+> cat >a.c <<'EOF'
+> #define _GNU_SOURCE
+> #include <unistd.h>
+> #include <fcntl.h>
+> #include <sys/stat.h>
+> #include <sys/syscall.h>
+> main()
+> {
+>         int fd = open("foo.ko", 00040000);
+>         syscall(__NR_finit_module, fd, "", 0);
+> }
+> EOF
+> gcc a.c
+> strace ./a.out
 > 
-> I followed the logic that starts the watchdog threads.
+> Correct behaviour (both the mainline and this series with fixes folded):
+> open("foo.ko", O_RDONLY|O_DIRECT)       = 3
+> finit_module(3, "", 0)                  = -1 EFAULT (Bad address)
+> Incorrect one:
+> open("foo.ko", O_RDONLY|O_DIRECT)       = 3
+> finit_module(3, "", 0 <unfinished ...>
+> +++ killed by SIGKILL +++
+> Killed
 > 
-> watchdog_enable_all_cpus()
->   smpboot_register_percpu-thread() {
+> with that oops reproduced.  Not sure if it's a proper LTP or xfstests fodder,
+> but anyway, here it is.
 > 
->     for_each_online_cpu(cpu) { ... }
-> 
-> Where watchdog_enable_all_cpus() can be called by
-> lockup_detector_init() before SMP is started, but also by
-> proc_dowatchdog() which is called by the sysctl commands (after SMP is
-> up and running).
-> 
-> I noticed there's no "get_online_cpus()" anywhere, although the
-> unregister_percpu_thread() has it. Is it possible that we created a
-> thread on a CPU that wasn't fully online yet?
-> 
-> Perhaps the following patch is needed? Even if this isn't the solution
-> to this bug, it is probably needed as watchdog_enable_all_cpus() can be
-> called after boot up too.
-> 
-> -- Steve
+> Incremental from previous for-next is
 
+Works for me.
 
-Hi, Steven, tglx
-
-See this https://lkml.org/lkml/2014/7/30/804
-"[PATCH] smpboot: add missing get_online_cpus() when register"
-
-
-Thanks,
-Lai
-
-> 
-> diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-> index eb89e1807408..60d35ac5d3f1 100644
-> --- a/kernel/smpboot.c
-> +++ b/kernel/smpboot.c
-> @@ -279,6 +279,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
->  	unsigned int cpu;
->  	int ret = 0;
->  
-> +	get_online_cpus();
->  	mutex_lock(&smpboot_threads_lock);
->  	for_each_online_cpu(cpu) {
->  		ret = __smpboot_create_thread(plug_thread, cpu);
-> @@ -291,6 +292,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
->  	list_add(&plug_thread->list, &hotplug_threads);
->  out:
->  	mutex_unlock(&smpboot_threads_lock);
-> +	put_online_cpus();
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
-
+-- 
+ Kirill A. Shutemov
