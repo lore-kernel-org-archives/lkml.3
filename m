@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaLIIwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:52:23 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41561 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaLIIwV (ORCPT
+	id S1754845AbaLIIw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:52:28 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:56038 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661AbaLIIw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:52:21 -0500
-Date: Tue, 9 Dec 2014 11:52:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: potential corruption in synclink driver
-Message-ID: <20141209085205.GA28655@mwanda>
+	Tue, 9 Dec 2014 03:52:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>, Olof Johansson <olof@lixom.net>,
+        arm@kernel.org, Scott Branden <sbranden@broadcom.com>,
+        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
+        mporter@linaro.org
+Subject: Re: [PATCH] ARM: bcm: fix __iomem annotation on kona_smc
+Date: Tue, 09 Dec 2014 09:51:38 +0100
+Message-ID: <3044718.ZPFEmzteVb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54862498.8080101@gmail.com>
+References: <1418075148-8752-1-git-send-email-olof@lixom.net> <54862498.8080101@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:QTVxm4wVe+26h3Ygyp15biX5F1dG1HVaBx9RUEfHBgVrsVlNsLa
+ wuGj8jhTH7iEW4aj8OZi1wbLc+Bibl3zSPyl431CjMlScGJVcoPaOcNWGbeaPOI7eXu0+bI
+ D04ZYrtnxPHIxa1rDWqWVPOfitvMEXCgW4zSdCLZ4lQW+/zEJRtmxI4gIdarT+LjW0CfxTK
+ N0xECDYON4lCvSuQyTKoQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri, I hate to bother you with this, but you're the TTY expert.  I'm
-getting the following static checker warning:
+On Monday 08 December 2014 14:22:16 Florian Fainelli wrote:
+> > diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
+> > index a55a7ec..d506d17 100644
+> > --- a/arch/arm/mach-bcm/bcm_kona_smc.c
+> > +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
+> > @@ -142,7 +142,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
+> >  static void __bcm_kona_smc(void *info)
+> >  {
+> >       struct bcm_kona_smc_data *data = info;
+> > -     u32 *args = bcm_smc_buffer;
+> > +     u32 __iomem *args = bcm_smc_buffer;
+> 
+> Your fix looks good to me, although the original code sounds a little
+> dubious, especially in LPAE environment.
 
-	drivers/tty/synclink.c:4057 save_tx_buffer_request()
-	error: 'BufferSize' from user is not capped properly
+Right, I think it could just use of_iomap() and drop the size
+check. If you want to keep the check, using of_address_to_resource()
+will do the right thing.
 
-drivers/tty/synclink.c
-  4047  static int save_tx_buffer_request(struct mgsl_struct *info,const char *Buffer, unsigned int BufferSize)
-  4048  {
-  4049          struct tx_holding_buffer *ptx;
-  4050  
-  4051          if ( info->tx_holding_count >= info->num_tx_holding_buffers ) {
-  4052                  return 0;               /* all buffers in use */
-  4053          }
-  4054  
-  4055          ptx = &info->tx_holding_buffers[info->put_tx_holding_index];
-  4056          ptx->buffer_size = BufferSize;
-  4057          memcpy( ptx->buffer, Buffer, BufferSize);
-                                             ^^^^^^^^^^
-  4058  
-  4059          ++info->tx_holding_count;
-  4060          if ( ++info->put_tx_holding_index >= info->num_tx_holding_buffers)
-  4061                  info->put_tx_holding_index=0;
-  4062  
-  4063          return 1;
-  4064  }
-
-ptx->buffer is allocated in mgsl_alloc_intermediate_txbuffer_memory()
-and it can be up to "info->max_frame_size" bytes which is a number
-between 4096 and 65535.
-
-The way I read it, BufferSize comes from do_tty_write() and it could be
-up to 65536.  That's obviously one higher than 65535.  But if
-->max_frame_size is 4096 then that's a lot higher.
-
-This looks like a potential buffer overflow but I don't know the TTY
-layer enough to be sure.
-
-regards,
-dan carpenter
+	Arnd
