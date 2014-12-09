@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaLIXQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:16:28 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:64383 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaLIXQ0 convert rfc822-to-8bit (ORCPT
+	id S1754309AbaLIX1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:27:24 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:34175 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784AbaLIX1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:16:26 -0500
+	Tue, 9 Dec 2014 18:27:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <54877495.9090102@gmail.com>
-References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
-	<1418079372.13358.9.camel@kernel.crashing.org>
-	<CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
-	<20141209001119.GA24661@shangw>
-	<20141209022601.GA16207@richard>
-	<CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com>
-	<54873A45.3050009@gmail.com>
-	<CAErSpo7OXLco+fagqpK00Cc_AGxjEDJO5JDBtr_p92L2tpvs+Q@mail.gmail.com>
-	<CAE9FiQWPGLwQsz5HtW7r0Lrk4DMqfhbmk=ohcBWtWqXAN3mEZw@mail.gmail.com>
-	<54877495.9090102@gmail.com>
-Date: Tue, 9 Dec 2014 15:16:25 -0800
-X-Google-Sender-Auth: NMdVZ75Vdn_ol65GYudxPNZ5coo
-Message-ID: <CAE9FiQXofeVMkGq7r5SqnveSfOcYjmuuSdZB-LAiSXjof2X0Jw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
- support it
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <54875D99.6070301@linaro.org>
+References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com>
+ <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com>
+ <5486BBB1.3040405@linaro.org> <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
+ <54875D99.6070301@linaro.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 9 Dec 2014 15:27:00 -0800
+X-Google-Sender-Auth: UbsU3D83yuLv8vbBt1BeOH27czw
+Message-ID: <CAB=NE6UCQXzUVU2tpZxiYXEp+77rtsfhFpLFKvb8371iK8FJBA@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH v3 2/2] x86, arm64, platform, xen, kconfig:
+ add xen defconfig helper
+To: Julien Grall <julien.grall@linaro.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, josh@joshtriplett.org, sam@ravnborg.org,
+        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mtosatti@redhat.com, Pekka Enberg <penberg@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        David Rientjes <rientjes@google.com>, xen-devel@lists.xenproject.org,
+        Borislav Petkov <bp@suse.de>, David Vrabel <david.vrabel@citrix.com>,
+        Benjamin Poirier <bpoirier@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 2:15 PM, Marek Kordík <kordikmarek@gmail.com> wrote:
-> On 12/09/2014 08:42 PM, Yinghai Lu wrote:
->>
->> On Tue, Dec 9, 2014 at 10:22 AM, Bjorn Helgaas <bhelgaas@google.com>
->> wrote:
+On Tue, Dec 9, 2014 at 12:37 PM, Julien Grall <julien.grall@linaro.org> wrote:
+> On 09/12/14 20:22, Luis R. Rodriguez wrote:
+>> On Tue, Dec 9, 2014 at 1:06 AM, Julien Grall <julien.grall@linaro.org> wrote:
+>>> Hello Luis,
 >>>
->>> On Tue, Dec 9, 2014 at 11:07 AM, Marek Kordík <kordikmarek@gmail.com>
->>> wrote:
+>>> On 08/12/2014 23:05, Luis R. Rodriguez wrote:
 >>>>
->>>> I have built and booted your branch and it works well. Do you want me to
->>>> attach some logs?
->>>> (I am new here and I have read http://www.tux.org/lkml/ and I don't want
+>>>> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
+>>>> new file mode 100644
+>>>> index 0000000..0d0eb6d
+>>>> --- /dev/null
+>>>> +++ b/kernel/configs/xen.config
+>>>> +CONFIG_XEN_MCE_LOG=y
+>>>
+>>>
+>>> MCE is x86 specific.
 >>
->> Can you run some graphics benchmark program to check the performance
->> between
->> 1.
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>   branch: for-pci-allocate-fit-3.18
->>
->> 2.
->> v 3.18 + clear mmio64 flags when children device does not support it
->>
->>
-> I have run Unigine Heaven benchmark on both versions (I tried version 2.
-> with and also without kernel parameters "debug ignore_loglevel pci=realloc")
-> and the performance of each version was the same (70-71 points). I tried to
-> run this benchmark also with kernel 3.15.10 and the result was 67 points.
-> Tomorrow I can try to run some more benchmarks, today I didn't have much
-> time.
+>> That's what I thought too but its available for arm64, so should we
+>> fix that Kconfig to depend on x86?
+>
+> Are you sure? On the Linus's repo I have:
+>
+> config XEN_MCE_LOG
+>         bool "Xen platform mcelog"
+>         depends on XEN_DOM0 && X86_64 && X86_MCE
+>
+> Anyway, the MCE interface in the hypervisor is implemented in arch/x86
+> not in common code.
 
-so putting  mem pref under bridge mem does not cause performance loss?
+OK I'll move to x86.
 
-Thanks
+>>>> +CONFIG_XEN_HAVE_PVMMU=y
+>>>
+>>>
+>>> We don't have PVMMU support on ARM. Shouldn't you move this config in
+>>> architecture specific code?
+>>
+>> If you are sure then yes.
+>
+> I'm 100% sure. MMU is handled by the hardware on ARM.
+>
+> Thinking a bit more about this option. CONFIG_XEN_HAVE_PVMMU can't be
+> selected by the user. It's automatically added per platform (for
+> instance see arch/x86/xen/Kconfig).
+>
+> So maybe it should not even appear in the one of the fragment configs?
 
-Yinghai
+And I'll remove this one.
+
+ Luis
