@@ -1,60 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595AbaLIKhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:37:33 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:52373 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822AbaLIKhb (ORCPT
+	id S1756028AbaLIKkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:40:42 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:49790 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822AbaLIKkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:37:31 -0500
-Date: Tue, 9 Dec 2014 11:37:45 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] multi-layer support for overlay filesystem
-Message-ID: <20141209103745.GA32280@tucsk.suse.de>
+	Tue, 9 Dec 2014 05:40:40 -0500
+Date: Tue, 9 Dec 2014 11:40:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] locking tree changes for v3.19
+Message-ID: <20141209104035.GA19970@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+Linus,
 
-Please pull from
+Please pull the latest core-locking-for-linus git tree from:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
 
-This adds support for multiple read-only layers to overlayfs.  It also makes the
-writable upper layer optional.
+   # HEAD: 78bff1c8684fb94f1ae7283688f90188b53fc433 x86/ticketlock: Fix spin_unlock_wait() livelock
 
-Thanks,
-Miklos
+Two changes: a documentation update and a ticket locks live lock 
+fix.
 
----
-Miklos Szeredi (12):
-      ovl: check whiteout while reading directory
-      ovl: make path-type a bitmap
-      ovl: dont replace opaque dir
-      ovl: add mutli-layer infrastructure
-      ovl: helper to iterate layers
-      ovl: multi-layer readdir
-      ovl: multi-layer lookup
-      ovl: allow statfs if no upper layer
-      ovl: mount: change order of initialization
-      ovl: improve mount helpers
-      ovl: make upperdir optional
-      ovl: support multiple lower layers
+ Thanks,
 
----
- Documentation/filesystems/overlayfs.txt |  12 +
- fs/overlayfs/copy_up.c                  |   4 +-
- fs/overlayfs/dir.c                      |  24 +-
- fs/overlayfs/inode.c                    |   9 +-
- fs/overlayfs/overlayfs.h                |  14 +-
- fs/overlayfs/readdir.c                  | 120 +++-----
- fs/overlayfs/super.c                    | 521 ++++++++++++++++++++------------
- 7 files changed, 427 insertions(+), 277 deletions(-)
+	Ingo
+
+------------------>
+Nicholas Mc Guire (1):
+      locking/lglocks: Add documentation of current lglocks implementation
+
+Oleg Nesterov (1):
+      x86/ticketlock: Fix spin_unlock_wait() livelock
+
+
+ Documentation/locking/lglock.txt | 166 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/spinlock.h  |  14 +++-
+ 2 files changed, 179 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/locking/lglock.txt
+
+diff --git a/Documentation/locking/lglock.txt b/Documentation/locking/lglock.txt
+new file mode 100644
+index 000000000000..a6971e34fabe
+--- /dev/null
++++ b/Documentation/locking/lglock.txt
+@@ -0,0 +1,166 @@
++lglock - local/global locks for mostly local access patterns
++------------------------------------------------------------
++
++Origin: Nick Piggin's VFS scalability series introduced during
++	2.6.35++ [1] [2]
++Location: kernel/locking/lglock.c
++	include/linux/lglock.h
++Users: currently only the VFS and stop_machine related code
++
++Design Goal:
++------------
++
++Improve scalability of globally used large data sets that are
++distributed over all CPUs as per_cpu elements.
++
++To manage global data structures that are partitioned over all CPUs
++as per_cpu elements but can be mostly handled by CPU local actions
++lglock will be used where the majority of accesses are cpu local
++reading and occasional cpu local writing with very infrequent
++global write access.
++
++
++* deal with things locally whenever possible
++	- very fast access to the local per_cpu data
++	- reasonably fast access to specific per_cpu data on a different
++	  CPU
++* while making global action possible when needed
++	- by expensive access to all CPUs locks - effectively
++	  resulting in a globally visible critical section.
++
++Design:
++-------
++
++Basically it is an array of per_cpu spinlocks with the
++lg_local_lock/unlock accessing the local CPUs lock object and the
++lg_local_lock_cpu/unlock_cpu accessing a remote CPUs lock object
++the lg_local_lock has to disable preemption as migration protection so
++that the reference to the local CPUs lock does not go out of scope.
++Due to the lg_local_lock/unlock only touching cpu-local resources it
++is fast. Taking the local lock on a different CPU will be more
++expensive but still relatively cheap.
++
++One can relax the migration constraints by acquiring the current
++CPUs lock with lg_local_lock_cpu, remember the cpu, and release that
++lock at the end of the critical section even if migrated. This should
++give most of the performance benefits without inhibiting migration
++though needs careful considerations for nesting of lglocks and
++consideration of deadlocks with lg_global_lock.
++
++The lg_global_lock/unlock locks all underlying spinlocks of all
++possible CPUs (including those off-line). The preemption disable/enable
++are needed in the non-RT kernels to prevent deadlocks like:
++
++                     on cpu 1
++
++              task A          task B
++         lg_global_lock
++           got cpu 0 lock
++                 <<<< preempt <<<<
++                         lg_local_lock_cpu for cpu 0
++                           spin on cpu 0 lock
++
++On -RT this deadlock scenario is resolved by the arch_spin_locks in the
++lglocks being replaced by rt_mutexes which resolve the above deadlock
++by boosting the lock-holder.
++
++
++Implementation:
++---------------
++
++The initial lglock implementation from Nick Piggin used some complex
++macros to generate the lglock/brlock in lglock.h - they were later
++turned into a set of functions by Andi Kleen [7]. The change to functions
++was motivated by the presence of multiple lock users and also by them
++being easier to maintain than the generating macros. This change to
++functions is also the basis to eliminated the restriction of not
++being initializeable in kernel modules (the remaining problem is that
++locks are not explicitly initialized - see lockdep-design.txt)
++
++Declaration and initialization:
++-------------------------------
++
++  #include <linux/lglock.h>
++
++  DEFINE_LGLOCK(name)
++  or:
++  DEFINE_STATIC_LGLOCK(name);
++
++  lg_lock_init(&name, "lockdep_name_string");
++
++  on UP this is mapped to DEFINE_SPINLOCK(name) in both cases, note
++  also that as of 3.18-rc6 all declaration in use are of the _STATIC_
++  variant (and it seems that the non-static was never in use).
++  lg_lock_init is initializing the lockdep map only.
++
++Usage:
++------
++
++From the locking semantics it is a spinlock. It could be called a
++locality aware spinlock. lg_local_* behaves like a per_cpu
++spinlock and lg_global_* like a global spinlock.
++No surprises in the API.
++
++  lg_local_lock(*lglock);
++     access to protected per_cpu object on this CPU
++  lg_local_unlock(*lglock);
++
++  lg_local_lock_cpu(*lglock, cpu);
++     access to protected per_cpu object on other CPU cpu
++  lg_local_unlock_cpu(*lglock, cpu);
++
++  lg_global_lock(*lglock);
++     access all protected per_cpu objects on all CPUs
++  lg_global_unlock(*lglock);
++
++  There are no _trylock variants of the lglocks.
++
++Note that the lg_global_lock/unlock has to iterate over all possible
++CPUs rather than the actually present CPUs or a CPU could go off-line
++with a held lock [4] and that makes it very expensive. A discussion on
++these issues can be found at [5]
++
++Constraints:
++------------
++
++  * currently the declaration of lglocks in kernel modules is not
++    possible, though this should be doable with little change.
++  * lglocks are not recursive.
++  * suitable for code that can do most operations on the CPU local
++    data and will very rarely need the global lock
++  * lg_global_lock/unlock is *very* expensive and does not scale
++  * on UP systems all lg_* primitives are simply spinlocks
++  * in PREEMPT_RT the spinlock becomes an rt-mutex and can sleep but
++    does not change the tasks state while sleeping [6].
++  * in PREEMPT_RT the preempt_disable/enable in lg_local_lock/unlock
++    is downgraded to a migrate_disable/enable, the other
++    preempt_disable/enable are downgraded to barriers [6].
++    The deadlock noted for non-RT above is resolved due to rt_mutexes
++    boosting the lock-holder in this case which arch_spin_locks do
++    not do.
++
++lglocks were designed for very specific problems in the VFS and probably
++only are the right answer in these corner cases. Any new user that looks
++at lglocks probably wants to look at the seqlock and RCU alternatives as
++her first choice. There are also efforts to resolve the RCU issues that
++currently prevent using RCU in place of view remaining lglocks.
++
++Note on brlock history:
++-----------------------
++
++The 'Big Reader' read-write spinlocks were originally introduced by
++Ingo Molnar in 2000 (2.4/2.5 kernel series) and removed in 2003. They
++later were introduced by the VFS scalability patch set in 2.6 series
++again as the "big reader lock" brlock [2] variant of lglock which has
++been replaced by seqlock primitives or by RCU based primitives in the
++3.13 kernel series as was suggested in [3] in 2003. The brlock was
++entirely removed in the 3.13 kernel series.
++
++Link: 1 http://lkml.org/lkml/2010/8/2/81
++Link: 2 http://lwn.net/Articles/401738/
++Link: 3 http://lkml.org/lkml/2003/3/9/205
++Link: 4 https://lkml.org/lkml/2011/8/24/185
++Link: 5 http://lkml.org/lkml/2011/12/18/189
++Link: 6 https://www.kernel.org/pub/linux/kernel/projects/rt/
++        patch series - lglocks-rt.patch.patch
++Link: 7 http://lkml.org/lkml/2012/3/5/26
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index bf156ded74b5..abc34e95398d 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -184,8 +184,20 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
+ 
+ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ {
+-	while (arch_spin_is_locked(lock))
++	__ticket_t head = ACCESS_ONCE(lock->tickets.head);
++
++	for (;;) {
++		struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
++		/*
++		 * We need to check "unlocked" in a loop, tmp.head == head
++		 * can be false positive because of overflow.
++		 */
++		if (tmp.head == (tmp.tail & ~TICKET_SLOWPATH_FLAG) ||
++		    tmp.head != head)
++			break;
++
+ 		cpu_relax();
++	}
+ }
+ 
+ /*
