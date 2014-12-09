@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaLIIYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:24:32 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:54930 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaLIIYa (ORCPT
+	id S1754195AbaLII2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:28:25 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:36918 "EHLO
+	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067AbaLII2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:24:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Flora Fu <flora.fu@mediatek.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        arm@kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+	Tue, 9 Dec 2014 03:28:23 -0500
+From: Peter Rosin <peda@lysator.liu.se>
+To: alsa-devel@alsa-project.org
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, HenryC Chen <henryc.chen@mediatek.com>,
-        Menghui Lin <menghui.lin@mediatek.com>,
-        Olof Johansson <olof@lixom.net>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Subject: Re: [PATCH v3 1/8] soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
-Date: Tue, 09 Dec 2014 09:23:18 +0100
-Message-ID: <2248330.M654Toyebg@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418091337.5663.9.camel@mtksdaap41>
-References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com> <2751641.o51TuZRl88@wuerfel> <1418091337.5663.9.camel@mtksdaap41>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:V8bdBfzjvrGEk4k/cfVjEGD2Vutx7fbqV8e6v6tWaRD/u/a3G7u
- Y9ZISUceHrgsdxJLex+sb5ScaiHmQA+RN5cbC8BDkkOnk7FTtRKrNesKSQ5umx1rWhLIbvE
- /ofkoawZ+b25VawRqCe6YEX8CtBD0Qn98iGrYAZNP/gmrScGCctfMe3MjM0vgVSpCb6HHx/
- Va1N08Jjy5hmOI86NRJdQ==
-X-UI-Out-Filterresults: notjunk:1;
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Peter Rosin <peda@axentia.se>
+Subject: [PATCH] ASoC: pcm512x: Also support PCM514x devices
+Date: Tue,  9 Dec 2014 09:28:09 +0100
+Message-Id: <1418113689-21505-1-git-send-email-peda@lysator.liu.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 December 2014 10:15:37 Flora Fu wrote:
-> Hi, Arnd,
-> 
-> On Fri, 2014-12-05 at 11:13 +0100, Arnd Bergmann wrote:
-> > On Friday 05 December 2014 12:07:52 Flora Fu wrote:
-> > > Add PMIC wrapper of MT8135 to access MT6397 MFD.
-> > > 
-> > > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
-> > > 
-> > 
-> > Please explain what a PMIC wrapper is and why you need one for MT8135.
-> > I don't understand the purpose of this code at all. Is this just another
-> > way of accessing the MT6397 when not using i2c or spi like other
-> > PMIC drivers do?
-> > 
-> 
-> Yes, MT8135 uses a proprietary hardware to communicate with MT6397. 
-> The hardware is called PMIC Wrapper or PWRAP.
-> Since it is not standard i2c or spi protocols, a soc related software
-> driver is implemented to handle access protocols in AP side.
-> 
-> +-----------------+           +---------------+
-> |                 |           |               |
-> | Mediatek AP SoC |           |               |
-> | (ex. MT8135)    |           |    MT6397     |
-> |                 |           |               |
-> |      +--------+ | (SPI bus) | +--------+    |
-> |      |        | |-----------| |        |    |
-> |      |  PMIC  | |-----------| |  PMIC  |    |
-> |      | Wrapper| |-----------| | Wrapper|    |
-> |      |        | |-----------| |        |    |
-> |      +--------+ |           | +--------+    |
-> |                 |           |               |
-> +-----------------+           +---------------+
-> 
+From: Peter Rosin <peda@axentia.se>
 
-I think we have had a similar case recently where a controller wasn't
-actually using I2C, but the sofware protocol was close enough so we decided
-to make it appear as i2c in Linux.
+Signed-off-by: Peter Rosin <peda@axentia.se>
+---
+ Documentation/devicetree/bindings/sound/pcm512x.txt |    3 ++-
+ sound/soc/codecs/pcm512x-i2c.c                      |    4 ++++
+ sound/soc/codecs/pcm512x-spi.c                      |    4 ++++
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-Would that work for you, i.e. register the pmic wrapper as a fake spi
-master driver in drivers/spi/ and register the rtc/regulator/codec
-as SPI clients from DT?
+diff --git a/Documentation/devicetree/bindings/sound/pcm512x.txt b/Documentation/devicetree/bindings/sound/pcm512x.txt
+index faff75e64573..98e0d34915e8 100644
+--- a/Documentation/devicetree/bindings/sound/pcm512x.txt
++++ b/Documentation/devicetree/bindings/sound/pcm512x.txt
+@@ -5,7 +5,8 @@ on the board).
+ 
+ Required properties:
+ 
+-  - compatible : One of "ti,pcm5121" or "ti,pcm5122"
++  - compatible : One of "ti,pcm5121", "ti,pcm5122", "ti,pcm5141" or
++                 "ti,pcm5142"
+ 
+   - reg : the I2C address of the device for I2C, the chip select
+           number for SPI.
+diff --git a/sound/soc/codecs/pcm512x-i2c.c b/sound/soc/codecs/pcm512x-i2c.c
+index 4d62230bd378..08047ac952f4 100644
+--- a/sound/soc/codecs/pcm512x-i2c.c
++++ b/sound/soc/codecs/pcm512x-i2c.c
+@@ -41,6 +41,8 @@ static int pcm512x_i2c_remove(struct i2c_client *i2c)
+ static const struct i2c_device_id pcm512x_i2c_id[] = {
+ 	{ "pcm5121", },
+ 	{ "pcm5122", },
++	{ "pcm5141", },
++	{ "pcm5142", },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pcm512x_i2c_id);
+@@ -48,6 +50,8 @@ MODULE_DEVICE_TABLE(i2c, pcm512x_i2c_id);
+ static const struct of_device_id pcm512x_of_match[] = {
+ 	{ .compatible = "ti,pcm5121", },
+ 	{ .compatible = "ti,pcm5122", },
++	{ .compatible = "ti,pcm5141", },
++	{ .compatible = "ti,pcm5142", },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, pcm512x_of_match);
+diff --git a/sound/soc/codecs/pcm512x-spi.c b/sound/soc/codecs/pcm512x-spi.c
+index f297058c0038..7b64a9cef704 100644
+--- a/sound/soc/codecs/pcm512x-spi.c
++++ b/sound/soc/codecs/pcm512x-spi.c
+@@ -43,6 +43,8 @@ static int pcm512x_spi_remove(struct spi_device *spi)
+ static const struct spi_device_id pcm512x_spi_id[] = {
+ 	{ "pcm5121", },
+ 	{ "pcm5122", },
++	{ "pcm5141", },
++	{ "pcm5142", },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(spi, pcm512x_spi_id);
+@@ -50,6 +52,8 @@ MODULE_DEVICE_TABLE(spi, pcm512x_spi_id);
+ static const struct of_device_id pcm512x_of_match[] = {
+ 	{ .compatible = "ti,pcm5121", },
+ 	{ .compatible = "ti,pcm5122", },
++	{ .compatible = "ti,pcm5141", },
++	{ .compatible = "ti,pcm5142", },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, pcm512x_of_match);
+-- 
+1.7.10.4
 
-	Arnd
