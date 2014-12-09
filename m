@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaLIHxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 02:53:01 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:54173 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaLIHw7 (ORCPT
+	id S1753745AbaLIHxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 02:53:55 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:42884 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaLIHxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 02:52:59 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-74-5486aa595d5a
+	Tue, 9 Dec 2014 02:53:53 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-52-5486aa8e3c5a
 From: Weijie Yang <weijie.yang@samsung.com>
 To: iamjoonsoo.kim@lge.com
 Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
@@ -16,67 +16,73 @@ Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
         "'Minchan Kim'" <minchan@kernel.org>,
         "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 2/3] mm: page_isolation: remove unnecessary
- freepage_migratetype check for unused page
+Subject: [PATCH 3/3] mm: page_alloc: remove redundant
+ set_freepage_migratetype() calls
 Date: Tue, 09 Dec 2014 15:51:49 +0800
-Message-id: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
+Message-id: <000301d01385$45554a60$cfffdf20$%yang@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdAThN1KjmiC0dJjTJCURinwlAL8Yg==
+Thread-index: AdAThOXndSR1bMOBR/Grhkzhgg6a2Q==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e+xgG7kqrYQgykTLSzmrF/DZrF6k6/F
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgG7/qrYQg4sfWCzmrF/DZrF6k6/F
 	yu5mNovLu+awWdxb85/VYvK7Z4wWy76+Z7f4e2U9i8Xsxj5Giycn/rM4cHkcfvOe2WPnrLvs
 	HptWdbJ5bPo0id2j6+0VJo8TM36zeLzfd5XN48yCI+wem09Xe3zeJBfAFcVlk5Kak1mWWqRv
-	l8CV8bXjCkvBJJ6KMw2X2BoYv3F2MXJySAiYSEzrm88CYYtJXLi3nq2LkYtDSGARo8T7c3uY
-	IJw/jBK7L11jB6liE9CWuNu/kRXEFhGQkjj1/QQjSBGzwCImiXO9z5lAEsICGRI3pj1jA7FZ
-	BFQlXq7aB9bAK2An0XHiDRuELSjxY/I9oNUcQM3qElOm5IKEmQXkJTavecsMEpYACj/6qwux
-	Sk9iybOLzBAl4hIbj9ximcAoMAvJoFkIg2YhGTQLSccCRpZVjKKpBckFxUnpuYZ6xYm5xaV5
-	6XrJ+bmbGMFx9ExqB+PKBotDjAIcjEo8vJqWbSFCrIllxZW5hxglOJiVRHiVlgKFeFMSK6tS
-	i/Lji0pzUosPMUpzsCiJ8yrZA6UE0hNLUrNTUwtSi2CyTBycUg2MwVIzrj9+tcTa2Thbpdun
-	4UjzZ4WjjEUu886d9XNU3ftIoVRXI+fQW6H39zqvaT/5wdhYMzGPIerqt523io+cnzzh6PEj
-	5ZdEqzx2+KvJB/RGM/ZUXjXh6Kr1CNfoWG8TqLVwwT8RtosdiWqT8/oXdJ4sMjioPrd7brlZ
-	W81cPXZGM8EaXTslluKMREMt5qLiRAAYcnfGnwIAAA==
+	l8CVser1I/aCbbwVD6a4NzC2cncxcnBICJhI/Jhf38XICWSKSVy4t56ti5GLQ0hgEaPEpNPX
+	mSGcP4wSVx/2MIFUsQloS9zt38gKYosISEmc+n6CEaSIWWARk8S53udgRcICERKv571jBrFZ
+	BFQlXq7aB9bAK2An0bByPhOELSjxY/I9FpArmAXUJaZMyQUJMwvIS2xe85YZ4jh1iUd/dSFW
+	6Uls7mhggSgRl9h45BbLBEaBWUgGzUIYNAvJoFlIOhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L
+	10vOz93ECI6hZ1I7GFc2WBxiFOBgVOLh1bRsCxFiTSwrrsw9xCjBwawkwqu0FCjEm5JYWZVa
+	lB9fVJqTWnyIUZqDRUmcV8keKCWQnliSmp2aWpBaBJNl4uCUamA8++KJE6vV+9i63J87XW/l
+	iV45zfzamfn4pDcmby/7T518LD8k7PeTDb15m79o+UbaMOk8m3164Wuv9Yf4Fvj4rlLSO+6w
+	Yflt75VLJU1e2TBbmcpyrVp9fHq+dc4G1szdrOXX9x9eordZUSKu9u80jakes5z0jESfVesw
+	veQIWDdLad4O4a5nSizFGYmGWsxFxYkAtFRT+50CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when we test the pages in a range is free or not, there is a little
-chance we encounter some page which is not in buddy but page_count is 0.
-That means that page could be in the page-freeing path but not in the
-buddy freelist, such as in pcplist or wait for the zone->lock which the
-tester is holding.
+The freepage_migratetype is a temporary cached value which represents
+the free page's pageblock migratetype. Now we use it in two scenarios:
 
-Back to the freepage_migratetype, we use it for a cached value for decide
-which free-list the page go when freeing page. If the pageblock is isolated
-the page will go to free-list[MIGRATE_ISOLATE] even if the cached type is
-not MIGRATE_ISOLATE, the commit ad53f92e(fix incorrect isolation behavior
-by rechecking migratetype) patch series have ensure this.
+1. Use it as a cached value in page freeing path. This cached value
+is temporary and non-100% update, which help us decide which pcp
+freelist and buddy freelist the page should go rather than using
+get_pfnblock_migratetype() to save some instructions.
+When there is race between page isolation and free path, we need use
+additional method to get a accurate value to put the free pages to
+the correct freelist and get a precise free pages statistics.
 
-So the freepage_migratetype check for page_count==0 page in
-__test_page_isolated_in_pageblock() is meaningless.
-This patch removes the unnecessary freepage_migratetype check.
+2. Use it in page alloc path to update NR_FREE_CMA_PAGES statistics.
+
+This patch aims at the scenario 1 and removes two redundant
+set_freepage_migratetype() calls, which will make sense in the hot path.
 
 Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- mm/page_isolation.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/page_alloc.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 6e5174d..f7c9183 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -223,8 +223,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 		page = pfn_to_page(pfn);
- 		if (PageBuddy(page))
- 			pfn += 1 << page_order(page);
--		else if (page_count(page) == 0 &&
--			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
-+		else if (page_count(page) == 0)
- 			pfn += 1;
- 		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
- 			/*
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 616a2c9..99af01a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -775,7 +775,6 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	local_irq_save(flags);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	set_freepage_migratetype(page, migratetype);
+ 	free_one_page(page_zone(page), page, pfn, order, migratetype);
+ 	local_irq_restore(flags);
+ }
+@@ -1024,7 +1023,6 @@ int move_freepages(struct zone *zone,
+ 		order = page_order(page);
+ 		list_move(&page->lru,
+ 			  &zone->free_area[order].free_list[migratetype]);
+-		set_freepage_migratetype(page, migratetype);
+ 		page += 1 << order;
+ 		pages_moved += 1 << order;
+ 	}
 -- 
 1.7.10.4
 
