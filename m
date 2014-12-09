@@ -1,118 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341AbaLIJOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:14:39 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46394 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaLIJOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:14:35 -0500
-From: Dudley Du <dudley.dulixin@gmail.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudley.dulixin@gmail.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v13 11/12] input: cyapa: add gen5 trackpad device force re-calibrate function support
-Date: Tue,  9 Dec 2014 17:11:43 +0800
-Message-Id: <1418116304-11392-12-git-send-email-dudley.dulixin@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
-References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+	id S932362AbaLIJOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:14:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44202 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932300AbaLIJOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:14:48 -0500
+Message-ID: <5486BD85.1010903@suse.cz>
+Date: Tue, 09 Dec 2014 10:14:45 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Weijie Yang <weijie.yang@samsung.com>, iamjoonsoo.kim@lge.com
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
+        "'Rik van Riel'" <riel@redhat.com>,
+        "'Johannes Weiner'" <hannes@cmpxchg.org>,
+        "'Minchan Kim'" <minchan@kernel.org>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: page_isolation: remove redundant moving for isolated
+ buddy pages
+References: <000101d01384$fac61240$f05236c0$%yang@samsung.com>
+In-Reply-To: <000101d01384$fac61240$f05236c0$%yang@samsung.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add force re-calibrate function supported for gen5 trackpad device,
-it can be used through sysfs calibrate interface.
-TEST=test on Chromebooks.
+On 12/09/2014 08:50 AM, Weijie Yang wrote:
+> The commit ad53f92e(fix incorrect isolation behavior by rechecking migratetype)
+> patch series describe the race between page isolation and alloc/free path, and
+> fix the race.
+>
+> Now, after the pageblock has been isolated, free buddy pages are already in
+> the free_list[MIGRATE_ISOLATE] and will not be allocated for usage. So the
+> current freepage_migratetype check is unnecessary and it will cause redundant
+> page move. That is to say, even if the buddy page's migratetype is not
+> MIGRATE_ISOLATE, the page is in free_list[MIGRATE_ISOLATE], we just move it
+> from free_list[MIGRATE_ISOLATE] to free_list[MIGRATE_ISOLATE].
+>
+> This patch removes the unnecessary freepage_migratetype check and the
+> redundant page moving.
+>
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 
-Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
----
- drivers/input/mouse/cyapa_gen5.c | 65 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
+With great hope that Joonsoo won't find another corner case J
 
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index 5bebee1..7d96904 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -1581,6 +1581,70 @@ static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
- 	return 0;
- }
- 
-+static int cyapa_gen5_calibrate_pwcs(struct cyapa *cyapa,
-+		u8 calibrate_sensing_mode_type)
-+{
-+	u8 cmd[8];
-+	u8 resp_data[6];
-+	int resp_len;
-+	int error;
-+
-+	/* Try to dump all bufferred data before doing command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	cmd[0] = 0x04;
-+	cmd[1] = 0x00;
-+	cmd[2] = 0x06;
-+	cmd[3] = 0x00;
-+	cmd[4] = GEN5_APP_CMD_REPORT_ID;
-+	cmd[5] = 0x00;
-+	cmd[6] = GEN5_CMD_CALIBRATE;
-+	cmd[7] = calibrate_sensing_mode_type;
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			5000, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || !VALID_CMD_RESP_HEADER(resp_data, GEN5_CMD_CALIBRATE) ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return error < 0 ? error : -EAGAIN;
-+
-+	return 0;
-+}
-+
-+static ssize_t cyapa_gen5_do_calibrate(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int error, calibrate_error;
-+
-+	/* 1. Suspend Scanning*/
-+	error = cyapa_gen5_suspend_scanning(cyapa);
-+	if (error)
-+		return error;
-+
-+	/* 2. Do mutual capacitance fine calibrate. */
-+	calibrate_error = cyapa_gen5_calibrate_pwcs(cyapa,
-+				CYAPA_SENSING_MODE_MUTUAL_CAP_FINE);
-+	if (calibrate_error)
-+		goto resume_scanning;
-+
-+	/* 3. Do self capacitance calibrate. */
-+	calibrate_error = cyapa_gen5_calibrate_pwcs(cyapa,
-+				CYAPA_SENSING_MODE_SELF_CAP);
-+	if (calibrate_error)
-+		goto resume_scanning;
-+
-+resume_scanning:
-+	/* 4. Resume Scanning*/
-+	error = cyapa_gen5_resume_scanning(cyapa);
-+	if (error || calibrate_error)
-+		return error ? error : calibrate_error;
-+
-+	return count;
-+}
-+
- static s32 two_complement_to_s32(s32 value, int num_bits)
- {
- 	if (value >> (num_bits - 1))
-@@ -2558,6 +2622,7 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.update_fw = cyapa_gen5_do_fw_update,
- 
- 	.show_baseline = cyapa_gen5_show_baseline,
-+	.calibrate_store = cyapa_gen5_do_calibrate,
- 
- 	.initialize = cyapa_gen5_initialize,
- 
--- 
-1.9.1
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+
+> ---
+>   mm/page_isolation.c |   17 +----------------
+>   1 file changed, 1 insertion(+), 16 deletions(-)
+>
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index c8778f7..6e5174d 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -221,23 +221,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+>   			continue;
+>   		}
+>   		page = pfn_to_page(pfn);
+> -		if (PageBuddy(page)) {
+> -			/*
+> -			 * If race between isolatation and allocation happens,
+> -			 * some free pages could be in MIGRATE_MOVABLE list
+> -			 * although pageblock's migratation type of the page
+> -			 * is MIGRATE_ISOLATE. Catch it and move the page into
+> -			 * MIGRATE_ISOLATE list.
+> -			 */
+> -			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
+> -				struct page *end_page;
+> -
+> -				end_page = page + (1 << page_order(page)) - 1;
+> -				move_freepages(page_zone(page), page, end_page,
+> -						MIGRATE_ISOLATE);
+> -			}
+> +		if (PageBuddy(page))
+>   			pfn += 1 << page_order(page);
+> -		}
+>   		else if (page_count(page) == 0 &&
+>   			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
+>   			pfn += 1;
+>
 
