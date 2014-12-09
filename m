@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851AbaLIMaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:30:25 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:62254 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756680AbaLIMaY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:30:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm64: psci: Fix build breakage without PM_SLEEP
-Date: Tue, 09 Dec 2014 13:29:29 +0100
-Message-ID: <2290734.BRljGaICu4@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
-References: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
+	id S1756860AbaLIMbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:31:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:60437 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756606AbaLIMbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 07:31:15 -0500
+Date: Tue, 9 Dec 2014 09:31:11 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Arjun Sreedharan <arjun024@gmail.com>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] calloc/xcalloc: fix argument order
+Message-ID: <20141209123111.GB4189@kernel.org>
+References: <1417866043-1877-1-git-send-email-arjun024@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:YPR3ryVFFzO0Xkm3EcyZZ8XkiTTGpwQI+kT9Zynmi6lvsC0NoSj
- ynnWGXY9mam1hOMmSmZzeW8rnOcFONx1B2jnF9CIN18XKbm6BUqkkv7IdQ5EIT7QVQNTeT+
- SCAnDF3ZooLtt2KXSqywx7EA9lrkIGVFLG3DPf1INa/hqibCzqmfjRsU8pEIGIkXhv/y6lq
- fJN2QadwD5HAy3HjDB1RA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417866043-1877-1-git-send-email-arjun024@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 December 2014 12:48:36 Krzysztof Kozlowski wrote:
-> Fix build failure of defconfig when PM_SLEEP is disabled (e.g. by
-> disabling SUSPEND) and CPU_IDLE enabled:
-> 
-> arch/arm64/kernel/psci.c:543:2: error: unknown field ‘cpu_suspend’ specified in initializer
->   .cpu_suspend = cpu_psci_cpu_suspend,
->   ^
-> arch/arm64/kernel/psci.c:543:2: warning: initialization from incompatible pointer type [enabled by default]
-> arch/arm64/kernel/psci.c:543:2: warning: (near initialization for ‘cpu_psci_ops.cpu_prepare’) [enabled by default]
-> make[1]: *** [arch/arm64/kernel/psci.o] Error 1
-> 
-> The cpu_operations.cpu_suspend field exists only if ARM64_CPU_SUSPEND is
-> defined, not CPU_IDLE.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
+Em Sat, Dec 06, 2014 at 05:10:43PM +0530, Arjun Sreedharan escreveu:
+> calloc() and xcalloc() takes @nmemb first and then @size.
+> fix all w/ pattern "calloc\s*(\s*sizeof".
 
-No objection to fixing this obvious build bug, but why do we even have
-an ARM64_CPU_SUSPEND option? On ARM32 we only have the respective option
-because we have a random collection of platform specific drivers that
-use the symbols, but that's not the case on ARM64.
-
-
-	Arnd
+Thanks, applied.
+ 
+> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> ---
+>  scripts/kconfig/mconf.c    | 4 ++--
+>  tools/perf/ui/hist.c       | 4 ++--
+>  tools/thermal/tmon/sysfs.c | 6 +++---
+>  3 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+> index 14cea74..4dd3755 100644
+> --- a/scripts/kconfig/mconf.c
+> +++ b/scripts/kconfig/mconf.c
+> @@ -330,10 +330,10 @@ static void set_subtitle(void)
+>  	list_for_each_entry(sp, &trail, entries) {
+>  		if (sp->text) {
+>  			if (pos) {
+> -				pos->next = xcalloc(sizeof(*pos), 1);
+> +				pos->next = xcalloc(1, sizeof(*pos));
+>  				pos = pos->next;
+>  			} else {
+> -				subtitles = pos = xcalloc(sizeof(*pos), 1);
+> +				subtitles = pos = xcalloc(1, sizeof(*pos));
+>  			}
+>  			pos->text = sp->text;
+>  		}
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> index 2af1837..dc0d095 100644
+> --- a/tools/perf/ui/hist.c
+> +++ b/tools/perf/ui/hist.c
+> @@ -162,8 +162,8 @@ static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
+>  		return ret;
+>  
+>  	nr_members = evsel->nr_members;
+> -	fields_a = calloc(sizeof(*fields_a), nr_members);
+> -	fields_b = calloc(sizeof(*fields_b), nr_members);
+> +	fields_a = calloc(nr_members, sizeof(*fields_a));
+> +	fields_b = calloc(nr_members, sizeof(*fields_b));
+>  
+>  	if (!fields_a || !fields_b)
+>  		goto out;
+> diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
+> index dfe4548..1c12536 100644
+> --- a/tools/thermal/tmon/sysfs.c
+> +++ b/tools/thermal/tmon/sysfs.c
+> @@ -446,7 +446,7 @@ int probe_thermal_sysfs(void)
+>  		return -1;
+>  	}
+>  
+> -	ptdata.tzi = calloc(sizeof(struct tz_info), ptdata.max_tz_instance+1);
+> +	ptdata.tzi = calloc(ptdata.max_tz_instance+1, sizeof(struct tz_info));
+>  	if (!ptdata.tzi) {
+>  		fprintf(stderr, "Err: allocate tz_info\n");
+>  		return -1;
+> @@ -454,8 +454,8 @@ int probe_thermal_sysfs(void)
+>  
+>  	/* we still show thermal zone information if there is no cdev */
+>  	if (ptdata.nr_cooling_dev) {
+> -		ptdata.cdi = calloc(sizeof(struct cdev_info),
+> -				ptdata.max_cdev_instance + 1);
+> +		ptdata.cdi = calloc(ptdata.max_cdev_instance + 1,
+> +				sizeof(struct cdev_info));
+>  		if (!ptdata.cdi) {
+>  			free(ptdata.tzi);
+>  			fprintf(stderr, "Err: allocate cdev_info\n");
+> -- 
+> 1.8.1.msysgit.1
