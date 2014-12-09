@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaLIVqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:46:35 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:64577 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaLIVqe (ORCPT
+	id S1753607AbaLIVrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:47:51 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53617 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678AbaLIVru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:46:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL 9/9] ARM64: SoC changes for 3.19
-Date: Tue, 09 Dec 2014 22:46:21 +0100
-Message-ID: <2482441.CQUhI8rqR1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4491193.a6KEQb1tZH@wuerfel>
-References: <4491193.a6KEQb1tZH@wuerfel>
+	Tue, 9 Dec 2014 16:47:50 -0500
+Date: Tue, 9 Dec 2014 21:47:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Message-ID: <20141209214737.GO11764@sirena.org.uk>
+References: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
+ <CAOMZO5B0WcR-=__QzCzD86oocuj--uhq+QYj3o1WU05JO-Qyfw@mail.gmail.com>
+ <20141209212708.GL11764@sirena.org.uk>
+ <CAOMZO5DYuUmc9m65Pssmy+Ak+A__WTLmXY2=+3jQ1ZKQcE5Pew@mail.gmail.com>
+ <20141209213728.GN11764@sirena.org.uk>
+ <CAOMZO5C+gwVocek-6mvReyTbf4ZKAs2xDRmsT+pLqAQf1vVSCg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:41hJgnFgp1FlCHITYIILC3nC4hrRIX+1PCwzlw3dvb8SQKdt1yj
- y5qqgEGgk2pUe7Hojkd1z9aU4UU+c6knnoJI+uC4Xx1pOGiV0zScNV6jOqk9ML6tmAveFKQ
- OSDvNCBjWlQ0uVbkjd7G05HI9vtW5glTqMRXzv8j4X7j7tQuZmT5P0QsK4RpKkPM9MhBtnq
- HJ+Sf9m47pkL9tl033D7g==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cU9XODsizZBnwgll"
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5C+gwVocek-6mvReyTbf4ZKAs2xDRmsT+pLqAQf1vVSCg@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: da9052-regulator fails to probe in linux-next
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+--cU9XODsizZBnwgll
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-are available in the git repository at:
+On Tue, Dec 09, 2014 at 07:40:40PM -0200, Fabio Estevam wrote:
+> On Tue, Dec 9, 2014 at 7:37 PM, Mark Brown <broonie@kernel.org> wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/arm64-for-linus
+> > Still not seeing any references to either pfuze100 or vdd (other than
+> > the external audio CODEC)...
 
-for you to fetch changes up to 70bcc9ba15690f1e616fd5f60831f4602dd39670:
+> Exactly, that's the bug :-)
 
-  arm64: amd-seattle: Fix PCI bus range due to SMMU limitation (2014-12-04 17:10:34 +0100)
+My point is that I'm not seeing anything complaining about those devices
+or the supplies they offer so nothing there indicates to me that there's
+any kind of problem.
 
-----------------------------------------------------------------
-ARM64: SoC changes for 3.19
+> If we compare it against next-20141031:
+> http://arm-soc.lixom.net/bootlogs/next/next-20141031/wandboard-arm-imx_v6_v7_defconfig.html
 
-This adds support for two new ARM64 platforms:
+> [    0.052239] CPU identified as i.MX6Q, silicon rev 1.2
+> [    0.072014] vdd1p1: 800 <--> 1375 mV at 1100 mV
+> [    0.073027] vdd3p0: 2800 <--> 3150 mV at 3000 mV
+> [    0.073933] vdd2p5: 2000 <--> 2750 mV at 2400 mV
+> [    0.074888] vddarm: 725 <--> 1450 mV at 1150 mV
+> [    0.075935] vddpu: 725 <--> 1450 mV at 1150 mV
+> [    0.076897] vddsoc: 725 <--> 1450 mV at 1200 mV
 
-* ARM Juno
-* AMD Seattle
+Remember that these messages are now at debug level.
 
-We had submissions for a number of additional platforms
-from Samsung, Freescale and Spreadtrum but are still working
-out the best process for getting these merged.
+--cU9XODsizZBnwgll
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-----------------------------------------------------------------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I forgot to mention in my introductory mail that there are a couple more pull
-requests queued up in the arm-soc tree that are waiting for dependencies or
-were added very late before the merge window and are given more time for
-things to settle down. I plan to submit them in a few days, but there is not
-much missing at this point.
+iQEcBAEBAgAGBQJUh234AAoJECTWi3JdVIfQGDIH/AnWsA9PGyM7t+z4a5rxXQe8
+b9EU5j6ZnAQm/pU/K2puMcnahbkV4RySgiosfE5utEDh1IJsss5a27aIM+OKpjuO
+JCmdi3iefvC4x9ikF3oq7U8D1/TvW39KmzAkY9ImVepgXnVjHvXmDAgbgNqugo3m
+ud3bFLp4FLXWy3sIEk1UUpKri6wuDzdLc4+panPMTduPFs8/QpHMyYTIfHHaOmUL
+cEIh0PAqwZc8o8pOK64QcnRNVlq7gh20l9kFykgZzfXNr67sHZkSqcziNyH+jLOb
+nWCNfet6NYT1W3gpyURuGi/oTSVBObuAYcolCfn3RdTW2L5Yep9NSUJjxIPNyIU=
+=LIsd
+-----END PGP SIGNATURE-----
 
-Arnd Bergmann (1):
-      Merge branch 'cleanup/dts-subdirs' into next/arm64
-
-Liviu Dudau (3):
-      arm64: Create link to include/dt-bindings to enable C preprocessor use.
-      arm64: Add Juno board device tree.
-      arm64: ARM: Fix the Generic Timers interrupt active level description
-
-Suravee Suthikulpanit (2):
-      arm64: amd-seattle: Adding device tree for AMD Seattle platform
-      arm64: amd-seattle: Fix PCI bus range due to SMMU limitation
-
- arch/arm/Makefile                                  |   8 +-
- arch/arm/boot/dts/Makefile                         |  12 +-
- arch/arm64/Kconfig                                 |   5 +
- arch/arm64/Makefile                                |  10 +-
- arch/arm64/boot/dts/Makefile                       |  16 +-
- arch/arm64/boot/dts/amd/Makefile                   |   5 +
- arch/arm64/boot/dts/amd/amd-overdrive.dts          |  66 +++++++
- arch/arm64/boot/dts/amd/amd-seattle-clks.dtsi      |  54 +++++
- arch/arm64/boot/dts/amd/amd-seattle-soc.dtsi       | 172 ++++++++++++++++
- arch/arm64/boot/dts/apm/Makefile                   |   5 +
- arch/arm64/boot/dts/{ => apm}/apm-mustang.dts      |   0
- arch/arm64/boot/dts/{ => apm}/apm-storm.dtsi       |   0
- arch/arm64/boot/dts/arm/Makefile                   |   7 +
- arch/arm64/boot/dts/{ => arm}/foundation-v8.dts    |   8 +-
- arch/arm64/boot/dts/arm/juno-clocks.dtsi           |  44 +++++
- arch/arm64/boot/dts/arm/juno-motherboard.dtsi      | 129 ++++++++++++
- arch/arm64/boot/dts/arm/juno.dts                   | 218 +++++++++++++++++++++
- arch/arm64/boot/dts/{ => arm}/rtsm_ve-aemv8a.dts   |   8 +-
- .../boot/dts/{ => arm}/rtsm_ve-motherboard.dtsi    |   0
- arch/arm64/boot/dts/cavium/Makefile                |   5 +
- arch/arm64/boot/dts/{ => cavium}/thunder-88xx.dts  |   0
- arch/arm64/boot/dts/{ => cavium}/thunder-88xx.dtsi |   0
- arch/arm64/boot/dts/include/dt-bindings            |   1 +
- scripts/Kbuild.include                             |   6 +
- scripts/Makefile.dtbinst                           |  51 +++++
- scripts/Makefile.lib                               |  12 --
- 26 files changed, 799 insertions(+), 43 deletions(-)
- create mode 100644 arch/arm64/boot/dts/amd/Makefile
- create mode 100644 arch/arm64/boot/dts/amd/amd-overdrive.dts
- create mode 100644 arch/arm64/boot/dts/amd/amd-seattle-clks.dtsi
- create mode 100644 arch/arm64/boot/dts/amd/amd-seattle-soc.dtsi
- create mode 100644 arch/arm64/boot/dts/apm/Makefile
- rename arch/arm64/boot/dts/{ => apm}/apm-mustang.dts (100%)
- rename arch/arm64/boot/dts/{ => apm}/apm-storm.dtsi (100%)
- create mode 100644 arch/arm64/boot/dts/arm/Makefile
- rename arch/arm64/boot/dts/{ => arm}/foundation-v8.dts (98%)
- create mode 100644 arch/arm64/boot/dts/arm/juno-clocks.dtsi
- create mode 100644 arch/arm64/boot/dts/arm/juno-motherboard.dtsi
- create mode 100644 arch/arm64/boot/dts/arm/juno.dts
- rename arch/arm64/boot/dts/{ => arm}/rtsm_ve-aemv8a.dts (97%)
- rename arch/arm64/boot/dts/{ => arm}/rtsm_ve-motherboard.dtsi (100%)
- create mode 100644 arch/arm64/boot/dts/cavium/Makefile
- rename arch/arm64/boot/dts/{ => cavium}/thunder-88xx.dts (100%)
- rename arch/arm64/boot/dts/{ => cavium}/thunder-88xx.dtsi (100%)
- create mode 120000 arch/arm64/boot/dts/include/dt-bindings
- create mode 100644 scripts/Makefile.dtbinst
-
+--cU9XODsizZBnwgll--
