@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458AbaLIPN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 10:13:27 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45423 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbaLIPN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 10:13:26 -0500
-Message-ID: <5487118F.4010606@hitachi.com>
-Date: Wed, 10 Dec 2014 00:13:19 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757474AbaLIPOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:14:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751940AbaLIPOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:14:31 -0500
+Date: Tue, 9 Dec 2014 15:12:53 +0000
+From: Joe Thornber <thornber@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: gregkh@linuxfoundation.org, snitzer@redhat.com, agk@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
+Message-ID: <20141209151253.GA17660@debian>
+Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
+	gregkh@linuxfoundation.org, snitzer@redhat.com, agk@redhat.com,
+	linux-kernel@vger.kernel.org
+References: <5484498E.4000202@gmail.com>
+ <20141207200834.GA2322@kroah.com>
+ <5484C0E9.3060707@gmail.com>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Wang Nan <wangnan0@huawei.com>, lizefan@huawei.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v14 7/7] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1418020040-68977-1-git-send-email-wangnan0@huawei.com>  <1418020131-69375-1-git-send-email-wangnan0@huawei.com>  <1418036666.3647.33.camel@linaro.org> <5485886E.2060303@huawei.com>  <1418039451.3647.48.camel@linaro.org> <5486CB9F.6030804@hitachi.com> <1418121037.3641.22.camel@linaro.org>
-In-Reply-To: <1418121037.3641.22.camel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5484C0E9.3060707@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/09 19:30), Jon Medhurst (Tixy) wrote:
-> On Tue, 2014-12-09 at 19:14 +0900, Masami Hiramatsu wrote:
->> (2014/12/08 20:50), Jon Medhurst (Tixy) wrote:> arch_optimize_kprobes is calling __arch_optimize_kprobes, which is
->>> iterating over a list of probes and removing each one in turn, if this
->>> is happening on multiple cpu's simultaneously, it's not clear to me that
->>> such an operation is safe. list_del_init calls __list_del which does
->>>
->>> 	next->prev = prev;
->>> 	prev->next = next;
->>>
->>> so what happens if another cpu is at the same time updating any of those
->>> list entries? Without even fully analysing the code I can see that with
->>> the fact that the list handling helpers have no memory barriers, that
->>> the above two lines could be seen to execute in the reverse order, e.g.
->>>
->>> 	prev->next = next;
->>> 	next->prev = prev;
->>>
->>> so another CPU could find and delete next before this one has finished
->>> doing so. Would the list end up in a consistent state where no loops
->>> develop and no probes are missed? I don't know the answer and a full
->>> analysis would be complicated, but my gut feeling is that if a cpu can
->>> observe the links in the list in an inconsistent state then only bad
->>> things can result.
->>
->> Just a comment, arch_optimize_kprobes() are only called under
->> kprobe_mutex held. No concurrent update happens :)
-> 
-> Except in the case of the code I was commenting on which was using
-> stop_machine to make all cpu's simultaneously do the work of
-> arch_optimize_kprobes :-)
+On Mon, Dec 08, 2014 at 06:04:41AM +0900, Akira Hayakawa wrote:
+> Mike and Alasdair,
+> I need your ack
 
-Ah, right! stop_machine with cpu_online_mask cause that problem.
+Hi Akira,
 
-Thanks,
+I just spent some time playing with your latest code.  On the positive
+side I am seeing some good performance with the fio tests.  Which is
+great, we know your design should outperform dm-cache with small
+random io.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+However I'm still getting v. poor results with the git-extract test,
+which clones a linux kernel repo, and then checks out 5 revisions, all
+with drop_caches in between.
+
+I'll summarise the results I get here:
 
 
+    raw SSD:            69, 107
+    raw spindle:        73, 184
+
+    dm-cache:           74, 118
+
+    writeboost type 0:  115, 247
+    writeboost type 1:  193, 275
+
+
+Each result consists of two numbers, the time to do the clone and the
+time to do the extract.
+
+Writeboost is significantly slower than the spindle alone for this
+very simple test.  I do not understand what is causing the issue.  At
+first I thought it was because the working set is larger than the SSD
+space, but I get the same results even if there's more SSD space than
+spindle.
+
+Running the same test using SSD on SSD also yields v. poor results:
+115, 177 and 198, 218 for type 0 and type 1 respectively.  Obviously
+this is a pointless configuration, but it does allow us to see the
+overhead of the caching layer.
+
+It's fine to have different benefits of the caching software depending
+on the load.  But I think the worst case should always be close to the
+performance of the raw spindle device.
+
+If you get the following work items done I will ack to go upstream:
+
+i) Get this test so it's performance is similar to raw spindle.
+
+ii) Write good documentation in Documentation/device-mapper/.  eg. How
+    do I remove a cache?  When should I use dm-writeboost rather than
+    bcache or dm-cache?
+
+iii) Provide an equivalent to the fsck tool to repair a damaged cache.
+
+- Joe
