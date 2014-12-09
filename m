@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaLIIHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:07:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42432 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454AbaLIIHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:07:43 -0500
-Date: Tue, 9 Dec 2014 09:08:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Duggan <aduggan@synaptics.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: [PATCH] HID: rmi: The address of query8 must be calculated based
- on which query registers are present
-In-Reply-To: <1418079720-11766-2-git-send-email-aduggan@synaptics.com>
-Message-ID: <alpine.LNX.2.00.1412090907490.14413@pobox.suse.cz>
-References: <1418079720-11766-1-git-send-email-aduggan@synaptics.com> <1418079720-11766-2-git-send-email-aduggan@synaptics.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753376AbaLIIIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:08:22 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44386 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaLIIIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 03:08:21 -0500
+Date: Tue, 9 Dec 2014 10:08:16 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: dmitry.torokhov@gmail.com
+Cc: LW@KARO-electronics.de, B38611@freescale.com, maksqwe1@ukr.net,
+        jg1.han@samsung.com, linux@rasmusvillemoes.dk, fabf@skynet.be,
+        joe@perches.com, asaf.vertz@tandemg.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] input: edt-ft5x06: fixed a macro coding style issue
+Message-ID: <20141209080816.GA19581@ubuntu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Dec 2014, Andrew Duggan wrote:
+Fixed a coding style error, macros with complex values should be
+enclosed in parentheses.
 
-> If a touchpad does not report relative data then query 6 will not be present and the address
-> of query 8 will be one less. This patches calculates the location of query 8 instead of
-> hardcoding the offset.
-> 
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+Changes in v2:
+  - use do {...} while (0)  instead of {...}
 
-Applied to hid.git#for-3.19/rmi as well.
+ drivers/input/touchscreen/edt-ft5x06.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
+index ee3434f..d22ed56 100644
+--- a/drivers/input/touchscreen/edt-ft5x06.c
++++ b/drivers/input/touchscreen/edt-ft5x06.c
+@@ -850,9 +850,11 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
+ }
+ 
+ #define EDT_ATTR_CHECKSET(name, reg) \
++do {								\
+ 	if (pdata->name >= edt_ft5x06_attr_##name.limit_low &&		\
+ 	    pdata->name <= edt_ft5x06_attr_##name.limit_high)		\
+-		edt_ft5x06_register_write(tsdata, reg, pdata->name)
++		edt_ft5x06_register_write(tsdata, reg, pdata->name);	\
++} while (0)
+ 
+ #define EDT_GET_PROP(name, reg) {				\
+ 	u32 val;						\
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.0.4
+
