@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700AbaLIJ73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:59:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44970 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396AbaLIJ71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:59:27 -0500
-Date: Tue, 9 Dec 2014 09:59:22 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Rik van Riel'" <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: Re: [PATCH] mm: page_alloc: place zone id check before
- VM_BUG_ON_PAGE check
-Message-ID: <20141209095922.GB21903@suse.de>
-References: <000001d01383$8e0f1120$aa2d3360$%yang@samsung.com>
+	id S1755754AbaLIKAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:00:42 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35119 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaLIKAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:00:39 -0500
+Date: Tue, 9 Dec 2014 11:00:35 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Johan Hovold <johan@kernel.org>
+Subject: Re: [GIT PULL] MFD for v3.19
+Message-ID: <20141209100035.GH14346@localhost>
+References: <20141208120058.GI3951@x1>
+ <CA+55aFzHz-a3tAc9PWVs1h_50EYFi=NM10+KmwP=Rw_xqx1_oA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000001d01383$8e0f1120$aa2d3360$%yang@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzHz-a3tAc9PWVs1h_50EYFi=NM10+KmwP=Rw_xqx1_oA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 03:40:35PM +0800, Weijie Yang wrote:
-> If the free page and its buddy has different zone id, the current
-> zone->lock cann't prevent buddy page getting allocated, this could
-> trigger VM_BUG_ON_PAGE in a very tiny chance:
+On Mon, Dec 08, 2014 at 08:06:11PM -0800, Linus Torvalds wrote:
+> On Mon, Dec 8, 2014 at 4:00 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> > Johan Hovold (4):
+> >       mfd: Use mfd_add_hotplug_devices() helper
 > 
+> This clashed with the earlier fix "mfd: viperboard: Fix
+> platform-device id collision" also by Johan.
+> 
+> My merge resolution ends up taking the mfd_add_hotplug_devices() version.
+> 
+> See drivers/mfd/viperboard.c, and somebody should double-check and
+> test that this actually works. The "Fix platform-device id collision"
+> commit supposedly fixed a problem with multiple boards, I'm
+> hoping/assuming that the mfd_add_hotplug_devices() helper handles that
+> case correctly.
 
-Under what circumstances can a buddy page be allocated without the
-zone->lock? Any parallel allocation from that zone that takes place will
-be from the per-cpu allocator and should not be affected by this. Have
-you actually hit this race?
+The end result is correct since, as you assumed,
+mfd_add_hotplug_devices() handles that case.
 
--- 
-Mel Gorman
-SUSE Labs
+Just discussed this with Lee. The original patch adding the helper was
+on top of the fix, but the latter never made it into mfd-next.
+
+Not sure what happened to the git history after your merge, though,
+since commit
+
+	b6684228726c ("mfd: viperboard: Fix platform-device id collision")
+
+no longer shows up when doing
+
+	git log origin/master -- drivers/mfd/viperboard.c
+
+and the diff of
+
+	1ab589c72ef6 ("mfd: Use mfd_add_hotplug_devices() helper")
+
+looks like the first patch has never been applied, even though it is
+listed when doing "git log origin/master".
+
+Johan
