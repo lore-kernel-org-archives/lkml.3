@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613AbaLIKSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:18:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52374 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533AbaLIKSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:18:49 -0500
-Date: Tue, 9 Dec 2014 02:18:33 -0800
-From: tip-bot for Richard Weinberger <tipbot@zytor.com>
-Message-ID: <tip-15bae280e412e79d74912c7ae6b6a002444edb1f@git.kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, richard@nod.at, hpa@zytor.com,
-        torvalds@linux-foundation.org
-Reply-To: richard@nod.at, torvalds@linux-foundation.org, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de
-In-Reply-To: <1416958612-7448-1-git-send-email-richard@nod.at>
-References: <1416958612-7448-1-git-send-email-richard@nod.at>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
-Git-Commit-ID: 15bae280e412e79d74912c7ae6b6a002444edb1f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755395AbaLIKTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:19:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755992AbaLIKTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:19:08 -0500
+Date: Tue, 9 Dec 2014 11:18:28 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 6/8] perf data: Switch to multiple cpu stream files
+Message-ID: <20141209101828.GD2516@krava.brq.redhat.com>
+References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
+ <1417623842-14331-7-git-send-email-jolsa@kernel.org>
+ <CAM9d7cg7EdhQ8f_yA_aHrOgbM9axW1sr+Jzw+Mfwr1kkwQZGpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAM9d7cg7EdhQ8f_yA_aHrOgbM9axW1sr+Jzw+Mfwr1kkwQZGpg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  15bae280e412e79d74912c7ae6b6a002444edb1f
-Gitweb:     http://git.kernel.org/tip/15bae280e412e79d74912c7ae6b6a002444edb1f
-Author:     Richard Weinberger <richard@nod.at>
-AuthorDate: Wed, 26 Nov 2014 00:36:52 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Dec 2014 12:04:17 +0100
+On Mon, Dec 08, 2014 at 05:17:44PM +0900, Namhyung Kim wrote:
+> On Thu, Dec 4, 2014 at 1:24 AM, Jiri Olsa <jolsa@kernel.org> wrote:
+> > +static int setup_streams(struct ctf_writer *cw, struct perf_session *session)
+> > +{
+> > +       struct ctf_stream **stream;
+> > +       struct perf_header *ph = &session->header;
+> > +       int ncpus;
+> > +
+> > +       /*
+> > +        * Try to get the number of cpus used in the data file,
+> > +        * if not present fallback to the MAX_CPUS.
+> > +        */
+> > +       if (!ph)
+> 
+> I think this check is meaningless since perf_header struct is embedded
+> in perf_session so it shouldn't be NULL when refered from a session..
 
-x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
+right, it's actually different in the git, I used:
 
-systemd has a hard dependency on CONFIG_FHANDLE.
-If you run systemd with CONFIG_FHANDLE=n it will somehow
-boot but fail to spawn a getty or other basic services.
-As systemd is now used by most x86 distributions it
-makes sense to enabled this by default and save kernel
-hackers a lot of value debugging time.
+        if (!ph || !ph->env.nr_cpus_avail)
+                ncpus = MAX_CPUS;
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: gregkh@linuxfoundation.org
-Cc: rafael.j.wysocki@intel.com
-Cc: pebolle@tiscali.nl
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1416958612-7448-1-git-send-email-richard@nod.at
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/configs/i386_defconfig   | 1 +
- arch/x86/configs/x86_64_defconfig | 1 +
- 2 files changed, 2 insertions(+)
+I attached slightyl older version in email :-\
 
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 32d2e70..419819d 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -8,6 +8,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index a481dd4..4c311dd 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -7,6 +7,7 @@ CONFIG_TASKSTATS=y
- CONFIG_TASK_DELAY_ACCT=y
- CONFIG_TASK_XACCT=y
- CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_FHANDLE=y
- CONFIG_AUDIT=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
+anyway, I'll send v2 shortly 
+
+thanks,
+jirka
