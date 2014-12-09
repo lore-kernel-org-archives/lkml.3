@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaLIGE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 01:04:59 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:17313 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaLIGE5 (ORCPT
+	id S1756602AbaLIGF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 01:05:27 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:29007 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756448AbaLIGFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 01:04:57 -0500
-X-AuditID: cbfee68f-f791c6d000004834-54-54869106d568
-Message-id: <5486910D.8030606@samsung.com>
-Date: Tue, 09 Dec 2014 11:35:01 +0530
+	Tue, 9 Dec 2014 01:05:23 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-28-54869121a3fd
+Message-id: <54869127.6030307@samsung.com>
+Date: Tue, 09 Dec 2014 11:35:27 +0530
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
  Thunderbird/31.2.0
@@ -23,42 +23,42 @@ Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
         chanho61.park@samsung.com, geunsik.lim@samsung.com,
         sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/19] clk: samsung: exynos5433: Add clocks for
- CMU_BUS{0|1|2} domains
+Subject: Re: [PATCH 08/19] clk: samsung: exynos5433: Add clocks for CMU_AUD
+ domain
 References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
- <1417510196-6714-10-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1417510196-6714-10-git-send-email-cw00.choi@samsung.com>
+ <1417510196-6714-9-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1417510196-6714-9-git-send-email-cw00.choi@samsung.com>
 Content-type: text/plain; charset=windows-1252; format=flowed
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsWyRsSkVpdtYluIwa92ZYvHaxYzWfyddIzd
-	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtsenyN1eLy
-	rjlsFjPO7wPqv/OPzWLp9YtMFqeuf2azOPymndVixuSXbBardv1htHj58QSLg6jHmnlrGD1+
-	/5rE6LFz1l12j81L6j2unGhi9ejbsorR4/MmuQD2KC6blNSczLLUIn27BK6M+7tWsBW8k6v4
-	9e8pSwPjFskuRk4OCQETiQu3bzFC2GISF+6tZwOxhQSWMkpsbBboYuQAq7l/DKicCyi8iFHi
-	/ZZ/zBA1rUwS2/4Xgti8AloSZ3afAJvDIqAqcfvkDLA5bAK6Ek/ezwWrFxWIkLiyZg4jRL2g
-	xI/J91hAbBGBbImnbw6zgSxgFtjJLHG+ewpYQlggRmLbum5miM0NjBKr1t4Am8Qp4CaxZckR
-	MJtZwFZiwft1LBC2vMTmNW/BGiQEjnBItB6+yAJxkoDEt8mHWCDekZXYdIAZ4mNJiYMrbrBM
-	YBSbheSoWUjGzkIydgEj8ypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MwJRw+t+z/h2Mdw9Y
-	H2IU4GBU4uHVsGwLEWJNLCuuzD3EaAp0xURmKdHkfGDiySuJNzQ2M7IwNTE1NjK3NFMS510o
-	9TNYSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OLh1rP88BpDmLf3YWlbzPu2uKeuWLSoR2R
-	dzj28j6K7KsxOerr0Vuh90w1jGnLGvFORg+xVZ46av/D/joZ7L7RJ2X7+/W38zVntBSFDjEz
-	CBScmh2gxrVaSM917ZN43fKy2RzH/SazbnfSvhjGYvvF4dLfe06lZvfV9dYxHMi2Mhb6nG4l
-	oMRSnJFoqMVcVJwIAPvT+jEEAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jAV22iW0hBleOSFg8XrOYyeLvpGPs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsWyRsSkRldxYluIwekFMhaP1yxmsvg76Ri7
+	xftlPYwWl/drW1z/8pzVYv6Rc6wWfya0sllMuj+BxeLGrzZWi94FV9kszja9YbfY9Pgaq8Xl
+	XXPYLGac3wfUf+cfm8XS6xeZLE5d/8xmcfhNO6vFjMkv2SxW7frDaPHy4wkWB1GPNfPWMHr8
+	/jWJ0WPnrLvsHpuX1HtcOdHE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZ8yalFUxWqehb
+	up+9gfGGbBcjJ4eEgInE8/kXWCBsMYkL99azdTFycQgJLGWUOHB8CVCCA6xoxeIgiPgiRold
+	N3rYIZxWJokzZ8+xg3TzCmhJ/Pv7lhXEZhFQlVjQvQ3MZhPQlXjyfi4ziC0qECFxZc0cRoh6
+	QYkfk++BbRYRyJZ4+uYw2GZmgZ3MEue7p4AlhAVCJL4cbgNbICRQLzH/zmI2kIs4BVwlXu92
+	AwkzC9hKLHi/jgXClpfYvOYtM8gcCYEjHBI/p65mhzhIQOLb5ENQ38hKbDrADPGxpMTBFTdY
+	JjCKzUJy0iwkY2chGbuAkXkVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmBCOP3v2YQdjPcO
+	WB9iFOBgVOLh1bBsCxFiTSwrrsw9xGgKdMVEZinR5Hxg2skriTc0NjOyMDUxNTYytzRTEud9
+	LfUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjeGmVz7/ZZ3a8tfLy9OW3WLtxx+d25dQ0
+	b8bjSSxZ+t49recevHzQUb4ie/EkRck7937ZvW89cDf8e06woG1t946vX57osC3yl7EMkH4R
+	3bpwtZ/C5il5rNVrRI463zlcccngfs8SNf/P4k1LZrBlHOr0ema2Qzdqh8Ny86Vvpspa3BCd
+	6DxDiaU4I9FQi7moOBEA5CPpmAMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t9jAV3FiW0hBnOWC1k8XrOYyeLvpGPs
 	Fu+X9TBaXN6vbXH9y3NWi/lHzrFa/JnQymYx6f4EFosbv9pYLXoXXGWzONv0ht1i0+NrrBaX
 	d81hs5hxfh9Q/51/bBZLr19ksjh1/TObxeE37awWMya/ZLNYtesPo8XLjydYHEQ91sxbw+jx
 	+9ckRo+ds+6ye2xeUu9x5UQTq0ffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfH
 	O8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAfaWkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC
-	1zckCK7HyAANJKxhzLi/awVbwTu5il//nrI0MG6R7GLk4JAQMJG4fwzI5AQyxSQu3FvP1sXI
-	xSEksIhR4v2Wf8wgCSGBViaJbf8LQWxeAS2JM7tPMILYLAKqErdPzmADsdkEdCWevJ8LVi8q
-	ECFxZc0cRoh6QYkfk++xgNgiAtkST98cBlvALLCTWeJ89xSwhLBAjMS2dd3MEJsbGCVWrb0B
-	NolTwE1iy5IjYDazgK3EgvfrWCBseYnNa94yT2AUmIVkySwkZbOQlC1gZF7FKJpakFxQnJSe
-	a6RXnJhbXJqXrpecn7uJEZxynknvYFzVYHGIUYCDUYmHV8OyLUSINbGsuDL3EKMEB7OSCO/9
-	OqAQb0piZVVqUX58UWlOavEhRlNgGExklhJNzgemw7ySeENjE3NTY1NLEwsTM0slcV4le6Am
-	gfTEktTs1NSC1CKYPiYOTqkGRknfK88bDF8siznglcC8wjucXfi70SvVefNUxER+HL62dO/u
-	CY/t05bNnvD2eVXxzLxrebvVZ89Kfz/l0Onm8ytq1eKYGD3nmKwt/G4y83DymruZd75fcqlV
-	dkzYyyizsuTylGRuDeawswcmT5/s5honb3Uoc+O1XeF3DcKW6K5eXHjr59MVGg+VWIozEg21
-	mIuKEwE3Y4KUTwMAAA==
+	1zckCK7HyAANJKxhzJg3Ka1gskpF39L97A2MN2S7GDk4JARMJFYsDupi5AQyxSQu3FvP1sXI
+	xSEksIhRYteNHnYIp5VJ4szZc+wgVbwCWhL//r5lBbFZBFQlFnRvA7PZBHQlnryfywxiiwpE
+	SFxZM4cRol5Q4sfkeywgtohAtsTTN4fBNjAL7GSWON89BSwhLBAi8eVwG9gCIYF6ifl3FrOB
+	XMcp4CrxercbSJhZwFZiwft1LBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tSC4oTkrP
+	NdIrTswtLs1L10vOz93ECE43z6R3MK5qsDjEKMDBqMTDq2HZFiLEmlhWXJl7iFGCg1lJhPd+
+	HVCINyWxsiq1KD++qDQntfgQoykwBCYyS4km5wNTYV5JvKGxibmpsamliYWJmaWSOK+SPVCT
+	QHpiSWp2ampBahFMHxMHp1QDo0b20hDbuWJbd3B58aZqLSmNfGd9/F5ad/MrrU0f994+bnix
+	8bKh+tEPu2pVjt7TO8wZdP/HpI3bdffHd1h+mttW+NJfzG3Kqu2yojfmekfx5E1bYDxh0eVe
+	JofXcyzPLvq669VUve77FSsPcds+UmiwvR1zMTnD8cTN7spEw13rbdyDliYt51ViKc5INNRi
+	LipOBAAbdXQpTQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -69,98 +69,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Chanwoo,
 
 On Tuesday 02 December 2014 02:19 PM, Chanwoo Choi wrote:
-> This patch adds the mux/divider/gate clocks for CMU_BUS{0|1|2} domains
-> which contain global data buses clocked at up the 400MHz. These blocks
-> transfer data between DRAM and various sub-blocks. These clock domains
-> also contain global peripheral buses clocked at 67/111/200/222/266/333/400
-> MHz and used for regiser accesses.
+> This patch adds the mux/divider/gate clocks for CMU_AUD domain which
+> includes the clocks of Cortex-A6/Bus/Audio clocks.
 
-typo: %s/regiser/register
+Cortex-A6? I think it should be Cortex-A5?
 
 >
 > Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > Cc: Tomasz Figa <tomasz.figa@gmail.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
 > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 > Acked-by: Inki Dae <inki.dae@samsung.com>
 > Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 > ---
->   .../devicetree/bindings/clock/exynos5433-clock.txt |  21 +++
->   drivers/clk/samsung/clk-exynos5433.c               | 185 ++++++++++++++++++++-
->   include/dt-bindings/clock/exynos5433.h             |  29 +++-
->   3 files changed, 232 insertions(+), 3 deletions(-)
+>   .../devicetree/bindings/clock/exynos5433-clock.txt |   7 +
+>   drivers/clk/samsung/clk-exynos5433.c               | 173 +++++++++++++++++++++
+>   include/dt-bindings/clock/exynos5433.h             |  53 +++++++
+>   3 files changed, 233 insertions(+)
 >
 > diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-> index 9a6ae75..03ae40a 100644
+> index 8d3dad4..9a6ae75 100644
 > --- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
 > +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-> @@ -25,6 +25,9 @@ Required Properties:
+> @@ -23,6 +23,8 @@ Required Properties:
+>       which generates clocks for G2D/MDMA IPs.
+>     - "samsung,exynos5433-cmu-disp"  - clock controller compatible for CMU_DISP
 >       which generates clocks for Display (DECON/HDMI/DSIM/MIXER) IPs.
->     - "samsung,exynos5433-cmu-aud"   - clock controller compatible for CMU_AUD
->       which generates clocks for Cortex-A5/BUS/AUDIO clocks.
-> +  - "samsung,exynos5433-cmu-bus0", "samsung,exynos5433-cmu-bus1"
-> +    and "samsung,exynos5433-cmu-bus2" - clock controller compatible for CMU_BUS
-> +    which generates global data buses clock and global peripheral buses clock.
+> +  - "samsung,exynos5433-cmu-aud"   - clock controller compatible for CMU_AUD
+> +    which generates clocks for Cortex-A5/BUS/AUDIO clocks.
+
+Commit message says Cortex-A6?
+
 >
 >   - reg: physical base address of the controller and length of memory mapped
 >     region.
-> @@ -94,6 +97,24 @@ Example 1: Examples of clock controller nodes are listed below.
+> @@ -86,6 +88,11 @@ Example 1: Examples of clock controller nodes are listed below.
 >   		#clock-cells = <1>;
 >   	};
 >
-> +	cmu_bus0: clock-controller@0x13600000 {
-> +		compatible = "samsung,exynos5433-cmu-bus0";
-> +		reg = <0x13600000 0x0b04>;
+> +	cmu_aud: clock-controller@0x114c0000 {
+> +		compatible = "samsung,exynos5433-cmu-aud";
+> +		reg = <0x114c0000 0x0b04>;
 > +		#clock-cells = <1>;
 > +	};
-> +
-> +	cmu_bus1: clock-controller@0x14800000 {
-> +		compatible = "samsung,exynos5433-cmu-bus1";
-> +		reg = <0x14800000 0x0b04>;
-> +		#clock-cells = <1>;
-> +	};
-> +
-> +	cmu_bus2: clock-controller@0x13400000 {
-> +		compatible = "samsung,exynos5433-cmu-bus2";
-> +		reg = <0x13400000 0x0b04>;
-> +		#clock-cells = <1>;
-> +	};
-> +
+>
 >   Example 2: UART controller node that consumes the clock generated by the clock
 >   	   controller.
->
 > diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-> index 99262e0..5b4ec83 100644
+> index ec23e97..99262e0 100644
 > --- a/drivers/clk/samsung/clk-exynos5433.c
 > +++ b/drivers/clk/samsung/clk-exynos5433.c
-> @@ -425,7 +425,7 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
->   			DIV_TOP2, 0, 3),
+> @@ -2454,3 +2454,176 @@ static void __init exynos5433_cmu_disp_init(struct device_node *np)
 >
->   	/* DIV_TOP3 */
-> -	DIV(CLK_DIV_ACLK_IMEM_SSSX, "div_aclk_imem_sssx",
-> +	DIV(CLK_DIV_ACLK_IMEM_SSSX_266, "div_aclk_imem_sssx_266",
-
-This change can be moved to patch 1/19 itself.
-
->   			"mout_bus_pll_user", DIV_TOP3, 24, 3),
->   	DIV(CLK_DIV_ACLK_IMEM_200, "div_aclk_imem_200",
->   			"mout_bus_pll_user", DIV_TOP3, 20, 3),
-> @@ -440,6 +440,14 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
->   	DIV(CLK_DIV_ACLK_PERIS_66_A, "div_aclk_peris_66_a",
->   			"mout_bus_pll_user", DIV_TOP3, 0, 3),
->
-> +	/* DIV_TOP4 */
-> +	DIV(CLK_DIV_ACLK_G3D_400, "div_aclk_g3d_400", "mout_bus_pll_user",
-> +			DIV_TOP4, 8, 3),
-> +	DIV(CLK_DIV_ACLK_BUS0_400, "div_aclk_bus0_400", "mout_aclk_bus0_400",
-> +			DIV_TOP4, 4, 3),
-> +	DIV(CLK_DIV_ACLK_BUS1_400, "div_aclk_bus1_400", "mout_bus_pll_user",
-> +			DIV_TOP4, 0, 3),
+>   CLK_OF_DECLARE(exynos5433_cmu_disp, "samsung,exynos5433-cmu-disp",
+>   		exynos5433_cmu_disp_init);
 > +
+> +/*
+> + * Register offset definitions for CMU_AUD
+> + */
+> +#define MUX_SEL_AUD0			0x0200
+> +#define MUX_SEL_AUD1			0x0204
+> +#define MUX_ENABLE_AUD0			0x0300
+> +#define MUX_ENABLE_AUD1			0x0304
+> +#define MUX_STAT_AUD0			0x0400
+> +#define DIV_AUD0			0x0600
+> +#define DIV_AUD1			0x0604
+> +#define DIV_STAT_AUD0			0x0700
+> +#define DIV_STAT_AUD1			0x0704
+> +#define ENABLE_ACLK_AUD			0x0800
+> +#define ENABLE_PCLK_AUD			0x0900
+> +#define ENABLE_SCLK_AUD0		0x0a00
+> +#define ENABLE_SCLK_AUD1		0x0a04
+> +#define ENABLE_IP_AUD0			0x0b00
+> +#define ENABLE_IP_AUD1			0x0b04
+> +
+> +static unsigned long aud_clk_regs[] __initdata = {
+> +	MUX_SEL_AUD0,
+> +	MUX_SEL_AUD1,
+> +	MUX_ENABLE_AUD0,
+> +	MUX_ENABLE_AUD1,
+> +	MUX_STAT_AUD0,
+> +	DIV_AUD0,
+> +	DIV_AUD1,
+> +	DIV_STAT_AUD0,
+> +	DIV_STAT_AUD1,
+> +	ENABLE_ACLK_AUD,
+> +	ENABLE_PCLK_AUD,
+> +	ENABLE_SCLK_AUD0,
+> +	ENABLE_SCLK_AUD1,
+> +	ENABLE_IP_AUD0,
+> +	ENABLE_IP_AUD1,
+> +};
+> +
+> +/* list of all parent clock list */
+> +PNAME(mout_aud_pll_user_aud_p)	= { "fin_pll", "fout_aud_pll", };
+> +PNAME(mout_sclk_aud_pcm_p)	= { "mout_aud_pll_user", "ioclk_audiocdclk0",};
+> +PNAME(mout_sclk_aud_i2s_p)	= { "mout_aud_pll_user", "ioclk_audiocdclk0",};
 
-With these changes you can have:
+Above two lines can be clubbed with some common name as both has same 
+parent clocks.
 
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> +
+> +static struct samsung_fixed_rate_clock aud_fixed_clks[] __initdata = {
+> +	FRATE(0, "ioclk_jtag_tclk", NULL, CLK_IS_ROOT, 188000000),
+> +	FRATE(0, "ioclk_slimbus_clk", NULL, CLK_IS_ROOT, 188000000),
+> +	FRATE(0, "ioclk_i2s_bclk", NULL, CLK_IS_ROOT, 188000000),
+
+Are you sure about these clock rates?
+As per UM I have, these are having rates as 33 MHz, 25 MHz and 50 MHz 
+respectively.
+
+> +};
+> +
+> +static struct samsung_mux_clock aud_mux_clks[] __initdata = {
+> +	/* MUX_SEL_AUD0 */
+> +	MUX(CLK_MOUT_AUD_PLL_USER, "mout_aud_pll_user",
+> +			mout_aud_pll_user_aud_p, MUX_SEL_AUD0, 0, 1),
+> +
+> +	/* MUX_SEL_AUD1 */
+> +	MUX(CLK_MOUT_SCLK_AUD_PCM, "mout_sclk_aud_pcm", mout_sclk_aud_pcm_p,
+> +			MUX_SEL_AUD1, 8, 1),
+> +	MUX(CLK_MOUT_SCLK_AUD_I2S, "mout_sclk_aud_i2s", mout_sclk_aud_i2s_p,
+> +			MUX_SEL_AUD1, 0, 1),
+> +};
+> +
 
 Thanks,
 Pankaj Dubey
