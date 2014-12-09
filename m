@@ -1,339 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631AbaLILyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:54:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52499 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486AbaLILyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:54:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,544,1413270000"; 
-   d="scan'208";a="634936875"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Eric Auger <eric.auger@linaro.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+	id S1756700AbaLILyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:54:38 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46890 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486AbaLILyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 06:54:35 -0500
+Date: Tue, 9 Dec 2014 11:54:26 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arend van Spriel <arend@broadcom.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for VT-d
- Posted-Interrupts
-Thread-Topic: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for VT-d
- Posted-Interrupts
-Thread-Index: AQHQD9hl7T5X4iAiPke989gQlb4RtpyFBa9QgAB68iKAAakMQA==
-Date: Tue, 9 Dec 2014 11:51:27 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F0022E8F61@SHSMSX104.ccr.corp.intel.com>
-References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
-	 <1417592394-24343-19-git-send-email-feng.wu@intel.com>
-	 <54807F5C.4050607@linaro.org>
-	 <E959C4978C3B6342920538CF579893F0022E2DC0@SHSMSX104.ccr.corp.intel.com>
- <1418015529.1095.26.camel@bling.home> <54857A4A.5030003@linaro.org>
-In-Reply-To: <54857A4A.5030003@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+        Will Deacon <Will.Deacon@arm.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "hauke@hauke-m.de" <hauke@hauke-m.de>,
+        David Miller <davem@davemloft.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: using DMA-API on ARM
+Message-ID: <20141209115425.GB31129@e104818-lin.cambridge.arm.com>
+References: <5481794E.4050406@broadcom.com>
+ <F51492713EF10846800D8C0ED37A7DCE01901765@SJEXCHMB15.corp.ad.broadcom.com>
+ <F51492713EF10846800D8C0ED37A7DCE01902076@SJEXCHMB15.corp.ad.broadcom.com>
+ <2863746.4sUSEYqahB@wuerfel>
+ <20141208160316.GM16185@e104818-lin.cambridge.arm.com>
+ <5485D97D.1040404@broadcom.com>
+ <5486CCBC.3@broadcom.com>
+ <20141209102904.GJ11285@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209102904.GJ11285@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB9BsbSQ031347
 
-
-
-> -----Original Message-----
-> From: Eric Auger [mailto:eric.auger@linaro.org]
-> Sent: Monday, December 08, 2014 6:16 PM
-> To: Alex Williamson; Wu, Feng
-> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
-> joro@8bytes.org; jiang.liu@linux.intel.com; linux-kernel@vger.kernel.org;
-> iommu@lists.linux-foundation.org; kvm@vger.kernel.org
-> Subject: Re: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for VT-d
-> Posted-Interrupts
+On Tue, Dec 09, 2014 at 10:29:05AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Dec 09, 2014 at 11:19:40AM +0100, Arend van Spriel wrote:
+> > The issue did not trigger overnight so it seems setting bit 22 <Shared
+> > Attribute _Override_ Enable> solves the issue over here. Now the question is
+> > how to move forward with this. As I understood from Catalin this patch was
+> > not included as it was not considered responsibility of the linux kernel.
 > 
-> On 12/08/2014 06:12 AM, Alex Williamson wrote:
-> > On Mon, 2014-12-08 at 04:58 +0000, Wu, Feng wrote:
-> >>
-> >>> -----Original Message-----
-> >>> From: Eric Auger [mailto:eric.auger@linaro.org]
-> >>> Sent: Thursday, December 04, 2014 11:36 PM
-> >>> To: Wu, Feng; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> >>> x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
-> >>> dwmw2@infradead.org; joro@8bytes.org; alex.williamson@redhat.com;
-> >>> jiang.liu@linux.intel.com
-> >>> Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> >>> kvm@vger.kernel.org
-> >>> Subject: Re: [v2 18/25] KVM: kvm-vfio: implement the VFIO skeleton for
-> VT-d
-> >>> Posted-Interrupts
-> >>>
-> >>> Hi Feng,
-> >>>
-> >>> On 12/03/2014 08:39 AM, Feng Wu wrote:
-> >>>> This patch adds the kvm-vfio interface for VT-d Posted-Interrrupts.
-> >>>> When guests updates MSI/MSI-x information for an assigned-device,
-> >>> update
-> >>>> QEMU will use KVM_DEV_VFIO_DEVICE_POSTING_IRQ attribute to setup
-> >>>> IRTE for VT-d PI. This patch implement this IRQ attribute.
-> >>> s/implement/implements
-> >>>>
-> >>>> Signed-off-by: Feng Wu <feng.wu@intel.com>
-> >>>> ---
-> >>>>  include/linux/kvm_host.h |   19 ++++++++
-> >>>>  virt/kvm/vfio.c          |  103
-> >>> ++++++++++++++++++++++++++++++++++++++++++++++
-> >>>>  2 files changed, 122 insertions(+), 0 deletions(-)
-> >>>>
-> >>>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> >>>> index 5cd4420..8d06678 100644
-> >>>> --- a/include/linux/kvm_host.h
-> >>>> +++ b/include/linux/kvm_host.h
-> >>>> @@ -1134,6 +1134,25 @@ static inline int
-> >>> kvm_arch_vfio_set_forward(struct kvm_fwd_irq *fwd_irq,
-> >>>>  }
-> >>>>  #endif
-> >>>>
-> >>>> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> >>>> +/*
-> >>>> + * kvm_arch_vfio_update_pi_irte - set IRTE for Posted-Interrupts
-> >>>> + *
-> >>>> + * @kvm: kvm
-> >>>> + * @host_irq: host irq of the interrupt
-> >>>> + * @guest_irq: gsi of the interrupt
-> >>>> + * returns 0 on success, < 0 on failure
-> >>>> + */
-> >>>> +int kvm_arch_vfio_update_pi_irte(struct kvm *kvm, unsigned int
-> host_irq,
-> >>>> +				 uint32_t guest_irq);
-> >>>> +#else
-> >>>> +static int kvm_arch_vfio_update_pi_irte(struct kvm *kvm, unsigned int
-> >>> host_irq,
-> >>>> +					uint32_t guest_irq)
-> >>>> +{
-> >>>> +	return 0;
-> >>>> +}
-> >>>> +#endif
-> >>>> +
-> >>>>  #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
-> >>>>
-> >>>>  static inline void kvm_vcpu_set_in_spin_loop(struct kvm_vcpu *vcpu,
-> bool
-> >>> val)
-> >>>> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> >>>> index 6bc7001..5e5515f 100644
-> >>>> --- a/virt/kvm/vfio.c
-> >>>> +++ b/virt/kvm/vfio.c
-> >>>> @@ -446,6 +446,99 @@ out:
-> >>>>  	return ret;
-> >>>>  }
-> >>>>
-> >>>> +static int kvm_vfio_pci_get_irq_count(struct pci_dev *pdev, int irq_type)
-> >>>> +{
-> >>>> +	if (irq_type == VFIO_PCI_INTX_IRQ_INDEX) {
-> >>>> +		u8 pin;
-> >>>> +
-> >>>> +		pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &pin);
-> >>>> +		if (pin)
-> >>>> +			return 1;
-> >>>> +	} else if (irq_type == VFIO_PCI_MSI_IRQ_INDEX)
-> >>>> +		return pci_msi_vec_count(pdev);
-> >>>> +	else if (irq_type == VFIO_PCI_MSIX_IRQ_INDEX)
-> >>>> +		return pci_msix_vec_count(pdev);
-> >>>> +
-> >>>> +	return 0;
-> >>>> +}
-> >>> for platform case I was asked to move the retrieval of absolute irq
-> >>> number to the architecture specific part. I don't know if it should
-> >>> apply to PCI stuff as well? This explains why I need to pass the VFIO
-> >>> device (or struct device handle) to the arch specific part. Actually we
-> >>> do the same job, we provide a phys/virt IRQ mapping to KVM, right? So to
-> >>> me our architecture specific API should look quite similar?
-> >>
-> >> In my patch, QEMU passes IRQ type(MSI/MSIx in my case), VFIO device
-> index,
-> >> and sub-index via "struct kvm_vfio_dev_irq" to KVM, then KVM will find the
-> >> real host irq from the VFIO device index and the IRQ type. Is this something
-> >> similar with your patch?
-> >>
-> >>>
-> >>>> +
-> >>>> +static int kvm_vfio_set_pi(struct kvm_device *kdev, int32_t __user
-> *argp)
-> >>>> +{
-> >>>> +	struct kvm_vfio_dev_irq pi_info;
-> >>>> +	uint32_t *gsi;
-> >>>> +	unsigned long minsz;
-> >>>> +	struct vfio_device *vdev;
-> >>>> +	struct msi_desc *entry;
-> >>>> +	struct device *dev;
-> >>>> +	struct pci_dev *pdev;
-> >>>> +	int i, max, ret;
-> >>>> +
-> >>>> +	minsz = offsetofend(struct kvm_vfio_dev_irq, count);
-> >>>> +
-> >>>> +	if (copy_from_user(&pi_info, (void __user *)argp, minsz))
-> >>>> +		return -EFAULT;
-> >>>> +
-> >>>> +	if (pi_info.argsz < minsz || pi_info.index >= VFIO_PCI_NUM_IRQS)
-> >>> PCI specific check, same remark as above but I will let Alex further
-> >>> comment on this and possibly invalidate this commeny ;-)
-> >>>> +		return -EINVAL;
-> >>>> +
-> >>>> +	vdev = kvm_vfio_get_vfio_device(pi_info.fd);
-> >>>> +	if (IS_ERR(vdev))
-> >>>> +		return PTR_ERR(vdev);
-> >>>> +
-> >>>> +	dev = kvm_vfio_external_base_device(vdev);
-> >>>> +	if (!dev || !dev_is_pci(dev)) {
-> >>>> +		ret = -EFAULT;
-> >>>> +		goto put_vfio_device;
-> >>>> +	}
-> >>>> +
-> >>>> +	pdev = to_pci_dev(dev);
-> >>>> +
-> >>>> +	max = kvm_vfio_pci_get_irq_count(pdev, pi_info.index);
-> >>>> +	if (max <= 0) {
-> >>>> +		ret = -EFAULT;
-> >>>> +		goto put_vfio_device;
-> >>>> +	}
-> >>>> +
-> >>>> +	if (pi_info.argsz - minsz < pi_info.count * sizeof(int) ||
-> >>> shouldn' we use the actual datatype?
-> >>
-> >> I am afraid I don't get this, could you please be more specific? Thanks a lot!
-> >
-> > We could have a platform that supports 64bit INTs.
-> yes this is what I meant (struct datatype is __u32).
+> It is preferable for firmware to configure the L2 cache appropriately,
+> which includes things like the prefetch offsets as well as feature bits
+> like bit 22.
 > 
-> Thanks
-> 
-> Eric
+> I think what I'll do is queue up a patch which adds a warning if bit 22
+> is not set, suggesting that firmware is updated to set this bit.
 
-Oh, I got it. In fact, I changed the type of gsi[] from "int" to "u32" in
-struct kvm_vfio_dev_irq, but I forgot to change this place. I will correct it.
-Thanks for the comments!
+I'm fine with a (big) warning on this bit. But when you boot in secure
+mode on 32-bit, do we still have a read/modify/write sequence for
+L2X0_AUX_CTRL? A quick look at l2c310_enable() didn't reveal this (the
+code has changed since I proposed the bit 22 setting patch).
 
-> >
-> >>>> +	    pi_info.start >= max || pi_info.start + pi_info.count > max) {
-> >>>> +		ret = -EINVAL;
-> >>>> +		goto put_vfio_device;
-> >>>> +	}
-> >>>> +
-> >>>> +	gsi = memdup_user((void __user *)((unsigned long)argp + minsz),
-> >>>> +			   pi_info.count * sizeof(int));
-> >>> same question as above
-> >>>> +	if (IS_ERR(gsi)) {
-> >>>> +		ret = PTR_ERR(gsi);
-> >>>> +		goto put_vfio_device;
-> >>>> +	}
-> >>>> +
-> >>>> +#ifdef CONFIG_PCI_MSI
-> >>>> +	for (i = 0; i < pi_info.count; i++) {
-> >>>> +		list_for_each_entry(entry, &pdev->msi_list, list) {
-> >>>> +			if (entry->msi_attrib.entry_nr != pi_info.start+i)
-> >>>> +				continue;
-> >>>> +
-> >>>> +			ret = kvm_arch_vfio_update_pi_irte(kdev->kvm,
-> >>>> +							   entry->irq,
-> >>>> +							   gsi[i]);
-> >>>> +			if (ret) {
-> >>>> +				ret = -EFAULT;
-> >>> why -EFAULT? and not propagation of original error code?
-> >> Yes, you are right. Thanks for the comments!
-> >>
-> >>> you may have posting set for part of the subindexes and unset for rest.
-> >>> Isn't it an issue?
-> >>
-> >> QEMU will always set the posting for all the sub-indexes for MSI/MSIx,
-> >> once the guest updates the configuration of some sub-indexes, KVM will
-> >> update it accordingly. So in which case will what you mentioned above
-> >> happen?
-> 
-> Was pointing out you handle the case where kvm_arch_vfio_update_pi_irte
-> could fail and you still continue looping thru the other indexes. So
-> theoretically you could have a mixed of non posted IRQs and posted IRQs.
-> 
-
-Okay, I got your point. In fact, remapped IRQs and Posted IRQs are independent.
-We can make some of the IRQ posted and the rest remapped. They are using
-different IRTEs in the remapped structure.
-
-Thanks,
-Feng
-
-> Best Regards
-> 
-> Eric
-> >
-> > QEMU is just one userspace, not necessarily the only userspace.  The
-> > kernel shouldn't expect a specific userspace behavior.
-> >
-> >>>> +				goto free_gsi;
-> >>>> +			}
-> >>>> +		}
-> >>>> +	}
-> >>>> +#endif
-> >>>> +
-> >>>> +	ret = 0;
-> >>>> +
-> >>>> +free_gsi:
-> >>>> +	kfree(gsi);
-> >>>> +
-> >>>> +put_vfio_device:
-> >>>> +	kvm_vfio_put_vfio_device(vdev);
-> >>>> +	return ret;
-> >>>> +}
-> >>>> +
-> >>>>  static int kvm_vfio_set_device(struct kvm_device *kdev, long attr, u64
-> arg)
-> >>>>  {
-> >>>>  	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
-> >>>> @@ -456,6 +549,11 @@ static int kvm_vfio_set_device(struct
-> kvm_device
-> >>> *kdev, long attr, u64 arg)
-> >>>>  	case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> >>>>  		ret = kvm_vfio_control_irq_forward(kdev, attr, argp);
-> >>>>  		break;
-> >>>> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> >>>> +	case KVM_DEV_VFIO_DEVICE_POSTING_IRQ:
-> >>>> +		ret = kvm_vfio_set_pi(kdev, argp);
-> >>>> +		break;
-> >>>> +#endif
-> >>>>  	default:
-> >>>>  		ret = -ENXIO;
-> >>>>  	}
-> >>>> @@ -511,6 +609,11 @@ static int kvm_vfio_has_attr(struct kvm_device
-> >>> *dev,
-> >>>>  		case KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ:
-> >>>>  			return 0;
-> >>>>  #endif
-> >>>> +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_POSTING
-> >>>> +		case KVM_DEV_VFIO_DEVICE_POSTING_IRQ:
-> >>>> +			return 0;
-> >>>> +#endif
-> >>>> +
-> >>>>  		}
-> >>>>  		break;
-> >>>>  	}
-> >>>>
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> >
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Catalin
