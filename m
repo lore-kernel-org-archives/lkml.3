@@ -1,257 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbaLINWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 08:22:19 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50176 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982AbaLINWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 08:22:17 -0500
-Date: Tue, 9 Dec 2014 14:22:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] EFI tree changes for v3.19
-Message-ID: <20141209132211.GA30775@gmail.com>
+	id S1757258AbaLINWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:22:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757214AbaLINWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 08:22:21 -0500
+Date: Tue, 9 Dec 2014 14:22:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: "Liang, Kan" <kan.liang@intel.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>
+Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Message-ID: <20141209132206.GA6784@krava.brq.redhat.com>
+References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+ <20141204142330.GB10406@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+ <20141204155142.GD18689@kernel.org>
+ <20141204160213.GB18631@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167E1F0@shsmsx102.ccr.corp.intel.com>
+ <20141209122708.GA4189@kernel.org>
+ <20141209125305.GE2516@krava.brq.redhat.com>
+ <20141209131104.GC4189@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141209131104.GC4189@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, Dec 09, 2014 at 10:11:04AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 09, 2014 at 01:53:05PM +0100, Jiri Olsa escreveu:
+> > On Tue, Dec 09, 2014 at 09:27:08AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Dec 04, 2014 at 04:18:56PM +0000, Liang, Kan escreveu:
+> > > > > On Thu, Dec 04, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > > Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
+> > > > > > > Jiri Wrote:
+> > > > > > > > looks ok to me..
+> > > > > > > Thanks for the review.
+> > > > > > > > I'll test it once I get hands on Haswel server again, I guess we
+> > > > > > > > wait for the kernel change to go in first anyway, right?
+> > > > > > > I'm not sure, let's ask Peter.
+> > > > > > > Peter?
+> > > > > > Would be good to go in one pull request, so that whoever pulls it has
+> > > > > > the chance to test the kernel feature with the accompanying tooling bits.
+> > > > > also there's user part dependency on kernel.. soem new define IIRC
+> > > > Oh, right. We have to let them go in together.
+> > > The ones that are just prep patches I am merging now, Jiri, can I stick
+> > > an Acked-by to the non-LBR related ones?
+>  
+> > I guess u mean just this one? 
+> > 2803   T Dec 02 kan.liang@intel (3.4K) ├─>[PATCH V5 2/3] perf tool: Move cpumode resolve code to add_callchain_ip
+> 
+> There is another I split from, iirc 1/3, that is unrelated to that
+> patch, fixing '-g fp' usage that became invalid after a patch from you:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=f70b4e39de4ef25aade966c0dfc69cfb97091be9
 
-Please pull the latest x86-efi-for-linus git tree from:
+this onliner is ok, but I dont recall seeing this change separated..
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-efi-for-linus
+and its 'Link' points to the whole 1/3 patch, which seems weird
 
-   # HEAD: 595247f61f9840222a4dec4baefd66ad6d5b0d6a Merge tag 'efi-next' of git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi into x86/efi
+what do I miss?
 
-Changes in this cycle are:
-
-     - Support module unload for efivarfs (Mathias Krause)
-
-     - Another attempt at moving x86 to libstub taking advantage of the
-       __pure attribute (Ard Biesheuvel)
-
-     - Add EFI runtime services section to ptdump (Mathias Krause)
-
- Thanks,
-
-	Ingo
-
------------------->
-Ard Biesheuvel (1):
-      efi/x86: Move x86 back to libstub
-
-Mathias Krause (2):
-      efivarfs: Allow unloading when build as module
-      x86, ptdump: Add section for EFI runtime services
-
-
- arch/x86/boot/compressed/Makefile       |  3 ++-
- arch/x86/boot/compressed/eboot.c        |  8 ++++----
- arch/x86/boot/compressed/eboot.h        | 16 ----------------
- arch/x86/include/asm/efi.h              | 24 ++++++++++++++++++++++++
- arch/x86/include/asm/pgtable_64_types.h |  2 ++
- arch/x86/mm/dump_pagetables.c           |  3 +++
- arch/x86/platform/efi/efi_64.c          |  3 +--
- drivers/firmware/efi/Makefile           |  2 +-
- fs/efivarfs/super.c                     | 11 +++++++++--
- 9 files changed, 46 insertions(+), 26 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 704f58aa79cd..20db5b3609de 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -35,7 +35,8 @@ vmlinux-objs-$(CONFIG_RANDOMIZE_BASE) += $(obj)/aslr.o
- 
- $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
- 
--vmlinux-objs-$(CONFIG_EFI_STUB) += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
-+vmlinux-objs-$(CONFIG_EFI_STUB) += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o \
-+	$(objtree)/drivers/firmware/efi/libstub/lib.a
- 
- $(obj)/vmlinux: $(vmlinux-objs-y) FORCE
- 	$(call if_changed,ld)
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 1acf605a646d..92b9a5f2aed6 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -21,8 +21,10 @@ static efi_system_table_t *sys_table;
- 
- static struct efi_config *efi_early;
- 
--#define efi_call_early(f, ...)						\
--	efi_early->call(efi_early->f, __VA_ARGS__);
-+__pure const struct efi_config *__efi_early(void)
-+{
-+	return efi_early;
-+}
- 
- #define BOOT_SERVICES(bits)						\
- static void setup_boot_services##bits(struct efi_config *c)		\
-@@ -285,8 +287,6 @@ void efi_char16_printk(efi_system_table_t *table, efi_char16_t *str)
- 	}
- }
- 
--#include "../../../../drivers/firmware/efi/libstub/efi-stub-helper.c"
--
- static void find_bits(unsigned long mask, u8 *pos, u8 *size)
- {
- 	u8 first, len;
-diff --git a/arch/x86/boot/compressed/eboot.h b/arch/x86/boot/compressed/eboot.h
-index c88c31ecad12..d487e727f1ec 100644
---- a/arch/x86/boot/compressed/eboot.h
-+++ b/arch/x86/boot/compressed/eboot.h
-@@ -103,20 +103,4 @@ struct efi_uga_draw_protocol {
- 	void *blt;
- };
- 
--struct efi_config {
--	u64 image_handle;
--	u64 table;
--	u64 allocate_pool;
--	u64 allocate_pages;
--	u64 get_memory_map;
--	u64 free_pool;
--	u64 free_pages;
--	u64 locate_handle;
--	u64 handle_protocol;
--	u64 exit_boot_services;
--	u64 text_output;
--	efi_status_t (*call)(unsigned long, ...);
--	bool is64;
--} __packed;
--
- #endif /* BOOT_COMPRESSED_EBOOT_H */
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 9b11757975d0..25bce45c6fc4 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -158,6 +158,30 @@ static inline efi_status_t efi_thunk_set_virtual_address_map(
- }
- #endif /* CONFIG_EFI_MIXED */
- 
-+
-+/* arch specific definitions used by the stub code */
-+
-+struct efi_config {
-+	u64 image_handle;
-+	u64 table;
-+	u64 allocate_pool;
-+	u64 allocate_pages;
-+	u64 get_memory_map;
-+	u64 free_pool;
-+	u64 free_pages;
-+	u64 locate_handle;
-+	u64 handle_protocol;
-+	u64 exit_boot_services;
-+	u64 text_output;
-+	efi_status_t (*call)(unsigned long, ...);
-+	bool is64;
-+} __packed;
-+
-+__pure const struct efi_config *__efi_early(void);
-+
-+#define efi_call_early(f, ...)						\
-+	__efi_early()->call(__efi_early()->f, __VA_ARGS__);
-+
- extern bool efi_reboot_required(void);
- 
- #else
-diff --git a/arch/x86/include/asm/pgtable_64_types.h b/arch/x86/include/asm/pgtable_64_types.h
-index 7166e25ecb57..602b6028c5b6 100644
---- a/arch/x86/include/asm/pgtable_64_types.h
-+++ b/arch/x86/include/asm/pgtable_64_types.h
-@@ -63,6 +63,8 @@ typedef struct { pteval_t pte; } pte_t;
- #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
- #define ESPFIX_PGD_ENTRY _AC(-2, UL)
- #define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
-+#define EFI_VA_START	 ( -4 * (_AC(1, UL) << 30))
-+#define EFI_VA_END	 (-68 * (_AC(1, UL) << 30))
- 
- #define EARLY_DYNAMIC_PAGE_TABLES	64
- 
-diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-index 95a427e57887..1a8053d1012e 100644
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -76,6 +76,9 @@ static struct addr_marker address_markers[] = {
- # ifdef CONFIG_X86_ESPFIX64
- 	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
- # endif
-+# ifdef CONFIG_EFI
-+	{ EFI_VA_END,		"EFI Runtime Services" },
-+# endif
- 	{ __START_KERNEL_map,   "High Kernel Mapping" },
- 	{ MODULES_VADDR,        "Modules" },
- 	{ MODULES_END,          "End Modules" },
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 35aecb6042fb..17e80d829df0 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -48,8 +48,7 @@ static unsigned long efi_flags __initdata;
-  * We allocate runtime services regions bottom-up, starting from -4G, i.e.
-  * 0xffff_ffff_0000_0000 and limit EFI VA mapping space to 64G.
-  */
--static u64 efi_va	= -4 * (1UL << 30);
--#define EFI_VA_END	(-68 * (1UL << 30))
-+static u64 efi_va = EFI_VA_START;
- 
- /*
-  * Scratch space used for switching the pagetable in the EFI stub
-diff --git a/drivers/firmware/efi/Makefile b/drivers/firmware/efi/Makefile
-index aef6a95adef5..d8be608a9f3b 100644
---- a/drivers/firmware/efi/Makefile
-+++ b/drivers/firmware/efi/Makefile
-@@ -7,4 +7,4 @@ obj-$(CONFIG_EFI_VARS_PSTORE)		+= efi-pstore.o
- obj-$(CONFIG_UEFI_CPER)			+= cper.o
- obj-$(CONFIG_EFI_RUNTIME_MAP)		+= runtime-map.o
- obj-$(CONFIG_EFI_RUNTIME_WRAPPERS)	+= runtime-wrappers.o
--obj-$(CONFIG_EFI_ARM_STUB)		+= libstub/
-+obj-$(CONFIG_EFI_STUB)			+= libstub/
-diff --git a/fs/efivarfs/super.c b/fs/efivarfs/super.c
-index 0a48886e069c..6dad1176ec52 100644
---- a/fs/efivarfs/super.c
-+++ b/fs/efivarfs/super.c
-@@ -236,6 +236,7 @@ static void efivarfs_kill_sb(struct super_block *sb)
- }
- 
- static struct file_system_type efivarfs_type = {
-+	.owner   = THIS_MODULE,
- 	.name    = "efivarfs",
- 	.mount   = efivarfs_mount,
- 	.kill_sb = efivarfs_kill_sb,
-@@ -244,17 +245,23 @@ static struct file_system_type efivarfs_type = {
- static __init int efivarfs_init(void)
- {
- 	if (!efi_enabled(EFI_RUNTIME_SERVICES))
--		return 0;
-+		return -ENODEV;
- 
- 	if (!efivars_kobject())
--		return 0;
-+		return -ENODEV;
- 
- 	return register_filesystem(&efivarfs_type);
- }
- 
-+static __exit void efivarfs_exit(void)
-+{
-+	unregister_filesystem(&efivarfs_type);
-+}
-+
- MODULE_AUTHOR("Matthew Garrett, Jeremy Kerr");
- MODULE_DESCRIPTION("EFI Variable Filesystem");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_FS("efivarfs");
- 
- module_init(efivarfs_init);
-+module_exit(efivarfs_exit);
+jirka
