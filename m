@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912AbaLIMiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:38:14 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59915 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756257AbaLIMiN (ORCPT
+	id S1756925AbaLIMjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:39:18 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:56881 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756257AbaLIMjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:38:13 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7fc86d0000066b7-98-5486ed332cbf
-Content-transfer-encoding: 8BIT
-Message-id: <1418128689.19339.3.camel@AMDC1943>
-Subject: Re: [PATCH] arm64: psci: Fix build breakage without PM_SLEEP
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 09 Dec 2014 13:38:09 +0100
-In-reply-to: <2290734.BRljGaICu4@wuerfel>
-References: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
- <2290734.BRljGaICu4@wuerfel>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xK7rGb9tCDB7PY7b4O+kYu8X7ZT2M
-	FpseX2O1uLxrDpvFm98v2C1efjzB4sDmsWbeGkaP378mMXpsXlLv8XmTXABLFJdNSmpOZllq
-	kb5dAldGZ/NxloIFXBV9q+8wNjBu5ehi5OSQEDCRaNy4gBnCFpO4cG89WxcjF4eQwFJGie5F
-	v9lAErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj6z4wSB5pmsoPU8AroS8y6XwJS
-	IyzgKnHi6yYmEJtNwFhi8/IlYCNFBBQlpr54BtbLLHCcUeLd4XXsIAkWAVWJA5/Ogc3hFNCU
-	eNUONkdIIE3i/u6dTCBhCQFlicZ+twmMArOQHDcL4bhZSI5bwMi8ilE0tTS5oDgpPddIrzgx
-	t7g0L10vOT93EyMkkL/uYFx6zOoQowAHoxIP7w7FthAh1sSy4srcQ4wSHMxKIrxTjgKFeFMS
-	K6tSi/Lji0pzUosPMTJxcEo1MMoEu63uVRB1k288oaBf+jnwM5dP+NsPF6fNT5+mocdvNlnq
-	8T0LlvyXB60LdiTMLVyfzN8Sf37xn2Ztn3v9c1x1phVlmpm/4Pptnj9rV56xWNWFOSp8ezPP
-	ztDm+NZ0uW4S15M5ig82bvkseWD/+gXKkuesD06P+JzycJ/Zhnnd2/5sP/qep0qJpTgj0VCL
-	uag4EQCPeds/QgIAAA==
+	Tue, 9 Dec 2014 07:39:16 -0500
+Date: Tue, 9 Dec 2014 14:38:19 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Subject: Re: [PATCH/RFC v9 02/19] Documentation: leds: Add description of LED
+ Flash class extension
+Message-ID: <20141209123819.GJ15559@valkosipuli.retiisi.org.uk>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-3-git-send-email-j.anaszewski@samsung.com>
+ <20141203170818.GN14746@valkosipuli.retiisi.org.uk>
+ <54802C9F.8030101@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54802C9F.8030101@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-12-09 at 13:29 +0100, Arnd Bergmann wrote:
-> On Tuesday 09 December 2014 12:48:36 Krzysztof Kozlowski wrote:
-> > Fix build failure of defconfig when PM_SLEEP is disabled (e.g. by
-> > disabling SUSPEND) and CPU_IDLE enabled:
-> > 
-> > arch/arm64/kernel/psci.c:543:2: error: unknown field ‘cpu_suspend’ specified in initializer
-> >   .cpu_suspend = cpu_psci_cpu_suspend,
-> >   ^
-> > arch/arm64/kernel/psci.c:543:2: warning: initialization from incompatible pointer type [enabled by default]
-> > arch/arm64/kernel/psci.c:543:2: warning: (near initialization for ‘cpu_psci_ops.cpu_prepare’) [enabled by default]
-> > make[1]: *** [arch/arm64/kernel/psci.o] Error 1
-> > 
-> > The cpu_operations.cpu_suspend field exists only if ARM64_CPU_SUSPEND is
-> > defined, not CPU_IDLE.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > 
+Hi Jacek,
+
+On Thu, Dec 04, 2014 at 10:42:55AM +0100, Jacek Anaszewski wrote:
+> Hi Sakari,
 > 
-> No objection to fixing this obvious build bug, but why do we even have
-> an ARM64_CPU_SUSPEND option? On ARM32 we only have the respective option
-> because we have a random collection of platform specific drivers that
-> use the symbols, but that's not the case on ARM64.
+> Thanks for the review.
+> 
+> On 12/03/2014 06:08 PM, Sakari Ailus wrote:
+> >Hi Jacek,
+> >
+> >On Wed, Dec 03, 2014 at 05:06:37PM +0100, Jacek Anaszewski wrote:
+> >>The documentation being added contains overall description of the
+> >>LED Flash Class and the related sysfs attributes.
+> >>
+> >>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> >>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>Cc: Bryan Wu <cooloney@gmail.com>
+> >>Cc: Richard Purdie <rpurdie@rpsys.net>
+> >>---
+> >>  Documentation/leds/leds-class-flash.txt |   50 +++++++++++++++++++++++++++++++
+> >>  1 file changed, 50 insertions(+)
+> >>  create mode 100644 Documentation/leds/leds-class-flash.txt
+> >>
+> >>diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
+> >>new file mode 100644
+> >>index 0000000..82e58b1
+> >>--- /dev/null
+> >>+++ b/Documentation/leds/leds-class-flash.txt
+> >>@@ -0,0 +1,50 @@
+> >>+
+> >>+Flash LED handling under Linux
+> >>+==============================
+> >>+
+> >>+Some LED devices support two modes - torch and flash. The modes are
+> >>+supported by the LED class (see Documentation/leds/leds-class.txt)
+> >>+and LED Flash class respectively.
+> >>+
+> >>+In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
+> >>+must be defined in the kernel config. A flash LED driver must register
+> >>+in the LED subsystem with led_classdev_flash_register to gain flash
+> >>+capabilities.
+> >>+
+> >>+Following sysfs attributes are exposed for controlling flash led devices:
+> >>+
+> >>+	- flash_brightness - flash LED brightness in microamperes (RW)
+> >>+	- max_flash_brightness - maximum available flash LED brightness (RO)
+> >>+	- flash_timeout - flash strobe duration in microseconds (RW)
+> >>+	- max_flash_timeout - maximum available flash strobe duration (RO)
+> >>+	- flash_strobe - flash strobe state (RW)
+> >>+	- flash_sync_strobe - one flash device can control more than one
+> >>+			      sub-led; when this atrribute is set to 1
+> >
+> >s/atrribute/attribute/
+> >
+> >>+			      the flash led will be strobed synchronously
+> >>+			      with the other one controlled by the same
+> >>+			      device; flash timeout setting is inherited
+> >>+			      from the led being strobed explicitly and
+> >>+			      flash brightness setting of a sub-led's
+> >>+			      being synchronized is used (RW)
+> >
+> >The flash brightness shouldn't be determined by the strobed LED. If this is
+> >a property of the hardware, then be it, but in general no, it it shouldn't
+> >be an interface requirement. I think this should just say that the strobe is
+> >synchronised.
+> 
+> I intended this to sound exactly as you laid it out above, but maybe it
+> is obscure English. "and flash brightness setting of a sub-led >>>being
+> synchronized<<< is used" - from my point of view the led being
+> synchronized is the one that isn't strobed explicitly. But I'm ok with
+> confining ourselves only to saying that strobe is synchronized.
 
-I believe because of cpuidle. It's the same as on ARM32: the cpu_suspend
-is used by both PM_SLEEP and CPU_IDLE.
+Agreed.
 
-Best regards,
-Krzysztof
+> >How does the user btw. figure out which flash LEDs may be strobed
+> >synchronously using the LED flash interface?
+> 
+> The flash_sync_strobe argument is absent if synchronized strobe
+> is not available for a LED. The driver defines this by setting
+> newly added LED_DEV_CAP_COMPOUND flag.
 
+I meant that how does the user figure out which LEDs may be strobed
+synchronously, together. Say, if you have two of these chips and four LEDs,
+then how does it work? :-)
 
+-- 
+Kind regards,
 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
