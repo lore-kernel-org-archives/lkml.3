@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085AbaLIJAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:00:15 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:62697 "EHLO
+	id S1754157AbaLIJFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:05:50 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:50382 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaLIJAN (ORCPT
+	with ESMTP id S1752001AbaLIJFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:00:13 -0500
+	Tue, 9 Dec 2014 04:05:48 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Olof Johansson <olof@lixom.net>, mturquette@linaro.org,
-        f.fainelli@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] clk: bcm: kona: don't return -EFOO as bool
-Date: Tue, 09 Dec 2014 09:59:42 +0100
-Message-ID: <13166134.ThBvWAfRgN@wuerfel>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lftan.linux@gmail.com
+Subject: Re: [GIT PULL] arch/nios2 for v3.19
+Date: Tue, 09 Dec 2014 10:05:43 +0100
+Message-ID: <2956564.Rk8U9iLBaJ@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418075645-14571-1-git-send-email-olof@lixom.net>
-References: <1418075645-14571-1-git-send-email-olof@lixom.net>
+In-Reply-To: <1418114172.4779.22.camel@leyfoon-vm>
+References: <1418114172.4779.22.camel@leyfoon-vm>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:WKmaoo8dHJBsVo8MBJbh+7BLMTe+EviChc80m+J/JhcAeDSlzOe
- H8h0H/O5ICbnQyoPSXoH7dWj1z8UP/6nD4ctaWrqjABcl3xyqBEpj1TrrjMXqXzhwLCb+tm
- X+VTx1eTItC1GaBoLr3PVSWAChLnDaOCbtLHzgiHUtgvCCqQCVFyQnwG+QEbaYkKjQDLL7d
- Pkla5QSaAPczqVZxxscDA==
+X-Provags-ID: V03:K0:KNMoGDQXiV21927tgawf7Zl+cwSOMWXGBZKCCftnaPcLp7EMqm7
+ XvXCGa7nV0erMKLJLkCZ6bZ3pBkjPNtOI1VZbjjokzQcbUMnwUBA4pDotCjb0NAeZdmAv8/
+ v9hAHLIRFckiSFgIfRzKGOsrrPhbprhv8T7TuDKnXAjWotWMIJkfLr1OUDBnI+zGMUxsoOo
+ m5oOvbeHPLTzaUIpfoowQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 December 2014 13:54:04 Olof Johansson wrote:
-> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-> index 95af2e6..53fca77 100644
-> --- a/drivers/clk/bcm/clk-kona.c
-> +++ b/drivers/clk/bcm/clk-kona.c
-> @@ -1252,7 +1252,7 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
->         default:
->                 BUG();
->         }
-> -       return -EINVAL;
-> +       return false;
->  }
+On Tuesday 09 December 2014 16:36:12 Ley Foon Tan wrote:
+> Hi Linus
+> 
+> Here is the Linux port for Nios II processor (from Altera) arch/nios2/
+> tree for v3.19. The patchset has been discussed on the kernel
+> mailing lists since April and has gone through 6 revisions of review.
+> The additional changes since then have been mostly further cleanups and
+> fixes when merged with other trees.
+> 
+> The arch code is in arch/nios2 and one asm-generic change (acked by
+> Arnd).
+> 
+> Please consider pulling. 
+> 
 
-Nothing wrong with your patch, but the __kona_clk_init() function is
-still very strange. Note that the return statement is unreachable,
-and the reason for the BUG() statement to not be hit is that all
-kona clocks have type=bcm_clk_peri.
+For the pull request:
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I've reviewed the architecture port in the past and it looks good in
+its latest version.
 
 	Arnd
