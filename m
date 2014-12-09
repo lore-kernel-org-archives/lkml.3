@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaLIXfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:35:51 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:44979 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147AbaLIXft (ORCPT
+	id S1754756AbaLIXf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:35:56 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40053 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702AbaLIXfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:35:49 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org
-Cc: bpoirier@suse.de, x86@kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
-        mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v2 1/2] x86, platform, xen, kconfig: clarify kvmconfig is for kvm
-Date: Tue,  9 Dec 2014 15:35:37 -0800
-Message-Id: <1418168138-6425-2-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
+	Tue, 9 Dec 2014 18:35:52 -0500
+Date: Tue, 09 Dec 2014 18:35:49 -0500 (EST)
+Message-Id: <20141209.183549.1930188640715074097.davem@davemloft.net>
+To: hau@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 0/9] r8169:update hardware ephy parameter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1418143563-7652-1-git-send-email-hau@realtek.com>
+References: <1418143563-7652-1-git-send-email-hau@realtek.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 15:35:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+From: Chunhao Lin <hau@realtek.com>
+Date: Wed, 10 Dec 2014 00:45:54 +0800
 
-We'll be adding options for xen as well.
+> Update hardware ephy parameter to improve pcie compatibility.
 
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: penberg@kernel.org
-Cc: levinsasha928@gmail.com
-Cc: mtosatti@redhat.com
-Cc: fengguang.wu@intel.com
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- scripts/kconfig/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This really doesn't tell me anything, I really dislike patch
+series like this one.
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 9645c07..ff612b0 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -141,7 +141,7 @@ help:
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
- 	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
--	@echo  '  kvmconfig	  - Enable additional options for guest kernel support'
-+	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
- 	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
- 
- # lxdialog stuff
--- 
-2.1.1
+All of the programming is magic values to magic offsets.
 
+You aren't even trying to describe in the commit log message exactly
+what kind of settings are being changed, and exactly how those changes
+achieve the stated goal.
+
+Furthermore, the commit description makes no sense at all to me.
+
+How can programming the ethernet MAC PHY have any influence on PCI-E
+bus compatability?  Or are you programming the PCI bus interface's
+PHY?
+
+In what way are you adjusting which settings and in what way do those
+adjustments help improve PCI-E bus behavior?
+
+You absolutely must describe exactly what the new programming
+is actually doing, precisely, and in detail.  I want to know
+if some kind of timings are being adjusted, and in what way.
+Are some fifo limits being changes?  If so, in what way, and
+why does that help.
+
+You have to describe what you are doing. Short and non-informative
+commit log messages alongside random changes to undocumented magic
+constant registers is simply unacceptable.
