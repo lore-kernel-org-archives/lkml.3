@@ -1,58 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaLIXf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 18:35:56 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40053 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaLIXfw (ORCPT
+	id S1754803AbaLIXgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:36:16 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:55736 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704AbaLIXfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 18:35:52 -0500
-Date: Tue, 09 Dec 2014 18:35:49 -0500 (EST)
-Message-Id: <20141209.183549.1930188640715074097.davem@davemloft.net>
-To: hau@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 0/9] r8169:update hardware ephy parameter
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1418143563-7652-1-git-send-email-hau@realtek.com>
-References: <1418143563-7652-1-git-send-email-hau@realtek.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 15:35:51 -0800 (PST)
+	Tue, 9 Dec 2014 18:35:54 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org
+Cc: bpoirier@suse.de, x86@kernel.org, kvm@vger.kernel.org,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2 2/2] x86, arm, platform, xen, kconfig: add xen defconfig helper
+Date: Tue,  9 Dec 2014 15:35:38 -0800
+Message-Id: <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chunhao Lin <hau@realtek.com>
-Date: Wed, 10 Dec 2014 00:45:54 +0800
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-> Update hardware ephy parameter to improve pcie compatibility.
+This lets you build a kernel which can support xen dom0
+or xen guests by just using:
 
-This really doesn't tell me anything, I really dislike patch
-series like this one.
+   make xenconfig
 
-All of the programming is magic values to magic offsets.
+on both x86 and arm64 kernels. This also splits out the
+options which are available currently to be built with x86
+and 'make ARCH=arm64' under a shared config.
 
-You aren't even trying to describe in the commit log message exactly
-what kind of settings are being changed, and exactly how those changes
-achieve the stated goal.
+Technically xen supports a dom0 kernel and also a guest
+kernel configuration but upon review with the xen team
+since we don't have many dom0 options its best to just
+combine these two into one.
 
-Furthermore, the commit description makes no sense at all to me.
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: penberg@kernel.org
+Cc: levinsasha928@gmail.com
+Cc: mtosatti@redhat.com
+Cc: fengguang.wu@intel.com
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ arch/x86/configs/xen.config |  7 +++++++
+ kernel/configs/xen.config   | 30 ++++++++++++++++++++++++++++++
+ scripts/kconfig/Makefile    |  5 +++++
+ 3 files changed, 42 insertions(+)
+ create mode 100644 arch/x86/configs/xen.config
+ create mode 100644 kernel/configs/xen.config
 
-How can programming the ethernet MAC PHY have any influence on PCI-E
-bus compatability?  Or are you programming the PCI bus interface's
-PHY?
+diff --git a/arch/x86/configs/xen.config b/arch/x86/configs/xen.config
+new file mode 100644
+index 0000000..92b8587f
+--- /dev/null
++++ b/arch/x86/configs/xen.config
+@@ -0,0 +1,7 @@
++# x86 xen specific config options
++CONFIG_XEN_PVHVM=y
++CONFIG_XEN_MAX_DOMAIN_MEMORY=500
++CONFIG_XEN_SAVE_RESTORE=y
++# CONFIG_XEN_DEBUG_FS is not set
++CONFIG_XEN_PVH=y
++CONFIG_XEN_MCE_LOG=y
+diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
+new file mode 100644
+index 0000000..d2ec010
+--- /dev/null
++++ b/kernel/configs/xen.config
+@@ -0,0 +1,30 @@
++# generic config
++CONFIG_XEN=y
++CONFIG_XEN_DOM0=y
++CONFIG_PCI_XEN=y
++CONFIG_XEN_PCIDEV_FRONTEND=m
++CONFIG_XEN_BLKDEV_FRONTEND=m
++CONFIG_XEN_BLKDEV_BACKEND=m
++CONFIG_XEN_NETDEV_FRONTEND=m
++CONFIG_XEN_NETDEV_BACKEND=m
++CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
++CONFIG_HVC_XEN=y
++CONFIG_HVC_XEN_FRONTEND=y
++CONFIG_TCG_XEN=m
++CONFIG_XEN_WDT=m
++CONFIG_XEN_FBDEV_FRONTEND=y
++CONFIG_XEN_BALLOON=y
++CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
++CONFIG_XEN_SCRUB_PAGES=y
++CONFIG_XEN_DEV_EVTCHN=m
++CONFIG_XEN_BACKEND=y
++CONFIG_XENFS=m
++CONFIG_XEN_COMPAT_XENFS=y
++CONFIG_XEN_SYS_HYPERVISOR=y
++CONFIG_XEN_XENBUS_FRONTEND=y
++CONFIG_XEN_GNTDEV=m
++CONFIG_XEN_GRANT_DEV_ALLOC=m
++CONFIG_SWIOTLB_XEN=y
++CONFIG_XEN_PCIDEV_BACKEND=m
++CONFIG_XEN_PRIVCMD=m
++CONFIG_XEN_ACPI_PROCESSOR=m
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index ff612b0..f4a8f89 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -117,6 +117,10 @@ PHONY += kvmconfig
+ kvmconfig:
+ 	$(call mergeconfig,kvm_guest)
+ 
++PHONY += xenconfig
++xenconfig:
++	$(call mergeconfig,xen)
++
+ PHONY += tinyconfig
+ tinyconfig: allnoconfig
+ 	$(call mergeconfig,tiny)
+@@ -142,6 +146,7 @@ help:
+ 	@echo  '  listnewconfig   - List new options'
+ 	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
+ 	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
++	@echo  '  xenconfig       - Enable additional options for xen dom0 and guest kernel support'
+ 	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
+ 
+ # lxdialog stuff
+-- 
+2.1.1
 
-In what way are you adjusting which settings and in what way do those
-adjustments help improve PCI-E bus behavior?
-
-You absolutely must describe exactly what the new programming
-is actually doing, precisely, and in detail.  I want to know
-if some kind of timings are being adjusted, and in what way.
-Are some fifo limits being changes?  If so, in what way, and
-why does that help.
-
-You have to describe what you are doing. Short and non-informative
-commit log messages alongside random changes to undocumented magic
-constant registers is simply unacceptable.
