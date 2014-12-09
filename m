@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaLIW4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:56:09 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63642 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660AbaLIWyw (ORCPT
+	id S1754645AbaLIWyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:54:50 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37481 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976AbaLIWul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:54:52 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: hpa@zytor.com
-Cc: bpoirier@suse.de, linux-doc@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH v2] x86-64, doc: update to account for file shuffling
-Date: Tue,  9 Dec 2014 14:54:44 -0800
-Message-Id: <1418165684-6226-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 9 Dec 2014 17:50:41 -0500
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 18/25] switch l2cap ->memcpy_fromiovec() to msghdr
+Date: Tue,  9 Dec 2014 22:50:31 +0000
+Message-Id: <1418165438-2205-18-git-send-email-viro@ZenIV.linux.org.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
+References: <20141209224928.GL22149@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-While at it, also refer to the 32 bit entry file.
+it'll die soon enough - now that kvec-backed iov_iter works regardless
+of set_fs(), both instances will become copy_from_iter() as soon as
+we introduce ->msg_iter...
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: x86@kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- Documentation/x86/entry_64.txt | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/net/bluetooth/l2cap.h | 6 +++---
+ net/bluetooth/l2cap_core.c    | 4 ++--
+ net/bluetooth/l2cap_sock.c    | 4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index bc7226e..4a1c5c2 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -7,9 +7,12 @@ http://lkml.kernel.org/r/<20110529191055.GC9835%40elte.hu>
- The x86 architecture has quite a few different ways to jump into
- kernel code.  Most of these entry points are registered in
- arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S
--and arch/x86/ia32/ia32entry.S.
-+for 64-bit, arch/x86/kernel/entry_32.S for 32-bit and finally
-+arch/x86/ia32/ia32entry.S which implements the 32-bit compatibility
-+syscall entry points and thus provides for 32-bit processes the
-+ability to execute syscalls when running on 64-bit kernels.
+diff --git a/include/net/bluetooth/l2cap.h b/include/net/bluetooth/l2cap.h
+index 061e648..4e23674 100644
+--- a/include/net/bluetooth/l2cap.h
++++ b/include/net/bluetooth/l2cap.h
+@@ -608,7 +608,7 @@ struct l2cap_ops {
+ 					       unsigned long len, int nb);
+ 	int			(*memcpy_fromiovec) (struct l2cap_chan *chan,
+ 						     unsigned char *kdata,
+-						     struct iovec *iov,
++						     struct msghdr *msg,
+ 						     int len);
+ };
  
--The IDT vector assignments are listed in arch/x86/include/irq_vectors.h.
-+The IDT vector assignments are listed in arch/x86/include/asm/irq_vectors.h.
+@@ -905,13 +905,13 @@ static inline long l2cap_chan_no_get_sndtimeo(struct l2cap_chan *chan)
  
- Some of these entries are:
+ static inline int l2cap_chan_no_memcpy_fromiovec(struct l2cap_chan *chan,
+ 						 unsigned char *kdata,
+-						 struct iovec *iov,
++						 struct msghdr *msg,
+ 						 int len)
+ {
+ 	/* Following is safe since for compiler definitions of kvec and
+ 	 * iovec are identical, yielding the same in-core layout and alignment
+ 	 */
+-	struct kvec *vec = (struct kvec *)iov;
++	struct kvec *vec = (struct kvec *)msg->msg_iov;
  
+ 	while (len > 0) {
+ 		if (vec->iov_len) {
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 8e12731..5201d61 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -2097,7 +2097,7 @@ static inline int l2cap_skbuff_fromiovec(struct l2cap_chan *chan,
+ 	int sent = 0;
+ 
+ 	if (chan->ops->memcpy_fromiovec(chan, skb_put(skb, count),
+-					msg->msg_iov, count))
++					msg, count))
+ 		return -EFAULT;
+ 
+ 	sent += count;
+@@ -2118,7 +2118,7 @@ static inline int l2cap_skbuff_fromiovec(struct l2cap_chan *chan,
+ 		*frag = tmp;
+ 
+ 		if (chan->ops->memcpy_fromiovec(chan, skb_put(*frag, count),
+-						msg->msg_iov, count))
++						msg, count))
+ 			return -EFAULT;
+ 
+ 		sent += count;
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index b0efb72..205b298 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -1338,9 +1338,9 @@ static struct sk_buff *l2cap_sock_alloc_skb_cb(struct l2cap_chan *chan,
+ 
+ static int l2cap_sock_memcpy_fromiovec_cb(struct l2cap_chan *chan,
+ 					  unsigned char *kdata,
+-					  struct iovec *iov, int len)
++					  struct msghdr *msg, int len)
+ {
+-	return memcpy_fromiovec(kdata, iov, len);
++	return memcpy_from_msg(kdata, msg, len);
+ }
+ 
+ static void l2cap_sock_ready_cb(struct l2cap_chan *chan)
 -- 
-2.1.1
+2.1.3
 
