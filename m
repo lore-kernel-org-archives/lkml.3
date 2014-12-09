@@ -1,42 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113AbaLISVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:21:48 -0500
-Received: from smtp07.online.nl ([194.134.42.52]:34860 "EHLO smtp07.online.nl"
+	id S1752141AbaLISW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:22:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54057 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005AbaLISVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:21:46 -0500
-X-Greylist: delayed 552 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 13:21:45 EST
-Message-ID: <54873B8E.1060106@topic.nl>
-Date: Tue, 09 Dec 2014 19:12:30 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-Organization: Topic
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752005AbaLISWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:22:24 -0500
+Date: Tue, 9 Dec 2014 19:22:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Jan Kara <jack@suse.cz>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memory: merge shared-writable dirtying branches
+ in do_wp_page()
+Message-ID: <20141209182219.GB22569@quack.suse.cz>
+References: <1417791166-32226-1-git-send-email-hannes@cmpxchg.org>
+ <1417791166-32226-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers/regulator/core.c: Don't print error on EPROBE_DEFER
-References: <1418130764-22440-1-git-send-email-mike.looijmans@topic.nl> <20141209161420.GJ1934@sirena.org.uk>
-In-Reply-To: <20141209161420.GJ1934@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Online-Scanned: by Cloudmark authority (on smtp07.online.nl)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417791166-32226-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 05:14 PM, Mark Brown wrote:
->>If a regulator depends on another regulator that happens to be called
->>later, the kernel always prints a message like this:
->>   reg-fixed-voltage regulator_sd1: Failed to find supply vin
->>Since the deferral is not something fatal, nor even something the user
->>may need to be aware about, reduce the message to debug level.
+On Fri 05-12-14 09:52:46, Johannes Weiner wrote:
+> Whether there is a vm_ops->page_mkwrite or not, the page dirtying is
+> pretty much the same.  Make sure the page references are the same in
+> both cases, then merge the two branches.
+> 
+> It's tempting to go even further and page-lock the !page_mkwrite case,
+> to get it in line with everybody else setting the page table and thus
+> further simplify the model.  But that's not quite compelling enough to
+> justify dropping the pte lock, then relocking and verifying the entry
+> for filesystems without ->page_mkwrite, which notably includes tmpfs.
+> Leave it for now and lock the page late in the !page_mkwrite case.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Can we instead at least reduce it to WARN or INFO level then?
+								Honza
 
-I have to explain over and over again that there's no problem when that 
-message comes along ten times in a row. And it causes people to overlook 
-the messages that really are errors.
-
+> ---
+>  mm/memory.c | 48 +++++++++++++++++-------------------------------
+>  1 file changed, 17 insertions(+), 31 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 5640a718ac58..df47fd0a4b7f 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2046,7 +2046,7 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	pte_t entry;
+>  	int ret = 0;
+>  	int page_mkwrite = 0;
+> -	struct page *dirty_page = NULL;
+> +	bool dirty_shared = false;
+>  	unsigned long mmun_start = 0;	/* For mmu_notifiers */
+>  	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+>  	struct mem_cgroup *memcg;
+> @@ -2097,6 +2097,7 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		unlock_page(old_page);
+>  	} else if (unlikely((vma->vm_flags & (VM_WRITE|VM_SHARED)) ==
+>  					(VM_WRITE|VM_SHARED))) {
+> +		page_cache_get(old_page);
+>  		/*
+>  		 * Only catch write-faults on shared writable pages,
+>  		 * read-only shared pages can get COWed by
+> @@ -2104,7 +2105,7 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		 */
+>  		if (vma->vm_ops && vma->vm_ops->page_mkwrite) {
+>  			int tmp;
+> -			page_cache_get(old_page);
+> +
+>  			pte_unmap_unlock(page_table, ptl);
+>  			tmp = do_page_mkwrite(vma, old_page, address);
+>  			if (unlikely(!tmp || (tmp &
+> @@ -2124,11 +2125,10 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  				unlock_page(old_page);
+>  				goto unlock;
+>  			}
+> -
+>  			page_mkwrite = 1;
+>  		}
+> -		dirty_page = old_page;
+> -		get_page(dirty_page);
+> +
+> +		dirty_shared = true;
+>  
+>  reuse:
+>  		/*
+> @@ -2147,43 +2147,29 @@ reuse:
+>  		pte_unmap_unlock(page_table, ptl);
+>  		ret |= VM_FAULT_WRITE;
+>  
+> -		if (!dirty_page)
+> -			return ret;
+> -
+> -		if (!page_mkwrite) {
+> +		if (dirty_shared) {
+>  			struct address_space *mapping;
+>  			int dirtied;
+>  
+> -			lock_page(dirty_page);
+> -			dirtied = set_page_dirty(dirty_page);
+> -			VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page);
+> -			mapping = dirty_page->mapping;
+> -			unlock_page(dirty_page);
+> +			if (!page_mkwrite)
+> +				lock_page(old_page);
+>  
+> -			if (dirtied && mapping) {
+> -				/*
+> -				 * Some device drivers do not set page.mapping
+> -				 * but still dirty their pages
+> -				 */
+> -				balance_dirty_pages_ratelimited(mapping);
+> -			}
+> +			dirtied = set_page_dirty(old_page);
+> +			VM_BUG_ON_PAGE(PageAnon(old_page), old_page);
+> +			mapping = old_page->mapping;
+> +			unlock_page(old_page);
+> +			page_cache_release(old_page);
+>  
+> -			file_update_time(vma->vm_file);
+> -		}
+> -		put_page(dirty_page);
+> -		if (page_mkwrite) {
+> -			struct address_space *mapping = dirty_page->mapping;
+> -
+> -			set_page_dirty(dirty_page);
+> -			unlock_page(dirty_page);
+> -			page_cache_release(dirty_page);
+> -			if (mapping)	{
+> +			if ((dirtied || page_mkwrite) && mapping) {
+>  				/*
+>  				 * Some device drivers do not set page.mapping
+>  				 * but still dirty their pages
+>  				 */
+>  				balance_dirty_pages_ratelimited(mapping);
+>  			}
+> +
+> +			if (!page_mkwrite)
+> +				file_update_time(vma->vm_file);
+>  		}
+>  
+>  		return ret;
+> -- 
+> 2.1.3
+> 
 -- 
-Mike Looijmans
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
