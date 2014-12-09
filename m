@@ -1,174 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbaLIQ6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 11:58:20 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:47142 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaLIQ6S (ORCPT
+	id S1757604AbaLIRDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 12:03:07 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:33779 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176AbaLIRDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 11:58:18 -0500
-Date: Tue, 9 Dec 2014 16:58:07 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Eddie Huang =?utf-8?B?KOm7g+aZuuWCkSk=?= 
-	<eddie.huang@mediatek.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
- timers when requested
-Message-ID: <20141209165807.GJ31129@e104818-lin.cambridge.arm.com>
-References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
- <1417776064.14380.17.camel@mtksdaap41>
- <20141208162140.GN16185@e104818-lin.cambridge.arm.com>
- <1418106718.32622.31.camel@mtksdaap41>
+	Tue, 9 Dec 2014 12:03:04 -0500
+Date: Tue, 9 Dec 2014 09:02:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "supporter:S390" <linux390@de.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Jens Freimann <jfrei@linux.vnet.ibm.com>,
+        "open list:S390" <linux-s390@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
+Message-ID: <20141209170255.GE25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418106718.32622.31.camel@mtksdaap41>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418134608-21556-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120917-0029-0000-0000-0000063E2C00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 06:31:58AM +0000, Yingjoe Chen wrote:
-> On Mon, 2014-12-08 at 16:21 +0000, Catalin Marinas wrote:
-> > On Fri, Dec 05, 2014 at 10:41:04AM +0000, Yingjoe Chen wrote:
-> > > On Sun, 2014-11-23 at 23:02 -0800, Sonny Rao wrote: 
-> > > > This is a bug fix for using physical arch timers when
-> > > > the arch_timer_use_virtual boolean is false.  It restores the
-> > > > arch_counter_get_cntpct() function after removal in
-> > > > 
-> > > > 0d651e4e "clocksource: arch_timer: use virtual counters"
-> > > > 
-> > > > We need this on certain ARMv7 systems which are architected like this:
-> > > > diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> > > > index f190971..b1fa4e6 100644
-> > > > --- a/arch/arm64/include/asm/arch_timer.h
-> > > > +++ b/arch/arm64/include/asm/arch_timer.h
-> > > > @@ -104,6 +104,15 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
-> > > >  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
-> > > >  }
-> > > >  
-> > > > +static inline u64 arch_counter_get_cntpct(void)
-> > > > +{
-> > > > +	/*
-> > > > +	 * AArch64 kernel and user space mandate the use of CNTVCT.
-> > > > +	 */
-> > > > +	BUG();
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > >  static inline u64 arch_counter_get_cntvct(void)
-> > > >  {
-> > > >  	u64 cval;
-> > > 
-> > > I tested this on an arm64 platform and system fail to boot when apply
-> > > this patch.
-> > > 
-> > > The boot loader start kernel at EL2, so is_hyp_mode_available() will be
-> > > true and we will use physical timer. Without this patch,
-> > > arch_timer_read_counter set to arch_counter_get_cntvct even when we use
-> > > physical timer which is incorrect but at least system will boot.
-> > 
-> > So on arm64 we want to use CNTVCT all the time, even if we start the
-> > kernel at EL2. This is the counter that gets exposed to user via vdso.
-> > When the kernel boots at EL2, we initialise CNTVOFF to 0, so we know
-> > that CNTVCT == CNTPCT. However, I would still prefer to use CNTVCT even
-> > in such case to spot possible firmware issues with not restoring CNTVOFF
-> > when coming out of suspend (one particular case of suspend which does
-> > not require a different kernel entry point).
-> > 
-> > > I think we still need this function on arm64. We should add BUG() to
-> > > arch_timer_init instead, maybe something like this:
-> > > 
-> > > @@ -708,9 +708,12 @@ static void __init arch_timer_init(struct device_node *np)
-> > >  	 * If we cannot rely on firmware initializing the timer registers then
-> > >  	 * we should use the physical timers instead.
-> > >  	 */
-> > > -	if (IS_ENABLED(CONFIG_ARM) &&
-> > > -	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
-> > > +	if (of_property_read_bool(np, "arm,cpu-registers-not-fw-configured")) {
-> > > +		if (IS_ENABLED(CONFIG_ARM64))
-> > > +			BUG();
-> > > +		else
-> > >  			arch_timer_use_virtual = false;
-> > > +	}
-> > 
-> > We could be more tolerant (give people a chance to check their DT):
-> > 
-> > 	if (!WARN_ON(IS_ENABLED(CONFIG_ARM64)))
-> > 		arch_timer_use_virtual = false;
-> > 
-> > In addition, we can define arch_counter_get_cntpct to always read CNTVCT
-> > (not that nice but maybe it looks better with a comment):
-> > 
-> > /*
-> >  * AArch64 kernel and user space mandate the use of CNTVCT.
-> >  */
-> > #define arch_counter_get_cntpct	arch_counter_get_cntvct
-> > 
-> > (or any better suggestion to avoid reading CNTPCT on arm64)
-> > 
+On Tue, Dec 09, 2014 at 09:16:46AM -0500, Pranith Kumar wrote:
+> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
+> is a compile time failure if srcu is used when not enabled. This was decided to
+> be better than waiting until link time for a failure to occur.
 > 
-> I'm not sure about this. arch_timer_use_virtual is false, indicate we
-> are using physical timer, the function name suggest it will read
-> physical timer, but actually it is reading virtual timer. It sure will
-> create confusion when one need to debug.
+> Also make including kvm_host.h conditional on CONFIG_KVM being enabled. This
+> prevents build failures as KVM is dependent on SRCU.
 
-You mix timer and counter terms here. Anyway, of we use physical timer,
-you could argue that it makes sense to use the corresponding physical
-counter (CNTPCT). However, on arm64 we only expose CNTVCT to user VDSO
-and we want to use the same in the kernel. When booting at EL2, CNTVCT
-== CNTPCT because we control CNTVOFF, that's unless we have some broken
-firmware that does not restore CNTVOFF correctly. That's what we want
-to spot early, hence the aim to always use the virtual counter (but not
-the timer, use use the physical timer as it makes it easier for KVM).
+Queued for testing, thank you!
 
-So the patch below, on top of linux-next, should solve the BUG():
+							Thanx, Paul
 
----------------------8<------------------------------
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> [for s390 parts]
+> CC: Josh Triplett <josh@joshtriplett.org>
+> CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  arch/s390/kernel/asm-offsets.c |  7 ++++++-
+>  include/linux/notifier.h       | 47 ++++++++++++++++++++++++------------------
+>  include/linux/srcu.h           |  6 +++++-
+>  3 files changed, 38 insertions(+), 22 deletions(-)
+> 
+> diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
+> index ef279a1..055334d 100644
+> --- a/arch/s390/kernel/asm-offsets.c
+> +++ b/arch/s390/kernel/asm-offsets.c
+> @@ -7,12 +7,15 @@
+>  #define ASM_OFFSETS_C
+> 
+>  #include <linux/kbuild.h>
+> -#include <linux/kvm_host.h>
+>  #include <linux/sched.h>
+>  #include <asm/idle.h>
+>  #include <asm/vdso.h>
+>  #include <asm/pgtable.h>
+> 
+> +#ifdef CONFIG_KVM
+> +#include <linux/kvm_host.h>
+> +#endif
+> +
+>  /*
+>   * Make sure that the compiler is new enough. We want a compiler that
+>   * is known to work with the "Q" assembler constraint.
+> @@ -182,8 +185,10 @@ int main(void)
+>  	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
+>  	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
+>  	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
+> +#ifdef CONFIG_KVM
+>  	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
+>  	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
+> +#endif /* CONFIG_KVM */
+>  #endif /* CONFIG_32BIT */
+>  	return 0;
+>  }
+> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+> index d14a4c3..fe4f02a 100644
+> --- a/include/linux/notifier.h
+> +++ b/include/linux/notifier.h
+> @@ -47,6 +47,8 @@
+>   * runtime initialization.
+>   */
+> 
+> +struct notifier_block;
+> +
+>  typedef	int (*notifier_fn_t)(struct notifier_block *nb,
+>  			unsigned long action, void *data);
+> 
+> @@ -70,12 +72,6 @@ struct raw_notifier_head {
+>  	struct notifier_block __rcu *head;
+>  };
+> 
+> -struct srcu_notifier_head {
+> -	struct mutex mutex;
+> -	struct srcu_struct srcu;
+> -	struct notifier_block __rcu *head;
+> -};
+> -
+>  #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
+>  		spin_lock_init(&(name)->lock);	\
+>  		(name)->head = NULL;		\
+> @@ -88,11 +84,6 @@ struct srcu_notifier_head {
+>  		(name)->head = NULL;		\
+>  	} while (0)
+> 
+> -/* srcu_notifier_heads must be initialized and cleaned up dynamically */
+> -extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+> -#define srcu_cleanup_notifier_head(name)	\
+> -		cleanup_srcu_struct(&(name)->srcu);
+> -
+>  #define ATOMIC_NOTIFIER_INIT(name) {				\
+>  		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
+>  		.head = NULL }
+> @@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+>  		.head = NULL }
+>  #define RAW_NOTIFIER_INIT(name)	{				\
+>  		.head = NULL }
+> -/* srcu_notifier_heads cannot be initialized statically */
+> 
+>  #define ATOMIC_NOTIFIER_HEAD(name)				\
+>  	struct atomic_notifier_head name =			\
+> @@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
+>  		struct notifier_block *nb);
+>  extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
+>  		struct notifier_block *nb);
+> -extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
+> -		struct notifier_block *nb);
+> 
+>  extern int blocking_notifier_chain_cond_register(
+>  		struct blocking_notifier_head *nh,
+> @@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
+>  		struct notifier_block *nb);
+>  extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
+>  		struct notifier_block *nb);
+> -extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
+> -		struct notifier_block *nb);
+> 
+>  extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+>  		unsigned long val, void *v);
+> @@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
+>  		unsigned long val, void *v);
+>  extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
+>  	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+> -extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+> -		unsigned long val, void *v);
+> -extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+> -	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+> 
+>  #define NOTIFY_DONE		0x0000		/* Don't care */
+>  #define NOTIFY_OK		0x0001		/* Suits me */
+> @@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
+> 
+>  extern struct blocking_notifier_head reboot_notifier_list;
+> 
+> +#ifdef CONFIG_SRCU
+> +
+> +struct srcu_notifier_head {
+> +	struct mutex mutex;
+> +	struct srcu_struct srcu;
+> +	struct notifier_block __rcu *head;
+> +};
+> +
+> +/* srcu_notifier_heads must be initialized and cleaned up dynamically
+> + * srcu_notifier_heads cannot be initialized statically
+> + */
+> +extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
+> +#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
+> +
+> +extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
+> +		struct notifier_block *nb);
+> +extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
+> +		struct notifier_block *nb);
+> +extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+> +		unsigned long val, void *v);
+> +extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+> +	unsigned long val, void *v, int nr_to_call, int *nr_calls);
+> +
+> +#endif /* CONFIG_SRCU */
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _LINUX_NOTIFIER_H */
+> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> index 9cfd962..ed9c389 100644
+> --- a/include/linux/srcu.h
+> +++ b/include/linux/srcu.h
+> @@ -26,6 +26,8 @@
+>   *
+>   */
+> 
+> +#ifdef CONFIG_SRCU
+> +
+>  #ifndef _LINUX_SRCU_H
+>  #define _LINUX_SRCU_H
+> 
+> @@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
+>  	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+>  }
+> 
+> -#endif
+> +#endif /* _LINUX_SRCU_H */
+> +
+> +#endif /* CONFIG_SRCU */
+> -- 
+> 1.9.1
+> 
 
->From 9be3c61788eff2e7d010d627582118fa6aae1d9c Mon Sep 17 00:00:00 2001
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Tue, 9 Dec 2014 16:44:06 +0000
-Subject: [PATCH] clocksource: arch_timer: Only use the virtual counter
- (CNTVCT) on arm64
-
-The arm64 kernel uses CNTVCT in VDSO. When booting in EL2, the kernel
-switches to the physical timers to make things easier for KVM but it
-continues to use the virtual counter both in user and kernel. While in
-such scenario CNTVCT == CNTPCT (since CNTVOFF is initialised by the
-kernel to 0), we want to spot firmware bugs corrupting CNTVOFF early
-(which would affect CNTVCT).
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- drivers/clocksource/arm_arch_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 6a79fc4f900c..095c1774592c 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -462,7 +462,7 @@ static void __init arch_counter_register(unsigned type)
- 
- 	/* Register the CP15 based counter if we have one */
- 	if (type & ARCH_CP15_TIMER) {
--		if (arch_timer_use_virtual)
-+		if (IS_ENABLED(CONFIG_ARM64) || arch_timer_use_virtual)
- 			arch_timer_read_counter = arch_counter_get_cntvct;
- 		else
- 			arch_timer_read_counter = arch_counter_get_cntpct;
