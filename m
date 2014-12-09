@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802AbaLIM0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:26:07 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60070 "EHLO mail.skyhub.de"
+	id S1756818AbaLIM1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 07:27:17 -0500
+Received: from mail.kernel.org ([198.145.19.201]:60237 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756257AbaLIM0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:26:05 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: Unify segment selector defines
-Date: Tue,  9 Dec 2014 13:25:59 +0100
-Message-Id: <1418127959-29902-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 2.0.0
+	id S1756257AbaLIM1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 07:27:15 -0500
+Date: Tue, 9 Dec 2014 09:27:08 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>
+Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Message-ID: <20141209122708.GA4189@kernel.org>
+References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+ <20141204142330.GB10406@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+ <20141204155142.GD18689@kernel.org>
+ <20141204160213.GB18631@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167E1F0@shsmsx102.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770167E1F0@shsmsx102.ccr.corp.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Em Thu, Dec 04, 2014 at 04:18:56PM +0000, Liang, Kan escreveu:
+> 
+> 
+> > 
+> > On Thu, Dec 04, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
+> > > > Jiri Wrote:
+> > > > > looks ok to me..
+> > >
+> > > > Thanks for the review.
+> > >
+> > > > > I'll test it once I get hands on Haswel server again, I guess we
+> > > > > wait for the kernel change to go in first anyway, right?
+> > >
+> > > > I'm not sure, let's ask Peter.
+> > >
+> > > > Peter?
+> > >
+> > > Would be good to go in one pull request, so that whoever pulls it has
+> > > the chance to test the kernel feature with the accompanying tooling bits.
+> > 
+> > also there's user part dependency on kernel.. soem new define IIRC
+> > 
+> 
+> Oh, right. We have to let them go in together.
+> 
+> Hi Peter,
 
-Those are identical on 32- and 64-bit, unify them. No functional change.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/segment.h | 30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
-
-diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-index 6f1c3a8a33ab..db257a58571f 100644
---- a/arch/x86/include/asm/segment.h
-+++ b/arch/x86/include/asm/segment.h
-@@ -23,6 +23,15 @@
- #define GDT_ENTRY_BOOT_TSS	(GDT_ENTRY_BOOT_CS + 2)
- #define __BOOT_TSS		(GDT_ENTRY_BOOT_TSS * 8)
+The ones that are just prep patches I am merging now, Jiri, can I stick
+an Acked-by to the non-LBR related ones?
  
-+#define SEGMENT_RPL_MASK	0x3 /*
-+				     * Bottom two bits of selector give the ring
-+				     * privilege level
-+				     */
-+#define SEGMENT_TI_MASK		0x4 /* Bit 2 is table indicator (LDT/GDT) */
-+#define USER_RPL		0x3 /* User mode is privilege level 3 */
-+#define SEGMENT_LDT		0x4 /* LDT segment has TI set... */
-+#define SEGMENT_GDT		0x0 /* ... GDT has it cleared */
-+
- #ifdef CONFIG_X86_32
- /*
-  * The layout of the per-CPU GDT under Linux:
-@@ -125,16 +134,6 @@
- #define PNP_TS1    (GDT_ENTRY_PNPBIOS_TS1 * 8)	/* transfer data segment */
- #define PNP_TS2    (GDT_ENTRY_PNPBIOS_TS2 * 8)	/* another data segment */
- 
--/* Bottom two bits of selector give the ring privilege level */
--#define SEGMENT_RPL_MASK	0x3
--/* Bit 2 is table indicator (LDT/GDT) */
--#define SEGMENT_TI_MASK		0x4
--
--/* User mode is privilege level 3 */
--#define USER_RPL		0x3
--/* LDT segment has TI set, GDT has it cleared */
--#define SEGMENT_LDT		0x4
--#define SEGMENT_GDT		0x0
- 
- /*
-  * Matching rules for certain types of segments.
-@@ -192,17 +191,6 @@
- #define get_kernel_rpl()  0
- #endif
- 
--/* User mode is privilege level 3 */
--#define USER_RPL		0x3
--/* LDT segment has TI set, GDT has it cleared */
--#define SEGMENT_LDT		0x4
--#define SEGMENT_GDT		0x0
--
--/* Bottom two bits of selector give the ring privilege level */
--#define SEGMENT_RPL_MASK	0x3
--/* Bit 2 is table indicator (LDT/GDT) */
--#define SEGMENT_TI_MASK		0x4
--
- #define IDT_ENTRIES 256
- #define NUM_EXCEPTION_VECTORS 32
- /* Bitmask of exception vectors which push an error code on the stack */
--- 
-2.0.0
-
+> I have verified that the V8 kernel part patch is compatible with both latest
+> tip and latest perf/core. We don't need to rebase.
+> The user perf tool for tip is not updated yet. We need to merge latest
+> perf/core to tip before applying user part patch.
+> 
+> Do you have more comments for the code?
+> 
+> The latest kernel and user part codes are here.
+> https://lkml.org/lkml/2014/11/6/432
+> https://lkml.org/lkml/2014/12/2/396
+> 
+> Thanks,
+> Kan
