@@ -1,95 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372AbaLIO1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:27:25 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:34817 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaLIO1Y (ORCPT
+	id S1757399AbaLIO2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:28:03 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:47014 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266AbaLIO2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:27:24 -0500
-Message-ID: <548706C6.2050105@linaro.org>
-Date: Tue, 09 Dec 2014 09:27:18 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 9 Dec 2014 09:28:00 -0500
+Message-ID: <548706E9.8080701@arm.com>
+Date: Tue, 09 Dec 2014 14:27:53 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Steve Capper <steve.capper@linaro.org>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+To: Jiang Liu <jiang.liu@linux.intel.com>, Yijing Wang <wangyijing@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
-References: <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com> <547FCB73.1010707@linaro.org> <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com> <54803ADD.2090201@hitachi.com> <CAPvkgC26-CprjLVH55=7z73JtxTumFFZ4W7itevXxMwReVqQ1g@mail.gmail.com> <54804B1F.3020703@hitachi.com> <20141209133340.GA20265@linaro.org>
-In-Reply-To: <20141209133340.GA20265@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Will Deacon <Will.Deacon@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH 2/6] PCI/MSI: add hooks to populate the msi_domain field
+References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com> <1418069543-21969-3-git-send-email-marc.zyngier@arm.com> <5486585B.40000@huawei.com> <5486C8BA.8030608@arm.com> <5486E3BF.70703@huawei.com> <5486E747.4010804@arm.com> <5486EF4E.5020704@linux.intel.com> <5487012B.4040505@arm.com> <54870302.5050703@linux.intel.com>
+In-Reply-To: <54870302.5050703@linux.intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/14 08:33, Steve Capper wrote:
-> On Thu, Dec 04, 2014 at 08:53:03PM +0900, Masami Hiramatsu wrote:
->> (2014/12/04 20:29), Steve Capper wrote:
+On 09/12/14 14:11, Jiang Liu wrote:
+> On 2014/12/9 22:03, Marc Zyngier wrote:
+>> Hi Gerry,
 >>
->>>> I'd like to ask you to try my fix on your machine, with my reproducing
->>>> methods. (do not use sytemtap nor perf, those can have other issues)
+>> On 09/12/14 12:47, Jiang Liu wrote:
+>>> On 2014/12/9 20:12, Marc Zyngier wrote:
+>>>> Yijing,
 >>>>
->>>
->>> Thank you Masami,
->>>
->>> I tried the following commands:
->>>
->>> echo "p:trace_event_buffer_lock_reserve
->>> trace_event_buffer_lock_reserve" >
->>> /sys/kernel/debug/tracing/kprobe_events
->>> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
->>> echo 1 > /sys/kernel/debug/tracing/events/sched/sched_process_exec/enable
->>>
->>> The system appeared okay, I then cat'ed out:
->>> # cat /sys/kernel/debug/tracing/kprobe_profile
->>>     trace_event_buffer_lock_reserve                           25              25
->>>
->>> I got similar output (i.e. no crashes) both with and without the
->>> interrupt fix you recommended.
->>>
->>> I'm not sure how to interpret this, please let me know if you would
->>> like me to run any other tests?
->>>
->>> (I did also try your proposed fix with perf + memcpy and that crashed
->>> in a similar way as before).
+>>>> On 09/12/14 11:57, Yijing Wang wrote:
+>>>>>>>> +void __weak pcibios_set_phb_msi_domain(struct pci_bus *bus)
+>>>>>>>> +{
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>> +static void pci_set_bus_msi_domain(struct pci_bus *bus)
+>>>>>>>> +{
+>>>>>>>> +	struct pci_dev *bridge = bus->self;
+>>>>>>>> +
+>>>>>>>> +	if (!bridge)
+>>>>>>>> +		pcibios_set_phb_msi_domain(bus);
+>>>>>>>> +	else
+>>>>>>>> +		dev_set_msi_domain(&bus->dev, dev_get_msi_domain(&bridge->dev));
+>>>>>>>> +}
+>>>>>>>
+>>>>>>>
+>>>>>>> Hi Marc, we can not assume pci devices under same phb share the same msi irq domain,
+>>>>>>> now in x86, pci devices under the same phb may associate different msi irq domain.
+>>>>>
+>>>>> Hi Marc,
+>>>>>
+>>>>>>
+>>>>>> Well, this is not supposed to be a perfect solution yet, but instead a
+>>>>>> basis for discussion. What I'd like to find out is:
+>>>>>>
+>>>>>> - What is the minimum granularity for associating a device with its MSI
+>>>>>> domain in existing platforms?
+>>>>>
+>>>>> PCI device, after Gerry's msi irq domain patchset which now in linux-next,
+>>>>> in x86, we will find msi irq domain by pci_dev.
+>>>>
+>>>> Are you *really* associating the MSI domain on a per pci-device basis?
+>>>> That is, you have devices on the same PCI bus talking to different MSI hw?
+>>> Hi Marc,
+>>> 	This is a little wild:(
+>>> 	On x86 platform with Intel VT-d(not the case for AMD-v),
+>>> interrupt remapping is tight to DMA remapping (IOMMU) unit.
+>>> For most common cases, IOMMU unit manages PCI bus and its sub-hierarchy.
+>>> But it may also manage a specific PCI device. This is typically used to
+>>> provide QoS for audio device by using dedicated IOMMU unit to avoid
+>>> resource contention on DMA remapping tables. BIOS uses ACPI table to
+>>> report PCI bus/device to IOMMU unit mapping relationship. (To be honest,
+>>> I have no really experience with such a hardware platform yet, just for
+>>> theoretical analysis)
+>>> 	On the other hand, we now support hierarchy irqdomain. So to
+>>> support per-PCI IOMMU unit case, we need maintain irqdomain at PCI
+>>> device level.
+>>> 	This piece of code from your [4/6] is flexible enough, which
+>>> retrieves msi_domain from PCI device, then fallback to PCI bus,
+>>> then fallback to platform specific method.
+>>> 	domain = dev_get_msi_domain(&dev->dev);
+>>> 	if (!domain && dev->bus->msi)
+>>>  		domain = dev->bus->msi->domain;
+>>>  	if (!domain)
+>>>  		domain = arch_get_pci_msi_domain(dev);
 >>
->> Hmm, then the bug is still there, and the bug may not be in the recursive
->> call path... We need to find another suspicious code in the patch.
+>> OK. But what I'd really like to see is a way to setup the
+>> device<->domain binding as early as possible, without having to use more
+>> conditional code in pci_msi_get_domain.
 >>
->
-> Not sure if this is helpful, but the following also caused a crash for
-> me:
->
-> echo "p:trace_event_buffer_lock_reserve trace_event_buffer_lock_reserve" > /sys/kernel/debug/tracing/kprobe_events
-> echo "p:memcpy memcpy" >> /sys/kernel/debug/tracing/kprobe_events
-> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
->
-> [immediate crash]
->
-> The crash point for me is in the arm64 ASID allocator, it again looks
-> like the interrupts are in an unexpected state.
-> (check_and_switch_context goes down the irqs disabled code path, I
-> think incorrectly).
->
-> This occurred for me both with and without the proposed irq saving fix.
->
-> I will do some more digging.
->
+>> IOW, can we do something similar to what pci_set_bus_msi_domain and
+>> pci_set_msi_domain do in this patch?
+> Hi Marc,
+> 	I have checked x86 code, we could set pci_dev->msi_domain
+> when creating PCI devices, just need to find some hook points
+> into PCI core next step. If arch code doesn't set pci_dev->msi_domain,
+> PCI MSI core may provide a default way to set pci_dev->msi_domain.
+> This may make the implementation simpler, I guess:)
 
-Thanks, more information is good.
+Right. So following your earlier suggestion, I could make
+pci_set_msi_domain a weak symbol and let arch code override this.
 
--dl
+My preference would have been to have arch code to create a set of
+arch-independent data structures describing the topology, and use that
+for everything, but maybe that's a bit ambitious for a start.
 
+I'll rework the series to make the symbols weak.
 
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
