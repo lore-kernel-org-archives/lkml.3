@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaLIR2C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 12:28:02 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:59262 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaLIR2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 12:28:00 -0500
-Date: Tue, 9 Dec 2014 18:27:53 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2] virtio_ccw: minor enhancements
-Message-ID: <20141209182753.632da537.cornelia.huck@de.ibm.com>
-In-Reply-To: <1418133187-12436-1-git-send-email-mst@redhat.com>
-References: <1418133187-12436-1-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120917-0009-0000-0000-000002501F7C
+	id S1751375AbaLIR2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 12:28:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53046 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaLIR2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 12:28:13 -0500
+Date: Tue, 9 Dec 2014 18:28:08 +0100
+From: Borislav Petkov <bp@suse.de>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org, bpoirier@suse.de,
+        x86@kernel.org, kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v3 1/2] x86, platform, kconfig: clarify kvmconfig is for
+ kvm
+Message-ID: <20141209172808.GD4147@pd.tnic>
+References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com>
+ <1418079900-4640-2-git-send-email-mcgrof@do-not-panic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1418079900-4640-2-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014 15:53:32 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Mon, Dec 08, 2014 at 03:04:59PM -0800, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> We'll be adding options for xen as well.
+> 
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: penberg@kernel.org
+> Cc: levinsasha928@gmail.com
+> Cc: mtosatti@redhat.com
+> Cc: fengguang.wu@intel.com
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xenproject.org
+> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  scripts/kconfig/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 9645c07..ff612b0 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -141,7 +141,7 @@ help:
+>  	@echo  '  randconfig	  - New config with random answer to all options'
+>  	@echo  '  listnewconfig   - List new options'
+>  	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
+> -	@echo  '  kvmconfig	  - Enable additional options for guest kernel support'
+> +	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
+>  	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
+>  
+>  # lxdialog stuff
 
-> Two enhancements for virtio_ccw, on top of latest 1.0 patchset
-> 
-> Cornelia Huck (1):
->   virtio_ccw: finalize_features error handling
-> 
-> Michael S. Tsirkin (1):
->   virtio_ccw: future-proof finalize_features
-> 
->  drivers/s390/kvm/virtio_ccw.c | 18 +++++++++++-------
->  1 file changed, 11 insertions(+), 7 deletions(-)
-> 
+Acked-by: Borislav Petkov <bp@suse.de>
 
-I tried to run this as a guest kernel with my virtio-1 qemu branch +
-your revision patch on top and it at least boots :) More testing
-tomorrow.
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
