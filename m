@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaLIV2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:28:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53595 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaLIV2v (ORCPT
+	id S1752921AbaLIVaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:30:06 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:33962 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537AbaLIVaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:28:51 -0500
-Date: Tue, 9 Dec 2014 21:28:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <20141209212844.GM11764@sirena.org.uk>
-References: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
+	Tue, 9 Dec 2014 16:30:04 -0500
+From: "Young, David" <dayoung@akamai.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "shuahkh@osg.samsung.com" <shuahkh@osg.samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 9 Dec 2014 16:29:57 -0500
+Subject: RE: selftests: question about git repos containing selftest.
+Thread-Topic: selftests: question about git repos containing selftest.
+Thread-Index: AdAT9u1CTEFxyYfAQ6OfHKprZJRrkAAAD+Jw
+Message-ID: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796C79@USMBX1.msg.corp.akamai.com>
+References: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796BF2@USMBX1.msg.corp.akamai.com>
+	<20141209194602.GB20166@kroah.com>
+	<CAKocOOMGoCtDjG24cJhkrJ=EyhbW-qy6=v5pJaRBeSPZuvZWfA@mail.gmail.com>
+	<7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796C21@USMBX1.msg.corp.akamai.com>
+	<CAKocOOMiaUDaP=PJ7R9dtsg001eP68hNLyryVQV=yLMC92aeyg@mail.gmail.com>
+	<7F8EB1E5A1A71643ACAD0928E03FFDE90E3D796C56@USMBX1.msg.corp.akamai.com>
+ <CAKocOOMNS3tZq3nFg7rTFnPRZwV0U-y4=34Yph+qTYN0kqTuQA@mail.gmail.com>
+In-Reply-To: <CAKocOOMNS3tZq3nFg7rTFnPRZwV0U-y4=34Yph+qTYN0kqTuQA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9+yvdhHLKXN64C4s"
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: da9052-regulator fails to probe in linux-next
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB9LUGlb002123
 
+Thanks for clearing this up, very helpful!
 
---9+yvdhHLKXN64C4s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+-dave
 
-On Tue, Dec 09, 2014 at 06:41:09PM -0200, Fabio Estevam wrote:
+-----Original Message-----
+From: Shuah Khan [mailto:shuahkhan@gmail.com] 
+Sent: Tuesday, December 09, 2014 4:27 PM
+To: Young, David
+Cc: Greg KH; linux-api@vger.kernel.org; shuahkh@osg.samsung.com; linux-kernel@vger.kernel.org
+Subject: Re: selftests: question about git repos containing selftest.
 
-> With kernel 3.18 it probes fine. Haven't bisected yet, but if anyone
-> has any ideas, please let me know.
+On Tue, Dec 9, 2014 at 2:08 PM, Young, David <dayoung@akamai.com> wrote:
+>
+>> Do you have specific patches in linux-next that you have questions about?
+>
+> Mostly I am interested in executing kselftests via something like autotest or Hudson/jenkins as a quick smoketest.  I understand it's still very much an in-progress feature, but would like the closest thing to a stable set of tests to regularly clone and use.  I suppose I could just wait for whatever makes it into mainline, but I'm interested in seeing the planned test coverage and test output so that I can write appropriate "glue" for use with a continuous-integration test system.
+>
 
-If it's regulator related my guess would be the stuff around
-072e78b12bf5182a3e2 (regulator: of: Add regulator desc param to
-of_get_regulator_init_data())
+David,
 
---9+yvdhHLKXN64C4s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Please follow fixes branch for patches that are going to be in the next mainline release. I am planning to create devel or experimental branch to make my next revision install target patches available for early testing for people that want to play with work in progress. Hope this is helpful.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUh2mLAAoJECTWi3JdVIfQl7sH/iBVVMtOnqrlTYoHCTUY72qt
-vcRNOU2MgwxUQWM4l3rm63eTuW5jjklw141VJuZNyrYpE5z7RKHd7kuxEiW6jMux
-qrlMJg7gK4rj6qkxQQcDNr4o51GbESlw7OPRvobgUum4IfvVNCeA7MTWvPVEHjKh
-C0JhHj8s3DooAvwTWycVHGJfN3f3ya6a9OhgyEKnf0KCHbXOxq/4Dty189PXTVu5
-KZ6AMNTt+NsxmyH644meV9Nxp3DgMzQd8pgLMFrrz6P8Inv/bXhpvSYmB1oWsk+7
-OYBFTGvEQ29Gr347MyVdcJSS36X3QXceBIDh3oGuTvfXIMAQ9JE/lxY7KknDd1s=
-=CVSh
------END PGP SIGNATURE-----
-
---9+yvdhHLKXN64C4s--
+thanks,
+-- Shuah
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
