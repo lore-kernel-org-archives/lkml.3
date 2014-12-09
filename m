@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648AbaLILml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:42:41 -0500
-Received: from ozlabs.org ([103.22.144.67]:37933 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486AbaLILmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:42:40 -0500
-Date: Tue, 9 Dec 2014 22:42:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pranith Kumar <bobby.prani@gmail.com>
-Subject: linux-next: build failure after merge of the rcu tree
-Message-ID: <20141209224230.57f0aa34@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/FMxARFt1PBBC+2c.40kk5kp"; protocol="application/pgp-signature"
+	id S1756640AbaLILss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:48:48 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:56174 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486AbaLILsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 06:48:46 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc86d0000066b7-cb-5486e19cbaa9
+Content-transfer-encoding: 8BIT
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] arm64: psci: Fix build breakage without PM_SLEEP
+Date: Tue, 09 Dec 2014 12:48:36 +0100
+Message-id: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t/xa7pzHraFGGzazmXxflkPo8XrF4YW
+	mx5fY7W4vGsOm8Wb3y/YLV5+PMHiwOaxZt4aRo/NS+o9+rasYvT4vEkugCWKyyYlNSezLLVI
+	3y6BK2PXghbWgmOcFXd3H2BrYJzJ0cXIySEhYCLx/dYxVghbTOLCvfVsXYxcHEICSxklml8/
+	ZQdJ8AoISvyYfI+li5GDg1lAXuLIpWyQMLOAusSkeYuYIer7mCQm9+1mAkmwCRhLbF6+BGyQ
+	iMBJRol9q66yQXQYSvx89wdsqLCAo0Tv0g5mEJtFQFVi45WzrBDL3CX+T5rJBnGRnMTJY5NZ
+	JzDyzUJyxyyEO2YhuWMBI/MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJDg/LqDcekxq0OM
+	AhyMSjy8OxTbQoRYE8uKK3MPMUpwMCuJ8E45ChTiTUmsrEotyo8vKs1JLT7EyMTBKdXAqN48
+	6VGsz7vXsmXu/z99tgzZLv13q83m0rvd074flX/39VKnr9Oh5gWP9l7mYUxt/J1tlZDx3uHi
+	XP6m+P0/7nf3ZVWrSwjHnVmk8LxEkGnvgcqyWT+vVs6+vOfV0jfatt+rbZr5HnNMc6/u4XPV
+	cu5nfZh7VLVVK/O01Gzph0GGAatjLoj0KrEUZyQaajEXFScCAN0zQyUsAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/FMxARFt1PBBC+2c.40kk5kp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Fix build failure of defconfig when PM_SLEEP is disabled (e.g. by
+disabling SUSPEND) and CPU_IDLE enabled:
 
-Hi Paul,
+arch/arm64/kernel/psci.c:543:2: error: unknown field ‘cpu_suspend’ specified in initializer
+  .cpu_suspend = cpu_psci_cpu_suspend,
+  ^
+arch/arm64/kernel/psci.c:543:2: warning: initialization from incompatible pointer type [enabled by default]
+arch/arm64/kernel/psci.c:543:2: warning: (near initialization for ‘cpu_psci_ops.cpu_prepare’) [enabled by default]
+make[1]: *** [arch/arm64/kernel/psci.o] Error 1
 
-After merging the rcu tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+The cpu_operations.cpu_suspend field exists only if ARM64_CPU_SUSPEND is
+defined, not CPU_IDLE.
 
-include/linux/notifier.h:51:4: warning: its scope is only this definition o=
-r declaration, which is probably not what you want
-In file included from include/linux/memory_hotplug.h:6:0,
-                 from include/linux/mmzone.h:790,
-                 from include/linux/gfp.h:5,
-                 from arch/powerpc/mm/pgtable.c:25:
-include/linux/notifier.h:51:4: error: 'struct notifier_block' declared insi=
-de parameter list [-Werror]
-    unsigned long action, void *data);
-    ^
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm64/kernel/psci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-And many more (most just warnings ...).
+diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+index 3425f311c49e..f1dbca7d5c96 100644
+--- a/arch/arm64/kernel/psci.c
++++ b/arch/arm64/kernel/psci.c
+@@ -540,6 +540,8 @@ const struct cpu_operations cpu_psci_ops = {
+ 	.name		= "psci",
+ #ifdef CONFIG_CPU_IDLE
+ 	.cpu_init_idle	= cpu_psci_cpu_init_idle,
++#endif
++#ifdef CONFIG_ARM64_CPU_SUSPEND
+ 	.cpu_suspend	= cpu_psci_cpu_suspend,
+ #endif
+ #ifdef CONFIG_SMP
+-- 
+1.9.1
 
-Presumably caused by commit 44dec3761b63 ("srcu: Isolate srcu sections
-using CONFIG_SRCU") and reverting that commit makes the messages go
-away, so I have done that for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/FMxARFt1PBBC+2c.40kk5kp
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUhuAtAAoJEMDTa8Ir7ZwVeFsP/08+3uFMUi+Q6vhnGt3BaWZR
-cttpu1M96QgVwySW1o/TNzq0Vr6K8a198h7yTEy36uYJI3dJ2jRqLocHmh2Ci6oS
-MZc6c3Ndt7G8Hg1UrmmHjNzkhiVi0E+CZoz89MJ809Cjzq3TTRdFMtfjGe0TCr2m
-hMIatqDPQSts0wnZfYgumzXIzVa4BwPA1TyEHqwH1/R8oXZf3hai2z5b63lGUILF
-bk4a9kTld6ey1DZDVn0T+OMCCxtQQ9E+6WBSfVT4Z6qDMQXDpBBYKQoNi9JBVupL
-1GolB0rYM7Ncf8D3wiwWw8/7YC+BxL8ZH8/0S1Dxdla7e4rH8Z/B9N2FNj/WoJJu
-NWzT0p9CVAa3Wj+odi2jCZKfKptlgsh3nxlhACyMKitZNXDQHq1tfWaBEpdINT0o
-aX9/xnWXl497Dn8D+geO5qz4YV0Bms8t+SPlLAQu3kazU38r3d8PDd+UPTwH00Vb
-9K/dZwm0fuZd8b4JffCMPvkWB8DWN9x3c6FCSCZxiplyR0xsp1vI+a85NxngpQhg
-XiOgKCPOaB7iMK1mi5lf98iM7mYYN9U6N9uj04JrtsvfhSIlGtzvpuE2SGwMXvUm
-r8P+ldBdS6AUeSchW89d1mnB+aRavee6g6dnRSzkTvkSvFBGgBDm55QZqJkWWzbq
-pu3YMTlsZvnkKEYZEUUr
-=NSIr
------END PGP SIGNATURE-----
-
---Sig_/FMxARFt1PBBC+2c.40kk5kp--
