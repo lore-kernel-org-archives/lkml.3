@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaLIAL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 19:11:28 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58238 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLIAL0 (ORCPT
+	id S1755665AbaLIASM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 19:18:12 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:45763 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751030AbaLIASK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 19:11:26 -0500
-Date: Tue, 9 Dec 2014 11:11:19 +1100
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>, weiyang@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        weiyang@linux.vnet.ibm.com
-Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
- support it
-Message-ID: <20141209001119.GA24661@shangw>
-Reply-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
-References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
- <1418079372.13358.9.camel@kernel.crashing.org>
- <CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
+	Mon, 8 Dec 2014 19:18:10 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Mon, 08 Dec 2014 16:42:15 -0800
+Message-ID: <54863F72.1060401@synaptics.com>
+Date: Mon, 8 Dec 2014 16:16:50 -0800
+From: Andrew Duggan <aduggan@synaptics.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120900-4790-0000-0000-00000578A0D6
+To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH v2] HID: rmi: Scan the report descriptor to determine
+ if the device is suitable for the hid-rmi driver
+References: <1416872246-9632-1-git-send-email-aduggan@synaptics.com>
+In-Reply-To: <1416872246-9632-1-git-send-email-aduggan@synaptics.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.4.10.98]
+X-Brightmail-Tracker: AAAAAQAAAWE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 03:59:54PM -0800, Yinghai Lu wrote:
->On Mon, Dec 8, 2014 at 2:56 PM, Benjamin Herrenschmidt
-><benh@kernel.crashing.org> wrote:
->> On Mon, 2014-12-08 at 13:52 -0800, Yinghai Lu wrote:
->>> 2. or scan the children resource other than ROM to clear bridge MEM_64
->>>    for mmio pref.
->>>
->>> The patch is using second way so will keep child mmio pref into bridge
->>> mmio pref range.
->>
->> That means that having a single ROM BAR that is 32-bit and prefetchable
->> will downgrade the entire window to 32-bit ? That's not going to work
->> either.
+On 11/24/2014 03:37 PM, Andrew Duggan wrote:
+> On composite HID devices there may be multiple HID devices on separate interfaces, but hid-rmi
+> should only bind to the touchpad. The previous version simply checked that the interface protocol
+> was set to mouse. Unfortuately, it is not always the case that the touchpad has the mouse interface
+> protocol set. This patch takes a different approach and scans the report descriptor looking for
+> the Generic Desktop Pointer usage and the Vendor Specific Top Level Collection needed by the
+> hid-rmi driver to interface with the device.
 >
->the ROM BAR get skipped during the checking.
->
->+                       if (i != PCI_ROM_RESOURCE)
->+                               mem64_mask &= r->flags & IORESOURCE_MEM_64;
->+               }
->
->>
->> I have GPUs with 16G BARs for example... suddenly they don't fit
->> anaymore because we downgraded the window to 32 bit because somewhere
->> there's a 32-bit pref resource ?
->>
->> That will break more than it fixes...
->
->Please check if this patch break your platform. I tried on my setup on
->x86. and it is still
->working on 64 bit resource allocation.
->
-
-I'm going to give it a spin and Richard, could you please apply Yinghai's
-patch to see if your SRIOV code can work properly?
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> ---
+> This is a second attempt at the patch I submitted back in October. Instead of looking for specific
+> HID reports this patch looks for the Generic Desktop Pointer usage. Having that usage along with
+> the vendor specific collection seems to be a distinctive enough to id the Synaptics touchpad in
+> the composite USB device.
+Any comments on this patch?
 
 Thanks,
-Gavin
+Andrew
+>   drivers/hid/hid-core.c | 21 ++++++++++++++++-----
+>   include/linux/hid.h    |  4 +++-
+>   2 files changed, 19 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 12b6e67..ba9dc59 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -698,10 +698,20 @@ static void hid_scan_feature_usage(struct hid_parser *parser, u32 usage)
+>   static void hid_scan_collection(struct hid_parser *parser, unsigned type)
+>   {
+>   	struct hid_device *hid = parser->device;
+> +	int i;
+>   
+>   	if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
+>   	    type == HID_COLLECTION_PHYSICAL)
+>   		hid->group = HID_GROUP_SENSOR_HUB;
+> +
+> +	if ((parser->global.usage_page << 16) == HID_UP_GENDESK)
+> +		for (i = 0; i < parser->local.usage_index; i++)
+> +			if (parser->local.usage[i] == HID_GD_POINTER)
+> +				parser->scan_flags
+> +					|= HID_SCAN_FLAG_GENDESK_POINTER;
+> +
+> +	if ((parser->global.usage_page << 16) == HID_UP_MSVENDOR)
+> +		parser->scan_flags |= HID_SCAN_FLAG_VENDOR_SPECIFIC;
+>   }
+>   
+>   static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+> @@ -783,11 +793,12 @@ static int hid_scan_report(struct hid_device *hid)
+>   	* Vendor specific handlings
+>   	*/
+>   	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+> -	    (hid->group == HID_GROUP_GENERIC) &&
+> -	    /* only bind to the mouse interface of composite USB devices */
+> -	    (hid->bus != BUS_USB || hid->type == HID_TYPE_USBMOUSE))
+> -		/* hid-rmi should take care of them, not hid-generic */
+> -		hid->group = HID_GROUP_RMI;
+> +	    (hid->group == HID_GROUP_GENERIC)) {
+> +		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
+> +		    && (parser->scan_flags & HID_SCAN_FLAG_GENDESK_POINTER))
+> +			/* hid-rmi should take care of them, not hid-generic */
+> +			hid->group = HID_GROUP_RMI;
+> +	}
+>   
+>   	/*
+>   	 * Vendor specific handlings
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index f53c4a9..b019f15 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -547,7 +547,9 @@ static inline void hid_set_drvdata(struct hid_device *hdev, void *data)
+>   #define HID_GLOBAL_STACK_SIZE 4
+>   #define HID_COLLECTION_STACK_SIZE 4
+>   
+> -#define HID_SCAN_FLAG_MT_WIN_8			0x00000001
+> +#define HID_SCAN_FLAG_MT_WIN_8			BIT(0)
+> +#define HID_SCAN_FLAG_VENDOR_SPECIFIC		BIT(1)
+> +#define HID_SCAN_FLAG_GENDESK_POINTER		BIT(2)
+>   
+>   struct hid_parser {
+>   	struct hid_global     global;
 
