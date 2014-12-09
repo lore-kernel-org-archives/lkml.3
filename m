@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618AbaLILEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:04:51 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:35931 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753AbaLILEt (ORCPT
+	id S1756447AbaLILGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:06:21 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:61781 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732AbaLILGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:04:49 -0500
-Date: Tue, 9 Dec 2014 12:04:42 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, peterz@infradead.org, oleg@redhat.com,
-        bp@suse.de, jkosina@suse.cz
-Subject: Re: [PATCH v2] CPU hotplug: active_writer not woken up in some
- cases - deadlock
-Message-ID: <20141209120442.29de5b22@thinkpad-w530>
-In-Reply-To: <20141209102108.GE4362@osiris>
-References: <1418070082-13512-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141208212236.GU25340@linux.vnet.ibm.com>
-	<20141209085930.6b831850@thinkpad-w530>
-	<20141209091447.GD4362@osiris>
-	<20141209111101.201e3544@thinkpad-w530>
-	<20141209102108.GE4362@osiris>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Tue, 9 Dec 2014 06:06:19 -0500
+Date: Tue, 9 Dec 2014 12:06:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Vince Weaver <vince@deater.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: Linux 3.18 released
+Message-ID: <20141209110614.GA24745@gmail.com>
+References: <CA+55aFwK3XtS32iJna-2uXZUfZQNUGC0Z4FmEFHK4JXB_kyojA@mail.gmail.com>
+ <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
+ <20141209101825.GA18294@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120911-0041-0000-0000-0000026901B8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209101825.GA18294@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Dec 09, 2014 at 11:11:01AM +0100, David Hildenbrand wrote:
-> > > > Therefore we have to move the condition check inside the 
-> > > >   __set_current_state(TASK_UNINTERRUPTIBLE) -> schedule();
-> > > > section to not miss any wake ups when the condition is satisfied.
-> > > > 
-> > > > So wake_up_process() will either see TASK_RUNNING and do nothing or see
-> > > > TASK_UNINTERRUPTIBLE and set it to TASK_RUNNING, so schedule() will in
-> > > > fact be woken up again.
-> > > 
-> > > Or the third alternative would be that 'active_writer' which was running
-> > > on CPU2 already terminated and wake_up_process() has a non-NULL pointer to
-> > > task_struct which is already dead.
-> > > Or is there anything that prevents this use-after-free race?
-> > 
-> > Hmmm ... I think that is also a valid scenario.
-> > That would mean we need soemthing like this:
-> > 
-> >  void put_online_cpus(void)
-> >  {
-> > + struct task_struct *awr;
-> > +
-> >         if (cpu_hotplug.active_writer == current)
-> >                 return;
-> >         if (!mutex_trylock(&cpu_hotplug.lock)) {
-> > +         awr = ACCESS_ONCE(cpu_hotplug.active_writer);
-> > +         if (unlikely(awr))
-> > +                 get_task_struct(awr);
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
 > 
-> How would this solve the problem?
+> * Vince Weaver <vince@deater.net> wrote:
+> 
+> > On Sun, 7 Dec 2014, Linus Torvalds wrote:
+> > 
+> > > I'd love to say that we've figured out the problem that 
+> > > plagues 3.17 for a couple of people, but we haven't. At the 
+> > > same time, there's absolutely no point in having everybody 
+> > > else twiddling their thumbs when a couple of people are 
+> > > actively trying to bisect an older issue, so holding up the 
+> > > release just didn't make sense. Especially since that would 
+> > > just have then held things up entirely over the holiday 
+> > > break.
+> > > 
+> > > So the merge window for 3.19 is open, and DaveJ will 
+> > > hopefully get his bisection done (or at least narrow things 
+> > > down sufficiently that we have that "Ahaa" moment) over the 
+> > > next week. But in solidarity with Dave (and to make my life 
+> > > easier too ;) let's try to avoid introducing any _new_ 
+> > > nasty issues, ok?
+> > 
+> > It's probably unrelated to DaveJ's issue, but my perf_event 
+> > fuzzer still quickly locks the kernel pretty solid on 3.18.
+> 
+> I'm really tempted to restrict most of the weirder perf ABI 
+> details (such as event groups, raw events, etc.) to root only 
+> (with a perf_event_paranoid level to make it available for 
+> power users and distros so inclined) - most of the past 
+> lockups/races you have triggered were in such weird, seldom 
+> used corners of the perf ABI that doesn't get much testing 
+> outside Trinity fuzzing.
+> 
+> The bits used by tools/perf and used by the majority of users 
+> are generally rock solid.
 
-If I am not completely wrong, an active_writer will remain in
-it's loop (cpu_hotplug_begin) until the refcount is down to 0. As we are
-putting the cpus, the refcount is > 0 (because of the previous get_all_cpus()
-which incremented the refcount).
+Note that it's entirely possible that I'm wrong about that 
+suspicion, that the leftover bug(s?) are still in the core 
+portion of perf.
 
-cpu_hotplug_begin will only be able to exit as soon as refcount == 0, therefore
-in our special case if cpu_hotplug.puts_pending has been incremented.
+Maybe fuzzing could help there: initially only fuzz core portions 
+of perf ABI (bits that things like tools/perf uses on an everyday 
+basis), then the rarer bits? If we knew it that it's say the 
+cgroups bits or tracepoint integration of perf that is causing 
+the trouble, that would already narrow down the inquiry quite a 
+bit.
 
-As long as we don't increment cpu_hotplug.puts_pending, the active_writer will
-not vanish. Therefore awr still points to a valid task struct after we
-incremented cpu_hotplug.puts_pending.
+> Doing that is not a fix obviously and we'd like to fix all 
+> pending bugs for real as well, but would at least isolate the 
+> impact to root-only until it's fixed.
 
-get_task_struct() will make sure that the struct will not vanish after we
-incremented cpu_hotplug.puts_pending (and therefore decremented the refcount).
+Thanks,
 
-
-Or am I missing something?
-
-Thanks!
-
-David
-
+	Ingo
