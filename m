@@ -1,154 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339AbaLIOZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:25:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52387 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311AbaLIOZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:25:21 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>
-Subject: [PATCH v2] xen/blkfront: remove redundant flush_op
-Date: Tue,  9 Dec 2014 15:25:10 +0100
-Message-Id: <1418135110-7194-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <54860EA4.7090705@oracle.com>
-References: <54860EA4.7090705@oracle.com>
+	id S1757353AbaLIOZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:25:50 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:59105 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030AbaLIOZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 09:25:48 -0500
+Date: Tue, 9 Dec 2014 22:24:23 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: George Spelvin <linux@horizon.com>
+Cc: davem@davemloft.net, dborkman@redhat.com, hannes@stressinduktion.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
+        tytso@mit.edu
+Subject: Re: Where exactly will arch_fast_hash be used
+Message-ID: <20141209142423.GB9745@gondor.apana.org.au>
+References: <20141207125157.GA9745@gondor.apana.org.au>
+ <20141207132305.24691.qmail@ns.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141207132305.24691.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_op is unambiguously defined by feature_flush:
-    REQ_FUA | REQ_FLUSH -> BLKIF_OP_WRITE_BARRIER
-    REQ_FLUSH -> BLKIF_OP_FLUSH_DISKCACHE
-    0 -> 0
-and thus can be removed. This is just a cleanup.
+On Sun, Dec 07, 2014 at 08:23:05AM -0500, George Spelvin wrote:
+>
+> Okay, I'm confused.  *What* scheme?  The arch_fast_hash interface doesn't
+> have any provision for a secret.  Because there's no point to having one;
 
-The patch was suggested by Boris Ostrovsky.
+It does actually, in the form of the seed parameter.  That's why
+it's so bad: it pretends to be a semi-secure hash function that
+people will use in hash tables.
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
-Changes from v1:
-   Future-proof feature_flush against new flags [Boris Ostrovsky].
-
-The patch is supposed to be applied after "xen/blkfront: improve protection
-against issuing unsupported REQ_FUA".
----
- drivers/block/xen-blkfront.c | 51 +++++++++++++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 2e6c103..2236c6f 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -126,7 +126,6 @@ struct blkfront_info
- 	unsigned int persistent_gnts_c;
- 	unsigned long shadow_free;
- 	unsigned int feature_flush;
--	unsigned int flush_op;
- 	unsigned int feature_discard:1;
- 	unsigned int feature_secdiscard:1;
- 	unsigned int discard_granularity;
-@@ -479,7 +478,19 @@ static int blkif_queue_request(struct request *req)
- 				 * way.  (It's also a FLUSH+FUA, since it is
- 				 * guaranteed ordered WRT previous writes.)
- 				 */
--				ring_req->operation = info->flush_op;
-+				switch (info->feature_flush &
-+					((REQ_FLUSH|REQ_FUA))) {
-+				case REQ_FLUSH|REQ_FUA:
-+					ring_req->operation =
-+						BLKIF_OP_WRITE_BARRIER;
-+					break;
-+				case REQ_FLUSH:
-+					ring_req->operation =
-+						BLKIF_OP_FLUSH_DISKCACHE;
-+					break;
-+				default:
-+					ring_req->operation = 0;
-+				}
- 			}
- 			ring_req->u.rw.nr_segments = nseg;
- 		}
-@@ -685,20 +696,26 @@ static int xlvbd_init_blk_queue(struct gendisk *gd, u16 sector_size,
- 	return 0;
- }
- 
-+static const char *flush_info(unsigned int feature_flush)
-+{
-+	switch (feature_flush & ((REQ_FLUSH | REQ_FUA))) {
-+	case REQ_FLUSH|REQ_FUA:
-+		return "barrier: enabled;";
-+	case REQ_FLUSH:
-+		return "flush diskcache: enabled;";
-+	default:
-+		return "barrier or flush: disabled;";
-+	}
-+}
- 
- static void xlvbd_flush(struct blkfront_info *info)
- {
- 	blk_queue_flush(info->rq, info->feature_flush);
--	printk(KERN_INFO "blkfront: %s: %s: %s %s %s %s %s\n",
--	       info->gd->disk_name,
--	       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
--		"barrier" : (info->flush_op == BLKIF_OP_FLUSH_DISKCACHE ?
--		"flush diskcache" : "barrier or flush"),
--	       info->feature_flush ? "enabled;" : "disabled;",
--	       "persistent grants:",
--	       info->feature_persistent ? "enabled;" : "disabled;",
--	       "indirect descriptors:",
--	       info->max_indirect_segments ? "enabled;" : "disabled;");
-+	pr_info("blkfront: %s: %s %s %s %s %s\n",
-+		info->gd->disk_name, flush_info(info->feature_flush),
-+		"persistent grants:", info->feature_persistent ?
-+		"enabled;" : "disabled;", "indirect descriptors:",
-+		info->max_indirect_segments ? "enabled;" : "disabled;");
- }
- 
- static int xen_translate_vdev(int vdevice, int *minor, unsigned int *offset)
-@@ -1190,7 +1207,6 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 				if (error == -EOPNOTSUPP)
- 					error = 0;
- 				info->feature_flush = 0;
--				info->flush_op = 0;
- 				xlvbd_flush(info);
- 			}
- 			/* fall through */
-@@ -1810,7 +1826,6 @@ static void blkfront_connect(struct blkfront_info *info)
- 		physical_sector_size = sector_size;
- 
- 	info->feature_flush = 0;
--	info->flush_op = 0;
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
- 			    "feature-barrier", "%d", &barrier,
-@@ -1823,10 +1838,8 @@ static void blkfront_connect(struct blkfront_info *info)
- 	 *
- 	 * If there are barriers, then we use flush.
- 	 */
--	if (!err && barrier) {
-+	if (!err && barrier)
- 		info->feature_flush = REQ_FLUSH | REQ_FUA;
--		info->flush_op = BLKIF_OP_WRITE_BARRIER;
--	}
- 	/*
- 	 * And if there is "feature-flush-cache" use that above
- 	 * barriers.
-@@ -1835,10 +1848,8 @@ static void blkfront_connect(struct blkfront_info *info)
- 			    "feature-flush-cache", "%d", &flush,
- 			    NULL);
- 
--	if (!err && flush) {
-+	if (!err && flush)
- 		info->feature_flush = REQ_FLUSH;
--		info->flush_op = BLKIF_OP_FLUSH_DISKCACHE;
--	}
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
- 			    "feature-discard", "%d", &discard,
+Cheers,
 -- 
-1.9.3
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
