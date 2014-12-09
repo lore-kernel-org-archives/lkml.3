@@ -1,155 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230AbaLIM7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 07:59:49 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:60359 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932197AbaLIM7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 07:59:47 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f126d000001e9a-88-5486f240dac9
-Content-transfer-encoding: 8BIT
-Message-id: <1418129982.19339.6.camel@AMDC1943>
-Subject: Re: [PATCH] clk: samsung: Fix Exynos 5420 pinctrl setup and clock
- disable failure due to domain being gated
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Kukjin Kim <kgene@kernel.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Tue, 09 Dec 2014 13:59:42 +0100
-In-reply-to: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
-References: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xq7oOn9pCDI73M1tsnLGe1eLo7wKL
-	/sevmS2ebn7MZHG26Q27xabH11gtLu+aw2Yx4/w+Jou1R+6yWzydcJHN4vCbdlaLH2e6WSxW
-	7frD6MDrcbmvl8nj7/PrLB47Z91l99i0qpPN4861PWwem5fUe/RtWcXo8XmTXABHFJdNSmpO
-	Zllqkb5dAlfGlCliBQdkKl7N5G9gvCrWxcjBISFgIrF1mUcXIyeQKSZx4d56ti5GLg4hgaWM
-	Er0zlrOAJHgFBCV+TL7HAlLPLCAvceRSNkiYWUBdYtK8RcwQ9Z8ZJdbNO8wIUa8vsXfWDiaQ
-	emGBMonNf8Dq2QSMJTYvX8IGYosAlSxZdRFsF7PAd2aJE2t+sIIkWARUJS4sPAq2l1PAQ2Ll
-	2X9MILaQgLvEmmn3mSFuVpZo7HebwCgwC8l1sxCum4XkugWMzKsYRVNLkwuKk9JzDfWKE3OL
-	S/PS9ZLzczcxQiLmyw7GxcesDjEKcDAq8fCaK7aGCLEmlhVX5h5ilOBgVhLhnXK0LUSINyWx
-	siq1KD++qDQntfgQIxMHp1QDY+fWF1Yee2x5Pl9yMTu1ab5+/a/Z/2//MGuKvCU499sMWeb0
-	Y+/M5sgevPo6e+cWGV/d2NUKktuaPj2+eeSt1r947ydzGBpCC94/27G05O/UjIzVvyRr12jN
-	O7/x+J01XLrTFubzbwjLtwm78aJNp4r3+uYXAbGbWVkWxvj7h6zTm3osVUK4rl2JpTgj0VCL
-	uag4EQA3oDl9dgIAAA==
+	id S1756779AbaLINGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:06:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755234AbaLINGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 08:06:03 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
+        haiyangz@microsoft.com
+Subject: Re: [PATCH] tools: hv: kvp_daemon: make IPv6-only-injection work
+References: <1418126489-20627-1-git-send-email-decui@microsoft.com>
+Date: Tue, 09 Dec 2014 14:05:49 +0100
+In-Reply-To: <1418126489-20627-1-git-send-email-decui@microsoft.com> (Dexuan
+	Cui's message of "Tue, 9 Dec 2014 04:01:29 -0800")
+Message-ID: <877fy1ht1u.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-12-05 at 15:15 +0100, Krzysztof Kozlowski wrote:
-> Audio subsystem clocks are located in separate block. On Exynos 5420 if
-> clock for this block (from main clock domain) 'mau_epll' is gated then
-> any read or write to audss registers will block.
-> 
-> This kind of boot hang was observed on Arndale Octa and Peach Pi/Pit
-> after introducing runtime PM to pl330 DMA driver. After that commit the
-> 'mau_epll' was gated, because the "amba" clock was disabled and there
-> were no more users of mau_epll.
-> 
-> The system hang on one of steps:
-> 1. Disabling unused clocks from audss block.
-> 2. During audss GPIO setup (just before probing i2s0 because
->    samsung_pinmux_setup() tried to access memory from audss block which was
->    gated.
-> 
-> Add a workaround for this by enabling the 'mau_epll' clock in probe.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Dexuan Cui <decui@microsoft.com> writes:
+
+> Currently IPv6-only-injection doesn't work because the daemon doesn't parse
+> any IPv6 information at all once it finds the dhcp_enabled flag is true.
+>
+> But according to the Hyper-v host team, the flag is only for IPv4.
+> In the case the host only injects 1 IPv6 address, the dhcp flag is true, but
+> we shouldn't ignore the IPv6 address and we should pass BOOTPROTO=none
+> to the distro-specific script hv_set_ipconfig.
+>
+> Tested in Ubuntu 14.10 and RHEL7.
+>
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
 > ---
->  drivers/clk/samsung/clk-exynos-audss.c | 29 ++++++++++++++++++++++++++++-
->  1 file changed, 28 insertions(+), 1 deletion(-)
-
-Sorry for pinging so quick but merge window is open and it looks like
-booting Exynos542x boards will be broken (because pl330 will no longer
-hold adma clock enabled so whole audss domain will be gated).
-
-This is a non-intrusive workaround for that issue, as wanted by
-Sylwester:
-https://lkml.org/lkml/2014/12/5/223
-
-Any comments on this?
-
-Best regards,
-Krzysztof
-
-
-> diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-> index acce708ace18..0916a81fa932 100644
-> --- a/drivers/clk/samsung/clk-exynos-audss.c
-> +++ b/drivers/clk/samsung/clk-exynos-audss.c
-> @@ -29,6 +29,13 @@ static DEFINE_SPINLOCK(lock);
->  static struct clk **clk_table;
->  static void __iomem *reg_base;
->  static struct clk_onecell_data clk_data;
-> +/*
-> + * On Exynos5420 this will be a clock which has to be enabled before any
-> + * access to audss registers. Typically a child of EPLL.
-> + *
-> + * On other platforms this will be -ENODEV.
-> + */
-> +static struct clk *epll;
->  
->  #define ASS_CLK_SRC 0x0
->  #define ASS_CLK_DIV 0x4
-> @@ -98,6 +105,8 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev, "failed to map audss registers\n");
->  		return PTR_ERR(reg_base);
->  	}
-> +	/* EPLL don't have to be enabled for boards other than Exynos5420 */
-> +	epll = ERR_PTR(-ENODEV);
->  
->  	clk_table = devm_kzalloc(&pdev->dev,
->  				sizeof(struct clk *) * EXYNOS_AUDSS_MAX_CLKS,
-> @@ -115,8 +124,20 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
->  	pll_in = devm_clk_get(&pdev->dev, "pll_in");
->  	if (!IS_ERR(pll_ref))
->  		mout_audss_p[0] = __clk_get_name(pll_ref);
-> -	if (!IS_ERR(pll_in))
-> +	if (!IS_ERR(pll_in)) {
->  		mout_audss_p[1] = __clk_get_name(pll_in);
+>  tools/hv/hv_kvp_daemon.c | 47 +++++++++++++++++++++++++++++++----------------
+>  1 file changed, 31 insertions(+), 16 deletions(-)
+>
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> index 6a6432a..6ef6c04 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -1145,6 +1145,9 @@ static int kvp_write_file(FILE *f, char *s1, char *s2, char *s3)
+>  }
+>
+> +/* How many ipv6 addresses the host is trying to inject? */
+> +static int num_ipv6_injected;
 > +
-> +		if (variant == TYPE_EXYNOS5420) {
-> +			epll = pll_in;
-> +
-> +			ret = clk_prepare_enable(epll);
-> +			if (ret) {
-> +				dev_err(&pdev->dev,
-> +						"failed to prepare the epll clock\n");
-> +				return ret;
-> +			}
-> +		}
+>  static int process_ip_string(FILE *f, char *ip_string, int type)
+>  {
+>  	int error = 0;
+> @@ -1190,6 +1193,7 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
+>  			switch (type) {
+>  			case IPADDR:
+>  				snprintf(str, sizeof(str), "%s", "IPV6ADDR");
+> +				num_ipv6_injected++;
+>  				break;
+>  			case NETMASK:
+>  				snprintf(str, sizeof(str), "%s", "IPV6NETMASK");
+> @@ -1308,27 +1312,12 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+>  	if (error)
+>  		goto setval_error;
+>
+> -	if (new_val->dhcp_enabled) {
+> -		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
+> -		if (error)
+> -			goto setval_error;
+> -
+> -		/*
+> -		 * We are done!.
+> -		 */
+> -		goto setval_done;
+> -
+> -	} else {
+> -		error = kvp_write_file(file, "BOOTPROTO", "", "none");
+> -		if (error)
+> -			goto setval_error;
+> -	}
+> -
+>  	/*
+>  	 * Write the configuration for ipaddress, netmask, gateway and
+>  	 * name servers.
+>  	 */
+>
+> +	num_ipv6_injected = 0;
+>  	error = process_ip_string(file, (char *)new_val->ip_addr, IPADDR);
+>  	if (error)
+>  		goto setval_error;
+> @@ -1345,6 +1334,32 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+>  	if (error)
+>  		goto setval_error;
+>
+> +	/*
+> +	 * Here "dhcp_enabled" is only for IPv4 according to Hyper-V host team.
+> +	 *
+> +	 * In the case the host only injects 1 IPv6 address:
+> +	 * new_val->dhcp_enabled is true, but we can't pass BOOTPROTO=dhcp to
+> +	 * the script hv_set_ifconfig, because in some distros (like RHEL7)
+> +	 * BOOTPROTO=dhcp has a special meaning in the config file (e.g.,
+> +	 * /etc/sysconfig/network-scripts/ifcfg-eth0): the network init program
+> +	 * ignores any static IP addr information once there is
+> +	 * BOOTPROTO=dhcp; as a result, IPv6-only injection can't work.
+> +	 *
+> +	 * In the case of IPv6-only injection, BOOTPROTO=dhcp doesn't affect
+> +	 * Ubuntu because it's ignored by the Ubuntu version of
+> +	 * hv_set_ifconfig and it doesn't seem to have special meaning in
+> +	 * Ubuntu.
+> +	 */
+
+I just checked and adding "IPV6ADDR=something" when "BOOTPROTO=dhcp"
+works for me with both RHEL7 and Fedora21.
+
+Other than that I think bringing distribution specifics into kernel.git
+is not a good idea. /etc/sysconfig/network-scripts/ifcfg-* format is
+distro-specific and not all Linux distros support it. Moreover,
+different distros can treat setting differently. I think it was wrong to
+stick to this format in kvp daemon from very beginning.
+
+As a solution I would suggest doing the following: kvp daemon writes all
+received request details in distro-agnostic format in some temporary
+place and then calls distro-specific script to set things up. Actually,
+we already have such script: tools/hv/hv_set_ifconfig.sh
+
+As for this bug I propose the following: remove skipping all
+IPADDR/MASK/... settings in case of "BOOTPROTO=dhcp" and let
+distro-specific script deal with the rest.
+
+
+> +	if (new_val->dhcp_enabled && num_ipv6_injected == 0) {
+> +		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
+> +		if (error)
+> +			goto setval_error;
+> +	} else {
+> +		error = kvp_write_file(file, "BOOTPROTO", "", "none");
+> +		if (error)
+> +			goto setval_error;
 > +	}
->  	clk_table[EXYNOS_MOUT_AUDSS] = clk_register_mux(NULL, "mout_audss",
->  				mout_audss_p, ARRAY_SIZE(mout_audss_p),
->  				CLK_SET_RATE_NO_REPARENT,
-> @@ -203,6 +224,9 @@ unregister:
->  			clk_unregister(clk_table[i]);
->  	}
->  
-> +	if (!IS_ERR(epll))
-> +		clk_disable_unprepare(epll);
 > +
->  	return ret;
->  }
->  
-> @@ -217,6 +241,9 @@ static int exynos_audss_clk_remove(struct platform_device *pdev)
->  			clk_unregister(clk_table[i]);
->  	}
->  
-> +	if (!IS_ERR(epll))
-> +		clk_disable_unprepare(epll);
-> +
->  	return 0;
->  }
->  
+>  setval_done:
+>  	fclose(file);
 
+-- 
+  Vitaly
