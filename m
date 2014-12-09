@@ -1,310 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaLIW7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:59:44 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37448 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618AbaLIWuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:39 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/25] iov_iter.c: macros for iterating over iov_iter
-Date: Tue,  9 Dec 2014 22:50:14 +0000
-Message-Id: <1418165438-2205-1-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
-References: <20141209224928.GL22149@ZenIV.linux.org.uk>
+	id S1755013AbaLIXAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 18:00:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56930 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753911AbaLIXAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 18:00:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,548,1413270000"; 
+   d="scan'208";a="635246401"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Calvin Owens <calvinowens@fb.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@fb.com" <kernel-team@fb.com>
+Subject: RE: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt
+ storms.
+Thread-Topic: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt
+ storms.
+Thread-Index: AQHQEDOY6s0/Sb23BUq9y5V5/Trac5yIHAGA///FtYA=
+Date: Tue, 9 Dec 2014 23:00:02 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F329640BC@ORSMSX114.amr.corp.intel.com>
+References: <1417746575-23299-1-git-send-email-calvinowens@fb.com>
+ <20141209180835.GF3990@pd.tnic>
+In-Reply-To: <20141209180835.GF3990@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB9N0Ltv002778
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+> Right, so this polling thing once again proves its fragility to me - we
+> have had problems with it in the past so maybe we should think about
+> replacing it with something simpler and and much more robust instead of
+> this flaky dynamically adjustable polling thing.
 
-iterate_all_kinds(iter, size, ident, step_iovec, step_bvec)
-iterates through the ranges covered by iter (up to size bytes total),
-repeating step_iovec or step_bvec for each of those.  ident is
-declared in expansion of that thing, either as struct iovec or
-struct bvec, and it contains the range we are currently looking
-at.  step_bvec should be a void expression, step_iovec - a size_t
-one, with non-zero meaning "stop here, that many bytes from this
-range left".  In the end, the amount actually handled is stored
-in size.
+Dynamic intervals for polling make sense for cpus that don't support
+CMCI.  We need to check occasionally to see if there are any corrected errors,
+but we don't want to waste a lot of cpu time doing that too often. There are
+almost never any errors to be found. So begin polling at 5 minute intervals
+(eternity on a multi-GHz cpu). If we do find an error, then look more frequently,
+because there are several cases where a single error source might generate
+multiple errors (e.g. stuck bit).
 
-iov_iter_copy_from_user_atomic() and iov_iter_alignment() converted
-to it.
+But then we came along an co-opted this mechanism  for CMCI storm
+control.  And you are right that we made things needlessly complex
+by using the same variable rate mechanism.  If we had a storm, we know
+we are having a high rate of errors (15 in one second) ... so we just want
+to poll at a high-ish rate to collect a good sample of subsequent errors.
+Also to detect when the storm ends in a timely manner. So we don't
+gain much by tweaking the poll rate, and we have complex code.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- mm/iov_iter.c | 212 ++++++++++++++++++++++++----------------------------------
- 1 file changed, 86 insertions(+), 126 deletions(-)
+> So I'm thinking of leaving the detection code as it is, when we detect
+> a storm on a CPU, we set CMCI_STORM_ACTIVE and start a kernel thread at
+> max freq HZ/100 and polling the MCA banks. No adjustable frequency, no
+> timers, no nothing. A stupid per-cpu thread which polls.
 
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index e34a3cb..798fcb4 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -4,6 +4,72 @@
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
- 
-+#define iterate_iovec(i, n, __v, __p, skip, STEP) {	\
-+	size_t left;					\
-+	size_t wanted = n;				\
-+	__p = i->iov;					\
-+	__v.iov_len = min(n, __p->iov_len - skip);	\
-+	if (likely(__v.iov_len)) {			\
-+		__v.iov_base = __p->iov_base + skip;	\
-+		left = (STEP);				\
-+		__v.iov_len -= left;			\
-+		skip += __v.iov_len;			\
-+		n -= __v.iov_len;			\
-+	} else {					\
-+		left = 0;				\
-+	}						\
-+	while (unlikely(!left && n)) {			\
-+		__p++;					\
-+		__v.iov_len = min(n, __p->iov_len);	\
-+		if (unlikely(!__v.iov_len))		\
-+			continue;			\
-+		__v.iov_base = __p->iov_base;		\
-+		left = (STEP);				\
-+		__v.iov_len -= left;			\
-+		skip = __v.iov_len;			\
-+		n -= __v.iov_len;			\
-+	}						\
-+	n = wanted - n;					\
-+}
-+
-+#define iterate_bvec(i, n, __v, __p, skip, STEP) {	\
-+	size_t wanted = n;				\
-+	__p = i->bvec;					\
-+	__v.bv_len = min_t(size_t, n, __p->bv_len - skip);	\
-+	if (likely(__v.bv_len)) {			\
-+		__v.bv_page = __p->bv_page;		\
-+		__v.bv_offset = __p->bv_offset + skip; 	\
-+		(void)(STEP);				\
-+		skip += __v.bv_len;			\
-+		n -= __v.bv_len;			\
-+	}						\
-+	while (unlikely(n)) {				\
-+		__p++;					\
-+		__v.bv_len = min_t(size_t, n, __p->bv_len);	\
-+		if (unlikely(!__v.bv_len))		\
-+			continue;			\
-+		__v.bv_page = __p->bv_page;		\
-+		__v.bv_offset = __p->bv_offset;		\
-+		(void)(STEP);				\
-+		skip = __v.bv_len;			\
-+		n -= __v.bv_len;			\
-+	}						\
-+	n = wanted;					\
-+}
-+
-+#define iterate_all_kinds(i, n, v, I, B) {			\
-+	size_t skip = i->iov_offset;				\
-+	if (unlikely(i->type & ITER_BVEC)) {			\
-+		const struct bio_vec *bvec;			\
-+		struct bio_vec v;				\
-+		iterate_bvec(i, n, v, bvec, skip, (B))		\
-+	} else {						\
-+		const struct iovec *iov;			\
-+		struct iovec v;					\
-+		iterate_iovec(i, n, v, iov, skip, (I))		\
-+	}							\
-+}
-+
- static size_t copy_to_iter_iovec(void *from, size_t bytes, struct iov_iter *i)
- {
- 	size_t skip, copy, left, wanted;
-@@ -300,54 +366,6 @@ static size_t zero_iovec(size_t bytes, struct iov_iter *i)
- 	return wanted - bytes;
- }
- 
--static size_t __iovec_copy_from_user_inatomic(char *vaddr,
--			const struct iovec *iov, size_t base, size_t bytes)
--{
--	size_t copied = 0, left = 0;
--
--	while (bytes) {
--		char __user *buf = iov->iov_base + base;
--		int copy = min(bytes, iov->iov_len - base);
--
--		base = 0;
--		left = __copy_from_user_inatomic(vaddr, buf, copy);
--		copied += copy;
--		bytes -= copy;
--		vaddr += copy;
--		iov++;
--
--		if (unlikely(left))
--			break;
--	}
--	return copied - left;
--}
--
--/*
-- * Copy as much as we can into the page and return the number of bytes which
-- * were successfully copied.  If a fault is encountered then return the number of
-- * bytes which were copied.
-- */
--static size_t copy_from_user_atomic_iovec(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes)
--{
--	char *kaddr;
--	size_t copied;
--
--	kaddr = kmap_atomic(page);
--	if (likely(i->nr_segs == 1)) {
--		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
--		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
--		copied = bytes - left;
--	} else {
--		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
--						i->iov, i->iov_offset, bytes);
--	}
--	kunmap_atomic(kaddr);
--
--	return copied;
--}
--
- static void advance_iovec(struct iov_iter *i, size_t bytes)
- {
- 	BUG_ON(i->count < bytes);
-@@ -404,30 +422,6 @@ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
- }
- EXPORT_SYMBOL(iov_iter_fault_in_readable);
- 
--static unsigned long alignment_iovec(const struct iov_iter *i)
--{
--	const struct iovec *iov = i->iov;
--	unsigned long res;
--	size_t size = i->count;
--	size_t n;
--
--	if (!size)
--		return 0;
--
--	res = (unsigned long)iov->iov_base + i->iov_offset;
--	n = iov->iov_len - i->iov_offset;
--	if (n >= size)
--		return res | size;
--	size -= n;
--	res |= n;
--	while (size > (++iov)->iov_len) {
--		res |= (unsigned long)iov->iov_base | iov->iov_len;
--		size -= iov->iov_len;
--	}
--	res |= (unsigned long)iov->iov_base | size;
--	return res;
--}
--
- void iov_iter_init(struct iov_iter *i, int direction,
- 			const struct iovec *iov, unsigned long nr_segs,
- 			size_t count)
-@@ -691,28 +685,6 @@ static size_t zero_bvec(size_t bytes, struct iov_iter *i)
- 	return wanted - bytes;
- }
- 
--static size_t copy_from_user_bvec(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes)
--{
--	char *kaddr;
--	size_t left;
--	const struct bio_vec *bvec;
--	size_t base = i->iov_offset;
--
--	kaddr = kmap_atomic(page);
--	for (left = bytes, bvec = i->bvec; left; bvec++, base = 0) {
--		size_t copy = min(left, bvec->bv_len - base);
--		if (!bvec->bv_len)
--			continue;
--		memcpy_from_page(kaddr + offset, bvec->bv_page,
--				 bvec->bv_offset + base, copy);
--		offset += copy;
--		left -= copy;
--	}
--	kunmap_atomic(kaddr);
--	return bytes;
--}
--
- static void advance_bvec(struct iov_iter *i, size_t bytes)
- {
- 	BUG_ON(i->count < bytes);
-@@ -749,30 +721,6 @@ static void advance_bvec(struct iov_iter *i, size_t bytes)
- 	}
- }
- 
--static unsigned long alignment_bvec(const struct iov_iter *i)
--{
--	const struct bio_vec *bvec = i->bvec;
--	unsigned long res;
--	size_t size = i->count;
--	size_t n;
--
--	if (!size)
--		return 0;
--
--	res = bvec->bv_offset + i->iov_offset;
--	n = bvec->bv_len - i->iov_offset;
--	if (n >= size)
--		return res | size;
--	size -= n;
--	res |= n;
--	while (size > (++bvec)->bv_len) {
--		res |= bvec->bv_offset | bvec->bv_len;
--		size -= bvec->bv_len;
--	}
--	res |= bvec->bv_offset | size;
--	return res;
--}
--
- static ssize_t get_pages_bvec(struct iov_iter *i,
- 		   struct page **pages, size_t maxsize, unsigned maxpages,
- 		   size_t *start)
-@@ -887,10 +835,15 @@ EXPORT_SYMBOL(iov_iter_zero);
- size_t iov_iter_copy_from_user_atomic(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
--	if (i->type & ITER_BVEC)
--		return copy_from_user_bvec(page, i, offset, bytes);
--	else
--		return copy_from_user_atomic_iovec(page, i, offset, bytes);
-+	char *kaddr = kmap_atomic(page), *p = kaddr + offset;
-+	iterate_all_kinds(i, bytes, v,
-+		__copy_from_user_inatomic((p += v.iov_len) - v.iov_len,
-+					  v.iov_base, v.iov_len),
-+		memcpy_from_page((p += v.bv_len) - v.bv_len, v.bv_page,
-+				 v.bv_offset, v.bv_len)
-+	)
-+	kunmap_atomic(kaddr);
-+	return bytes;
- }
- EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
- 
-@@ -919,10 +872,17 @@ EXPORT_SYMBOL(iov_iter_single_seg_count);
- 
- unsigned long iov_iter_alignment(const struct iov_iter *i)
- {
--	if (i->type & ITER_BVEC)
--		return alignment_bvec(i);
--	else
--		return alignment_iovec(i);
-+	unsigned long res = 0;
-+	size_t size = i->count;
-+
-+	if (!size)
-+		return 0;
-+
-+	iterate_all_kinds(i, size, v,
-+		(res |= (unsigned long)v.iov_base | v.iov_len, 0),
-+		res |= v.bv_offset | v.bv_len
-+	)
-+	return res;
- }
- EXPORT_SYMBOL(iov_iter_alignment);
- 
--- 
-2.1.3
+Go for it.
 
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
