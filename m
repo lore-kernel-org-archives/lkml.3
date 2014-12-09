@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaLICOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:14:31 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23726 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaLICOa (ORCPT
+	id S1756090AbaLICPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:15:43 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:33107 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755257AbaLICPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:14:30 -0500
-Message-ID: <54865AF2.5040707@huawei.com>
-Date: Tue, 9 Dec 2014 10:14:10 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 8 Dec 2014 21:15:41 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v3 1/8] soc: mediatek: Add PMIC wrapper for MT8135 and
+ MT6397 SoC
+From: Flora Fu <flora.fu@mediatek.com>
+To: Arnd Bergmann <arnd@arndb.de>, Matthias Brugger <matthias.bgg@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        <arm@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        <srv_heupstream@mediatek.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, HenryC Chen <henryc.chen@mediatek.com>,
+        Menghui Lin <menghui.lin@mediatek.com>,
+        Olof Johansson <olof@lixom.net>, Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>
+In-Reply-To: <2751641.o51TuZRl88@wuerfel>
+References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com>
+	 <1417752479-4749-2-git-send-email-flora.fu@mediatek.com>
+	 <2751641.o51TuZRl88@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 9 Dec 2014 10:15:37 +0800
+Message-ID: <1418091337.5663.9.camel@mtksdaap41>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-CC: Li Zefan <lizefan@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RESEND][PATCH v15 7/7] ARM: kprobes: enable OPTPROBES for ARM
- 32
-In-Reply-To: 1418047765-53197-8-git-send-email-wangnan0@huawei.com
-Content-Type: text/plain; charset="GB2312"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi, Arnd,
 
-Looks like v15 patch solves the problems found in patch v13 and v14. I run Tixy's test
-cases in a loop for a whole night on two real unpublished Hisilicon ARM A15 SoCs (I
-backported kprobes to 3.10 kernel), no problem arise, they are still running now.
+On Fri, 2014-12-05 at 11:13 +0100, Arnd Bergmann wrote:
+> On Friday 05 December 2014 12:07:52 Flora Fu wrote:
+> > Add PMIC wrapper of MT8135 to access MT6397 MFD.
+> > 
+> > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
+> > 
+> 
+> Please explain what a PMIC wrapper is and why you need one for MT8135.
+> I don't understand the purpose of this code at all. Is this just another
+> way of accessing the MT6397 when not using i2c or spi like other
+> PMIC drivers do?
+> 
+
+Yes, MT8135 uses a proprietary hardware to communicate with MT6397. 
+The hardware is called PMIC Wrapper or PWRAP.
+Since it is not standard i2c or spi protocols, a soc related software
+driver is implemented to handle access protocols in AP side.
+
++-----------------+           +---------------+
+|                 |           |               |
+| Mediatek AP SoC |           |               |
+| (ex. MT8135)    |           |    MT6397     |
+|                 |           |               |
+|      +--------+ | (SPI bus) | +--------+    |
+|      |        | |-----------| |        |    |
+|      |  PMIC  | |-----------| |  PMIC  |    |
+|      | Wrapper| |-----------| | Wrapper|    |
+|      |        | |-----------| |        |    |
+|      +--------+ |           | +--------+    |
+|                 |           |               |
++-----------------+           +---------------+
+
+Thanks,
+Flora
+
 
