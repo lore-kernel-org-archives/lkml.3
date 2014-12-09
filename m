@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaLIUo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:44:57 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:34140 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaLIUow (ORCPT
+	id S1752581AbaLIUpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:45:38 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:37507 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226AbaLIUpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:44:52 -0500
+	Tue, 9 Dec 2014 15:45:34 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Andy Lutomirski <luto@amacapital.net>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
@@ -42,14 +42,14 @@ References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacap
 	<87a92xn2io.fsf@x220.int.ebiederm.org>
 	<87r3w8liw4.fsf@x220.int.ebiederm.org>
 	<87iohklfvj.fsf_-_@x220.int.ebiederm.org>
-Date: Tue, 09 Dec 2014 14:42:34 -0600
+Date: Tue, 09 Dec 2014 14:43:17 -0600
 In-Reply-To: <87iohklfvj.fsf_-_@x220.int.ebiederm.org> (Eric W. Biederman's
 	message of "Tue, 09 Dec 2014 14:36:48 -0600")
-Message-ID: <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
+Message-ID: <87a92wk10a.fsf_-_@x220.int.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+Zp10C2ZgSjx6tL5Vk7Rn8oShlHMyP5jE=
+X-XM-AID: U2FsdGVkX1++kme95IFkj7wwEVJ+0s1X/oZfAkNGUmI=
 X-SA-Exim-Connect-IP: 67.3.210.55
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -59,330 +59,62 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  0.7 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
 	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
+	*      [score: 0.4999]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
 X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ******;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Combo: ***;Andy Lutomirski <luto@amacapital.net>
 X-Spam-Relay-Country: 
-X-Spam-Timing: total 616 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 3.7 (0.6%), b_tie_ro: 2.8 (0.5%), parse: 4.3 (0.7%),
-	extract_message_metadata: 23 (3.8%), get_uri_detail_list: 7 (1.1%),
-	tests_pri_-1000: 10 (1.6%), tests_pri_-950: 1.86 (0.3%), tests_pri_-900: 1.57
-	(0.3%), tests_pri_-400: 52 (8.5%), check_bayes: 51 (8.2%), b_tokenize: 25
-	(4.1%), b_tok_get_all: 12 (1.9%), b_comp_prob: 3.9 (0.6%), b_tok_touch_all:
-	4.9 (0.8%), b_finish: 1.99 (0.3%), tests_pri_0: 507 (82.3%), tests_pri_500: 6
-	(0.9%), rewrite_mail: 0.00 (0.0%)
-Subject: [CFT][PATCH 7/8] userns: Add a knob to disable setgroups on a per user namespace basis
+X-Spam-Timing: total 207 ms - load_scoreonly_sql: 0.03 (0.0%),
+	signal_user_changed: 3.1 (1.5%), b_tie_ro: 2.3 (1.1%), parse: 0.64 (0.3%),
+	extract_message_metadata: 15 (7.2%), get_uri_detail_list: 1.13 (0.5%),
+	tests_pri_-1000: 8 (3.9%), tests_pri_-950: 1.19 (0.6%), tests_pri_-900: 0.95
+	(0.5%), tests_pri_-400: 19 (9.2%), check_bayes: 18 (8.7%), b_tokenize: 6
+	(2.8%), b_tok_get_all: 7 (3.2%), b_comp_prob: 1.40 (0.7%), b_tok_touch_all:
+	2.1 (1.0%), b_finish: 0.68 (0.3%), tests_pri_0: 151 (72.7%), tests_pri_500:
+	5.0 (2.4%), rewrite_mail: 0.00 (0.0%)
+Subject: [CFT][PATCH 8/8] userns: Allow setting gid_maps without privilege when setgroups is disabled
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-- Expose the knob to user space through a proc file /proc/<pid>/setgroups
+Now that setgroups can be disabled and not reenabled, setting gid_map
+without privielge can now be enabled when setgroups is disabled.
 
-  A value of "deny" means the setgroups system call is disabled in the
-  current processes user namespace and can not be enabled in the
-  future in this user namespace.
-
-  A value of "allow" means the segtoups system call is enabled.
-
-- Descendant user namespaces inherit the value of setgroups from
-  their parents.
-
-- A proc file is used (instead of a sysctl) as sysctls
-  currently do not pass in a struct file so file_ns_capable
-  is unusable.
+This restores most of the functionality that was lost when unprivileged
+setting of gid_map was removed.  Applications that use this functionality
+will need to check to see if they use setgroups or init_groups, and if they
+don't they can be fixed by simply disabling setgroups before writing to
+gid_map.
 
 Cc: stable@vger.kernel.org
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/proc/base.c                 |  31 +++++++++----
- include/linux/user_namespace.h |   7 +++
- kernel/user.c                  |   1 +
- kernel/user_namespace.c        | 103 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 134 insertions(+), 8 deletions(-)
+ kernel/user_namespace.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 772efa45a452..4ebed9f01d97 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2386,7 +2386,7 @@ static int proc_tgid_io_accounting(struct seq_file *m, struct pid_namespace *ns,
- #endif /* CONFIG_TASK_IO_ACCOUNTING */
- 
- #ifdef CONFIG_USER_NS
--static int proc_id_map_open(struct inode *inode, struct file *file,
-+static int proc_userns_open(struct inode *inode, struct file *file,
- 	const struct seq_operations *seq_ops)
- {
- 	struct user_namespace *ns = NULL;
-@@ -2418,7 +2418,7 @@ err:
- 	return ret;
- }
- 
--static int proc_id_map_release(struct inode *inode, struct file *file)
-+static int proc_userns_release(struct inode *inode, struct file *file)
- {
- 	struct seq_file *seq = file->private_data;
- 	struct user_namespace *ns = seq->private;
-@@ -2428,17 +2428,17 @@ static int proc_id_map_release(struct inode *inode, struct file *file)
- 
- static int proc_uid_map_open(struct inode *inode, struct file *file)
- {
--	return proc_id_map_open(inode, file, &proc_uid_seq_operations);
-+	return proc_userns_open(inode, file, &proc_uid_seq_operations);
- }
- 
- static int proc_gid_map_open(struct inode *inode, struct file *file)
- {
--	return proc_id_map_open(inode, file, &proc_gid_seq_operations);
-+	return proc_userns_open(inode, file, &proc_gid_seq_operations);
- }
- 
- static int proc_projid_map_open(struct inode *inode, struct file *file)
- {
--	return proc_id_map_open(inode, file, &proc_projid_seq_operations);
-+	return proc_userns_open(inode, file, &proc_projid_seq_operations);
- }
- 
- static const struct file_operations proc_uid_map_operations = {
-@@ -2446,7 +2446,7 @@ static const struct file_operations proc_uid_map_operations = {
- 	.write		= proc_uid_map_write,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= proc_id_map_release,
-+	.release	= proc_userns_release,
- };
- 
- static const struct file_operations proc_gid_map_operations = {
-@@ -2454,7 +2454,7 @@ static const struct file_operations proc_gid_map_operations = {
- 	.write		= proc_gid_map_write,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= proc_id_map_release,
-+	.release	= proc_userns_release,
- };
- 
- static const struct file_operations proc_projid_map_operations = {
-@@ -2462,7 +2462,20 @@ static const struct file_operations proc_projid_map_operations = {
- 	.write		= proc_projid_map_write,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= proc_id_map_release,
-+	.release	= proc_userns_release,
-+};
-+
-+static int proc_setgroups_open(struct inode *inode, struct file *file)
-+{
-+	return proc_userns_open(inode, file, &proc_setgroups_seq_operations);
-+}
-+
-+static const struct file_operations proc_setgroups_operations = {
-+	.open		= proc_setgroups_open,
-+	.write		= proc_setgroups_write,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= proc_userns_release,
- };
- #endif /* CONFIG_USER_NS */
- 
-@@ -2572,6 +2585,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
- 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
- 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
-+	REG("setgroups",  S_IRUGO|S_IWUSR, proc_setgroups_operations),
- #endif
- #ifdef CONFIG_CHECKPOINT_RESTORE
- 	REG("timers",	  S_IRUGO, proc_timers_operations),
-@@ -2913,6 +2927,7 @@ static const struct pid_entry tid_base_stuff[] = {
- 	REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
- 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
- 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
-+	REG("setgroups",  S_IRUGO|S_IWUSR, proc_setgroups_operations),
- #endif
- };
- 
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index 8d493083486a..feb0f4ec5573 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -17,6 +17,10 @@ struct uid_gid_map {	/* 64 bytes -- 1 cache line */
- 	} extent[UID_GID_MAP_MAX_EXTENTS];
- };
- 
-+#define USERNS_SETGROUPS_ALLOWED 1UL
-+
-+#define USERNS_INIT_FLAGS USERNS_SETGROUPS_ALLOWED
-+
- struct user_namespace {
- 	struct uid_gid_map	uid_map;
- 	struct uid_gid_map	gid_map;
-@@ -27,6 +31,7 @@ struct user_namespace {
- 	kuid_t			owner;
- 	kgid_t			group;
- 	unsigned int		proc_inum;
-+	unsigned long		flags;
- 
- 	/* Register of per-UID persistent keyrings for this namespace */
- #ifdef CONFIG_PERSISTENT_KEYRINGS
-@@ -60,9 +65,11 @@ struct seq_operations;
- extern const struct seq_operations proc_uid_seq_operations;
- extern const struct seq_operations proc_gid_seq_operations;
- extern const struct seq_operations proc_projid_seq_operations;
-+extern const struct seq_operations proc_setgroups_seq_operations;
- extern ssize_t proc_uid_map_write(struct file *, const char __user *, size_t, loff_t *);
- extern ssize_t proc_gid_map_write(struct file *, const char __user *, size_t, loff_t *);
- extern ssize_t proc_projid_map_write(struct file *, const char __user *, size_t, loff_t *);
-+extern ssize_t proc_setgroups_write(struct file *, const char __user *, size_t, loff_t *);
- extern bool userns_may_setgroups(const struct user_namespace *ns);
- #else
- 
-diff --git a/kernel/user.c b/kernel/user.c
-index 4efa39350e44..2d09940c9632 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
- 	.owner = GLOBAL_ROOT_UID,
- 	.group = GLOBAL_ROOT_GID,
- 	.proc_inum = PROC_USER_INIT_INO,
-+	.flags = USERNS_INIT_FLAGS,
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 	.persistent_keyring_register_sem =
- 	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
 diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 44a555ac6104..b507f9af7ff2 100644
+index b507f9af7ff2..3b29b9a52332 100644
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -100,6 +100,11 @@ int create_user_ns(struct cred *new)
- 	ns->owner = owner;
- 	ns->group = group;
+@@ -826,6 +826,11 @@ static bool new_idmap_permitted(const struct file *file,
+ 			kuid_t uid = make_kuid(ns->parent, id);
+ 			if (uid_eq(uid, cred->euid))
+ 				return true;
++		} else if (cap_setid == CAP_SETGID) {
++			kgid_t gid = make_kgid(ns->parent, id);
++			if (!(ns->flags & USERNS_SETGROUPS_ALLOWED) &&
++			    gid_eq(gid, cred->egid))
++				return true;
+ 		}
+ 	}
  
-+	/* Inherit USERNS_SETGROUPS_ALLOWED from our parent */
-+	mutex_lock(&userns_state_mutex);
-+	ns->flags = parent_ns->flags;
-+	mutex_unlock(&userns_state_mutex);
-+
- 	set_cred_user_ns(new, ns);
- 
- #ifdef CONFIG_PERSISTENT_KEYRINGS
-@@ -839,6 +844,102 @@ static bool new_idmap_permitted(const struct file *file,
- 	return false;
- }
- 
-+static void *setgroups_m_start(struct seq_file *seq, loff_t *ppos)
-+{
-+	struct user_namespace *ns = seq->private;
-+
-+	return (*ppos == 0) ?  ns : NULL;
-+}
-+
-+static void *setgroups_m_next(struct seq_file *seq, void *v, loff_t *ppos)
-+{
-+	++*ppos;
-+	return NULL;
-+}
-+
-+static void setgroups_m_stop(struct seq_file *seq, void *v)
-+{
-+}
-+
-+static int setgroups_m_show(struct seq_file *seq, void *v)
-+{
-+	struct user_namespace *ns = seq->private;
-+
-+	seq_printf(seq, "%s\n",
-+		   test_bit(USERNS_SETGROUPS_ALLOWED, &ns->flags) ?
-+		   "allow" : "deny");
-+	return 0;
-+}
-+
-+const struct seq_operations proc_setgroups_seq_operations = {
-+	.start	= setgroups_m_start,
-+	.stop = setgroups_m_stop,
-+	.next = setgroups_m_next,
-+	.show = setgroups_m_show,
-+};
-+
-+ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
-+			     size_t count, loff_t *ppos)
-+{
-+	struct seq_file *seq = file->private_data;
-+	struct user_namespace *ns = seq->private;
-+	char kbuf[8], *pos;
-+	bool setgroups_allowed;
-+	ssize_t ret;
-+
-+	ret = -EACCES;
-+	if (!file_ns_capable(file, ns, CAP_SYS_ADMIN))
-+		goto out;
-+
-+	/* Only allow a very narrow range of strings to be written */
-+	ret = -EINVAL;
-+	if ((*ppos != 0) || (count >= sizeof(kbuf)))
-+		goto out;
-+
-+	/* What was written? */
-+	ret = -EFAULT;
-+	if (copy_from_user(kbuf, buf, count))
-+		goto out;
-+	kbuf[count] = '\0';
-+	pos = kbuf;
-+
-+	/* What is being requested? */
-+	ret = -EINVAL;
-+	if (strncmp(pos, "allow", 5) == 0) {
-+		pos += 5;
-+		setgroups_allowed = true;
-+	}
-+	else if (strncmp(pos, "deny", 4) == 0) {
-+		pos += 4;
-+		setgroups_allowed = false;
-+	}
-+	else
-+		goto out;
-+
-+	/* Verify there is not trailing junk on the line */
-+	pos = skip_spaces(pos);
-+	if (*pos != '\0')
-+		goto out;
-+
-+	mutex_lock(&userns_state_mutex);
-+	if (setgroups_allowed) {
-+		ret = -EPERM;
-+		if (!(ns->flags & USERNS_SETGROUPS_ALLOWED)) {
-+			mutex_unlock(&userns_state_mutex);
-+			goto out;
-+		}
-+	} else {
-+		ns->flags &= ~USERNS_SETGROUPS_ALLOWED;
-+	}
-+	mutex_unlock(&userns_state_mutex);
-+
-+	/* Report a successful write */
-+	*ppos = count;
-+	ret = count;
-+out:
-+	return ret;
-+}
-+
- bool userns_may_setgroups(const struct user_namespace *ns)
- {
- 	bool allowed;
-@@ -848,6 +949,8 @@ bool userns_may_setgroups(const struct user_namespace *ns)
- 	 * the user namespace has been established.
- 	 */
- 	allowed = ns->gid_map.nr_extents != 0;
-+	/* Is setgroups allowed? */
-+	allowed = allowed && (ns->flags & USERNS_SETGROUPS_ALLOWED);
- 	mutex_unlock(&userns_state_mutex);
- 
- 	return allowed;
 -- 
 1.9.1
 
