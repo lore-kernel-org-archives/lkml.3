@@ -1,193 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaLIJJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:09:11 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:51150 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaLIJJG (ORCPT
+	id S1755183AbaLIJJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:09:33 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:55623 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755025AbaLIJJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:09:06 -0500
-MIME-Version: 1.0
-Date: Tue, 9 Dec 2014 10:09:05 +0100
-Message-ID: <CACRpkda1EPMPTzW56GcCsMnBvn=s1gnp-pHu4cHP-+P-J2q52w@mail.gmail.com>
-Subject: [GIT PULL] bulk GPIO changes for v3.19
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Dec 2014 04:09:29 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-64-5486bc46e033
+Message-id: <5486BC44.7010602@samsung.com>
+Date: Tue, 09 Dec 2014 10:09:24 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v9 04/19] mfd: max77693: adjust
+ max77693_led_platform_data
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-5-git-send-email-j.anaszewski@samsung.com>
+ <20141209085047.GR3951@x1>
+In-reply-to: <20141209085047.GR3951@x1>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4ZV23PW0hBmsuG1lsnLGe1eLozolM
+	Fte/PGe16H+zkNXi3KuVjBZnm96wW9z/epTR4vKuOWwWW9+sY7To2bCV1WLp9YtMFndPHWWz
+	mDB9LYtF694j7Ba7dz1ltTj8pp3V4sz+lWwOgh5r5q1h9Ljc18vksXPWXXaPlcu/sHkc/rqQ
+	xWPTqk42jzvX9rB57Jn/g9Wjb8sqRo8Vq7+ze3zeJBfAHcVlk5Kak1mWWqRvl8CV8WLVbraC
+	w3wVj969ZW1gvMvdxcjJISFgIjHv3hF2CFtM4sK99WwgtpDAUkaJTac5IOyPjBLfX3mA2LwC
+	WhIHLj5nBbFZBFQl+vccYwax2QQMJX6+eM0EYosKREj8Ob2PFaJeUOLH5HssXYwcHCICKhLn
+	3ph3MXJxMAtMZpY4em8N2C5hgRCJDc/mM4MkhASWMEocOXUa7CBOAXWJw4fPs4DYzAJmEo9a
+	1jFD2PISm9e8ZZ7AKDALyY5ZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk
+	Cr/uYFx6zOoQowAHoxIP7w7FthAh1sSy4srcQ4wSHMxKIrxKS4FCvCmJlVWpRfnxRaU5qcWH
+	GJk4OKUaGHXPVNcbPNx+yemu2605ceL8LOIZfux3FPcbvXjg8NHcbJntauncypVLg6/UBVs8
+	S9l4r1RY61jBnA77eqE0h+0N+88dOhbj9fT+7olJqxZc2aSxgZPZQTZ2WrD4qz0zfBXmdUn+
+	f6L+Ka74RD3f/JmTLwUbsuutUBOdeE53Y3JniLFb1nLfZ0osxRmJhlrMRcWJAPgLrCGgAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/09/2014 09:50 AM, Lee Jones wrote:
+> On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
+>
+>> Add "label" array for Device Tree strings with the name of a LED device
+>> and make flash_timeout a two element array, for caching the sub-led
+>> related flash timeout. Added is also an array for caching pointers to the
+>> sub-nodes representing sub-leds.
+>>
+>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+>> Cc: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>   include/linux/mfd/max77693.h |    4 +++-
+>>   1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
+>> index f0b6585..c80ee99 100644
+>> --- a/include/linux/mfd/max77693.h
+>> +++ b/include/linux/mfd/max77693.h
+>> @@ -88,16 +88,18 @@ enum max77693_led_boost_mode {
+>>   };
+>>
+>>   struct max77693_led_platform_data {
+>> +	const char *label[2];
+>>   	u32 fleds[2];
+>>   	u32 iout_torch[2];for_each_available_child_of_node
+>>   	u32 iout_flash[2];
+>>   	u32 trigger[2];
+>>   	u32 trigger_type[2];
+>> +	u32 flash_timeout[2];
+>>   	u32 num_leds;
+>>   	u32 boost_mode;
+>> -	u32 flash_timeout;
+>>   	u32 boost_vout;
+>>   	u32 low_vsys;
+>> +	struct device_node *sub_nodes[2];
+>
+> I haven't seen anyone do this before.  Why can't you use the provided
+> OF functions to traverse through your tree?
 
-here is the bulk of GPIO changes for the v3.19 kernel series.
-The major external change is the new API to driver several GPIOs
-simultaneously, and the major internal change is that we're getting
-rid of a static array of GPIO descriptors and again moving away,
-slowly, from the global GPIO numberspace.
+I use for_each_available_child_of_node when parsing DT node, but I
+need to cache the pointer to sub-node to be able to use it later
+when it needs to be passed to V4L2 sub-device which is then
+asynchronously matched by the phandle to sub-node.
 
-There is a patch hitting the TTY/serial subsystem, it has been
-ACKed by Greg.
+If it is not well seen to cache it in the platform data then
+I will find different way to accomplish this.
 
-More details in the signed tag as usual.
-
-Please pull it in!
-
-Yours,
-Linus Walleij
-
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.19-1
-
-for you to fetch changes up to 256965d724347a9fa1cce42dc30987e7d92addb3:
-
-  gpio: pl061: document gpio-ranges property for bindings file
-(2014-12-03 14:46:27 +0100)
-
-----------------------------------------------------------------
-This is the bulk of GPIO changes for the v3.19 series:
-
-- A new API that allows setting more than one GPIO at the
-  time. This is implemented for the new descriptor-based
-  API only and makes it possible to e.g. toggle a clock and
-  data line at the same time, if the hardware can do this
-  with a single register write. Both consumers and drivers
-  need new calls, and the core will fall back to driving
-  individual lines where needed. Implemented for the MPC8xxx
-  driver initially.
-- Patched the mdio-mux-gpio and the serial mctrl driver
-  that drives modems to use the new multiple-setting API
-  to set several signals simultaneously.
-- Get rid of the global GPIO descriptor array, and instead
-  allocate descriptors dynamically for each GPIO on a certain
-  GPIO chip. This moves us closer to getting rid of the
-  limitation of using the global, static GPIO numberspace.
-- New driver and device tree bindings for 74xx ICs.
-- New driver and device tree bindings for the VF610 Vybrid.
-- Support the RCAR r8a7793 and r8a7794.
-- Guidelines for GPIO device tree bindings trying to get
-  things a bit more strict with the advent of combined
-  device properties.
-- Suspend/resume support for the MVEBU driver.
-- A slew of minor fixes and improvements.
-
-----------------------------------------------------------------
-Alexander Shiyan (2):
-      GPIO: Add driver for 74xx-ICs with MMIO access
-      GPIO: 74xx-mmio: Add DT bindings documentation
-
-Alexander Stein (4):
-      gpio: mcp23s08: Do not free unrequested interrupt
-      gpio: mcp23s08: request a shared interrupt
-      gpio: mcp23s08: Add simple IRQ support for SPI devices
-      gpio: mcp23s08: Add option to configure IRQ output polarity as active high
-
-Alexandre Courbot (5):
-      gpio: rename gpio_lock_as_irq to gpiochip_lock_as_irq
-      Documentation: gpio: guidelines for bindings
-      gpio: remove gpio_descs global array
-      gpio: remove const modifier from gpiod_get_direction()
-      gpio: fix deferred probe detection for legacy API
-
-Daniel Thompson (1):
-      gpio: msm-v1: Fix typo in function argument
-
-Geert Uytterhoeven (2):
-      gpio: Check if base is positive before calling gpio_is_valid()
-      gpio: em: Use dynamic allocation of GPIOs
-
-Hisashi Nakamura (1):
-      gpio: rcar: Add r8a7793 and r8a7794 support
-
-Janusz Uzycki (1):
-      gpio: mxs: implement get_direction callback
-
-Linus Walleij (1):
-      gpio: dwapb: fix compile errors
-
-Pramod Gurav (3):
-      gpio: cs5535: Switch to using managed resources with devm_
-      gpio: amd8111: unmap ioport on failure case
-      gpio: grgpio: remove irq_domain resources on failure
-
-Rojhalat Ibrahim (4):
-      gpiolib: allow simultaneous setting of multiple GPIO outputs
-      gpio-mpc8xxx: add mpc8xxx_gpio_set_multiple function
-      mdio-mux-gpio: Use GPIO descriptor interface and new
-gpiod_set_array function
-      serial: mctrl_gpio: use gpiod_set_array function
-
-Stefan Agner (2):
-      gpio: vf610: add gpiolib/IRQ chip driver for Vybrid
-      Documentation: dts: add bindings for Vybrid GPIO/PORT module
-
-Thomas Petazzoni (1):
-      gpio: mvebu: add suspend/resume support
-
-Varka Bhadram (3):
-      gpio: gpio-stp-xway: remove duplicate check on resource
-      gpio: gpio-tb10x: remove duplicate check on resource
-      gpio: gpio-davinci: remove duplicate check on resource
-
-Yunlei He (2):
-      gpio: pl061: hook request if gpio-ranges avaiable
-      gpio: pl061: document gpio-ranges property for bindings file
-
- .../devicetree/bindings/gpio/gpio-74xx-mmio.txt    |  30 +++
- .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |   2 +
- .../devicetree/bindings/gpio/gpio-vf610.txt        |  55 ++++
- Documentation/devicetree/bindings/gpio/gpio.txt    |  40 ++-
- .../devicetree/bindings/gpio/pl061-gpio.txt        |   2 +-
- .../devicetree/bindings/gpio/renesas,gpio-rcar.txt |   4 +-
- Documentation/gpio/consumer.txt                    |  27 ++
- Documentation/gpio/driver.txt                      |   4 +-
- drivers/gpio/Kconfig                               |  23 ++
- drivers/gpio/Makefile                              |   2 +
- drivers/gpio/gpio-74xx-mmio.c                      | 170 ++++++++++++
- drivers/gpio/gpio-amd8111.c                        |   1 +
- drivers/gpio/gpio-bcm-kona.c                       |   4 +-
- drivers/gpio/gpio-cs5535.c                         |  11 +-
- drivers/gpio/gpio-davinci.c                        |   5 -
- drivers/gpio/gpio-dwapb.c                          |   4 +-
- drivers/gpio/gpio-em.c                             |  11 +-
- drivers/gpio/gpio-grgpio.c                         |   1 +
- drivers/gpio/gpio-mcp23s08.c                       |  40 ++-
- drivers/gpio/gpio-mpc8xxx.c                        |  27 ++
- drivers/gpio/gpio-msm-v1.c                         |   2 +-
- drivers/gpio/gpio-mvebu.c                          |  99 +++++++
- drivers/gpio/gpio-mxs.c                            |  13 +
- drivers/gpio/gpio-omap.c                           |   2 +-
- drivers/gpio/gpio-pl061.c                          |  20 +-
- drivers/gpio/gpio-rcar.c                           |  27 +-
- drivers/gpio/gpio-stp-xway.c                       |   8 +-
- drivers/gpio/gpio-tb10x.c                          |   7 +-
- drivers/gpio/gpio-tegra.c                          |   4 +-
- drivers/gpio/gpio-vf610.c                          | 295 +++++++++++++++++++++
- drivers/gpio/gpio-vr41xx.c                         |   4 +-
- drivers/gpio/gpiolib-acpi.c                        |   6 +-
- drivers/gpio/gpiolib-legacy.c                      |  12 +-
- drivers/gpio/gpiolib-sysfs.c                       |   6 +-
- drivers/gpio/gpiolib.c                             | 241 +++++++++++++++--
- drivers/net/phy/mdio-mux-gpio.c                    |  37 +--
- drivers/pinctrl/pinctrl-at91.c                     |   4 +-
- drivers/pinctrl/samsung/pinctrl-exynos.c           |   4 +-
- drivers/pinctrl/sunxi/pinctrl-sunxi.c              |   6 +-
- drivers/tty/serial/serial_mctrl_gpio.c             |  12 +-
- include/linux/gpio.h                               |   7 +-
- include/linux/gpio/consumer.h                      |  40 ++-
- include/linux/gpio/driver.h                        |   8 +-
- 43 files changed, 1165 insertions(+), 162 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-74xx-mmio.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-vf610.txt
- create mode 100644 drivers/gpio/gpio-74xx-mmio.c
- create mode 100644 drivers/gpio/gpio-vf610.c
+Best Regards,
+Jacek Anaszewski
