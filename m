@@ -1,272 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332AbaLIJt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:49:59 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:64491 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754396AbaLIJt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:49:56 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44732336"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH] tiny_rcu: directly force QS when call_rcu_[bh|sched]() on idle_task
-Date: Tue, 9 Dec 2014 17:53:34 +0800
-Message-ID: <1418118815-13423-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <5486C42F.7010407@cn.fujitsu.com>
-References: <5486C42F.7010407@cn.fujitsu.com>
+	id S1755456AbaLIJvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:51:02 -0500
+Received: from mail-by2on0133.outbound.protection.outlook.com ([207.46.100.133]:18752
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752845AbaLIJu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 04:50:59 -0500
+X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Dec 2014 04:50:59 EST
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv4] dmaengine: fsl-edma: fixup reg offset and hw S/G
+ support in big-endian model
+Thread-Topic: [PATCHv4] dmaengine: fsl-edma: fixup reg offset and hw S/G
+ support in big-endian model
+Thread-Index: AQHP7dxw0ZXsnje90ESiN3180LVrWZyHROAAgAAEwWA=
+Date: Tue, 9 Dec 2014 09:35:47 +0000
+Message-ID: <BN3PR0301MB1236551BC121795218B2EAB387650@BN3PR0301MB1236.namprd03.prod.outlook.com>
+References: <1413968035-12855-1-git-send-email-jingchang.lu@freescale.com>
+ <20141209091248.GA16827@intel.com>
+In-Reply-To: <20141209091248.GA16827@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.51]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+x-forefront-prvs: 0420213CCD
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(24454002)(199003)(189002)(66654002)(41574002)(97736003)(40100003)(110136001)(99286002)(107046002)(105586002)(106116001)(106356001)(21056001)(4396001)(102836002)(74316001)(76576001)(122556002)(46102003)(68736005)(31966008)(101416001)(19580405001)(19580395003)(54206007)(33656002)(120916001)(20776003)(54606007)(62966003)(99396003)(87936001)(64706001)(77156002)(66066001)(50986999)(76176999)(54356999)(2656002)(92566001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1235;H:BN3PR0301MB1236.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB99pB64030744
 
-For RCU in UP, context-switch = QS = GP, thus we can force a
-context-switch when any call_rcu_[bh|sched]() is happened on idle_task.
-After doing so, rcu_idle/irq_enter/exit() are useless, so we can simply
-make these functions empty.
+Hi, Vinod,
+  
+  Many thanks!
+  I resend the patch just before I saw this email, please ignore the
+resend one since they are the same.
 
-More important, this change does not change the functionality logically.
-Note: raise_softirq(RCU_SOFTIRQ)/rcu_sched_qs() in rcu_idle_enter() and
-outmost rcu_irq_exit() will have to wake up the ksoftirqd
-(due to in_interrupt() == 0).
 
-Before this patch		After this patch:
-call_rcu_sched() in idle;	call_rcu_sched() in idle
-				  set resched
-do other stuffs;		do other stuffs
-outmost rcu_irq_exit()		outmost rcu_irq_exit() (empty function)
-  (or rcu_idle_enter())		  (or rcu_idle_enter(), also empty function)
-				start to resched. (see above)
-  rcu_sched_qs()		rcu_sched_qs()
-    QS,and GP and advance cb	  QS,and GP and advance cb
-    wake up the ksoftirqd	    wake up the ksoftirqd
-      set resched
-resched to ksoftirqd (or other)	resched to ksoftirqd (or other)
+Thanks and Best Regards,
+Jingchang
 
-These two code patches are almost the same.
+>-----Original Message-----
+>From: Vinod Koul [mailto:vinod.koul@intel.com]
+>Sent: Tuesday, December 09, 2014 5:13 PM
+>To: Lu Jingchang-B35083
+>Cc: dmaengine@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+>linux-kernel@vger.kernel.org
+>Subject: Re: [PATCHv4] dmaengine: fsl-edma: fixup reg offset and hw S/G
+>support in big-endian model
+>
+>On Wed, Oct 22, 2014 at 04:53:55PM +0800, Jingchang Lu wrote:
+>> The offset of all 8-/16-bit registers in big-endian eDMA model are
+>> swapped in a 32-bit size opposite those in the little-endian model.
+>>
+>> The hardware Scatter/Gather requires the subsequent TCDs stored in
+>> memory in little endian independent of the register endian model, the
+>> eDMA engine will do the swap if need.
+>>
+>> This patch also use regular assignment for tcd variables r/w instead
+>> of with io function previously that may not always be true.
+>Applied, thanks
+>
+>--
+>~Vinod
 
-Size changed after patched:
 
-size kernel/rcu/tiny-old.o kernel/rcu/tiny-patched.o
-   text	   data	    bss	    dec	    hex	filename
-   3449	    206	      8	   3663	    e4f	kernel/rcu/tiny-old.o
-   2406	    144	      8	   2558	    9fe	kernel/rcu/tiny-patched.o
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/rcu/rcu.h         |    6 +++
- kernel/rcu/tiny.c        |   99 +++------------------------------------------
- kernel/rcu/tiny_plugin.h |    2 +-
- kernel/rcu/tree.c        |    6 ---
- 4 files changed, 14 insertions(+), 99 deletions(-)
-
-diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-index 07bb02e..80adef7 100644
---- a/kernel/rcu/rcu.h
-+++ b/kernel/rcu/rcu.h
-@@ -137,4 +137,10 @@ int rcu_jiffies_till_stall_check(void);
- 
- void rcu_early_boot_tests(void);
- 
-+/*
-+ * This function really isn't for public consumption, but RCU is special in
-+ * that context switches can allow the state machine to make progress.
-+ */
-+extern void resched_cpu(int cpu);
-+
- #endif /* __LINUX_RCU_H */
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index 805b6d5..85287ec 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -47,54 +47,14 @@ static void __call_rcu(struct rcu_head *head,
- 		       void (*func)(struct rcu_head *rcu),
- 		       struct rcu_ctrlblk *rcp);
- 
--static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
--
- #include "tiny_plugin.h"
- 
--/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcu/tree.c. */
--static void rcu_idle_enter_common(long long newval)
--{
--	if (newval) {
--		RCU_TRACE(trace_rcu_dyntick(TPS("--="),
--					    rcu_dynticks_nesting, newval));
--		rcu_dynticks_nesting = newval;
--		return;
--	}
--	RCU_TRACE(trace_rcu_dyntick(TPS("Start"),
--				    rcu_dynticks_nesting, newval));
--	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
--		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
--
--		RCU_TRACE(trace_rcu_dyntick(TPS("Entry error: not idle task"),
--					    rcu_dynticks_nesting, newval));
--		ftrace_dump(DUMP_ALL);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
--	rcu_sched_qs(); /* implies rcu_bh_inc() */
--	barrier();
--	rcu_dynticks_nesting = newval;
--}
--
- /*
-  * Enter idle, which is an extended quiescent state if we have fully
-- * entered that mode (i.e., if the new value of dynticks_nesting is zero).
-+ * entered that mode.
-  */
- void rcu_idle_enter(void)
- {
--	unsigned long flags;
--	long long newval;
--
--	local_irq_save(flags);
--	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
--	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
--	    DYNTICK_TASK_NEST_VALUE)
--		newval = 0;
--	else
--		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
--	rcu_idle_enter_common(newval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
- 
-@@ -103,55 +63,14 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
-  */
- void rcu_irq_exit(void)
- {
--	unsigned long flags;
--	long long newval;
--
--	local_irq_save(flags);
--	newval = rcu_dynticks_nesting - 1;
--	WARN_ON_ONCE(newval < 0);
--	rcu_idle_enter_common(newval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_irq_exit);
- 
--/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcu/tree.c. */
--static void rcu_idle_exit_common(long long oldval)
--{
--	if (oldval) {
--		RCU_TRACE(trace_rcu_dyntick(TPS("++="),
--					    oldval, rcu_dynticks_nesting));
--		return;
--	}
--	RCU_TRACE(trace_rcu_dyntick(TPS("End"), oldval, rcu_dynticks_nesting));
--	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
--		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
--
--		RCU_TRACE(trace_rcu_dyntick(TPS("Exit error: not idle task"),
--			  oldval, rcu_dynticks_nesting));
--		ftrace_dump(DUMP_ALL);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
--}
--
- /*
-  * Exit idle, so that we are no longer in an extended quiescent state.
-  */
- void rcu_idle_exit(void)
- {
--	unsigned long flags;
--	long long oldval;
--
--	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
--		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
--	else
--		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
--	rcu_idle_exit_common(oldval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
- 
-@@ -160,15 +79,6 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
-  */
- void rcu_irq_enter(void)
- {
--	unsigned long flags;
--	long long oldval;
--
--	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	rcu_dynticks_nesting++;
--	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
--	rcu_idle_exit_common(oldval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_irq_enter);
- 
-@@ -179,7 +89,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
-  */
- bool notrace __rcu_is_watching(void)
- {
--	return rcu_dynticks_nesting;
-+	return true;
- }
- EXPORT_SYMBOL(__rcu_is_watching);
- 
-@@ -347,6 +257,11 @@ static void __call_rcu(struct rcu_head *head,
- 	rcp->curtail = &head->next;
- 	RCU_TRACE(rcp->qlen++);
- 	local_irq_restore(flags);
-+
-+	if (unlikely(is_idle_task(current))) {
-+		/* force scheduling for rcu_sched_qs() */
-+		resched_cpu(0);
-+	}
- }
- 
- /*
-diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
-index 858c565..b5fc5e5 100644
---- a/kernel/rcu/tiny_plugin.h
-+++ b/kernel/rcu/tiny_plugin.h
-@@ -147,7 +147,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 	js = ACCESS_ONCE(rcp->jiffies_stall);
- 	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
- 		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
--		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
-+		       rcp->name, rcp->ticks_this_gp, DYNTICK_TASK_EXIT_IDLE,
- 		       jiffies - rcp->gp_start, rcp->qlen);
- 		dump_stack();
- 	}
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 3f5dd16..b5ef579 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -940,12 +940,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
- }
- 
- /*
-- * This function really isn't for public consumption, but RCU is special in
-- * that context switches can allow the state machine to make progress.
-- */
--extern void resched_cpu(int cpu);
--
--/*
-  * Return true if the specified CPU has passed through a quiescent
-  * state by virtue of being in or having passed through an dynticks
-  * idle state since the last call to dyntick_save_progress_counter()
--- 
-1.7.4.4
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
