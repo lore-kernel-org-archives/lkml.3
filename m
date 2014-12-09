@@ -1,208 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaLISSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 13:18:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54020 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005AbaLISSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 13:18:52 -0500
-Date: Tue, 9 Dec 2014 19:18:45 +0100
-From: Jan Kara <jack@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Jan Kara <jack@suse.cz>, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: protect set_page_dirty() from ongoing truncation
-Message-ID: <20141209181845.GA22569@quack.suse.cz>
-References: <1417791166-32226-1-git-send-email-hannes@cmpxchg.org>
+	id S1752075AbaLISVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 13:21:34 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:64944 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaLISVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 13:21:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417791166-32226-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141209075619.GA23327@richard>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+ <1418079372.13358.9.camel@kernel.crashing.org> <CAE9FiQX-vMu5+Kr09ngr95WvtoZTUSL5R2+NiVFeiN6q-BXLLg@mail.gmail.com>
+ <20141209001119.GA24661@shangw> <20141209022601.GA16207@richard>
+ <CAE9FiQWz=vdR=QSkoEs5XjUxg_y4vJgnChQAc1-U_9xzfQpknQ@mail.gmail.com> <20141209075619.GA23327@richard>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 9 Dec 2014 11:21:11 -0700
+Message-ID: <CAErSpo5Wj1GScsj6=_=Vv73NSh3D-SCfhEdeK6VOY1AicVUN3Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-12-14 09:52:44, Johannes Weiner wrote:
-> Tejun, while reviewing the code, spotted the following race condition
-> between the dirtying and truncation of a page:
-> 
-> __set_page_dirty_nobuffers()       __delete_from_page_cache()
->   if (TestSetPageDirty(page))
->                                      page->mapping = NULL
-> 				     if (PageDirty())
-> 				       dec_zone_page_state(page, NR_FILE_DIRTY);
-> 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->     if (page->mapping)
->       account_page_dirtied(page)
->         __inc_zone_page_state(page, NR_FILE_DIRTY);
-> 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> 
-> which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
-> 
-> Dirtiers usually lock out truncation, either by holding the page lock
-> directly, or in case of zap_pte_range(), by pinning the mapcount with
-> the page table lock held.  The notable exception to this rule, though,
-> is do_wp_page(), for which this race exists.  However, do_wp_page()
-> already waits for a locked page to unlock before setting the dirty
-> bit, in order to prevent a race where clear_page_dirty() misses the
-> page bit in the presence of dirty ptes.  Upgrade that wait to a fully
-> locked set_page_dirty() to also cover the situation explained above.
-> 
-> Afterwards, the code in set_page_dirty() dealing with a truncation
-> race is no longer needed.  Remove it.
-> 
-> Reported-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: <stable@vger.kernel.org>
-> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+On Tue, Dec 9, 2014 at 12:56 AM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
 
-								Honza
+> As you mentioned in another thread, "5b28541552ef is taking the wrong
+> approach". (http://www.spinics.net/lists/linux-pci/msg37374.html) Maybe I
+> don't catch it clearly. Put a 32bit prefetchable resource in a 32bit
+> non-prefetchable bridge window is a bad idea?
 
-> ---
->  include/linux/writeback.h |  1 -
->  mm/memory.c               | 27 +++++++++++++++++----------
->  mm/page-writeback.c       | 43 ++++++++++++-------------------------------
->  3 files changed, 29 insertions(+), 42 deletions(-)
-> 
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index a219be961c0a..00048339c23e 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -177,7 +177,6 @@ int write_cache_pages(struct address_space *mapping,
->  		      struct writeback_control *wbc, writepage_t writepage,
->  		      void *data);
->  int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
-> -void set_page_dirty_balance(struct page *page);
->  void writeback_set_ratelimit(void);
->  void tag_pages_for_writeback(struct address_space *mapping,
->  			     pgoff_t start, pgoff_t end);
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 3e503831e042..72d998eb0438 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2150,17 +2150,24 @@ reuse:
->  		if (!dirty_page)
->  			return ret;
->  
-> -		/*
-> -		 * Yes, Virginia, this is actually required to prevent a race
-> -		 * with clear_page_dirty_for_io() from clearing the page dirty
-> -		 * bit after it clear all dirty ptes, but before a racing
-> -		 * do_wp_page installs a dirty pte.
-> -		 *
-> -		 * do_shared_fault is protected similarly.
-> -		 */
->  		if (!page_mkwrite) {
-> -			wait_on_page_locked(dirty_page);
-> -			set_page_dirty_balance(dirty_page);
-> +			struct address_space *mapping;
-> +			int dirtied;
-> +
-> +			lock_page(dirty_page);
-> +			dirtied = set_page_dirty(dirty_page);
-> +			VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page);
-> +			mapping = dirty_page->mapping;
-> +			unlock_page(dirty_page);
-> +
-> +			if (dirtied && mapping) {
-> +				/*
-> +				 * Some device drivers do not set page.mapping
-> +				 * but still dirty their pages
-> +				 */
-> +				balance_dirty_pages_ratelimited(mapping);
-> +			}
-> +
->  			/* file_update_time outside page_lock */
->  			if (vma->vm_file)
->  				file_update_time(vma->vm_file);
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 19ceae87522d..437174a2aaa3 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1541,16 +1541,6 @@ pause:
->  		bdi_start_background_writeback(bdi);
->  }
->  
-> -void set_page_dirty_balance(struct page *page)
-> -{
-> -	if (set_page_dirty(page)) {
-> -		struct address_space *mapping = page_mapping(page);
-> -
-> -		if (mapping)
-> -			balance_dirty_pages_ratelimited(mapping);
-> -	}
-> -}
-> -
->  static DEFINE_PER_CPU(int, bdp_ratelimits);
->  
->  /*
-> @@ -2123,32 +2113,25 @@ EXPORT_SYMBOL(account_page_dirtied);
->   * page dirty in that case, but not all the buffers.  This is a "bottom-up"
->   * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
->   *
-> - * Most callers have locked the page, which pins the address_space in memory.
-> - * But zap_pte_range() does not lock the page, however in that case the
-> - * mapping is pinned by the vma's ->vm_file reference.
-> - *
-> - * We take care to handle the case where the page was truncated from the
-> - * mapping by re-checking page_mapping() inside tree_lock.
-> + * The caller must ensure this doesn't race with truncation.  Most will simply
-> + * hold the page lock, but e.g. zap_pte_range() calls with the page mapped and
-> + * the pte lock held, which also locks out truncation.
->   */
->  int __set_page_dirty_nobuffers(struct page *page)
->  {
->  	if (!TestSetPageDirty(page)) {
->  		struct address_space *mapping = page_mapping(page);
-> -		struct address_space *mapping2;
->  		unsigned long flags;
->  
->  		if (!mapping)
->  			return 1;
->  
->  		spin_lock_irqsave(&mapping->tree_lock, flags);
-> -		mapping2 = page_mapping(page);
-> -		if (mapping2) { /* Race with truncate? */
-> -			BUG_ON(mapping2 != mapping);
-> -			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
-> -			account_page_dirtied(page, mapping);
-> -			radix_tree_tag_set(&mapping->page_tree,
-> -				page_index(page), PAGECACHE_TAG_DIRTY);
-> -		}
-> +		BUG_ON(page_mapping(page) != mapping);
-> +		WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
-> +		account_page_dirtied(page, mapping);
-> +		radix_tree_tag_set(&mapping->page_tree, page_index(page),
-> +				   PAGECACHE_TAG_DIRTY);
->  		spin_unlock_irqrestore(&mapping->tree_lock, flags);
->  		if (mapping->host) {
->  			/* !PageAnon && !swapper_space */
-> @@ -2305,12 +2288,10 @@ int clear_page_dirty_for_io(struct page *page)
->  		/*
->  		 * We carefully synchronise fault handlers against
->  		 * installing a dirty pte and marking the page dirty
-> -		 * at this point. We do this by having them hold the
-> -		 * page lock at some point after installing their
-> -		 * pte, but before marking the page dirty.
-> -		 * Pages are always locked coming in here, so we get
-> -		 * the desired exclusion. See mm/memory.c:do_wp_page()
-> -		 * for more comments.
-> +		 * at this point.  We do this by having them hold the
-> +		 * page lock while dirtying the page, and pages are
-> +		 * always locked coming in here, so we get the desired
-> +		 * exclusion.
->  		 */
->  		if (TestClearPageDirty(page)) {
->  			dec_zone_page_state(page, NR_FILE_DIRTY);
-> -- 
-> 2.1.3
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+A 32-bit prefetchable resource *can* be put in a 32-bit
+non-prefetchable window, but the device won't perform as well as it
+would if the resource were in a prefetchable window.
+
+What I object to is the fact that we put a 32-bit prefetchable
+resource in the non-prefetchable window and leave the 64-bit
+prefetchable window unused.  This gives up performance for no benefit.
+
+> But in my mind, if the bridge
+> prefetchable window is 64bit, we can't put a 32bit prefetchable resource in
+> it.
+
+If the window is programmed to be above 4GB, of course we can't put a
+32-bit resource in it.  My point is that if the bridge *supports* a
+64-bit prefetchable window, we can decide where to place it.  If we
+put the window below 4GB, we can put a 32-bit prefetchable resource in
+it.
+
+I think maybe you're thinking of "64-bit window" as "a window
+programmed to be above 4GB."  I'm using "64-bit window" to mean "a
+window that supports 64-bit addressing," i.e., one where
+PCI_PREF_BASE_UPPER32 and PCI_PREF_LIMIT_UPPER32 are implemented.
+That's analogous to the way we talk about 64-bit BARs.  A 64-bit BAR
+is still a 64-bit BAR even if it is currently programmed to be below
+4GB.
+
+Bjorn
