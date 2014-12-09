@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaLINcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 08:32:51 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:19061 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284AbaLINct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 08:32:49 -0500
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-To: <nicolas.ferre@atmel.com>, <gregkh@linuxfoundation.org>,
-        <wenyou.yang@atmel.com>, <ludovic.desroches@atmel.com>,
-        <leilei.zhao@atmel.com>, <voice.shen@atmel.com>, <josh.wu@atmel.com>,
-        <linux-serial@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Subject: [PATCH 5/5] tty/serial: at91: fix typo and indentation
-Date: Tue, 9 Dec 2014 14:31:36 +0100
-Message-ID: <faa94cfe2de1047de096b51c780f6e408aced2fb.1418131298.git.cyrille.pitchen@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1418131298.git.cyrille.pitchen@atmel.com>
-References: <cover.1418131298.git.cyrille.pitchen@atmel.com>
+	id S1757064AbaLINdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:33:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40521 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757008AbaLINdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 08:33:51 -0500
+Date: Tue, 9 Dec 2014 14:33:33 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: "Liang, Kan" <kan.liang@intel.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>
+Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Message-ID: <20141209133333.GB6784@krava.brq.redhat.com>
+References: <20141204142330.GB10406@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+ <20141204155142.GD18689@kernel.org>
+ <20141204160213.GB18631@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167E1F0@shsmsx102.ccr.corp.intel.com>
+ <20141209122708.GA4189@kernel.org>
+ <20141209125305.GE2516@krava.brq.redhat.com>
+ <20141209131104.GC4189@kernel.org>
+ <20141209132206.GA6784@krava.brq.redhat.com>
+ <20141209132712.GE4189@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141209132712.GE4189@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
----
- drivers/tty/serial/atmel_serial.c | 40 +++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+On Tue, Dec 09, 2014 at 10:27:12AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 09, 2014 at 02:22:06PM +0100, Jiri Olsa escreveu:
+> > On Tue, Dec 09, 2014 at 10:11:04AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Tue, Dec 09, 2014 at 01:53:05PM +0100, Jiri Olsa escreveu:
+> > > > On Tue, Dec 09, 2014 at 09:27:08AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > Em Thu, Dec 04, 2014 at 04:18:56PM +0000, Liang, Kan escreveu:
+> > > > > > > On Thu, Dec 04, 2014 at 12:51:42PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > > > > Em Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan escreveu:
+> > > > > > > > > Jiri Wrote:
+> > > > > > > > > > looks ok to me..
+> > > > > > > > > Thanks for the review.
+> > > > > > > > > > I'll test it once I get hands on Haswel server again, I guess we
+> > > > > > > > > > wait for the kernel change to go in first anyway, right?
+> > > > > > > > > I'm not sure, let's ask Peter.
+> > > > > > > > > Peter?
+> > > > > > > > Would be good to go in one pull request, so that whoever pulls it has
+> > > > > > > > the chance to test the kernel feature with the accompanying tooling bits.
+> > > > > > > also there's user part dependency on kernel.. soem new define IIRC
+> > > > > > Oh, right. We have to let them go in together.
+> > > > > The ones that are just prep patches I am merging now, Jiri, can I stick
+> > > > > an Acked-by to the non-LBR related ones?
+> > >  
+> > > > I guess u mean just this one? 
+> > > > 2803   T Dec 02 kan.liang@intel (3.4K) ├─>[PATCH V5 2/3] perf tool: Move cpumode resolve code to add_callchain_ip
+> > > 
+> > > There is another I split from, iirc 1/3, that is unrelated to that
+> > > patch, fixing '-g fp' usage that became invalid after a patch from you:
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=f70b4e39de4ef25aade966c0dfc69cfb97091be9
+> > 
+> > this onliner is ok, but I dont recall seeing this change separated..
+> 
+> I did the separation here, I thought I could have your ack there as you
+> said you was ok with the whole patchkit, no?
+>  
+> > and its 'Link' points to the whole 1/3 patch, which seems weird
+> > 
+> > what do I miss?
+> 
+> Well, that is why I added the comment just before my S-o-B :-) We could
+> have gone thru the whole process of me submitting a patchkit so that we
+> could have a proper Link:, but I thought it was too straightforward to
+> warrant that :-\
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 9e0c636..846552b 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -738,7 +738,11 @@ static void atmel_complete_tx_dma(void *arg)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
- 
--	/* Do we really need this? */
-+	/*
-+	 * xmit is a circular buffer so, if we have just send data from
-+	 * xmit->tail to the end of xmit->buf, now we have to transmit the
-+	 * remaining data from the beginning of xmit->buf to xmit->head.
-+	 */
- 	if (!uart_circ_empty(xmit))
- 		tasklet_schedule(&atmel_port->tasklet);
- 
-@@ -797,11 +801,11 @@ static void atmel_tx_dma(struct uart_port *port)
- 		BUG_ON(!sg_dma_len(sg));
- 
- 		desc = dmaengine_prep_slave_sg(chan,
--						sg,
--						1,
--						DMA_MEM_TO_DEV,
--						DMA_PREP_INTERRUPT |
--						DMA_CTRL_ACK);
-+					       sg,
-+					       1,
-+					       DMA_MEM_TO_DEV,
-+					       DMA_PREP_INTERRUPT |
-+					       DMA_CTRL_ACK);
- 		if (!desc) {
- 			dev_err(port->dev, "Failed to send via dma!\n");
- 			return;
-@@ -1025,13 +1029,13 @@ static int atmel_prepare_rx_dma(struct uart_port *port)
- 	/* UART circular rx buffer is an aligned page. */
- 	BUG_ON((int)port->state->xmit.buf & ~PAGE_MASK);
- 	sg_set_page(&atmel_port->sg_rx,
--			virt_to_page(ring->buf),
--			ATMEL_SERIAL_RINGSIZE,
--			(int)ring->buf & ~PAGE_MASK);
--			nent = dma_map_sg(port->dev,
--					&atmel_port->sg_rx,
--					1,
--					DMA_FROM_DEVICE);
-+		    virt_to_page(ring->buf),
-+		    ATMEL_SERIAL_RINGSIZE,
-+		    (int)ring->buf & ~PAGE_MASK);
-+	nent = dma_map_sg(port->dev,
-+			  &atmel_port->sg_rx,
-+			  1,
-+			  DMA_FROM_DEVICE);
- 
- 	if (!nent) {
- 		dev_dbg(port->dev, "need to release resource of dma\n");
-@@ -1060,11 +1064,11 @@ static int atmel_prepare_rx_dma(struct uart_port *port)
- 	 * each one is half ring buffer size
- 	 */
- 	desc = dmaengine_prep_dma_cyclic(atmel_port->chan_rx,
--				sg_dma_address(&atmel_port->sg_rx),
--				sg_dma_len(&atmel_port->sg_rx),
--				sg_dma_len(&atmel_port->sg_rx)/2,
--				DMA_DEV_TO_MEM,
--				DMA_PREP_INTERRUPT);
-+					 sg_dma_address(&atmel_port->sg_rx),
-+					 sg_dma_len(&atmel_port->sg_rx),
-+					 sg_dma_len(&atmel_port->sg_rx)/2,
-+					 DMA_DEV_TO_MEM,
-+					 DMA_PREP_INTERRUPT);
- 	desc->callback = atmel_complete_rx_dma;
- 	desc->callback_param = port;
- 	atmel_port->desc_rx = desc;
--- 
-1.8.2.2
+ah ok.. u can keep the ack on the onliner of course
 
+jirka
