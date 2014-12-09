@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaLIKOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:14:45 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:54861 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114AbaLIKOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:14:43 -0500
-Date: Tue, 9 Dec 2014 10:14:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Backlight for v3.19
-Message-ID: <20141209101438.GX3951@x1>
+	id S1756335AbaLIKO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:14:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755114AbaLIKOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:14:54 -0500
+Date: Tue, 9 Dec 2014 11:14:16 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
+Message-ID: <20141209101416.GB2516@krava.brq.redhat.com>
+References: <1417623842-14331-1-git-send-email-jolsa@kernel.org>
+ <1417623842-14331-2-git-send-email-jolsa@kernel.org>
+ <CAM9d7cixHgGqiLu0c8zrbEU6aLNdvhwC0vne4zcd8OZjQkCV1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAM9d7cixHgGqiLu0c8zrbEU6aLNdvhwC0vne4zcd8OZjQkCV1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Dec 08, 2014 at 05:07:23PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Thu, Dec 4, 2014 at 1:23 AM, Jiri Olsa <jolsa@kernel.org> wrote:
+> > +ifndef NO_LIBBABELTRACE
+> > +  # for linking with debug library, run like:
+> > +  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libdw/
+> 
+> s/libdw/libbabeltrace/
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+ouch.. copy&paste crap ;-)
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+> 
+> 
+> > +  ifdef LIBBABELTRACE_DIR
+> > +    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
+> > +    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
+> > +  endif
+> > +  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
+> > +  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
+> > +endif
+> > +
+> >  # include ARCH specific config
+> >  -include $(src-perf)/arch/$(ARCH)/Makefile
+> >
+> > @@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =                        \
+> >         stackprotector-all              \
+> >         timerfd                         \
+> >         libdw-dwarf-unwind              \
+> > +       libbabeltrace                   \
+> >         zlib
+> >
+> >  LIB_FEATURE_TESTS =                    \
+> > @@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =                 \
+> >         libslang                        \
+> >         libunwind                       \
+> >         libdw-dwarf-unwind              \
+> > +       libbabeltrace                   \
+> >         zlib
+> >
+> >  VF_FEATURE_TESTS =                     \
+> > @@ -661,6 +674,17 @@ else
+> >    NO_PERF_READ_VDSOX32 := 1
+> >  endif
+> >
+> > +ifndef NO_LIBBABELTRACE
+> > +  ifeq ($(feature-libbabeltrace), 0)
+> > +    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-dev);
+> 
+> It seems that Ubuntu has libbabeltrace-ctf-dev package.
 
-are available in the git repository at:
+ok
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git tags/backlight-for-linus-3.19
-
-for you to fetch changes up to 3d6969a641d01cc9b6aa199a6f01eb1802522baf:
-
-  MAINTAINERS: Remove my name from Backlight subsystem (2014-12-09 09:24:47 +0000)
-
-----------------------------------------------------------------
- - Clean-up leaky resources; pwm_bl
- - Simplify Device Tree initialisation; lp855x_bl
- - Add Regulator support; lp855x
- - Remove Bryan from the Maintainer list -- new baby, no time :)
-
-----------------------------------------------------------------
-Bryan Wu (1):
-      MAINTAINERS: Remove my name from Backlight subsystem
-
-Sean Paul (2):
-      backlight: lp855x: Refactor DT parsing code
-      backlight: lp855x: Add supply regulator to lp855x
-
-Vladimir Zapolskiy (1):
-      backlight: pwm: Clean-up pwm requested using legacy API
-
- .../devicetree/bindings/video/backlight/lp855x.txt |  2 +
- MAINTAINERS                                        |  1 -
- drivers/video/backlight/lp855x_bl.c                | 55 ++++++++++++++--------
- drivers/video/backlight/pwm_bl.c                   |  5 +-
- include/linux/platform_data/lp855x.h               |  2 +
- 5 files changed, 44 insertions(+), 21 deletions(-)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+thanks,
+jirka
