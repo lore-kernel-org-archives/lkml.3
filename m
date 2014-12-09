@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaLIIIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:08:22 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:44386 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaLIIIV (ORCPT
+	id S1752479AbaLIIQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 03:16:16 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:49439 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaLIIQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 03:08:21 -0500
-Date: Tue, 9 Dec 2014 10:08:16 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: dmitry.torokhov@gmail.com
-Cc: LW@KARO-electronics.de, B38611@freescale.com, maksqwe1@ukr.net,
-        jg1.han@samsung.com, linux@rasmusvillemoes.dk, fabf@skynet.be,
-        joe@perches.com, asaf.vertz@tandemg.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] input: edt-ft5x06: fixed a macro coding style issue
-Message-ID: <20141209080816.GA19581@ubuntu>
+	Tue, 9 Dec 2014 03:16:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: [PATCH] ARM: DMA: Fix kzalloc flags in __iommu_alloc_buffer()
+Date: Tue, 09 Dec 2014 09:14:36 +0100
+Message-ID: <34381031.ms2E1cJuQN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAVeFuKOaN5c2OkUDRWYQ_QVH8E1Q0JByRSSrbY_g13takWdAw@mail.gmail.com>
+References: <1418027967-12923-1-git-send-email-acourbot@nvidia.com> <10532762.PXKTQM8KjH@wuerfel> <CAAVeFuKOaN5c2OkUDRWYQ_QVH8E1Q0JByRSSrbY_g13takWdAw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:aEPtZQDqmxvAfhDIDiN+E0e/pihDj4uFS5uxmFUb9QCH1+oVpQj
+ mIMOpN953OTNAwSzhOPwcpSpTOb6PIy8ICBjlSmLYKR2XJGGhNA9jkIKXy03v7M7xtekat0
+ MwF11s+aQKeguNMP6EQNSwwJmVeYga3ihpmuhQj+lOXS5PGZnFGpjkJo3fokfIkJTqXEa8A
+ IjnLYtSE0PVNkGgU2xmQQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style error, macros with complex values should be
-enclosed in parentheses.
+On Tuesday 09 December 2014 11:57:22 Alexandre Courbot wrote:
+> On Mon, Dec 8, 2014 at 7:24 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 08 December 2014 17:39:27 Alexandre Courbot wrote:
+> >> There doesn't seem to be any valid reason to allocate the pages array
+> >> with the same flags as the buffer itself. Doing so can eventually lead
+> >> to the following safeguard in mm/slab.c to be hit:
+> >>
+> >> BUG_ON(flags & GFP_SLAB_BUG_MASK);
+> >>
+> >> This happens when buffers are allocated with __GFP_DMA32 or
+> >> __GFP_HIGHMEM.
+> >>
+> >> Fix this by allocating the pages array with GFP_KERNEL to follow what is
+> >> done elsewhere in this file. Using GFP_KERNEL in __iommu_alloc_buffer()
+> >> is safe because atomic allocations are handled by __iommu_alloc_atomic().
+> >>
+> >
+> > I think you need to carry over the GFP_ATOMIC flag if that is set by the
+> > caller, but not the GFP_HIGHMEM or GFP_DMA32. Not sure if it's better
+> > to mask out flags from the caller mask, or to start with GFP_KERNEL
+> > and adding in extra bits.
+> 
+> I thought the issue of atomicity is already handled by
+> __iommu_alloc_buffer's caller (arm_iommu_alloc_attrs):
+> 
+>     if (!(gfp & __GFP_WAIT))
+>         return __iommu_alloc_atomic(dev, size, handle);
+>     ....
+>     pages = __iommu_alloc_buffer(dev, size, gfp, attrs);
+> 
+> Isn't the interesting property about GFP_ATOMIC that it does not
+> include __GFP_WAIT? I may very well misunderstand the issue, sorry if
+> that's the case.
 
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
-Changes in v2:
-  - use do {...} while (0)  instead of {...}
+No, I think you are right, I wasn't looking at the whole call chain,
+just at your patch, and it looks good to me now.
 
- drivers/input/touchscreen/edt-ft5x06.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
-index ee3434f..d22ed56 100644
---- a/drivers/input/touchscreen/edt-ft5x06.c
-+++ b/drivers/input/touchscreen/edt-ft5x06.c
-@@ -850,9 +850,11 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
- }
- 
- #define EDT_ATTR_CHECKSET(name, reg) \
-+do {								\
- 	if (pdata->name >= edt_ft5x06_attr_##name.limit_low &&		\
- 	    pdata->name <= edt_ft5x06_attr_##name.limit_high)		\
--		edt_ft5x06_register_write(tsdata, reg, pdata->name)
-+		edt_ft5x06_register_write(tsdata, reg, pdata->name);	\
-+} while (0)
- 
- #define EDT_GET_PROP(name, reg) {				\
- 	u32 val;						\
--- 
-1.7.0.4
-
+	Arnd
