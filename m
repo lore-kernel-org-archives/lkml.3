@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585AbaLIKSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:18:46 -0500
-Received: from ozlabs.org ([103.22.144.67]:56232 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533AbaLIKSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:18:42 -0500
-In-Reply-To: <20141208141629.912861A5D5B@localhost.localdomain>
-To: LEROY Christophe <christophe.leroy@c-s.fr>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com,
-        aneesh.kumar@in.ibm.com
-From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: powerpc32: missing accessors to pgprot_t objects
-Message-Id: <20141209101841.7D9241400D2@ozlabs.org>
-Date: Tue,  9 Dec 2014 21:18:41 +1100 (AEDT)
+	id S1756613AbaLIKSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:18:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52374 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533AbaLIKSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:18:49 -0500
+Date: Tue, 9 Dec 2014 02:18:33 -0800
+From: tip-bot for Richard Weinberger <tipbot@zytor.com>
+Message-ID: <tip-15bae280e412e79d74912c7ae6b6a002444edb1f@git.kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, richard@nod.at, hpa@zytor.com,
+        torvalds@linux-foundation.org
+Reply-To: richard@nod.at, torvalds@linux-foundation.org, hpa@zytor.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de
+In-Reply-To: <1416958612-7448-1-git-send-email-richard@nod.at>
+References: <1416958612-7448-1-git-send-email-richard@nod.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
+Git-Commit-ID: 15bae280e412e79d74912c7ae6b6a002444edb1f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-12 at 14:16:29 UTC, LEROY Christophe wrote:
-> Compilation with #define STRICT_MM_TYPECHECKS in arch/powerpc/include/asm/page.h
-> fails due to missing use of pgprot_val() when using pgprot_t objects.
+Commit-ID:  15bae280e412e79d74912c7ae6b6a002444edb1f
+Gitweb:     http://git.kernel.org/tip/15bae280e412e79d74912c7ae6b6a002444edb1f
+Author:     Richard Weinberger <richard@nod.at>
+AuthorDate: Wed, 26 Nov 2014 00:36:52 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Dec 2014 12:04:17 +0100
 
-Hmm, looks like 64 bit doesn't build either.
+x86/kconfig/defconfig: Enable CONFIG_FHANDLE=y
 
-Aneesh I think you added this, mind fixing it up?
+systemd has a hard dependency on CONFIG_FHANDLE.
+If you run systemd with CONFIG_FHANDLE=n it will somehow
+boot but fail to spawn a getty or other basic services.
+As systemd is now used by most x86 distributions it
+makes sense to enabled this by default and save kernel
+hackers a lot of value debugging time.
 
-In file included from ../arch/powerpc/include/asm/thread_info.h:34:0,
-                 from ../include/linux/thread_info.h:54,
-                 from ../include/asm-generic/preempt.h:4,
-                 from arch/powerpc/include/generated/asm/preempt.h:1,
-                 from ../include/linux/preempt.h:18,
-                 from ../include/linux/spinlock.h:50,
-                 from ../include/linux/mmzone.h:7,
-                 from ../include/linux/gfp.h:5,
-                 from ../include/linux/mm.h:9,
-                 from ../arch/powerpc/mm/tlb_hash64.c:25:
-../arch/powerpc/mm/tlb_hash64.c: In function ‘__flush_hash_table_range’:
-../arch/powerpc/include/asm/page.h:286:24: error: request for member ‘pte’ in something not a structure or union
- #define pte_val(x) ((x).pte)
-                        ^    
-../arch/powerpc/mm/tlb_hash64.c:219:37: note: in expansion of macro ‘pte_val’
-    trace_hugepage_invalidate(start, pte_val(pte));
-                                     ^    
-make[2]: *** [arch/powerpc/mm/tlb_hash64.o] Error 1
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: gregkh@linuxfoundation.org
+Cc: rafael.j.wysocki@intel.com
+Cc: pebolle@tiscali.nl
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1416958612-7448-1-git-send-email-richard@nod.at
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/configs/i386_defconfig   | 1 +
+ arch/x86/configs/x86_64_defconfig | 1 +
+ 2 files changed, 2 insertions(+)
 
-
-cheers
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index 32d2e70..419819d 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -8,6 +8,7 @@ CONFIG_TASKSTATS=y
+ CONFIG_TASK_DELAY_ACCT=y
+ CONFIG_TASK_XACCT=y
+ CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_FHANDLE=y
+ CONFIG_AUDIT=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index a481dd4..4c311dd 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -7,6 +7,7 @@ CONFIG_TASKSTATS=y
+ CONFIG_TASK_DELAY_ACCT=y
+ CONFIG_TASK_XACCT=y
+ CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_FHANDLE=y
+ CONFIG_AUDIT=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
