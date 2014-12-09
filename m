@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaLIUyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:54:25 -0500
-Received: from mout.web.de ([212.227.15.3]:59582 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709AbaLIUyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:54:23 -0500
-From: Alexander Stein <alexanders83@web.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Tue, 09 Dec 2014 21:53:12 +0100
-Message-ID: <5455670.EDnhYEk7hP@kongar>
-User-Agent: KMail/4.14.3 (Linux/3.14.14-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
+	id S1752560AbaLIUyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:54:46 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:53173 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaLIUyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 15:54:44 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:BIQRPPPMsxownJtaOeuXD0lA7IYkDYCSK8TPj6EjzNetVv2ZRQv
- oi1ybI6SQXjOe4OOyjp96hREa0Vf8mXjGsq8RmOFBHYAfI4Rofn3gDNvf3G36R5yWIvSwCb
- Oaw9eI9IHTjG5Fq0ENyIFMgNd23z5PCHGMmJvQEKgr1bChSAECqH6SUs6H5Pfw8PEK9D8Jo
- BjSvaGLNyy+dRtdAHu/ag==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141209105819.0e847b4b@kryten>
+References: <1418009221-12719-1-git-send-email-anton@samba.org>
+	<20141208083408.GA8023@gmail.com>
+	<20141208211859.6e81ec81@kryten>
+	<20141209105819.0e847b4b@kryten>
+Date: Tue, 9 Dec 2014 12:54:43 -0800
+X-Google-Sender-Auth: 8r8V_tILjcd4qzry0tkXKjNSqw0
+Message-ID: <CA+55aFyR5PzNkojvEej1NXnpEFOPOYfnxCcPDAjg1rE79tQv7A@mail.gmail.com>
+Subject: Re: [PATCH] powerpc: secondary CPUs signal to master before setting
+ active and online (fixes kernel BUG at kernel/smpboot.c:134!)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, yuyang.du@intel.com,
+        lkp@01.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Daniel J Blueman <daniel@numascale.com>, subbaram@codeaurora.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        Slava Pestov <sp@datera.io>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, mpe@ellerman.id.au
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Dec 8, 2014 at 3:58 PM, Anton Blanchard <anton@samba.org> wrote:
+> Hi Ingo,
+>
+>> At that point I thought the previous task_cpu() was somewhat ingrained
+>> in the scheduler and came up with the patch. If not, we could go on a
+>> hunt to see what else needs fixing.
+>
+> I had another look. The scheduled does indeed make assumptions about the
+> previous task_cpu, but we have a hammer to fix it up called
+> select_fallback_rq.
+>
+> I annotated select_fallback_rq, and did hit a case where the CPU was
+> not active. ppc64 patch below.
 
-On Monday 01 December 2014, 11:27:21 wrote Boris Brezillon:
-> +static int at91_ebi_probe(struct platform_device *pdev)
-> +{
-> +	const struct of_device_id *match;
-> +	struct device_node *child;
-> +	struct device_node *np;
-> +	struct at91_ebi *ebi;
-> +	struct clk *clk;
-> +	int ret;
-> +
-> +	match = of_match_device(at91_ebi_id_table, &pdev->dev);
-> +	if (!match || !match->data)
-> +		return -EINVAL;
-> +
-> +	ebi = devm_kzalloc(&pdev->dev, sizeof(*ebi), GFP_KERNEL);
-> +	if (!ebi)
-> +		return -ENOMEM;
-> +
-> +	ebi->caps = match->data;
-> +	ebi->dev = &pdev->dev;
-> +
-> +	clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
-> +
-> +	ebi->clk = clk;
-> +
-> +	np = of_parse_phandle(pdev->dev.of_node, "atmel,smc", 0);
-> +	if (!np)
-> +		return -EINVAL;
-> +
-> +	ebi->smc = syscon_node_to_regmap(np);
-> +	if (IS_ERR(ebi->smc))
-> +		return PTR_ERR(ebi->smc);
-> +
-> +	/*
-> +	 * The sama5d3 does not provide an EBICSA register and thus does need
-> +	 * to access the matrix registers.
-> +	 */
-> +	if (ebi->caps->ebi_csa) {
-> +		np = of_parse_phandle(pdev->dev.of_node, "atmel,matrix", 0);
-> +		if (np)
-         ^^^^^^^
-Shouldn't this be if (!np)?
+Anton, I'll assume I will get this through the usual powerpc pull requests?
 
-> +			return -EINVAL;
-> +
-> +		ebi->matrix = syscon_node_to_regmap(np);
-> +		if (IS_ERR(ebi->matrix))
-> +			return PTR_ERR(ebi->matrix);
-> +
-> +		ebi->ebi_csa = regmap_field_alloc(ebi->matrix,
-> +						  *ebi->caps->ebi_csa);
-> +		if (IS_ERR(ebi->ebi_csa))
-> +			return PTR_ERR(ebi->ebi_csa);
-> +	}
-> +
-> +	ret = ebi->caps->init(ebi);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for_each_child_of_node(pdev->dev.of_node, child) {
-> +		ret = at91_ebi_dev_setup(ebi, child);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static struct platform_driver at91_ebi_driver = {
-> +	.driver = {
-> +		.name = "atmel-ebi",
-> +		.of_match_table	= at91_ebi_id_table,
-> +	},
-> +};
-> +module_platform_driver_probe(at91_ebi_driver, at91_ebi_probe);
-> +
-> +MODULE_AUTHOR("JJ Hiblot");
-> +MODULE_DESCRIPTION("Atmel's EBI driver");
-> +MODULE_LICENSE("GPL");
+> I think x86 have a similar (although harder to hit) issue.
 
+Ingo?
 
-Best regards,
-Alexander
-
+                         Linus
