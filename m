@@ -1,219 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaLIWVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:21:54 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:53125 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818AbaLIWVx (ORCPT
+	id S1753634AbaLIW3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:29:04 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45669 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239AbaLIW3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:21:53 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH] hexagon: Fix build failures in linux-next
-Date: Tue,  9 Dec 2014 14:21:45 -0800
-Message-Id: <1418163705-1816-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010201.54877601.02A2,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 9 Dec 2014 17:29:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+ <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
+ <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
+ <87388xodlj.fsf@x220.int.ebiederm.org> <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
+ <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com>
+ <87ppbtn4mv.fsf@x220.int.ebiederm.org> <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
+ <87a92xn2io.fsf@x220.int.ebiederm.org> <87r3w8liw4.fsf@x220.int.ebiederm.org>
+ <87iohklfvj.fsf_-_@x220.int.ebiederm.org> <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 9 Dec 2014 14:28:38 -0800
+Message-ID: <CALCETrVfKiXuY=KY_=nHpkTyLWgpy_3DK=4Mr2mhpyX9z1TzrA@mail.gmail.com>
+Subject: Re: [CFT][PATCH 7/8] userns: Add a knob to disable setgroups on a per
+ user namespace basis
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hexagon:defconfig fails to build in linux-next since commit 332fd7c4fef5
-("genirq: Generic chip: Change irq_reg_{readl,writel} arguments").
+On Tue, Dec 9, 2014 at 12:42 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
+>
+>   A value of "deny" means the setgroups system call is disabled in the
+>   current processes user namespace and can not be enabled in the
+>   future in this user namespace.
+>
+>   A value of "allow" means the segtoups system call is enabled.
+>
+> - Descendant user namespaces inherit the value of setgroups from
+>   their parents.
+>
+> - A proc file is used (instead of a sysctl) as sysctls
+>   currently do not pass in a struct file so file_ns_capable
+>   is unusable.
 
-The primary build failure is
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 
-arch/hexagon/include/asm/cacheflush.h: In function 'copy_to_user_page':
-arch/hexagon/include/asm/cacheflush.h:89:22: error: 'VM_EXEC' undeclared
+But I still don't like the name "setgroups".  People may look at that
+and have no clue what the scope of the setting is.  And anyone who, as
+root, writes "deny" to /proc/self/setgroups, thinking that it acts on
+self, will be in for a surprise.
 
-This is the result of including of <linux/io.h> from <linux/irq.h>,
-which is now necessary due to the use of readl and writel from irq.h.
-This causes recursive inclusions in hexagon code; cacheflush.h is included
-from mm.h prior to the definition of VM_EXEC.
+--Andy
 
-Fix the problem by moving copy_to_user_page from the hexagon include file to
-arch/hexagon/mm/cache.c, similar to other architectures. After this change,
-several redefinitions of readl and writel are reported. Those are caused
-by recursive inclusions of io.h and asm/cacheflush.h. Fix those problems by
-reducing the number of files included from those files. Also, it was necessary
-to stop including asm-generic/cacheflush.h from asm/cacheflush.h. Instead,
-functionality originally provided by asm-generic/cacheflush.h is now coded
-in asm/cacheflush.h directly.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/proc/base.c                 |  31 +++++++++----
+>  include/linux/user_namespace.h |   7 +++
+>  kernel/user.c                  |   1 +
+>  kernel/user_namespace.c        | 103 +++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 134 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 772efa45a452..4ebed9f01d97 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -2386,7 +2386,7 @@ static int proc_tgid_io_accounting(struct seq_file *m, struct pid_namespace *ns,
+>  #endif /* CONFIG_TASK_IO_ACCOUNTING */
+>
+>  #ifdef CONFIG_USER_NS
+> -static int proc_id_map_open(struct inode *inode, struct file *file,
+> +static int proc_userns_open(struct inode *inode, struct file *file,
+>         const struct seq_operations *seq_ops)
+>  {
+>         struct user_namespace *ns = NULL;
+> @@ -2418,7 +2418,7 @@ err:
+>         return ret;
+>  }
+>
+> -static int proc_id_map_release(struct inode *inode, struct file *file)
+> +static int proc_userns_release(struct inode *inode, struct file *file)
+>  {
+>         struct seq_file *seq = file->private_data;
+>         struct user_namespace *ns = seq->private;
+> @@ -2428,17 +2428,17 @@ static int proc_id_map_release(struct inode *inode, struct file *file)
+>
+>  static int proc_uid_map_open(struct inode *inode, struct file *file)
+>  {
+> -       return proc_id_map_open(inode, file, &proc_uid_seq_operations);
+> +       return proc_userns_open(inode, file, &proc_uid_seq_operations);
+>  }
+>
+>  static int proc_gid_map_open(struct inode *inode, struct file *file)
+>  {
+> -       return proc_id_map_open(inode, file, &proc_gid_seq_operations);
+> +       return proc_userns_open(inode, file, &proc_gid_seq_operations);
+>  }
+>
+>  static int proc_projid_map_open(struct inode *inode, struct file *file)
+>  {
+> -       return proc_id_map_open(inode, file, &proc_projid_seq_operations);
+> +       return proc_userns_open(inode, file, &proc_projid_seq_operations);
+>  }
+>
+>  static const struct file_operations proc_uid_map_operations = {
+> @@ -2446,7 +2446,7 @@ static const struct file_operations proc_uid_map_operations = {
+>         .write          = proc_uid_map_write,
+>         .read           = seq_read,
+>         .llseek         = seq_lseek,
+> -       .release        = proc_id_map_release,
+> +       .release        = proc_userns_release,
+>  };
+>
+>  static const struct file_operations proc_gid_map_operations = {
+> @@ -2454,7 +2454,7 @@ static const struct file_operations proc_gid_map_operations = {
+>         .write          = proc_gid_map_write,
+>         .read           = seq_read,
+>         .llseek         = seq_lseek,
+> -       .release        = proc_id_map_release,
+> +       .release        = proc_userns_release,
+>  };
+>
+>  static const struct file_operations proc_projid_map_operations = {
+> @@ -2462,7 +2462,20 @@ static const struct file_operations proc_projid_map_operations = {
+>         .write          = proc_projid_map_write,
+>         .read           = seq_read,
+>         .llseek         = seq_lseek,
+> -       .release        = proc_id_map_release,
+> +       .release        = proc_userns_release,
+> +};
+> +
+> +static int proc_setgroups_open(struct inode *inode, struct file *file)
+> +{
+> +       return proc_userns_open(inode, file, &proc_setgroups_seq_operations);
+> +}
+> +
+> +static const struct file_operations proc_setgroups_operations = {
+> +       .open           = proc_setgroups_open,
+> +       .write          = proc_setgroups_write,
+> +       .read           = seq_read,
+> +       .llseek         = seq_lseek,
+> +       .release        = proc_userns_release,
+>  };
+>  #endif /* CONFIG_USER_NS */
+>
+> @@ -2572,6 +2585,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+>         REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
+>         REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+>         REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+> +       REG("setgroups",  S_IRUGO|S_IWUSR, proc_setgroups_operations),
+>  #endif
+>  #ifdef CONFIG_CHECKPOINT_RESTORE
+>         REG("timers",     S_IRUGO, proc_timers_operations),
+> @@ -2913,6 +2927,7 @@ static const struct pid_entry tid_base_stuff[] = {
+>         REG("uid_map",    S_IRUGO|S_IWUSR, proc_uid_map_operations),
+>         REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+>         REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+> +       REG("setgroups",  S_IRUGO|S_IWUSR, proc_setgroups_operations),
+>  #endif
+>  };
+>
+> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+> index 8d493083486a..feb0f4ec5573 100644
+> --- a/include/linux/user_namespace.h
+> +++ b/include/linux/user_namespace.h
+> @@ -17,6 +17,10 @@ struct uid_gid_map { /* 64 bytes -- 1 cache line */
+>         } extent[UID_GID_MAP_MAX_EXTENTS];
+>  };
+>
+> +#define USERNS_SETGROUPS_ALLOWED 1UL
+> +
+> +#define USERNS_INIT_FLAGS USERNS_SETGROUPS_ALLOWED
+> +
+>  struct user_namespace {
+>         struct uid_gid_map      uid_map;
+>         struct uid_gid_map      gid_map;
+> @@ -27,6 +31,7 @@ struct user_namespace {
+>         kuid_t                  owner;
+>         kgid_t                  group;
+>         unsigned int            proc_inum;
+> +       unsigned long           flags;
+>
+>         /* Register of per-UID persistent keyrings for this namespace */
+>  #ifdef CONFIG_PERSISTENT_KEYRINGS
+> @@ -60,9 +65,11 @@ struct seq_operations;
+>  extern const struct seq_operations proc_uid_seq_operations;
+>  extern const struct seq_operations proc_gid_seq_operations;
+>  extern const struct seq_operations proc_projid_seq_operations;
+> +extern const struct seq_operations proc_setgroups_seq_operations;
+>  extern ssize_t proc_uid_map_write(struct file *, const char __user *, size_t, loff_t *);
+>  extern ssize_t proc_gid_map_write(struct file *, const char __user *, size_t, loff_t *);
+>  extern ssize_t proc_projid_map_write(struct file *, const char __user *, size_t, loff_t *);
+> +extern ssize_t proc_setgroups_write(struct file *, const char __user *, size_t, loff_t *);
+>  extern bool userns_may_setgroups(const struct user_namespace *ns);
+>  #else
+>
+> diff --git a/kernel/user.c b/kernel/user.c
+> index 4efa39350e44..2d09940c9632 100644
+> --- a/kernel/user.c
+> +++ b/kernel/user.c
+> @@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
+>         .owner = GLOBAL_ROOT_UID,
+>         .group = GLOBAL_ROOT_GID,
+>         .proc_inum = PROC_USER_INIT_INO,
+> +       .flags = USERNS_INIT_FLAGS,
+>  #ifdef CONFIG_PERSISTENT_KEYRINGS
+>         .persistent_keyring_register_sem =
+>         __RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index 44a555ac6104..b507f9af7ff2 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -100,6 +100,11 @@ int create_user_ns(struct cred *new)
+>         ns->owner = owner;
+>         ns->group = group;
+>
+> +       /* Inherit USERNS_SETGROUPS_ALLOWED from our parent */
+> +       mutex_lock(&userns_state_mutex);
+> +       ns->flags = parent_ns->flags;
+> +       mutex_unlock(&userns_state_mutex);
+> +
+>         set_cred_user_ns(new, ns);
+>
+>  #ifdef CONFIG_PERSISTENT_KEYRINGS
+> @@ -839,6 +844,102 @@ static bool new_idmap_permitted(const struct file *file,
+>         return false;
+>  }
+>
+> +static void *setgroups_m_start(struct seq_file *seq, loff_t *ppos)
+> +{
+> +       struct user_namespace *ns = seq->private;
+> +
+> +       return (*ppos == 0) ?  ns : NULL;
+> +}
+> +
+> +static void *setgroups_m_next(struct seq_file *seq, void *v, loff_t *ppos)
+> +{
+> +       ++*ppos;
+> +       return NULL;
+> +}
+> +
+> +static void setgroups_m_stop(struct seq_file *seq, void *v)
+> +{
+> +}
+> +
+> +static int setgroups_m_show(struct seq_file *seq, void *v)
+> +{
+> +       struct user_namespace *ns = seq->private;
+> +
+> +       seq_printf(seq, "%s\n",
+> +                  test_bit(USERNS_SETGROUPS_ALLOWED, &ns->flags) ?
+> +                  "allow" : "deny");
+> +       return 0;
+> +}
+> +
+> +const struct seq_operations proc_setgroups_seq_operations = {
+> +       .start  = setgroups_m_start,
+> +       .stop = setgroups_m_stop,
+> +       .next = setgroups_m_next,
+> +       .show = setgroups_m_show,
+> +};
+> +
+> +ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
+> +                            size_t count, loff_t *ppos)
+> +{
+> +       struct seq_file *seq = file->private_data;
+> +       struct user_namespace *ns = seq->private;
+> +       char kbuf[8], *pos;
+> +       bool setgroups_allowed;
+> +       ssize_t ret;
+> +
+> +       ret = -EACCES;
+> +       if (!file_ns_capable(file, ns, CAP_SYS_ADMIN))
+> +               goto out;
+> +
+> +       /* Only allow a very narrow range of strings to be written */
+> +       ret = -EINVAL;
+> +       if ((*ppos != 0) || (count >= sizeof(kbuf)))
+> +               goto out;
+> +
+> +       /* What was written? */
+> +       ret = -EFAULT;
+> +       if (copy_from_user(kbuf, buf, count))
+> +               goto out;
+> +       kbuf[count] = '\0';
+> +       pos = kbuf;
+> +
+> +       /* What is being requested? */
+> +       ret = -EINVAL;
+> +       if (strncmp(pos, "allow", 5) == 0) {
+> +               pos += 5;
+> +               setgroups_allowed = true;
+> +       }
+> +       else if (strncmp(pos, "deny", 4) == 0) {
+> +               pos += 4;
+> +               setgroups_allowed = false;
+> +       }
+> +       else
+> +               goto out;
+> +
+> +       /* Verify there is not trailing junk on the line */
+> +       pos = skip_spaces(pos);
+> +       if (*pos != '\0')
+> +               goto out;
+> +
+> +       mutex_lock(&userns_state_mutex);
+> +       if (setgroups_allowed) {
+> +               ret = -EPERM;
+> +               if (!(ns->flags & USERNS_SETGROUPS_ALLOWED)) {
+> +                       mutex_unlock(&userns_state_mutex);
+> +                       goto out;
+> +               }
+> +       } else {
+> +               ns->flags &= ~USERNS_SETGROUPS_ALLOWED;
+> +       }
+> +       mutex_unlock(&userns_state_mutex);
+> +
+> +       /* Report a successful write */
+> +       *ppos = count;
+> +       ret = count;
+> +out:
+> +       return ret;
+> +}
+> +
+>  bool userns_may_setgroups(const struct user_namespace *ns)
+>  {
+>         bool allowed;
+> @@ -848,6 +949,8 @@ bool userns_may_setgroups(const struct user_namespace *ns)
+>          * the user namespace has been established.
+>          */
+>         allowed = ns->gid_map.nr_extents != 0;
+> +       /* Is setgroups allowed? */
+> +       allowed = allowed && (ns->flags & USERNS_SETGROUPS_ALLOWED);
+>         mutex_unlock(&userns_state_mutex);
+>
+>         return allowed;
+> --
+> 1.9.1
+>
 
-Cc: Kevin Cernekee <cernekee@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Compile tested only. Applies to linux-next as well as mainline.
 
- arch/hexagon/include/asm/cacheflush.h | 36 ++++++++++++++++++-----------------
- arch/hexagon/include/asm/io.h         |  5 -----
- arch/hexagon/kernel/setup.c           |  1 +
- arch/hexagon/mm/cache.c               | 10 ++++++++++
- arch/hexagon/mm/ioremap.c             |  1 +
- 5 files changed, 31 insertions(+), 22 deletions(-)
 
-diff --git a/arch/hexagon/include/asm/cacheflush.h b/arch/hexagon/include/asm/cacheflush.h
-index 49e0896..b86f9f3 100644
---- a/arch/hexagon/include/asm/cacheflush.h
-+++ b/arch/hexagon/include/asm/cacheflush.h
-@@ -21,10 +21,7 @@
- #ifndef _ASM_CACHEFLUSH_H
- #define _ASM_CACHEFLUSH_H
- 
--#include <linux/cache.h>
--#include <linux/mm.h>
--#include <asm/string.h>
--#include <asm-generic/cacheflush.h>
-+#include <linux/mm_types.h>
- 
- /* Cache flushing:
-  *
-@@ -41,6 +38,20 @@
- #define LINESIZE	32
- #define LINEBITS	5
- 
-+#define flush_cache_all()			do { } while (0)
-+#define flush_cache_mm(mm)			do { } while (0)
-+#define flush_cache_dup_mm(mm)			do { } while (0)
-+#define flush_cache_range(vma, start, end)	do { } while (0)
-+#define flush_cache_page(vma, vmaddr, pfn)	do { } while (0)
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
-+#define flush_dcache_page(page)			do { } while (0)
-+#define flush_dcache_mmap_lock(mapping)		do { } while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
-+#define flush_icache_page(vma, pg)		do { } while (0)
-+#define flush_icache_user_range(vma, pg, adr, len)	do { } while (0)
-+#define flush_cache_vmap(start, end)		do { } while (0)
-+#define flush_cache_vunmap(start, end)		do { } while (0)
-+
- /*
-  * Flush Dcache range through current map.
-  */
-@@ -49,7 +60,6 @@ extern void flush_dcache_range(unsigned long start, unsigned long end);
- /*
-  * Flush Icache range through current map.
-  */
--#undef flush_icache_range
- extern void flush_icache_range(unsigned long start, unsigned long end);
- 
- /*
-@@ -79,19 +89,11 @@ static inline void update_mmu_cache(struct vm_area_struct *vma,
- 	/*  generic_ptrace_pokedata doesn't wind up here, does it?  */
- }
- 
--#undef copy_to_user_page
--static inline void copy_to_user_page(struct vm_area_struct *vma,
--					     struct page *page,
--					     unsigned long vaddr,
--					     void *dst, void *src, int len)
--{
--	memcpy(dst, src, len);
--	if (vma->vm_flags & VM_EXEC) {
--		flush_icache_range((unsigned long) dst,
--		(unsigned long) dst + len);
--	}
--}
-+void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+		       unsigned long vaddr, void *dst, void *src, int len);
- 
-+#define copy_from_user_page(vma, page, vaddr, dst, src, len) \
-+	memcpy(dst, src, len)
- 
- extern void hexagon_inv_dcache_range(unsigned long start, unsigned long end);
- extern void hexagon_clean_dcache_range(unsigned long start, unsigned long end);
-diff --git a/arch/hexagon/include/asm/io.h b/arch/hexagon/include/asm/io.h
-index 7029899..66f5e9a 100644
---- a/arch/hexagon/include/asm/io.h
-+++ b/arch/hexagon/include/asm/io.h
-@@ -24,14 +24,9 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
--#include <linux/delay.h>
--#include <linux/vmalloc.h>
--#include <asm/string.h>
--#include <asm/mem-layout.h>
- #include <asm/iomap.h>
- #include <asm/page.h>
- #include <asm/cacheflush.h>
--#include <asm/tlbflush.h>
- 
- /*
-  * We don't have PCI yet.
-diff --git a/arch/hexagon/kernel/setup.c b/arch/hexagon/kernel/setup.c
-index 0e7c1db..6981949 100644
---- a/arch/hexagon/kernel/setup.c
-+++ b/arch/hexagon/kernel/setup.c
-@@ -19,6 +19,7 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/delay.h>
- #include <linux/bootmem.h>
- #include <linux/mmzone.h>
- #include <linux/mm.h>
-diff --git a/arch/hexagon/mm/cache.c b/arch/hexagon/mm/cache.c
-index 0c76c80..a7c6d82 100644
---- a/arch/hexagon/mm/cache.c
-+++ b/arch/hexagon/mm/cache.c
-@@ -127,3 +127,13 @@ void flush_cache_all_hexagon(void)
- 	local_irq_restore(flags);
- 	mb();
- }
-+
-+void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+		       unsigned long vaddr, void *dst, void *src, int len)
-+{
-+	memcpy(dst, src, len);
-+	if (vma->vm_flags & VM_EXEC) {
-+		flush_icache_range((unsigned long) dst,
-+		(unsigned long) dst + len);
-+	}
-+}
-diff --git a/arch/hexagon/mm/ioremap.c b/arch/hexagon/mm/ioremap.c
-index 5905fd5..d27d672 100644
---- a/arch/hexagon/mm/ioremap.c
-+++ b/arch/hexagon/mm/ioremap.c
-@@ -20,6 +20,7 @@
- 
- #include <linux/io.h>
- #include <linux/vmalloc.h>
-+#include <linux/mm.h>
- 
- void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size)
- {
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
