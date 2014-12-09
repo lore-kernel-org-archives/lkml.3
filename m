@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaLIW5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 17:57:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37460 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953AbaLIWuj (ORCPT
+	id S1754788AbaLIW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 17:57:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43373 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963AbaLIWuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 17:50:39 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/25] iov_iter.c: get rid of bvec_copy_page_{to,from}_iter()
-Date: Tue,  9 Dec 2014 22:50:20 +0000
-Message-Id: <1418165438-2205-7-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141209224928.GL22149@ZenIV.linux.org.uk>
-References: <20141209224928.GL22149@ZenIV.linux.org.uk>
+	Tue, 9 Dec 2014 17:50:40 -0500
+Date: Tue, 9 Dec 2014 14:50:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Ingo Molnar <mingo@kernel.org>, <dave@sr71.net>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-tip-commits@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH V2] x86/mm: Fix zone ranges boot printout
+Message-Id: <20141209145038.6253a2b99379bfb1255fa95e@linux-foundation.org>
+In-Reply-To: <54866C18.1050203@huawei.com>
+References: <54866C18.1050203@huawei.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+On Tue, 9 Dec 2014 11:27:20 +0800 Xishi Qiu <qiuxishi@huawei.com> wrote:
 
-Just have copy_page_{to,from}_iter() fall back to kmap_atomic +
-copy_{to,from}_iter() + kunmap_atomic() in ITER_BVEC case.  As
-the matter of fact, that's what we want to do for any iov_iter
-kind that isn't blocking - e.g. ITER_KVEC will also go that way
-once we recognize it on iov_iter.c primitives level
+> Changelog:
+> V2:
+> 	-fix building warnings of min(...).
+>
+> ...
+>
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -674,10 +674,12 @@ void __init zone_sizes_init(void)
+>  	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+>  
+>  #ifdef CONFIG_ZONE_DMA
+> -	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
+> +	max_zone_pfns[ZONE_DMA]		= min_t(unsigned long,
+> +						max_low_pfn, MAX_DMA_PFN);
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- mm/iov_iter.c | 60 ++++++++++++++++++++++++-----------------------------------
- 1 file changed, 24 insertions(+), 36 deletions(-)
+MAX_DMA_PFN has type int.
 
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 39ad713..17b7144 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -486,30 +486,33 @@ static size_t copy_from_iter_bvec(void *to, size_t bytes, struct iov_iter *i)
- 	return wanted;
- }
- 
--static size_t copy_page_to_iter_bvec(struct page *page, size_t offset,
--					size_t bytes, struct iov_iter *i)
-+size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
- {
--	void *kaddr = kmap_atomic(page);
--	size_t wanted = copy_to_iter_bvec(kaddr + offset, bytes, i);
--	kunmap_atomic(kaddr);
--	return wanted;
-+	if (i->type & ITER_BVEC)
-+		return copy_to_iter_bvec(addr, bytes, i);
-+	else
-+		return copy_to_iter_iovec(addr, bytes, i);
- }
-+EXPORT_SYMBOL(copy_to_iter);
- 
--static size_t copy_page_from_iter_bvec(struct page *page, size_t offset,
--					size_t bytes, struct iov_iter *i)
-+size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
- {
--	void *kaddr = kmap_atomic(page);
--	size_t wanted = copy_from_iter_bvec(kaddr + offset, bytes, i);
--	kunmap_atomic(kaddr);
--	return wanted;
-+	if (i->type & ITER_BVEC)
-+		return copy_from_iter_bvec(addr, bytes, i);
-+	else
-+		return copy_from_iter_iovec(addr, bytes, i);
- }
-+EXPORT_SYMBOL(copy_from_iter);
- 
- size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
--	if (i->type & ITER_BVEC)
--		return copy_page_to_iter_bvec(page, offset, bytes, i);
--	else
-+	if (i->type & (ITER_BVEC|ITER_KVEC)) {
-+		void *kaddr = kmap_atomic(page);
-+		size_t wanted = copy_to_iter(kaddr + offset, bytes, i);
-+		kunmap_atomic(kaddr);
-+		return wanted;
-+	} else
- 		return copy_page_to_iter_iovec(page, offset, bytes, i);
- }
- EXPORT_SYMBOL(copy_page_to_iter);
-@@ -517,31 +520,16 @@ EXPORT_SYMBOL(copy_page_to_iter);
- size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
- 			 struct iov_iter *i)
- {
--	if (i->type & ITER_BVEC)
--		return copy_page_from_iter_bvec(page, offset, bytes, i);
--	else
-+	if (i->type & ITER_BVEC) {
-+		void *kaddr = kmap_atomic(page);
-+		size_t wanted = copy_from_iter(kaddr + offset, bytes, i);
-+		kunmap_atomic(kaddr);
-+		return wanted;
-+	} else
- 		return copy_page_from_iter_iovec(page, offset, bytes, i);
- }
- EXPORT_SYMBOL(copy_page_from_iter);
- 
--size_t copy_to_iter(void *addr, size_t bytes, struct iov_iter *i)
--{
--	if (i->type & ITER_BVEC)
--		return copy_to_iter_bvec(addr, bytes, i);
--	else
--		return copy_to_iter_iovec(addr, bytes, i);
--}
--EXPORT_SYMBOL(copy_to_iter);
--
--size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
--{
--	if (i->type & ITER_BVEC)
--		return copy_from_iter_bvec(addr, bytes, i);
--	else
--		return copy_from_iter_iovec(addr, bytes, i);
--}
--EXPORT_SYMBOL(copy_from_iter);
--
- size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
- {
- 	if (unlikely(bytes > i->count))
--- 
-2.1.3
+>  #endif
+>  #ifdef CONFIG_ZONE_DMA32
+> -	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
+> +	max_zone_pfns[ZONE_DMA32]	= min_t(unsigned long,
+> +						max_low_pfn, MAX_DMA32_PFN);
+
+MAX_DMA32_PFN has type UL (I think?) so there's no need for min_t here.
+
+>  #endif
+>  	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
+>  #ifdef CONFIG_HIGHMEM
+
+
+Let's try to get the types correct, rather than hacking around fixing
+up fallout from earlier incorrect type choices?
+
+What is the type of a pfn?  Unsigned long, generally, when we bother
+thinking about it.
+
+So how about we make MAX_DMA_PFN have type UL?  I assume that fixes the
+warning?
+
+If we do this, we should also be able to undo the min_t hackery in
+arch/x86/kernel/e820.c:memblock_find_dma_reserve().
 
