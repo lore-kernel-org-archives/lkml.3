@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaLIUg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:36:59 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:39537 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaLIUg5 (ORCPT
+	id S1751955AbaLIUhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:37:54 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59454 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaLIUhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:36:57 -0500
+	Tue, 9 Dec 2014 15:37:52 -0500
+Message-ID: <54875D99.6070301@linaro.org>
+Date: Tue, 09 Dec 2014 20:37:45 +0000
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1412092103270.16275@nanos>
-References: <1418140999-29092-1-git-send-email-bobby.prani@gmail.com> <alpine.DEB.2.11.1412092103270.16275@nanos>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Tue, 9 Dec 2014 15:36:26 -0500
-Message-ID: <CAJhHMCAORzK4Yc-DrEmFxwwyWwxWTCQzv1WKd1M6+YiEn9HKiA@mail.gmail.com>
-Subject: Re: [RFC PATCH] smpboot: Check for successfull allocation of cpumask vars
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Igor Mammedov <imammedo@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, josh@joshtriplett.org, sam@ravnborg.org,
+        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mtosatti@redhat.com, Pekka Enberg <penberg@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        David Rientjes <rientjes@google.com>, xen-devel@lists.xenproject.org,
+        Borislav Petkov <bp@suse.de>, David Vrabel <david.vrabel@citrix.com>,
+        Benjamin Poirier <bpoirier@suse.de>
+Subject: Re: [Xen-devel] [PATCH v3 2/2] x86, arm64, platform, xen, kconfig:
+ add xen defconfig helper
+References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com> <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com> <5486BBB1.3040405@linaro.org> <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
+In-Reply-To: <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 3:10 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 9 Dec 2014, Pranith Kumar wrote:
->> zalloc_cpumask_var() can return 0 on allocation failure when
->> CONFIG_CPUMASK_OFFSTACK is set. Check for the return value and WARN() on failure
->> of an allocation in such cases.
->
-> And that warning helps in which way?
->
-> It just prints a completely useless backtrace and breaks out of the
-> loop, but it does not prevent that later on code will trip over the
-> non allocated per cpu data.
->
+On 09/12/14 20:22, Luis R. Rodriguez wrote:
+> On Tue, Dec 9, 2014 at 1:06 AM, Julien Grall <julien.grall@linaro.org> wrote:
+>> Hello Luis,
+>>
+>> On 08/12/2014 23:05, Luis R. Rodriguez wrote:
+>>>
+>>> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
+>>> new file mode 100644
+>>> index 0000000..0d0eb6d
+>>> --- /dev/null
+>>> +++ b/kernel/configs/xen.config
+>>> +CONFIG_XEN_MCE_LOG=y
+>>
+>>
+>> MCE is x86 specific.
+> 
+> That's what I thought too but its available for arm64, so should we
+> fix that Kconfig to depend on x86?
 
-I agree. May be just a pr_warn() saying that an allocation failed perhaps?
+Are you sure? On the Linus's repo I have:
 
-To prevent further accesses, we can clear the cpu bit from the cpu
-masks(online/possible/present) for the failed cpu and continue trying
-to allocate for other cpus. We don't break out of the loop. Removing
-the cpu from the cpu masks will disable accesses of the non allocated
-per cpu data.
+config XEN_MCE_LOG
+        bool "Xen platform mcelog"
+        depends on XEN_DOM0 && X86_64 && X86_MCE
 
-What do you suggest we do in such cases?
+Anyway, the MCE interface in the hypervisor is implemented in arch/x86
+not in common code.
+
+>>> +CONFIG_XEN_HAVE_PVMMU=y
+>>
+>>
+>> We don't have PVMMU support on ARM. Shouldn't you move this config in
+>> architecture specific code?
+> 
+> If you are sure then yes.
+
+I'm 100% sure. MMU is handled by the hardware on ARM.
+
+Thinking a bit more about this option. CONFIG_XEN_HAVE_PVMMU can't be
+selected by the user. It's automatically added per platform (for
+instance see arch/x86/xen/Kconfig).
+
+So maybe it should not even appear in the one of the fragment configs?
+
+Regards,
+
 -- 
-Pranith
+Julien Grall
