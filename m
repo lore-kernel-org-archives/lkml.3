@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaLIKSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:18:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52359 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923AbaLIKSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:18:31 -0500
-Date: Tue, 9 Dec 2014 02:17:54 -0800
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-fd7de1e8d5b2b2b35e71332fafb899f584597150@git.kernel.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        peterz@infradead.org, luto@amacapital.net, tglx@linutronix.de,
-        mingo@kernel.org
-Reply-To: tglx@linutronix.de, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        peterz@infradead.org, luto@amacapital.net
-In-Reply-To: <729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net>
-References: <729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Add missing rcu protection to wake_up_all_idle_cpus
-Git-Commit-ID: fd7de1e8d5b2b2b35e71332fafb899f584597150
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1756585AbaLIKSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:18:46 -0500
+Received: from ozlabs.org ([103.22.144.67]:56232 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755533AbaLIKSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 05:18:42 -0500
+In-Reply-To: <20141208141629.912861A5D5B@localhost.localdomain>
+To: LEROY Christophe <christophe.leroy@c-s.fr>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com,
+        aneesh.kumar@in.ibm.com
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: powerpc32: missing accessors to pgprot_t objects
+Message-Id: <20141209101841.7D9241400D2@ozlabs.org>
+Date: Tue,  9 Dec 2014 21:18:41 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd7de1e8d5b2b2b35e71332fafb899f584597150
-Gitweb:     http://git.kernel.org/tip/fd7de1e8d5b2b2b35e71332fafb899f584597150
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Sat, 29 Nov 2014 08:13:51 -0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Dec 2014 11:44:19 +0100
+On Mon, 2014-08-12 at 14:16:29 UTC, LEROY Christophe wrote:
+> Compilation with #define STRICT_MM_TYPECHECKS in arch/powerpc/include/asm/page.h
+> fails due to missing use of pgprot_val() when using pgprot_t objects.
 
-sched: Add missing rcu protection to wake_up_all_idle_cpus
+Hmm, looks like 64 bit doesn't build either.
 
-Locklessly doing is_idle_task(rq->curr) is only okay because of
-RCU protection.  The older variant of the broken code checked
-rq->curr == rq->idle instead and therefore didn't need RCU.
+Aneesh I think you added this, mind fixing it up?
 
-Fixes: f6be8af1c95d ("sched: Add new API wake_up_if_idle() to wake up the idle cpu")
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+In file included from ../arch/powerpc/include/asm/thread_info.h:34:0,
+                 from ../include/linux/thread_info.h:54,
+                 from ../include/asm-generic/preempt.h:4,
+                 from arch/powerpc/include/generated/asm/preempt.h:1,
+                 from ../include/linux/preempt.h:18,
+                 from ../include/linux/spinlock.h:50,
+                 from ../include/linux/mmzone.h:7,
+                 from ../include/linux/gfp.h:5,
+                 from ../include/linux/mm.h:9,
+                 from ../arch/powerpc/mm/tlb_hash64.c:25:
+../arch/powerpc/mm/tlb_hash64.c: In function ‘__flush_hash_table_range’:
+../arch/powerpc/include/asm/page.h:286:24: error: request for member ‘pte’ in something not a structure or union
+ #define pte_val(x) ((x).pte)
+                        ^    
+../arch/powerpc/mm/tlb_hash64.c:219:37: note: in expansion of macro ‘pte_val’
+    trace_hugepage_invalidate(start, pte_val(pte));
+                                     ^    
+make[2]: *** [arch/powerpc/mm/tlb_hash64.o] Error 1
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d44d0c5..88f49bc 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1628,8 +1628,10 @@ void wake_up_if_idle(int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long flags;
- 
--	if (!is_idle_task(rq->curr))
--		return;
-+	rcu_read_lock();
-+
-+	if (!is_idle_task(rcu_dereference(rq->curr)))
-+		goto out;
- 
- 	if (set_nr_if_polling(rq->idle)) {
- 		trace_sched_wake_idle_without_ipi(cpu);
-@@ -1640,6 +1642,9 @@ void wake_up_if_idle(int cpu)
- 		/* Else cpu is not in idle, do nothing here */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
- 	}
-+
-+out:
-+	rcu_read_unlock();
- }
- 
- bool cpus_share_cache(int this_cpu, int that_cpu)
+
+cheers
