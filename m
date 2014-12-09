@@ -1,124 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560AbaLIOSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:18:15 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:45816 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225AbaLIOSN (ORCPT
+	id S932303AbaLIOTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:19:13 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:40804 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008AbaLIOTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:18:13 -0500
-Date: Tue, 9 Dec 2014 00:03:37 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Rui Zhang <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] thermal-soc management updates for v3.19 #3
-Message-ID: <20141209040336.GB2245@developer>
+	Tue, 9 Dec 2014 09:19:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <548703C4.1030300@collabora.com>
+References: <1417709696-29281-1-git-send-email-tomeu.vizoso@collabora.com>
+ <CAAVeFuJkpuWocEDTfSAK7_UfhZvqOfYJY6sLgsy9i+KcMAkbCQ@mail.gmail.com> <548703C4.1030300@collabora.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 9 Dec 2014 23:18:49 +0900
+Message-ID: <CAAVeFuJY_31ayqnoY65uCoP9AadvucEARmuv4jr_DoS6Aj5rGA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/3] Add support for Tegra Activity Monitor
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 9, 2014 at 11:14 PM, Tomeu Vizoso
+<tomeu.vizoso@collabora.com> wrote:
+> On 12/09/2014 06:38 AM, Alexandre Courbot wrote:
+>> On Fri, Dec 5, 2014 at 1:14 AM, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+>>> Hello,
+>>>
+>>> this v3 addresses the comments that the devfreq implementation got, namely:
+>>>
+>>> * Address misc. style issues found by Thierry and Alexander
+>>> * Added helpers for register i/o
+>>> * Further documented the structs
+>>> * Enable the ACTMON after the IRQ handler has been installed
+>>> * Disable the ACTMON before removing the IRQ handler
+>>> * Add governor in a subsys initcall
+>>>
+>>> There's an open question on whether some functionality currently in this
+>>> devfreq driver should be moved into the devfreq framework, but without knowing
+>>> of other SoC family that would benefit from it, I'm reticent. It would be
+>>> great to hear from the devfreq maintainers if they have any plans regarding
+>>> this, or if they have any suggestion.
+>>
+>> I cannot make a thorough review because of the problem I mentioned in
+>> patch 3/3, but I am guessing this series is converging towards what we
+>> want. Now the main question will be how we can leverage Arto's
+>> watermark series for this one. I am ready to bet that doing so can
+>> reduce quite a lot of code.
+>>
+>> Since you are likely to be the first user of the watermarking feature,
+>> could you comment on its potential shortcomings and whatever needs to
+>> be fixed to best implement ACTMON support using it? I will try to push
+>> it myself, but you are obviously in a better position to understand
+>> what is needed.
+>
+> Sure, I'm still playing with the idea, but I have sent a few questions
+> to that thread already.
 
---hQiwHBbRI9kgIhsi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Seen that, thanks! After seeing your comments I come to thing that
+maybe we should merge ACTMON support first and then adapt it to use
+watermarking afterwards. I'm all for incremental changes and after 4
+iterations this series should be close to completion now - would be
+sad to go back to the design board at this stage.
 
-Hello Rui,
-
-Please pull from
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git fixes
-
-to receive Thermal-SoC Management updates for v3.19 with top-most
-
-9a3031dc3e7a5edfeb52ae8951f8bcd927351854:
-
-  thermal:core:fix: Check return code of the ->get_max_state() callback (2014-12-08 21:32:56 -0400)
-
-on top of 88910638717dd195cff1dd1ea74772b159632bba:
-
-  Merge tag 'staging-3.18-rc7' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging (2014-11-28 16:08:09 -0800)
-
-Specifics:
-
-- In this pull, I am including a series of fixes that was supposed to make 3.18, but I decided
-to send them for v3.19. I left for v3.19 because the required changes modified a couple of APIs.
-Therefore, the redesign had to be done properly. The major fix here is to have proper sequencing
-between cpufreq layer and cpu cooling registration. A take away of this fix is an improvement in
-the thermal drivers code. Thermal drivers that require cpu cooling do not need to check for
-cpufreq layer. The requirement now is to propagate the error code, if any, while registering
-cpu cooling device. Thanks to Viresh for implementing the required CPUfreq changes.
-- While in the subject, Viresh took the opportunity to review the cpu cooling code from a
-cpufreq layer user perspective, which resulted in several cleanups.
-- The content in this pull depends on CPUfreq refactoring done by Viresh, which is part of
-the pull sent by Rafael J. W.:
-https://lkml.org/lkml/2014/12/8/704
-
-BR,
-
-----------------------------------------------------------------
-Eduardo Valentin (1):
-      thermal: cpu_cooling: check for the readiness of cpufreq layer
-
-Lukasz Majewski (1):
-      thermal:core:fix: Check return code of the ->get_max_state() callback
-
-Viresh Kumar (25):
-      thermal: db8500: pass cpu_present_mask to cpufreq_cooling_register()
-      thermal: imx: pass cpu_present_mask to cpufreq_cooling_register()
-      thermal: exynos: pass cpu_present_mask to cpufreq_cooling_register()
-      thermal: cpu_cooling: random comment fixups
-      thermal: cpu_cooling: fix doc comment over struct cpufreq_cooling_device
-      thermal: cpu_cooling: Add comment to clarify relation between cooling state and frequency
-      thermal: cpu_cooling: Pass variable instead of its type to sizeof()
-      thermal: cpu_cooling: no need to set cpufreq_state to zero
-      thermal: cpu_cooling: no need to set cpufreq_dev to NULL
-      thermal: cpu_cooling: no need to initialze 'ret'
-      thermal: cpu_cooling: propagate error returned by idr_alloc()
-      thermal: cpu_cooling: Don't match min/max frequencies for all CPUs on cooling register
-      thermal: cpu_cooling: don't iterate over all allowed_cpus to update cpufreq policy
-      thermal: cpu_cooling: Don't check is_cpufreq_valid()
-      thermal: cpu_cooling: do error handling at the bottom in __cpufreq_cooling_register()
-      thermal: cpu_cooling: initialize 'cpufreq_val' on registration
-      thermal: cpu_cooling: Merge cpufreq_apply_cooling() into cpufreq_set_cur_state()
-      thermal: cpu_cooling: remove unnecessary wrapper get_cpu_frequency()
-      thermal: cpu_cooling: find max level during device registration
-      thermal: cpu_cooling: get_property() doesn't need to support GET_MAXL anymore
-      thermal: cpu_cooling: use cpufreq_dev_list instead of cpufreq_dev_count
-      thermal: cpu_cooling: Pass 'cpufreq_dev' to get_property()
-      thermal: cpu_cooling: Store frequencies in descending order
-      thermal: cpu_cooling: Use cpufreq_dev->freq_table for finding level/freq
-      thermal: cpu_cooling: update copyright tags
-
- drivers/thermal/cpu_cooling.c                      | 360 ++++++++-------------
- drivers/thermal/db8500_cpufreq_cooling.c           |  10 +-
- drivers/thermal/imx_thermal.c                      |   9 +-
- drivers/thermal/samsung/exynos_thermal_common.c    |  12 +-
- drivers/thermal/samsung/exynos_tmu.c               |   5 +-
- drivers/thermal/thermal_core.c                     |   6 +-
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c |   6 -
- 7 files changed, 152 insertions(+), 256 deletions(-)
-
---hQiwHBbRI9kgIhsi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUhnSQAAoJEMLUO4d9pOJW+KYIAJv72U5Q77J3EtFPKtFRLc/Z
-wWoFQCEOnT348fldncC3hDKYGcSyop7B0btZM0H1kY7dKO91SKMgOdHdx5u7a6gu
-QvAAn8wCg0Mwy7oJKrsvvhDwkGzZ6ypM9/6hQB8RkDe4VLGHlbJRaDnsj+hY44g7
-rVc0B0CnPeWUCDnj5eXV4KiqLAtBZrvG1gDa5bnaL9OYihh+j5ukFEptXeHjE2Ku
-+hj5uXNOWZXQldquaFNNPgq9358b82Mmq1m+EcyF6PPV2wceRLGx3LO/z2g+YT7A
-FlVe4WMrzxLv2/Zk1CdLGK9xs9xU5+cz4loiJ9pTcNRuCyS5i0hZu9mS/hdB/BQ=
-=oHhd
------END PGP SIGNATURE-----
-
---hQiwHBbRI9kgIhsi--
+Reviewing your v4 is on my schedule for tomorrow, thanks for your patience!
