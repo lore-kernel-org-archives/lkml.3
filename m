@@ -1,66 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328AbaLICRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Dec 2014 21:17:52 -0500
-Received: from ozlabs.org ([103.22.144.67]:55158 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755745AbaLICRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Dec 2014 21:17:51 -0500
-Date: Tue, 9 Dec 2014 13:17:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: linux-next: build failure after merge of the thermal tree
-Message-ID: <20141209131744.084929df@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1756385AbaLICUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Dec 2014 21:20:45 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:13785 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754329AbaLICUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Dec 2014 21:20:44 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44705543"
+Message-ID: <54865D65.8030906@cn.fujitsu.com>
+Date: Tue, 9 Dec 2014 10:24:37 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/J+Xtqe6RXr1IQMktB9wEdIv"; protocol="application/pgp-signature"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Anton Blanchard <anton@samba.org>, <torvalds@linux-foundation.org>,
+        <akpm@linux-foundation.org>, <peterz@infradead.org>,
+        <tglx@linutronix.de>, <mingo@redhat.com>, <tj@kernel.org>,
+        <fengguang.wu@intel.com>, <rafael.j.wysocki@intel.com>,
+        <yuyang.du@intel.com>, <lkp@01.org>, <yuanhan.liu@linux.intel.com>,
+        <pjt@google.com>, <bsegall@google.com>, <daniel@numascale.com>,
+        <subbaram@codeaurora.org>, <computersforpeace@gmail.com>,
+        <sp@datera.io>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH] kthread: kthread_bind fails to enforce CPU affinity (fixes
+ kernel BUG at kernel/smpboot.c:134!)
+References: <1418009221-12719-1-git-send-email-anton@samba.org> <20141208085405.730577a3@gandalf.local.home>
+In-Reply-To: <20141208085405.730577a3@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/J+Xtqe6RXr1IQMktB9wEdIv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 12/08/2014 09:54 PM, Steven Rostedt wrote:
+> On Mon,  8 Dec 2014 14:27:01 +1100
+> Anton Blanchard <anton@samba.org> wrote:
+> 
+>> I have a busy ppc64le KVM box where guests sometimes hit the infamous
+>> "kernel BUG at kernel/smpboot.c:134!" issue during boot:
+>>
+>> BUG_ON(td->cpu != smp_processor_id());
+>>
+>> Basically a per CPU hotplug thread scheduled on the wrong CPU. The oops
+>> output confirms it:
+>>
+>> CPU: 0
+>> Comm: watchdog/130
+>>
+>> The issue is in kthread_bind where we set the cpus_allowed mask, but do
+>> not touch task_thread_info(p)->cpu. The scheduler assumes the previously
+>> scheduled CPU is in the cpus_allowed mask, but in this case we are
+>> moving a thread to another CPU so it is not.
+>>
+> 
+> Does this happen always on boot up, and always with the watchdog thread?
+> 
+> I followed the logic that starts the watchdog threads.
+> 
+> watchdog_enable_all_cpus()
+>   smpboot_register_percpu-thread() {
+> 
+>     for_each_online_cpu(cpu) { ... }
+> 
+> Where watchdog_enable_all_cpus() can be called by
+> lockup_detector_init() before SMP is started, but also by
+> proc_dowatchdog() which is called by the sysctl commands (after SMP is
+> up and running).
+> 
+> I noticed there's no "get_online_cpus()" anywhere, although the
+> unregister_percpu_thread() has it. Is it possible that we created a
+> thread on a CPU that wasn't fully online yet?
+> 
+> Perhaps the following patch is needed? Even if this isn't the solution
+> to this bug, it is probably needed as watchdog_enable_all_cpus() can be
+> called after boot up too.
+> 
+> -- Steve
 
-Hi Zhang,
 
-After merging the thermal tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Hi, Steven, tglx
 
-drivers/thermal/Kconfig:265: can't open file "drivers/thermal/int340x_therm=
-al/Kconfig"
+See this https://lkml.org/lkml/2014/7/30/804
+"[PATCH] smpboot: add missing get_online_cpus() when register"
 
-Caused by commit 4152c8bc018d ("Thermal: introduce INT3406 thermal
-driver").  Presumable a new file was missed.
 
-I have used teh thermal tree from next-20141208 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
+Lai
 
---Sig_/J+Xtqe6RXr1IQMktB9wEdIv
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+> 
+> diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+> index eb89e1807408..60d35ac5d3f1 100644
+> --- a/kernel/smpboot.c
+> +++ b/kernel/smpboot.c
+> @@ -279,6 +279,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>  	unsigned int cpu;
+>  	int ret = 0;
+>  
+> +	get_online_cpus();
+>  	mutex_lock(&smpboot_threads_lock);
+>  	for_each_online_cpu(cpu) {
+>  		ret = __smpboot_create_thread(plug_thread, cpu);
+> @@ -291,6 +292,7 @@ int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
+>  	list_add(&plug_thread->list, &hotplug_threads);
+>  out:
+>  	mutex_unlock(&smpboot_threads_lock);
+> +	put_online_cpus();
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUhlvMAAoJEMDTa8Ir7ZwVUHoP/iSsEw8/KmV5MN8YNllJGten
-2eyxP+ShFUz3mF5P8Ho1OpOJt3zTZirw+UVRfOZmmCWnXUdYDnnEjymHF5aZEcWB
-UxvQoPn0dlfjwRXFy2Az4yvro8pyT00aWadf8X0NE6ZuBMm9maIPMxCkpi90Fl/k
-Xg3FIyhuAtSqfA5zwl8RDHryCDn9Ipj8AGLC8kA+5TP5GXEeqZ8X8c9UnaJC6mRE
-5QXJk0ttRszPVJ64XvDO7edjFynYSgAlS1kgg7fK5yOYn6flv1mNcRNyoQTvjseu
-0dt8HOhpUWHj2zt7F+wrcaJYFyg1M+9O3m7lve6+hmJZsyjrwTtvSoUBaArBcuUJ
-U+EIcWFHIvLX2AgrTDoThUR4iBHqQF+VqOCte3wLKEAMTBVAESTLpna7BaPqirlh
-48E4GsWj+qPyQP9BLKt5arJTr2oo36j49tNA4eCz/agK+J4GXgEC9Dua6bIa/3lT
-UamI9QneB2QZJkMbwIQtcHqGz1AEmT/4x+UpOJ2ChdjBcZWzNn1Yg8F+KMF6wQam
-JN8yDwqC3ewqXgeXGwUu9dy8uJ+b7M8IXXYRcVwTphSZoDheunl4NqtP9E/A/hPg
-loz682+r5UjhgBpQbg3zQE4iFVjxtfdDZ1KunjqTJItK3p/yxBBKkEgwu9GVvFkR
-nmH5pkD9J4PVGcXebgtm
-=IY/N
------END PGP SIGNATURE-----
-
---Sig_/J+Xtqe6RXr1IQMktB9wEdIv--
