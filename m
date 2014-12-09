@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711AbaLIL6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 06:58:12 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50766 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaLIL6K (ORCPT
+	id S1756723AbaLIL60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 06:58:26 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:58025 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617AbaLIL6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 06:58:10 -0500
-Message-ID: <5486E3BF.70703@huawei.com>
-Date: Tue, 9 Dec 2014 19:57:51 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH 2/6] PCI/MSI: add hooks to populate the msi_domain field
-References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com> <1418069543-21969-3-git-send-email-marc.zyngier@arm.com> <5486585B.40000@huawei.com> <5486C8BA.8030608@arm.com>
-In-Reply-To: <5486C8BA.8030608@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	Tue, 9 Dec 2014 06:58:23 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>, Olof Johansson <olof@lixom.net>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 0/6] platform/chrome: Add user-space dev inferface support
+Date: Tue,  9 Dec 2014 12:57:42 +0100
+Message-Id: <1418126268-12532-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> +void __weak pcibios_set_phb_msi_domain(struct pci_bus *bus)
->>> +{
->>> +}
->>> +
->>> +static void pci_set_bus_msi_domain(struct pci_bus *bus)
->>> +{
->>> +	struct pci_dev *bridge = bus->self;
->>> +
->>> +	if (!bridge)
->>> +		pcibios_set_phb_msi_domain(bus);
->>> +	else
->>> +		dev_set_msi_domain(&bus->dev, dev_get_msi_domain(&bridge->dev));
->>> +}
->>
->>
->> Hi Marc, we can not assume pci devices under same phb share the same msi irq domain,
->> now in x86, pci devices under the same phb may associate different msi irq domain.
+Hello,
 
-Hi Marc,
+The mainline ChromeOS Embedded Controller (EC) driver is still missing some
+features that are present in the downstream ChromiumOS tree. These are:
 
-> 
-> Well, this is not supposed to be a perfect solution yet, but instead a
-> basis for discussion. What I'd like to find out is:
-> 
-> - What is the minimum granularity for associating a device with its MSI
-> domain in existing platforms?
+  - User-space device interface
+  - Low Pin Count (LPC) interface
+  - Access to vboot context stored on a block device
+  - Access to vboot context stored on EC's nvram
+  - Power Delivery Device
+  - Support for multiple EC in a system
 
-PCI device, after Gerry's msi irq domain patchset which now in linux-next,
-in x86, we will find msi irq domain by pci_dev.
+This is a second version of a series that adds support for the first of
+these missing features: the ChromeOS EC character device driver that provides
+the interface used by user-space to access the EC. The support patches were
+taken from the downstream ChromiumOS 3.14 kernel tree with fixes and cleanups
+squashed to have a minimal patch-set.
 
-I generally agree your first patch which associate basic device with msi irq domain.
+The version of the ChromeOS EC chardev driver in this series still does not
+reflect the latest one that is in the downstream ChromiumOS 3.14 kernel but
+makes the delta shorter. Following patches will add the remaining missing
+features until both trees are in sync. I preferred to first add the initial
+support and then adding the other features to both maintain the original
+patch history in the downstream kernel and so preserve the patch authorship
+and also make the diff to have a working cros user-space interface smaller.
 
-> - What topology data structures do you use to find out what MSI
-> controller a device should be matched with?
+Version 1 of this series was [0] and added the Chrome EC chardev driver
+and the sysfs interface to drivers/mfd since that is what is done in the
+downstream ChromiumOS kernel but Lee Jones asked to find a better place
+since those are not really multi-function device drivers. So this version
+places them under drivers/platform/chrome since MAINTAINERS says that this
+sub-directory is "CHROME HARDWARE PLATFORM SUPPORT" which seems a good fit.
 
-Now only arm and arm64 use msi controller to setup/teardown msi irqs,
-in arm, now msi controller saved in pci_sys_data, and for arm64, it seems
-to be saved in pci_bus. For a more common method to find msi controller/irq domain,
-I prefer pci_dev/device.
+A big change in this version is that the ioctl API is modified to make it
+64-bit safe and compatible with both 64 and 32 bit user-space binaries.
+The data structures passed as arguments to ioctl commands had pointers fields
+and these have different byte boundaries alignment requirement so the previous
+version had a compat ioctl interface. The feedback was that this had to be
+avoided since this was a new ioctl API so the pointers fields were replaced
+with a set of fixed-size arrays to be used instead. This has the drawback that
+more data could be used and copied between user and kernel space so feedback
+is welcomed if there is a better approach to solve this kind of issues.
 
-> - What in-tree platform already has this requirements?
+The patches were tested on an Exynos5420 Peach Pit Chromebook usig a modified
+ectool [1] adapted to use the new ioctl API. I don't have access to a Pixel
+Chromebook so testing of the sysfs lightbar interface is highly appreciated.
 
-As mentioned above, x86 does.
+The series is composed of the following patches:
 
+Bill Richardson (3):
+  platform/chrome: Add Chrome OS EC userspace device interface
+  platform/chrome: Create sysfs attributes for the ChromeOS EC.
+  platform/chrome: Expose Chrome OS Lightbar to users
 
-Thanks!
-Yijing.
+Javier Martinez Canillas (3):
+  mfd: cros_ec: Use fixed size arrays to transfer data with the EC
+  mfd: cros_ec: Add char dev and virtual dev pointers
+  mfd: cros_ec: Instantiate ChromeOS EC character device
 
+ Documentation/ioctl/ioctl-number.txt       |   1 +
+ drivers/i2c/busses/i2c-cros-ec-tunnel.c    |  51 +---
+ drivers/input/keyboard/cros_ec_keyb.c      |  13 +-
+ drivers/mfd/cros_ec.c                      |  19 +-
+ drivers/platform/chrome/Kconfig            |  14 +-
+ drivers/platform/chrome/Makefile           |   2 +
+ drivers/platform/chrome/cros_ec_dev.c      | 274 ++++++++++++++++++++++
+ drivers/platform/chrome/cros_ec_dev.h      |  53 +++++
+ drivers/platform/chrome/cros_ec_lightbar.c | 363 +++++++++++++++++++++++++++++
+ drivers/platform/chrome/cros_ec_sysfs.c    | 271 +++++++++++++++++++++
+ include/linux/mfd/cros_ec.h                |  23 +-
+ 11 files changed, 1022 insertions(+), 62 deletions(-)
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.c
+ create mode 100644 drivers/platform/chrome/cros_ec_dev.h
+ create mode 100644 drivers/platform/chrome/cros_ec_lightbar.c
+ create mode 100644 drivers/platform/chrome/cros_ec_sysfs.c
 
+Patch #1 modified the struct cros_ec_command structure so it can be used
+as an ioctl argument and be 64 and 32 bit safe and patch #2 adds fields
+to the struct cros_ec_device that will be needed by the EC chardev driver.
 
+Patch #3 adds the ChromeOS chardev driver and patch #4 instantiates it
+from the mfd cros_ec driver.
 
-> 
-> Thanks,
-> 
-> 	M.
-> 
+Patch #5 and Patch #6 exposes sysfs attributes that can be used by user
+space programs to get information and control the ChromeOS EC.
 
+The patches must be applied together and in that order due dependencies.
 
--- 
-Thanks!
-Yijing
+Best regards,
+Javier
 
+[0]: https://lkml.org/lkml/2014/11/17/429
+[1]: git://git.collabora.co.uk/git/user/javier/ec.git mainline-ioctl
