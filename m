@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273AbaLINQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 08:16:25 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60284 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087AbaLINQS (ORCPT
+	id S1756981AbaLINSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 08:18:41 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9163 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669AbaLINSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 08:16:18 -0500
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-pm@vger.kernel.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Arto Merilainen <amerilainen@nvidia.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/3] ARM: tegra: Add Tegra124 ACTMON support
-Date: Tue,  9 Dec 2014 14:15:06 +0100
-Message-Id: <1418130912-24725-4-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418130912-24725-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1418130912-24725-1-git-send-email-tomeu.vizoso@collabora.com>
+	Tue, 9 Dec 2014 08:18:39 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-c9-5486f6adf1a1
+Content-transfer-encoding: 8BIT
+Message-id: <5486F69B.6020005@samsung.com>
+Date: Tue, 09 Dec 2014 14:18:19 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Kukjin Kim <kgene@kernel.org>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] clk: samsung: Fix Exynos 5420 pinctrl setup and clock
+ disable failure due to domain being gated
+References: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
+ <1418129982.19339.6.camel@AMDC1943>
+In-reply-to: <1418129982.19339.6.camel@AMDC1943>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xq7prv7WFGNxdyWexccZ6Voujvwss
+	Xr8wtOh//JrZ4unmx0wWZ5vesFtsenyN1eLyrjlsFjPO72OyWHvkLrvF0wkX2Sx+nOlmsVi1
+	6w+jA6/H5b5eJo+/z6+zeOycdZfdY9OqTjaPO9f2sHlsXlLv0bdlFaPH501yARxRXDYpqTmZ
+	ZalF+nYJXBm/nh1hLFjGV9HzOLqBcTN3FyMnh4SAicTbDXPYIGwxiQv31gPZXBxCAksZJf7v
+	ugSW4BUQlPgx+R5LFyMHB7OAvMSRS9kQprrElCm5IBVCAp8YJWZ+jYGo1pK4frudFcRmEVCV
+	uHS3iR3EZhMwlOg92scIYosKREicvLsHLC4iEC1x6cdkFpC1zAJnmSWOf7nJBDJfWKBMYvMf
+	sFVCArkSZ3r0QMo5BQwk9u15yDKBUWAWkttmIdw2C+G2BYzMqxhFU0uTC4qT0nMN9YoTc4tL
+	89L1kvNzNzFCouXLDsbFx6wOMQpwMCrx8JortoYIsSaWFVfmHmKU4GBWEuGdcrQtRIg3JbGy
+	KrUoP76oNCe1+BAjEwenVAOjWzjHzLzFatn6W7tdI7Mi/R8pXhL7/X3hVdYX2Xd+ZTiInggw
+	+vnoL4PqB9uVZQeyV93O+n476eHJove3Gfq+ba4pv6twdfaJ5EAfS+4H5XvXKS5b+YaReU7g
+	qeDM7iO7VvvnK/Z+fyyteyHgh7PnUpldYWY1Ty9Mn+RiUZU4caHHJdUDMiXzlFiKMxINtZiL
+	ihMBk/73eHQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device node for the ACTMON block to the Tegra124 device tree.
+On 09/12/14 13:59, Krzysztof Kozlowski wrote:
+> On pią, 2014-12-05 at 15:15 +0100, Krzysztof Kozlowski wrote:
+>> > Audio subsystem clocks are located in separate block. On Exynos 5420 if
+>> > clock for this block (from main clock domain) 'mau_epll' is gated then
+>> > any read or write to audss registers will block.
+>> > 
+>> > This kind of boot hang was observed on Arndale Octa and Peach Pi/Pit
+>> > after introducing runtime PM to pl330 DMA driver. After that commit the
+>> > 'mau_epll' was gated, because the "amba" clock was disabled and there
+>> > were no more users of mau_epll.
+>> > 
+>> > The system hang on one of steps:
+>> > 1. Disabling unused clocks from audss block.
+>> > 2. During audss GPIO setup (just before probing i2s0 because
+>> >    samsung_pinmux_setup() tried to access memory from audss block which was
+>> >    gated.
+>> > 
+>> > Add a workaround for this by enabling the 'mau_epll' clock in probe.
+>> > 
+>> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> > ---
+>> >  drivers/clk/samsung/clk-exynos-audss.c | 29 ++++++++++++++++++++++++++++-
+>> >  1 file changed, 28 insertions(+), 1 deletion(-)
+>
+> Sorry for pinging so quick but merge window is open and it looks like
+> booting Exynos542x boards will be broken (because pl330 will no longer
+> hold adma clock enabled so whole audss domain will be gated).
+> 
+> This is a non-intrusive workaround for that issue, as wanted by
+> Sylwester:
+> https://lkml.org/lkml/2014/12/5/223
+> 
+> Any comments on this?
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+The patch looks OK to me, it would be good though if someone else
+has confirmed it fixes the bug. I don't have any clock patches queued
+at the moment. Perhaps you could apply it directly, Mike ?
 
----
+>From my side:
 
-v2:	* Add operating-points property
----
- arch/arm/boot/dts/tegra124.dtsi | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index a49e7da..9d7baa8 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -215,6 +215,29 @@
- 		reg = <0x0 0x60007000 0x0 0x1000>;
- 	};
- 
-+	actmon@0,6000c800 {
-+		compatible = "nvidia,tegra124-actmon";
-+		reg = <0x0 0x6000c800 0x0 0x400>;
-+		interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_ACTMON>,
-+			 <&tegra_car TEGRA124_CLK_EMC>;
-+		clock-names = "actmon", "emc";
-+		resets = <&tegra_car 119>;
-+		reset-names = "actmon";
-+		operating-points = <
-+			/* KHz	uV */
-+			/* TODO: Add more points below 102 MHz */
-+			102000	800000
-+			204000	800000
-+			300000	820000
-+			396000	850000
-+			528000	880000
-+			600000	910000
-+			792000	980000
-+			924000	1010000
-+		>;
-+	};
-+
- 	gpio: gpio@0,6000d000 {
- 		compatible = "nvidia,tegra124-gpio", "nvidia,tegra30-gpio";
- 		reg = <0x0 0x6000d000 0x0 0x1000>;
 -- 
-1.9.3
-
+Thanks,
+Sylwester
