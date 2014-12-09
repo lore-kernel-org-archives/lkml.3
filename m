@@ -1,139 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaLIVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:24:16 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:64445 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaLIVYO (ORCPT
+	id S1752778AbaLIV0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:26:15 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50570 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751796AbaLIV0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:24:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL 1/9] ARM: SoC non-critical bug fixes for 3.19
-Date: Tue, 09 Dec 2014 22:22:21 +0100
-Message-ID: <4358286.jYCatVeXCJ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4491193.a6KEQb1tZH@wuerfel>
-References: <4491193.a6KEQb1tZH@wuerfel>
+	Tue, 9 Dec 2014 16:26:14 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: linux-scsi@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: [Update][PATCH] SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Tue, 09 Dec 2014 22:47:47 +0100
+Message-ID: <3039454.iyzHXUp3Uj@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3237237.IIIiULdqDt@vostro.rjw.lan>
+References: <3237237.IIIiULdqDt@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:CC+wXBSJUlLQnarlVML+wcKQxMbVZ9tGELcsE89qGb/CQCjs9XO
- VqTuLDFv2hZpW6Pm7mWi9jP3YIb1LvZ9WV7iWWZOZ9xU90PrPS4jkKstqUdeOC4jr1VoB+s
- txfXbmMlsg5pkR+ORprP3KPPm+uYWZ8QKLDVj1jMN2iYMAf9Eyjcd/CzLcXsUBg0ulWtIUh
- gmf2MFcXdffYMtFQpYg0w==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+depending on CONFIG_PM_RUNTIME may now be changed to depend on
+CONFIG_PM.
 
-are available in the git repository at:
+Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+drivers/scsi/ and in include/scsi/scsi_device.h.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-nc-for-linus
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-for you to fetch changes up to 65bb688aab9424849e94f74d555542fa76cd3d5a:
+Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) which is only in linux-next at the moment (via the
+linux-pm tree).
 
-  ARM: imx6: fix bogus use of irq_get_irq_data (2014-12-04 23:24:51 -0800)
+Please let me know if it is OK to take this one into linux-pm.
 
-----------------------------------------------------------------
-ARM: SoC non-critical bug fixes for 3.19
+---
+ drivers/scsi/scsi_pm.c           |   10 ----------
+ drivers/scsi/scsi_priv.h         |    5 ++---
+ drivers/scsi/ufs/ufshcd-pci.c    |   11 ++++-------
+ drivers/scsi/ufs/ufshcd-pltfrm.c |   11 ++++-------
+ include/scsi/scsi_device.h       |    4 ++--
+ 5 files changed, 12 insertions(+), 29 deletions(-)
 
-These are bug fixes for harmless problems that were not important
-enough to get fixed in 3.19. This contains updates to the MAINTAINERS
-file, in particular:
-
-- Ben Dooks stepped down as Samsung co-maintainer (thanks Ben for
-  long years of maintaining this). Kukjin Kim, who has been
-  doing the work de-facto by himself recently is now the
-  only maintainer.
-- Liviu, Sudeep and Lorenzo from ARM now officially maintain the
-  Versatile Express platform, which was orphaned (thanks for
-- Gregory Fong and Florian Fainelli help out on the Broadcom BCM7XXX
-  platform
-- Ray Jui and Scott Branden are the future maintainers for the
-  newly merged Broadcom Cygnus platform. Welcome!
-
-In terms of actual fixes, we have the usual set of OMAP bug fixes,
-which Tony Lindgren separates out well from the other OMAP changes,
-one really ep93xx regression fix against 3.11 that didn't make it for
-3.18, a few GIC changes from Marc Zyngier as a preparation for
-later rework (the current code is wrong in a harmless way), on
-Tegra regression and one samsung spelling fix.
-
-----------------------------------------------------------------
-Arnd Bergmann (4):
-      Merge tag 'omap-for-v3.19/fixes-not-urgent-part1' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge tag 'arm-soc/for-3.19/cygnus-maintainers-v2' of http://github.com/brcm/linux into next/fixes-non-critical
-      Merge tag 'samsung-fixes-v3.19' of git://git.kernel.org/.../kgene/linux-samsung into next/fixes-non-critical
-      Merge tag 'tegra-for-3.19-soc' of git://git.kernel.org/.../tegra/linux into next/fixes-non-critical
-
-Dmitry Osipenko (1):
-      ARM: tegra: Re-add removed SoC id macro to tegra_resume()
-
-Florian Fainelli (2):
-      MAINTAINERS: update brcmstb entries
-      MAINTAINERS: add entry for the GISB arbiter driver
-
-H Hartley Sweeten (1):
-      arm: ep93xx: add dma_masks for the M2P and M2M DMA controllers
-
-Kukjin Kim (1):
-      MAINTAINERS: update email address and cleanup for exynos entry
-
-Marc Zyngier (2):
-      ARM: imx: irq: fix buggy usage of irq_data irq field
-      ARM: imx6: fix bogus use of irq_get_irq_data
-
-Masanari Iida (1):
-      ARM: OMAP2: Remove unnecessary KERN_* in omap_phy_internal.c
-
-NeilBrown (1):
-      ARM: OMAP: serial: remove last vestige of DTR_gpio support.
-
-Pankaj Dubey (1):
-      ARM: EXYNOS: fix typo in static struct name "exynos5_list_diable_wfi_wfe"
-
-Pawel Moll (2):
-      MAINTAINERS: ARM Versatile Express platform
-      MAINTAINERS: ARM Versatile Express platform, add missing pattern
-
-Peter Griffin (1):
-      MAINTAINERS: Add ahci_st.c to ARCH/STI architecture
-
-Roger Quadros (1):
-      ARM: OMAP2+: gpmc: Get rid of "ti,elm-id not found" warning
-
-Scott Branden (1):
-      MAINTAINERS: Entry for Cygnus/iproc arm architecture
-
-Tony Lindgren (5):
-      ARM: OMAP3: Fix errors for omap_l3_smx when booted with device tree
-      ARM: dts: Fix NAND last partition size on LDP
-      ARM: dts: Add twl keypad map for LDP
-      ARM: dts: Add twl keypad map for omap3 EVM
-      ARM: OMAP4+: Remove unused omap_l3_noc platform init
-
- MAINTAINERS                               | 47 +++++++++++++++++++++++--------
- arch/arm/boot/dts/omap3-evm-common.dtsi   | 21 ++++++++++++++
- arch/arm/boot/dts/omap3-ldp.dts           | 23 ++++++++++++++-
- arch/arm/boot/dts/omap3.dtsi              |  2 +-
- arch/arm/mach-ep93xx/dma.c                | 12 ++++++--
- arch/arm/mach-exynos/pmu.c                |  8 +++---
- arch/arm/mach-imx/common.h                |  4 +--
- arch/arm/mach-imx/gpc.c                   | 42 ++++++++++++++++-----------
- arch/arm/mach-imx/pm-imx6.c               |  5 ++--
- arch/arm/mach-omap2/devices.c             | 36 +----------------------
- arch/arm/mach-omap2/gpmc.c                |  2 --
- arch/arm/mach-omap2/omap_phy_internal.c   |  8 ++++--
- arch/arm/mach-omap2/serial.c              |  3 --
- arch/arm/mach-tegra/reset-handler.S       |  1 +
- drivers/bus/omap_l3_smx.c                 | 26 +++++++++++++----
- include/linux/platform_data/serial-omap.h |  3 --
- 16 files changed, 151 insertions(+), 92 deletions(-)
+Index: linux-pm/include/scsi/scsi_device.h
+===================================================================
+--- linux-pm.orig/include/scsi/scsi_device.h
++++ linux-pm/include/scsi/scsi_device.h
+@@ -440,13 +440,13 @@ static inline int scsi_execute_req(struc
+ extern void sdev_disable_disk_events(struct scsi_device *sdev);
+ extern void sdev_enable_disk_events(struct scsi_device *sdev);
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ extern int scsi_autopm_get_device(struct scsi_device *);
+ extern void scsi_autopm_put_device(struct scsi_device *);
+ #else
+ static inline int scsi_autopm_get_device(struct scsi_device *d) { return 0; }
+ static inline void scsi_autopm_put_device(struct scsi_device *d) {}
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ static inline int __must_check scsi_device_reprobe(struct scsi_device *sdev)
+ {
+Index: linux-pm/drivers/scsi/scsi_priv.h
+===================================================================
+--- linux-pm.orig/drivers/scsi/scsi_priv.h
++++ linux-pm/drivers/scsi/scsi_priv.h
+@@ -157,8 +157,7 @@ static inline void scsi_netlink_exit(voi
+ /* scsi_pm.c */
+ #ifdef CONFIG_PM
+ extern const struct dev_pm_ops scsi_bus_pm_ops;
+-#endif
+-#ifdef CONFIG_PM_RUNTIME
++
+ extern void scsi_autopm_get_target(struct scsi_target *);
+ extern void scsi_autopm_put_target(struct scsi_target *);
+ extern int scsi_autopm_get_host(struct Scsi_Host *);
+@@ -168,7 +167,7 @@ static inline void scsi_autopm_get_targe
+ static inline void scsi_autopm_put_target(struct scsi_target *t) {}
+ static inline int scsi_autopm_get_host(struct Scsi_Host *h) { return 0; }
+ static inline void scsi_autopm_put_host(struct Scsi_Host *h) {}
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ extern struct async_domain scsi_sd_pm_domain;
+ extern struct async_domain scsi_sd_probe_domain;
+Index: linux-pm/drivers/scsi/scsi_pm.c
+===================================================================
+--- linux-pm.orig/drivers/scsi/scsi_pm.c
++++ linux-pm/drivers/scsi/scsi_pm.c
+@@ -213,8 +213,6 @@ static int scsi_bus_restore(struct devic
+ 
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-
+ static int sdev_runtime_suspend(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+@@ -332,14 +330,6 @@ void scsi_autopm_put_host(struct Scsi_Ho
+ 	pm_runtime_put_sync(&shost->shost_gendev);
+ }
+ 
+-#else
+-
+-#define scsi_runtime_suspend	NULL
+-#define scsi_runtime_resume	NULL
+-#define scsi_runtime_idle	NULL
+-
+-#endif /* CONFIG_PM_RUNTIME */
+-
+ const struct dev_pm_ops scsi_bus_pm_ops = {
+ 	.prepare =		scsi_bus_prepare,
+ 	.suspend =		scsi_bus_suspend,
+Index: linux-pm/drivers/scsi/ufs/ufshcd-pci.c
+===================================================================
+--- linux-pm.orig/drivers/scsi/ufs/ufshcd-pci.c
++++ linux-pm/drivers/scsi/ufs/ufshcd-pci.c
+@@ -62,12 +62,7 @@ static int ufshcd_pci_resume(struct devi
+ {
+ 	return ufshcd_system_resume(dev_get_drvdata(dev));
+ }
+-#else
+-#define ufshcd_pci_suspend	NULL
+-#define ufshcd_pci_resume	NULL
+-#endif /* CONFIG_PM */
+ 
+-#ifdef CONFIG_PM_RUNTIME
+ static int ufshcd_pci_runtime_suspend(struct device *dev)
+ {
+ 	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
+@@ -80,11 +75,13 @@ static int ufshcd_pci_runtime_idle(struc
+ {
+ 	return ufshcd_runtime_idle(dev_get_drvdata(dev));
+ }
+-#else /* !CONFIG_PM_RUNTIME */
++#else /* !CONFIG_PM */
++#define ufshcd_pci_suspend	NULL
++#define ufshcd_pci_resume	NULL
+ #define ufshcd_pci_runtime_suspend	NULL
+ #define ufshcd_pci_runtime_resume	NULL
+ #define ufshcd_pci_runtime_idle	NULL
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ /**
+  * ufshcd_pci_shutdown - main function to put the controller in reset state
+Index: linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
+===================================================================
+--- linux-pm.orig/drivers/scsi/ufs/ufshcd-pltfrm.c
++++ linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
+@@ -266,12 +266,7 @@ static int ufshcd_pltfrm_resume(struct d
+ {
+ 	return ufshcd_system_resume(dev_get_drvdata(dev));
+ }
+-#else
+-#define ufshcd_pltfrm_suspend	NULL
+-#define ufshcd_pltfrm_resume	NULL
+-#endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
+ static int ufshcd_pltfrm_runtime_suspend(struct device *dev)
+ {
+ 	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
+@@ -284,11 +279,13 @@ static int ufshcd_pltfrm_runtime_idle(st
+ {
+ 	return ufshcd_runtime_idle(dev_get_drvdata(dev));
+ }
+-#else /* !CONFIG_PM_RUNTIME */
++#else /* !CONFIG_PM */
++#define ufshcd_pltfrm_suspend	NULL
++#define ufshcd_pltfrm_resume	NULL
+ #define ufshcd_pltfrm_runtime_suspend	NULL
+ #define ufshcd_pltfrm_runtime_resume	NULL
+ #define ufshcd_pltfrm_runtime_idle	NULL
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ static void ufshcd_pltfrm_shutdown(struct platform_device *pdev)
+ {
 
