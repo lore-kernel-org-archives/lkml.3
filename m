@@ -1,371 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaLIJOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 04:14:12 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37489 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaLIJOG (ORCPT
+	id S932298AbaLIJOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 04:14:24 -0500
+Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:46700 "EHLO
+	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753187AbaLIJOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 04:14:06 -0500
-From: Dudley Du <dudley.dulixin@gmail.com>
-To: dmitry.torokhov@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudley.dulixin@gmail.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v13 09/12] input: cyapa: add gen5 trackpad device firmware update function support
-Date: Tue,  9 Dec 2014 17:11:41 +0800
-Message-Id: <1418116304-11392-10-git-send-email-dudley.dulixin@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
-References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+	Tue, 9 Dec 2014 04:14:19 -0500
+Message-ID: <1418116450.3641.7.camel@linaro.org>
+Subject: Re: [RESEND][PATCH v15 7/7] ARM: kprobes: enable OPTPROBES for ARM
+ 32
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Wang Nan <wangnan0@huawei.com>, linux@arm.linux.org.uk, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Tue, 09 Dec 2014 09:14:10 +0000
+In-Reply-To: <54869B1C.6050401@hitachi.com>
+References: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>
+	 <1418047765-53197-8-git-send-email-wangnan0@huawei.com>
+	 <54869B1C.6050401@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add firmware image update function supported for gen5 trackpad device,
-it can be used through sysfs update_fw interface.
-TEST=test on Chromebooks.
+On Tue, 2014-12-09 at 15:47 +0900, Masami Hiramatsu wrote:
+> (2014/12/08 23:09), Wang Nan wrote:
+> > This patch introduce kprobeopt for ARM 32.
+> > 
+> > Limitations:
+> >  - Currently only kernel compiled with ARM ISA is supported.
+> > 
+> >  - Offset between probe point and optinsn slot must not larger than
+> >    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
+> >    things complex. Futher patch can make such optimization.
+> > 
+> > Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
+> > ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
+> > replace probed instruction by a 'b', branch to trampoline code and then
+> > calls optimized_callback(). optimized_callback() calls opt_pre_handler()
+> > to execute kprobe handler. It also emulate/simulate replaced instruction.
+> > 
+> > When unregistering kprobe, the deferred manner of unoptimizer may leave
+> > branch instruction before optimizer is called. Different from x86_64,
+> > which only copy the probed insn after optprobe_template_end and
+> > reexecute them, this patch call singlestep to emulate/simulate the insn
+> > directly. Futher patch can optimize this behavior.
+> > 
+> > Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> > Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+> > Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> > Cc: Will Deacon <will.deacon@arm.com>
+> > ---
+> > v1 -> v2:
+> >  - Improvement: if replaced instruction is conditional, generate a
+> >    conditional branch instruction for it;
+> >  - Introduces RELATIVEJUMP_OPCODES due to ARM kprobe_opcode_t is 4
+> >    bytes;
+> >  - Removes size field in struct arch_optimized_insn;
+> >  - Use arm_gen_branch() to generate branch instruction;
+> >  - Remove all recover logic: ARM doesn't use tail buffer, no need
+> >    recover replaced instructions like x86;
+> >  - Remove incorrect CONFIG_THUMB checking;
+> >  - can_optimize() always returns true if address is well aligned;
+> >  - Improve optimized_callback: using opt_pre_handler();
+> >  - Bugfix: correct range checking code and improve comments;
+> >  - Fix commit message.
+> > 
+> > v2 -> v3:
+> >  - Rename RELATIVEJUMP_OPCODES to MAX_COPIED_INSNS;
+> >  - Remove unneeded checking:
+> >       arch_check_optimized_kprobe(), can_optimize();
+> >  - Add missing flush_icache_range() in arch_prepare_optimized_kprobe();
+> >  - Remove unneeded 'return;'.
+> > 
+> > v3 -> v4:
+> >  - Use __mem_to_opcode_arm() to translate copied_insn to ensure it
+> >    works in big endian kernel;
+> >  - Replace 'nop' placeholder in trampoline code template with
+> >    '.long 0' to avoid confusion: reader may regard 'nop' as an
+> >    instruction, but it is value in fact.
+> > 
+> > v4 -> v5:
+> >  - Don't optimize stack store operations.
+> >  - Introduce prepared field to arch_optimized_insn to indicate whether
+> >    it is prepared. Similar to size field with x86. See v1 -> v2.
+> > 
+> > v5 -> v6:
+> >  - Dynamically reserve stack according to instruction.
+> >  - Rename: kprobes-opt.c -> kprobes-opt-arm.c.
+> >  - Set op->optinsn.insn after all works are done.
+> > 
+> > v6 -> v7:
+> >   - Using checker to check stack consumption.
+> > 
+> > v7 -> v8:
+> >   - Small code adjustments.
+> > 
+> > v8 -> v9:
+> >   - Utilize original kprobe passed to arch_prepare_optimized_kprobe()
+> >     to avoid copy ainsn twice.
+> >   - A bug in arch_prepare_optimized_kprobe() is found and fixed.
+> > 
+> > v9 -> v10:
+> >   - Commit message improvements.
+> > 
+> > v10 -> v11:
+> >   - Move to arch/arm/probes/, insn.h is moved to arch/arm/include/asm.
+> >   - Code cleanup.
+> >   - Bugfix based on Tixy's test result:
+> >     - Trampoline deal with ARM -> Thumb transision instructions and
+> >       AEABI stack alignment requirement correctly.
+> >     - Trampoline code buffer should start at 4 byte aligned address.
+> >       We enforces it in this series by using macro to wrap 'code' var.
+> > 
+> > v11 -> v12:
+> >   - Remove trampoline code stack trick and use r4 to save original
+> >     stack.
+> >   - Remove trampoline code buffer alignment trick.
+> >   - Names of files are changed.
+> > 
+> > v12 -> v13:
+> >   - Assume stack always aligned by 4-bytes in any case.
+> >   - Comments update.
+> > 
+> > v13 -> v14:
+> >   - Use stop_machine to wrap arch_optimize_kprobes to avoid a racing.
+> > 
+> > v14 -> v15:
+> >   - In v14, stop_machine() wraps a coarse-grained piece of code which
+> >     makes things complex than it should be. In this version,
+> >     kprobes_remove_breakpoint() is extracted, core.c and opt-arm.c use it
+> >     to replace breakpoint to valid instruction. stop_machine() used inside
+> >     in kprobes_remove_breakpoint().
+> > ---
+> >  arch/arm/Kconfig                        |   1 +
+> >  arch/arm/{kernel => include/asm}/insn.h |   0
+> >  arch/arm/include/asm/kprobes.h          |  29 +++
+> >  arch/arm/kernel/Makefile                |   2 +-
+> >  arch/arm/kernel/ftrace.c                |   3 +-
+> >  arch/arm/kernel/jump_label.c            |   3 +-
+> >  arch/arm/probes/kprobes/Makefile        |   1 +
+> >  arch/arm/probes/kprobes/core.c          |  26 ++-
+> >  arch/arm/probes/kprobes/core.h          |   2 +
+> >  arch/arm/probes/kprobes/opt-arm.c       | 317 ++++++++++++++++++++++++++++++++
+> >  10 files changed, 372 insertions(+), 12 deletions(-)
+> >  rename arch/arm/{kernel => include/asm}/insn.h (100%)
+> >  create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+> > 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index 89c4b5c..2471240 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -59,6 +59,7 @@ config ARM
+> >  	select HAVE_MEMBLOCK
+> >  	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
+> >  	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
+> > +	select HAVE_OPTPROBES if !THUMB2_KERNEL
+> >  	select HAVE_PERF_EVENTS
+> >  	select HAVE_PERF_REGS
+> >  	select HAVE_PERF_USER_STACK_DUMP
+> > diff --git a/arch/arm/kernel/insn.h b/arch/arm/include/asm/insn.h
+> > similarity index 100%
+> > rename from arch/arm/kernel/insn.h
+> > rename to arch/arm/include/asm/insn.h
+> > diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
+> > index 56f9ac6..50ff3bc 100644
+> > --- a/arch/arm/include/asm/kprobes.h
+> > +++ b/arch/arm/include/asm/kprobes.h
+> > @@ -50,5 +50,34 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
+> >  int kprobe_exceptions_notify(struct notifier_block *self,
+> >  			     unsigned long val, void *data);
+> >  
+> > +/* optinsn template addresses */
+> > +extern __visible kprobe_opcode_t optprobe_template_entry;
+> > +extern __visible kprobe_opcode_t optprobe_template_val;
+> > +extern __visible kprobe_opcode_t optprobe_template_call;
+> > +extern __visible kprobe_opcode_t optprobe_template_end;
+> > +extern __visible kprobe_opcode_t optprobe_template_sub_sp;
+> > +extern __visible kprobe_opcode_t optprobe_template_add_sp;
+> > +
+> > +#define MAX_OPTIMIZED_LENGTH	4
+> > +#define MAX_OPTINSN_SIZE				\
+> > +	((unsigned long)&optprobe_template_end -	\
+> > +	 (unsigned long)&optprobe_template_entry)
+> > +#define RELATIVEJUMP_SIZE	4
+> > +
+> > +struct arch_optimized_insn {
+> > +	/*
+> > +	 * copy of the original instructions.
+> > +	 * Different from x86, ARM kprobe_opcode_t is u32.
+> > +	 */
+> > +#define MAX_COPIED_INSN	DIV_ROUND_UP(RELATIVEJUMP_SIZE, sizeof(kprobe_opcode_t))
+> > +	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
+> > +	/* detour code buffer */
+> > +	kprobe_opcode_t *insn;
+> > +	/*
+> > +	 * We always copy one instruction on ARM,
+> > +	 * so size will always be 4, and unlike x86, there is no
+> > +	 * need for a size field.
+> > +	 */
+> > +};
+> >  
+> >  #endif /* _ARM_KPROBES_H */
+> > diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+> > index 40d3e00..1d0f4e7 100644
+> > --- a/arch/arm/kernel/Makefile
+> > +++ b/arch/arm/kernel/Makefile
+> > @@ -52,7 +52,7 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
+> >  obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
+> >  obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
+> >  # Main staffs in KPROBES are in arch/arm/probes/ .
+> > -obj-$(CONFIG_KPROBES)		+= patch.o
+> > +obj-$(CONFIG_KPROBES)		+= patch.o insn.o
+> >  obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+> >  obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+> >  obj-$(CONFIG_KGDB)		+= kgdb.o
+> > diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+> > index af9a8a9..ec7e332 100644
+> > --- a/arch/arm/kernel/ftrace.c
+> > +++ b/arch/arm/kernel/ftrace.c
+> > @@ -19,8 +19,7 @@
+> >  #include <asm/cacheflush.h>
+> >  #include <asm/opcodes.h>
+> >  #include <asm/ftrace.h>
+> > -
+> > -#include "insn.h"
+> > +#include <asm/insn.h>
+> >  
+> >  #ifdef CONFIG_THUMB2_KERNEL
+> >  #define	NOP		0xf85deb04	/* pop.w {lr} */
+> > diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
+> > index c6c73ed..35a8fbb 100644
+> > --- a/arch/arm/kernel/jump_label.c
+> > +++ b/arch/arm/kernel/jump_label.c
+> > @@ -1,8 +1,7 @@
+> >  #include <linux/kernel.h>
+> >  #include <linux/jump_label.h>
+> >  #include <asm/patch.h>
+> > -
+> > -#include "insn.h"
+> > +#include <asm/insn.h>
+> >  
+> >  #ifdef HAVE_JUMP_LABEL
+> >  
+> > diff --git a/arch/arm/probes/kprobes/Makefile b/arch/arm/probes/kprobes/Makefile
+> > index bc8d504..76a36bf 100644
+> > --- a/arch/arm/probes/kprobes/Makefile
+> > +++ b/arch/arm/probes/kprobes/Makefile
+> > @@ -7,5 +7,6 @@ obj-$(CONFIG_KPROBES)		+= actions-thumb.o checkers-thumb.o
+> >  test-kprobes-objs		+= test-thumb.o
+> >  else
+> >  obj-$(CONFIG_KPROBES)		+= actions-arm.o checkers-arm.o
+> > +obj-$(CONFIG_OPTPROBES)		+= opt-arm.o
+> >  test-kprobes-objs		+= test-arm.o
+> >  endif
+> > diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
+> > index 3a58db4..a4ec240 100644
+> > --- a/arch/arm/probes/kprobes/core.c
+> > +++ b/arch/arm/probes/kprobes/core.c
+> > @@ -163,19 +163,31 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
+> >   * memory. It is also needed to atomically set the two half-words of a 32-bit
+> >   * Thumb breakpoint.
+> >   */
+> > -int __kprobes __arch_disarm_kprobe(void *p)
+> > -{
+> > -	struct kprobe *kp = p;
+> > -	void *addr = (void *)((uintptr_t)kp->addr & ~1);
+> > -
+> > -	__patch_text(addr, kp->opcode);
+> > +struct patch {
+> > +	void *addr;
+> > +	unsigned int insn;
+> > +};
+> >  
+> > +static int __kprobes_remove_breakpoint(void *data)
+> > +{
+> > +	struct patch *p = data;
+> > +	__patch_text(p->addr, p->insn);
+> >  	return 0;
+> >  }
+> >  
+> > +void __kprobes kprobes_remove_breakpoint(void *addr, unsigned int insn)
+> > +{
+> > +	struct patch p = {
+> > +		.addr = addr,
+> > +		.insn = insn,
+> > +	};
+> > +	stop_machine(__kprobes_remove_breakpoint, &p, cpu_online_mask);
+> > +}
+> 
+> Hmm, I think finally we should fix patch_text() in patch.c to forcibly use stop_machine
+> by adding "bool stop" parameter, instead of introducing new another patch_text()
+> implementation, because we'd better avoid two private "patch" data structures.
 
-Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
----
- drivers/input/mouse/Kconfig      |   2 +-
- drivers/input/mouse/cyapa_gen5.c | 290 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 291 insertions(+), 1 deletion(-)
+That was my first thought too, then I realised that breaks encapsulation
+of the patch_text implementation, because its use of stop_machine is an
+implementation detail and it could be rewritten to not use stop machine.
+(That is sort of on my long term todo list
+https://lkml.org/lkml/2014/9/4/188)
 
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index d8b46b0..63e8b40 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -205,7 +205,7 @@ config MOUSE_BCM5974
- 
- config MOUSE_CYAPA
- 	tristate "Cypress APA I2C Trackpad support"
--	depends on I2C
-+	depends on I2C && CRC_ITU_T
- 	help
- 	  This driver adds support for Cypress All Points Addressable (APA)
- 	  I2C Trackpads, including the ones used in 2012 Samsung Chromebooks.
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index 8509046..47a0543 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -18,6 +18,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/unaligned/access_ok.h>
-+#include <linux/crc-itu-t.h>
- #include "cyapa.h"
- 
- 
-@@ -911,6 +912,86 @@ static int cyapa_gen5_state_parse(struct cyapa *cyapa, u8 *reg_data, int len)
- 	return -EAGAIN;
- }
- 
-+static int cyapa_gen5_bl_initiate(struct cyapa *cyapa,
-+		const struct firmware *fw)
-+{
-+	u16 length = 0;
-+	u16 data_len = 0;
-+	u16 meta_data_crc = 0;
-+	u16 cmd_crc = 0;
-+	u8 bl_gen5_activate[18 + CYAPA_TSG_FLASH_MAP_BLOCK_SIZE + 3];
-+	int bl_gen5_activate_size = 0;
-+	u8 resp_data[11];
-+	int resp_len;
-+	struct cyapa_tsg_bin_image *image;
-+	int records_num;
-+	u8 *data;
-+	int error;
-+
-+	/* Try to dump all bufferred report data before send any command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	bl_gen5_activate_size = sizeof(bl_gen5_activate);
-+	memset(bl_gen5_activate, 0, bl_gen5_activate_size);
-+
-+	/* Output Report Register Address[15:0] = 0004h */
-+	bl_gen5_activate[0] = 0x04;
-+	bl_gen5_activate[1] = 0x00;
-+
-+	/* Total command length[15:0] */
-+	length = bl_gen5_activate_size - 2;
-+	put_unaligned_le16(length, &bl_gen5_activate[2]);
-+	bl_gen5_activate[4] = 0x40;  /* Report ID = 40h */
-+	bl_gen5_activate[5] = 0x00;  /* RSVD = 00h */
-+
-+	bl_gen5_activate[6] = GEN5_SOP_KEY;  /* SOP = 01h */
-+	bl_gen5_activate[7] = 0x48;  /* Command Code = 48h */
-+
-+	/* 8 Key bytes and block size */
-+	data_len = CYAPA_TSG_BL_KEY_SIZE + CYAPA_TSG_FLASH_MAP_BLOCK_SIZE;
-+	/* Data Length[15:0] */
-+	put_unaligned_le16(data_len, &bl_gen5_activate[8]);
-+	bl_gen5_activate[10] = 0xa5;  /* Key Byte 0 */
-+	bl_gen5_activate[11] = 0x01;
-+	bl_gen5_activate[12] = 0x02;  /*     .      */
-+	bl_gen5_activate[13] = 0x03;  /*     .      */
-+	bl_gen5_activate[14] = 0xff;  /*     .      */
-+	bl_gen5_activate[15] = 0xfe;
-+	bl_gen5_activate[16] = 0xfd;
-+	bl_gen5_activate[17] = 0x5a;  /* Key Byte 7 */
-+
-+	/* Copy 60 bytes Meta Data Row Parameters */
-+	image = (struct cyapa_tsg_bin_image *)fw->data;
-+	records_num = (fw->size - sizeof(struct cyapa_tsg_bin_image_head)) /
-+				sizeof(struct cyapa_tsg_bin_image_data_record);
-+	/* APP_INTEGRITY row is always the last row block */
-+	data = image->records[records_num - 1].record_data;
-+	memcpy(&bl_gen5_activate[18], data, CYAPA_TSG_FLASH_MAP_METADATA_SIZE);
-+
-+	meta_data_crc = crc_itu_t(0xffff, &bl_gen5_activate[18],
-+				CYAPA_TSG_FLASH_MAP_METADATA_SIZE);
-+	/* Meta Data CRC[15:0] */
-+	put_unaligned_le16(meta_data_crc,
-+		&bl_gen5_activate[18 + CYAPA_TSG_FLASH_MAP_METADATA_SIZE]);
-+
-+	cmd_crc = crc_itu_t(0xffff, &bl_gen5_activate[6], 4 + data_len);
-+	put_unaligned_le16(cmd_crc,
-+		&bl_gen5_activate[bl_gen5_activate_size - 3]);  /* CRC[15:0] */
-+	bl_gen5_activate[bl_gen5_activate_size - 1] = GEN5_EOP_KEY;
-+
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			bl_gen5_activate, sizeof(bl_gen5_activate),
-+			resp_data, &resp_len, 12000,
-+			cyapa_gen5_sort_tsg_pip_bl_resp_data, true);
-+	if (error || resp_len != GEN5_BL_INITIATE_RESP_LEN ||
-+			resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return error ? error : -EAGAIN;
-+
-+	return 0;
-+}
-+
- bool cyapa_gen5_sort_bl_exit_data(struct cyapa *cyapa, u8 *buf, int len)
- {
- 	if (buf == NULL || len < GEN5_RESP_LENGTH_SIZE)
-@@ -960,6 +1041,210 @@ static int cyapa_gen5_bl_exit(struct cyapa *cyapa)
- 	return -ENODEV;
- }
- 
-+static int cyapa_gen5_bl_enter(struct cyapa *cyapa)
-+{
-+	int error;
-+	u8 cmd[] = { 0x04, 0x00, 0x05, 0x00, 0x2F, 0x00, 0x01 };
-+	u8 resp_data[2];
-+	int resp_len;
-+
-+	error = cyapa_poll_state(cyapa, 500);
-+	if (error < 0)
-+		return error;
-+	if (cyapa->gen != CYAPA_GEN5)
-+		return -EINVAL;
-+
-+	/* Already in Gen5 BL. Skipping exit. */
-+	if (cyapa->state == CYAPA_STATE_GEN5_BL)
-+		return 0;
-+
-+	if (cyapa->state != CYAPA_STATE_GEN5_APP)
-+		return -EAGAIN;
-+
-+	/* Try to dump all bufferred report data before send any command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	/*
-+	 * Send bootloader enter command to trackpad device,
-+	 * after enter bootloader, the response data is two bytes of 0x00 0x00.
-+	 */
-+	resp_len = sizeof(resp_data);
-+	memset(resp_data, 0, resp_len);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			5000, cyapa_gen5_sort_application_launch_data,
-+			true);
-+	if (error || resp_data[0] != 0x00 || resp_data[1] != 0x00)
-+		return error < 0 ? error : -EAGAIN;
-+
-+	cyapa->state = CYAPA_STATE_GEN5_BL;
-+	return 0;
-+}
-+
-+static int cyapa_gen5_check_fw(struct cyapa *cyapa, const struct firmware *fw)
-+{
-+	int i;
-+	struct cyapa_tsg_bin_image *image;
-+	int flash_records_count;
-+	u16 expected_app_crc;
-+	u16 expected_app_integrity_crc;
-+	u16 app_crc = 0;
-+	u16 app_integrity_crc = 0;
-+	u16 row_num;
-+	u8 *data;
-+	u32 app_start;
-+	u16 app_len;
-+	u32 img_start;
-+	u16 img_len;
-+	int record_index;
-+	struct device *dev = &cyapa->client->dev;
-+
-+	image = (struct cyapa_tsg_bin_image *)fw->data;
-+	flash_records_count = (fw->size -
-+			sizeof(struct cyapa_tsg_bin_image_head)) /
-+			sizeof(struct cyapa_tsg_bin_image_data_record);
-+
-+	/* APP_INTEGRITY row is always the last row block,
-+	 * and the row id must be 0x01ff */
-+	row_num = get_unaligned_be16(
-+			&image->records[flash_records_count - 1].row_number);
-+	if (&image->records[flash_records_count - 1].flash_array_id != 0x00 &&
-+			row_num != 0x01ff) {
-+		dev_err(dev, "%s: invalid app_integrity data.\n", __func__);
-+		return -EINVAL;
-+	}
-+	data = image->records[flash_records_count - 1].record_data;
-+	app_start = get_unaligned_le32(&data[4]);
-+	app_len = get_unaligned_le16(&data[8]);
-+	expected_app_crc = get_unaligned_le16(&data[10]);
-+	img_start = get_unaligned_le32(&data[16]);
-+	img_len = get_unaligned_le16(&data[20]);
-+	expected_app_integrity_crc = get_unaligned_le16(&data[60]);
-+
-+	if ((app_start + app_len + img_start + img_len) %
-+			CYAPA_TSG_FW_ROW_SIZE) {
-+		dev_err(dev, "%s: invalid image alignment.\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	/* Verify app_integrity crc */
-+	app_integrity_crc = crc_itu_t(0xffff, data,
-+			CYAPA_TSG_APP_INTEGRITY_SIZE);
-+	if (app_integrity_crc != expected_app_integrity_crc) {
-+		dev_err(dev, "%s: invalid app_integrity crc.\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * Verify application image CRC
-+	 */
-+	record_index = app_start / CYAPA_TSG_FW_ROW_SIZE -
-+				CYAPA_TSG_IMG_START_ROW_NUM;
-+	data = (u8 *)&image->records[record_index].record_data;
-+	app_crc = crc_itu_t(0xffff, data, CYAPA_TSG_FW_ROW_SIZE);
-+	for (i = 1; i < (app_len / CYAPA_TSG_FW_ROW_SIZE); i++) {
-+		data = (u8 *)&image->records[++record_index].record_data;
-+		app_crc = crc_itu_t(app_crc, data, CYAPA_TSG_FW_ROW_SIZE);
-+	}
-+
-+	if (app_crc != expected_app_crc) {
-+		dev_err(dev, "%s: invalid firmware app crc check.\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_write_fw_block(struct cyapa *cyapa,
-+		struct cyapa_tsg_bin_image_data_record *flash_record)
-+{
-+	u8 flash_array_id;
-+	u16 flash_row_id;
-+	u16 record_len;
-+	u8 *record_data;
-+	u8 cmd[144];  /* 13 + 128+ 3 */
-+	u16 cmd_len;
-+	u16 data_len;
-+	u16 crc;
-+	u8 resp_data[11];
-+	int resp_len;
-+	int error;
-+
-+	flash_array_id = flash_record->flash_array_id;
-+	flash_row_id = get_unaligned_be16(&flash_record->row_number);
-+	record_len = get_unaligned_be16(&flash_record->record_len);
-+	record_data = flash_record->record_data;
-+
-+	cmd_len = sizeof(cmd) - 2; /* Not include 2 bytes regisetr address. */
-+	memset(cmd, 0, cmd_len + 2);
-+	cmd[0] = 0x04;  /* Register address */
-+	cmd[1] = 0x00;
-+
-+	put_unaligned_le16(cmd_len, &cmd[2]);
-+	cmd[4] = 0x40;  /* Report id 40h */
-+	cmd[5] = 0x00;
-+
-+	cmd[6] = GEN5_SOP_KEY;  /* SOP = 01h */
-+	cmd[7] = 0x39;  /* Command code = 39h */
-+	/* 1 (Flash Array ID) + 2 (Flash Row ID) + 128 (flash data) */
-+	data_len = 3 + record_len;
-+	put_unaligned_le16(data_len, &cmd[8]);
-+	cmd[10] = flash_array_id;  /* Flash Array ID = 00h */
-+	put_unaligned_le16(flash_row_id, &cmd[11]);
-+
-+	memcpy(&cmd[13], record_data, record_len);
-+	crc = crc_itu_t(0xffff, &cmd[6], 4 + data_len);
-+	put_unaligned_le16(crc, &cmd[2 + cmd_len - 3]);
-+	cmd[2 + cmd_len - 1] = GEN5_EOP_KEY;
-+
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_bl_resp_data, true);
-+	if (error || resp_len != GEN5_BL_BLOCK_WRITE_RESP_LEN ||
-+			resp_data[2] != GEN5_BL_RESP_REPORT_ID ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return error < 0 ? error : -EAGAIN;
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_do_fw_update(struct cyapa *cyapa,
-+		const struct firmware *fw)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+	struct cyapa_tsg_bin_image *image =
-+		(struct cyapa_tsg_bin_image *)fw->data;
-+	struct cyapa_tsg_bin_image_data_record *flash_record;
-+	int flash_records_count;
-+	int i;
-+	int error;
-+
-+	/* Try to dump all bufferred data if exists before send commands. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	flash_records_count =
-+		(fw->size - sizeof(struct cyapa_tsg_bin_image_head)) /
-+			sizeof(struct cyapa_tsg_bin_image_data_record);
-+	/*
-+	 * The last flash row 0x01ff has been written through bl_initiate
-+	 *  command, so DO NOT write flash 0x01ff to trackpad device.
-+	 */
-+	for (i = 0; i < (flash_records_count - 1); i++) {
-+		flash_record = &image->records[i];
-+		error = cyapa_gen5_write_fw_block(cyapa, flash_record);
-+		if (error) {
-+			dev_err(dev, "%s: Gen5 FW update aborted: %d\n",
-+				__func__, error);
-+			return error;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int cyapa_gen5_change_power_state(struct cyapa *cyapa, u8 power_state)
- {
- 	u8 cmd[8] = { 0x04, 0x00, 0x06, 0x00, 0x2f, 0x00, 0x08, 0x01 };
-@@ -1648,6 +1933,11 @@ static int cyapa_gen5_irq_handler(struct cyapa *cyapa)
- }
- 
- const struct cyapa_dev_ops cyapa_gen5_ops = {
-+	.check_fw = cyapa_gen5_check_fw,
-+	.bl_enter = cyapa_gen5_bl_enter,
-+	.bl_initiate = cyapa_gen5_bl_initiate,
-+	.update_fw = cyapa_gen5_do_fw_update,
-+
- 	.initialize = cyapa_gen5_initialize,
- 
- 	.state_parse = cyapa_gen5_state_parse,
+Whereas stop machine is used by kprobes to avoid race conditions with
+the undefined instruction exception handler and something like that
+would be needed even if patch_text didn't use stop_machine.
+
 -- 
-1.9.1
+Tixy
 
