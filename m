@@ -1,137 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbaLIIYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 03:24:34 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63948 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbaLIIYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753549AbaLIIYc (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 9 Dec 2014 03:24:32 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 9 Dec 2014 17:28:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [RFC PATCH 2/3] mm: more aggressive page stealing for UNMOVABLE
- allocations
-Message-ID: <20141209082821.GB7714@js1304-P5Q-DELUXE>
-References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
- <1417713178-10256-3-git-send-email-vbabka@suse.cz>
- <20141208071140.GB3904@js1304-P5Q-DELUXE>
- <54857D0F.3080601@suse.cz>
+Received: from mout.kundenserver.de ([212.227.126.187]:54930 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaLIIYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 03:24:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Flora Fu <flora.fu@mediatek.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        arm@kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, HenryC Chen <henryc.chen@mediatek.com>,
+        Menghui Lin <menghui.lin@mediatek.com>,
+        Olof Johansson <olof@lixom.net>, Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>
+Subject: Re: [PATCH v3 1/8] soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
+Date: Tue, 09 Dec 2014 09:23:18 +0100
+Message-ID: <2248330.M654Toyebg@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418091337.5663.9.camel@mtksdaap41>
+References: <1417752479-4749-1-git-send-email-flora.fu@mediatek.com> <2751641.o51TuZRl88@wuerfel> <1418091337.5663.9.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54857D0F.3080601@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:V8bdBfzjvrGEk4k/cfVjEGD2Vutx7fbqV8e6v6tWaRD/u/a3G7u
+ Y9ZISUceHrgsdxJLex+sb5ScaiHmQA+RN5cbC8BDkkOnk7FTtRKrNesKSQ5umx1rWhLIbvE
+ /ofkoawZ+b25VawRqCe6YEX8CtBD0Qn98iGrYAZNP/gmrScGCctfMe3MjM0vgVSpCb6HHx/
+ Va1N08Jjy5hmOI86NRJdQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 11:27:27AM +0100, Vlastimil Babka wrote:
-> On 12/08/2014 08:11 AM, Joonsoo Kim wrote:
-> >On Thu, Dec 04, 2014 at 06:12:57PM +0100, Vlastimil Babka wrote:
-> >>When allocation falls back to stealing free pages of another migratetype,
-> >>it can decide to steal extra pages, or even the whole pageblock in order to
-> >>reduce fragmentation, which could happen if further allocation fallbacks
-> >>pick a different pageblock. In try_to_steal_freepages(), one of the situations
-> >>where extra pages are stolen happens when we are trying to allocate a
-> >>MIGRATE_RECLAIMABLE page.
-> >>
-> >>However, MIGRATE_UNMOVABLE allocations are not treated the same way, although
-> >>spreading such allocation over multiple fallback pageblocks is arguably even
-> >>worse than it is for RECLAIMABLE allocations. To minimize fragmentation, we
-> >>should minimize the number of such fallbacks, and thus steal as much as is
-> >>possible from each fallback pageblock.
-> >
-> >I'm not sure that this change is good. If we steal order 0 pages,
-> >this may be good. But, sometimes, we try to steal high order page
-> >and, in this case, there would be many order 0 freepages and blindly
-> >stealing freepages in that pageblock make the system more fragmented.
+On Tuesday 09 December 2014 10:15:37 Flora Fu wrote:
+> Hi, Arnd,
 > 
-> I don't understand. If we try to steal high order page
-> (current_order >= pageblock_order / 2), then nothing changes, the
-> condition for extra stealing is the same.
-
-More accureately, I means mid order page (current_order <
-pageblock_order / 2), but, not order 0, such as order 2,3,4(?).
-In this case, perhaps, the system has enough unmovable order 0 freepages,
-so we don't need to worry about second kind of fragmentation you
-mentioned below. Stealing one mid order freepage is enough to satify
-request.
-
+> On Fri, 2014-12-05 at 11:13 +0100, Arnd Bergmann wrote:
+> > On Friday 05 December 2014 12:07:52 Flora Fu wrote:
+> > > Add PMIC wrapper of MT8135 to access MT6397 MFD.
+> > > 
+> > > Signed-off-by: Flora Fu <flora.fu@mediatek.com>
+> > > 
+> > 
+> > Please explain what a PMIC wrapper is and why you need one for MT8135.
+> > I don't understand the purpose of this code at all. Is this just another
+> > way of accessing the MT6397 when not using i2c or spi like other
+> > PMIC drivers do?
+> > 
 > 
-> >MIGRATE_RECLAIMABLE is different case than MIGRATE_UNMOVABLE, because
-> >it can be reclaimed so excessive migratetype movement doesn't result
-> >in permanent fragmentation.
+> Yes, MT8135 uses a proprietary hardware to communicate with MT6397. 
+> The hardware is called PMIC Wrapper or PWRAP.
+> Since it is not standard i2c or spi protocols, a soc related software
+> driver is implemented to handle access protocols in AP side.
 > 
-> There's two kinds of "fragmentation" IMHO. First, inside a
-> pageblock, unmovable allocations can prevent merging of lower
-> orders. This can get worse if we steal multiple pages from a single
-> pageblock, but the pageblock itself is not marked as unmovable.
-
-So, what's the intention pageblock itself not marked as unmovable?
-I guess that if many pages are moved to unmovable, they can't be easily
-back and this pageblock is highly fragmented. So, processing more unmovable
-requests from this pageblock by changing pageblock migratetype makes more
-sense to me.
-
-> Second kind of fragmentation is when unmovable allocations spread
-> over multiple pageblocks. Lower order allocations within each such
-> pageblock might be still possible, but less pageblocks are able to
-> compact to have whole pageblock free.
+> +-----------------+           +---------------+
+> |                 |           |               |
+> | Mediatek AP SoC |           |               |
+> | (ex. MT8135)    |           |    MT6397     |
+> |                 |           |               |
+> |      +--------+ | (SPI bus) | +--------+    |
+> |      |        | |-----------| |        |    |
+> |      |  PMIC  | |-----------| |  PMIC  |    |
+> |      | Wrapper| |-----------| | Wrapper|    |
+> |      |        | |-----------| |        |    |
+> |      +--------+ |           | +--------+    |
+> |                 |           |               |
+> +-----------------+           +---------------+
 > 
-> I think the second kind is worse, so when do have to pollute a
-> movable pageblock with unmovable allocation, we better take as much
-> as possible, so we prevent polluting other pageblocks.
 
-I agree.
+I think we have had a similar case recently where a controller wasn't
+actually using I2C, but the sofware protocol was close enough so we decided
+to make it appear as i2c in Linux.
 
-> 
-> >What I'd like to do to prevent fragmentation is
-> >1) check whether we can steal all or almost freepages and change
-> >migratetype of pageblock.
-> >2) If above condition isn't met, deny allocation and invoke compaction.
-> 
-> Could work to some extend, but we need also to prevent excessive compaction.
+Would that work for you, i.e. register the pmic wrapper as a fake spi
+master driver in drivers/spi/ and register the rtc/regulator/codec
+as SPI clients from DT?
 
-So, I suggest knob to control behaviour. In small memory system,
-fragmentation occurs frequently so the system can't handle just order 2
-request. In that system, excessive compaction is acceptable because
-it it better than system down.
-
-> 
-> We could also introduce a new pageblock migratetype, something like
-> MIGRATE_MIXED. The idea is that once pageblock isn't used purely by
-> MOVABLE allocations, it's marked as MIXED, until it either becomes
-> marked UNMOVABLE or RECLAIMABLE by the existing mechanisms, or is
-> fully freed. In more detail:
-> 
-> - MIXED is preferred for fallback before any other migratetypes
-> - if RECLAIMABLE/UNMOVABLE page allocation is stealing from MOVABLE
-> pageblock and cannot mark pageblock as RECLAIMABLE/UNMOVABLE (by
-> current rules), it marks it as MIXED instead.
-> - if MOVABLE allocation is stealing from UNMOVABLE/RECLAIMABLE
-> pageblocks, it will only mark it as MOVABLE if it was fully free.
-> Otherwise, if current rules would result in marking it as MOVABLE
-> (i.e. most of it was stolen, but not all) it will mark it as MIXED
-> instead.
-> 
-> This could in theory leave more MOVABLE pageblocks unspoiled by
-> UNMOVABLE allocations.
-
-I guess that we can do it without introducing new migratetype pageblock.
-Just always marking it as RECLAIMABLE/UNMOVABLE when
-RECLAIMABLE/UNMOVABLE page allocation is stealing from MOVABLE would
-have same effect.
-
-Thanks.
-
-> >Maybe knob to control behaviour would be needed.
-> >How about it?
-> 
-> Adding new knobs is not a good solution.
-
+	Arnd
