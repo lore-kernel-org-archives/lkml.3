@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaLIViE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 16:38:04 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39035 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaLIViB (ORCPT
+	id S1752192AbaLIVjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 16:39:35 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37623 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaLIVjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 16:38:01 -0500
-Date: Tue, 09 Dec 2014 16:37:58 -0500 (EST)
-Message-Id: <20141209.163758.1934464464299516168.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: the next chunk of iov_iter-net stuff for review
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141209212337.GK22149@ZenIV.linux.org.uk>
-References: <20141209210414.GJ22149@ZenIV.linux.org.uk>
-	<20141209.161712.1258837733606317716.davem@davemloft.net>
-	<20141209212337.GK22149@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Dec 2014 13:38:01 -0800 (PST)
+	Tue, 9 Dec 2014 16:39:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQUhwMOKEXi8mVY_rMGEAmYr13m+Gr5id+rYTC0EiwEHgw@mail.gmail.com>
+References: <1418075552-26495-1-git-send-email-yinghai@kernel.org>
+	<1418079372.13358.9.camel@kernel.crashing.org>
+	<1418079603.13358.12.camel@kernel.crashing.org>
+	<CAE9FiQUhwMOKEXi8mVY_rMGEAmYr13m+Gr5id+rYTC0EiwEHgw@mail.gmail.com>
+Date: Tue, 9 Dec 2014 13:39:32 -0800
+X-Google-Sender-Auth: hsZ-JIHwIuBAf9IyBCOd8Vv5zhk
+Message-ID: <CAE9FiQV6s9=zK6Yx__3ZWp2SrGydb-2bnsbNDh-xD9ni0ricLQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Clear bridge MEM_64 flag if one child does not
+ support it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Tue, 9 Dec 2014 21:23:37 +0000
+On Mon, Dec 8, 2014 at 4:09 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Dec 8, 2014 at 3:00 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+>
+>>
+>> I think an option would be to keep track of whether the PCI host bridge
+>> can do 64-bit pref above 4G.
+>
+> Yes, that could be enhancement.
+>
+> That should fix the problem Marek's
+>
+> But not on Zermond's, as his system is not using _CRS.
+>
 
-> On Tue, Dec 09, 2014 at 04:17:12PM -0500, David Miller wrote:
->> From: Al Viro <viro@ZenIV.linux.org.uk>
->> Date: Tue, 9 Dec 2014 21:04:14 +0000
->> 
->> > Well, I've got no comments whatsoever on the networking side of things;
->> 
->> I've been away for more than 10 days, so I personally haven't had time
->> to review any of it.
->> 
->> Why don't you respin and I'll try to allocate some review time myself?
-> 
-> Umm...  Do you want a rebase on top of current net-next/master?
+http://patchwork.ozlabs.org/patch/419295/
 
-Sure, why not?
+PCI: Clear all bridge res MEM_64 if host bridge has non mem64
