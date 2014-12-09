@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353AbaLIOZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 09:25:50 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:59105 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaLIOZs (ORCPT
+	id S1757372AbaLIO1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 09:27:25 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:34817 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030AbaLIO1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 09:25:48 -0500
-Date: Tue, 9 Dec 2014 22:24:23 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: George Spelvin <linux@horizon.com>
-Cc: davem@davemloft.net, dborkman@redhat.com, hannes@stressinduktion.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tgraf@suug.ch,
-        tytso@mit.edu
-Subject: Re: Where exactly will arch_fast_hash be used
-Message-ID: <20141209142423.GB9745@gondor.apana.org.au>
-References: <20141207125157.GA9745@gondor.apana.org.au>
- <20141207132305.24691.qmail@ns.horizon.com>
+	Tue, 9 Dec 2014 09:27:24 -0500
+Message-ID: <548706C6.2050105@linaro.org>
+Date: Tue, 09 Dec 2014 09:27:18 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141207132305.24691.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steve Capper <steve.capper@linaro.org>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com> <547F94B0.1000902@linaro.org> <547FB5DD.901@redhat.com> <547FCB73.1010707@linaro.org> <CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com> <54803ADD.2090201@hitachi.com> <CAPvkgC26-CprjLVH55=7z73JtxTumFFZ4W7itevXxMwReVqQ1g@mail.gmail.com> <54804B1F.3020703@hitachi.com> <20141209133340.GA20265@linaro.org>
+In-Reply-To: <20141209133340.GA20265@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 07, 2014 at 08:23:05AM -0500, George Spelvin wrote:
+On 12/09/14 08:33, Steve Capper wrote:
+> On Thu, Dec 04, 2014 at 08:53:03PM +0900, Masami Hiramatsu wrote:
+>> (2014/12/04 20:29), Steve Capper wrote:
+>>
+>>>> I'd like to ask you to try my fix on your machine, with my reproducing
+>>>> methods. (do not use sytemtap nor perf, those can have other issues)
+>>>>
+>>>
+>>> Thank you Masami,
+>>>
+>>> I tried the following commands:
+>>>
+>>> echo "p:trace_event_buffer_lock_reserve
+>>> trace_event_buffer_lock_reserve" >
+>>> /sys/kernel/debug/tracing/kprobe_events
+>>> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+>>> echo 1 > /sys/kernel/debug/tracing/events/sched/sched_process_exec/enable
+>>>
+>>> The system appeared okay, I then cat'ed out:
+>>> # cat /sys/kernel/debug/tracing/kprobe_profile
+>>>     trace_event_buffer_lock_reserve                           25              25
+>>>
+>>> I got similar output (i.e. no crashes) both with and without the
+>>> interrupt fix you recommended.
+>>>
+>>> I'm not sure how to interpret this, please let me know if you would
+>>> like me to run any other tests?
+>>>
+>>> (I did also try your proposed fix with perf + memcpy and that crashed
+>>> in a similar way as before).
+>>
+>> Hmm, then the bug is still there, and the bug may not be in the recursive
+>> call path... We need to find another suspicious code in the patch.
+>>
 >
-> Okay, I'm confused.  *What* scheme?  The arch_fast_hash interface doesn't
-> have any provision for a secret.  Because there's no point to having one;
+> Not sure if this is helpful, but the following also caused a crash for
+> me:
+>
+> echo "p:trace_event_buffer_lock_reserve trace_event_buffer_lock_reserve" > /sys/kernel/debug/tracing/kprobe_events
+> echo "p:memcpy memcpy" >> /sys/kernel/debug/tracing/kprobe_events
+> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+>
+> [immediate crash]
+>
+> The crash point for me is in the arm64 ASID allocator, it again looks
+> like the interrupts are in an unexpected state.
+> (check_and_switch_context goes down the irqs disabled code path, I
+> think incorrectly).
+>
+> This occurred for me both with and without the proposed irq saving fix.
+>
+> I will do some more digging.
+>
 
-It does actually, in the form of the seed parameter.  That's why
-it's so bad: it pretends to be a semi-secure hash function that
-people will use in hash tables.
+Thanks, more information is good.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+-dl
+
+
