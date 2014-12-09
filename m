@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaLIUXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 15:23:10 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38048 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaLIUXI (ORCPT
+	id S1752906AbaLIUXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 15:23:21 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45848 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881AbaLIUXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 15:23:08 -0500
+	Tue, 9 Dec 2014 15:23:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <5486BBB1.3040405@linaro.org>
+In-Reply-To: <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
 References: <1418079900-4640-1-git-send-email-mcgrof@do-not-panic.com>
- <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com> <5486BBB1.3040405@linaro.org>
+ <1418079900-4640-3-git-send-email-mcgrof@do-not-panic.com>
+ <5486BBB1.3040405@linaro.org> <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 9 Dec 2014 12:22:45 -0800
-X-Google-Sender-Auth: Qm5wyVhoJHtgGr9v8t94HIEIzRU
-Message-ID: <CAB=NE6V+kLaZePAzHim0VxGsd8ew6dS7kN=H=awwz1dpHy5VJw@mail.gmail.com>
+Date: Tue, 9 Dec 2014 12:22:57 -0800
+X-Google-Sender-Auth: cAUNwiPDa9yMAH9cKrpUHQv1mYE
+Message-ID: <CAB=NE6XaT34DDGio16dyRqxPu25XE0PZYOX2n+6+GabPFXih0g@mail.gmail.com>
 Subject: Re: [Xen-devel] [PATCH v3 2/2] x86, arm64, platform, xen, kconfig:
  add xen defconfig helper
 To: Julien Grall <julien.grall@linaro.org>
@@ -34,30 +35,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 1:06 AM, Julien Grall <julien.grall@linaro.org> wrote:
-> Hello Luis,
->
-> On 08/12/2014 23:05, Luis R. Rodriguez wrote:
->>
->> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
->> new file mode 100644
->> index 0000000..0d0eb6d
->> --- /dev/null
->> +++ b/kernel/configs/xen.config
->> +CONFIG_XEN_MCE_LOG=y
->
->
-> MCE is x86 specific.
+On Tue, Dec 9, 2014 at 12:22 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> If you are sure then yes.
 
-That's what I thought too but its available for arm64, so should we
-fix that Kconfig to depend on x86?
-
->> +CONFIG_XEN_HAVE_PVMMU=y
->
->
-> We don't have PVMMU support on ARM. Shouldn't you move this config in
-> architecture specific code?
-
-If you are sure then yes.
+Likewise here.
 
  Luis
