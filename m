@@ -1,85 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaLIPtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 10:49:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51278 "EHLO mx1.redhat.com"
+	id S1757498AbaLIPsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 10:48:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53480 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932291AbaLIPtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 10:49:03 -0500
-Date: Tue, 9 Dec 2014 10:48:59 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        gregkh@linuxfoundation.org, agk@redhat.com,
-        linux-kernel@vger.kernel.org, ejt@redhat.com
-Subject: Re: staging: writeboost: Add dm-writeboost
-Message-ID: <20141209154859.GC26238@redhat.com>
-References: <5484498E.4000202@gmail.com>
- <20141207200834.GA2322@kroah.com>
- <5484C0E9.3060707@gmail.com>
- <20141209151253.GA17660@debian>
+	id S1757435AbaLIPse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 10:48:34 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>
+Subject: [PATCH 3/5] Tools: hv: address compiler warnings for hv_kvp_daemon.c
+Date: Tue,  9 Dec 2014 16:48:21 +0100
+Message-Id: <1418140103-11854-4-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209151253.GA17660@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09 2014 at 10:12am -0500,
-Joe Thornber <thornber@redhat.com> wrote:
+This patch addresses two types of compiler warnings:
+... warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+and
+... warning: pointer targets in passing argument N of ‘kvp_...’ differ in signedness [-Wpointer-sign]
 
-> On Mon, Dec 08, 2014 at 06:04:41AM +0900, Akira Hayakawa wrote:
-> > Mike and Alasdair,
-> > I need your ack
-> 
-> Hi Akira,
-> 
-> I just spent some time playing with your latest code.  On the positive
-> side I am seeing some good performance with the fio tests.  Which is
-> great, we know your design should outperform dm-cache with small
-> random io.
-> 
-> However I'm still getting v. poor results with the git-extract test,
-> which clones a linux kernel repo, and then checks out 5 revisions, all
-> with drop_caches in between.
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-Thanks for re-evaluating dm-writeboost performance Joe.
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 5a274ca..48a95f9 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -308,7 +308,7 @@ static int kvp_file_init(void)
+ 	return 0;
+ }
+ 
+-static int kvp_key_delete(int pool, const char *key, int key_size)
++static int kvp_key_delete(int pool, const __u8 *key, int key_size)
+ {
+ 	int i;
+ 	int j, k;
+@@ -351,8 +351,8 @@ static int kvp_key_delete(int pool, const char *key, int key_size)
+ 	return 1;
+ }
+ 
+-static int kvp_key_add_or_modify(int pool, const char *key, int key_size, const char *value,
+-			int value_size)
++static int kvp_key_add_or_modify(int pool, const __u8 *key, int key_size,
++				 const __u8 *value, int value_size)
+ {
+ 	int i;
+ 	int num_records;
+@@ -405,7 +405,7 @@ static int kvp_key_add_or_modify(int pool, const char *key, int key_size, const
+ 	return 0;
+ }
+ 
+-static int kvp_get_value(int pool, const char *key, int key_size, char *value,
++static int kvp_get_value(int pool, const __u8 *key, int key_size, __u8 *value,
+ 			int value_size)
+ {
+ 	int i;
+@@ -437,8 +437,8 @@ static int kvp_get_value(int pool, const char *key, int key_size, char *value,
+ 	return 1;
+ }
+ 
+-static int kvp_pool_enumerate(int pool, int index, char *key, int key_size,
+-				char *value, int value_size)
++static int kvp_pool_enumerate(int pool, int index, __u8 *key, int key_size,
++				__u8 *value, int value_size)
+ {
+ 	struct kvp_record *record;
+ 
+@@ -659,7 +659,7 @@ static char *kvp_if_name_to_mac(char *if_name)
+ 	char    *p, *x;
+ 	char    buf[256];
+ 	char addr_file[256];
+-	int i;
++	unsigned int i;
+ 	char *mac_addr = NULL;
+ 
+ 	snprintf(addr_file, sizeof(addr_file), "%s%s%s", "/sys/class/net/",
+@@ -698,7 +698,7 @@ static char *kvp_mac_to_if_name(char *mac)
+ 	char    buf[256];
+ 	char *kvp_net_dir = "/sys/class/net/";
+ 	char dev_id[256];
+-	int i;
++	unsigned int i;
+ 
+ 	dir = opendir(kvp_net_dir);
+ 	if (dir == NULL)
+@@ -748,7 +748,7 @@ static char *kvp_mac_to_if_name(char *mac)
+ 
+ 
+ static void kvp_process_ipconfig_file(char *cmd,
+-					char *config_buf, int len,
++					char *config_buf, unsigned int len,
+ 					int element_size, int offset)
+ {
+ 	char buf[256];
+@@ -766,7 +766,7 @@ static void kvp_process_ipconfig_file(char *cmd,
+ 	if (offset == 0)
+ 		memset(config_buf, 0, len);
+ 	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
+-		if ((len - strlen(config_buf)) < (element_size + 1))
++		if (len < strlen(config_buf) + element_size + 1)
+ 			break;
+ 
+ 		x = strchr(p, '\n');
+@@ -914,7 +914,7 @@ static int kvp_process_ip_address(void *addrp,
+ 
+ static int
+ kvp_get_ip_info(int family, char *if_name, int op,
+-		 void  *out_buffer, int length)
++		 void  *out_buffer, unsigned int length)
+ {
+ 	struct ifaddrs *ifap;
+ 	struct ifaddrs *curp;
+@@ -1017,8 +1017,7 @@ kvp_get_ip_info(int family, char *if_name, int op,
+ 					weight += hweight32(&w[i]);
+ 
+ 				sprintf(cidr_mask, "/%d", weight);
+-				if ((length - sn_offset) <
+-					(strlen(cidr_mask) + 1))
++				if (length < sn_offset + strlen(cidr_mask) + 1)
+ 					goto gather_ipaddr;
+ 
+ 				if (sn_offset == 0)
+-- 
+1.9.3
 
-> It's fine to have different benefits of the caching software depending
-> on the load.  But I think the worst case should always be close to the
-> performance of the raw spindle device.
-> 
-> If you get the following work items done I will ack to go upstream:
-> 
-> i) Get this test so it's performance is similar to raw spindle.
-> 
-> ii) Write good documentation in Documentation/device-mapper/.  eg. How
->     do I remove a cache?  When should I use dm-writeboost rather than
->     bcache or dm-cache?
-> 
-> iii) Provide an equivalent to the fsck tool to repair a damaged cache.
-
-I agree with this TODO list.  But I'd also add:
- iv) perform full code review to catch various implementation issues,
-     any style nits, etc.
-
- v) explore/implement read caching support (could the lack of read
-    caching be contributing to why the git_extract test is so poor?)
-
-Item iv) would be a task for myself and anyone else interested in
-getting dm-writeboost ready for inclusion.  Akira, I can start working
-on dm-writeboost code review once I complete review of the dm-dedup
-target (my current priority) -- but realistically that likely won't be
-until the new year.
-
-BTW, I'm really not seeing much point putting dm-writeboost in staging.
-I'd be happy to take dm-writeboost into drivers/md/ once the above list
-is resolved.  BUT if you'd still like dm-writeboost to go into staging
-_without_ any of these 5 work items being completed I'll ack it but to
-be very clear: dm-writeboost will not migrate out of staging until these
-items are resolved.
-
-Thanks,
-Mike
