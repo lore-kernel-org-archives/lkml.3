@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaLIKCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 05:02:35 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:59914 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458AbaLIKCc (ORCPT
+	id S1755977AbaLIKCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 05:02:52 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:46779 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755864AbaLIKCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 05:02:32 -0500
-Date: Tue, 9 Dec 2014 10:02:24 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v9 03/19] mfd: max77693: Modify flash cell name
- identifiers
-Message-ID: <20141209100224.GV3951@x1>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-4-git-send-email-j.anaszewski@samsung.com>
- <20141209085216.GS3951@x1>
- <5486BE6C.9010408@samsung.com>
+	Tue, 9 Dec 2014 05:02:49 -0500
+Message-ID: <5486C8BA.8030608@arm.com>
+Date: Tue, 09 Dec 2014 10:02:34 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
+To: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH 2/6] PCI/MSI: add hooks to populate the msi_domain field
+References: <1418069543-21969-1-git-send-email-marc.zyngier@arm.com> <1418069543-21969-3-git-send-email-marc.zyngier@arm.com> <5486585B.40000@huawei.com>
+In-Reply-To: <5486585B.40000@huawei.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5486BE6C.9010408@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Dec 2014, Jacek Anaszewski wrote:
+Hi Yijing,
 
-> On 12/09/2014 09:52 AM, Lee Jones wrote:
-> >On Wed, 03 Dec 2014, Jacek Anaszewski wrote:
-> >
-> >>Change flash cell identifiers from max77693-flash to max77693-led
-> >>to avoid confusion with NOR/NAND Flash.
-> >>
-> >>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> >>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>Cc: Chanwoo Choi <cw00.choi@samsung.com>
-> >>Cc: Lee Jones <lee.jones@linaro.org>
-> >>---
-> >>  drivers/mfd/max77693.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >>diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> >>index a159593..cb14afa 100644
-> >>--- a/drivers/mfd/max77693.c
-> >>+++ b/drivers/mfd/max77693.c
-> >>@@ -53,8 +53,8 @@ static const struct mfd_cell max77693_devs[] = {
-> >>  		.of_compatible = "maxim,max77693-haptic",
-> >>  	},
-> >>  	{
-> >>-		.name = "max77693-flash",
-> >>-		.of_compatible = "maxim,max77693-flash",
-> >>+		.name = "max77693-led",
-> >>+		.of_compatible = "maxim,max77693-led",
-> >
-> >This is fine by me, so long as you've been through the usual
-> >deprecation procedures or this platform is still WiP.
+On 09/12/14 02:03, Yijing Wang wrote:
+> On 2014/12/9 4:12, Marc Zyngier wrote:
+>> In order to be able to populate the device msi_domain field,
+>> add the necesary hooks to propagate the PHB msi_domain across
+>> secondary busses to devices.
+>>
+>> So far, nobody populates the initial msi_domain.
+>>
+>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>> ---
+>>  drivers/pci/probe.c | 24 ++++++++++++++++++++++++
+>>  include/linux/pci.h |  1 +
+>>  2 files changed, 25 insertions(+)
+>>
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index c8ca98c..d1009a2 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -670,6 +670,20 @@ static void pci_set_bus_speed(struct pci_bus *bus)
+>>  	}
+>>  }
+>>  
+>> +void __weak pcibios_set_phb_msi_domain(struct pci_bus *bus)
+>> +{
+>> +}
+>> +
+>> +static void pci_set_bus_msi_domain(struct pci_bus *bus)
+>> +{
+>> +	struct pci_dev *bridge = bus->self;
+>> +
+>> +	if (!bridge)
+>> +		pcibios_set_phb_msi_domain(bus);
+>> +	else
+>> +		dev_set_msi_domain(&bus->dev, dev_get_msi_domain(&bridge->dev));
+>> +}
 > 
-> It was me who added of_compatible for max77693-flash, but the
-> related led driver has not been yet merged and there are no
-> other drivers depending on it.
+> 
+> Hi Marc, we can not assume pci devices under same phb share the same msi irq domain,
+> now in x86, pci devices under the same phb may associate different msi irq domain.
 
-Very well.
+Well, this is not supposed to be a perfect solution yet, but instead a
+basis for discussion. What I'd like to find out is:
 
-For my own reference:
+- What is the minimum granularity for associating a device with its MSI
+domain in existing platforms?
+- What topology data structures do you use to find out what MSI
+controller a device should be matched with?
+- What in-tree platform already has this requirements?
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Thanks,
 
+	M.
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jazz is not dead. It just smells funny...
