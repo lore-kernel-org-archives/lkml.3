@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaLJCfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:35:52 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:61725 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaLJCfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:35:51 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Audit patches for 3.19
-Date: Tue, 09 Dec 2014 21:35:48 -0500
-Message-ID: <2676941.D86tdbjuKD@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+	id S1753951AbaLJCni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:43:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34716 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752651AbaLJCng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 21:43:36 -0500
+Date: Tue, 9 Dec 2014 21:43:19 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Moore <pmoore@redhat.com>, linux-audit@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, anton@samba.org, sgrubb@redhat.com,
+        eparis@parisplace.org, tonyj@suse.de
+Subject: Re: [PATCH V4] powerpc: add little endian flag to syscall_get_arch()
+Message-ID: <20141210024319.GI29175@madcap2.tricolour.ca>
+References: <24fcd2ea2c7633152e74a7a92abab1dd1782745d.1418157273.git.rgb@redhat.com>
+ <1557787.lOBez6GG22@sifl>
+ <1418178015.30244.5.camel@concordia>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418178015.30244.5.camel@concordia>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 14/12/10, Michael Ellerman wrote:
+> On Tue, 2014-12-09 at 21:11 -0500, Paul Moore wrote:
+> > On Tuesday, December 09, 2014 03:37:07 PM Richard Guy Briggs wrote:
+> > > Since both ppc and ppc64 have LE variants which are now reported by uname,
+> > > add that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add
+> > > AUDIT_ARCH_PPC64LE variant.
+> > > 
+> > > Without this,  perf trace and auditctl fail.
+> > > 
+> > > Mainline kernel reports ppc64le (per a058801) but there is no matching
+> > > AUDIT_ARCH_PPC64LE.
+> > > 
+> > > Since 32-bit PPC LE is not supported by audit, don't advertise it in
+> > > AUDIT_ARCH_PPC* variants.
+> > > 
+> > > See:
+> > > 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+> > > 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
+> > > 
+> > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > > ---
+> > >  arch/powerpc/include/asm/syscall.h |    6 +++++-
+> > >  include/uapi/linux/audit.h         |    2 ++
+> > >  2 files changed, 7 insertions(+), 1 deletions(-)
+> > 
+> > The audit changes look fine to me, but as I mentioned earlier, this should go 
+> > in via the ppc tree and not the audit tree.
+> > 
+> > Acked-by: Paul Moore <paul@paul-moore.com>
+> 
+> Thanks.
+> 
+> Yep I'll take it via the powerpc tree, I'll CC stable as well as presumably we
+> want this to work in all versions that had LE support.
 
-Two small patches from the audit next branch; only one of which has any real 
-significant code changes, the other is simply a MAINTAINERS update for audit.  
-The single code patch is pretty small and rather straightforward, it changes 
-the audit "version" number reported to userspace from an integer to a bitmap 
-which is used to indicate the functionality of the running kernel.  This 
-really doesn't have much impact on the kernel, but it will make life easier 
-for the audit userspace folks.  Thankfully we were still on a version number 
-which allowed us to do this without breaking userspace.
+Yes, please!
 
-For what it is worth, as of a few minutes ago, the branch below applied 
-cleanly on top of your tree.
+(I was very tempted to change the #error to #warning, but figured the
+placeholder comment in the uapi file was sufficient.)
 
-Thanks,
--Paul
+> cheers
 
----
-The following changes since commit 799b601451b21ebe7af0e6e8f6e2ccd4683c5064:
+- RGB
 
-  audit: keep inode pinned (2014-11-11 14:20:22 -0500)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/pcmoore/audit upstream
-
-for you to fetch changes up to 0f7e94ee40d06f7a04e039392dfee8244bd8a7e0:
-
-  Merge branch 'next' into upstream for v3.19 (2014-12-09 14:38:30 -0500)
-
-----------------------------------------------------------------
-Paul Moore (2):
-      audit: add Paul Moore to the MAINTAINERS entry
-      Merge branch 'next' into upstream for v3.19
-
-Richard Guy Briggs (1):
-      audit: convert status version to a feature bitmap
-
- MAINTAINERS                |  5 +++--
- include/uapi/linux/audit.h | 17 +++++++++++++----
- kernel/audit.c             |  2 +-
- 3 files changed, 17 insertions(+), 7 deletions(-)
-
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
