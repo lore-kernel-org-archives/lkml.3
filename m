@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaLJJTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:19:45 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:41018 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752694AbaLJJTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:19:41 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v5] clocksource: arch_timer: Fix code to use physical
- timers when requested
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Marc Zyngier <Marc.Zyngier@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Eddie Huang =?UTF-8?Q?=28=E9=BB=83=E6=99=BA=E5=82=91=29?= 
-	<eddie.huang@mediatek.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-In-Reply-To: <20141209165807.GJ31129@e104818-lin.cambridge.arm.com>
-References: <1416812564-26465-1-git-send-email-sonnyrao@chromium.org>
-	 <1417776064.14380.17.camel@mtksdaap41>
-	 <20141208162140.GN16185@e104818-lin.cambridge.arm.com>
-	 <1418106718.32622.31.camel@mtksdaap41>
-	 <20141209165807.GJ31129@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Dec 2014 17:19:26 +0800
-Message-ID: <1418203166.21309.3.camel@mtksdaap41>
+	id S1751907AbaLJJWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:22:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaLJJWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 04:22:52 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: KY Srinivasan <kys@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
+References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
+Date: Wed, 10 Dec 2014 10:22:40 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Wed, 10 Dec 2014 02:58:50 +0000")
+Message-ID: <87lhmfhna7.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-09 at 16:58 +0000, Catalin Marinas wrote:
-<...>
-> You mix timer and counter terms here. Anyway, of we use physical timer,
-> you could argue that it makes sense to use the corresponding physical
-> counter (CNTPCT). However, on arm64 we only expose CNTVCT to user VDSO
-> and we want to use the same in the kernel. When booting at EL2, CNTVCT
-> == CNTPCT because we control CNTVOFF, that's unless we have some broken
-> firmware that does not restore CNTVOFF correctly. That's what we want
-> to spot early, hence the aim to always use the virtual counter (but not
-> the timer, use use the physical timer as it makes it easier for KVM).
-> 
-> So the patch below, on top of linux-next, should solve the BUG():
+Dexuan Cui <decui@microsoft.com> writes:
 
-Thanks for detail explanation and the patch. I tested it on my platform
-and it did solve the issue. So,
+>> -----Original Message-----
+>> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> Sent: Tuesday, December 9, 2014 23:48 PM
+>> To: KY Srinivasan
+>> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
+>> kernel@vger.kernel.org; Dexuan Cui
+>> Subject: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
+>> 
+>> When someone does 'make' in tools/hv/ issues appear:
+>> - hv_fcopy_daemon is not being built;
+>> - lots of compiler warnings.
+>> 
+>> This is just a cleanup. Compile-tested by myself on top of linux-next/master.
+>> 
+>> Piggyback this series and send "[PATCH 5/5] Tools: hv: do not add redundant
+>> '/'
+>>  in hv_start_fcopy()"
+>> 
+>> Vitaly Kuznetsov (5):
+>>   Tools: hv: add mising fcopyd to the Makefile
+>>   Tools: hv: remove unused bytes_written from kvp_update_file()
+>>   Tools: hv: address compiler warnings for hv_kvp_daemon.c
+>>   Tools: hv: address compiler warnings for hv_fcopy_daemon.c
+>>   Tools: hv: do not add redundant '/' in hv_start_fcopy()
+>> 
+>>  tools/hv/Makefile          |  4 ++--
+>>  tools/hv/hv_fcopy_daemon.c | 10 ++--------
+>>  tools/hv/hv_kvp_daemon.c   | 29 +++++++++++++----------------
+>>  3 files changed, 17 insertions(+), 26 deletions(-)
+>> 
+>> --
+>> 1.9.3
+>
+> Hi Vitaly,
+> Thanks for the patchset!
+>
+> Acked-by: Dexuan Cui <decui@microsoft.com>
+>
+> PS, I added Greg into the TO list.
+> The hv code in drivers/hv/ and tools/hv/ usually has to go into
+> Greg's tree first.
 
-Tested-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Well, I don't mind spamming Greg but he's not on the
+scripts/get_maintainer.pl output. In case he's not monitoring the list
+for patches by some other tool (patchwork?) a patch adding him to
+MAINTAINERS would do the job.
 
-Joe.C
+Greg, do you want to become an official Hyper-V maintainer in
+MAINTAINERS? I can send a patch then :-)
 
-
+-- 
+  Vitaly
