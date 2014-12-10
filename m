@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222AbaLJWVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:21:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43628 "EHLO mx1.redhat.com"
+	id S1758197AbaLJWVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:21:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43625 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758103AbaLJWVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758051AbaLJWVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Dec 2014 17:21:20 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>,
         Nestor Lopez Casado <nlopezcasad@logitech.com>
 Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] HID: logitech-hidpp: do not return the name length
-Date: Wed, 10 Dec 2014 17:21:09 -0500
-Message-Id: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/2] HID: logitech-hidpp: prefix the name with Logitech
+Date: Wed, 10 Dec 2014 17:21:10 -0500
+Message-Id: <1418250070-28604-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not make any use of the actual name length get through
-hidpp_get_device_name().
+Current names are reported as "K750", "M705", and it can be misleading
+for the users when they look at their input device list.
 
-We can drop the extra code and simplify the API a bit.
+Prefixing the names with "Logitech " makes things better.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-logitech-hidpp.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+
+Hi Jiri,
+
+I'd love to see this one in 3.19 (after a strong review, of course).
+The idea came with the mouse DPI database that Peter is currently working on
+(see http://who-t.blogspot.com.au/2014/12/building-a-dpi-database-for-mice.html).
+
+I think, if you do not qualify the series for 3.19, we should drop it entirely.
+3.19 introduces the hidpp module and changes the labels. The DPI hwdb will check
+on the label to match the actual mouse, so if this one does not get into 3.19,
+we will end up in 3 entries for each Logitech device.
+
+Cheers,
+Benjamin
+
+
+ drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
 diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index 1a6395d..3846305 100644
+index 3846305..8cf4352 100644
 --- a/drivers/hid/hid-logitech-hidpp.c
 +++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
- 	return count;
+@@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
+ 		(report->rap.sub_id == 0x41);
  }
  
--static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
-+static char *hidpp_get_device_name(struct hidpp_device *hidpp)
- {
- 	u8 feature_type;
- 	u8 feature_index;
-@@ -484,7 +484,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
- 	if (!name)
- 		goto out_err;
++/**
++ * hidpp_prefix_name() prefixes the current given name with "Logitech ".
++ */
++static void hidpp_prefix_name(char **name, int name_length)
++{
++#define PREFIX_SIZE 9 /* "Logitech " */
++
++	int new_length;
++	char *new_name;
++
++	if (name_length > PREFIX_SIZE &&
++	    strncmp(*name, "Logitech ", PREFIX_SIZE) == 0)
++		/* The prefix has is already in the name */
++		return;
++
++	new_length = name_length + PREFIX_SIZE;
++	new_name = kzalloc(new_length, GFP_KERNEL);
++	if (!new_name)
++		return;
++
++	snprintf(new_name, new_length, "Logitech %s", *name);
++
++	kfree(*name);
++
++	*name = new_name;
++}
++
+ /* -------------------------------------------------------------------------- */
+ /* HIDP++ 1.0 commands                                                        */
+ /* -------------------------------------------------------------------------- */
+@@ -318,6 +345,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
+ 		return NULL;
  
--	*name_length = __name_length + 1;
- 	while (index < __name_length)
- 		index += hidpp_devicenametype_get_device_name(hidpp,
+ 	memcpy(name, &response.rap.params[2], len);
++
++	/* include the terminating '\0' */
++	hidpp_prefix_name(&name, len + 1);
++
+ 	return name;
+ }
+ 
+@@ -489,6 +520,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
  			feature_index, index, name + index,
-@@ -493,7 +492,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+ 			__name_length - index);
+ 
++	/* include the terminating '\0' */
++	hidpp_prefix_name(&name, __name_length + 1);
++
  	return name;
  
  out_err:
--	*name_length = 0;
- 	return NULL;
- }
- 
-@@ -989,7 +987,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
- {
- 	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
- 	char *name;
--	u8 name_length;
- 
- 	if (use_unifying)
- 		/*
-@@ -999,7 +996,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
- 		 */
- 		name = hidpp_get_unifying_name(hidpp);
- 	else
--		name = hidpp_get_device_name(hidpp, &name_length);
-+		name = hidpp_get_device_name(hidpp);
- 
- 	if (!name)
- 		hid_err(hdev, "unable to retrieve the name of the device");
-@@ -1053,7 +1050,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
- 	bool connected = atomic_read(&hidpp->connected);
- 	struct input_dev *input;
- 	char *name, *devm_name;
--	u8 name_length;
- 
- 	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
- 		wtp_connect(hdev, connected);
-@@ -1080,7 +1076,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
- 		return;
- 	}
- 
--	name = hidpp_get_device_name(hidpp, &name_length);
-+	name = hidpp_get_device_name(hidpp);
- 	if (!name) {
- 		hid_err(hdev, "unable to retrieve the name of the device");
- 	} else {
 -- 
 2.1.0
 
