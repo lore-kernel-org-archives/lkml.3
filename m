@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaLJBkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:40:16 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:32410 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbaLJBkO (ORCPT
+	id S1753697AbaLJBkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:40:33 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:61446 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647AbaLJBk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:40:14 -0500
-Message-ID: <5487A471.30005@huawei.com>
-Date: Wed, 10 Dec 2014 09:40:01 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-tip-commits@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH V2] x86/mm: Fix zone ranges boot printout
-References: <54866C18.1050203@huawei.com> <20141209145038.6253a2b99379bfb1255fa95e@linux-foundation.org>
-In-Reply-To: <20141209145038.6253a2b99379bfb1255fa95e@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A010201.5487A479.0464,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 157f894069c51c7bb90ee27efb632ab1
+	Tue, 9 Dec 2014 20:40:29 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, broonie@kernel.org,
+        anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
+        johan@kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] mfd: da9052-core: Fix platform-device id collision
+Date: Tue,  9 Dec 2014 23:39:53 -0200
+Message-Id: <1418175593-23474-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/10 6:50, Andrew Morton wrote:
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-> On Tue, 9 Dec 2014 11:27:20 +0800 Xishi Qiu <qiuxishi@huawei.com> wrote:
-> 
->> Changelog:
->> V2:
->> 	-fix building warnings of min(...).
->>
->> ...
->>
->> --- a/arch/x86/mm/init.c
->> +++ b/arch/x86/mm/init.c
->> @@ -674,10 +674,12 @@ void __init zone_sizes_init(void)
->>  	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
->>  
->>  #ifdef CONFIG_ZONE_DMA
->> -	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
->> +	max_zone_pfns[ZONE_DMA]		= min_t(unsigned long,
->> +						max_low_pfn, MAX_DMA_PFN);
-> 
-> MAX_DMA_PFN has type int.
-> 
->>  #endif
->>  #ifdef CONFIG_ZONE_DMA32
->> -	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
->> +	max_zone_pfns[ZONE_DMA32]	= min_t(unsigned long,
->> +						max_low_pfn, MAX_DMA32_PFN);
-> 
-> MAX_DMA32_PFN has type UL (I think?) so there's no need for min_t here.
-> 
->>  #endif
->>  	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
->>  #ifdef CONFIG_HIGHMEM
-> 
-> 
-> Let's try to get the types correct, rather than hacking around fixing
-> up fallout from earlier incorrect type choices?
-> 
-> What is the type of a pfn?  Unsigned long, generally, when we bother
-> thinking about it.
-> 
-> So how about we make MAX_DMA_PFN have type UL?  I assume that fixes the
-> warning?
-> 
-> If we do this, we should also be able to undo the min_t hackery in
-> arch/x86/kernel/e820.c:memblock_find_dma_reserve().
-> 
+Allow multiple DA9052 regulators be registered by registering with
+PLATFORM_DEVID_AUTO instead of PLATFORM_DEVID_NONE.
+   
+The subdevices are currently registered with PLATFORM_DEVID_NONE, which
+will cause a name collision on the platform bus when multiple regulators
+are registered:
 
-Hi Andrew,
+[    0.128855] da9052-regulator da9052-regulator: invalid regulator ID specified
+[    0.128973] da9052-regulator: probe of da9052-regulator failed with error -22
+[    0.129148] ------------[ cut here ]------------
+[    0.129200] WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x5c/0x7c()
+[    0.129233] sysfs: cannot create duplicate filename '/devices/platform/soc/60000000.aips/63fc8000.i2c/i2c-0/0-0048/da9052-regulator
+...
+[    0.132891] ------------[ cut here ]------------
+[    0.132924] WARNING: CPU: 0 PID: 1 at lib/kobject.c:240 kobject_add_internal+0x24c/0x2cc()
+[    0.132957] kobject_add_internal failed for da9052-regulator with -EEXIST, don't try to register things with the same name in the same directory.
+...
+[    0.137000] da9052 0-0048: mfd_add_devices failed: -17
+[    0.138486] da9052: probe of 0-0048 failed with error -17
 
-Thanks for your suggestion, I'll resend V3.
+Based on the fix done by Johan Hovold at commit b6684228726cc255 ("mfd: 
+viperboard: Fix platform-device id collision"). 
 
-Thanks,
-Xishi Qiu
+Tested on a imx53-qsb board, where multiple DA9053 regulators can be 
+successfully probed.
 
-> 
-> .
-> 
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/mfd/da9052-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index 52a0c2f..ae498b5 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -554,7 +554,8 @@ int da9052_device_init(struct da9052 *da9052, u8 chip_id)
+ 		return ret;
+ 	}
+ 
+-	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
++	ret = mfd_add_devices(da9052->dev, PLATFORM_DEVID_AUTO,
++			      da9052_subdev_info,
+ 			      ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
+ 	if (ret) {
+ 		dev_err(da9052->dev, "mfd_add_devices failed: %d\n", ret);
+-- 
+1.9.1
 
