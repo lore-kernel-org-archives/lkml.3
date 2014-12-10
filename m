@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaLJLaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:30:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35413 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbaLJLaT (ORCPT
+	id S1755881AbaLJLcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:32:11 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:63877 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738AbaLJLcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:30:19 -0500
-Date: Wed, 10 Dec 2014 03:30:14 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 10
-Message-ID: <20141210113014.GB10836@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20141210204822.3359b7ef@canb.auug.org.au>
+	Wed, 10 Dec 2014 06:32:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
+        hauke@hauke-m.de
+Subject: Re: [PATCH 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
+Date: Wed, 10 Dec 2014 12:31:38 +0100
+Message-ID: <9707535.Y78sV0TgX4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418169871-19232-3-git-send-email-rjui@broadcom.com>
+References: <1418169871-19232-3-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210204822.3359b7ef@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:i05wScWZ/qLMqphkefZ9GCsAiiFKsw86TUH7Yg0ekYDSGcYQHYc
+ y9FUjm10HWxDugXrkUzD1fXaH6wGDANm/2ekGcDT5Wz8jgpYSpHGRyb7IPFlM/Ios8JseA8
+ H/SmQ9/v3BL1NfwaGUYkFE40bOzG/6Nrrzyj61I23xHHS6uZ3pz7HMJISKbWcoE3tKNePqR
+ BIaxCgpIrWh9WI0+GJU1g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
-
-On Wed, Dec 10, 2014 at 08:48:22PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Tuesday 09 December 2014 16:04:29 Ray Jui wrote:
+> Add initial version of the Broadcom iProc PCIe driver. This driver
+> has been tested on NSP and Cygnus and is expected to work on all iProc
+> family of SoCs that deploys the same PCIe host controller
 > 
-> Please do not add stuff destined for v3.20 until after v3.19-rc1 is
-> released.
+> The driver also supports MSI
 > 
-> Changes since 20141209:
-> 
-> Dropped tree: access_once
-> 
-> The thermal tree lost its build failure.
-> 
+> Signed-off-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Scott Branden <sbranden@broadcom.com>
 
-Just a FYI.
+The driver looks suspiciously like the one that Hauke already submitted a
+while ago for bcm53xx. Please come up with a merged driver that works for
+both.
 
-As of -next 20141210 commit d32394fae95741d733b174ec1446f27765f80233,
-which caused a suspend hang bug [1], is still in the tree.  Greg created
-a revert patch for it in driver-core [2] but I am not sure if this will
-make its way to -next.
+Are you sure that iProc isn't based on the BCMA bus infrastructure after
+all? Even the physical address of your PCI host falls into the address
+range that is used for the internal BCMA bus on the other chips!
 
-  [1]: https://lkml.org/lkml/2014/12/3/215
-
-  [2]: https://git.kernel.org/cgit/linux/kernel/git/gregkh/driver-core.git/commit/?h=driver-core-testing&id=f1c488a78d9f1a22cdb15648c15e70fd82ed229a
-
--- 
-- Jeremiah Mahler
+	Arnd
