@@ -1,32 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244AbaLJHRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 02:17:18 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:52932 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123AbaLJHRQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 02:17:16 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID sBA7H6wM019195, This message is accepted by code: ctloc85258
-From: Hau <hau@realtek.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH net-next 0/9] r8169:update hardware ephy parameter
-Thread-Topic: [PATCH net-next 0/9] r8169:update hardware ephy parameter
-Thread-Index: AQHQE8+idbl2pv7EmU64DTY0ajM31ZyHY/6AgAED3IA=
-Date: Wed, 10 Dec 2014 07:17:04 +0000
-Message-ID: <80377ECBC5453840BA8C7155328B537701085AD8@RTITMBSV03.realtek.com.tw>
-References: <1418143563-7652-1-git-send-email-hau@realtek.com>
- <20141209.183549.1930188640715074097.davem@davemloft.net>
-In-Reply-To: <20141209.183549.1930188640715074097.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
+	id S1757279AbaLJHW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 02:22:26 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:13466 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752764AbaLJHWZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 02:22:25 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Kirill A. Shutemov'" <kirill@shutemov.name>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
+        "'oleg@redhat.com'" <oleg@redhat.com>,
+        "'gorcunov@openvz.org'" <gorcunov@openvz.org>,
+        "'pfeiner@google.com'" <pfeiner@google.com>
+Date: Wed, 10 Dec 2014 15:22:21 +0800
+Subject: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Thread-Topic: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Thread-Index: AdAS3POBh48LiUfmSOiU07RH13dqIwAgkhXwADqmExA=
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+ <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+ <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+ <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+ <20141208114601.GA28846@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.179]
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -34,44 +44,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Wednesday, December 10, 2014 7:36 AM
-> To: Hau
-> Cc: netdev@vger.kernel.org; nic_swsd; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH net-next 0/9] r8169:update hardware ephy parameter
-> 
-> From: Chunhao Lin <hau@realtek.com>
-> Date: Wed, 10 Dec 2014 00:45:54 +0800
-> 
-> > Update hardware ephy parameter to improve pcie compatibility.
-> 
-> This really doesn't tell me anything, I really dislike patch series like this one.
-> 
-> All of the programming is magic values to magic offsets.
-> 
-> You aren't even trying to describe in the commit log message exactly what
-> kind of settings are being changed, and exactly how those changes achieve
-> the stated goal.
-> 
-> Furthermore, the commit description makes no sense at all to me.
-> 
-> How can programming the ethernet MAC PHY have any influence on PCI-E
-> bus compatability?  Or are you programming the PCI bus interface's PHY?
-> 
-> In what way are you adjusting which settings and in what way do those
-> adjustments help improve PCI-E bus behavior?
-> 
-> You absolutely must describe exactly what the new programming is actually
-> doing, precisely, and in detail.  I want to know if some kind of timings are
-> being adjusted, and in what way.
-> Are some fifo limits being changes?  If so, in what way, and why does that
-> help.
-> 
-> You have to describe what you are doing. Short and non-informative commit
-> log messages alongside random changes to undocumented magic constant
-> registers is simply unacceptable.
-> 
+smaps_pte_entry() doesn't ignore zero_huge_page,
+but it ignore zero_page, because vm_normal_page() will
+ignore it. We remove vm_normal_page() call, because walk_page_range()
+have ignore VM_PFNMAP vma maps, it's safe to just use pfn_valid(),
+so that we can also consider zero_page to be a valid page.
 
-These series patch is an alignment with our latest hardware pcie ephy parameters. I will try to explain more on my next patch.
+Another change is that we only add map_count >= 2 or mapcount == 1
+pages into pss, because zero_page and huge_zero_page's _mapcount is
+zero, this means pss will consider evey zero page as a PAGE_SIZE for
+every process, this is not correct for pss statistic. We ignore
+zero page for pss, just add zero page into rss statistic.
 
-Thanks.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ fs/proc/task_mmu.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4e0388c..ce503d3 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -458,7 +458,9 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+ 	int mapcount;
+ 
+ 	if (pte_present(ptent)) {
+-		page = vm_normal_page(vma, addr, ptent);
++		if (!pte_special(ptent) && pfn_valid(pte_pfn(ptent)))
++			page = pfn_to_page(pte_pfn(ptent));
++
+ 	} else if (is_swap_pte(ptent)) {
+ 		swp_entry_t swpent = pte_to_swp_entry(ptent);
+ 
+@@ -491,7 +493,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+ 		else
+ 			mss->shared_clean += ptent_size;
+ 		mss->pss += (ptent_size << PSS_SHIFT) / mapcount;
+-	} else {
++	} else if (mapcount == 1){
+ 		if (pte_dirty(ptent) || PageDirty(page))
+ 			mss->private_dirty += ptent_size;
+ 		else
+-- 
+2.1.3
