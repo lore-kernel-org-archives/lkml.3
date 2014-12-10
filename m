@@ -1,103 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517AbaLJBfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:35:24 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:26301 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaLJBfW (ORCPT
+	id S1753542AbaLJBgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:36:39 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57931 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbaLJBgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:35:22 -0500
-X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52521862"
-Message-ID: <5487A355.6030704@broadcom.com>
-Date: Tue, 9 Dec 2014 17:35:17 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 9 Dec 2014 20:36:38 -0500
+Message-ID: <5487A3A0.8080308@gmail.com>
+Date: Wed, 10 Dec 2014 09:36:32 +0800
+From: Charles Chiou <ch1102chiou@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Varka Bhadram <varkabhadram@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        "Matt Porter" <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "Russell King" <linux@arm.linux.org.uk>
-CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/4] i2c: iProc: define Broadcom iProc I2C binding
-References: <Ray Jui <rjui@broadcom.com> <1418172891-19441-1-git-send-email-rjui@broadcom.com> <1418172891-19441-2-git-send-email-rjui@broadcom.com> <5487A16C.5000707@gmail.com>
-In-Reply-To: <5487A16C.5000707@gmail.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: JBottomley@parallels.com
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linus.chen@tw.promise.com, grace.chang@tw.promise.com,
+        victor.p@promise.com, ed.lin@promise.com
+Subject: [V3 PATCH 3/4] scsi:stex.c Add reboot support
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+ From 72f5b5cbda424a254b0e9672bd4d9d249728fcb9 Mon Sep 17 00:00:00 2001
+From: Charles Chiou <charles.chiou@tw.promise.com>
+Date: Wed, 5 Nov 2014 19:29:46 +0800
+Subject: [PATCH 3/4] scsi:stex.c Add reboot support
 
-On 12/9/2014 5:27 PM, Varka Bhadram wrote:
-> Hi,
->
-> On Wednesday 10 December 2014 06:24 AM, Ray Jui wrote:
->> Document the I2C device tree binding for Broadcom iProc family of
->> SoCs
->>
->> Signed-off-by: Ray Jui <rjui@broadcom.com>
->> Reviewed-by: Scott Branden <sbranden@broadcom.com>
->> ---
->>   .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37
->> ++++++++++++++++++++
->>   1 file changed, 37 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
->>
->> diff --git a/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
->> b/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
->> new file mode 100644
->> index 0000000..81f982c
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
->> @@ -0,0 +1,37 @@
->> +Broadcom iProc I2C controller
->> +
->> +Required properties:
->> +
->> +- compatible:
->> +    Must be "brcm,iproc-i2c"
->> +
->> +- reg:
->> +    Define the base and range of the I/O address space that contain
->> the iProc
->> +    I2C controller registers
->> +
->> +- interrupts:
->> +    Should contain the I2C interrupt
->> +
->> +- clock-frequency:
->> +    This is the I2C bus clock. Need to be either 100000 or 400000
->> +
->> +- #address-cells:
->> +    Always 1 (for I2C addresses)
->> +
->> +- #size-cells:
->> +    Always 0
->> +
->
-> All the properties defined with two lines of statements.
->
-> Why cant they be with single line statement, like:
->
-> compatible:    Must be "brcm,iproc-i2c"
-> reg:        Define the base and range of the I/O address space that
->          contain the iProc I2C controller registers
->
-> ....
->
->
-I thought making them two lines are more readable (and obviously that's 
-very subjective, :)). But more importantly, it matches the format of 
-other Broadcom iProc/Cygnus devicetree binding documents that are 
-currently in progress of upstreaming.
+1. Add reboot support, Pegasus devices should be notified that
+    the host is going to shut down/reboot. I register reboot callback
+    function to distinct host is going to shut down or to reboot.
+
+2. Pegasus FW shutdown flow is sensitive to host behavior
+    (host is going to S3/S4/shut down/reboot). To this end, I add one
+    argument in stex_hba_stop to support various stop command.
+
+Signed-off-by: charles.chiou@tw.promise.com
+---
+  drivers/scsi/stex.c | 46 ++++++++++++++++++++++++++++++++++++++++++----
+  1 file changed, 42 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
+index 7dc6afe..a536cfb 100644
+--- a/drivers/scsi/stex.c
++++ b/drivers/scsi/stex.c
+@@ -24,6 +24,7 @@
+  #include <linux/interrupt.h>
+  #include <linux/types.h>
+  #include <linux/module.h>
++#include <linux/reboot.h>
+  #include <linux/spinlock.h>
+  #include <asm/io.h>
+  #include <asm/irq.h>
+@@ -166,6 +167,13 @@ enum {
+
+  	ST_ADDITIONAL_MEM			= 0x200000,
+  	ST_ADDITIONAL_MEM_MIN			= 0x80000,
++	PMIC_SHUTDOWN				= 0x0D,
++	PMIC_REUMSE					= 0x10,
++	ST_IGNORED					= -1,
++	ST_S3						= 3,
++	ST_S4						= 4,
++	ST_S5						= 5,
++	ST_S6						= 6,
+  };
+
+  struct st_sgitem {
+@@ -344,6 +352,7 @@ struct st_card_info {
+  	u16 sts_count;
+  };
+
++static int reboot;
+  static int msi;
+  module_param(msi, int, 0);
+  MODULE_PARM_DESC(msi, "Enable Message Signaled Interrupts(0=off, 1=on)");
+@@ -364,6 +373,14 @@ MODULE_AUTHOR("Ed Lin");
+  MODULE_DESCRIPTION("Promise Technology SuperTrak EX Controllers");
+  MODULE_LICENSE("GPL");
+  MODULE_VERSION(ST_DRIVER_VERSION);
++static int stex_reboot_callback(struct notifier_block *self,
++							  unsigned long val,
++							  void *data)
++{
++	if (val == SYS_RESTART)
++		reboot = 1;
++	return NOTIFY_OK;
++}
+
+  static void stex_gettime(__le64 *time)
+  {
+@@ -1562,6 +1579,7 @@ static int stex_probe(struct pci_dev *pdev, const 
+struct pci_device_id *id)
+  	u32 sts_offset, cp_offset, scratch_offset;
+  	int err;
+
++	reboot = 0;
+  	err = pci_enable_device(pdev);
+  	if (err)
+  		return err;
+@@ -1755,7 +1773,7 @@ out_disable:
+  	return err;
+  }
+
+-static void stex_hba_stop(struct st_hba *hba)
++static void stex_hba_stop(struct st_hba *hba, int st_sleep_mic)
+  {
+  	struct req_msg *req;
+  	struct st_msg_header *msg_h;
+@@ -1771,11 +1789,18 @@ static void stex_hba_stop(struct st_hba *hba)
+  	} else
+  		memset(req, 0, hba->rq_size);
+
+-	if (hba->cardtype == st_yosemite || hba->cardtype == st_yel) {
++	if ((hba->cardtype == st_yosemite || hba->cardtype == st_yel)
++		&& st_sleep_mic == ST_IGNORED) {
+  		req->cdb[0] = MGT_CMD;
+  		req->cdb[1] = MGT_CMD_SIGNATURE;
+  		req->cdb[2] = CTLR_CONFIG_CMD;
+  		req->cdb[3] = CTLR_SHUTDOWN;
++	} else if (hba->cardtype == st_yel && st_sleep_mic != ST_IGNORED) {
++		req->cdb[0] = MGT_CMD;
++		req->cdb[1] = MGT_CMD_SIGNATURE;
++		req->cdb[2] = CTLR_CONFIG_CMD;
++		req->cdb[3] = PMIC_SHUTDOWN;
++		req->cdb[4] = st_sleep_mic;
+  	} else {
+  		req->cdb[0] = CONTROLLER_CMD;
+  		req->cdb[1] = CTLR_POWER_STATE_CHANGE;
+@@ -1795,10 +1820,12 @@ static void stex_hba_stop(struct st_hba *hba)
+  	while (hba->ccb[tag].req_type & PASSTHRU_REQ_TYPE) {
+  		if (time_after(jiffies, before + ST_INTERNAL_TIMEOUT * HZ)) {
+  			hba->ccb[tag].req_type = 0;
++			hba->mu_status = MU_STATE_STOP;
+  			return;
+  		}
+  		msleep(1);
+  	}
++	hba->mu_status = MU_STATE_STOP;
+  }
+
+  static void stex_hba_free(struct st_hba *hba)
+@@ -1838,7 +1865,14 @@ static void stex_shutdown(struct pci_dev *pdev)
+  {
+  	struct st_hba *hba = pci_get_drvdata(pdev);
+
+-	stex_hba_stop(hba);
++	if (hba->supports_pm == 0)
++		stex_hba_stop(hba, ST_IGNORED);
++	else {
++		if (reboot)
++			stex_hba_stop(hba, ST_S6);
++		else
++			stex_hba_stop(hba, ST_S5);
++	}
+  }
+
+  MODULE_DEVICE_TABLE(pci, stex_pci_tbl);
+@@ -1851,18 +1885,22 @@ static struct pci_driver stex_pci_driver = {
+  	.shutdown	= stex_shutdown,
+  };
+
++static struct notifier_block stex_reboot_notifier = {
++	stex_reboot_callback, NULL, 0
++};
+  static int __init stex_init(void)
+  {
+  	printk(KERN_INFO DRV_NAME
+  		": Promise SuperTrak EX Driver version: %s\n",
+  		 ST_DRIVER_VERSION);
+-
++	register_reboot_notifier(&stex_reboot_notifier);
+  	return pci_register_driver(&stex_pci_driver);
+  }
+
+  static void __exit stex_exit(void)
+  {
+  	pci_unregister_driver(&stex_pci_driver);
++	unregister_reboot_notifier(&stex_reboot_notifier);
+  }
+
+  module_init(stex_init);
+-- 
+1.9.1
+
