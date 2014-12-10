@@ -1,110 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaLJJ1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:27:22 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36201 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaLJJ1U (ORCPT
+	id S1752755AbaLJJ16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:27:58 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:48320 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaLJJ1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:27:20 -0500
-Message-ID: <548811C2.6060408@huawei.com>
-Date: Wed, 10 Dec 2014 17:26:26 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 10 Dec 2014 04:27:55 -0500
+Message-ID: <54881218.6010107@monstr.eu>
+Date: Wed, 10 Dec 2014 10:27:52 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Yijing Wang" <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <546B51BA.6070806@linux.intel.com> <546B5635.6020806@huawei.com> <alpine.DEB.2.11.1411181526220.3909@nanos> <546C3F55.3090301@huawei.com> <87ioibczrj.fsf@approximate.cambridge.arm.com>
-In-Reply-To: <87ioibczrj.fsf@approximate.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: Fix mmap for cache coherent memory
+References: <1417619248-20365-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1417619248-20365-1-git-send-email-lars@metafoo.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/19 17:20, Marc Zyngier wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Nov 19 2014 at  6:57:25 am GMT, "Yun Wu (Abel)" <wuyun.wu@huawei.com> wrote:
->> On 2014/11/18 22:32, Thomas Gleixner wrote:
->>
->>> On Tue, 18 Nov 2014, Yun Wu (Abel) wrote:
->>>
->>> Can you please trim the messages when you're replying?
->>>
->>>> The above you described is absolutely right, but not the things I want
->>>> to know. :)
->>>> Take GICv3 ITS for example, it deals with both PCI and non PCI message
->>>> interrupts. IIUC, several irq_chips need to be implemented in the ITS
->>>> driver (i.e. pci_msi_chip, A_msi_chip and B_msi_chip). What should we
->>>> do to the ITS driver if new MSI-capable devices come out?
->>>
->>> You seem to miss the stacking here
->>>
->>> PCI-MSI	->
->>> A-MSI	->   ITS  -> GIC
->>> B-MSI	->
->>>
->>> So each of the device types has its own MSI controller. Each of them
->>> will have their own callbacks and are backed by the underlying ITS/GIC
->>> implementation.
->>
->> Yes, this hits the key point. Once a new device type becomes available,
->> we need to add pieces of code outside the new device's driver to make
->> it work, which in my opinion is due to lack of core infrastructure.
->> More specifically, the core infrastructure needs to support mechanism
->> of MSI, not the various types of devices.
->>
->>>
->>> And that's the only sensible solution.
->>>
->>
->> It's sensible, but not perfect.
->> What I suggested is to add a generic layer:
->>
->> PCI-MSI	->
->> A-MSI	-> (generic layer) -> ITS -> GICR
->> B-MSI	->
->>
->> The PCI/A/B/... passes its hardware properties to the generic layer which
->> gets configurations ready by calling ITS's domain/chip callbacks. When
->> a new device type arrives, the only thing need to do is to implement the
->> driver of that device, with nothing to do with the generic layer or ITS.
-> 
-> I really don't get your "generic layer" story. To me, it looks like a
-> glorified set of function pointers. And that's exactly what stacked
-> domains are giving you:
-> 
-> A-MSI -> ITS -> GIC
-> 
-> This "A-MSI" is responsible for:
-> - implementing the "prepare" callback, which allocates the ITT
-> - implementing the "irq_compose_msi_msg"
-> 
-> Hardly anything to change in the ITS driver, and I can probably make it
-> so that you don't even have to write a single line of code in the ITS
-> driver.
-> 
-> If the generic MSI layer we now have is not enough for you, then please
-> submit detailed use cases.
-> 
+On 12/03/2014 04:07 PM, Lars-Peter Clausen wrote:
+> When running in non-cache coherent configuration the memory that was
+> allocated with dma_alloc_coherent() has a custom mapping and so there i=
+s no
+> 1-to-1 relationship between the kernel virtual address and the PFN. Thi=
+s
+> means that virt_to_pfn() will not work correctly for those addresses an=
+d the
+> default mmap implementation in the form of dma_common_mmap() will map s=
+ome
+> random, but not the requested, memory area.
+>=20
+> Fix this by providing a custom mmap implementation that looks up the PF=
+N
+> from the page table rather than using virt_to_pfn.
+>=20
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  arch/microblaze/include/asm/pgtable.h |  1 +
+>  arch/microblaze/kernel/dma.c          | 26 ++++++++++++++++++++++++++
+>  arch/microblaze/mm/consistent.c       | 23 ++++++++++++++++++-----
+>  3 files changed, 45 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/in=
+clude/asm/pgtable.h
+> index 95cef0b..df19d0c 100644
+> --- a/arch/microblaze/include/asm/pgtable.h
+> +++ b/arch/microblaze/include/asm/pgtable.h
+> @@ -565,6 +565,7 @@ void consistent_free(size_t size, void *vaddr);
+>  void consistent_sync(void *vaddr, size_t size, int direction);
+>  void consistent_sync_page(struct page *page, unsigned long offset,
+>  	size_t size, int direction);
+> +unsigned long consistent_virt_to_pfn(void *vaddr);
+> =20
+>  void setup_memory(void);
+>  #endif /* __ASSEMBLY__ */
+> diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.=
+c
+> index 4633c36..4822367 100644
+> --- a/arch/microblaze/kernel/dma.c
+> +++ b/arch/microblaze/kernel/dma.c
+> @@ -154,9 +154,35 @@ dma_direct_sync_sg_for_device(struct device *dev,
+>  			__dma_sync(sg->dma_address, sg->length, direction);
+>  }
+> =20
+> +int dma_direct_mmap_coherent(struct device *dev, struct vm_area_struct=
+ *vma,
+> +			     void *cpu_addr, dma_addr_t handle, size_t size,
+> +			     struct dma_attrs *attrs)
+> +{
+> +	unsigned long user_count =3D (vma->vm_end - vma->vm_start) >> PAGE_SH=
+IFT;
+> +	unsigned long count =3D PAGE_ALIGN(size) >> PAGE_SHIFT;
+> +	unsigned long off =3D vma->vm_pgoff;
+> +	unsigned long pfn;
+> +
+> +	if (!IS_ENABLED(CONFIG_MMU))
+> +		return -ENXIO;
+> +
+> +	if (off >=3D count || user_count > (count - off))
+> +		return -ENXIO;
+> +
+> +#ifdef NOT_COHERENT_CACHE
+> +	vma->vm_page_prot =3D pgprot_noncached(vma->vm_page_prot);
+> +	pfn =3D consistent_virt_to_pfn(cpu_addr);
+> +#else
+> +	pfn =3D virt_to_pfn(cpu_addr);
+> +#endif
+> +	return remap_pfn_range(vma, vma->vm_start, pfn + off,
+> +			       vma->vm_end - vma->vm_start, vma->vm_page_prot);
+> +}
+> +
+>  struct dma_map_ops dma_direct_ops =3D {
+>  	.alloc		=3D dma_direct_alloc_coherent,
+>  	.free		=3D dma_direct_free_coherent,
+> +	.mmap		=3D dma_direct_mmap_coherent,
+>  	.map_sg		=3D dma_direct_map_sg,
+>  	.dma_supported	=3D dma_direct_dma_supported,
+>  	.map_page	=3D dma_direct_map_page,
+> diff --git a/arch/microblaze/mm/consistent.c b/arch/microblaze/mm/consi=
+stent.c
+> index e10ad93..f358cd2 100644
+> --- a/arch/microblaze/mm/consistent.c
+> +++ b/arch/microblaze/mm/consistent.c
+> @@ -156,6 +156,23 @@ void *consistent_alloc(gfp_t gfp, size_t size, dma=
+_addr_t *dma_handle)
+>  }
+>  EXPORT_SYMBOL(consistent_alloc);
+> =20
+> +static pte_t *consistent_virt_to_pte(void *vaddr)
+> +{
+> +	unsigned long addr =3D (unsigned long)vaddr;
+> +
+> +	return pte_offset_kernel(pmd_offset(pgd_offset_k(addr), addr), addr);=
 
-Hi Marc,
+> +}
+> +
+> +unsigned long consistent_virt_to_pfn(void *vaddr)
+> +{
+> +	pte_t *ptep =3D consistent_virt_to_pte(vaddr);
+> +
+> +	if (pte_none(*ptep) || !pte_present(*ptep))
+> +		return 0;
+> +
+> +	return pte_pfn(*ptep);
+> +}
+> +
+>  /*
+>   * free page(s) as defined by the above mapping.
+>   */
+> @@ -181,13 +198,9 @@ void consistent_free(size_t size, void *vaddr)
+>  	} while (size -=3D PAGE_SIZE);
+>  #else
+>  	do {
+> -		pte_t *ptep;
+> +		pte_t *ptep =3D consistent_virt_to_pte(vaddr);
+>  		unsigned long pfn;
+> =20
+> -		ptep =3D pte_offset_kernel(pmd_offset(pgd_offset_k(
+> -						(unsigned int)vaddr),
+> -					(unsigned int)vaddr),
+> -				(unsigned int)vaddr);
+>  		if (!pte_none(*ptep) && pte_present(*ptep)) {
+>  			pfn =3D pte_pfn(*ptep);
+>  			pte_clear(&init_mm, (unsigned int)vaddr, ptep);
+>=20
 
-As I said, I never thought Gerry's patch don't work, I am just trying to
-make it better. :)
 
-As to the "generic layer" story, please check the following URL:
-https://lkml.org/lkml/2014/12/10/93
+Applied.
 
 Thanks,
-	Abel
+Michal
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlSIEhgACgkQykllyylKDCExNQCfZ86S73+4VrzLt9MHKMsFE7dG
+29MAoJO+M52ntscv4SmGNwQhbwuTqJfj
+=yXkZ
+-----END PGP SIGNATURE-----
+
+--w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK--
