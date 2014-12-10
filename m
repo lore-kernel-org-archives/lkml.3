@@ -1,248 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaLJWcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:32:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36946 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724AbaLJWcN convert rfc822-to-8bit (ORCPT
+	id S933299AbaLJWeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:34:17 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:51970 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724AbaLJWeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:32:13 -0500
+	Wed, 10 Dec 2014 17:34:15 -0500
+Date: Wed, 10 Dec 2014 22:33:39 +0000
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: m.chehab@samsung.com
+Cc: jarod@wilsonet.com, gregkh@linuxfoundation.org,
+        mahfouz.saif.elyazal@gmail.com, gulsah.1004@gmail.com,
+        tuomas.tynkkynen@iki.fi, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 1/2] staging: media: lirc: lirc_zilog.c: fix quoted
+ strings split across lines
+Message-ID: <20141210223339.GA9397@biggie>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v2 00/16] nfsd/sunrpc: add support for a workqueue-based nfsd
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
-Date: Wed, 10 Dec 2014 14:31:55 -0800
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Neil Brown <neilb@suse.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AF4C9367-72BD-46F2-BAB2-5C583B01C3F6@oracle.com>
-References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
-To: Jeff Layton <jlayton@primarydata.com>
-X-Mailer: Apple Mail (2.1878.6)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff-
+checkpatch makes an exception to the 80-colum rule for quotes strings, and
+Documentation/CodingStyle recommends not splitting quotes strings across lines
+because it breaks the ability to grep for the string. Fixing these.
 
-On Dec 10, 2014, at 11:07 AM, Jeff Layton <jlayton@primarydata.com> wrote:
+WARNING: quoted string split across lines
 
-> This is the second revision of the workqueue-based nfsd. Changes from
-> the RFC version I posted earlier:
-> 
-> v2:
-> - found and fixed problem causing the delays between work. It was a bug
->  in the design of the new code. I was queueing the svc_xprt's work to
->  do everything and that necessarily serialized that work. This version
->  adds a work_struct to the svc_rqst as well, and that's where the
->  bulk of the work.
-> 
-> - no longer tries to use the thread count as a max_active setting for
->  the workqueue. The workqueue max_active settings are left to the
->  default. This means that /proc/fs/nfsd/threads is basically a binary
->  switch that's either zero (not running) or non-zero (running). The
->  actual value has no meaning.
-> 
-> - the handling of the fs_struct has been reworked. It's now allocated
->  as part of the struct svc_rqst. Each svc_rqst has its own fs_struct
->  now.
-> 
-> - CONFIG_SUNRPC_SVC_WORKQUEUE has been removed. Since the code must
->  be enabled at runtime anyway, we don't need a switch to disable this
->  code at build time.
-> 
-> - the new tracepoints have been reworked.
-> 
-> This new code is still a little slower (2-3%) than the older, thread
-> based code in my testing, though my hope is that it may perform better
-> than the older code on a NUMA machine. I don't have one at the moment
-> to verify that, however.
-> 
-> For background, here's an excerpt from the original posting:
-> 
-> This patchset is a little skunkworks project that I've been poking at
-> for the last few weeks. Currently nfsd uses a dedicated thread pool to
-> handle RPCs, but that requires maintaining a rather large swath of
-> "fiddly" code to handle the threads and transports.
-> 
-> This patchset represents an alternative approach, which makes nfsd use
-> workqueues to do its bidding rather than a dedicated thread pool. When a
-> transport needs to do work, we simply queue it to the workqueue in
-> softirq context and let it service the transport.
-> 
-> Performance:
-> ------------
-> As far as numbers go, I ran a modified version of the fio
-> tiobench-example.fio test that just reduces the file size to 128M:
-> 
-> threads:
-> ----------------------------------------------------------------------
-> Run status group 0 (all jobs):
->  WRITE: io=13740KB, aggrb=228KB/s, minb=57KB/s, maxb=57KB/s,
-> mint=60034msec, maxt=60049msec
-> 
-> Run status group 1 (all jobs):
->  WRITE: io=14652KB, aggrb=244KB/s, minb=60KB/s, maxb=61KB/s,
-> mint=60002msec, maxt=60028msec
-> 
-> Run status group 2 (all jobs):
->   READ: io=524288KB, aggrb=49639KB/s, minb=12409KB/s, maxb=12433KB/s,
-> mint=10542msec, maxt=10562msec
-> 
-> Run status group 3 (all jobs):
->   READ: io=524288KB, aggrb=50670KB/s, minb=12667KB/s, maxb=12687KB/s,
-> mint=10331msec, maxt=10347msec
-> 
-> workqueue:
-> ----------------------------------------------------------------------
-> Run status group 0 (all jobs):
->  WRITE: io=13632KB, aggrb=226KB/s, minb=56KB/s, maxb=56KB/s,
-> mint=60010msec, maxt=60061msec
-> 
-> Run status group 1 (all jobs):
->  WRITE: io=14328KB, aggrb=238KB/s, minb=59KB/s, maxb=59KB/s,
-> mint=60023msec, maxt=60033msec
-> 
-> Run status group 2 (all jobs):
->   READ: io=524288KB, aggrb=47779KB/s, minb=11944KB/s, maxb=11955KB/s,
-> mint=10963msec, maxt=10973msec
-> 
-> Run status group 3 (all jobs):
->   READ: io=524288KB, aggrb=48379KB/s, minb=12094KB/s, maxb=12114KB/s,
-> mint=10819msec, maxt=10837msec
-> 
-> ...a small performance decrease using workqueues (about 5% in the worst
-> case). It varies a little between runs but the results over several runs
-> are fairly consistent in showing a small perf decrease.
-> 
-> In an attempt to ascertain where that comes from, I added some
-> tracepoints and wrote a perl script to scrape the results and figure out
-> where the latency comes from. The numbers here are from the ones that
-> produced the above results:
-> 
-> [jlayton@palma nfsd-wq]$ ./analyze.pl < threads.txt 
-> -------------------------------------------------------------
-> rpcs=272437
-> queue=3.79952429455322
-> queued=10.0558330900775
-> receive=10.6196625266701
-> process=2325.8173229043
-> total=2350.2923428156
-> 
-> [jlayton@palma nfsd-wq]$ ./analyze.pl < workqueue.txt 
-> -------------------------------------------------------------
-> rpcs=272329
-> queue=4.41979737859012
-> queued=8.124893049967
-> receive=11.3421082590608
-> process=2310.15945786277
-> total=2334.04625655039
-> 
-> Here's a legend, the numbers represent a delta between two
-> tracepoints for a particular xprt or rqst. I can provide the script if
-> it's helpful but it's definitely hacked together:
-> 
-> rpcs: total number of rpcs processed (just a count)
-> queue: time it took to queue the xprt.xi
->       trace_svc_xprt_enqueued - trace_svc_xprt_enqueue (in usecs)
-> 
-> queued: time between being queued and going "active"
->        trace_svc_xprt_active - trace_svc_xprt_enqueued (in usecs)
-> 
-> receive: time between going "active" and completing the receive
->         trace_svc_xprt_received - trace_svc_xprt_active (in usecs)
-> 
-> process: time between completing the receive and finishing processing
->         trace_svc_process - trace_svc_xprt_recevied (in usecs)
-> 
-> total: total time from enqueueing to finishing the processing
->       trace_svc_process - trace_svc_xprt_enqueued (in usecs)
-> 
-> The interesting bit is that according to these numbers, the workqueue
-> RPCs ran more quickly on average (though most of that is in svc_process,
-> for which I have zero explanation). So, why are we getting slower
-> results?
-> 
-> One theory is that it's getting bitten by the fact that the workqueue
-> queueing/dequeueing code uses spinlocks that disable bottom halves.
-> Perhaps that adds up and causes more latency to softirq processing? I'm
-> not sure how best to nail that down...
-> 
-> It's probably worth it to start considering this for v3.20, but I'd like
-> to get some time on a larger scale test rig to see how it does first.
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+---
+ drivers/staging/media/lirc/lirc_zilog.c | 61 ++++++++++++++++++---------------
+ 1 file changed, 34 insertions(+), 27 deletions(-)
 
-I think there needs to be a guarantee that this does not break
-badly with NFS/RDMA, with xfs / btrfs / ext4, or with 40 and
-56GbE. (Yes, we are volunteering to help with some of that).
-
-How does it scale in number of individual transport sockets?
-
-Does the new scheduling model use more or less CPU per byte
-and per RPC?
-
-Also, running these performance tests with a CPU soaker running
-on the NFS server might be interesting. Something like a large
-software build. That could better expose issues with workqueue
-scheduling.
-
-That feels like more work than any of us can do before 3.20.
-
-
-> We'll also need Al's ACK on the fs_struct stuff.
-> 
-> Thoughts or comments are welcome.
-> 
-> Jeff Layton (16):
->  sunrpc: add a new svc_serv_ops struct and move sv_shutdown into it
->  sunrpc: move sv_function into sv_ops
->  sunrpc: move sv_module parm into sv_ops
->  sunrpc: turn enqueueing a svc_xprt into a svc_serv operation
->  sunrpc: abstract out svc_set_num_threads to sv_ops
->  sunrpc: move pool_mode definitions into svc.h
->  sunrpc: factor svc_rqst allocation and freeing from sv_nrthreads
->    refcounting
->  sunrpc: set up workqueue function in svc_xprt
->  sunrpc: set up svc_rqst work if it's defined
->  sunrpc: add basic support for workqueue-based services
->  nfsd: keep a reference to the fs_struct in svc_rqst
->  nfsd: add support for workqueue based service processing
->  sunrpc: keep a cache of svc_rqsts for each NUMA node
->  sunrpc: add more tracepoints around svc_xprt handling
->  sunrpc: print the svc_rqst pointer value in svc_process tracepoint
->  sunrpc: add tracepoints around svc_sock handling
-> 
-> fs/fs_struct.c                  |  60 ++++++--
-> fs/lockd/svc.c                  |   7 +-
-> fs/nfs/callback.c               |   6 +-
-> fs/nfsd/nfssvc.c                | 100 +++++++++++--
-> include/linux/fs_struct.h       |   4 +
-> include/linux/sunrpc/svc.h      |  93 ++++++++++---
-> include/linux/sunrpc/svc_xprt.h |   3 +
-> include/linux/sunrpc/svcsock.h  |   1 +
-> include/trace/events/sunrpc.h   |  88 ++++++++++--
-> net/sunrpc/Makefile             |   2 +-
-> net/sunrpc/svc.c                | 141 +++++++++++--------
-> net/sunrpc/svc_wq.c             | 302 ++++++++++++++++++++++++++++++++++++++++
-> net/sunrpc/svc_xprt.c           |  68 ++++++++-
-> net/sunrpc/svcsock.c            |   6 +
-> 14 files changed, 758 insertions(+), 123 deletions(-)
-> create mode 100644 net/sunrpc/svc_wq.c
-> 
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index dca806a..8814a7e 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -372,14 +372,14 @@ static int add_to_buf(struct IR *ir)
+ 					   ret);
+ 			if (failures >= 3) {
+ 				mutex_unlock(&ir->ir_lock);
+-				dev_err(ir->l.dev, "unable to read from the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(ir->l.dev,
++					"unable to read from the IR chip after 3 resets, giving up\n");
+ 				break;
+ 			}
+ 
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
+-				    "trying reset\n");
++			dev_err(ir->l.dev,
++				"polling the IR receiver chip failed, trying reset\n");
+ 
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			if (kthread_should_stop()) {
+@@ -405,8 +405,9 @@ static int add_to_buf(struct IR *ir)
+ 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
+ 		mutex_unlock(&ir->ir_lock);
+ 		if (ret != sizeof(keybuf)) {
+-			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
+-				    "keeping last read buffer\n", ret);
++			dev_err(ir->l.dev,
++				"i2c_master_recv failed with %d -- keeping last read buffer\n",
++				ret);
+ 		} else {
+ 			rx->b[0] = keybuf[3];
+ 			rx->b[1] = keybuf[4];
+@@ -713,8 +714,9 @@ static int send_boot_data(struct IR_tx *tx)
+ 				       buf[0]);
+ 		return 0;
+ 	}
+-	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
+-		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
++	dev_notice(tx->ir->l.dev,
++		   "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
++		   buf[1], buf[2], buf[3]);
+ 
+ 	return 0;
+ }
+@@ -794,9 +796,9 @@ static int fw_load(struct IR_tx *tx)
+ 	if (!read_uint8(&data, tx_data->endp, &version))
+ 		goto corrupt;
+ 	if (version != 1) {
+-		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
+-			    "1) -- please upgrade to a newer driver",
+-			    version);
++		dev_err(tx->ir->l.dev,
++			"unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
++			version);
+ 		fw_unload_locked();
+ 		ret = -EFAULT;
+ 		goto out;
+@@ -983,8 +985,9 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	ret = get_key_data(data_block, code, key);
+ 
+ 	if (ret == -EPROTO) {
+-		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
+-			    "lircd.conf entries\n", code, key);
++		dev_err(tx->ir->l.dev,
++			"failed to get data for code %u, key %u -- check lircd.conf entries\n",
++			code, key);
+ 		return ret;
+ 	} else if (ret != 0)
+ 		return ret;
+@@ -1059,12 +1062,14 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 		ret = i2c_master_send(tx->c, buf, 1);
+ 		if (ret == 1)
+ 			break;
+-		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
+-			"failed with %d (try %d)\n", ret, i+1);
++		dev_dbg(tx->ir->l.dev,
++			"NAK expected: i2c_master_send failed with %d (try %d)\n",
++			ret, i+1);
+ 	}
+ 	if (ret != 1) {
+-		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
+-			    "failed with %d\n", ret);
++		dev_err(tx->ir->l.dev,
++			"IR TX chip never got ready: last i2c_master_send failed with %d\n",
++			ret);
+ 		return ret < 0 ? ret : -EFAULT;
+ 	}
+ 
+@@ -1167,12 +1172,12 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
+ 		 */
+ 		if (ret != 0) {
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
+-				    "failed, trying reset\n");
++			dev_err(tx->ir->l.dev,
++				"sending to the IR transmitter chip failed, trying reset\n");
+ 
+ 			if (failures >= 3) {
+-				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(tx->ir->l.dev,
++					"unable to send to the IR chip after 3 resets, giving up\n");
+ 				mutex_unlock(&ir->ir_lock);
+ 				mutex_unlock(&tx->client_lock);
+ 				put_ir_tx(tx, false);
+@@ -1542,8 +1547,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 		/* Proceed only if the Rx client is also ready or not needed */
+ 		if (rx == NULL && !tx_only) {
+-			dev_info(tx->ir->l.dev, "probe of IR Tx on %s (i2c-%d) done. Waiting"
+-				   " on IR Rx.\n", adap->name, adap->nr);
++			dev_info(tx->ir->l.dev,
++				 "probe of IR Tx on %s (i2c-%d) done. Waiting on IR Rx.\n",
++				 adap->name, adap->nr);
+ 			goto out_ok;
+ 		}
+ 	} else {
+@@ -1581,8 +1587,9 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 				       "zilog-rx-i2c-%d", adap->nr);
+ 		if (IS_ERR(rx->task)) {
+ 			ret = PTR_ERR(rx->task);
+-			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
+-				    "\n", __func__);
++			dev_err(tx->ir->l.dev,
++				"%s: could not start IR Rx polling thread\n",
++				__func__);
+ 			/* Failed kthread, so put back the ir ref */
+ 			put_ir_device(ir, true);
+ 			/* Failure exit, so put back rx ref from i2c_client */
+@@ -1594,8 +1601,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 		/* Proceed only if the Tx client is also ready */
+ 		if (tx == NULL) {
+-			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
+-				   " on IR Tx.\n", adap->name, adap->nr);
++			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
++				   adap->name, adap->nr);
+ 			goto out_ok;
+ 		}
+ 	}
+-- 
+2.1.3
 
