@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759AbaLJPBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:01:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54183 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbaLJPBi (ORCPT
+	id S1757760AbaLJPCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:02:48 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:45420 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905AbaLJPCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:01:38 -0500
-Date: Wed, 10 Dec 2014 16:01:09 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: atull@opensource.altera.com
-Cc: gregkh@linuxfoundation.org, jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v4 2/6] arm: dts: socfpga: add altera fpga manager
-Message-ID: <20141210150109.GA23358@pengutronix.de>
-References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
- <1418156090-23578-3-git-send-email-atull@opensource.altera.com>
+	Wed, 10 Dec 2014 10:02:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418156090-23578-3-git-send-email-atull@opensource.altera.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:59:52 up 56 days,  2:13, 82 users,  load average: 0,15, 0,15,
- 0,15
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <000001cffe5e$44893f60$cd9bbe20$%yang@samsung.com>
+References: <000001cffe5e$44893f60$cd9bbe20$%yang@samsung.com>
+Date: Wed, 10 Dec 2014 23:02:46 +0800
+Message-ID: <CAL1ERfM3gn25gt-yf_MgVgZCkPyecQBB+cw32SR2XLNDWmnCQQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] mm: mincore: use PAGE_SIZE instead of PAGE_CACHE_SIZE
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+ping. Any comments?
 
-On Tue, Dec 09, 2014 at 02:14:46PM -0600, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Add Altera FGPA manager to device tree.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+On Wed, Nov 12, 2014 at 5:50 PM, Weijie Yang <weijie.yang@samsung.com> wrote:
+> This is a RFC patch, because current PAGE_SIZE is equal to PAGE_CACHE_SIZE,
+> there isn't any difference and issue when running.
+>
+> However, the current code mixes these two aligned_size inconsistently, and if
+> they are not equal in future mincore_unmapped_range() would check more file
+> pages than wanted.
+>
+> According to man-page, mincore uses PAGE_SIZE as its size unit, so this patch
+> uses PAGE_SIZE instead of PAGE_CACHE_SIZE.
+>
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 > ---
->  arch/arm/boot/dts/socfpga.dtsi |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 4472fd9..bab98b6 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -751,5 +751,15 @@
->  			compatible = "altr,sys-mgr", "syscon";
->  			reg = <0xffd08000 0x4000>;
->  		};
-> +
-> +		hps_0_fpgamgr: fpgamgr@0xff706000 {
-> +			compatible = "altr,fpga-mgr", "simple-bus";
-> +			reg = <0xFF706000 0x1000
-> +			       0xFFB90000 0x1000>;
-> +			interrupts = <0 175 4>;
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +		};
-
-The fpgamgr is NOT a bus. You don't need ranges and/or simple-bus.
-
-Regards,
-Steffen
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>  mm/mincore.c |   19 +++++++++++++------
+>  1 files changed, 13 insertions(+), 6 deletions(-)
+>
+> diff --git a/mm/mincore.c b/mm/mincore.c
+> index 725c809..8c19bce 100644
+> --- a/mm/mincore.c
+> +++ b/mm/mincore.c
+> @@ -102,11 +102,18 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
+>         int i;
+>
+>         if (vma->vm_file) {
+> -               pgoff_t pgoff;
+> +               pgoff_t pgoff, pgoff_end;
+> +               int j, count;
+> +               unsigned char res;
+>
+> +               count = 1 << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+>                 pgoff = linear_page_index(vma, addr);
+> -               for (i = 0; i < nr; i++, pgoff++)
+> -                       vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
+> +               pgoff_end = linear_page_index(vma, end);
+> +               for (i = 0; pgoff < pgoff_end; pgoff++) {
+> +                       res = mincore_page(vma->vm_file->f_mapping, pgoff);
+> +                       for (j = 0; j < count; j++)
+> +                               vec[i++] = res;
+> +               }
+>         } else {
+>                 for (i = 0; i < nr; i++)
+>                         vec[i] = 0;
+> @@ -258,7 +265,7 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+>   * return values:
+>   *  zero    - success
+>   *  -EFAULT - vec points to an illegal address
+> - *  -EINVAL - addr is not a multiple of PAGE_CACHE_SIZE
+> + *  -EINVAL - addr is not a multiple of PAGE_SIZE
+>   *  -ENOMEM - Addresses in the range [addr, addr + len] are
+>   *             invalid for the address space of this process, or
+>   *             specify one or more pages which are not currently
+> @@ -273,14 +280,14 @@ SYSCALL_DEFINE3(mincore, unsigned long, start, size_t, len,
+>         unsigned char *tmp;
+>
+>         /* Check the start address: needs to be page-aligned.. */
+> -       if (start & ~PAGE_CACHE_MASK)
+> +       if (start & ~PAGE_MASK)
+>                 return -EINVAL;
+>
+>         /* ..and we need to be passed a valid user-space range */
+>         if (!access_ok(VERIFY_READ, (void __user *) start, len))
+>                 return -ENOMEM;
+>
+> -       /* This also avoids any overflows on PAGE_CACHE_ALIGN */
+> +       /* This also avoids any overflows on PAGE_ALIGN */
+>         pages = len >> PAGE_SHIFT;
+>         pages += (len & ~PAGE_MASK) != 0;
+>
+> --
+> 1.7.0.4
+>
+>
