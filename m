@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517AbaLJRJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:09:22 -0500
-Received: from box2.japko.eu ([91.121.152.53]:42071 "EHLO box2.japko.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209AbaLJRJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:09:21 -0500
-Date: Wed, 10 Dec 2014 18:05:31 +0100
-From: Krzysztof Adamski <k@japko.eu>
-To: Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6656: whitespace checkpatch warning fix.
-Message-ID: <20141210170531.GA5833@japko.eu>
+	id S932530AbaLJRKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:10:43 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:50373 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209AbaLJRKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 12:10:42 -0500
+Date: Wed, 10 Dec 2014 12:10:38 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [GIT PULL] cgroup changes for v3.19-rc1
+Message-ID: <20141210171038.GF6294@htj.dyndns.org>
+References: <20141210170827.GE6294@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141210170827.GE6294@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes following checkpatch.pl error:
-ERROR: space prohibited before that ',' (ctx:WxW)
+Oops, wrong git branch URL.
 
-Signed-off-by: Krzysztof Adamski <k@japko.eu>
----
- drivers/staging/vt6656/rxtx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Dec 10, 2014 at 12:08:27PM -0500, Tejun Heo wrote:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.19
 
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index ea5140a..5a18e26 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -55,7 +55,7 @@ static const u16 vnt_fb_opt0[2][5] = {
- 
- static const u16 vnt_fb_opt1[2][5] = {
- 	{RATE_12M, RATE_18M, RATE_24M, RATE_24M, RATE_36M}, /* fallback_rate0 */
--	{RATE_6M , RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
-+	{RATE_6M,  RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
- };
- 
- #define RTSDUR_BB       0
+This should have been
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.19
+
+Everything else is the same.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
