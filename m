@@ -1,162 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaLJGhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:37:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:8778 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514AbaLJGhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:37:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="496467432"
-Message-ID: <5487E96D.70609@intel.com>
-Date: Wed, 10 Dec 2014 14:34:21 +0800
-From: Jike Song <jike.song@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756583AbaLJGml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:42:41 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51469 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbaLJGmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 01:42:39 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 10 Dec 2014 15:46:32 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mm/compaction: enhance compaction finish condition
+Message-ID: <20141210064632.GD13371@js1304-P5Q-DELUXE>
+References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1418022980-4584-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <5485708D.3070009@suse.cz>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm@vger.kernel.org, "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        linux-kernel@vger.kernel.org, "Haron, Sandra" <sandra.haron@intel.com>,
-        "Tian, Kevin" <kevin.tian@intel.com>
-Subject: Re: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
- GVT-g(full GPU virtualization) for KVM
-References: <547FC5DE.4010701@intel.com> <5486C6CA.8080006@siemens.com>
-In-Reply-To: <5486C6CA.8080006@siemens.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5485708D.3070009@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Kevin.
+On Mon, Dec 08, 2014 at 10:34:05AM +0100, Vlastimil Babka wrote:
+> On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
+> >Compaction has anti fragmentation algorithm. It is that freepage
+> >should be more than pageblock order to finish the compaction if we don't
+> >find any freepage in requested migratetype buddy list. This is for
+> >mitigating fragmentation, but, it is a lack of migratetype consideration
+> >and too excessive.
+> >
+> >At first, it doesn't consider migratetype so there would be false positive
+> >on compaction finish decision. For example, if allocation request is
+> >for unmovable migratetype, freepage in CMA migratetype doesn't help that
+> >allocation, so compaction should not be stopped. But, current logic
+> >considers it as compaction is no longer needed and stop the compaction.
+> >
+> >Secondly, it is too excessive. We can steal freepage from other migratetype
+> >and change pageblock migratetype on more relaxed conditions. In page
+> >allocator, there is another conditions that can succeed to steal without
+> >introducing fragmentation.
+> >
+> >To solve these problems, this patch borrows anti fragmentation logic from
+> >page allocator. It will reduce premature compaction finish in some cases
+> >and reduce excessive compaction work.
+> >
+> >stress-highalloc test in mmtests with non movable order 7 allocation shows
+> >in allocation success rate on phase 1 and compaction success rate.
+> >
+> >Allocation success rate on phase 1 (%)
+> >57.00 : 63.67
+> >
+> >Compaction success rate (Compaction success * 100 / Compaction stalls, %)
+> >28.94 : 35.13
+> >
+> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >---
+> >  include/linux/mmzone.h |    3 +++
+> >  mm/compaction.c        |   31 +++++++++++++++++++++++++++++--
+> >  mm/internal.h          |    1 +
+> >  mm/page_alloc.c        |    5 ++---
+> >  4 files changed, 35 insertions(+), 5 deletions(-)
+> >
+> >diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> >index 2f0856d..87f5bb5 100644
+> >--- a/include/linux/mmzone.h
+> >+++ b/include/linux/mmzone.h
+> >@@ -63,6 +63,9 @@ enum {
+> >  	MIGRATE_TYPES
+> >  };
+> >
+> >+#define FALLBACK_MIGRATETYPES (4)
+> >+extern int fallbacks[MIGRATE_TYPES][FALLBACK_MIGRATETYPES];
+> >+
+> >  #ifdef CONFIG_CMA
+> >  #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
+> >  #else
+> >diff --git a/mm/compaction.c b/mm/compaction.c
+> >index 1a5f465..2fd5f79 100644
+> >--- a/mm/compaction.c
+> >+++ b/mm/compaction.c
+> >@@ -1054,6 +1054,30 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+> >  	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+> >  }
+> >
+> >+static bool can_steal_fallbacks(struct free_area *area,
+> >+			unsigned int order, int migratetype)
+> >+{
+> >+	int i;
+> >+	int fallback_mt;
+> >+
+> >+	if (area->nr_free == 0)
+> >+		return false;
+> >+
+> >+	for (i = 0; i < FALLBACK_MIGRATETYPES; i++) {
+> >+		fallback_mt = fallbacks[migratetype][i];
+> >+		if (fallback_mt == MIGRATE_RESERVE)
+> >+			break;
+> >+
+> >+		if (list_empty(&area->free_list[fallback_mt]))
+> >+			continue;
+> >+
+> >+		if (can_steal_freepages(order, migratetype, fallback_mt))
+> >+			return true;
+> >+	}
+> >+
+> >+	return false;
+> >+}
+> >+
+> >  static int __compact_finished(struct zone *zone, struct compact_control *cc,
+> >  			    const int migratetype)
+> >  {
+> >@@ -1104,8 +1128,11 @@ static int __compact_finished(struct zone *zone, struct compact_control *cc,
+> >  		if (!list_empty(&area->free_list[migratetype]))
+> >  			return COMPACT_PARTIAL;
+> >
+> >-		/* Job done if allocation would set block type */
+> >-		if (order >= pageblock_order && area->nr_free)
+> 
+> So, can_steal_fallbacks() -> can_steal_freepages() is quite involved
+> way if in the end we just realize that order >= pageblock_order and
+> we are stealing whole pageblock. Given that often compaction is done
+> for THP, it would be better to check order >= pageblock_order and
+> handle it upfront. This goes together with my comments on previous
+> patch that order >= pageblock_order is better handled separately.
 
+I'd like to keep this order check in can_steal_freepages(). At first, we
+should first check migratetype before order checking. If high order page
+is on CMA, we can't steal it. Secondly, I think that maintaining well
+defined function to check whether we can steal or not is better than
+separating logic. It would help future maintanance.
 
-On 12/09/2014 05:54 PM, Jan Kiszka wrote:
-> On 2014-12-04 03:24, Jike Song wrote:
->> Hi all,
->>
->>   We are pleased to announce the first release of KVMGT project. KVMGT is
->> the implementation of Intel GVT-g technology, a full GPU virtualization
->> solution. Under Intel GVT-g, a virtual GPU instance is maintained for
->> each VM, with part of performance critical resources directly assigned.
->> The capability of running native graphics driver inside a VM, without
->> hypervisor intervention in performance critical paths, achieves a good
->> balance of performance, feature, and sharing capability.
->>
->>
->>   KVMGT is still in the early stage:
->>
->>    - Basic functions of full GPU virtualization works, guest can see a
->> full-featured vGPU.
->>      We ran several 3D workloads such as lightsmark, nexuiz, urbanterror
->> and warsow.
->>
->>    - Only Linux guest supported so far, and PPGTT must be disabled in
->> guest through a
->>      kernel parameter(see README.kvmgt in QEMU).
->>
->>    - This drop also includes some Xen specific changes, which will be
->> cleaned up later.
->>
->>    - Our end goal is to upstream both XenGT and KVMGT, which shares ~90%
->> logic for vGPU
->>      device model (will be part of i915 driver), with only difference in
->> hypervisor
->>      specific services
->>
->>    - insufficient test coverage, so please bear with stability issues :)
->>
->>
->>
->>   There are things need to be improved, esp. the KVM interfacing part:
->>
->>      1    a domid was added to each KVMGT guest
->>
->>          An ID is needed for foreground OS switching, e.g.
->>
->>              # echo <domid>    >    /sys/kernel/vgt/control/foreground_vm
->>
->>          domid 0 is reserved for host OS.
->>
->>
->>       2    SRCU workarounds.
->>
->>          Some KVM functions, such as:
->>
->>                  kvm_io_bus_register_dev
->>                  install_new_memslots
->>
->>          must be called *without* &kvm->srcu read-locked. Otherwise it
->> hangs.
->>
->>          In KVMGT, we need to register an iodev only *after* BAR
->> registers are
->>          written by guest. That means, we already have &kvm->srcu hold -
->>          trapping/emulating PIO(BAR registers) makes us in such a condition.
->>          That will make kvm_io_bus_register_dev hangs.
->>
->>          Currently we have to disable rcu_assign_pointer() in such
->> functions.
->>
->>          These were dirty workarounds, your suggestions are high welcome!
->>
->>
->>      3    syscalls were called to access "/dev/mem" from kernel
->>
->>          An in-kernel memslot was added for aperture, but using syscalls
->> like
->>          open and mmap to open and access the character device "/dev/mem",
->>          for pass-through.
->>
->>
->>
->>
->> The source codes(kernel, qemu as well as seabios) are available at github:
->>
->>      git://github.com/01org/KVMGT-kernel
->>      git://github.com/01org/KVMGT-qemu
->>      git://github.com/01org/KVMGT-seabios
->>
->> In the KVMGT-qemu repository, there is a "README.kvmgt" to be referred.
->>
->>
->>
->> More information about Intel GVT-g and KVMGT can be found at:
->>
->>      https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
->>
->>      http://events.linuxfoundation.org/sites/events/files/slides/KVMGT-a%20Full%20GPU%20Virtualization%20Solution_1.pdf
->>
->>
->>
->> Appreciate your comments, BUG reports, and contributions!
->>
->
-> There is an even increasing interest to keep KVM's in-kernel guest
-> interface as small as possible, specifically for security reasons. I'm
-> sure there are some good performance reasons to create a new in-kernel
-> device model, but I suppose those will need good evidences why things
-> are done in the way they finally should be - and not via a user-space
-> device model. This is likely not a binary decision (all userspace vs. no
-> userspace), it is more about the size and robustness of the in-kernel
-> model vs. its performance.
->
-> One aspect could also be important: Are there hardware improvements in
-> sight that will eventually help to reduce the in-kernel device model and
-> make the overall design even more robust? How will those changes fit
-> best into a proposed user/kernel split?
->
-> Jan
->
+Thanks.
 
---
-Thanks,
-Jike
-_______________________________________________
-Intel-gfx mailing list
-Intel-gfx@lists.freedesktop.org
-http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> 
+> >+		/*
+> >+		 * Job done if allocation would steal freepages from
+> >+		 * other migratetype buddy lists.
+> >+		 */
+> >+		if (can_steal_fallbacks(area, order, migratetype))
+> >  			return COMPACT_PARTIAL;
+> >  	}
+> >
+> >diff --git a/mm/internal.h b/mm/internal.h
+> >index efad241..7028d83 100644
+> >--- a/mm/internal.h
+> >+++ b/mm/internal.h
+> >@@ -179,6 +179,7 @@ unsigned long
+> >  isolate_migratepages_range(struct compact_control *cc,
+> >  			   unsigned long low_pfn, unsigned long end_pfn);
+> >
+> >+bool can_steal_freepages(unsigned int order, int start_mt, int fallback_mt);
+> >  #endif
+> >
+> >  /*
+> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >index 7b4c9aa..dcb8523 100644
+> >--- a/mm/page_alloc.c
+> >+++ b/mm/page_alloc.c
+> >@@ -1031,7 +1031,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+> >   * This array describes the order lists are fallen back to when
+> >   * the free lists for the desirable migrate type are depleted
+> >   */
+> >-static int fallbacks[MIGRATE_TYPES][4] = {
+> >+int fallbacks[MIGRATE_TYPES][FALLBACK_MIGRATETYPES] = {
+> >  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,     MIGRATE_RESERVE },
+> >  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,     MIGRATE_RESERVE },
+> >  #ifdef CONFIG_CMA
+> >@@ -1161,8 +1161,7 @@ static void try_to_steal_freepages(struct zone *zone, struct page *page,
+> >  	}
+> >  }
+> >
+> >-static bool can_steal_freepages(unsigned int order,
+> >-			int start_mt, int fallback_mt)
+> >+bool can_steal_freepages(unsigned int order, int start_mt, int fallback_mt)
+> >  {
+> >  	/*
+> >  	 * When borrowing from MIGRATE_CMA, we need to release the excess
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
