@@ -1,193 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaLJGml (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:42:41 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51469 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359AbaLJGmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:42:39 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 10 Dec 2014 15:46:32 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mm/compaction: enhance compaction finish condition
-Message-ID: <20141210064632.GD13371@js1304-P5Q-DELUXE>
-References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1418022980-4584-4-git-send-email-iamjoonsoo.kim@lge.com>
- <5485708D.3070009@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5485708D.3070009@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756594AbaLJGon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:44:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39239 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967AbaLJGom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 01:44:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,550,1413270000"; 
+   d="scan'208";a="645282944"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Borislav Petkov <bp@alien8.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC Patch V1 0/9] Simplify initialization of IR on x86 platforms
+Date: Wed, 10 Dec 2014 14:47:42 +0800
+Message-Id: <1418194071-13785-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:34:05AM +0100, Vlastimil Babka wrote:
-> On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
-> >Compaction has anti fragmentation algorithm. It is that freepage
-> >should be more than pageblock order to finish the compaction if we don't
-> >find any freepage in requested migratetype buddy list. This is for
-> >mitigating fragmentation, but, it is a lack of migratetype consideration
-> >and too excessive.
-> >
-> >At first, it doesn't consider migratetype so there would be false positive
-> >on compaction finish decision. For example, if allocation request is
-> >for unmovable migratetype, freepage in CMA migratetype doesn't help that
-> >allocation, so compaction should not be stopped. But, current logic
-> >considers it as compaction is no longer needed and stop the compaction.
-> >
-> >Secondly, it is too excessive. We can steal freepage from other migratetype
-> >and change pageblock migratetype on more relaxed conditions. In page
-> >allocator, there is another conditions that can succeed to steal without
-> >introducing fragmentation.
-> >
-> >To solve these problems, this patch borrows anti fragmentation logic from
-> >page allocator. It will reduce premature compaction finish in some cases
-> >and reduce excessive compaction work.
-> >
-> >stress-highalloc test in mmtests with non movable order 7 allocation shows
-> >in allocation success rate on phase 1 and compaction success rate.
-> >
-> >Allocation success rate on phase 1 (%)
-> >57.00 : 63.67
-> >
-> >Compaction success rate (Compaction success * 100 / Compaction stalls, %)
-> >28.94 : 35.13
-> >
-> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >---
-> >  include/linux/mmzone.h |    3 +++
-> >  mm/compaction.c        |   31 +++++++++++++++++++++++++++++--
-> >  mm/internal.h          |    1 +
-> >  mm/page_alloc.c        |    5 ++---
-> >  4 files changed, 35 insertions(+), 5 deletions(-)
-> >
-> >diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> >index 2f0856d..87f5bb5 100644
-> >--- a/include/linux/mmzone.h
-> >+++ b/include/linux/mmzone.h
-> >@@ -63,6 +63,9 @@ enum {
-> >  	MIGRATE_TYPES
-> >  };
-> >
-> >+#define FALLBACK_MIGRATETYPES (4)
-> >+extern int fallbacks[MIGRATE_TYPES][FALLBACK_MIGRATETYPES];
-> >+
-> >  #ifdef CONFIG_CMA
-> >  #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-> >  #else
-> >diff --git a/mm/compaction.c b/mm/compaction.c
-> >index 1a5f465..2fd5f79 100644
-> >--- a/mm/compaction.c
-> >+++ b/mm/compaction.c
-> >@@ -1054,6 +1054,30 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
-> >  	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
-> >  }
-> >
-> >+static bool can_steal_fallbacks(struct free_area *area,
-> >+			unsigned int order, int migratetype)
-> >+{
-> >+	int i;
-> >+	int fallback_mt;
-> >+
-> >+	if (area->nr_free == 0)
-> >+		return false;
-> >+
-> >+	for (i = 0; i < FALLBACK_MIGRATETYPES; i++) {
-> >+		fallback_mt = fallbacks[migratetype][i];
-> >+		if (fallback_mt == MIGRATE_RESERVE)
-> >+			break;
-> >+
-> >+		if (list_empty(&area->free_list[fallback_mt]))
-> >+			continue;
-> >+
-> >+		if (can_steal_freepages(order, migratetype, fallback_mt))
-> >+			return true;
-> >+	}
-> >+
-> >+	return false;
-> >+}
-> >+
-> >  static int __compact_finished(struct zone *zone, struct compact_control *cc,
-> >  			    const int migratetype)
-> >  {
-> >@@ -1104,8 +1128,11 @@ static int __compact_finished(struct zone *zone, struct compact_control *cc,
-> >  		if (!list_empty(&area->free_list[migratetype]))
-> >  			return COMPACT_PARTIAL;
-> >
-> >-		/* Job done if allocation would set block type */
-> >-		if (order >= pageblock_order && area->nr_free)
-> 
-> So, can_steal_fallbacks() -> can_steal_freepages() is quite involved
-> way if in the end we just realize that order >= pageblock_order and
-> we are stealing whole pageblock. Given that often compaction is done
-> for THP, it would be better to check order >= pageblock_order and
-> handle it upfront. This goes together with my comments on previous
-> patch that order >= pageblock_order is better handled separately.
+This is a following-on patch set to simplify initialization of interrupt
+remapping subsystem on x86 platforms. Please refer to
+	https://lkml.org/lkml/2014/12/5/114
+for the whole story.
 
-I'd like to keep this order check in can_steal_freepages(). At first, we
-should first check migratetype before order checking. If high order page
-is on CMA, we can't steal it. Secondly, I think that maintaining well
-defined function to check whether we can steal or not is better than
-separating logic. It would help future maintanance.
+With this patch set applied, there are three steps to initialize IR on x86:
+1) "Detect" stage to detect ACPI table for IR at early booting stage
+2) "Prepare" stage to allocate resources for IR
+3) "Enable" stage to program hardware device to enable IR
 
-Thanks.
+Patch 1-3 clean up the code to initialize IR and X2APIC on x86
+Patch 4-5 kill the irq_remapping_supported() and related code
+Patch 6-9 clean up IR code further.
 
-> 
-> >+		/*
-> >+		 * Job done if allocation would steal freepages from
-> >+		 * other migratetype buddy lists.
-> >+		 */
-> >+		if (can_steal_fallbacks(area, order, migratetype))
-> >  			return COMPACT_PARTIAL;
-> >  	}
-> >
-> >diff --git a/mm/internal.h b/mm/internal.h
-> >index efad241..7028d83 100644
-> >--- a/mm/internal.h
-> >+++ b/mm/internal.h
-> >@@ -179,6 +179,7 @@ unsigned long
-> >  isolate_migratepages_range(struct compact_control *cc,
-> >  			   unsigned long low_pfn, unsigned long end_pfn);
-> >
-> >+bool can_steal_freepages(unsigned int order, int start_mt, int fallback_mt);
-> >  #endif
-> >
-> >  /*
-> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >index 7b4c9aa..dcb8523 100644
-> >--- a/mm/page_alloc.c
-> >+++ b/mm/page_alloc.c
-> >@@ -1031,7 +1031,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
-> >   * This array describes the order lists are fallen back to when
-> >   * the free lists for the desirable migrate type are depleted
-> >   */
-> >-static int fallbacks[MIGRATE_TYPES][4] = {
-> >+int fallbacks[MIGRATE_TYPES][FALLBACK_MIGRATETYPES] = {
-> >  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,     MIGRATE_RESERVE },
-> >  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,     MIGRATE_RESERVE },
-> >  #ifdef CONFIG_CMA
-> >@@ -1161,8 +1161,7 @@ static void try_to_steal_freepages(struct zone *zone, struct page *page,
-> >  	}
-> >  }
-> >
-> >-static bool can_steal_freepages(unsigned int order,
-> >-			int start_mt, int fallback_mt)
-> >+bool can_steal_freepages(unsigned int order, int start_mt, int fallback_mt)
-> >  {
-> >  	/*
-> >  	 * When borrowing from MIGRATE_CMA, we need to release the excess
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+It's based on tip/x86/apic branch and could be pulled from:
+https://github.com/jiangliu/linux.git irq_remapping_v1
+
+It has been tested on Intel platform with X2APIC enabled and disabled.
+It also passes Fengguang's 0day test suite. Tests on AMD platform are
+welcomed!
+
+Jiang Liu (9):
+  x86, apic: Kill useless variable x2apic_enabled in function
+    enable_IR_x2apic()
+  x86, apic: Correctly detect X2APIC status in function enable_IR()
+  x86, apic: Refine enable_IR_x2apic() and related functions
+  iommu/vt-d: Prepare for killing function irq_remapping_supported()
+  iommu/irq_remapping: Kill function irq_remapping_supported() and
+    related code
+  iommu/irq_remapping: Refine function irq_remapping_prepare() for
+    maintenance
+  iommu/irq_remapping: Change variable disable_irq_remap to be static
+  iommu/irq_remapping: Normailize the way to detect whether IR is
+    enabled
+  iommu/irq_remapping: Kill unused function irq_remapping_print_chip()
+
+ arch/x86/include/asm/irq_remapping.h |    4 --
+ arch/x86/kernel/apic/apic.c          |   89 +++++++++++++++-------------------
+ drivers/iommu/amd_iommu.c            |    1 -
+ drivers/iommu/amd_iommu_init.c       |   10 +---
+ drivers/iommu/amd_iommu_proto.h      |    1 -
+ drivers/iommu/intel_irq_remapping.c  |   59 ++++++++--------------
+ drivers/iommu/irq_remapping.c        |   74 +++++++++-------------------
+ drivers/iommu/irq_remapping.h        |    5 --
+ 8 files changed, 84 insertions(+), 159 deletions(-)
+
+-- 
+1.7.10.4
+
