@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaLJAVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 19:21:49 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:32774 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaLJAVp convert rfc822-to-8bit (ORCPT
+	id S1752769AbaLJAZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 19:25:29 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45094 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaLJAZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 19:21:45 -0500
+	Tue, 9 Dec 2014 19:25:27 -0500
+Date: Tue, 9 Dec 2014 18:25:23 -0600
+From: rkuo <rkuo@codeaurora.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH] hexagon: Fix build failures in linux-next
+Message-ID: <20141210002523.GA17946@codeaurora.org>
+References: <1418163705-1816-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <971ad3f6-90fd-4e3f-916c-8988af3c826d@email.android.com>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
- <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
- <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
- <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
- <87388xodlj.fsf@x220.int.ebiederm.org> <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
- <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
- <CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com>
- <87ppbtn4mv.fsf@x220.int.ebiederm.org> <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
- <87a92xn2io.fsf@x220.int.ebiederm.org> <87r3w8liw4.fsf@x220.int.ebiederm.org>
- <87iohklfvj.fsf_-_@x220.int.ebiederm.org> <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
- <CALCETrVfKiXuY=KY_=nHpkTyLWgpy_3DK=4Mr2mhpyX9z1TzrA@mail.gmail.com> <971ad3f6-90fd-4e3f-916c-8988af3c826d@email.android.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 9 Dec 2014 16:21:23 -0800
-Message-ID: <CALCETrWpzvNm=fjOa3_+4QOqYP8qZUJvQAd6AsRZ71xyHZQRCg@mail.gmail.com>
-Subject: Re: [CFT][PATCH 7/8] userns: Add a knob to disable setgroups on a per
- user namespace basis
-To: "Eric W.Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418163705-1816-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 4:04 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->
->
-> On December 9, 2014 4:28:38 PM CST, Andy Lutomirski <luto@amacapital.net> wrote:
->>On Tue, Dec 9, 2014 at 12:42 PM, Eric W. Biederman
->><ebiederm@xmission.com> wrote:
->>>
->>> - Expose the knob to user space through a proc file
->>/proc/<pid>/setgroups
->>>
->>>   A value of "deny" means the setgroups system call is disabled in
->>the
->>>   current processes user namespace and can not be enabled in the
->>>   future in this user namespace.
->>>
->>>   A value of "allow" means the segtoups system call is enabled.
->>>
->>> - Descendant user namespaces inherit the value of setgroups from
->>>   their parents.
->>>
->>> - A proc file is used (instead of a sysctl) as sysctls
->>>   currently do not pass in a struct file so file_ns_capable
->>>   is unusable.
->>
->>Reviewed-by: Andy Lutomirski <luto@amacapital.net>
->>
->>But I still don't like the name "setgroups".  People may look at that
->>and have no clue what the scope of the setting is.  And anyone who, as
->>root, writes "deny" to /proc/self/setgroups, thinking that it acts on
->>self, will be in for a surprise.
->
-> True setgroups isn't perfect.  Documenting it in a manpage may have to be enough. The only real improvement I can think of would be to make the setting a sysctl.   But I think pursuing that approaches the point where perfection is the enemy of getting this problem fixed.
->
+On Tue, Dec 09, 2014 at 02:21:45PM -0800, Guenter Roeck wrote:
+> hexagon:defconfig fails to build in linux-next since commit 332fd7c4fef5
+> ("genirq: Generic chip: Change irq_reg_{readl,writel} arguments").
+> 
+> The primary build failure is
+> 
+> arch/hexagon/include/asm/cacheflush.h: In function 'copy_to_user_page':
+> arch/hexagon/include/asm/cacheflush.h:89:22: error: 'VM_EXEC' undeclared
+> 
+> This is the result of including of <linux/io.h> from <linux/irq.h>,
+> which is now necessary due to the use of readl and writel from irq.h.
+> This causes recursive inclusions in hexagon code; cacheflush.h is included
+> from mm.h prior to the definition of VM_EXEC.
+> 
+> Fix the problem by moving copy_to_user_page from the hexagon include file to
+> arch/hexagon/mm/cache.c, similar to other architectures. After this change,
+> several redefinitions of readl and writel are reported. Those are caused
+> by recursive inclusions of io.h and asm/cacheflush.h. Fix those problems by
+> reducing the number of files included from those files. Also, it was necessary
+> to stop including asm-generic/cacheflush.h from asm/cacheflush.h. Instead,
+> functionality originally provided by asm-generic/cacheflush.h is now coded
+> in asm/cacheflush.h directly.
+> 
+> Cc: Kevin Cernekee <cernekee@gmail.com>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Compile tested only. Applies to linux-next as well as mainline.
+> 
+>  arch/hexagon/include/asm/cacheflush.h | 36 ++++++++++++++++++-----------------
+>  arch/hexagon/include/asm/io.h         |  5 -----
+>  arch/hexagon/kernel/setup.c           |  1 +
+>  arch/hexagon/mm/cache.c               | 10 ++++++++++
+>  arch/hexagon/mm/ioremap.c             |  1 +
+>  5 files changed, 31 insertions(+), 22 deletions(-)
+> 
 
-Would "userns_setgroups" be okay?
+Thanks for the cleanup; tested working on hardware.
 
---Andy
+I'm fine taking this into my tree, or it can go via another tree if more
+expedient.
 
-> Eric
+
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
 
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, 
+a Linux Foundation Collaborative Project
