@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766AbaLJMwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:52:35 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:37221 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaLJMwe (ORCPT
+	id S1755904AbaLJMxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:53:42 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62651 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753089AbaLJMxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:52:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <54883DB6.10504@linux.vnet.ibm.com>
-References: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
-	<54883DB6.10504@linux.vnet.ibm.com>
-Date: Wed, 10 Dec 2014 18:22:32 +0530
-Message-ID: <CAKohpokJxXe2RNc4Jqb20PJo2adr49nKBbzdXzYk9=H4kNjfRQ@mail.gmail.com>
-Subject: Re: [Query] Spurious interrupts from clockevent device on X86 Ivybridge
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Santosh Shukla <santosh.shukla@linaro.org>,
+	Wed, 10 Dec 2014 07:53:41 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19J4F62b+gqcJY2ZetcfOnEgpEYqO5Z47o=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 024C462E196
+Date: Wed, 10 Dec 2014 07:53:13 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+        Marc Zyngier <marc.zyngier@arm.com>, srv_heupstream@mediatek.com,
+        hc.yen@mediatek.com, yh.chen@mediatek.com,
+        linux-kernel@vger.kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, eddie.huang@mediatek.com,
+        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] irqchip: mediatek: Use IS_ERR() instead of NULL
+ pointer check
+Message-ID: <20141210125313.GJ22670@titan.lakedaemon.net>
+References: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
+ <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
+ <20141210121442.GA14485@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210121442.GA14485@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 December 2014 at 18:03, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+On Wed, Dec 10, 2014 at 01:14:43PM +0100, Beniamino Galvani wrote:
+> On Wed, Dec 10, 2014 at 05:55:02PM +0800, Yingjoe Chen wrote:
+> > Beniamino reported a kernel oops caused by an invalid DT file for the
+> > mediatek interrupt polarity extension.
+> > 
+> > The reason is that the interrupt polarity support for mediatek chips
+> > merely checks for NULL pointer instead of a casted error return
+> > value in mtk_sysirq_of_init() so any other casted error value passes
+> > the NULL pointer check and causes a kernel panic when dereferenced.
+> > 
+> > Use IS_ERR() and return the error value via PTR_ERR().
+> > 
+> > Reported-and-tested-by: Beniamino Galvani <b.galvani@gmail.com>
+> 
+> Well, actually I only reported the bug and didn't do any test. Can the
+> "-and-tested" portion of the tag be dropped while applying the patch?
 
-> Right. We get an interrupt when nobody had asked for it to be delivered
-> or had asked for it to be delivered and later canceled the request. It
-> is most often in the latter situation, that there can be race
-> conditions. If these race conditions are not taken care of, they can
-> result in spurious interrupts.
+I'd prefer that it be tested before applying.  Would you mind confirming
+that the oops is gone with this patch applied?
 
-But the delta time will be very small then, right ?
+thx,
 
-> Since the difference is 1us and not a noticeably high value, it is most
-> probably because during hrtimer handling, we traverse all queued timers
-> and call their handlers, till we find timers whose expiry is in the
-> future. I would not be surprised if we overshoot the expiry of the
-> timers at the end of the list by a microsecond by the time we call their
-> handlers.
-
-Looks like you misunderstood what he wrote. He isn't saying that we
-serviced the timers/hrtimers sometime after we should have.
-
-What he is saying is: we got the clockevent device's interrupt at the
-time we requested but hrtimer_update_base() returned a time
-lesser than what it *should* have. And that results in a spurious
-interrupt.. We enqueue again for 1 us and service the timer then.
-
-Or am I missing something ?
-
---
-viresh
+Jason.
