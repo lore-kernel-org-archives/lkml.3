@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243AbaLJWV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:21:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53812 "EHLO mx1.redhat.com"
+	id S1758278AbaLJWWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:22:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51122 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758200AbaLJWVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:21:53 -0500
+	id S1758200AbaLJWV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 17:21:58 -0500
 From: Josh Poimboeuf <jpoimboe@redhat.com>
 To: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
         Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
@@ -16,9 +16,9 @@ Cc: Christoph Hellwig <hch@infradead.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
         x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCHv6 1/3] kernel: add TAINT_LIVEPATCH
-Date: Wed, 10 Dec 2014 16:21:07 -0600
-Message-Id: <291ceff8fc96eb4244141ebf5e53359af21d90be.1418248631.git.jpoimboe@redhat.com>
+Subject: [PATCHv6 2/3] kernel: add support for live patching
+Date: Wed, 10 Dec 2014 16:21:08 -0600
+Message-Id: <2e40fffcf2fb715c59e84d638bb8519c3837d1a6.1418248631.git.jpoimboe@redhat.com>
 In-Reply-To: <cover.1418248631.git.jpoimboe@redhat.com>
 References: <cover.1418248631.git.jpoimboe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,78 +27,1411 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Seth Jennings <sjenning@redhat.com>
 
-This adds a new taint flag to indicate when the kernel or a kernel
-module has been live patched.  This will provide a clean indication in
-bug reports that live patching was used.
+This commit introduces code for the live patching core.  It implements
+an ftrace-based mechanism and kernel interface for doing live patching
+of kernel and kernel module functions.
 
-Additionally, if the crash occurs in a live patched function, the live
-patch module will appear beside the patched function in the backtrace.
+It represents the greatest common functionality set between kpatch and
+kgraft and can accept patches built using either method.
+
+This first version does not implement any consistency mechanism that
+ensures that old and new code do not run together.  In practice, ~90% of
+CVEs are safe to apply in this way, since they simply add a conditional
+check.  However, any function change that can not execute safely with
+the old version of the function can _not_ be safely applied in this
+version.
 
 Signed-off-by: Seth Jennings <sjenning@redhat.com>
+Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
 ---
- Documentation/oops-tracing.txt  | 2 ++
- Documentation/sysctl/kernel.txt | 1 +
- include/linux/kernel.h          | 1 +
- kernel/panic.c                  | 2 ++
- 4 files changed, 6 insertions(+)
+ Documentation/ABI/testing/sysfs-kernel-livepatch |  44 ++
+ MAINTAINERS                                      |  13 +
+ arch/x86/Kconfig                                 |   3 +
+ arch/x86/include/asm/livepatch.h                 |  36 +
+ arch/x86/kernel/Makefile                         |   1 +
+ arch/x86/kernel/livepatch.c                      |  89 +++
+ include/linux/livepatch.h                        | 132 ++++
+ kernel/Makefile                                  |   1 +
+ kernel/livepatch/Kconfig                         |  18 +
+ kernel/livepatch/Makefile                        |   3 +
+ kernel/livepatch/core.c                          | 935 +++++++++++++++++++++++
+ 11 files changed, 1275 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
+ create mode 100644 arch/x86/include/asm/livepatch.h
+ create mode 100644 arch/x86/kernel/livepatch.c
+ create mode 100644 include/linux/livepatch.h
+ create mode 100644 kernel/livepatch/Kconfig
+ create mode 100644 kernel/livepatch/Makefile
+ create mode 100644 kernel/livepatch/core.c
 
-diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
-index beefb9f..f3ac05c 100644
---- a/Documentation/oops-tracing.txt
-+++ b/Documentation/oops-tracing.txt
-@@ -270,6 +270,8 @@ characters, each representing a particular tainted value.
- 
-  15: 'L' if a soft lockup has previously occurred on the system.
- 
-+ 16: 'K' if the kernel has been live patched.
+diff --git a/Documentation/ABI/testing/sysfs-kernel-livepatch b/Documentation/ABI/testing/sysfs-kernel-livepatch
+new file mode 100644
+index 0000000..5bf42a8
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-kernel-livepatch
+@@ -0,0 +1,44 @@
++What:		/sys/kernel/livepatch
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		Interface for kernel live patching
 +
- The primary reason for the 'Tainted: ' string is to tell kernel
- debuggers if this is a clean kernel or if anything unusual has
- occurred.  Tainting is permanent: even if an offending module is
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 75511ef..83ab256 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -843,6 +843,7 @@ can be ORed together:
- 8192 - An unsigned module has been loaded in a kernel supporting module
-        signature.
- 16384 - A soft lockup has previously occurred on the system.
-+32768 - The kernel has been live patched.
++		The /sys/kernel/livepatch directory contains subdirectories for
++		each loaded live patch module.
++
++What:		/sys/kernel/livepatch/<patch>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The patch directory contains subdirectories for each kernel
++		object (vmlinux or a module) in which it patched functions.
++
++What:		/sys/kernel/livepatch/<patch>/enabled
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		A writable attribute that indicates whether the patched
++		code is currently applied.  Writing 0 will disable the patch
++		while writing 1 will re-enable the patch.
++
++What:		/sys/kernel/livepatch/<patch>/<object>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The object directory contains subdirectories for each function
++		that is patched within the object.
++
++What:		/sys/kernel/livepatch/<patch>/<object>/<function>
++Date:		Nov 2014
++KernelVersion:	3.19.0
++Contact:	live-patching@vger.kernel.org
++Description:
++		The function directory contains attributes regarding the
++		properties and state of the patched function.
++
++		There are currently no such attributes.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 06d5b4b..94f9f69 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5777,6 +5777,19 @@ F:	Documentation/misc-devices/lis3lv02d
+ F:	drivers/misc/lis3lv02d/
+ F:	drivers/platform/x86/hp_accel.c
  
- ==============================================================
++LIVE PATCHING
++M:	Josh Poimboeuf <jpoimboe@redhat.com>
++M:	Seth Jennings <sjenning@redhat.com>
++M:	Jiri Kosina <jkosina@suse.cz>
++M:	Vojtech Pavlik <vojtech@suse.cz>
++S:	Maintained
++F:	kernel/livepatch/
++F:	include/linux/livepatch.h
++F:	arch/x86/include/asm/livepatch.h
++F:	arch/x86/kernel/livepatch.c
++F:	Documentation/ABI/testing/sysfs-kernel-livepatch
++L:	live-patching@vger.kernel.org
++
+ LLC (802.2)
+ M:	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+ S:	Maintained
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ce8dcdf..5c57181 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -17,6 +17,7 @@ config X86_64
+ 	depends on 64BIT
+ 	select X86_DEV_DMA_OPS
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_HAVE_LIVE_PATCHING
  
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 5449d2f..d03e3de 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -471,6 +471,7 @@ extern enum system_states {
- #define TAINT_OOT_MODULE		12
- #define TAINT_UNSIGNED_MODULE		13
- #define TAINT_SOFTLOCKUP		14
-+#define TAINT_LIVEPATCH			15
+ ### Arch settings
+ config X86
+@@ -1986,6 +1987,8 @@ config CMDLINE_OVERRIDE
+ 	  This is used to work around broken boot loaders.  This should
+ 	  be set to 'N' under normal conditions.
  
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4d8d6f9..8136ad7 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -226,6 +226,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_OOT_MODULE,		'O', ' ' },
- 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
- 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
-+	{ TAINT_LIVEPATCH,		'K', ' ' },
- };
++source "kernel/livepatch/Kconfig"
++
+ endmenu
  
- /**
-@@ -246,6 +247,7 @@ static const struct tnt tnts[] = {
-  *  'O' - Out-of-tree module has been loaded.
-  *  'E' - Unsigned module has been loaded.
-  *  'L' - A soft lockup has previously occurred.
-+ *  'K' - Kernel has been live patched.
-  *
-  *	The string is overwritten by the next call to print_tainted().
-  */
+ config ARCH_ENABLE_MEMORY_HOTPLUG
+diff --git a/arch/x86/include/asm/livepatch.h b/arch/x86/include/asm/livepatch.h
+new file mode 100644
+index 0000000..c2ae592
+--- /dev/null
++++ b/arch/x86/include/asm/livepatch.h
+@@ -0,0 +1,36 @@
++/*
++ * livepatch.h - x86-specific Kernel Live Patching Core
++ *
++ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _ASM_X86_LIVEPATCH_H
++#define _ASM_X86_LIVEPATCH_H
++
++#include <linux/module.h>
++
++#ifdef CONFIG_LIVE_PATCHING
++#ifndef CC_USING_FENTRY
++#error Your compiler must support -mfentry for live patching to work
++#endif
++extern int klp_write_module_reloc(struct module *mod, unsigned long type,
++				  unsigned long loc, unsigned long value);
++
++#else
++#error Live patching support is disabled; check CONFIG_LIVE_PATCHING
++#endif
++
++#endif /* _ASM_X86_LIVEPATCH_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 5d4502c..316b34e 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -63,6 +63,7 @@ obj-$(CONFIG_X86_MPPARSE)	+= mpparse.o
+ obj-y				+= apic/
+ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
++obj-$(CONFIG_LIVE_PATCHING)	+= livepatch.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
+ obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+diff --git a/arch/x86/kernel/livepatch.c b/arch/x86/kernel/livepatch.c
+new file mode 100644
+index 0000000..4b0ed7b
+--- /dev/null
++++ b/arch/x86/kernel/livepatch.c
+@@ -0,0 +1,89 @@
++/*
++ * livepatch.c - x86-specific Kernel Live Patching Core
++ *
++ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
++#include <asm/page_types.h>
++#include <asm/elf.h>
++#include <asm/livepatch.h>
++
++/**
++ * klp_write_module_reloc() - write a relocation in a module
++ * @mod:	module in which the section to be modified is found
++ * @type:	ELF relocation type (see asm/elf.h)
++ * @loc:	address that the relocation should be written to
++ * @value:	relocation value (sym address + addend)
++ *
++ * This function writes a relocation to the specified location for
++ * a particular module.
++ */
++int klp_write_module_reloc(struct module *mod, unsigned long type,
++			   unsigned long loc, unsigned long value)
++{
++	int ret, numpages, size = 4;
++	bool readonly;
++	unsigned long val;
++	unsigned long core = (unsigned long)mod->module_core;
++	unsigned long core_ro_size = mod->core_ro_size;
++	unsigned long core_size = mod->core_size;
++
++	switch (type) {
++	case R_X86_64_NONE:
++		return 0;
++	case R_X86_64_64:
++		val = value;
++		size = 8;
++		break;
++	case R_X86_64_32:
++		val = (u32)value;
++		break;
++	case R_X86_64_32S:
++		val = (s32)value;
++		break;
++	case R_X86_64_PC32:
++		val = (u32)(value - loc);
++		break;
++	default:
++		/* unsupported relocation type */
++		return -EINVAL;
++	}
++
++	if (loc < core || loc >= core + core_size)
++		/* loc does not point to any symbol inside the module */
++		return -EINVAL;
++
++	if (loc < core + core_ro_size)
++		readonly = true;
++	else
++		readonly = false;
++
++	/* determine if the relocation spans a page boundary */
++	numpages = ((loc & PAGE_MASK) == ((loc + size) & PAGE_MASK)) ? 1 : 2;
++
++	if (readonly)
++		set_memory_rw(loc & PAGE_MASK, numpages);
++
++	ret = probe_kernel_write((void *)loc, &val, size);
++
++	if (readonly)
++		set_memory_ro(loc & PAGE_MASK, numpages);
++
++	return ret;
++}
+diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
+new file mode 100644
+index 0000000..b61fe74
+--- /dev/null
++++ b/include/linux/livepatch.h
+@@ -0,0 +1,132 @@
++/*
++ * livepatch.h - Kernel Live Patching Core
++ *
++ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _LINUX_LIVEPATCH_H_
++#define _LINUX_LIVEPATCH_H_
++
++#include <linux/module.h>
++#include <linux/ftrace.h>
++
++#if IS_ENABLED(CONFIG_LIVE_PATCHING)
++
++#include <asm/livepatch.h>
++
++enum klp_state {
++	KLP_DISABLED,
++	KLP_ENABLED
++};
++
++/**
++ * struct klp_func - function structure for live patching
++ * @old_name:	name of the function to be patched
++ * @new_func:	pointer to the patched function code
++ * @old_addr:	a hint conveying at what address the old function
++ *		can be found (optional, vmlinux patches only)
++ * @kobj:	kobject for sysfs resources
++ * @fops:	ftrace operations structure
++ * @state:	tracks function-level patch application state
++ */
++struct klp_func {
++	/* external */
++	const char *old_name;
++	void *new_func;
++	/*
++	 * The old_addr field is optional and can be used to resolve
++	 * duplicate symbol names in the vmlinux object.  If this
++	 * information is not present, the symbol is located by name
++	 * with kallsyms. If the name is not unique and old_addr is
++	 * not provided, the patch application fails as there is no
++	 * way to resolve the ambiguity.
++	 */
++	unsigned long old_addr;
++
++	/* internal */
++	struct kobject kobj;
++	struct ftrace_ops *fops;
++	enum klp_state state;
++};
++
++/**
++ * struct klp_reloc - relocation structure for live patching
++ * @loc:	address where the relocation will be written
++ * @val:	address of the referenced symbol (optional,
++ *		vmlinux	patches only)
++ * @type:	ELF relocation type
++ * @name:	name of the referenced symbol (for lookup/verification)
++ * @addend:	offset from the referenced symbol
++ * @external:	symbol is either exported or within the live patch module itself
++ */
++struct klp_reloc {
++	unsigned long loc;
++	unsigned long val;
++	unsigned long type;
++	const char *name;
++	int addend;
++	int external;
++};
++
++/**
++ * struct klp_object - kernel object structure for live patching
++ * @name:	module name (or NULL for vmlinux)
++ * @relocs:	relocation entries to be applied at load time
++ * @funcs:	function entries for functions to be patched in the object
++ * @kobj:	kobject for sysfs resources
++ * @mod:	kernel module associated with the patched object
++ * 		(NULL for vmlinux)
++ * @state:	tracks object-level patch application state
++ */
++struct klp_object {
++	/* external */
++	const char *name;
++	struct klp_reloc *relocs;
++	struct klp_func *funcs;
++
++	/* internal */
++	struct kobject *kobj;
++	struct module *mod;
++	enum klp_state state;
++};
++
++/**
++ * struct klp_patch - patch structure for live patching
++ * @mod:	reference to the live patch module
++ * @objs:	object entries for kernel objects to be patched
++ * @list:	list node for global list of registered patches
++ * @kobj:	kobject for sysfs resources
++ * @state:	tracks patch-level application state
++ */
++struct klp_patch {
++	/* external */
++	struct module *mod;
++	struct klp_object *objs;
++
++	/* internal */
++	struct list_head list;
++	struct kobject kobj;
++	enum klp_state state;
++};
++
++extern int klp_register_patch(struct klp_patch *);
++extern int klp_unregister_patch(struct klp_patch *);
++extern int klp_enable_patch(struct klp_patch *);
++extern int klp_disable_patch(struct klp_patch *);
++
++#endif /* CONFIG_LIVE_PATCHING */
++
++#endif /* _LINUX_LIVEPATCH_H_ */
+diff --git a/kernel/Makefile b/kernel/Makefile
+index a59481a..616994f 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -26,6 +26,7 @@ obj-y += power/
+ obj-y += printk/
+ obj-y += irq/
+ obj-y += rcu/
++obj-y += livepatch/
+ 
+ obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+diff --git a/kernel/livepatch/Kconfig b/kernel/livepatch/Kconfig
+new file mode 100644
+index 0000000..96da00f
+--- /dev/null
++++ b/kernel/livepatch/Kconfig
+@@ -0,0 +1,18 @@
++config ARCH_HAVE_LIVE_PATCHING
++	boolean
++	help
++	  Arch supports kernel live patching
++
++config LIVE_PATCHING
++	boolean "Kernel Live Patching"
++	depends on DYNAMIC_FTRACE_WITH_REGS
++	depends on MODULES
++	depends on SYSFS
++	depends on KALLSYMS_ALL
++	depends on ARCH_HAVE_LIVE_PATCHING
++	help
++	  Say Y here if you want to support kernel live patching.
++	  This option has no runtime impact until a kernel "patch"
++	  module uses the interface provided by this option to register
++	  a patch, causing calls to patched functions to be redirected
++	  to new function code contained in the patch module.
+diff --git a/kernel/livepatch/Makefile b/kernel/livepatch/Makefile
+new file mode 100644
+index 0000000..7c1f008
+--- /dev/null
++++ b/kernel/livepatch/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_LIVE_PATCHING) += livepatch.o
++
++livepatch-objs := core.o
+diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+new file mode 100644
+index 0000000..4ca924b
+--- /dev/null
++++ b/kernel/livepatch/core.c
+@@ -0,0 +1,935 @@
++/*
++ * core.c - Kernel Live Patching Core
++ *
++ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/ftrace.h>
++#include <linux/list.h>
++#include <linux/kallsyms.h>
++#include <linux/livepatch.h>
++
++/*
++ * The klp_mutex protects the klp_patches list and state transitions of any
++ * structure reachable from the patches list.  References to any structure must
++ * be obtained under mutex protection.
++ */
++
++static DEFINE_MUTEX(klp_mutex);
++static LIST_HEAD(klp_patches);
++
++static struct kobject *klp_root_kobj;
++
++static bool klp_is_module(struct klp_object *obj)
++{
++	return obj->name;
++}
++
++static bool klp_is_object_loaded(struct klp_object *obj)
++{
++	return !obj->name || obj->mod;
++}
++
++/* sets obj->mod if object is not vmlinux and module is found */
++static void klp_find_object_module(struct klp_object *obj)
++{
++	if (!klp_is_module(obj))
++		return;
++
++	mutex_lock(&module_mutex);
++	/*
++	 * We don't need to take a reference on the module here because we have
++	 * the klp_mutex, which is also taken by the module notifier.  This
++	 * prevents any module from unloading until we release the klp_mutex.
++	 */
++	obj->mod = find_module(obj->name);
++	mutex_unlock(&module_mutex);
++}
++
++/* klp_mutex must be held by caller */
++static bool klp_patch_is_registered(struct klp_patch *patch)
++{
++	struct klp_patch *mypatch;
++
++	list_for_each_entry(mypatch, &klp_patches, list)
++		if (mypatch == patch)
++			return true;
++
++	return false;
++}
++
++static bool klp_is_enabled(void)
++{
++	return klp_root_kobj;
++}
++
++struct klp_find_arg {
++	const char *objname;
++	const char *name;
++	unsigned long addr;
++	/*
++	 * If count == 0, the symbol was not found. If count == 1, a unique
++	 * match was found and addr is set.  If count > 1, there is
++	 * unresolvable ambiguity among "count" number of symbols with the same
++	 * name in the same object.
++	 */
++	unsigned long count;
++};
++
++static int klp_find_callback(void *data, const char *name,
++			     struct module *mod, unsigned long addr)
++{
++	struct klp_find_arg *args = data;
++
++	if ((mod && !args->objname) || (!mod && args->objname))
++		return 0;
++
++	if (strcmp(args->name, name))
++		return 0;
++
++	if (args->objname && strcmp(args->objname, mod->name))
++		return 0;
++
++	/*
++	 * args->addr might be overwritten if another match is found
++	 * but klp_find_object_symbol() handles this and only returns the
++	 * addr if count == 1.
++	 */
++	args->addr = addr;
++	args->count++;
++
++	return 0;
++}
++
++static int klp_find_object_symbol(const char *objname, const char *name,
++				  unsigned long *addr)
++{
++	struct klp_find_arg args = {
++		.objname = objname,
++		.name = name,
++		.addr = 0,
++		.count = 0
++	};
++
++	kallsyms_on_each_symbol(klp_find_callback, &args);
++
++	if (args.count == 0)
++		pr_err("symbol '%s' not found in symbol table\n", name);
++	else if (args.count > 1)
++		pr_err("unresolvable ambiguity (%lu matches) on symbol '%s' in object '%s'\n",
++		       args.count, name, objname);
++	else {
++		*addr = args.addr;
++		return 0;
++	}
++
++	*addr = 0;
++	return -EINVAL;
++}
++
++struct klp_verify_args {
++	const char *name;
++	const unsigned long addr;
++};
++
++static int klp_verify_callback(void *data, const char *name,
++			       struct module *mod, unsigned long addr)
++{
++	struct klp_verify_args *args = data;
++
++	if (!mod &&
++	    !strcmp(args->name, name) &&
++	    args->addr == addr)
++		return 1;
++
++	return 0;
++}
++
++static int klp_verify_vmlinux_symbol(const char *name, unsigned long addr)
++{
++	struct klp_verify_args args = {
++		.name = name,
++		.addr = addr,
++	};
++
++	if (kallsyms_on_each_symbol(klp_verify_callback, &args))
++		return 0;
++
++	pr_err("symbol '%s' not found at specified address 0x%016lx, kernel mismatch?",
++		name, addr);
++	return -EINVAL;
++}
++
++static int klp_find_verify_func_addr(struct klp_object *obj,
++				     struct klp_func *func)
++{
++	int ret;
++
++#if defined(CONFIG_RANDOMIZE_BASE)
++	/* KASLR is enabled, disregard old_addr from user */
++	func->old_addr = 0;
++#endif
++
++	if (!func->old_addr || klp_is_module(obj))
++		ret = klp_find_object_symbol(obj->name, func->old_name,
++					     &func->old_addr);
++	else
++		ret = klp_verify_vmlinux_symbol(func->old_name,
++						func->old_addr);
++
++	return ret;
++}
++
++/*
++ * external symbols are located outside the parent object (where the parent
++ * object is either vmlinux or the kmod being patched).
++ */
++static int klp_find_external_symbol(struct module *pmod, const char *name,
++				    unsigned long *addr)
++{
++	const struct kernel_symbol *sym;
++
++	/* first, check if it's an exported symbol */
++	preempt_disable();
++	sym = find_symbol(name, NULL, NULL, true, true);
++	preempt_enable();
++	if (sym) {
++		*addr = sym->value;
++		return 0;
++	}
++
++	/* otherwise check if it's in another .o within the patch module */
++	return klp_find_object_symbol(pmod->name, name, addr);
++}
++
++static int klp_write_object_relocations(struct module *pmod,
++					struct klp_object *obj)
++{
++	int ret;
++	struct klp_reloc *reloc;
++
++	if (WARN_ON(!klp_is_object_loaded(obj)))
++		return -EINVAL;
++
++	if (WARN_ON(!obj->relocs))
++		return -EINVAL;
++
++	for (reloc = obj->relocs; reloc->name; reloc++) {
++		if (!klp_is_module(obj)) {
++			ret = klp_verify_vmlinux_symbol(reloc->name,
++							reloc->val);
++			if (ret)
++				return ret;
++		} else {
++			/* module, reloc->val needs to be discovered */
++			if (reloc->external)
++				ret = klp_find_external_symbol(pmod,
++							       reloc->name,
++							       &reloc->val);
++			else
++				ret = klp_find_object_symbol(obj->mod->name,
++							     reloc->name,
++							     &reloc->val);
++			if (ret)
++				return ret;
++		}
++		ret = klp_write_module_reloc(pmod, reloc->type, reloc->loc,
++					     reloc->val + reloc->addend);
++		if (ret) {
++			pr_err("relocation failed for symbol '%s' at 0x%016lx (%d)\n",
++			       reloc->name, reloc->val, ret);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static void notrace klp_ftrace_handler(unsigned long ip,
++				       unsigned long parent_ip,
++				       struct ftrace_ops *ops,
++				       struct pt_regs *regs)
++{
++	struct klp_func *func = ops->private;
++
++	regs->ip = (unsigned long)func->new_func;
++}
++
++static int klp_disable_func(struct klp_func *func)
++{
++	int ret;
++
++	if (WARN_ON(func->state != KLP_ENABLED))
++		return -EINVAL;
++
++	if (WARN_ON(!func->old_addr))
++		return -EINVAL;
++
++	ret = unregister_ftrace_function(func->fops);
++	if (ret) {
++		pr_err("failed to unregister ftrace handler for function '%s' (%d)\n",
++		       func->old_name, ret);
++		return ret;
++	}
++
++	ret = ftrace_set_filter_ip(func->fops, func->old_addr, 1, 0);
++	if (ret)
++		pr_warn("function unregister succeeded but failed to clear the filter\n");
++
++	func->state = KLP_DISABLED;
++
++	return 0;
++}
++
++static int klp_enable_func(struct klp_func *func)
++{
++	int ret;
++
++	if (WARN_ON(!func->old_addr))
++		return -EINVAL;
++
++	if (WARN_ON(func->state != KLP_DISABLED))
++		return -EINVAL;
++
++	ret = ftrace_set_filter_ip(func->fops, func->old_addr, 0, 0);
++	if (ret) {
++		pr_err("failed to set ftrace filter for function '%s' (%d)\n",
++		       func->old_name, ret);
++		return ret;
++	}
++
++	ret = register_ftrace_function(func->fops);
++	if (ret) {
++		pr_err("failed to register ftrace handler for function '%s' (%d)\n",
++		       func->old_name, ret);
++		ftrace_set_filter_ip(func->fops, func->old_addr, 1, 0);
++	} else {
++		func->state = KLP_ENABLED;
++	}
++
++	return ret;
++}
++
++static int klp_disable_object(struct klp_object *obj)
++{
++	struct klp_func *func;
++	int ret;
++
++	if (WARN_ON(obj->state != KLP_ENABLED))
++		return -EINVAL;
++
++	for (func = obj->funcs; func->old_name; func++) {
++		if (func->state != KLP_ENABLED)
++			continue;
++
++		ret = klp_disable_func(func);
++		if (ret)
++			return ret;
++	}
++
++	obj->state = KLP_DISABLED;
++
++	return 0;
++}
++
++static int klp_enable_object(struct klp_object *obj)
++{
++	struct klp_func *func;
++	int ret;
++
++	if (WARN_ON(obj->state != KLP_DISABLED))
++		return -EINVAL;
++
++	if (WARN_ON(!klp_is_object_loaded(obj)))
++		return -EINVAL;
++
++	for (func = obj->funcs; func->old_name; func++) {
++		ret = klp_enable_func(func);
++		if (ret)
++			goto unregister;
++	}
++	obj->state = KLP_ENABLED;
++
++	return 0;
++
++unregister:
++	WARN_ON(klp_disable_object(obj));
++	return ret;
++}
++
++static int __klp_disable_patch(struct klp_patch *patch)
++{
++	struct klp_object *obj;
++	int ret;
++
++	if (WARN_ON(patch->state != KLP_ENABLED))
++		return -EINVAL;
++
++	pr_notice("disabling patch '%s'\n", patch->mod->name);
++
++	for (obj = patch->objs; obj->funcs; obj++) {
++		if (obj->state != KLP_ENABLED)
++			continue;
++
++		ret = klp_disable_object(obj);
++		if (ret)
++			return ret;
++	}
++
++	patch->state = KLP_DISABLED;
++
++	return 0;
++}
++
++/**
++ * klp_disable_patch() - disables a registered patch
++ * @patch:	The registered, enabled patch to be disabled
++ *
++ * Unregisters the patched functions from ftrace.
++ *
++ * Return: 0 on success, otherwise error
++ */
++int klp_disable_patch(struct klp_patch *patch)
++{
++	int ret;
++
++	if (!klp_is_enabled())
++		return -ENODEV;
++
++	mutex_lock(&klp_mutex);
++
++	if (!klp_patch_is_registered(patch)) {
++		ret = -EINVAL;
++		goto err;
++	}
++
++	ret = __klp_disable_patch(patch);
++
++err:
++	mutex_unlock(&klp_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(klp_disable_patch);
++
++static int __klp_enable_patch(struct klp_patch *patch)
++{
++	struct klp_object *obj;
++	int ret;
++
++	if (WARN_ON(patch->state != KLP_DISABLED))
++		return -EINVAL;
++
++	pr_notice_once("tainting kernel with TAINT_LIVEPATCH\n");
++	add_taint(TAINT_LIVEPATCH, LOCKDEP_STILL_OK);
++
++	pr_notice("enabling patch '%s'\n", patch->mod->name);
++
++	for (obj = patch->objs; obj->funcs; obj++) {
++		klp_find_object_module(obj);
++
++		if (!klp_is_object_loaded(obj))
++			continue;
++
++		ret = klp_enable_object(obj);
++		if (ret)
++			goto unregister;
++	}
++
++	patch->state = KLP_ENABLED;
++
++	return 0;
++
++unregister:
++	WARN_ON(__klp_disable_patch(patch));
++	return ret;
++}
++
++/**
++ * klp_enable_patch() - enables a registered patch
++ * @patch:	The registered, disabled patch to be enabled
++ *
++ * Performs the needed symbol lookups and code relocations,
++ * then registers the patched functions with ftrace.
++ *
++ * Return: 0 on success, otherwise error
++ */
++int klp_enable_patch(struct klp_patch *patch)
++{
++	int ret;
++
++	if (!klp_is_enabled())
++		return -ENODEV;
++
++	mutex_lock(&klp_mutex);
++
++	if (!klp_patch_is_registered(patch)) {
++		ret = -EINVAL;
++		goto err;
++	}
++
++	ret = __klp_enable_patch(patch);
++
++err:
++	mutex_unlock(&klp_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(klp_enable_patch);
++
++/*
++ * Sysfs Interface
++ *
++ * /sys/kernel/livepatch
++ * /sys/kernel/livepatch/<patch>
++ * /sys/kernel/livepatch/<patch>/enabled
++ * /sys/kernel/livepatch/<patch>/<object>
++ * /sys/kernel/livepatch/<patch>/<object>/<func>
++ */
++
++static ssize_t enabled_store(struct kobject *kobj, struct kobj_attribute *attr,
++			     const char *buf, size_t count)
++{
++	struct klp_patch *patch;
++	int ret;
++	unsigned long val;
++
++	ret = kstrtoul(buf, 10, &val);
++	if (ret)
++		return -EINVAL;
++
++	if (val != KLP_DISABLED && val != KLP_ENABLED)
++		return -EINVAL;
++
++	patch = container_of(kobj, struct klp_patch, kobj);
++
++	mutex_lock(&klp_mutex);
++
++	if (val == patch->state) {
++		/* already in requested state */
++		ret = -EINVAL;
++		goto err;
++	}
++
++	if (val == KLP_ENABLED) {
++		ret = __klp_enable_patch(patch);
++		if (ret)
++			goto err;
++	} else {
++		ret = __klp_disable_patch(patch);
++		if (ret)
++			goto err;
++	}
++
++	mutex_unlock(&klp_mutex);
++
++	return count;
++
++err:
++	mutex_unlock(&klp_mutex);
++	return ret;
++}
++
++static ssize_t enabled_show(struct kobject *kobj,
++			    struct kobj_attribute *attr, char *buf)
++{
++	struct klp_patch *patch;
++
++	patch = container_of(kobj, struct klp_patch, kobj);
++	return snprintf(buf, PAGE_SIZE-1, "%d\n", patch->state);
++}
++
++static struct kobj_attribute enabled_kobj_attr = __ATTR_RW(enabled);
++static struct attribute *klp_patch_attrs[] = {
++	&enabled_kobj_attr.attr,
++	NULL
++};
++
++static void klp_kobj_release_patch(struct kobject *kobj)
++{
++	/*
++	 * Once we have a consistency model we'll need to module_put() the
++	 * patch module here.  See klp_register_patch() for more details.
++	 */
++}
++
++static struct kobj_type klp_ktype_patch = {
++	.release = klp_kobj_release_patch,
++	.sysfs_ops = &kobj_sysfs_ops,
++	.default_attrs = klp_patch_attrs,
++};
++
++static void klp_kobj_release_func(struct kobject *kobj)
++{
++	struct klp_func *func;
++
++	func = container_of(kobj, struct klp_func, kobj);
++	kfree(func->fops);
++}
++
++static struct kobj_type klp_ktype_func = {
++	.release = klp_kobj_release_func,
++	.sysfs_ops = &kobj_sysfs_ops,
++};
++
++/*
++ * Free all functions' kobjects in the array up to some limit. When limit is
++ * NULL, all kobjects are freed.
++ */
++static void klp_free_funcs_limited(struct klp_object *obj,
++				   struct klp_func *limit)
++{
++	struct klp_func *func;
++
++	for (func = obj->funcs; func->old_name && func != limit; func++)
++		kobject_put(&func->kobj);
++}
++
++/* Clean up when a patched object is unloaded */
++static void klp_free_object_loaded(struct klp_object *obj)
++{
++	struct klp_func *func;
++
++	obj->mod = NULL;
++
++	for (func = obj->funcs; func->old_name; func++)
++		func->old_addr = 0;
++}
++
++/*
++ * Free all objects' kobjects in the array up to some limit. When limit is
++ * NULL, all kobjects are freed.
++ */
++static void klp_free_objects_limited(struct klp_patch *patch,
++				     struct klp_object *limit)
++{
++	struct klp_object *obj;
++
++	for (obj = patch->objs; obj->funcs && obj != limit; obj++) {
++		klp_free_funcs_limited(obj, NULL);
++		kobject_put(obj->kobj);
++	}
++}
++
++static void klp_free_patch(struct klp_patch *patch)
++{
++	klp_free_objects_limited(patch, NULL);
++	if (!list_empty(&patch->list))
++		list_del(&patch->list);
++	kobject_put(&patch->kobj);
++}
++
++static int klp_init_func(struct klp_object *obj, struct klp_func *func)
++{
++	struct ftrace_ops *ops;
++	int ret;
++
++	func->state = KLP_DISABLED;
++
++	ops = kzalloc(sizeof(*ops), GFP_KERNEL);
++	if (!ops)
++		ret = -ENOMEM;
++
++	ops->private = func;
++	ops->func = klp_ftrace_handler;
++	ops->flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_DYNAMIC;
++	func->fops = ops;
++
++	ret = kobject_init_and_add(&func->kobj, &klp_ktype_func,
++				   obj->kobj, func->old_name);
++	if (ret) {
++		kfree(func->fops);
++		return ret;
++	}
++
++	return 0;
++}
++
++/* parts of the initialization that is done only when the object is loaded */
++static int klp_init_object_loaded(struct klp_patch *patch,
++				  struct klp_object *obj)
++{
++	struct klp_func *func;
++	int ret;
++
++	if (obj->relocs) {
++		ret = klp_write_object_relocations(patch->mod, obj);
++		if (ret)
++			return ret;
++	}
++
++	for (func = obj->funcs; func->old_name; func++) {
++		ret = klp_find_verify_func_addr(obj, func);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int klp_init_object(struct klp_patch *patch, struct klp_object *obj)
++{
++	struct klp_func *func;
++	int ret;
++	const char *name;
++
++	if (!obj->funcs)
++		return -EINVAL;
++
++	obj->state = KLP_DISABLED;
++
++	klp_find_object_module(obj);
++
++	name = klp_is_module(obj) ? obj->name : "vmlinux";
++	obj->kobj = kobject_create_and_add(name, &patch->kobj);
++	if (!obj->kobj)
++		return -ENOMEM;
++
++	for (func = obj->funcs; func->old_name; func++) {
++		ret = klp_init_func(obj, func);
++		if (ret)
++			goto free;
++	}
++
++	if (klp_is_object_loaded(obj)) {
++		ret = klp_init_object_loaded(patch, obj);
++		if (ret)
++			goto free;
++	}
++
++	return 0;
++
++free:
++	klp_free_funcs_limited(obj, func);
++	return ret;
++}
++
++static int klp_init_patch(struct klp_patch *patch)
++{
++	struct klp_object *obj;
++	int ret;
++
++	if (!patch->objs)
++		return -EINVAL;
++
++	mutex_lock(&klp_mutex);
++
++	patch->state = KLP_DISABLED;
++
++	ret = kobject_init_and_add(&patch->kobj, &klp_ktype_patch,
++				   klp_root_kobj, patch->mod->name);
++	if (ret)
++		goto unlock;
++
++	for (obj = patch->objs; obj->funcs; obj++) {
++		ret = klp_init_object(patch, obj);
++		if (ret)
++			goto free;
++	}
++
++	list_add(&patch->list, &klp_patches);
++
++	mutex_unlock(&klp_mutex);
++
++	return 0;
++
++free:
++	klp_free_objects_limited(patch, obj);
++	kobject_put(&patch->kobj);
++unlock:
++	mutex_unlock(&klp_mutex);
++	return ret;
++}
++
++/**
++ * klp_unregister_patch() - unregisters a patch
++ * @patch:	Disabled patch to be unregistered
++ *
++ * Frees the data structures and removes the sysfs interface.
++ *
++ * Return: 0 on success, otherwise error
++ */
++int klp_unregister_patch(struct klp_patch *patch)
++{
++	int ret = 0;
++
++	if (!klp_is_enabled())
++		return -ENODEV;
++
++	mutex_lock(&klp_mutex);
++
++	if (!klp_patch_is_registered(patch)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (patch->state == KLP_ENABLED) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	klp_free_patch(patch);
++
++out:
++	mutex_unlock(&klp_mutex);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(klp_unregister_patch);
++
++/**
++ * klp_register_patch() - registers a patch
++ * @patch:	Patch to be registered
++ *
++ * Initializes the data structure associated with the patch and
++ * creates the sysfs interface.
++ *
++ * Return: 0 on success, otherwise error
++ */
++int klp_register_patch(struct klp_patch *patch)
++{
++	int ret;
++
++	if (!klp_is_enabled())
++		return -ENODEV;
++
++	if (!patch || !patch->mod)
++		return -EINVAL;
++
++	/*
++	 * A reference is taken on the patch module to prevent it from being
++	 * unloaded.  Right now, we don't allow patch modules to unload since
++	 * there is currently no method to determine if a thread is still
++	 * running in the patched code contained in the patch module once
++	 * the ftrace registration is successful.
++	 */
++	if (!try_module_get(patch->mod))
++		return -ENODEV;
++
++	ret = klp_init_patch(patch);
++	if (ret)
++		module_put(patch->mod);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(klp_register_patch);
++
++static void klp_module_notify_coming(struct klp_patch *patch,
++				     struct klp_object *obj)
++{
++	struct module *pmod = patch->mod;
++	struct module *mod = obj->mod;
++	int ret;
++
++	pr_notice("applying patch '%s' to loading module '%s'\n",
++		  pmod->name, mod->name);
++
++	ret = klp_init_object_loaded(patch, obj);
++	if (ret)
++		goto err;
++
++	ret = klp_enable_object(obj);
++	if (!ret)
++		return;
++
++err:
++	pr_warn("failed to apply patch '%s' to module '%s' (%d)\n",
++		pmod->name, mod->name, ret);
++}
++
++static void klp_module_notify_going(struct klp_patch *patch,
++				    struct klp_object *obj)
++{
++	struct module *pmod = patch->mod;
++	struct module *mod = obj->mod;
++	int ret;
++
++	pr_notice("reverting patch '%s' on unloading module '%s'\n",
++		  pmod->name, mod->name);
++
++	ret = klp_disable_object(obj);
++	if (ret)
++		pr_warn("failed to revert patch '%s' on module '%s' (%d)\n",
++			pmod->name, mod->name, ret);
++
++	klp_free_object_loaded(obj);
++}
++
++static int klp_module_notify(struct notifier_block *nb, unsigned long action,
++			     void *data)
++{
++	struct module *mod = data;
++	struct klp_patch *patch;
++	struct klp_object *obj;
++
++	if (action != MODULE_STATE_COMING && action != MODULE_STATE_GOING)
++		return 0;
++
++	mutex_lock(&klp_mutex);
++
++	list_for_each_entry(patch, &klp_patches, list) {
++		if (patch->state == KLP_DISABLED)
++			continue;
++
++		for (obj = patch->objs; obj->funcs; obj++) {
++			if (!klp_is_module(obj) || strcmp(obj->name, mod->name))
++				continue;
++
++			if (action == MODULE_STATE_COMING) {
++				obj->mod = mod;
++				klp_module_notify_coming(patch, obj);
++			} else /* MODULE_STATE_GOING */
++				klp_module_notify_going(patch, obj);
++
++			break;
++		}
++	}
++
++	mutex_unlock(&klp_mutex);
++
++	return 0;
++}
++
++static struct notifier_block klp_module_nb = {
++	.notifier_call = klp_module_notify,
++	.priority = INT_MIN+1, /* called late but before ftrace notifier */
++};
++
++static int klp_init(void)
++{
++	int ret;
++
++	ret = register_module_notifier(&klp_module_nb);
++	if (ret)
++		return ret;
++
++	klp_root_kobj = kobject_create_and_add("livepatch", kernel_kobj);
++	if (!klp_root_kobj) {
++		ret = -ENOMEM;
++		goto unregister;
++	}
++
++	return 0;
++
++unregister:
++	unregister_module_notifier(&klp_module_nb);
++	return ret;
++}
++
++module_init(klp_init);
 -- 
 2.1.0
 
