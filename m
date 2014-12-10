@@ -1,159 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306AbaLJXRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:17:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59720 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758269AbaLJXRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933238AbaLJXR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:17:56 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:62601 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757519AbaLJXRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Dec 2014 18:17:51 -0500
-Date: Wed, 10 Dec 2014 18:17:40 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Peter Wu <peter@lekensteyn.nl>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: logitech-hidpp: prefix the name with Logitech
-Message-ID: <20141210231739.GD4861@mail.corp.redhat.com>
-References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
- <1418250070-28604-2-git-send-email-benjamin.tissoires@redhat.com>
- <1511661.CjWHljXQbp@al>
+Date: Wed, 10 Dec 2014 16:17:46 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: catalin.marinas@arm.com, will.deacon@arm.com, lorenzo.pieralisi@arm.com,
+        wangyijing@huawei.com, arnd@arndb.de, hanjun.guo@linaro.org,
+        Liviu.Dudau@arm.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rjw@rjwysocki.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 3/6] x86, acpi, pci: Move PCI config space accessors.
+Message-ID: <20141210231746.GF6692@google.com>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1416413091-13452-4-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1511661.CjWHljXQbp@al>
+In-Reply-To: <1416413091-13452-4-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 11 2014 or thereabouts, Peter Wu wrote:
-> On Wednesday 10 December 2014 17:21:10 Benjamin Tissoires wrote:
-> > Current names are reported as "K750", "M705", and it can be misleading
-> > for the users when they look at their input device list.
-> > 
-> > Prefixing the names with "Logitech " makes things better.
+On Wed, Nov 19, 2014 at 05:04:48PM +0100, Tomasz Nowicki wrote:
+> We are going to use mmio_config_{} name convention across all architectures.
+
+mmio_config_*() are workarounds for an AMD Fam10h defect [1].  I would prefer
+not to extend these names to other architectures, because they should be
+able to use readb()/writeb()/etc. directly, as we did on x86 before
+3320ad994afb ("x86: Work around mmio config space quirk on AMD Fam10h").
+
+In fact, it would be nice if we could use readb()/writeb()/etc. on x86, and
+only use mmio_config_*() when we're on AMD Fam10h.  Maybe there could be a
+"struct pci_raw_ops pci_mmcfg_amd_fam10h" that used mmio_config_*(), and we
+could set raw_pci_ext_ops to those ops instead of the default ones when
+we're on AMD Fam10h.  Then x86 should be able to use the generic
+readb()-based ops on most platforms.
+
+Bjorn
+
+[1] 3320ad994afb ("x86: Work around mmio config space quirk on AMD Fam10h")
+
+Somewhere in this process, I'd like to update the AMD Fam10h comment to fix
+the typos and reference the spec that talks about this, i.e., the "BIOS and
+Kernel Developer's Guide (BKDG) For AMD Family 10h Processors," rev 3.48,
+sec 2.11.1, "MMIO Configuration Coding Requirements."
+
+That can be a separate patch since it's only cosmetic.
+
+> Currently it belongs to asm/pci_x86.h header which should be included
+> only for x86 specific files. From now on, those accessors are in asm/pci.h
+> header which can be included in non-architecture code much easier.
 > 
-> Doesn't this apply to all input devices? Like, every USB device can be
-> queried for the manufacturer which could then by included by the input
-> subsystem.
-
-Yes and no. Yes, it's good to have the manufacturer name in the input
-subsystem, and no, because usbhid already prepend the name with the
-manufacturer.
-
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> Tested-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/x86/include/asm/pci.h     | 42 +++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/pci_x86.h | 43 ------------------------------------------
+>  2 files changed, 42 insertions(+), 43 deletions(-)
 > 
-> What about duplicate names? Can this patch cause a conflict with devices
-> having the same name?
-
-I am not sure what you mean here. I am adding a prefix to the name, so I
-do not see how a conflict can be possible. If there were a "M705" and a
-"Logitech M705", with different wireless PID, that would be worrisome to
-some extend.
-But I am pretty sure this will not happen.
-
-> 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > ---
-> > 
-> > Hi Jiri,
-> > 
-> > I'd love to see this one in 3.19 (after a strong review, of course).
-> > The idea came with the mouse DPI database that Peter is currently working on
-> > (see http://who-t.blogspot.com.au/2014/12/building-a-dpi-database-for-mice.html).
-> > 
-> > I think, if you do not qualify the series for 3.19, we should drop it entirely.
-> > 3.19 introduces the hidpp module and changes the labels. The DPI hwdb will check
-> > on the label to match the actual mouse, so if this one does not get into 3.19,
-> > we will end up in 3 entries for each Logitech device.
-> > 
-> > Cheers,
-> > Benjamin
-> > 
-> > 
-> >  drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
-> >  1 file changed, 34 insertions(+)
-> > 
-> > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> > index 3846305..8cf4352 100644
-> > --- a/drivers/hid/hid-logitech-hidpp.c
-> > +++ b/drivers/hid/hid-logitech-hidpp.c
-> > @@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
-> >  		(report->rap.sub_id == 0x41);
-> >  }
-> >  
-> > +/**
-> > + * hidpp_prefix_name() prefixes the current given name with "Logitech ".
-> > + */
-> > +static void hidpp_prefix_name(char **name, int name_length)
-> > +{
-> > +#define PREFIX_SIZE 9 /* "Logitech " */
-> > +
-> > +	int new_length;
-> > +	char *new_name;
-> > +
-> > +	if (name_length > PREFIX_SIZE &&
-> > +	    strncmp(*name, "Logitech ", PREFIX_SIZE) == 0)
-> 
-> I think you meant || here, not &&.
-
-No, I meant &&. The idea is to not add a prefix if the provided name
-already contains the prefix. Read that as "if the size of the name may
-contain the prefix and that the prefix is here, then we bail out".
-
-> 
-> > +		/* The prefix has is already in the name */
-> > +		return;
-> > +
-> > +	new_length = name_length + PREFIX_SIZE;
-> 
-> Stylistic note, but 'PREFIX_SIZE + name_length' would match the order of
-> the string that gets prepended.
-
-Works for me.
-
-I will send a v2 with your comments addressed.
-
-Cheers,
-Benjamin
-
-> 
-> Kind regards,
-> Peter
-> 
-> > +	new_name = kzalloc(new_length, GFP_KERNEL);
-> > +	if (!new_name)
-> > +		return;
-> > +
-> > +	snprintf(new_name, new_length, "Logitech %s", *name);
-> > +
-> > +	kfree(*name);
-> > +
-> > +	*name = new_name;
-> > +}
-> > +
-> >  /* -------------------------------------------------------------------------- */
-> >  /* HIDP++ 1.0 commands                                                        */
-> >  /* -------------------------------------------------------------------------- */
-> > @@ -318,6 +345,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
-> >  		return NULL;
-> >  
-> >  	memcpy(name, &response.rap.params[2], len);
-> > +
-> > +	/* include the terminating '\0' */
-> > +	hidpp_prefix_name(&name, len + 1);
-> > +
-> >  	return name;
-> >  }
-> >  
-> > @@ -489,6 +520,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
-> >  			feature_index, index, name + index,
-> >  			__name_length - index);
-> >  
-> > +	/* include the terminating '\0' */
-> > +	hidpp_prefix_name(&name, __name_length + 1);
-> > +
-> >  	return name;
-> >  
-> >  out_err:
-> > 
+> diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+> index 0892ea0..5ba3720 100644
+> --- a/arch/x86/include/asm/pci.h
+> +++ b/arch/x86/include/asm/pci.h
+> @@ -71,6 +71,48 @@ void pcibios_set_master(struct pci_dev *dev);
+>  struct irq_routing_table *pcibios_get_irq_routing_table(void);
+>  int pcibios_set_irq_routing(struct pci_dev *dev, int pin, int irq);
+>  
+> +/*
+> + * AMD Fam10h CPUs are buggy, and cannot access MMIO config space
+> + * on their northbrige except through the * %eax register. As such, you MUST
+> + * NOT use normal IOMEM accesses, you need to only use the magic mmio-config
+> + * accessor functions.
+> + * In fact just use pci_config_*, nothing else please.
+> + */
+> +static inline unsigned char mmio_config_readb(void __iomem *pos)
+> +{
+> +	u8 val;
+> +	asm volatile("movb (%1),%%al" : "=a" (val) : "r" (pos));
+> +	return val;
+> +}
+> +
+> +static inline unsigned short mmio_config_readw(void __iomem *pos)
+> +{
+> +	u16 val;
+> +	asm volatile("movw (%1),%%ax" : "=a" (val) : "r" (pos));
+> +	return val;
+> +}
+> +
+> +static inline unsigned int mmio_config_readl(void __iomem *pos)
+> +{
+> +	u32 val;
+> +	asm volatile("movl (%1),%%eax" : "=a" (val) : "r" (pos));
+> +	return val;
+> +}
+> +
+> +static inline void mmio_config_writeb(void __iomem *pos, u8 val)
+> +{
+> +	asm volatile("movb %%al,(%1)" : : "a" (val), "r" (pos) : "memory");
+> +}
+> +
+> +static inline void mmio_config_writew(void __iomem *pos, u16 val)
+> +{
+> +	asm volatile("movw %%ax,(%1)" : : "a" (val), "r" (pos) : "memory");
+> +}
+> +
+> +static inline void mmio_config_writel(void __iomem *pos, u32 val)
+> +{
+> +	asm volatile("movl %%eax,(%1)" : : "a" (val), "r" (pos) : "memory");
+> +}
+>  
+>  #define HAVE_PCI_MMAP
+>  extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
+> diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+> index caba141..42e7332 100644
+> --- a/arch/x86/include/asm/pci_x86.h
+> +++ b/arch/x86/include/asm/pci_x86.h
+> @@ -121,49 +121,6 @@ extern int __init pcibios_init(void);
+>  extern int pci_legacy_init(void);
+>  extern void pcibios_fixup_irqs(void);
+>  
+> -/*
+> - * AMD Fam10h CPUs are buggy, and cannot access MMIO config space
+> - * on their northbrige except through the * %eax register. As such, you MUST
+> - * NOT use normal IOMEM accesses, you need to only use the magic mmio-config
+> - * accessor functions.
+> - * In fact just use pci_config_*, nothing else please.
+> - */
+> -static inline unsigned char mmio_config_readb(void __iomem *pos)
+> -{
+> -	u8 val;
+> -	asm volatile("movb (%1),%%al" : "=a" (val) : "r" (pos));
+> -	return val;
+> -}
+> -
+> -static inline unsigned short mmio_config_readw(void __iomem *pos)
+> -{
+> -	u16 val;
+> -	asm volatile("movw (%1),%%ax" : "=a" (val) : "r" (pos));
+> -	return val;
+> -}
+> -
+> -static inline unsigned int mmio_config_readl(void __iomem *pos)
+> -{
+> -	u32 val;
+> -	asm volatile("movl (%1),%%eax" : "=a" (val) : "r" (pos));
+> -	return val;
+> -}
+> -
+> -static inline void mmio_config_writeb(void __iomem *pos, u8 val)
+> -{
+> -	asm volatile("movb %%al,(%1)" : : "a" (val), "r" (pos) : "memory");
+> -}
+> -
+> -static inline void mmio_config_writew(void __iomem *pos, u16 val)
+> -{
+> -	asm volatile("movw %%ax,(%1)" : : "a" (val), "r" (pos) : "memory");
+> -}
+> -
+> -static inline void mmio_config_writel(void __iomem *pos, u32 val)
+> -{
+> -	asm volatile("movl %%eax,(%1)" : : "a" (val), "r" (pos) : "memory");
+> -}
+> -
+>  #ifdef CONFIG_PCI
+>  # ifdef CONFIG_ACPI
+>  #  define x86_default_pci_init		pci_acpi_init
+> -- 
+> 1.9.1
 > 
