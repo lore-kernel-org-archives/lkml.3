@@ -1,75 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536AbaLJO7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:59:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54112 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755993AbaLJO7I (ORCPT
+	id S1757633AbaLJO7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:59:47 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:44190 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757563AbaLJO7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:59:08 -0500
-Date: Wed, 10 Dec 2014 15:59:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Santosh Shukla <santosh.shukla@linaro.org>
-cc: fweisbec@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        preeti@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [Query] Spurious interrupts from clockevent device on X86
- Ivybridge
-In-Reply-To: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412101539200.13233@nanos>
-References: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 10 Dec 2014 09:59:46 -0500
+From: Petr Cermak <petrcermak@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Primiano Tucci <primiano@chromium.org>,
+        Petr Cermak <petrcermak@chromium.org>
+Subject: [RFC PATCH] Add user-space support for resetting mm->hiwater_rss (peak RSS)
+Date: Wed, 10 Dec 2014 14:59:04 +0000
+Message-Id: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014, Santosh Shukla wrote:
-> The causes I could find:
-> - Clockevent device's counter overflow: When we need to program a clockevt
->   device for times larger than it can handle, we program it for max time and
->   then reprogram again on expiration. Because of hardware counter limitations we
->   have to do it this way and this isn't really a spurious interrupt as we
->   programmed it that way.
-> 
-> - Hardware timer firing before its expiration: Yes, its hard to digest but from
->   my tests it looks like this does happen. Will circulate another mail once I am
->   sure about it.
+Being able to reset mm->hiwater_rss (resident set size high water mark) from
+user space would enable fine grained iterative memory profiling. I propose a
+very short patch for doing so below. I would like to get some feedback on the
+user-space interface to do this. Would it be best to:
 
-Nothing we can do about.
+  1. Add an extra value to /proc/PID/clear_refs to reset VmHWM? (The proposed
+     patch uses this approach.)
+
+  2. Add a new write-only pseudo-file for this purpose (e.g.,
+     /proc/pid/reset_hwm)?
+
+The driving use-case for this would be getting the peak RSS value, which can be
+retrieved from the VmHWM field in /proc/pid/status, per benchmark iteration or
+test scenario.
+
+Signed-off-by: Petr Cermak <petrcermak@chromium.org>
+---
+ Documentation/filesystems/proc.txt |   3 ++
+ fs/proc/task_mmu.c                 | 106 +++++++++++++++++++++----------------
+ include/linux/mm.h                 |   5 ++
+ 3 files changed, 68 insertions(+), 46 deletions(-)
+
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index eb8a10e..2c277e9 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -488,6 +488,9 @@ To clear the bits for the file mapped pages associated with the process
+ To clear the soft-dirty bit
+     > echo 4 > /proc/PID/clear_refs
  
-> - Difference between time returned by hrtimer_update_base() and clockevt
->   device's notion of time: Wanted to discuss this here..
-
-The clock event device and the clock source can run at different
-frequencies. So the conversion from nsec to event ticks can cause
-slight errors which are only observable when the delta gets larger.
-
-The clock event device conversion from nsecs to timer ticks is
-calculated at setup time once. It's known to be not completely
-precise.
-
-The clock source conversion which we use for reading time can be
-changed by recalibration (we do that for TSC) and by NTP adjustments.
-
-So even if we would calibrate the clock event device better, then we
-still would need to take the NTP adjustments into account. And given
-the zoo of timers we have, certainly not a trivial exercise.
-
-Need to think about a bit more.
-
-Thanks,
-
-	tglx
-
-
-
++To reset the peak resident set size ("high water mark")
++    > echo 5 > /proc/PID/clear_refs
++
+ Any other value written to /proc/PID/clear_refs will have no effect.
+ 
+ The /proc/pid/pagemap gives the PFN, which can be used to find the pageflags
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 4e0388c..86b23b2 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -712,6 +712,7 @@ enum clear_refs_types {
+ 	CLEAR_REFS_ANON,
+ 	CLEAR_REFS_MAPPED,
+ 	CLEAR_REFS_SOFT_DIRTY,
++	CLEAR_REFS_MM_HIWATER_RSS,
+ 	CLEAR_REFS_LAST,
+ };
+ 
+@@ -818,56 +819,69 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 		return -ESRCH;
+ 	mm = get_task_mm(task);
+ 	if (mm) {
+-		struct clear_refs_private cp = {
+-			.type = type,
+-		};
+-		struct mm_walk clear_refs_walk = {
+-			.pmd_entry = clear_refs_pte_range,
+-			.mm = mm,
+-			.private = &cp,
+-		};
+-		down_read(&mm->mmap_sem);
+-		if (type == CLEAR_REFS_SOFT_DIRTY) {
+-			for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-				if (!(vma->vm_flags & VM_SOFTDIRTY))
+-					continue;
+-				up_read(&mm->mmap_sem);
+-				down_write(&mm->mmap_sem);
++		if (type == CLEAR_REFS_MM_HIWATER_RSS) {
++			/*
++			 * Writing 5 to /proc/pid/clear_refs resets the peak
++			 * resident set size.
++			 */
++			down_write(&mm->mmap_sem);
++			reset_mm_hiwater_rss(mm);
++			up_write(&mm->mmap_sem);
++		} else {
++			struct clear_refs_private cp = {
++				.type = type,
++			};
++			struct mm_walk clear_refs_walk = {
++				.pmd_entry = clear_refs_pte_range,
++				.mm = mm,
++				.private = &cp,
++			};
++			down_read(&mm->mmap_sem);
++			if (type == CLEAR_REFS_SOFT_DIRTY) {
+ 				for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-					vma->vm_flags &= ~VM_SOFTDIRTY;
+-					vma_set_page_prot(vma);
++					if (!(vma->vm_flags & VM_SOFTDIRTY))
++						continue;
++					up_read(&mm->mmap_sem);
++					down_write(&mm->mmap_sem);
++					for (vma = mm->mmap; vma;
++					     vma = vma->vm_next) {
++						vma->vm_flags &= ~VM_SOFTDIRTY;
++						vma_set_page_prot(vma);
++					}
++					downgrade_write(&mm->mmap_sem);
++					break;
+ 				}
+-				downgrade_write(&mm->mmap_sem);
+-				break;
++				mmu_notifier_invalidate_range_start(mm, 0, -1);
+ 			}
+-			mmu_notifier_invalidate_range_start(mm, 0, -1);
+-		}
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
+-				continue;
+-			/*
+-			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+-			 *
+-			 * Writing 2 to /proc/pid/clear_refs only affects
+-			 * Anonymous pages.
+-			 *
+-			 * Writing 3 to /proc/pid/clear_refs only affects file
+-			 * mapped pages.
+-			 *
+-			 * Writing 4 to /proc/pid/clear_refs affects all pages.
+-			 */
+-			if (type == CLEAR_REFS_ANON && vma->vm_file)
+-				continue;
+-			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+-				continue;
+-			walk_page_range(vma->vm_start, vma->vm_end,
+-					&clear_refs_walk);
++			for (vma = mm->mmap; vma; vma = vma->vm_next) {
++				cp.vma = vma;
++				if (is_vm_hugetlb_page(vma))
++					continue;
++				/*
++				 * Writing 1 to /proc/pid/clear_refs affects all
++				 * pages.
++				 *
++				 * Writing 2 to /proc/pid/clear_refs only
++				 * affects Anonymous pages.
++				 *
++				 * Writing 3 to /proc/pid/clear_refs only
++				 * affects file mapped pages.
++				 *
++				 * Writing 4 to /proc/pid/clear_refs affects all
++				 * pages.
++				 */
++				if (type == CLEAR_REFS_ANON && vma->vm_file)
++					continue;
++				if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
++					continue;
++				walk_page_range(vma->vm_start, vma->vm_end,
++						&clear_refs_walk);
++			}
++			if (type == CLEAR_REFS_SOFT_DIRTY)
++				mmu_notifier_invalidate_range_end(mm, 0, -1);
++			flush_tlb_mm(mm);
++			up_read(&mm->mmap_sem);
+ 		}
+-		if (type == CLEAR_REFS_SOFT_DIRTY)
+-			mmu_notifier_invalidate_range_end(mm, 0, -1);
+-		flush_tlb_mm(mm);
+-		up_read(&mm->mmap_sem);
+ 		mmput(mm);
+ 	}
+ 	put_task_struct(task);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b464611..8a51ef4 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1350,6 +1350,11 @@ static inline void update_hiwater_vm(struct mm_struct *mm)
+ 		mm->hiwater_vm = mm->total_vm;
+ }
+ 
++static inline void reset_mm_hiwater_rss(struct mm_struct *mm)
++{
++	mm->hiwater_rss = get_mm_rss(mm);
++}
++
+ static inline void setmax_mm_hiwater_rss(unsigned long *maxrss,
+ 					 struct mm_struct *mm)
+ {
+-- 
+2.2.0.rc0.207.ga3a616c
 
