@@ -1,126 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795AbaLJOZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:25:03 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:38080 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757533AbaLJOXo (ORCPT
+	id S1757816AbaLJOZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:25:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48872 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756547AbaLJOZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:23:44 -0500
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
-        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
-        hughd@google.com, hocko@suse.cz
-Subject: [PATCH v2 2/5] uaccess: count pagefault_disable() levels in pagefault_count
-Date: Wed, 10 Dec 2014 15:23:31 +0100
-Message-Id: <1418221414-60110-3-git-send-email-dahi@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
-References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121014-0017-0000-0000-0000022862FF
+	Wed, 10 Dec 2014 09:25:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <3c4acafb6be84bf0a27f11b16d0309c3@BL2FFO11FD025.protection.gbl>
+References: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1418217710-11987-2-git-send-email-ricardo.ribalda@gmail.com> <3c4acafb6be84bf0a27f11b16d0309c3@BL2FFO11FD025.protection.gbl>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 10 Dec 2014 15:25:32 +0100
+Message-ID: <CAPybu_1pZXcx9hbHN7_An1CsokWuLbaMbjN7hnFZyW-QNcmn=Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] gpio/xilinx: Remove offset property
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pagefault_disable() and pagefault_enable() have to increment/decrement the
-pagefault_count. We keep manipulating the preempt count to retain compability
-to existing pagefault handlers. This has to be demangled in separate patches.
+Hello Michal
 
-It is now possible to verify whether in a pagefault_disable() envionment by
-calling pagefault_disabled().
+Thanks for the review
 
-Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
----
- include/linux/uaccess.h | 45 ++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 38 insertions(+), 7 deletions(-)
+I wait for more comments and then I will resend the patchet with this
+fixed. I guess is fine to add your reviewed-by?
 
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index ecd3319..1dfc678 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -2,20 +2,45 @@
- #define __LINUX_UACCESS_H__
- 
- #include <linux/preempt.h>
-+#include <linux/thread_info.h>
- #include <asm/uaccess.h>
- 
-+static __always_inline int pagefault_count(void)
-+{
-+	return current_thread_info()->pagefault_count;
-+}
-+
-+static __always_inline int *pagefault_count_ptr(void)
-+{
-+	return &current_thread_info()->pagefault_count;
-+}
-+
-+static __always_inline void pagefault_count_inc(void)
-+{
-+	(*pagefault_count_ptr())++;
-+}
-+
-+static __always_inline void pagefault_count_dec(void)
-+{
-+	(*pagefault_count_ptr())--;
-+}
-+
- /*
-- * These routines enable/disable the pagefault handler in that
-- * it will not take any locks and go straight to the fixup table.
-+ * These routines enable/disable the pagefault handler. If disabled, it will
-+ * not take any locks and go straight to the fixup table.
-+ *
-+ * We increase the preempt and the pagefault count, to be able to distinguish
-+ * whether we run in simple atomic context or in a real pagefault_disable()
-+ * context.
-+ *
-+ * For now, after pagefault_disabled() has been called, we run in atomic
-+ * context. User access methods will not sleep.
-  *
-- * They have great resemblance to the preempt_disable/enable calls
-- * and in fact they are identical; this is because currently there is
-- * no other way to make the pagefault handlers do this. So we do
-- * disable preemption but we don't necessarily care about that.
-  */
- static inline void pagefault_disable(void)
- {
- 	preempt_count_inc();
-+	pagefault_count_inc();
- 	/*
- 	 * make sure to have issued the store before a pagefault
- 	 * can hit.
-@@ -25,18 +50,24 @@ static inline void pagefault_disable(void)
- 
- static inline void pagefault_enable(void)
- {
--#ifndef CONFIG_PREEMPT
- 	/*
- 	 * make sure to issue those last loads/stores before enabling
- 	 * the pagefault handler again.
- 	 */
- 	barrier();
-+	pagefault_count_dec();
-+#ifndef CONFIG_PREEMPT
- 	preempt_count_dec();
- #else
- 	preempt_enable();
- #endif
- }
- 
-+/*
-+ * Is the pagefault handler disabled? If so, user access methods will not sleep.
-+ */
-+#define pagefault_disabled() (pagefault_count() != 0)
-+
- #ifndef ARCH_HAS_NOCACHE_UACCESS
- 
- static inline unsigned long __copy_from_user_inatomic_nocache(void *to,
+
+Thanks!
+
+On Wed, Dec 10, 2014 at 3:18 PM, Michal Simek <michal.simek@xilinx.com> wrote:
+> On 12/10/2014 02:21 PM, Ricardo Ribalda Delgado wrote:
+>> Instead of calculating the register offset per call, pre-calculate it on
+>> probe time.
+>>
+>> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>> ---
+>>
+>> v2: Add Acked-by
+>>
+>>  drivers/gpio/gpio-xilinx.c | 33 +++++++++++----------------------
+>>  1 file changed, 11 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+>> index ba18b06..9483950 100644
+>> --- a/drivers/gpio/gpio-xilinx.c
+>> +++ b/drivers/gpio/gpio-xilinx.c
+>> @@ -50,7 +50,6 @@ struct xgpio_instance {
+>>       struct of_mm_gpio_chip mmchip;
+>>       u32 gpio_state;
+>>       u32 gpio_dir;
+>> -     u32 offset;
+>
+> when you remove offset property you should also remove offset from comment
+> above of this structure.
+>
+>>       spinlock_t gpio_lock;
+>>  };
+>>
+>> @@ -65,12 +64,8 @@ struct xgpio_instance {
+>>  static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
+>>  {
+>>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+>> -     struct xgpio_instance *chip =
+>> -         container_of(mm_gc, struct xgpio_instance, mmchip);
+>>
+>> -     void __iomem *regs = mm_gc->regs + chip->offset;
+>> -
+>> -     return !!(xgpio_readreg(regs + XGPIO_DATA_OFFSET) & BIT(gpio));
+>> +     return !!(xgpio_readreg(mm_gc->regs + XGPIO_DATA_OFFSET) & BIT(gpio));
+>>  }
+>>
+>>  /**
+>> @@ -88,7 +83,6 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+>>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+>>       struct xgpio_instance *chip =
+>>           container_of(mm_gc, struct xgpio_instance, mmchip);
+>> -     void __iomem *regs = mm_gc->regs;
+>>
+>>       spin_lock_irqsave(&chip->gpio_lock, flags);
+>>
+>> @@ -98,8 +92,7 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+>>       else
+>>               chip->gpio_state &= ~BIT(gpio);
+>>
+>> -     xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
+>> -                                                      chip->gpio_state);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
+>>
+>>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
+>>  }
+>> @@ -119,13 +112,12 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+>>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+>>       struct xgpio_instance *chip =
+>>           container_of(mm_gc, struct xgpio_instance, mmchip);
+>> -     void __iomem *regs = mm_gc->regs;
+>>
+>>       spin_lock_irqsave(&chip->gpio_lock, flags);
+>>
+>>       /* Set the GPIO bit in shadow register and set direction as input */
+>>       chip->gpio_dir |= BIT(gpio);
+>> -     xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
+>>
+>>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
+>>
+>> @@ -148,7 +140,6 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+>>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+>>       struct xgpio_instance *chip =
+>>           container_of(mm_gc, struct xgpio_instance, mmchip);
+>> -     void __iomem *regs = mm_gc->regs;
+>>
+>>       spin_lock_irqsave(&chip->gpio_lock, flags);
+>>
+>> @@ -157,12 +148,11 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+>>               chip->gpio_state |= BIT(gpio);
+>>       else
+>>               chip->gpio_state &= ~BIT(gpio);
+>> -     xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
+>> -                    chip->gpio_state);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
+>>
+>>       /* Clear the GPIO bit in shadow register and set direction as output */
+>>       chip->gpio_dir &= ~BIT(gpio);
+>> -     xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
+>>
+>>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
+>>
+>> @@ -178,10 +168,8 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
+>>       struct xgpio_instance *chip =
+>>           container_of(mm_gc, struct xgpio_instance, mmchip);
+>>
+>> -     xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
+>> -                                                     chip->gpio_state);
+>> -     xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET,
+>> -                                                      chip->gpio_dir);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
+>> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
+>>  }
+>>
+>>  /**
+>> @@ -247,9 +235,6 @@ static int xgpio_of_probe(struct device_node *np)
+>>               if (!chip)
+>>                       return -ENOMEM;
+>>
+>> -             /* Add dual channel offset */
+>> -             chip->offset = XGPIO_CHANNEL_OFFSET;
+>> -
+>>               /* Update GPIO state shadow register with default value */
+>>               of_property_read_u32(np, "xlnx,dout-default-2",
+>>                                    &chip->gpio_state);
+>> @@ -285,6 +270,10 @@ static int xgpio_of_probe(struct device_node *np)
+>>                       np->full_name, status);
+>>                       return status;
+>>               }
+>> +
+>> +             /* Add dual channel offset */
+>> +             chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
+>> +
+>>               pr_info("XGpio: %s: dual channel registered, base is %d\n",
+>>                                       np->full_name, chip->mmchip.gc.base);
+>>       }
+>>
+>
+> Thanks,
+> Michal
+
+
+
 -- 
-1.8.5.5
-
+Ricardo Ribalda
