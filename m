@@ -1,158 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaLJBeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:34:08 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:54916 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbaLJBeG (ORCPT
+	id S1753517AbaLJBfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:35:24 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:26301 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647AbaLJBfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:34:06 -0500
-Message-ID: <5487A309.6020400@gmail.com>
-Date: Wed, 10 Dec 2014 09:34:01 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 9 Dec 2014 20:35:22 -0500
+X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
+   d="scan'208";a="52521862"
+Message-ID: <5487A355.6030704@broadcom.com>
+Date: Tue, 9 Dec 2014 17:35:17 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: JBottomley@parallels.com
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        grace.chang@tw.promise.com, ed.lin@promise.com,
-        linus.chen@tw.promise.com, victor.p@promise.com
-Subject: [V3 PATCH 2/4] scsi:stex.c Add hotplug support
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Varka Bhadram <varkabhadram@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        "Matt Porter" <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "Russell King" <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/4] i2c: iProc: define Broadcom iProc I2C binding
+References: <Ray Jui <rjui@broadcom.com> <1418172891-19441-1-git-send-email-rjui@broadcom.com> <1418172891-19441-2-git-send-email-rjui@broadcom.com> <5487A16C.5000707@gmail.com>
+In-Reply-To: <5487A16C.5000707@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
- From 901f2c1b2d1ae2991182f0f62cedc70f87ea49bc Mon Sep 17 00:00:00 2001
-From: Charles Chiou <charles.chiou@tw.promise.com>
-Date: Wed, 5 Nov 2014 17:18:37 +0800
-Subject: [PATCH 2/4] scsi:stex.c Add hotplug support
 
-1. Add hotplug support. Pegasus support surprise removal. To this end, I
-    use return_abnormal_state function to return DID_NO_CONNECT for all
-    commands which sent to driver.
-
-2. Remove stex_hba_stop in stex_remove because we cannot send command to
-    device after hotplug.
-
-3. Add new device status:  MU_STATE_STOP, MU_STATE_NOCONNECT
-    , MU_STATE_STOP. MU_STATE_STOP is currently not referenced.
-    MU_STATE_NOCONNECT represent that device is plugged out
-    from the host.
-
-4. Use return_abnormal_function() to substitute part of code
-    in stex_do_reset.
-
-Signed-off-by: charles.chiou@tw.promise.com
----
-  drivers/scsi/stex.c | 51 
-+++++++++++++++++++++++++++++++++------------------
-  1 file changed, 33 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
-index 08e7bc8..7dc6afe 100644
---- a/drivers/scsi/stex.c
-+++ b/drivers/scsi/stex.c
-@@ -83,6 +83,8 @@ enum {
-  	MU_STATE_STARTED			= 2,
-  	MU_STATE_RESETTING			= 3,
-  	MU_STATE_FAILED				= 4,
-+	MU_STATE_STOP				= 5,
-+	MU_STATE_NOCONNECT			= 6,
-
-  	MU_MAX_DELAY				= 120,
-  	MU_HANDSHAKE_SIGNATURE			= 0x55aaaa55,
-@@ -544,6 +546,27 @@ stex_ss_send_cmd(struct st_hba *hba, struct req_msg 
-*req, u16 tag)
-  	readl(hba->mmio_base + YH2I_REQ); /* flush */
-  }
-
-+static void return_abnormal_state(struct st_hba *hba, int status)
-+{
-+	struct st_ccb *ccb;
-+	unsigned long flags;
-+	u16 tag;
-+
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	for (tag = 0; tag < hba->host->can_queue; tag++) {
-+		ccb = &hba->ccb[tag];
-+		if (ccb->req == NULL)
-+			continue;
-+		ccb->req = NULL;
-+		if (ccb->cmd) {
-+			scsi_dma_unmap(ccb->cmd);
-+			ccb->cmd->result = status << 16;
-+			ccb->cmd->scsi_done(ccb->cmd);
-+			ccb->cmd = NULL;
-+		}
-+	}
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+}
-  static int
-  stex_slave_alloc(struct scsi_device *sdev)
-  {
-@@ -585,7 +608,11 @@ stex_queuecommand_lck(struct scsi_cmnd *cmd, void 
-(*done)(struct scsi_cmnd *))
-  	id = cmd->device->id;
-  	lun = cmd->device->lun;
-  	hba = (struct st_hba *) &host->hostdata[0];
--
-+	if (hba->mu_status == MU_STATE_NOCONNECT) {
-+		cmd->result = DID_NO_CONNECT;
-+		done(cmd);
-+		return 0;
-+	}
-  	if (unlikely(hba->mu_status == MU_STATE_RESETTING))
-  		return SCSI_MLQUEUE_HOST_BUSY;
-
-@@ -1287,10 +1314,8 @@ static void stex_ss_reset(struct st_hba *hba)
-
-  static int stex_do_reset(struct st_hba *hba)
-  {
--	struct st_ccb *ccb;
-  	unsigned long flags;
-  	unsigned int mu_status = MU_STATE_RESETTING;
--	u16 tag;
-
-  	spin_lock_irqsave(hba->host->host_lock, flags);
-  	if (hba->mu_status == MU_STATE_STARTING) {
-@@ -1324,20 +1349,8 @@ static int stex_do_reset(struct st_hba *hba)
-  	else if (hba->cardtype == st_yel)
-  		stex_ss_reset(hba);
-
--	spin_lock_irqsave(hba->host->host_lock, flags);
--	for (tag = 0; tag < hba->host->can_queue; tag++) {
--		ccb = &hba->ccb[tag];
--		if (ccb->req == NULL)
--			continue;
--		ccb->req = NULL;
--		if (ccb->cmd) {
--			scsi_dma_unmap(ccb->cmd);
--			ccb->cmd->result = DID_RESET << 16;
--			ccb->cmd->scsi_done(ccb->cmd);
--			ccb->cmd = NULL;
--		}
--	}
--	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	return_abnormal_state(hba, DID_RESET);
-
-  	if (stex_handshake(hba) == 0)
-  		return 0;
-@@ -1808,9 +1821,11 @@ static void stex_remove(struct pci_dev *pdev)
-  {
-  	struct st_hba *hba = pci_get_drvdata(pdev);
-
-+	hba->mu_status = MU_STATE_NOCONNECT;
-+	return_abnormal_state(hba, DID_NO_CONNECT);
-  	scsi_remove_host(hba->host);
-
--	stex_hba_stop(hba);
-+	scsi_block_requests(hba->host);
-
-  	stex_hba_free(hba);
-
--- 
-1.9.1
-
+On 12/9/2014 5:27 PM, Varka Bhadram wrote:
+> Hi,
+>
+> On Wednesday 10 December 2014 06:24 AM, Ray Jui wrote:
+>> Document the I2C device tree binding for Broadcom iProc family of
+>> SoCs
+>>
+>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+>> ---
+>>   .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37
+>> ++++++++++++++++++++
+>>   1 file changed, 37 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+>> b/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+>> new file mode 100644
+>> index 0000000..81f982c
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+>> @@ -0,0 +1,37 @@
+>> +Broadcom iProc I2C controller
+>> +
+>> +Required properties:
+>> +
+>> +- compatible:
+>> +    Must be "brcm,iproc-i2c"
+>> +
+>> +- reg:
+>> +    Define the base and range of the I/O address space that contain
+>> the iProc
+>> +    I2C controller registers
+>> +
+>> +- interrupts:
+>> +    Should contain the I2C interrupt
+>> +
+>> +- clock-frequency:
+>> +    This is the I2C bus clock. Need to be either 100000 or 400000
+>> +
+>> +- #address-cells:
+>> +    Always 1 (for I2C addresses)
+>> +
+>> +- #size-cells:
+>> +    Always 0
+>> +
+>
+> All the properties defined with two lines of statements.
+>
+> Why cant they be with single line statement, like:
+>
+> compatible:    Must be "brcm,iproc-i2c"
+> reg:        Define the base and range of the I/O address space that
+>          contain the iProc I2C controller registers
+>
+> ....
+>
+>
+I thought making them two lines are more readable (and obviously that's 
+very subjective, :)). But more importantly, it matches the format of 
+other Broadcom iProc/Cygnus devicetree binding documents that are 
+currently in progress of upstreaming.
