@@ -1,141 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403AbaLJXT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:19:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758362AbaLJXTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:19:49 -0500
-Date: Wed, 10 Dec 2014 18:01:52 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Peter Wu <peter@lekensteyn.nl>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: logitech-hidpp: do not return the name length
-Message-ID: <20141210230152.GC4861@mail.corp.redhat.com>
-References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
- <4561294.qneDZ51mgu@al>
+	id S933276AbaLJXUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:20:36 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:41485 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758284AbaLJXUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 18:20:33 -0500
+Date: Thu, 11 Dec 2014 01:14:32 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Jacek Anaszewski <j.anaszewski@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
+ Flash class extension
+Message-ID: <20141210231431.GP15559@valkosipuli.retiisi.org.uk>
+References: <20141129125832.GA315@amd>
+ <547C539A.4010500@samsung.com>
+ <20141201130437.GB24737@amd>
+ <547C7420.4080801@samsung.com>
+ <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
+ <20141206124310.GB3411@amd>
+ <5485D7F8.10807@samsung.com>
+ <20141208201855.GA16648@amd>
+ <5486B8AE.5000408@samsung.com>
+ <20141209155033.GB21422@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4561294.qneDZ51mgu@al>
+In-Reply-To: <20141209155033.GB21422@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 10 2014 or thereabouts, Peter Wu wrote:
-> On Wednesday 10 December 2014 17:21:09 Benjamin Tissoires wrote:
-> > We do not make any use of the actual name length get through
-> > hidpp_get_device_name().
+Hi Pavel and Jacek,
+
+On Tue, Dec 09, 2014 at 04:50:33PM +0100, Pavel Machek wrote:
+> On Tue 2014-12-09 09:54:06, Jacek Anaszewski wrote:
+> > Hi Pavel,
 > > 
-> > We can drop the extra code and simplify the API a bit.
+> > On 12/08/2014 09:18 PM, Pavel Machek wrote:
+> > >On Mon 2014-12-08 17:55:20, Jacek Anaszewski wrote:
+> > >>On 12/06/2014 01:43 PM, Pavel Machek wrote:
+> > >>>
+> > >>>>>The format of a sysfs attribute should be concise.
+> > >>>>>The error codes are generic and map directly to the V4L2 Flash
+> > >>>>>error codes.
+> > >>>>>
+> > >>>>
+> > >>>>Actually I'd like to see those flash fault code defined in LED
+> > >>>>subsystem. And V4L2 will just include LED flash header file to use it.
+> > >>>>Because flash fault code is not for V4L2 specific but it's a feature
+> > >>>>of LED flash devices.
+> > >>>>
+> > >>>>For clearing error code of flash devices, I think it depends on the
+> > >>>>hardware. If most of our LED flash is using reading to clear error
+> > >>>>code, we probably can make it simple as this now. But what if some
+> > >>>>other LED flash devices are using writing to clear error code? we
+> > >>>>should provide a API to that?
+> > >>>
+> > >>>Actually, we should provide API that makes sense, and that is easy to
+> > >>>use by userspace.
+> > >>>
+> > >>>I believe "read" is called read because it does not change anything,
+> > >>>and it should stay that way in /sysfs. You may want to talk to sysfs
+> > >>>maintainers if you plan on doing another semantics.
+> > >>
+> > >>How would you proceed in case of devices which clear their fault
+> > >>register upon I2C readout (e.g. AS3645)? In this case read does have
+> > >>a side effect. For such devices attribute semantics would have to be
+> > >>different than for the devices which don't clear faults on readout.
+> > >
+> > >No, semantics should be same for all devices.
+> > >
+> > >If device clears fault register during I2C readout, kernel will simply
+> > >gather faults in an variable, and clear them upon write to sysfs file.
 > > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> >
-> > ---
-> >  drivers/hid/hid-logitech-hidpp.c | 10 +++-------
-> >  1 file changed, 3 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> > index 1a6395d..3846305 100644
-> > --- a/drivers/hid/hid-logitech-hidpp.c
-> > +++ b/drivers/hid/hid-logitech-hidpp.c
-> > @@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
-> >  	return count;
-> >  }
-> >  
-> > -static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
-> > +static char *hidpp_get_device_name(struct hidpp_device *hidpp)
-> >  {
-> >  	u8 feature_type;
-> >  	u8 feature_index;
-> > @@ -484,7 +484,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
-> >  	if (!name)
-> >  		goto out_err;
-> >  
-> > -	*name_length = __name_length + 1;
-> >  	while (index < __name_length)
-> >  		index += hidpp_devicenametype_get_device_name(hidpp,
-> >  			feature_index, index, name + index,
+> > This approach would require implementing additional mechanisms on
+> > both sides: LED Flash class core and a LED Flash class driver.
+> > In the former the sysfs attribute write permissions would have
+> > to be decided in the runtime and in the latter caching mechanism
 > 
-> hidpp_devicenametype_get_device_name can return a non-positive value if
-> the USB device is unplugged at the wrong time, or if a malicious device
-> is attached (and 0 is returned). An infinite loop is the result.
-
-Oh, yes, you are definitively right.
-
+> Write attributes at runtime? Why? We can emulate sane and consistent
+> behaviour for all the controllers: read gives you list of faults,
+> write clears it. We can do it for all the controllers.
 > 
-> Can you apply this change in the patch or should I send you a separate
-> one?
+> Only cost is few lines of code in the drivers where hardware clears
+> faults at read.
 
-Feel free to send your patch directly to the list.
+Please take the time to read this, and consider it.
 
-> 
-> 	while (index < __name_length) {
-> 		ret = hidpp_devicenametype_get_device_name(hidpp,
-> 			feature_index, index, name + index,
-> 			__name_length - index);
-> 		if (ret <= 0) {
-> 			kfree(name);
-> 			return NULL;
-> 		}
-> 		index += ret;
-> 	}
-> 
-> > @@ -493,7 +492,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
-> >  	return name;
-> >  
-> >  out_err:
-> > -	*name_length = 0;
-> >  	return NULL;
-> 
-> What about dropping the label out_err here and returning NULL in the
-> previous places?
+I'd say the cost is I2C register access, not so much a few lines added to
+the drivers. The functionality and behaviour between the flash controllers
+varies. They have different faults, presence of (some) faults may prevent
+strobing, some support reading the flash status and some don't.
 
-Yep, good idea. You can either send a patch for that if you want to take
-credits, or I can send a v2. It's up to you.
+Some of the flash faults are mostly relevant in production testing, some can
+be used to find hardware issues during use (rare) and some are produced in
+common use (timeout, for instance).
 
-Cheers,
-Benjamin
+The V4L2 flash API defines that reading the faults clears them, but does not
+state whether presence of faults would prevent further use of the flash.
+This is flash controller chip specific.
 
-> 
-> >  }
-> >  
-> > @@ -989,7 +987,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
-> >  {
-> >  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
-> >  	char *name;
-> > -	u8 name_length;
-> >  
-> >  	if (use_unifying)
-> >  		/*
-> > @@ -999,7 +996,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
-> >  		 */
-> >  		name = hidpp_get_unifying_name(hidpp);
-> >  	else
-> > -		name = hidpp_get_device_name(hidpp, &name_length);
-> > +		name = hidpp_get_device_name(hidpp);
-> >  
-> >  	if (!name)
-> >  		hid_err(hdev, "unable to retrieve the name of the device");
-> > @@ -1053,7 +1050,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
-> >  	bool connected = atomic_read(&hidpp->connected);
-> >  	struct input_dev *input;
-> >  	char *name, *devm_name;
-> > -	u8 name_length;
-> >  
-> >  	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
-> >  		wtp_connect(hdev, connected);
-> > @@ -1080,7 +1076,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
-> >  		return;
-> >  	}
-> >  
-> > -	name = hidpp_get_device_name(hidpp, &name_length);
-> > +	name = hidpp_get_device_name(hidpp);
-> >  	if (!name) {
-> >  		hid_err(hdev, "unable to retrieve the name of the device");
-> >  	} else {
-> > 
-> 
+I think you *could* force a policy on the level of kernel API, for instance
+require that the user clears the faults before strobing again rather than
+relying on the chip requiring this instead.
+
+Most of the time there are no faults. When there are, they may appear at
+some point of time after the strobing, but how long? Probably roughly after
+the timeout period the flash should have faults available if there were any
+--- except if the strobe is external such as a sensor timed strobe. In that
+case the software running on the CPU has no knowledge when the flash is
+strobed nor when the faults should be read. So the requirement of checking
+the faults would probably have to be limited to software strobe only. The
+user would still have to be able to check the faults for externally strobed
+pulses. Would it be acceptable that the interface was different there?
+
+So, after the user has strobed, when the user should check the flash faults?
+After the timeout period has passed? Right before strobing again? If this
+was a requirement, it adds an additional I2C access to potentially the place
+which should absolutely have no extra delay --- the flash strobe time. This
+would be highly unwanted.
+
+The faults seldom happened in regular use, but more recent flash controllers
+have LED overtemperature or undervoltage faults, the latter of which isn't
+really a fault, but status information telling that the flash current will
+be limited. Reading the faults in this case is more important than it has
+used to be.
+
+Finally, should the LED flash class enforce such a policy, would the V4L2
+flash API which is provided to the same devices be changed as well? I'm not
+against that if we have
+
+	1) can come up with a good policy that is understood to be
+	   meaningful for all thinkable flash controller implementations and
+
+	2) agreement the behaviour can be changed.
+
+
+Btw. I think I'm slightly leaning towards liking flash faults in form of
+strings better; that's what much of the sysfs interface already uses. V4L2
+is quite a bit different from that; we have a bitmask control for faults
+with well defined meanings for the bits in the spec. The LED class API is
+much more usable from the command line, and using strings for flash faults
+is in line with that. I have no strict stance towards that however;
+hexadecimal numbers have advantages as well such as being slightly more
+practicable to check in a C program. The importance of good documentatation
+increases in that case though, and probably a header file with the bit
+definitions is needed as well.
+
+-- 
+Kind regards,
+
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
