@@ -1,204 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633AbaLJO7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:59:47 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:44190 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757563AbaLJO7q (ORCPT
+	id S1757699AbaLJPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:00:09 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54162 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757663AbaLJPAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:59:46 -0500
-From: Petr Cermak <petrcermak@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Primiano Tucci <primiano@chromium.org>,
-        Petr Cermak <petrcermak@chromium.org>
-Subject: [RFC PATCH] Add user-space support for resetting mm->hiwater_rss (peak RSS)
-Date: Wed, 10 Dec 2014 14:59:04 +0000
-Message-Id: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Wed, 10 Dec 2014 10:00:07 -0500
+Message-ID: <1418223593.3258.10.camel@pengutronix.de>
+Subject: Re: [PATCH v3] clk: Add PWM clock driver
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Janusz =?UTF-8?Q?U=C5=BCycki?= <j.uzycki@elproma.com.pl>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Date: Wed, 10 Dec 2014 15:59:53 +0100
+In-Reply-To: <54872810.7000700@elproma.com.pl>
+References: <1418138392-17081-1-git-send-email-p.zabel@pengutronix.de>
+	 <54872810.7000700@elproma.com.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Being able to reset mm->hiwater_rss (resident set size high water mark) from
-user space would enable fine grained iterative memory profiling. I propose a
-very short patch for doing so below. I would like to get some feedback on the
-user-space interface to do this. Would it be best to:
+Hi Janusz,
 
-  1. Add an extra value to /proc/PID/clear_refs to reset VmHWM? (The proposed
-     patch uses this approach.)
+thank you for the comments.
 
-  2. Add a new write-only pseudo-file for this purpose (e.g.,
-     /proc/pid/reset_hwm)?
+Am Dienstag, den 09.12.2014, 17:49 +0100 schrieb Janusz Użycki:
+[...]
+> > +int clk_pwm_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device_node *node = pdev->dev.of_node;
+> > +	struct clk_init_data init;
+> > +	struct clk_pwm *clk_pwm;
+> > +	struct pwm_device *pwm;
+> > +	const char *clk_name;
+> > +	struct clk *clk;
+> > +	int ret;
+> > +
+> > +	clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
+> > +	if (!clk_pwm)
+> > +		return -ENOMEM;
+> > +
+> > +	pwm = devm_pwm_get(&pdev->dev, NULL);
+> 
+> NULL or clk_name ?
 
-The driving use-case for this would be getting the peak RSS value, which can be
-retrieved from the VmHWM field in /proc/pid/status, per benchmark iteration or
-test scenario.
+There's only one pwm input to the pwm-clock, so I see no need to use a
+con_id here and require the pwm-names device tree property to be set.
 
-Signed-off-by: Petr Cermak <petrcermak@chromium.org>
----
- Documentation/filesystems/proc.txt |   3 ++
- fs/proc/task_mmu.c                 | 106 +++++++++++++++++++++----------------
- include/linux/mm.h                 |   5 ++
- 3 files changed, 68 insertions(+), 46 deletions(-)
+> > +	if (IS_ERR(pwm))
+> > +		return PTR_ERR(pwm);
+> > +
+> > +	if (!pwm || !pwm->period) {
+> > +		dev_err(&pdev->dev, "invalid pwm period\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (of_property_read_u32(node, "clock-frequency", &clk_pwm->fixed_rate))
+> > +		clk_pwm->fixed_rate = 1000000000 / pwm->period;
+> 
+> You can use NSEC_PER_SEC instead of the hardcoded value.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index eb8a10e..2c277e9 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -488,6 +488,9 @@ To clear the bits for the file mapped pages associated with the process
- To clear the soft-dirty bit
-     > echo 4 > /proc/PID/clear_refs
- 
-+To reset the peak resident set size ("high water mark")
-+    > echo 5 > /proc/PID/clear_refs
-+
- Any other value written to /proc/PID/clear_refs will have no effect.
- 
- The /proc/pid/pagemap gives the PFN, which can be used to find the pageflags
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4e0388c..86b23b2 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -712,6 +712,7 @@ enum clear_refs_types {
- 	CLEAR_REFS_ANON,
- 	CLEAR_REFS_MAPPED,
- 	CLEAR_REFS_SOFT_DIRTY,
-+	CLEAR_REFS_MM_HIWATER_RSS,
- 	CLEAR_REFS_LAST,
- };
- 
-@@ -818,56 +819,69 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 		return -ESRCH;
- 	mm = get_task_mm(task);
- 	if (mm) {
--		struct clear_refs_private cp = {
--			.type = type,
--		};
--		struct mm_walk clear_refs_walk = {
--			.pmd_entry = clear_refs_pte_range,
--			.mm = mm,
--			.private = &cp,
--		};
--		down_read(&mm->mmap_sem);
--		if (type == CLEAR_REFS_SOFT_DIRTY) {
--			for (vma = mm->mmap; vma; vma = vma->vm_next) {
--				if (!(vma->vm_flags & VM_SOFTDIRTY))
--					continue;
--				up_read(&mm->mmap_sem);
--				down_write(&mm->mmap_sem);
-+		if (type == CLEAR_REFS_MM_HIWATER_RSS) {
-+			/*
-+			 * Writing 5 to /proc/pid/clear_refs resets the peak
-+			 * resident set size.
-+			 */
-+			down_write(&mm->mmap_sem);
-+			reset_mm_hiwater_rss(mm);
-+			up_write(&mm->mmap_sem);
-+		} else {
-+			struct clear_refs_private cp = {
-+				.type = type,
-+			};
-+			struct mm_walk clear_refs_walk = {
-+				.pmd_entry = clear_refs_pte_range,
-+				.mm = mm,
-+				.private = &cp,
-+			};
-+			down_read(&mm->mmap_sem);
-+			if (type == CLEAR_REFS_SOFT_DIRTY) {
- 				for (vma = mm->mmap; vma; vma = vma->vm_next) {
--					vma->vm_flags &= ~VM_SOFTDIRTY;
--					vma_set_page_prot(vma);
-+					if (!(vma->vm_flags & VM_SOFTDIRTY))
-+						continue;
-+					up_read(&mm->mmap_sem);
-+					down_write(&mm->mmap_sem);
-+					for (vma = mm->mmap; vma;
-+					     vma = vma->vm_next) {
-+						vma->vm_flags &= ~VM_SOFTDIRTY;
-+						vma_set_page_prot(vma);
-+					}
-+					downgrade_write(&mm->mmap_sem);
-+					break;
- 				}
--				downgrade_write(&mm->mmap_sem);
--				break;
-+				mmu_notifier_invalidate_range_start(mm, 0, -1);
- 			}
--			mmu_notifier_invalidate_range_start(mm, 0, -1);
--		}
--		for (vma = mm->mmap; vma; vma = vma->vm_next) {
--			cp.vma = vma;
--			if (is_vm_hugetlb_page(vma))
--				continue;
--			/*
--			 * Writing 1 to /proc/pid/clear_refs affects all pages.
--			 *
--			 * Writing 2 to /proc/pid/clear_refs only affects
--			 * Anonymous pages.
--			 *
--			 * Writing 3 to /proc/pid/clear_refs only affects file
--			 * mapped pages.
--			 *
--			 * Writing 4 to /proc/pid/clear_refs affects all pages.
--			 */
--			if (type == CLEAR_REFS_ANON && vma->vm_file)
--				continue;
--			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
--				continue;
--			walk_page_range(vma->vm_start, vma->vm_end,
--					&clear_refs_walk);
-+			for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+				cp.vma = vma;
-+				if (is_vm_hugetlb_page(vma))
-+					continue;
-+				/*
-+				 * Writing 1 to /proc/pid/clear_refs affects all
-+				 * pages.
-+				 *
-+				 * Writing 2 to /proc/pid/clear_refs only
-+				 * affects Anonymous pages.
-+				 *
-+				 * Writing 3 to /proc/pid/clear_refs only
-+				 * affects file mapped pages.
-+				 *
-+				 * Writing 4 to /proc/pid/clear_refs affects all
-+				 * pages.
-+				 */
-+				if (type == CLEAR_REFS_ANON && vma->vm_file)
-+					continue;
-+				if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
-+					continue;
-+				walk_page_range(vma->vm_start, vma->vm_end,
-+						&clear_refs_walk);
-+			}
-+			if (type == CLEAR_REFS_SOFT_DIRTY)
-+				mmu_notifier_invalidate_range_end(mm, 0, -1);
-+			flush_tlb_mm(mm);
-+			up_read(&mm->mmap_sem);
- 		}
--		if (type == CLEAR_REFS_SOFT_DIRTY)
--			mmu_notifier_invalidate_range_end(mm, 0, -1);
--		flush_tlb_mm(mm);
--		up_read(&mm->mmap_sem);
- 		mmput(mm);
- 	}
- 	put_task_struct(task);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b464611..8a51ef4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1350,6 +1350,11 @@ static inline void update_hiwater_vm(struct mm_struct *mm)
- 		mm->hiwater_vm = mm->total_vm;
- }
- 
-+static inline void reset_mm_hiwater_rss(struct mm_struct *mm)
-+{
-+	mm->hiwater_rss = get_mm_rss(mm);
-+}
-+
- static inline void setmax_mm_hiwater_rss(unsigned long *maxrss,
- 					 struct mm_struct *mm)
- {
--- 
-2.2.0.rc0.207.ga3a616c
+Thanks, I'll fix that.
+
+> > +
+> > +	if (pwm->period != 1000000000 / clk_pwm->fixed_rate &&
+> > +	    pwm->period != DIV_ROUND_UP(1000000000, clk_pwm->fixed_rate)) {
+> > +		dev_err(&pdev->dev,
+> > +			"clock-frequency does not match pwm period\n");
+> > +		return -EINVAL;
+> > +	}
+> 
+> This can't prevent against buggy pwm driver (bad frequency)
+> because there is not function to read the period back, ie.
+> .pwm_config callback does not modify duty_ns and period_ns to real 
+> values indeed.
+
+Of course, this is only to make sure that the clock-frequency and pwm
+duty cycle are roughly the same.
+
+> There is the way to set directly
+>          pwm->period = NSEC_PER_SEC / clk_pwm>fixed_rate;
+> instead of third argument (period_ns) of pwms. Although the argument is 
+> required
+> (#pwm-cells >= 2 and *_xlate_* functions) it could be set to 0 in pwms.
+> Such calculation should be right for most PWMs if they are clocked not 
+> faster
+> than eg. 40MHz. Above div-round issue can appear but it also appears due 
+> to ns resolution.
+> I can't point if this is the best solution for the future.
+> 
+> > +
+> > +	ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	clk_name = node->name;
+> > +	of_property_read_string(node, "clock-output-names", &clk_name);
+> > +
+> > +	init.name = clk_name;
+> > +	init.ops = &clk_pwm_ops;
+> > +	init.flags = CLK_IS_ROOT;
+> 
+> and what about CLK_IS_BASIC?
+
+Yes, I'll add that.
+
+> > +	init.num_parents = 0;
+> 
+> Is it proof against suspend/resume race of pwm driver vs pwm-clock's 
+> customer?
+> Otherwise chain of clocks can be broken.
+
+Are there pwm drivers that disable pwm output in their suspend callback?
+I don't think system wide suspend/resume ordering can protect against
+that at all, since the two devices may be on completely different buses.
+In that case it'd probably be best to use runtime pm to keep the pwm
+activated until clk_disable/pwm_disable is called by the consumer.
+
+[...]
+> > +static struct platform_driver clk_pwm_driver = {
+> > +	.probe = clk_pwm_probe,
+> 
+> missing
+>                  .remove = clk_pwm_remove,
+> 
+> > +	.driver = {
+> > +		.name = "pwm-clock",
+> > +		.owner = THIS_MODULE,
+> 
+> .owner could be removed (not a problem now)
+
+Will add and remove those, respectively.
+
+> > +		.of_match_table = of_match_ptr(clk_pwm_dt_ids),
+> > +	},
+> 
+> Why doesn't mcp251x trigger probe of pwm-clock driver?
+> The fixed-clock uses CLK_OF_DECLARE which defines .data
+> of of_device_id instead of .probe. Unfortunately I'm not so much 
+> familiar with DT.
+> Any idea?
+
+Did you add "simple-bus" to the clocks node compatible? The pwm-clock
+device tree node needs to be placed somewhere where of_platform_populate
+will consider it.
+
+regards
+Philipp
 
