@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394AbaLJOyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:54:03 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:36986 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905AbaLJOyA (ORCPT
+	id S1757558AbaLJOzF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:55:05 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:56106 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423AbaLJOzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:54:00 -0500
-Date: Wed, 10 Dec 2014 14:50:52 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: <atull@opensource.altera.com>
-Cc: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
-        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
-        <s.trumtrar@pengutronix.de>, <jason@lakedaemon.net>,
-        <kyle.teske@ni.com>, <nico@linaro.org>, <balbi@ti.com>,
-        <m.chehab@samsung.com>, <davidb@codeaurora.org>, <rob@landley.net>,
-        <davem@davemloft.net>, <cesarb@cesarb.net>, <sameo@linux.intel.com>,
-        <akpm@linux-foundation.org>, <linus.walleij@linaro.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v4 4/6] fpga manager: add sysfs interface document
-Message-ID: <20141210145052.56f0b880@lxorguk.ukuu.org.uk>
-In-Reply-To: <1418156090-23578-5-git-send-email-atull@opensource.altera.com>
-References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
-	<1418156090-23578-5-git-send-email-atull@opensource.altera.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Wed, 10 Dec 2014 09:55:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <CAKMK7uHNeM9ebkpWKi30zz73-xferz39WQMvh6G4SrKAJyFxjw@mail.gmail.com>
+References: <20141210140306.GC32722@mwanda>
+	<CAKMK7uHNeM9ebkpWKi30zz73-xferz39WQMvh6G4SrKAJyFxjw@mail.gmail.com>
+Date: Wed, 10 Dec 2014 15:55:02 +0100
+Message-ID: <CAKMK7uGg7cpKvU=VUgDBmeNYVrj-8yeSv=RBVruMrWkZorhESg@mail.gmail.com>
+Subject: Re: [drm-intel:topic/core-stuff 32/37] drivers/gpu/drm/drm_crtc.c:4472
+ drm_mode_crtc_set_gamma_size() warn: double check that we're allocating
+ correct size: 2 vs 6
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kbuild@01.org, Thierry Reding <treding@nvidia.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014 14:14:48 -0600
-> +Contact:	Alan Tull <atull@opensource.altera.com>
-> +Description:	Read state of fpga framework state machine as a string.
-> +		Valid states may vary by manufacturer; superset is:
-> +		* unknown		= can't determine state
-> +		* power_off		= FPGA power is off
-> +		* power_up		= FPGA reports power is up
-> +		* reset			= FPGA held in reset state
-> +		* firmware_request	= firmware class request in progress
-> +		* firmware_request_err	= firmware request failed
-> +		* write_init		= FPGA being prepared for programming
-> +		* write_init_err	= Error while preparing FPGA for
-> +					  programming
-> +		* write			= FPGA ready to receive image data
-> +		* write_err		= Error while programming
-> +		* write_complete	= Doing post programming steps
-> +		* write_complete_err	= Error while doing post programming
-> +		* operating		= FPGA is programmed and operating
+Forgotten to add mailing lists.
+-Daniel
+
+On Wed, Dec 10, 2014 at 3:53 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Wed, Dec 10, 2014 at 3:03 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> From a style prespective this should be:
+>>
+>>         crtc->gamma_store = kcalloc(gamma_size * 3, sizeof(uint16_t),
+>>                                     GFP_KERNEL);
+>>
+>> Because the elements are sizeof(uint16_t), we are allocating 3
+>> arrays of gamma_size elements.  But I guess it's nice to move all the
+>> constants to one side of the equation so that it tests for integer
+>> overflows...  Whatever you decided is fine, this is a one time email
+>> that is auto-genenerated.
+>
+> Imo the point of kcalloc and kmalloc_array is to get the overflow
+> checks correct. Putting the *3 to the gamma_size (which can be fairly
+> big and migth come from dubios places) means we still have to deal
+> with overflow headaches. sizeof(uint16_t)*3 is trivial to see that
+> it's not overflowing.
+>
+> I think your style guide here is exactly _not_ what we should do as
+> best practice for safe code.
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 
 
-How does this work as a security model?
 
-I want to assign an FPGA resource to a specific end user. How do I do
-that with a pile of sysfs nodes ?
-
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
