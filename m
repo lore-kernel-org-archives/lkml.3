@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaLJMNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:13:30 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752815AbaLJMN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:13:28 -0500
-Message-ID: <548838E5.8060701@nod.at>
-Date: Wed, 10 Dec 2014 13:13:25 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751500AbaLJMNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:13:42 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:45131 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaLJMNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 07:13:39 -0500
+Date: Wed, 10 Dec 2014 12:13:31 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sameo@linux.intel.com, lee.jone@linaro.org,
+        lgirdwood@gmail.com, broonie@kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com
+Subject: Re: [PATCH v8 1/4] mfd: rt5033: Add Richtek RT5033 driver core.
+Message-ID: <20141210121331.GD23481@x1>
+References: <1418126634-4781-1-git-send-email-beomho.seo@samsung.com>
+ <1418126634-4781-2-git-send-email-beomho.seo@samsung.com>
+ <20141209140102.GZ3951@x1>
+ <54882255.9060303@samsung.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Miklos Szeredi <miklos@szeredi.hu>, Ley Foon Tan <lftan@altera.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Walter <sahne@0x90.at>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [BUG] uml panics with "Segfault with no mm" in v3.19-rc
-References: <20141210104624.GB32280@tucsk.suse.de>	<54882533.6080901@nod.at> <CAMuHMdUzc2=EodO5vxKVWdaDQeWXUM8w90ssQ4HvPyR6N-g8fA@mail.gmail.com>
-In-Reply-To: <CAMuHMdUzc2=EodO5vxKVWdaDQeWXUM8w90ssQ4HvPyR6N-g8fA@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54882255.9060303@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.12.2014 um 12:59 schrieb Geert Uytterhoeven:
-> On Wed, Dec 10, 2014 at 11:49 AM, Richard Weinberger <richard@nod.at> wrote:
->> Am 10.12.2014 um 11:46 schrieb Miklos Szeredi:
->>> The guilty commit is:
->>>
->>>   00f634bc522d "asm-generic: add generic futex for !CONFIG_SMP"
->>
->> Thanks a lot Miklos!
->> Your bisecting faster than I do.
->>
->> Let's dig into the issue!
+On Wed, 10 Dec 2014, Beomho Seo wrote:
+
+> On 12/09/2014 11:01 PM, Lee Jones wrote:
+> > On Tue, 09 Dec 2014, Beomho Seo wrote:
+> > 
+> >> This patch adds a new driver for Richtek RT5033 driver.
+> >> RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+> >> flash LED current source, LDO and synchronous Buck converter. It is interfaced
+> >> to host controller using I2C interface.
+> >>
+> >> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> >> Cc: Lee Jones <lee.jone@linaro.org>
+> >> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+> >> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> >> ---
+> >>  drivers/mfd/Kconfig                |   12 ++
+> >>  drivers/mfd/Makefile               |    1 +
+> >>  drivers/mfd/rt5033.c               |  142 ++++++++++++++++++++
+> >>  include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
+> >>  include/linux/mfd/rt5033.h         |   62 +++++++++
+> >>  5 files changed, 477 insertions(+)
+> >>  create mode 100644 drivers/mfd/rt5033.c
+> >>  create mode 100644 include/linux/mfd/rt5033-private.h
+> >>  create mode 100644 include/linux/mfd/rt5033.h
+> > 
+> > Much better.
+> > 
+> > For my own reference:
+> > 
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > So what's the plan with this set?
+> > 
 > 
-> Do you need "select HAVE_FUTEX_CMPXCHG if FUTEX"?
+> This patch have been made on for-next-mfd branch of your git repository.
+> So I hope this patch to be merged at your git repository.
+> Another patch set(RT5033 regulator driver) have been merged on for-next branch of regulator git repository.
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/commit/?h=for-next&id=b1917578fd5d8efa67afa05a0d6d7e323f2802da
+> 
+> Other patches(about charger, fuelgague and devicetree doc) will be re-sent to each maintainers.
 
-> Cfr. commit e571c58f313d35c5 ("m68k: Skip futex_atomic_cmpxchg_inatomic()
-> test") and commit 03b8c7b623c80af2 ("futex: Allow architectures to skip
-> futex_atomic_cmpxchg_inatomic() test").
+Okay, so all patches are indipendant/othognal of each other for sure?
 
-Bingo!
-
-If UML selects HAVE_FUTEX_CMPXCHG the code path I've described in my previous mail
-is no longer taken and makes it work again.
-I did only a small test but nothing exploded so far.
-
-> BTW, I still think the real problem is the wrong address space, cfr.
-> "[PATCH/RFC] futex: Switch to USER_DS for futex test"
-> (http://www.spinics.net/lists/linux-m68k/msg06597.html), so you may also
-> want to try that.
-> However, that caused problems on s390, as it ran too early:
-> http://permalink.gmane.org/gmane.linux.kernel.next/30165
-
-Yeah, this would also make sense for UML.
-
-Thanks,
-//richard
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
