@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856AbaLJPEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:04:08 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:18535 "EHLO
+	id S1757879AbaLJPEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:04:22 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:18663 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161AbaLJPDx (ORCPT
+	with ESMTP id S1757858AbaLJPEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:03:53 -0500
+	Wed, 10 Dec 2014 10:04:20 -0500
 From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
 To: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
         <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
@@ -14,9 +14,11 @@ To: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
 CC: <linux-kernel@vger.kernel.org>,
         Cyrille Pitchen <cyrille.pitchen@atmel.com>
 Subject: [PATCH] net/macb: add TX multiqueue support for gem
-Date: Wed, 10 Dec 2014 16:03:50 +0100
-Message-ID: <1418223831-30435-1-git-send-email-cyrille.pitchen@atmel.com>
+Date: Wed, 10 Dec 2014 16:03:51 +0100
+Message-ID: <1418223831-30435-2-git-send-email-cyrille.pitchen@atmel.com>
 X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1418223831-30435-1-git-send-email-cyrille.pitchen@atmel.com>
+References: <1418223831-30435-1-git-send-email-cyrille.pitchen@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,13 +38,6 @@ This is the reason why the order of some initializations has been changed in
 macb_probe().
 Eventually, the dedicated IRQ and TX ring buffer descriptors are initialized
 for each queue.
-
-For backward compatibility reasons, queue0 uses the legacy registers ISR, IER,
-IDR, IMR, TBQP and RBQP. On the other hand, the other queues use new registers
-ISR[1..7], IER[1..7], IDR[1..7], IMR[1..7], TBQP[1..7] and RBQP[1..7].
-Except this hardware detail there is no real difference between queue0 and the
-others. The driver hides that thanks to the struct macb_queue.
-This structure allows us to share a common set of functions for all the queues.
 
 Besides when a TX error occurs, the gem MUST be halted before writing any of
 the TBQP registers to reset the relevant queue. An immediate side effect is
@@ -71,22 +66,6 @@ value. So queue discipline can be used to define the queue priority policy.
 
 Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
 ---
-
-At the first look this patch may look quite big but it cannot be splitted.
-Each queue has its own dedicated IRQ, which should be handled.
-Also the Transmit Base Queue Pointer register of each available queue must be
-initialized before starting the transmission, otherwise the transmission will be
-halted immediately as HRESP errors are likely to occur.
-In addition, some fields had to be moved from struct macb into struct macb_queue
-so a common code could manage the queues.
-
-This patch was applied to net-next and tested on a sama5d36ek board, which embeds
-both macb and gem IPs, to check the backward compatibility.
-
-Also it was tested on a sama5dx FPGA platform with a gem designed to use 3 queues.
-Then we used the tc program to set a queue discipline policy as describe in the
-Documentation/networking/multiqueue.txt: we successfully used each queue.
-
  drivers/net/ethernet/cadence/macb.c | 442 +++++++++++++++++++++++-------------
  drivers/net/ethernet/cadence/macb.h |  71 +++++-
  2 files changed, 349 insertions(+), 164 deletions(-)
