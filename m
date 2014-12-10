@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaLJD6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 22:58:33 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:60493 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543AbaLJD6b (ORCPT
+	id S1754867AbaLJECZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 23:02:25 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47715 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517AbaLJECX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 22:58:31 -0500
-X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52847515"
-Message-ID: <5487C4E3.6060403@broadcom.com>
-Date: Tue, 9 Dec 2014 19:58:27 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 9 Dec 2014 23:02:23 -0500
+Date: Tue, 9 Dec 2014 20:02:19 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v13 10/12] input: cyapa: add gen5 trackpad device read
+ baseline function support
+Message-ID: <20141210040219.GB4173@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, dmitry.torokhov@gmail.com,
+	rydberg@euromail.se, bleung@google.com, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+ <1418116304-11392-11-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        "Matt Porter" <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] ARM: mach-bcm: Enable I2C support for iProc
-References: <Ray Jui <rjui@broadcom.com> <1418177893-22094-1-git-send-email-rjui@broadcom.com> <1418177893-22094-4-git-send-email-rjui@broadcom.com> <5487ADE5.4070705@gmail.com> <5487AEF0.5010404@broadcom.com> <5487BBE0.4000701@gmail.com>
-In-Reply-To: <5487BBE0.4000701@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418116304-11392-11-git-send-email-dudley.dulixin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dudley,
 
+On Tue, Dec 09, 2014 at 05:11:42PM +0800, Dudley Du wrote:
+> Add read baseline function supported for gen5 trackpad device,
+> it can be used through sysfs baseline interface.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> ---
+[...]
+>  	return 0;
+>  }
+>  
+> +static int cyapa_gen5_resume_scanning(struct cyapa *cyapa)
+> +{
+> +	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x04 };
+> +	u8 resp_data[6];
+> +	int resp_len;
+> +	int error;
+> +
+> +	/* Try to dump all bufferred data before doing command. */
+                       ^^^^^^^^^
+					   buffered
 
-On 12/9/2014 7:20 PM, Florian Fainelli wrote:
-> On 09/12/14 18:24, Ray Jui wrote:
->>
->>
->> On 12/9/2014 6:20 PM, Florian Fainelli wrote:
->>> On 09/12/14 18:18, Ray Jui wrote:
->>>> Enable I2C driver support for Broadcom iProc family of SoCs by
->>>> selecting I2C_BCM_IPROC
->>>>
->>>> Signed-off-by: Ray Jui <rjui@broadcom.com>
->>>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
->>>> ---
->>>>    arch/arm/mach-bcm/Kconfig |    1 +
->>>>    1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
->>>> index aaeec78..86ee90b 100644
->>>> --- a/arch/arm/mach-bcm/Kconfig
->>>> +++ b/arch/arm/mach-bcm/Kconfig
->>>> @@ -19,6 +19,7 @@ config ARCH_BCM_IPROC
->>>>        select ARCH_REQUIRE_GPIOLIB
->>>>        select ARM_AMBA
->>>>        select PINCTRL
->>>> +    select I2C_BCM_IPROC
->>>
->>> One way to avoid having to modify mach-bcm/Kconfig would be to have your
->>> i2c driver Kconfig do this:
->>>
->>> default ARCH_BCM_IPROC
->>>
->>> would that work?
->>>
->> Yes. So in which case it is better to select a driver from the
->> architecture specific Kconfig?
->
-> I suppose if your driver/subsystem is critical for system boot, like
-> powering a regulator or something that has a critical purpose, a select
-> is probably more appropriate here. If this is just exposing non-critical
-> devices, I would go with a depends on/default at the driver Kconfig level.
->
-> This is just how I see things, others would definitively have a
-> different view.
->
-Okay. Thanks. I default the driver to y in patchset v3 just like some 
-other I2C drivers in the same Kconfig. It already depends on 
-ARCH_BCM_IPROC so it makes sense to set the default to y, i.e., it will 
-be enabled by default for ARCH_BCM_IPROC platforms.
+And there are three more below.
 
->>
->>>>        help
->>>>          This enables support for systems based on Broadcom IPROC
->>>> architected SoCs.
->>>>          The IPROC complex contains one or more ARM CPUs along with
->>>> common
->>>>
->>>
->
+> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
+> +
+> +	resp_len = 6;
+> +	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
+> +			cmd, 7,
+> +			resp_data, &resp_len,
+> +			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
+> +	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x04))
+> +		return -EINVAL;
+> +
+> +	/* Try to dump all bufferred data when resuming scanning. */
+> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
+> +{
+> +	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x03 };
+> +	u8 resp_data[6];
+> +	int resp_len;
+> +	int error;
+> +
+> +	/* Try to dump all bufferred data before doing command. */
+> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
+> +
+> +	resp_len = 6;
+> +	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
+> +			cmd, 7,
+> +			resp_data, &resp_len,
+> +			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
+> +	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x03))
+> +		return -EINVAL;
+> +
+> +	/* Try to dump all bufferred data when suspending scanning. */
+> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
+> +
+> +	return 0;
+> +}
+> +
+[...]
+
+-- 
+- Jeremiah Mahler
