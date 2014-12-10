@@ -1,136 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401AbaLJWrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:47:53 -0500
-Received: from ec2-54-183-128-9.us-west-1.compute.amazonaws.com ([54.183.128.9]:52598
-	"EHLO ip-172-31-29-154.us-west-1.compute.internal"
+	id S933417AbaLJWsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:48:25 -0500
+Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:2476
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933041AbaLJWru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:47:50 -0500
-X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 17:47:50 EST
+	id S933041AbaLJWsY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 17:48:24 -0500
+From: Long Li <longli@microsoft.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+CC: KY Srinivasan <kys@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
+Thread-Topic: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
+Thread-Index: AQHQFEr1l6JEzjzL40qd8o/Vn6giApyJT08AgAAZ6lA=
+Date: Wed, 10 Dec 2014 22:33:26 +0000
+Message-ID: <BL2PR03MB132331596398113A8F15B45CE620@BL2PR03MB132.namprd03.prod.outlook.com>
+References: <1418200705-488-1-git-send-email-longli@microsoft.com>
+ <20141210205746.GB1209@sucs.org>
+In-Reply-To: <20141210205746.GB1209@sucs.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ed43::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0720;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0720;
+x-forefront-prvs: 0421BF7135
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(13464003)(377454003)(199003)(51704005)(92566001)(76576001)(62966003)(77156002)(86362001)(120916001)(31966008)(86612001)(99396003)(122556002)(101416001)(40100003)(4396001)(68736005)(97736003)(15975445007)(102836002)(99286002)(87936001)(105586002)(64706001)(19580405001)(50986999)(21056001)(54206007)(54606007)(15395725005)(1411001)(107046002)(76176999)(46102003)(33656002)(110136001)(106116001)(20776003)(2656002)(106356001)(54356999)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0720;H:BL2PR03MB132.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20141208114813.GA2724@gmail.com>
-References: <20141124041629.GA17907@kmo-pixel>
-	<20141204110027.GA28552@gmail.com>
-	<20141206030205.GA22669@kmo-pixel>
-	<20141208114813.GA2724@gmail.com>
-Date: Wed, 10 Dec 2014 14:42:14 -0800
-Message-ID: <CAF1ivSYYTO-abY32rFy2SVscPpxJaDyDZTULygXTys3rgWLONg@mail.gmail.com>
-Subject: Re: Block layer projects that I haven't had time for
-From: Ming Lin <mlin@minggr.net>
-To: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-fsdevel@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 3:48 AM, Dongsu Park
-<dongsu.park@profitbricks.com> wrote:
-> Thanks for the reply.
->
-> On 05.12.2014 19:02, Kent Overstreet wrote:
->> On Thu, Dec 04, 2014 at 12:00:27PM +0100, Dongsu Park wrote:
->> > Playing a little with your block_stuff tree based on 3.15, however,
->> > I think there still seems to be a couple of issues.
->> > First of all, it doesn't work with virtio-blk. A testing Qemu VM panics
->> > at the very early stage of booting. This issue should be addressed as
->> > the first step, so that other parts can be tested.
->>
->> Really? I was testing with virtio-blk, that's odd..
->
-> The culprit seems to be the plugging commit.
-> Before that change, it works well also with virtio-blk.
-> Though that's not the only issue...
->
->> > Moreover, I've already tried to rebase these patches on top of current
->> > mainline, 3.18-rc7. It's now compilable, but it seems to introduce
->> > more bugs about direct-IO. I didn't manage to find out the reason.
->> > I'd need to also look at the previous review comments in [1], [2].
->> >
->> > Don't you have other trees based on top of 3.17 or higher?
->> > If not, can I create my own tree based on 3.18-rc7 to publish?
->>
->> Yeah, I'd post what you have now and I'll try and take a look.
->
-> I've created a git tree to include what I have right now.
-> Please see <https://github.com/dongsupark/linux>.
->
-> To be able to handle different issues one by one,
-> I got the entire tree separated out into 4 branches based on 3.18.
->
-> * block-generic-req-for-next : the most stable branch you can test with.
->   With this branch, you can test most of block drivers as well as file
->   systems with less critical bugs. Though it's not 100% perfect yet,
->   e.g. btrfs doesn't seem to work quite well. Thus more tests are needed.
->
-> * block-mpage-bvecs-for-next : block-generic-req-for-next + multipage bvecs.
->   This branch shows a critical issue that writing blocks to ext4 rootfs
->   causes the whole system to crash. Need-to-investigate.
+> -----Original Message-----
+> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> Sent: Wednesday, December 10, 2014 12:58 PM
+> To: Long Li
+> Cc: KY Srinivasan; Haiyang Zhang; JBottomley@parallels.com; linux-
+> scsi@vger.kernel.org; devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
+> 
+> On Wed, Dec 10, 2014 at 12:38:25AM -0800, Long Li wrote:
+> > MSFT targets currently claim SPC-2 compliance while they implement
+> > post SPC-2 features. With this patch we can correctly handle
+> > WRITE_SAME_16 issues.
+> >
+> > This patch fixes an issue where the flag is setup too late in drive
+> > initialization process.
+> 
+> Li, is this a fix for the issue I keep whinging about over in
+> https://lkml.org/lkml/2014/10/21/23 ?
+> 
+> If is the same issue you may want to CC Martin on this...
 
-I tried block-mpage-bvecs-for-next branch on qemu-kvm with ext4 rootfs.
-Run "sync" will stuck in kernel.
+This is only for fixing WRITE_SAME_16. The rest of the thin provisioning (e.g. UNMAP) is still broken on SPC-2.
 
-[  480.751901] INFO: task sync:4424 blocked for more than 120 seconds.
-[  480.753064]       Not tainted 3.18.0-00025-g46c8231 #39
-[  480.753720] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-disables this message.
-[  480.754737] sync            D ffff88001fc11180     0  4424   4338 0x00000000
-[  480.755719]  ffff88001cdfbc98 0000000000000086 ffff88001cdfbba8
-ffff880014adefc0
-[  480.756810]  0000000000011180 0000000000004000 ffffffff81813460
-ffff880014adefc0
-[  480.758102]  ffff88001cdfbbc8 ffffffff812f08be ffff88001cdfbc18
-ffff880014adf028
-[  480.759454] Call Trace:
-[  480.759852]  [<ffffffff812f08be>] ? debug_smp_processor_id+0x17/0x19
-[  480.760609]  [<ffffffff8106093e>] ? __enqueue_entity+0x69/0x6b
-[  480.761318]  [<ffffffff8106017e>] ? __dequeue_entity+0x33/0x38
-[  480.762026]  [<ffffffff810601ab>] ? set_next_entity+0x28/0x7d
-[  480.762739]  [<ffffffff8105a4fb>] ? get_parent_ip+0xf/0x3f
-[  480.763425]  [<ffffffff8108562b>] ? ktime_get+0x50/0x8f
-[  480.763848]  [<ffffffff8148abdb>] ? bit_wait_timeout+0x60/0x60
-[  480.764555]  [<ffffffff8148a6be>] schedule+0x6a/0x6c
-[  480.765186]  [<ffffffff8148a74f>] io_schedule+0x8f/0xcd
-[  480.765841]  [<ffffffff8148ac19>] bit_wait_io+0x3e/0x42
-[  480.766493]  [<ffffffff8148ae80>] __wait_on_bit+0x4d/0x86
-[  480.767183]  [<ffffffff810d4302>] ? find_get_pages_tag+0x106/0x133
-[  480.767847]  [<ffffffff810d4a63>] wait_on_page_bit+0x76/0x78
-[  480.768532]  [<ffffffff8106ab59>] ? wake_atomic_t_function+0x2d/0x2d
-[  480.769262]  [<ffffffff810d511f>] filemap_fdatawait_range+0x7e/0x11d
-[  480.769992]  [<ffffffff8148a639>] ? preempt_schedule+0x36/0x51
-[  480.770677]  [<ffffffff8105a4fb>] ? get_parent_ip+0xf/0x3f
-[  480.771848]  [<ffffffff810d51df>] filemap_fdatawait+0x21/0x23
-[  480.772530]  [<ffffffff811458ce>] sync_inodes_sb+0x158/0x1aa
-[  480.773201]  [<ffffffff81480303>] ? br_mdb_dump+0x225/0x495
-[  480.773885]  [<ffffffff81149ad8>] ? fdatawrite_one_bdev+0x18/0x18
-[  480.774592]  [<ffffffff81149aec>] sync_inodes_one_sb+0x14/0x16
-[  480.775278]  [<ffffffff81125937>] iterate_supers+0x6f/0xc4
-[  480.775847]  [<ffffffff81149bf4>] sys_sync+0x35/0x83
-[  480.776460]  [<ffffffff8148da52>] system_call_fastpath+0x12/0x17
-
-
-Here is a quick hack.
-
-diff --git a/block/bio.c b/block/bio.c
-index 4020ccc..fbc7108 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -829,6 +829,11 @@ int bio_add_page(struct bio *bio, struct page *page,
-                if (bvec_to_phys(bv) + bv->bv_len ==
-                    page_to_phys(page) + offset) {
-                        bv->bv_len += len;
-+                       /*
-+                        * Page is not added to bio vec.
-+                        * Clear PG_writeback so
-filemap_fdatawait_range() won't wait for it.
-+                        */
-+                       TestClearPageWriteback(page);
-                        goto done;
-                }
-        }
-
-Thanks,
-Ming
+> 
+> --
+> Sitsofe | http://sucs.org/~sits/
