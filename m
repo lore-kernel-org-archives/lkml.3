@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044AbaLJTtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:49:21 -0500
+	id S933126AbaLJTt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:49:28 -0500
 Received: from mga02.intel.com ([134.134.136.20]:33536 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932982AbaLJTtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:49:15 -0500
+	id S932906AbaLJTtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 14:49:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="621770565"
+   d="scan'208";a="621770540"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
@@ -16,9 +16,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
         Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next 12/13] misc: mic: MIC card driver specific changes to enable SCIF
-Date: Wed, 10 Dec 2014 11:47:52 -0800
-Message-Id: <fcea09f02a8bb0db8bc217dd930b75d14690b862.1418237176.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next 04/13] misc: mic: SCIF Peer Bus
+Date: Wed, 10 Dec 2014 11:47:44 -0800
+Message-Id: <a6cd58c4c752a4848d078af397ecf341158c2725.1418237176.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1418237176.git.sudeep.dutt@intel.com>
 References: <cover.1418237176.git.sudeep.dutt@intel.com>
@@ -28,372 +28,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIC card driver specific changes to enable SCIF. This patch implements
-the SCIF hardware bus operations and registers a SCIF device on the
-SCIF hardware bus.
+The SCIF peer bus is used to register and unregister SCIF peer devices
+internally by the SCIF driver to signify the addition and removal of
+peer nodes respectively from the SCIF network. This simplifies remote node
+handling within SCIF and will also be used to support device probe/remove
+for SCIF client drivers (e.g. netdev over SCIF)
 
 Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 ---
- drivers/misc/mic/Kconfig           |   2 +-
- drivers/misc/mic/card/mic_device.h |  11 +++-
- drivers/misc/mic/card/mic_x100.h   |   1 +
- drivers/misc/mic/card/mic_device.c | 132 ++++++++++++++++++++++++++++++++++++-
- drivers/misc/mic/card/mic_x100.c   |  61 ++++++++++++++++-
- 5 files changed, 201 insertions(+), 6 deletions(-)
+ drivers/misc/mic/scif/scif_peer_bus.h |  63 +++++++++++++++++
+ drivers/misc/mic/scif/scif_peer_bus.c | 124 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 187 insertions(+)
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.h
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.c
 
-diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
-index a2ea3ab..e9f2f56 100644
---- a/drivers/misc/mic/Kconfig
-+++ b/drivers/misc/mic/Kconfig
-@@ -56,7 +56,7 @@ comment "Intel MIC Card Driver"
- 
- config INTEL_MIC_CARD
- 	tristate "Intel MIC Card Driver"
--	depends on 64BIT && X86 && INTEL_MIC_BUS
-+	depends on 64BIT && X86 && INTEL_MIC_BUS && SCIF_BUS
- 	select VIRTIO
- 	help
- 	  This enables card driver support for the Intel Many Integrated
-diff --git a/drivers/misc/mic/card/mic_device.h b/drivers/misc/mic/card/mic_device.h
-index 844be8f..1dbf83c 100644
---- a/drivers/misc/mic/card/mic_device.h
-+++ b/drivers/misc/mic/card/mic_device.h
-@@ -29,9 +29,9 @@
- 
- #include <linux/workqueue.h>
- #include <linux/io.h>
--#include <linux/irqreturn.h>
- #include <linux/interrupt.h>
- #include <linux/mic_bus.h>
-+#include "../bus/scif_bus.h"
- 
- /**
-  * struct mic_intr_info - Contains h/w specific interrupt sources info
-@@ -73,6 +73,9 @@ struct mic_device {
-  * @irq_info: The OS specific irq information
-  * @intr_info: H/W specific interrupt information.
-  * @dma_mbdev: dma device on the MIC virtual bus.
-+ * @dma_ch - Array of DMA channels
-+ * @num_dma_ch - Number of DMA channels available
-+ * @scdev: SCIF device on the SCIF virtual bus.
-  */
- struct mic_driver {
- 	char name[20];
-@@ -84,6 +87,9 @@ struct mic_driver {
- 	struct mic_irq_info irq_info;
- 	struct mic_intr_info intr_info;
- 	struct mbus_device *dma_mbdev;
-+	struct dma_chan *dma_ch[MIC_MAX_DMA_CHAN];
-+	int num_dma_ch;
-+	struct scif_hw_dev *scdev;
- };
- 
- /**
-@@ -122,10 +128,11 @@ void mic_driver_uninit(struct mic_driver *mdrv);
- int mic_next_card_db(void);
- struct mic_irq *
- mic_request_card_irq(irq_handler_t handler, irq_handler_t thread_fn,
--		     const char *name, void *data, int intr_src);
-+		     const char *name, void *data, int db);
- void mic_free_card_irq(struct mic_irq *cookie, void *data);
- u32 mic_read_spad(struct mic_device *mdev, unsigned int idx);
- void mic_send_intr(struct mic_device *mdev, int doorbell);
-+void mic_send_p2p_intr(int doorbell, struct mic_mw *mw);
- int mic_db_to_irq(struct mic_driver *mdrv, int db);
- u32 mic_ack_interrupt(struct mic_device *mdev);
- void mic_hw_intr_init(struct mic_driver *mdrv);
-diff --git a/drivers/misc/mic/card/mic_x100.h b/drivers/misc/mic/card/mic_x100.h
-index d66ea55..7e22249 100644
---- a/drivers/misc/mic/card/mic_x100.h
-+++ b/drivers/misc/mic/card/mic_x100.h
-@@ -35,6 +35,7 @@
- #define MIC_X100_SBOX_SDBIC0 0x0000CC90
- #define MIC_X100_SBOX_SDBIC0_DBREQ_BIT 0x80000000
- #define MIC_X100_SBOX_RDMASR0	0x0000B180
-+#define MIC_X100_SBOX_APICICR0 0x0000A9D0
- 
- #define MIC_X100_MAX_DOORBELL_IDX 8
- 
-diff --git a/drivers/misc/mic/card/mic_device.c b/drivers/misc/mic/card/mic_device.c
-index 83819ee..6338908 100644
---- a/drivers/misc/mic/card/mic_device.c
-+++ b/drivers/misc/mic/card/mic_device.c
-@@ -28,6 +28,8 @@
- #include <linux/pci.h>
- #include <linux/interrupt.h>
- #include <linux/reboot.h>
-+#include <linux/dmaengine.h>
-+#include <linux/kmod.h>
- 
- #include <linux/mic_common.h>
- #include "../common/mic_dev.h"
-@@ -240,6 +242,111 @@ static void mic_uninit_irq(void)
- 	kfree(mdrv->irq_info.irq_usage_count);
- }
- 
-+static inline struct mic_driver *scdev_to_mdrv(struct scif_hw_dev *scdev)
-+{
-+	return dev_get_drvdata(scdev->dev.parent);
-+}
+diff --git a/drivers/misc/mic/scif/scif_peer_bus.h b/drivers/misc/mic/scif/scif_peer_bus.h
+new file mode 100644
+index 0000000..27ed508
+--- /dev/null
++++ b/drivers/misc/mic/scif/scif_peer_bus.h
+@@ -0,0 +1,63 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * Intel SCIF driver.
++ */
++#ifndef _SCIF_PEER_BUS_H_
++#define _SCIF_PEER_BUS_H_
 +
-+static struct mic_irq *
-+___mic_request_irq(struct scif_hw_dev *scdev,
-+		   irqreturn_t (*func)(int irq, void *data),
-+				       const char *name, void *data,
-+				       int db)
-+{
-+	return mic_request_card_irq(func, NULL, name, data, db);
-+}
++#include <linux/device.h>
++#include <linux/mic_common.h>
 +
-+static void
-+___mic_free_irq(struct scif_hw_dev *scdev,
-+		struct mic_irq *cookie, void *data)
-+{
-+	return mic_free_card_irq(cookie, data);
-+}
-+
-+static void ___mic_ack_interrupt(struct scif_hw_dev *scdev, int num)
-+{
-+	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
-+
-+	mic_ack_interrupt(&mdrv->mdev);
-+}
-+
-+static int ___mic_next_db(struct scif_hw_dev *scdev)
-+{
-+	return mic_next_card_db();
-+}
-+
-+static void ___mic_send_intr(struct scif_hw_dev *scdev, int db)
-+{
-+	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
-+
-+	mic_send_intr(&mdrv->mdev, db);
-+}
-+
-+static void ___mic_send_p2p_intr(struct scif_hw_dev *scdev, int db,
-+				 struct mic_mw *mw)
-+{
-+	mic_send_p2p_intr(db, mw);
-+}
-+
-+static void __iomem *
-+___mic_ioremap(struct scif_hw_dev *scdev,
-+	       phys_addr_t pa, size_t len)
-+{
-+	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
-+
-+	return mic_card_map(&mdrv->mdev, pa, len);
-+}
-+
-+static void ___mic_iounmap(struct scif_hw_dev *scdev, void __iomem *va)
-+{
-+	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
-+
-+	mic_card_unmap(&mdrv->mdev, va);
-+}
-+
-+static struct scif_hw_ops scif_hw_ops = {
-+	.request_irq = ___mic_request_irq,
-+	.free_irq = ___mic_free_irq,
-+	.ack_interrupt = ___mic_ack_interrupt,
-+	.next_db = ___mic_next_db,
-+	.send_intr = ___mic_send_intr,
-+	.send_p2p_intr = ___mic_send_p2p_intr,
-+	.ioremap = ___mic_ioremap,
-+	.iounmap = ___mic_iounmap,
++/*
++ * Peer devices show up as PCIe devices for the mgmt node but not the cards.
++ * The mgmt node discovers all the cards on the PCIe bus and informs the other
++ * cards about their peers. Upon notification of a peer a node adds a peer
++ * device to the peer bus to maintain symmetry in the way devices are
++ * discovered across all nodes in the SCIF network.
++ */
++/**
++ * scif_peer_dev - representation of a peer SCIF device
++ * @dev: underlying device
++ * @dnode - The destination node which this device will communicate with.
++ */
++struct scif_peer_dev {
++	struct device dev;
++	u8 dnode;
 +};
 +
-+static int mic_request_dma_chans(struct mic_driver *mdrv)
-+{
-+	dma_cap_mask_t mask;
-+	struct dma_chan *chan;
-+
-+	request_module("mic_x100_dma");
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_MEMCPY, mask);
-+
-+	do {
-+		chan = dma_request_channel(mask, NULL, NULL);
-+		if (chan) {
-+			mdrv->dma_ch[mdrv->num_dma_ch++] = chan;
-+			if (mdrv->num_dma_ch >= MIC_MAX_DMA_CHAN)
-+				break;
-+		}
-+	} while (chan);
-+	dev_info(mdrv->dev, "DMA channels # %d\n", mdrv->num_dma_ch);
-+	return mdrv->num_dma_ch;
-+}
-+
-+static void mic_free_dma_chans(struct mic_driver *mdrv)
-+{
-+	int i = 0;
-+
-+	for (i = 0; i < mdrv->num_dma_ch; i++) {
-+		dma_release_channel(mdrv->dma_ch[i]);
-+		mdrv->dma_ch[i] = NULL;
-+	}
-+	mdrv->num_dma_ch = 0;
-+}
-+
- /*
-  * mic_driver_init - MIC driver initialization tasks.
-  *
-@@ -248,6 +355,8 @@ static void mic_uninit_irq(void)
- int __init mic_driver_init(struct mic_driver *mdrv)
- {
- 	int rc;
-+	struct mic_bootparam __iomem *bootparam;
-+	u8 node_id;
- 
- 	g_drv = mdrv;
- 	/*
-@@ -268,13 +377,32 @@ int __init mic_driver_init(struct mic_driver *mdrv)
- 	rc = mic_shutdown_init();
- 	if (rc)
- 		goto irq_uninit;
-+	if (!mic_request_dma_chans(mdrv)) {
-+		rc = -ENODEV;
-+		goto shutdown_uninit;
-+	}
- 	rc = mic_devices_init(mdrv);
- 	if (rc)
--		goto shutdown_uninit;
-+		goto dma_free;
-+	bootparam = mdrv->dp;
-+	node_id = ioread8(&bootparam->node_id);
-+	mdrv->scdev = scif_register_device(mdrv->dev, MIC_SCIF_DEV,
-+					   NULL, &scif_hw_ops,
-+					   0, node_id, &mdrv->mdev.mmio, NULL,
-+					   NULL, mdrv->dp, mdrv->dma_ch,
-+					   mdrv->num_dma_ch);
-+	if (IS_ERR(mdrv->scdev)) {
-+		rc = PTR_ERR(mdrv->scdev);
-+		goto device_uninit;
-+	}
- 	mic_create_card_debug_dir(mdrv);
- 	atomic_notifier_chain_register(&panic_notifier_list, &mic_panic);
- done:
- 	return rc;
-+device_uninit:
-+	mic_devices_uninit(mdrv);
-+dma_free:
-+	mic_free_dma_chans(mdrv);
- shutdown_uninit:
- 	mic_shutdown_uninit();
- irq_uninit:
-@@ -294,7 +422,9 @@ put:
- void mic_driver_uninit(struct mic_driver *mdrv)
- {
- 	mic_delete_card_debug_dir(mdrv);
-+	scif_unregister_device(mdrv->scdev);
- 	mic_devices_uninit(mdrv);
-+	mic_free_dma_chans(mdrv);
- 	/*
- 	 * Inform the host about the shutdown status i.e. poweroff/restart etc.
- 	 * The module cannot be unloaded so the only code path to call
-diff --git a/drivers/misc/mic/card/mic_x100.c b/drivers/misc/mic/card/mic_x100.c
-index 9d57545..5ae1078 100644
---- a/drivers/misc/mic/card/mic_x100.c
-+++ b/drivers/misc/mic/card/mic_x100.c
-@@ -70,6 +70,41 @@ void mic_send_intr(struct mic_device *mdev, int doorbell)
- 		       (MIC_X100_SBOX_SDBIC0 + (4 * doorbell)));
- }
- 
-+/*
-+ * mic_x100_send_sbox_intr - Send an MIC_X100_SBOX interrupt to MIC.
++/**
++ * scif_peer_driver - operations for a scif_peer I/O driver
++ * @driver: underlying device driver (populate name and owner).
++ * @id_table: the ids serviced by this driver.
++ * @probe: the function to call when a device is found.  Returns 0 or -errno.
++ * @remove: the function to call when a device is removed.
 + */
-+static void mic_x100_send_sbox_intr(struct mic_mw *mw, int doorbell)
-+{
-+	u64 apic_icr_offset = MIC_X100_SBOX_APICICR0 + doorbell * 8;
-+	u32 apicicr_low = mic_mmio_read(mw, MIC_X100_SBOX_BASE_ADDRESS +
-+					apic_icr_offset);
++struct scif_peer_driver {
++	struct device_driver driver;
++	const struct scif_peer_dev_id *id_table;
 +
-+	/* for MIC we need to make sure we "hit" the send_icr bit (13) */
-+	apicicr_low = (apicicr_low | (1 << 13));
-+	/*
-+	 * Ensure that the interrupt is ordered w.r.t. previous stores
-+	 * to main memory. Fence instructions are not implemented in X100
-+	 * since execution is in order but a compiler barrier is still
-+	 * required.
-+	 */
-+	wmb();
-+	mic_mmio_write(mw, apicicr_low,
-+		       MIC_X100_SBOX_BASE_ADDRESS + apic_icr_offset);
++	int (*probe)(struct scif_peer_dev *dev);
++	void (*remove)(struct scif_peer_dev *dev);
++};
++
++int scif_peer_register_driver(struct scif_peer_driver *driver);
++void scif_peer_unregister_driver(struct scif_peer_driver *driver);
++struct scif_dev;
++struct scif_peer_dev *
++scif_peer_register_device(struct scif_dev *sdev);
++void scif_peer_unregister_device(struct scif_peer_dev *sdev);
++int scif_peer_bus_init(void);
++void scif_peer_bus_exit(void);
++#endif /* _SCIF_PEER_BUS_H */
+diff --git a/drivers/misc/mic/scif/scif_peer_bus.c b/drivers/misc/mic/scif/scif_peer_bus.c
+new file mode 100644
+index 0000000..589ae9a
+--- /dev/null
++++ b/drivers/misc/mic/scif/scif_peer_bus.c
+@@ -0,0 +1,124 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * Intel SCIF driver.
++ */
++#include "scif_main.h"
++#include "../bus/scif_bus.h"
++#include "scif_peer_bus.h"
++
++static inline struct scif_peer_dev *
++dev_to_scif_peer(struct device *dev)
++{
++	return container_of(dev, struct scif_peer_dev, dev);
 +}
 +
-+static void mic_x100_send_rdmasr_intr(struct mic_mw *mw, int doorbell)
++static inline struct scif_peer_driver *
++drv_to_scif_peer(struct device_driver *drv)
 +{
-+	int rdmasr_offset = MIC_X100_SBOX_RDMASR0 + (doorbell << 2);
-+	/*
-+	 * Ensure that the interrupt is ordered w.r.t. previous stores
-+	 * to main memory. Fence instructions are not implemented in X100
-+	 * since execution is in order but a compiler barrier is still
-+	 * required.
-+	 */
-+	wmb();
-+	mic_mmio_write(mw, 0, MIC_X100_SBOX_BASE_ADDRESS + rdmasr_offset);
++	return container_of(drv, struct scif_peer_driver, driver);
 +}
 +
- /**
-  * mic_ack_interrupt - Device specific interrupt handling.
-  * @mdev: pointer to mic_device instance
-@@ -91,6 +126,18 @@ static inline int mic_get_rdmasr_irq(int index)
- 	return  MIC_X100_RDMASR_IRQ_BASE + index;
- }
- 
-+void mic_send_p2p_intr(int db, struct mic_mw *mw)
++static int scif_peer_dev_match(struct device *dv, struct device_driver *dr)
 +{
-+	int rdmasr_index;
-+
-+	if (db < MIC_X100_NUM_SBOX_IRQ) {
-+		mic_x100_send_sbox_intr(mw, db);
-+	} else {
-+		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ;
-+		mic_x100_send_rdmasr_intr(mw, rdmasr_index);
-+	}
++	return !strncmp(dev_name(dv), dr->name, 4);
 +}
 +
- /**
-  * mic_hw_intr_init - Initialize h/w specific interrupt
-  * information.
-@@ -113,11 +160,15 @@ void mic_hw_intr_init(struct mic_driver *mdrv)
- int mic_db_to_irq(struct mic_driver *mdrv, int db)
- {
- 	int rdmasr_index;
++static int scif_peer_dev_probe(struct device *d)
++{
++	struct scif_peer_dev *dev = dev_to_scif_peer(d);
++	struct scif_peer_driver *drv = drv_to_scif_peer(dev->dev.driver);
 +
++	return drv->probe(dev);
++}
++
++static int scif_peer_dev_remove(struct device *d)
++{
++	struct scif_peer_dev *dev = dev_to_scif_peer(d);
++	struct scif_peer_driver *drv = drv_to_scif_peer(dev->dev.driver);
++
++	drv->remove(dev);
++	return 0;
++}
++
++static struct bus_type scif_peer_bus = {
++	.name  = "scif_peer_bus",
++	.match = scif_peer_dev_match,
++	.probe = scif_peer_dev_probe,
++	.remove = scif_peer_dev_remove,
++};
++
++int scif_peer_register_driver(struct scif_peer_driver *driver)
++{
++	driver->driver.bus = &scif_peer_bus;
++	return driver_register(&driver->driver);
++}
++
++void scif_peer_unregister_driver(struct scif_peer_driver *driver)
++{
++	driver_unregister(&driver->driver);
++}
++
++static void scif_peer_release_dev(struct device *d)
++{
++	struct scif_peer_dev *sdev = dev_to_scif_peer(d);
++	struct scif_dev *scifdev = &scif_dev[sdev->dnode];
++
++	scif_cleanup_scifdev(scifdev);
++	kfree(sdev);
++}
++
++struct scif_peer_dev *
++scif_peer_register_device(struct scif_dev *scifdev)
++{
++	int ret;
++	struct scif_peer_dev *spdev;
++
++	spdev = kzalloc(sizeof(*spdev), GFP_KERNEL);
++	if (!spdev)
++		return ERR_PTR(-ENOMEM);
++
++	spdev->dev.parent = scifdev->sdev->dev.parent;
++	spdev->dev.release = scif_peer_release_dev;
++	spdev->dnode = scifdev->node;
++	spdev->dev.bus = &scif_peer_bus;
++
++	dev_set_name(&spdev->dev, "scif_peer-dev%u", spdev->dnode);
 +	/*
-+	 * The total number of doorbell interrupts on the card are 16. Indices
-+	 * 0-8 falls in the SBOX category and 8-15 fall in the RDMASR category.
++	 * device_register() causes the bus infrastructure to look for a
++	 * matching driver.
 +	 */
- 	if (db < MIC_X100_NUM_SBOX_IRQ) {
- 		return mic_get_sbox_irq(db);
- 	} else {
--		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ +
--			MIC_X100_RDMASR_IRQ_BASE;
-+		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ;
- 		return mic_get_rdmasr_irq(rdmasr_index);
- 	}
- }
-@@ -243,10 +294,16 @@ static void mic_platform_shutdown(struct platform_device *pdev)
- 	mic_remove(pdev);
- }
- 
-+static u64 mic_dma_mask = DMA_BIT_MASK(64);
++	ret = device_register(&spdev->dev);
++	if (ret)
++		goto free_spdev;
++	return spdev;
++free_spdev:
++	kfree(spdev);
++	return ERR_PTR(ret);
++}
 +
- static struct platform_device mic_platform_dev = {
- 	.name = mic_driver_name,
- 	.id   = 0,
- 	.num_resources = 0,
-+	.dev = {
-+		.dma_mask = &mic_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(64),
-+	},
- };
- 
- static struct platform_driver __refdata mic_platform_driver = {
++void scif_peer_unregister_device(struct scif_peer_dev *sdev)
++{
++	device_unregister(&sdev->dev);
++}
++
++int scif_peer_bus_init(void)
++{
++	return bus_register(&scif_peer_bus);
++}
++
++void scif_peer_bus_exit(void)
++{
++	bus_unregister(&scif_peer_bus);
++}
 -- 
 1.8.2.1
 
