@@ -1,177 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276AbaLJG1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:27:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:54468 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaLJG1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:27:12 -0500
-Date: Wed, 10 Dec 2014 17:27:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the userns tree with the vfs tree
-Message-ID: <20141210172705.766c7b7b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1756338AbaLJG2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:28:31 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43773 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756286AbaLJG23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 01:28:29 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 10 Dec 2014 15:32:20 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [RFC PATCH 2/3] mm: more aggressive page stealing for UNMOVABLE
+ allocations
+Message-ID: <20141210063220.GA13371@js1304-P5Q-DELUXE>
+References: <1417713178-10256-1-git-send-email-vbabka@suse.cz>
+ <1417713178-10256-3-git-send-email-vbabka@suse.cz>
+ <20141208071140.GB3904@js1304-P5Q-DELUXE>
+ <54857D0F.3080601@suse.cz>
+ <20141209082821.GB7714@js1304-P5Q-DELUXE>
+ <5486BCEF.5080007@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/BSrF2TBmtkLVobERebLtkPd"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5486BCEF.5080007@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/BSrF2TBmtkLVobERebLtkPd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 09, 2014 at 10:12:15AM +0100, Vlastimil Babka wrote:
+> On 12/09/2014 09:28 AM, Joonsoo Kim wrote:
+> >On Mon, Dec 08, 2014 at 11:27:27AM +0100, Vlastimil Babka wrote:
+> >>On 12/08/2014 08:11 AM, Joonsoo Kim wrote:
+> >>>
+> >>>I'm not sure that this change is good. If we steal order 0 pages,
+> >>>this may be good. But, sometimes, we try to steal high order page
+> >>>and, in this case, there would be many order 0 freepages and blindly
+> >>>stealing freepages in that pageblock make the system more fragmented.
+> >>
+> >>I don't understand. If we try to steal high order page
+> >>(current_order >= pageblock_order / 2), then nothing changes, the
+> >>condition for extra stealing is the same.
+> >
+> >More accureately, I means mid order page (current_order <
+> >pageblock_order / 2), but, not order 0, such as order 2,3,4(?).
+> >In this case, perhaps, the system has enough unmovable order 0 freepages,
+> >so we don't need to worry about second kind of fragmentation you
+> >mentioned below. Stealing one mid order freepage is enough to satify
+> >request.
+> 
+> OK.
+> 
+> >>
+> >>>MIGRATE_RECLAIMABLE is different case than MIGRATE_UNMOVABLE, because
+> >>>it can be reclaimed so excessive migratetype movement doesn't result
+> >>>in permanent fragmentation.
+> >>
+> >>There's two kinds of "fragmentation" IMHO. First, inside a
+> >>pageblock, unmovable allocations can prevent merging of lower
+> >>orders. This can get worse if we steal multiple pages from a single
+> >>pageblock, but the pageblock itself is not marked as unmovable.
+> >
+> >So, what's the intention pageblock itself not marked as unmovable?
+> >I guess that if many pages are moved to unmovable, they can't be easily
+> >back and this pageblock is highly fragmented. So, processing more unmovable
+> >requests from this pageblock by changing pageblock migratetype makes more
+> >sense to me.
+> 
+> There's the danger that we mark too much pageblocks as unmovable in
+> some unmovable allocation spike and even if the number of unmovable
+> allocated pages later decreases, they will keep being allocated from
+> many unmovable-marked pageblocks, and neither will become empty
+> enough to be remarked back. If we don't mark pageblocks unmovable as
+> aggressively, it's possible that the unmovable allocations in a
+> partially-stolen pageblock will be eventually freed, and no more
+> unmovable allocations will occur in that pageblock if it's not
+> marked as unmovable.
 
-Hi Eric,
+Hmm... Yes, but, it seems to be really workload dependent. I'll check
+the effect of changing pageblock migratetype aggressively on my test bed.
 
-Today's linux-next merge of the userns tree got a conflict in
-kernel/user_namespace.c between commits 3c0411846118 ("switch the rest
-of proc_ns_operations to working with &...->ns") and 64964528b24e
-("make proc_ns_operations work with struct ns_common * instead of void
-*") from the vfs tree and commit 2b714ea67ed4 ("userns: Add a knob to
-disable setgroups on a per user namespace basis") from the userns tree.
+> 
+> >>Second kind of fragmentation is when unmovable allocations spread
+> >>over multiple pageblocks. Lower order allocations within each such
+> >>pageblock might be still possible, but less pageblocks are able to
+> >>compact to have whole pageblock free.
+> >>
+> >>I think the second kind is worse, so when do have to pollute a
+> >>movable pageblock with unmovable allocation, we better take as much
+> >>as possible, so we prevent polluting other pageblocks.
+> >
+> >I agree.
+> >
+> >>
+> >>>What I'd like to do to prevent fragmentation is
+> >>>1) check whether we can steal all or almost freepages and change
+> >>>migratetype of pageblock.
+> >>>2) If above condition isn't met, deny allocation and invoke compaction.
+> >>
+> >>Could work to some extend, but we need also to prevent excessive compaction.
+> >
+> >So, I suggest knob to control behaviour. In small memory system,
+> >fragmentation occurs frequently so the system can't handle just order 2
+> >request. In that system, excessive compaction is acceptable because
+> >it it better than system down.
+> 
+> So you say that in these systems, order 2 requests fail because of
+> page stealing?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Yes. At some point, system memory is highly fragmented and order 2
+requests fail. It would be caused by page stealing but I didn't analyze it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> >>
+> >>We could also introduce a new pageblock migratetype, something like
+> >>MIGRATE_MIXED. The idea is that once pageblock isn't used purely by
+> >>MOVABLE allocations, it's marked as MIXED, until it either becomes
+> >>marked UNMOVABLE or RECLAIMABLE by the existing mechanisms, or is
+> >>fully freed. In more detail:
+> >>
+> >>- MIXED is preferred for fallback before any other migratetypes
+> >>- if RECLAIMABLE/UNMOVABLE page allocation is stealing from MOVABLE
+> >>pageblock and cannot mark pageblock as RECLAIMABLE/UNMOVABLE (by
+> >>current rules), it marks it as MIXED instead.
+> >>- if MOVABLE allocation is stealing from UNMOVABLE/RECLAIMABLE
+> >>pageblocks, it will only mark it as MOVABLE if it was fully free.
+> >>Otherwise, if current rules would result in marking it as MOVABLE
+> >>(i.e. most of it was stolen, but not all) it will mark it as MIXED
+> >>instead.
+> >>
+> >>This could in theory leave more MOVABLE pageblocks unspoiled by
+> >>UNMOVABLE allocations.
+> >
+> >I guess that we can do it without introducing new migratetype pageblock.
+> >Just always marking it as RECLAIMABLE/UNMOVABLE when
+> >RECLAIMABLE/UNMOVABLE page allocation is stealing from MOVABLE would
+> >have same effect.
+> 
+> See the argument above. The difference with MIXED marking is that
+> new unmovable allocations would take from these pageblocks only as a
+> fallback. Primarily it would try to reuse a more limited number of
+> unmovable-marked pageblocks.
 
-diff --cc kernel/user_namespace.c
-index 1491ad00388f,1db950ec08ce..000000000000
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@@ -842,12 -851,99 +852,104 @@@ static bool new_idmap_permitted(const s
-  	return false;
-  }
- =20
- +static inline struct user_namespace *to_user_ns(struct ns_common *ns)
- +{
- +	return container_of(ns, struct user_namespace, ns);
- +}
- +
-+ static void *setgroups_m_start(struct seq_file *seq, loff_t *ppos)
-+ {
-+ 	struct user_namespace *ns =3D seq->private;
-+=20
-+ 	return (*ppos =3D=3D 0) ?  ns : NULL;
-+ }
-+=20
-+ static void *setgroups_m_next(struct seq_file *seq, void *v, loff_t *ppos)
-+ {
-+ 	++*ppos;
-+ 	return NULL;
-+ }
-+=20
-+ static void setgroups_m_stop(struct seq_file *seq, void *v)
-+ {
-+ }
-+=20
-+ static int setgroups_m_show(struct seq_file *seq, void *v)
-+ {
-+ 	struct user_namespace *ns =3D seq->private;
-+=20
-+ 	seq_printf(seq, "%s\n",
-+ 		   test_bit(USERNS_SETGROUPS_ALLOWED, &ns->flags) ?
-+ 		   "allow" : "deny");
-+ 	return 0;
-+ }
-+=20
-+ const struct seq_operations proc_setgroups_seq_operations =3D {
-+ 	.start	=3D setgroups_m_start,
-+ 	.stop =3D setgroups_m_stop,
-+ 	.next =3D setgroups_m_next,
-+ 	.show =3D setgroups_m_show,
-+ };
-+=20
-+ ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
-+ 			     size_t count, loff_t *ppos)
-+ {
-+ 	struct seq_file *seq =3D file->private_data;
-+ 	struct user_namespace *ns =3D seq->private;
-+ 	char kbuf[8], *pos;
-+ 	bool setgroups_allowed;
-+ 	ssize_t ret;
-+=20
-+ 	ret =3D -EACCES;
-+ 	if (!file_ns_capable(file, ns, CAP_SYS_ADMIN))
-+ 		goto out;
-+=20
-+ 	/* Only allow a very narrow range of strings to be written */
-+ 	ret =3D -EINVAL;
-+ 	if ((*ppos !=3D 0) || (count >=3D sizeof(kbuf)))
-+ 		goto out;
-+=20
-+ 	/* What was written? */
-+ 	ret =3D -EFAULT;
-+ 	if (copy_from_user(kbuf, buf, count))
-+ 		goto out;
-+ 	kbuf[count] =3D '\0';
-+ 	pos =3D kbuf;
-+=20
-+ 	/* What is being requested? */
-+ 	ret =3D -EINVAL;
-+ 	if (strncmp(pos, "allow", 5) =3D=3D 0) {
-+ 		pos +=3D 5;
-+ 		setgroups_allowed =3D true;
-+ 	}
-+ 	else if (strncmp(pos, "deny", 4) =3D=3D 0) {
-+ 		pos +=3D 4;
-+ 		setgroups_allowed =3D false;
-+ 	}
-+ 	else
-+ 		goto out;
-+=20
-+ 	/* Verify there is not trailing junk on the line */
-+ 	pos =3D skip_spaces(pos);
-+ 	if (*pos !=3D '\0')
-+ 		goto out;
-+=20
-+ 	if (setgroups_allowed) {
-+ 		ret =3D -EPERM;
-+ 		if (!userns_setgroups_allowed(ns))
-+ 			goto out;
-+ 	} else {
-+ 		userns_disable_setgroups(ns);
-+ 	}
-+=20
-+ 	/* Report a successful write */
-+ 	*ppos =3D count;
-+ 	ret =3D count;
-+ out:
-+ 	return ret;
-+ }
-+=20
- -static void *userns_get(struct task_struct *task)
- +static struct ns_common *userns_get(struct task_struct *task)
-  {
-  	struct user_namespace *user_ns;
- =20
+Ah, I understand now. Looks like a good idea.
 
---Sig_/BSrF2TBmtkLVobERebLtkPd
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUh+e+AAoJEMDTa8Ir7ZwVvCMP/R7wD4ueaXQ8Yx4iRqwdQmWF
-7fWA+kobsVmlxGHjGlQafna20Xt5K19hKtQR8wnSsSIiCsn7GLRQkIyINcrR4W49
-rG68ocHxQ+y7Nn+nc2FgQV18mlvxJkrPNqq1yjvUJSIl1DlW475ECS0g0yI71izI
-x0cUilPgAhwWmFUqQbARCapcj9ZQ9ioJnhomEewomtxoA8wMbGwQqzOYUhbr988l
-KxIIGWBL3d66Kjtwj9yuAcYq9NuKQytY9G6URb8Lxbs9clVhr3ZmU5oOxOqwduLK
-knNGGa2KnJFQ/k7cuMkQTgQeEwUGzz4GrBn5na2623YVqPNluGE0JueeLNrcaWzG
-Jef2kEav07nOcSvMMyU7QsNvXyy/Fyw/VV4JORqzbIol+aUPk02a0ldM752MJR1w
-y0PU608kqwBf61FiVHaRS3CKyU8i5Z+TPmCxXI3PoVmYQIrkyH5kAq4/tRuGoF9o
-nJav3tChIhnKhva6KQfW2IaQ8fQsf3rOhg/bSpQ+6OqtkmGMIYJfx8NcQvmmFdWZ
-KwMMPlMqWRgbxk1qEz3pQbRZNxrtV8A87TXZ25S+YcwkQUIiDgDouUfXllIMq3Jg
-IQv0VLK+EJ6guZcu/hmXGN9i+rzCizyrbqPPUIRbtb2I2mKZL6jF/d/9ClZhm9u7
-oVkd4OnlidjgUQlMI2fD
-=Xxr3
------END PGP SIGNATURE-----
-
---Sig_/BSrF2TBmtkLVobERebLtkPd--
+> But this is just an idea not related to the series at hand. Yes, it
+> could be better, these are all heuristics and any change is a
+> potential tradeoff.
+> 
+> Also we need to keep in mind that ultimately, anything we devise
+> cannot prevent fragmentation 100%. We cannot predict the future, so
+> we don't know which unmovable allocations will be freed soon, and
+> which will stay for longer time. To minimize fragmentation, we would
+> need to recognize those longer-lived unmovable allocations, so we
+> could put them together in as few pageblocks as possible.
+> 
+> >Thanks.
+> >
+> >>>Maybe knob to control behaviour would be needed.
+> >>>How about it?
+> >>
+> >>Adding new knobs is not a good solution.
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
