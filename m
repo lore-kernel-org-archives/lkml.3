@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652AbaLJSPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:15:49 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:32871 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414AbaLJSPs (ORCPT
+	id S932679AbaLJSTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:19:00 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:34670 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414AbaLJSS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:15:48 -0500
+	Wed, 10 Dec 2014 13:18:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <CALnjE+pnJqHFaKZAGgN2Q_q-sAfuGYOb6fX0utkb-J1-JFv7dg@mail.gmail.com>
-References: <1417575363-13770-1-git-send-email-joestringer@nicira.com>
- <1417575363-13770-2-git-send-email-joestringer@nicira.com>
- <CALnjE+o4tbQVTyVkzdOG8zj=qxPZ8Dv3vGHbYkBmghxsLgKkkw@mail.gmail.com>
- <CANr6G5yOqVkA6hf3J9mk41Kh=0k3sM3tQx4sdADSgFaAx9xrWg@mail.gmail.com> <CALnjE+pnJqHFaKZAGgN2Q_q-sAfuGYOb6fX0utkb-J1-JFv7dg@mail.gmail.com>
-From: Joe Stringer <joestringer@nicira.com>
-Date: Wed, 10 Dec 2014 10:15:27 -0800
-X-Google-Sender-Auth: XU0LVNP2Gba5n0piYg_JA4UqgdE
-Message-ID: <CAOftzPjp3++6X50m27fhnAqVPsNRRfrhtmWGoeVi_8v3KCHWhA@mail.gmail.com>
-Subject: Re: [ovs-dev] [PATCHv11 net-next 2/2] openvswitch: Add support for
- unique flow IDs.
-To: Pravin Shelar <pshelar@nicira.com>
-Cc: Joe Stringer <joestringer@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20141210143428.GB12497@richard>
+References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo5tZU=zBKNDt2UtUE_AMG3zzrdq2CX2A4ZL7tdLELXgqA@mail.gmail.com>
+	<CAE9FiQWLaNSsFTWEpWRFR4xTd0hKOwENdQR7N6T=K65VM+vDQg@mail.gmail.com>
+	<20141210141537.GA9298@richard>
+	<20141210143428.GB12497@richard>
+Date: Wed, 10 Dec 2014 10:18:58 -0800
+X-Google-Sender-Auth: qQpciRP62GetUdEmxaiFZHmKVPw
+Message-ID: <CAE9FiQVDkWSrm0Z9N+zW=Pb2gL6CW9EBj7CcOfKD=1uizRqP6Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non mem64
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 December 2014 at 22:11, Pravin Shelar <pshelar@nicira.com> wrote:
-> On Tue, Dec 9, 2014 at 4:25 PM, Joe Stringer <joestringer@nicira.com> wrote:
->> On 9 December 2014 at 10:32, Pravin Shelar <pshelar@nicira.com> wrote:
->>> On Tue, Dec 2, 2014 at 6:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
->>>> @@ -424,10 +475,9 @@ static struct sw_flow *masked_flow_lookup(struct table_instance *ti,
->>>>         ovs_flow_mask_key(&masked_key, unmasked, mask);
->>>>         hash = flow_hash(&masked_key, key_start, key_end);
->>>>         head = find_bucket(ti, hash);
->>>> -       hlist_for_each_entry_rcu(flow, head, hash_node[ti->node_ver]) {
->>>> -               if (flow->mask == mask && flow->hash == hash &&
->>>> -                   flow_cmp_masked_key(flow, &masked_key,
->>>> -                                         key_start, key_end))
->>>> +       hlist_for_each_entry_rcu(flow, head, flow_hash.node[ti->node_ver]) {
->>>> +               if (flow->mask == mask && flow->flow_hash.hash == hash &&
->>>> +                   flow_cmp_masked_key(flow, &masked_key, key_start, key_end))
->>>>                         return flow;
->>>>         }
->>>>         return NULL;
->>>> @@ -469,7 +519,40 @@ struct sw_flow *ovs_flow_tbl_lookup_exact(struct flow_table *tbl,
->>>>         /* Always called under ovs-mutex. */
->>>>         list_for_each_entry(mask, &tbl->mask_list, list) {
->>>>                 flow = masked_flow_lookup(ti, match->key, mask);
->>>> -               if (flow && ovs_flow_cmp_unmasked_key(flow, match))  /* Found */
->>>> +               if (flow && !flow->ufid &&
->>> why not NULL check for flow->unmasked_key here rather than ufid?
->>
->> In this version, I tried to consistently use flow->ufid as the switch
->> for whether UFID exists or not. In the next version, this statement
->> would refer to flow->id->ufid_len.
->>
->> The current approach means that ovs_flow_tbl_lookup_exact() is really
->> ovs_flow_tbl_lookup_unmasked_key(). Do you think this should remain
->> specific to unmasked key or should it be made to check that the
->> identifier (ufid OR unmasked key) is the same?
+On Wed, Dec 10, 2014 at 6:34 AM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
+> My mutt hang, in case the mail isn't sent out, I resend it.
 >
-> It is easier to read code if we check for flow->unmasked_key here.
-> ovs_flow_cmp_unmasked_key() has assert on ufid anyways.
+> On Wed, Dec 10, 2014 at 10:15:37PM +0800, Wei Yang wrote:
+>>On Tue, Dec 09, 2014 at 03:13:49PM -0800, Yinghai Lu wrote:
+>>>On Tue, Dec 9, 2014 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>> On Tue, Dec 9, 2014 at 2:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>>> +       list_for_each_entry(window, &bridge->windows, list) {
+>>>>> +               res = window->res;
+>>>>> +               if (resource_type(res) == IORESOURCE_MEM ||
+>>>>> +                   res->end > 0xffffffff) {
+>>>>> +                       bridge->has_mem64_res = true;
+>>>>
+>>>> This is an interesting idea, but I think you're checking CPU addresses
+>>>> here, and you need to check PCI bus addresses.
+>>>
+>>>Looks like those IBM platforms have res > 4g, but pci bus address < 4g.
+>>>If we check pci bus address, and then we would break those platforms.
+>>>
+>
+> Hi, Yinghai
+>
+> I did some test with patch on my machine. It looks good.
+>
+> While as Bjorn mentioned, I think we could change it a little. The pci space
+> on our machine is like this:
+>
+>         cpu address                               pci address
+>   MEM   0x00003ff280000000..0x00003ff2fffeffff -> 0x00000000 8000 0000
+>   MEM64 0x00003d5000000000..0x00003d5fffffffff -> 0x00003d50 0000 0000
 
-With the change to put UFID/unmasked key in the same struct, there
-will be no such pointer to check, only ufid_len.
 
-However, we could shift this check at the start of the function instead.
+>
+> Each root bridge has two MMIO window. From this output we could see the pci
+> address for 64-bit window is above 4G.
+
+>
+> I did a little change on your code, like this
+>
+>         list_for_each_entry(window, &bridge->windows, list) {
+>                 res = window->res;
+>                 if (resource_type(res) == IORESOURCE_MEM ||
+> -                   res->end > 0xffffffff) {
+> +                   (res->end - window->offset) > 0xffffffff) {
+>                         bridge->has_mem64_res = true;
+>                         break;
+>                 }
+>         }
+
+good, then we should change to compare region end.
+
+>
+> This also works on my machine.
+>
+> One more question, with this patch, do we still need previous patch for
+> Marek's problem?
+
+Only need this to make Marek's working.
+
+but does not help on Zermond's
+
+Thanks
+
+Yinghai
