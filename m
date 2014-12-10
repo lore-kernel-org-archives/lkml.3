@@ -1,237 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556AbaLJGes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:34:48 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:59426 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756493AbaLJGer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:34:47 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 10 Dec 2014 15:38:40 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm/page_alloc: expands broken freepage to proper
- buddy list when steal
-Message-ID: <20141210063840.GC13371@js1304-P5Q-DELUXE>
-References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com>
- <54856F88.8090300@suse.cz>
+	id S1753112AbaLJGhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:37:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8778 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751514AbaLJGhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 01:37:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="496467432"
+Message-ID: <5487E96D.70609@intel.com>
+Date: Wed, 10 Dec 2014 14:34:21 +0800
+From: Jike Song <jike.song@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54856F88.8090300@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: kvm@vger.kernel.org, "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        linux-kernel@vger.kernel.org, "Haron, Sandra" <sandra.haron@intel.com>,
+        "Tian, Kevin" <kevin.tian@intel.com>
+Subject: Re: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
+ GVT-g(full GPU virtualization) for KVM
+References: <547FC5DE.4010701@intel.com> <5486C6CA.8080006@siemens.com>
+In-Reply-To: <5486C6CA.8080006@siemens.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 08, 2014 at 10:29:44AM +0100, Vlastimil Babka wrote:
-> On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
-> >There is odd behaviour when we steal freepages from other migratetype
-> >buddy list. In try_to_steal_freepages(), we move all freepages in
-> >the pageblock that founded freepage is belong to to the request
-> >migratetype in order to mitigate fragmentation. If the number of moved
-> >pages are enough to change pageblock migratetype, there is no problem. If
-> >not enough, we don't change pageblock migratetype and add broken freepages
-> >to the original migratetype buddy list rather than request migratetype
-> >one. For me, this is odd, because we already moved all freepages in this
-> >pageblock to the request migratetype. This patch fixes this situation to
-> >add broken freepages to the request migratetype buddy list in this case.
-> 
-> I'd rather split the fix from the refactoring. And maybe my
-> description is longer, but easier to understand? (I guess somebody
-> else should judge this)
+CC Kevin.
 
-Your patch is much better to understand than mine. :)
-No need to judge from somebody else.
-After your patch is merged, I will resubmit these on top of it.
 
-> 
-> >This patch introduce new function that can help to decide if we can
-> >steal the page without resulting in fragmentation. It will be used in
-> >following patch for compaction finish criteria.
-> >
-> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >---
-> >  include/trace/events/kmem.h |    7 +++--
-> >  mm/page_alloc.c             |   72 +++++++++++++++++++++++++------------------
-> >  2 files changed, 46 insertions(+), 33 deletions(-)
-> >
-> >diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
-> >index aece134..4ad10ba 100644
-> >--- a/include/trace/events/kmem.h
-> >+++ b/include/trace/events/kmem.h
-> >@@ -268,11 +268,11 @@ TRACE_EVENT(mm_page_alloc_extfrag,
-> >
-> >  	TP_PROTO(struct page *page,
-> >  		int alloc_order, int fallback_order,
-> >-		int alloc_migratetype, int fallback_migratetype, int new_migratetype),
-> >+		int alloc_migratetype, int fallback_migratetype),
-> >
-> >  	TP_ARGS(page,
-> >  		alloc_order, fallback_order,
-> >-		alloc_migratetype, fallback_migratetype, new_migratetype),
-> >+		alloc_migratetype, fallback_migratetype),
-> >
-> >  	TP_STRUCT__entry(
-> >  		__field(	struct page *,	page			)
-> >@@ -289,7 +289,8 @@ TRACE_EVENT(mm_page_alloc_extfrag,
-> >  		__entry->fallback_order		= fallback_order;
-> >  		__entry->alloc_migratetype	= alloc_migratetype;
-> >  		__entry->fallback_migratetype	= fallback_migratetype;
-> >-		__entry->change_ownership	= (new_migratetype == alloc_migratetype);
-> >+		__entry->change_ownership	= (alloc_migratetype ==
-> >+					get_pageblock_migratetype(page));
-> >  	),
-> >
-> >  	TP_printk("page=%p pfn=%lu alloc_order=%d fallback_order=%d pageblock_order=%d alloc_migratetype=%d fallback_migratetype=%d fragmenting=%d change_ownership=%d",
-> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >index 7c46d0f..7b4c9aa 100644
-> >--- a/mm/page_alloc.c
-> >+++ b/mm/page_alloc.c
-> >@@ -1139,44 +1139,50 @@ static void change_pageblock_range(struct page *pageblock_page,
-> >   * Returns the new migratetype of the pageblock (or the same old migratetype
-> >   * if it was unchanged).
-> >   */
-> >-static int try_to_steal_freepages(struct zone *zone, struct page *page,
-> >-				  int start_type, int fallback_type)
-> >+static void try_to_steal_freepages(struct zone *zone, struct page *page,
-> >+							int target_mt)
-> >  {
-> >+	int pages;
-> >  	int current_order = page_order(page);
-> >
-> >-	/*
-> >-	 * When borrowing from MIGRATE_CMA, we need to release the excess
-> >-	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
-> >-	 * is set to CMA so it is returned to the correct freelist in case
-> >-	 * the page ends up being not actually allocated from the pcp lists.
-> >-	 */
-> >-	if (is_migrate_cma(fallback_type))
-> >-		return fallback_type;
-> >-
-> >  	/* Take ownership for orders >= pageblock_order */
-> >  	if (current_order >= pageblock_order) {
-> >-		change_pageblock_range(page, current_order, start_type);
-> >-		return start_type;
-> >+		change_pageblock_range(page, current_order, target_mt);
-> >+		return;
-> 
-> So here's a (current_order >= pageblock_order) check.
-> 
-> >  	}
-> >
-> >-	if (current_order >= pageblock_order / 2 ||
-> >-	    start_type == MIGRATE_RECLAIMABLE ||
-> >-	    page_group_by_mobility_disabled) {
-> >-		int pages;
-> >+	pages = move_freepages_block(zone, page, target_mt);
-> >
-> >-		pages = move_freepages_block(zone, page, start_type);
-> >+	/* Claim the whole block if over half of it is free */
-> >+	if (pages >= (1 << (pageblock_order-1)) ||
-> >+			page_group_by_mobility_disabled) {
-> >
-> >-		/* Claim the whole block if over half of it is free */
-> >-		if (pages >= (1 << (pageblock_order-1)) ||
-> >-				page_group_by_mobility_disabled) {
-> >+		set_pageblock_migratetype(page, target_mt);
-> >+	}
-> >+}
-> >
-> >-			set_pageblock_migratetype(page, start_type);
-> >-			return start_type;
-> >-		}
-> >+static bool can_steal_freepages(unsigned int order,
-> >+			int start_mt, int fallback_mt)
-> >+{
-> >+	/*
-> >+	 * When borrowing from MIGRATE_CMA, we need to release the excess
-> >+	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
-> >+	 * is set to CMA so it is returned to the correct freelist in case
-> >+	 * the page ends up being not actually allocated from the pcp lists.
-> >+	 */
-> >+	if (is_migrate_cma(fallback_mt))
-> >+		return false;
-> >
-> >-	}
-> >+	/* Can take ownership for orders >= pageblock_order */
-> >+	if (order >= pageblock_order)
-> >+		return true;
-> 
-> And another check.
-> 
-> >+
-> >+	if (order >= pageblock_order / 2 ||
-> >+		start_mt == MIGRATE_RECLAIMABLE ||
-> >+		page_group_by_mobility_disabled)
-> >+		return true;
-> >
-> >-	return fallback_type;
-> >+	return false;
-> >  }
-> >
-> >  /* Remove an element from the buddy allocator from the fallback list */
-> >@@ -1187,6 +1193,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
-> >  	unsigned int current_order;
-> >  	struct page *page;
-> >  	int migratetype, new_type, i;
-> >+	bool can_steal;
-> >
-> >  	/* Find the largest possible block of pages in the other list */
-> >  	for (current_order = MAX_ORDER-1;
-> >@@ -1194,6 +1201,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
-> >  				--current_order) {
-> >  		for (i = 0;; i++) {
-> >  			migratetype = fallbacks[start_migratetype][i];
-> >+			new_type = migratetype;
-> >
-> >  			/* MIGRATE_RESERVE handled later if necessary */
-> >  			if (migratetype == MIGRATE_RESERVE)
-> >@@ -1207,9 +1215,13 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
-> >  					struct page, lru);
-> >  			area->nr_free--;
-> 
-> So wouldn't it be better to handle the "order >= pageblock_order"
-> case separately at this level? I think it would be better also for
-> the compaction case (I'll comment on the later patch why).
+On 12/09/2014 05:54 PM, Jan Kiszka wrote:
+> On 2014-12-04 03:24, Jike Song wrote:
+>> Hi all,
+>>
+>>   We are pleased to announce the first release of KVMGT project. KVMGT is
+>> the implementation of Intel GVT-g technology, a full GPU virtualization
+>> solution. Under Intel GVT-g, a virtual GPU instance is maintained for
+>> each VM, with part of performance critical resources directly assigned.
+>> The capability of running native graphics driver inside a VM, without
+>> hypervisor intervention in performance critical paths, achieves a good
+>> balance of performance, feature, and sharing capability.
+>>
+>>
+>>   KVMGT is still in the early stage:
+>>
+>>    - Basic functions of full GPU virtualization works, guest can see a
+>> full-featured vGPU.
+>>      We ran several 3D workloads such as lightsmark, nexuiz, urbanterror
+>> and warsow.
+>>
+>>    - Only Linux guest supported so far, and PPGTT must be disabled in
+>> guest through a
+>>      kernel parameter(see README.kvmgt in QEMU).
+>>
+>>    - This drop also includes some Xen specific changes, which will be
+>> cleaned up later.
+>>
+>>    - Our end goal is to upstream both XenGT and KVMGT, which shares ~90%
+>> logic for vGPU
+>>      device model (will be part of i915 driver), with only difference in
+>> hypervisor
+>>      specific services
+>>
+>>    - insufficient test coverage, so please bear with stability issues :)
+>>
+>>
+>>
+>>   There are things need to be improved, esp. the KVM interfacing part:
+>>
+>>      1    a domid was added to each KVMGT guest
+>>
+>>          An ID is needed for foreground OS switching, e.g.
+>>
+>>              # echo <domid>    >    /sys/kernel/vgt/control/foreground_vm
+>>
+>>          domid 0 is reserved for host OS.
+>>
+>>
+>>       2    SRCU workarounds.
+>>
+>>          Some KVM functions, such as:
+>>
+>>                  kvm_io_bus_register_dev
+>>                  install_new_memslots
+>>
+>>          must be called *without* &kvm->srcu read-locked. Otherwise it
+>> hangs.
+>>
+>>          In KVMGT, we need to register an iodev only *after* BAR
+>> registers are
+>>          written by guest. That means, we already have &kvm->srcu hold -
+>>          trapping/emulating PIO(BAR registers) makes us in such a condition.
+>>          That will make kvm_io_bus_register_dev hangs.
+>>
+>>          Currently we have to disable rcu_assign_pointer() in such
+>> functions.
+>>
+>>          These were dirty workarounds, your suggestions are high welcome!
+>>
+>>
+>>      3    syscalls were called to access "/dev/mem" from kernel
+>>
+>>          An in-kernel memslot was added for aperture, but using syscalls
+>> like
+>>          open and mmap to open and access the character device "/dev/mem",
+>>          for pass-through.
+>>
+>>
+>>
+>>
+>> The source codes(kernel, qemu as well as seabios) are available at github:
+>>
+>>      git://github.com/01org/KVMGT-kernel
+>>      git://github.com/01org/KVMGT-qemu
+>>      git://github.com/01org/KVMGT-seabios
+>>
+>> In the KVMGT-qemu repository, there is a "README.kvmgt" to be referred.
+>>
+>>
+>>
+>> More information about Intel GVT-g and KVMGT can be found at:
+>>
+>>      https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
+>>
+>>      http://events.linuxfoundation.org/sites/events/files/slides/KVMGT-a%20Full%20GPU%20Virtualization%20Solution_1.pdf
+>>
+>>
+>>
+>> Appreciate your comments, BUG reports, and contributions!
+>>
+>
+> There is an even increasing interest to keep KVM's in-kernel guest
+> interface as small as possible, specifically for security reasons. I'm
+> sure there are some good performance reasons to create a new in-kernel
+> device model, but I suppose those will need good evidences why things
+> are done in the way they finally should be - and not via a user-space
+> device model. This is likely not a binary decision (all userspace vs. no
+> userspace), it is more about the size and robustness of the in-kernel
+> model vs. its performance.
+>
+> One aspect could also be important: Are there hardware improvements in
+> sight that will eventually help to reduce the in-kernel device model and
+> make the overall design even more robust? How will those changes fit
+> best into a proposed user/kernel split?
+>
+> Jan
+>
 
-I will also comment on the later patch.
-
-Thanks.
-
-> 
-> >-			new_type = try_to_steal_freepages(zone, page,
-> >-							  start_migratetype,
-> >-							  migratetype);
-> >+			can_steal = can_steal_freepages(current_order,
-> >+					start_migratetype, migratetype);
-> >+			if (can_steal) {
-> >+				new_type = start_migratetype;
-> >+				try_to_steal_freepages(zone, page,
-> >+							start_migratetype);
-> >+			}
-> >
-> >  			/* Remove the page from the freelists */
-> >  			list_del(&page->lru);
-> >@@ -1225,7 +1237,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
-> >  			set_freepage_migratetype(page, new_type);
-> >
-> >  			trace_mm_page_alloc_extfrag(page, order, current_order,
-> >-				start_migratetype, migratetype, new_type);
-> >+					start_migratetype, migratetype);
-> >
-> >  			return page;
-> >  		}
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+--
+Thanks,
+Jike
+_______________________________________________
+Intel-gfx mailing list
+Intel-gfx@lists.freedesktop.org
+http://lists.freedesktop.org/mailman/listinfo/intel-gfx
