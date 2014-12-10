@@ -1,196 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159AbaLJW3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:29:41 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55548 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969AbaLJW3k (ORCPT
+	id S933215AbaLJWaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:30:30 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55772 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932782AbaLJWa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:29:40 -0500
-Date: Wed, 10 Dec 2014 14:29:13 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@ozlabs.org, dev@codyps.com, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: [PATCH 1/2] perf/powerpc/hv-24x7: Use per-cpu page buffer
-Message-ID: <20141210222912.GA30869@us.ibm.com>
-References: <20141210070637.GA27377@us.ibm.com>
- <1418202549.9279.0.camel@ellerman.id.au>
+	Wed, 10 Dec 2014 17:30:28 -0500
+Date: Thu, 11 Dec 2014 09:30:12 +1100
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non
+ mem64
+Message-ID: <20141210223012.GA11234@shangw>
+Reply-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
+References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418202549.9279.0.camel@ellerman.id.au>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121022-0009-0000-0000-00000709E966
+x-cbid: 14121022-0029-0000-0000-00000367F50A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman [mpe@ellerman.id.au] wrote:
-| On Tue, 2014-12-09 at 23:06 -0800, Sukadev Bhattiprolu wrote:
-| > From 470c16c8955672103a9529c78dffbb239e9e27b8 Mon Sep 17 00:00:00 2001
-| > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-| > Date: Tue, 9 Dec 2014 22:17:46 -0500
-| > Subject: [PATCH 1/2] perf/poweprc/hv-24x7: Use per-cpu page buffer
-| > 
-| > diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-| > index dba3408..18e1f49 100644
-| > --- a/arch/powerpc/perf/hv-24x7.c
-| > +++ b/arch/powerpc/perf/hv-24x7.c
-| > @@ -217,11 +217,14 @@ static bool is_physical_domain(int domain)
-| >  		domain == HV_24X7_PERF_DOMAIN_PHYSICAL_CORE;
-| >  }
-| >  
-| > +DEFINE_PER_CPU(char, hv_24x7_reqb[4096]);
-| > +DEFINE_PER_CPU(char, hv_24x7_resb[4096]);
-| 
-| Do we need it to be 4K aligned also? I would guess so.
+On Tue, Dec 09, 2014 at 01:34:31PM -0800, Yinghai Lu wrote:
+>So we could use bridge 64bit mem pref for children mem pref instead of
+>forcing them into bridge mem.
+>
+>Could help Marek's system as his system is using _CRS, and all mem res is under
+>4G.
+>
+>Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
+>Reported-by: Marek Kordik <kordikmarek@gmail.com>
+>Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
+>Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+>---
+> drivers/pci/host-bridge.c |    7 +++++++
+> drivers/pci/pci.h         |    1 +
+> drivers/pci/probe.c       |    9 +++++++++
+> drivers/pci/setup-bus.c   |    3 +++
+> include/linux/pci.h       |    1 +
+> 5 files changed, 21 insertions(+)
+>
+>Index: linux-2.6/drivers/pci/host-bridge.c
+>===================================================================
+>--- linux-2.6.orig/drivers/pci/host-bridge.c
+>+++ linux-2.6/drivers/pci/host-bridge.c
+>@@ -31,6 +31,13 @@ void pci_set_host_bridge_release(struct
+> 	bridge->release_data = release_data;
+> }
+>
+>+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus)
+>+{
+>+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+>+
+>+	return bridge->has_mem64_res;
+>+}
+>+
+> void pcibios_resource_to_bus(struct pci_bus *bus, struct pci_bus_region *region,
+> 			     struct resource *res)
+> {
+>Index: linux-2.6/drivers/pci/pci.h
+>===================================================================
+>--- linux-2.6.orig/drivers/pci/pci.h
+>+++ linux-2.6/drivers/pci/pci.h
+>@@ -196,6 +196,7 @@ enum pci_bar_type {
+> 	pci_bar_mem64,		/* A 64-bit memory BAR */
+> };
+>
+>+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus);
+> bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
+> 				int crs_timeout);
+> int pci_setup_device(struct pci_dev *dev);
+>Index: linux-2.6/drivers/pci/probe.c
+>===================================================================
+>--- linux-2.6.orig/drivers/pci/probe.c
+>+++ linux-2.6/drivers/pci/probe.c
+>@@ -1980,6 +1980,15 @@ struct pci_bus *pci_create_root_bus(stru
+> 		dev_info(&b->dev, "root bus resource %pR%s\n", res, bus_addr);
+> 	}
+>
+>+	list_for_each_entry(window, &bridge->windows, list) {
+>+		res = window->res;
+>+		if (resource_type(res) == IORESOURCE_MEM ||
+>+		    res->end > 0xffffffff) {
 
-Yes, fixed in the patch below.
-| 
-| Rather than declaring these as char arrays and then casting below, can you pull
-| the struct definitions up and then declare the per cpu variables with the
-| proper type.
+Should we replace "||" with "&&" ?
 
-Well, the structures, used for communication with HV, have variable length
-arrays, like:
+Thanks,
+Gavin
 
-	struct hv_24x7_request_buffer {
-		...
-		struct hv_24x7_request requests[];
-	};
-
-i.e the buffer needs to be larger than reported by sizeof(). So we
-allocate a large buffer and cast it. Not sure if there is a trick to
-get DEFINE_PER_CPU() to do that. We could add code to allocate pages
-per cpu during init, but that would mean more code, error handling etc.
-
-| 
-| 
-| >  static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
-| >  					 u16 lpar, u64 *res,
-| >  					 bool success_expected)
-| >  {
-| > -	unsigned long ret = -ENOMEM;
-| > +	unsigned long ret;
-| >  
-| >  	/*
-| >  	 * request_buffer and result_buffer are not required to be 4k aligned,
-| > @@ -243,13 +246,11 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
-| >  	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
-| >  	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
-| >  
-| > -	request_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
-| > -	if (!request_buffer)
-| > -		goto out;
-| > +	request_buffer = (void *)get_cpu_var(hv_24x7_reqb);
-| > +	result_buffer = (void *)get_cpu_var(hv_24x7_resb);
-| >  
-| > -	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
-| > -	if (!result_buffer)
-| > -		goto out_free_request_buffer;
-| > +	memset(request_buffer, 0, 4096);
-| > +	memset(result_buffer, 0, 4096);
-| 
-| Do we have to memset them? That's not going to speed things up.
-
-I agree about the speed, specially since we have a larger buffer. But we
-are reusing the buffer for independent events and some fields need to be 0
-(hence the zalloc in the current code).
-
----
-
-
->From 545ad0771ef8f22085ed8bb486f0a81b3afc5757 Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Tue, 9 Dec 2014 22:17:46 -0500
-Subject: [PATCH 1/2] powerpc/perf/hv-24x7: Use per-cpu page buffer
-
-The 24x7 counters are continuously running and not updated on an interrupt.
-So we record the event counts when stopping the event or deleting it.
-
-But to "read" a single counter in 24x7, we allocate a page and pass it
-into the hypervisor (The HV returns the page full of counters from which
-we extract the specific counter for this event).
-
-We allocate a page using GFP_USER and when deleting the event, we end up
-with the following warning because we are blocking in interrupt context.
-
-	[  698.641709] BUG: scheduling while atomic: swapper/0/0/0x10010000
-
-We could use GFP_ATOMIC but that could result in failures. Pre-allocate
-a buffer so we don't have to allocate in interrupt context. Further as
-Michael Ellerman suggested, use Per-CPU buffer so we only need to allocate
-once per CPU.
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- arch/powerpc/perf/hv-24x7.c | 21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
-
-Changelog[v2]:
-	[Michael Ellerman] Ensure buffer is aligned to 4K.
-
-
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index dba3408..d073e06 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -217,11 +217,14 @@ static bool is_physical_domain(int domain)
- 		domain == HV_24X7_PERF_DOMAIN_PHYSICAL_CORE;
- }
- 
-+DEFINE_PER_CPU(char, hv_24x7_reqb[4096]) __aligned(4096);
-+DEFINE_PER_CPU(char, hv_24x7_resb[4096]) __aligned(4096);
-+
- static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 					 u16 lpar, u64 *res,
- 					 bool success_expected)
- {
--	unsigned long ret = -ENOMEM;
-+	unsigned long ret;
- 
- 	/*
- 	 * request_buffer and result_buffer are not required to be 4k aligned,
-@@ -243,13 +246,11 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
- 	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
- 
--	request_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
--	if (!request_buffer)
--		goto out;
-+	request_buffer = (void *)get_cpu_var(hv_24x7_reqb);
-+	result_buffer = (void *)get_cpu_var(hv_24x7_resb);
- 
--	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
--	if (!result_buffer)
--		goto out_free_request_buffer;
-+	memset(request_buffer, 0, 4096);
-+	memset(result_buffer, 0, 4096);
- 
- 	*request_buffer = (struct reqb) {
- 		.buf = {
-@@ -278,15 +279,11 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 				domain, offset, ix, lpar, ret, ret,
- 				result_buffer->buf.detailed_rc,
- 				result_buffer->buf.failing_request_ix);
--		goto out_free_result_buffer;
-+		goto out;
- 	}
- 
- 	*res = be64_to_cpu(result_buffer->result);
- 
--out_free_result_buffer:
--	kfree(result_buffer);
--out_free_request_buffer:
--	kfree(request_buffer);
- out:
- 	return ret;
- }
--- 
-1.8.3.1
+>+			bridge->has_mem64_res = true;
+>+			break;
+>+		}
+>+	}
+>+
+> 	down_write(&pci_bus_sem);
+> 	list_add_tail(&b->node, &pci_root_buses);
+> 	up_write(&pci_bus_sem);
+>Index: linux-2.6/include/linux/pci.h
+>===================================================================
+>--- linux-2.6.orig/include/linux/pci.h
+>+++ linux-2.6/include/linux/pci.h
+>@@ -407,6 +407,7 @@ struct pci_host_bridge {
+> 	struct list_head windows;	/* pci_host_bridge_windows */
+> 	void (*release_fn)(struct pci_host_bridge *);
+> 	void *release_data;
+>+	bool has_mem64_res;
+> };
+>
+> #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
+>Index: linux-2.6/drivers/pci/setup-bus.c
+>===================================================================
+>--- linux-2.6.orig/drivers/pci/setup-bus.c
+>+++ linux-2.6/drivers/pci/setup-bus.c
+>@@ -693,6 +693,9 @@ static void pci_bridge_check_ranges(stru
+> 		}
+> 	}
+>
+>+        if (!pcibios_host_bridge_has_mem64_res(bus))
+>+                b_res[2].flags &= ~IORESOURCE_MEM_64;
+>+
+> 	/* double check if bridge does support 64 bit pref */
+> 	if (b_res[2].flags & IORESOURCE_MEM_64) {
+> 		u32 mem_base_hi, tmp;
+>
 
