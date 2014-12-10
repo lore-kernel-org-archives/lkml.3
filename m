@@ -1,50 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158AbaLJUlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:41:17 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:16689 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116AbaLJUlP (ORCPT
+	id S933196AbaLJUmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:42:25 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:45190 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116AbaLJUmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:41:15 -0500
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
-        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/22] [SCSI] mpt2sas: Complete the SCSI command with DID_RESET status for log_info value 0x0x32010081
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1416467155-16869-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-	<1416467155-16869-8-git-send-email-Sreekanth.Reddy@avagotech.com>
-	<yq1a934i055.fsf@sermon.lab.mkp.net>
-	<CAK=zhgr-+MaT6UeXR96G-nMGfo8RdmHVRN1wkUKjz7h6gwLNhg@mail.gmail.com>
-Date: Wed, 10 Dec 2014 15:40:38 -0500
-In-Reply-To: <CAK=zhgr-+MaT6UeXR96G-nMGfo8RdmHVRN1wkUKjz7h6gwLNhg@mail.gmail.com>
-	(Sreekanth Reddy's message of "Tue, 9 Dec 2014 17:38:32 +0530")
-Message-ID: <yq161djdyrd.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 10 Dec 2014 15:42:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <54863F72.1060401@synaptics.com>
+References: <1416872246-9632-1-git-send-email-aduggan@synaptics.com>
+	<54863F72.1060401@synaptics.com>
+Date: Wed, 10 Dec 2014 15:42:22 -0500
+Message-ID: <CAN+gG=GLcmMFxpScE4h6mrEruNTOFXhJE9xRB16fXds1du3A5A@mail.gmail.com>
+Subject: Re: [PATCH v2] HID: rmi: Scan the report descriptor to determine if
+ the device is suitable for the hid-rmi driver
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+Hi Andrew,
 
-Sreekanth> For any SCSI command, if the driver receives IOC status =
-Sreekanth> SCSI_IOC_TERMINATED and log info = 0x32010081 then that
-Sreekanth> command will be completed with DID_RESET host status.
->> 
->> What does that log info value mean?
+On Mon, Dec 8, 2014 at 7:16 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
+> On 11/24/2014 03:37 PM, Andrew Duggan wrote:
+>>
+>> On composite HID devices there may be multiple HID devices on separate
+>> interfaces, but hid-rmi
+>> should only bind to the touchpad. The previous version simply checked that
+>> the interface protocol
+>> was set to mouse. Unfortuately, it is not always the case that the
+>> touchpad has the mouse interface
+>> protocol set. This patch takes a different approach and scans the report
+>> descriptor looking for
+>> the Generic Desktop Pointer usage and the Vendor Specific Top Level
+>> Collection needed by the
+>> hid-rmi driver to interface with the device.
+>>
+>> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+>> ---
+>> This is a second attempt at the patch I submitted back in October. Instead
+>> of looking for specific
+>> HID reports this patch looks for the Generic Desktop Pointer usage. Having
+>> that usage along with
+>> the vendor specific collection seems to be a distinctive enough to id the
+>> Synaptics touchpad in
+>> the composite USB device.
+>
+> Any comments on this patch?
 
-Sreekanth> The meaning of this log info value is "Virtual IO has failed
-Sreekanth> and has to be retried".
+Sorry for the lag on this one.
 
-OK, I'd prefer to see that documented in the patch.
+>
+> Thanks,
+> Andrew
+>
+>>   drivers/hid/hid-core.c | 21 ++++++++++++++++-----
+>>   include/linux/hid.h    |  4 +++-
+>>   2 files changed, 19 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> index 12b6e67..ba9dc59 100644
+>> --- a/drivers/hid/hid-core.c
+>> +++ b/drivers/hid/hid-core.c
+>> @@ -698,10 +698,20 @@ static void hid_scan_feature_usage(struct hid_parser
+>> *parser, u32 usage)
+>>   static void hid_scan_collection(struct hid_parser *parser, unsigned
+>> type)
+>>   {
+>>         struct hid_device *hid = parser->device;
+>> +       int i;
+>>         if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
+>>             type == HID_COLLECTION_PHYSICAL)
+>>                 hid->group = HID_GROUP_SENSOR_HUB;
+>> +
+>> +       if ((parser->global.usage_page << 16) == HID_UP_GENDESK)
+>> +               for (i = 0; i < parser->local.usage_index; i++)
+>> +                       if (parser->local.usage[i] == HID_GD_POINTER)
+>> +                               parser->scan_flags
+>> +                                       |= HID_SCAN_FLAG_GENDESK_POINTER;
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Change GENDESK into GD (or remove it) and the line will fit on 80 chars :)
+
+>> +
+>> +       if ((parser->global.usage_page << 16) == HID_UP_MSVENDOR)
+>> +               parser->scan_flags |= HID_SCAN_FLAG_VENDOR_SPECIFIC;
+
+This, I don't completely like it.
+
+We should have "if ((parser->global.usage_page << 16) >=
+HID_UP_MSVENDOR)". The HUT 1.12 specifies that usage pages between
+0xff00 and 0xffff are vendor specific. So if we want to put a flag on
+it, then using ">="is more appropriate.
+
+Side note, we should really rename this #define HID_UP_MSVENDOR, this
+has nothing to do with Microsoft.
+
+>>   }
+>>     static int hid_scan_main(struct hid_parser *parser, struct hid_item
+>> *item)
+>> @@ -783,11 +793,12 @@ static int hid_scan_report(struct hid_device *hid)
+>>         * Vendor specific handlings
+>>         */
+>>         if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+>> -           (hid->group == HID_GROUP_GENERIC) &&
+>> -           /* only bind to the mouse interface of composite USB devices
+>> */
+>> -           (hid->bus != BUS_USB || hid->type == HID_TYPE_USBMOUSE))
+>> -               /* hid-rmi should take care of them, not hid-generic */
+>> -               hid->group = HID_GROUP_RMI;
+>> +           (hid->group == HID_GROUP_GENERIC)) {
+>> +               if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
+>> +                   && (parser->scan_flags &
+>> HID_SCAN_FLAG_GENDESK_POINTER))
+>> +                       /* hid-rmi should take care of them, not
+>> hid-generic */
+>> +                       hid->group = HID_GROUP_RMI;
+>> +       }
+
+I prefer it. The differentiation is done at the report descriptor
+level, it's better for me.
+
+>>         /*
+>>          * Vendor specific handlings
+>> diff --git a/include/linux/hid.h b/include/linux/hid.h
+>> index f53c4a9..b019f15 100644
+>> --- a/include/linux/hid.h
+>> +++ b/include/linux/hid.h
+>> @@ -547,7 +547,9 @@ static inline void hid_set_drvdata(struct hid_device
+>> *hdev, void *data)
+>>   #define HID_GLOBAL_STACK_SIZE 4
+>>   #define HID_COLLECTION_STACK_SIZE 4
+>>   -#define HID_SCAN_FLAG_MT_WIN_8                       0x00000001
+>> +#define HID_SCAN_FLAG_MT_WIN_8                 BIT(0)
+>> +#define HID_SCAN_FLAG_VENDOR_SPECIFIC          BIT(1)
+>> +#define HID_SCAN_FLAG_GENDESK_POINTER          BIT(2)
+>>     struct hid_parser {
+>>         struct hid_global     global;
+>
+>
+
+With the minors comments I expressed, this patch is:
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Thanks Andrew!
+
+Cheers,
+Benjamin
