@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaLJECZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 23:02:25 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47715 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaLJECX (ORCPT
+	id S1754928AbaLJEFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 23:05:41 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42377 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869AbaLJEFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 23:02:23 -0500
-Date: Tue, 9 Dec 2014 20:02:19 -0800
+	Tue, 9 Dec 2014 23:05:39 -0500
+Date: Tue, 9 Dec 2014 20:05:36 -0800
 From: Jeremiah Mahler <jmmahler@gmail.com>
 To: Dudley Du <dudley.dulixin@gmail.com>
 Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v13 10/12] input: cyapa: add gen5 trackpad device read
- baseline function support
-Message-ID: <20141210040219.GB4173@hudson.localdomain>
+Subject: Re: [PATCH v13 11/12] input: cyapa: add gen5 trackpad device force
+ re-calibrate function support
+Message-ID: <20141210040536.GC4173@hudson.localdomain>
 Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
 	Dudley Du <dudley.dulixin@gmail.com>, dmitry.torokhov@gmail.com,
 	rydberg@euromail.se, bleung@google.com, linux-input@vger.kernel.org,
 	linux-kernel@vger.kernel.org
 References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
- <1418116304-11392-11-git-send-email-dudley.dulixin@gmail.com>
+ <1418116304-11392-12-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418116304-11392-11-git-send-email-dudley.dulixin@gmail.com>
+In-Reply-To: <1418116304-11392-12-git-send-email-dudley.dulixin@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,20 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dudley,
 
-On Tue, Dec 09, 2014 at 05:11:42PM +0800, Dudley Du wrote:
-> Add read baseline function supported for gen5 trackpad device,
-> it can be used through sysfs baseline interface.
+On Tue, Dec 09, 2014 at 05:11:43PM +0800, Dudley Du wrote:
+> Add force re-calibrate function supported for gen5 trackpad device,
+> it can be used through sysfs calibrate interface.
 > TEST=test on Chromebooks.
 > 
 > Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
 > ---
-[...]
+>  drivers/input/mouse/cyapa_gen5.c | 65 ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 65 insertions(+)
+> 
+> diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+> index 5bebee1..7d96904 100644
+> --- a/drivers/input/mouse/cyapa_gen5.c
+> +++ b/drivers/input/mouse/cyapa_gen5.c
+> @@ -1581,6 +1581,70 @@ static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
 >  	return 0;
 >  }
 >  
-> +static int cyapa_gen5_resume_scanning(struct cyapa *cyapa)
+> +static int cyapa_gen5_calibrate_pwcs(struct cyapa *cyapa,
+> +		u8 calibrate_sensing_mode_type)
 > +{
-> +	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x04 };
+> +	u8 cmd[8];
 > +	u8 resp_data[6];
 > +	int resp_len;
 > +	int error;
@@ -54,48 +62,6 @@ On Tue, Dec 09, 2014 at 05:11:42PM +0800, Dudley Du wrote:
                        ^^^^^^^^^
 					   buffered
 
-And there are three more below.
-
-> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-> +
-> +	resp_len = 6;
-> +	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-> +			cmd, 7,
-> +			resp_data, &resp_len,
-> +			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-> +	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x04))
-> +		return -EINVAL;
-> +
-> +	/* Try to dump all bufferred data when resuming scanning. */
-> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-> +
-> +	return 0;
-> +}
-> +
-> +static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
-> +{
-> +	u8 cmd[7] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x03 };
-> +	u8 resp_data[6];
-> +	int resp_len;
-> +	int error;
-> +
-> +	/* Try to dump all bufferred data before doing command. */
-> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-> +
-> +	resp_len = 6;
-> +	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-> +			cmd, 7,
-> +			resp_data, &resp_len,
-> +			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-> +	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x03))
-> +		return -EINVAL;
-> +
-> +	/* Try to dump all bufferred data when suspending scanning. */
-> +	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-> +
-> +	return 0;
-> +}
-> +
 [...]
 
 -- 
