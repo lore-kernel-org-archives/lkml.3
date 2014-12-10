@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734AbaLJMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:20:25 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45926 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaLJMUW (ORCPT
+	id S1754164AbaLJMVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:21:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37738 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaLJMVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:20:22 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-ef-54883a8415aa
-Message-id: <54883A70.7070903@samsung.com>
-Date: Wed, 10 Dec 2014 13:20:00 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>, linux-leds@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Andrzej Hajda <a.hajda@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH/RFC v9 06/19] DT: Add documentation for the mfd Maxim
- max77693
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-7-git-send-email-j.anaszewski@samsung.com>
- <20141204100706.GP14746@valkosipuli.retiisi.org.uk>
- <54804840.4030202@samsung.com> <20141204161201.GB29080@amd>
-In-reply-to: <20141204161201.GB29080@amd>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t/xa7otVh0hBsd+i1jcWneO1WLjjPWs
-	Fkd3TmSyuP7lOavF/CNAsf43C1ktzr1ayWjRe/U5o8XZpjfsFve/HmW0uLxrDpvF1jfrGC16
-	NmxltVh6/SKTxd1TR9ksJkxfy2LRuvcIu8XuXU9ZLc7sX8nmIOyxZt4aRo/Lfb1MHjtn3WX3
-	WLn8C5vH4a8LWTw2repk87hzbQ+bx575P1g9+rasYvRYsfo7u8fnTXIB3FFcNimpOZllqUX6
-	dglcGav/rGIqeCBYcWF9TgPjZL4uRk4OCQETiXu/ZzJC2GISF+6tZ+ti5OIQEljKKLF12SVm
-	COcTo8S9a3+AMhwcvAJaEv8mq4M0sAioStx/PY0JxGYTMJToPdoHNkhUIELi5N097CA2r4Cg
-	xI/J91hAbBEBH4mbX68wgsxkFnjILPHp8hywBmGBEImt+0+zQCz7zShxaedVdpBlnAKaEvee
-	m4OYzAJ6EvcvaoGUMwvIS2xe85Z5AqPALCQrZiFUzUJStYCReRWjaGppckFxUnqukV5xYm5x
-	aV66XnJ+7iZGSFR+3cG49JjVIUYBDkYlHt4dim0hQqyJZcWVuYcYJTiYlUR430h2hAjxpiRW
-	VqUW5ccXleakFh9iZOLglGpgLLK+pxY9tWVRYUP3923LRHXWFN25Lr963Z5dd8oU7W7uZCwp
-	WGmQV8vL9ZIrXcRK2as3Z0beYeHUSr63aw/1C05967Vg51EvgYP9PpLLvTZvv7amu33z3Vky
-	sq58z6bUF2s3rZw6Py7t8knZiRsc5A/J3IvfYzfzMSPDVD/dLrdt1XZ6C253KrEUZyQaajEX
-	FScCAMAMfyqoAgAA
+	Wed, 10 Dec 2014 07:21:12 -0500
+Date: Wed, 10 Dec 2014 13:21:07 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        p.zabel@pengutronix.de, shawn.guo@linaro.org, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, mturquette@linaro.org, airlied@linux.ie
+Subject: Re: [PATCH RFC 04/15] drm/dsi: Do not add DSI devices for the child
+ nodes with input-port property
+Message-ID: <20141210122105.GC23558@ulmo.nvidia.com>
+References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+ <1418200648-32656-5-git-send-email-Ying.Liu@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PuGuTyElPB9bOcsM"
+Content-Disposition: inline
+In-Reply-To: <1418200648-32656-5-git-send-email-Ying.Liu@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 04/12/14 17:12, Pavel Machek wrote:
->>>> +- maxim,boost-mode :
->>>> > >>+	In boost mode the device can produce up to 1.2A of total current
->>>> > >>+	on both outputs. The maximum current on each output is reduced
->>>> > >>+	to 625mA then. If there are two child led nodes defined then boost
->>>> > >>+	is enabled by default.
->>>> > >>+	Possible values:
->>>> > >>+		MAX77693_LED_BOOST_OFF - no boost,
->>>> > >>+		MAX77693_LED_BOOST_ADAPTIVE - adaptive mode,
->>>> > >>+		MAX77693_LED_BOOST_FIXED - fixed mode.
->>>> > >>+- maxim,boost-vout : Output voltage of the boost module in millivolts.
->>>> > >>+- maxim,vsys-min : Low input voltage level in millivolts. Flash is not fired
->>>> > >>+	if chip estimates that system voltage could drop below this level due
->>>> > >>+	to flash power consumption.
->>>> > >>+
->>>> > >>+Required properties of the LED child node:
->>>> > >>+- label : see Documentation/devicetree/bindings/leds/common.txt
->>>> > >>+- maxim,fled_id : Identifier of the fled output the led is connected to;
->>> > >
->>> > >I'm pretty sure this will be needed for about every chip that can drive
->>> > >multiple LEDs. Shouldn't it be documented in the generic documentation?
->> > 
->> > OK.
->
-> Well... "fled_id" is not exactly suitable name. On other busses, it
-> would be "reg = <1>"?
+--PuGuTyElPB9bOcsM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think we need to clarify what the LED device node subnodes really mean.
-I thought initially they describe a physical current output of the LED
-controller, but it turns out the subnode corresponds to a LED attached
-to the LED controller.  Since a LED can be connected to multiple outputs
-of the LED controller I think 'reg' property doesn't make sense here.
+On Wed, Dec 10, 2014 at 04:37:17PM +0800, Liu Ying wrote:
+> The MIPI DSI bus driver would try to add a DSI device for a host's every
+> child node which contains the reg property.  Unfortunately, the existing
+> i.MX6Q/SDL MIPI DSI host device tree node's child nodes contain the reg
 
-Then presumably we should use a property in each subnode, telling which
-LED controller outputs a LED is connected to?
+There aren't any existing nodes for the DSI host on i.MX. This patch
+series adds support for them.
 
-For instance, if we assign numbers 0, 1 to FLED1, FLED2 outputs of
-MAX77693 and there is just one LED connected to those outputs we would
-have something like:
+> property, but the child nodes are ports pointing to dedicated CRTCs.
+> So, this patch phases out the child nodes with input-port property before
+> adding DSI devices for them and updates the MIPI DSI bus OF binding
+> documentation.
+>=20
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> ---
+>  Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt | 4 ++++
+>  drivers/gpu/drm/drm_mipi_dsi.c                              | 5 +++--
+>  2 files changed, 7 insertions(+), 2 deletions(-)
 
-max77693: led {
-	compatible = "maxim,max77693-led";	
-	...
-	led1 {
-		maxim,fled-sources = <0 1>;
-		...
-	};
-};
+Sorry, but NAK. There's no need for this special-case. I'll go into more
+detail in response to patch 09/15.
 
-Feel free to propose better name for the property, I guess we need to
-avoid "maxim,current-sources" due to ambiguity of the word "current".
+Thierry
 
---
-Regards,
-Sylwester
+--PuGuTyElPB9bOcsM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUiDqxAAoJEN0jrNd/PrOhVKgP/juzUrsAppVY2PtOlvuMiJBm
+GphVtL7zCISpwBveA6NvoY7/i+j5VgpFHcMdOr5QQEPs7+CjbaHNJMPK6wVrT9m2
+QjWpwBn+K2ra0oK4Lf4lPlBMhMlt6eYMkxJ2xJoRU0SK7BozWiCKvs807yA5wBcf
+qhd+hv9/R/DwK0WZwU7SpgG3B0cv1ua4zvggNA0DQ6V/p9jqQKG9RJl6Cew2mF54
+/up7H0GZv15BcdG8ZezwKulOGRkcV+G1qCXj041T+6TnDUnuIvQS1wop3yZY2wvT
+DLdxDMxczVjKoBivoBmHWsogrl7vftpSZy0vvjh9Nqw+eLe16X2oMC/lNh9GdikQ
+zpS7lhoNBQWgXyHZrv8HbZqQlNTsVR6NZuEi4j5YlTt15DuK7/R6oOf8RKHve0jP
+jc5UvygOoRkiGh07iZjVo5sAv/r680yiFLuDA4YnkNaKUeDXoWph6OBx2/5KNTCS
+qiYMjNWzY6dCupID9kINctV/DtOBoQZP+Z+vFmZCRE0xPt6x/u6kmj5M0dRcK0bj
+SMMHSN4GvJL4+dvp3QXR3rb4bnlRNdrQ2UX+GPA0b/X28Aol50WOLvhx0eVKJdEL
+KWzidhWCR+ygs0d4NAlPRzL/y3ARggwoSGJKrLDlcJBk4Y8MAmzlOiLLwjnmeYVw
+8r3MbIrxfU7STF7njSt+
+=ckC4
+-----END PGP SIGNATURE-----
+
+--PuGuTyElPB9bOcsM--
