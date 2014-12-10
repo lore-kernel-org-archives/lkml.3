@@ -1,65 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056AbaLJQtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:49:25 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16230 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754895AbaLJQtX (ORCPT
+	id S1758126AbaLJQuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:50:22 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52238 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958AbaLJQuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:49:23 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX195elV0nLEPoBy9+uX5Vh4Q
-Date: Wed, 10 Dec 2014 08:47:35 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Ravikumar Kattekola <rk@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/2] ARM: dts: dra7-evm: Regulator max voltage fixes
-Message-ID: <20141210164734.GE30437@atomide.com>
-References: <1417608237-12258-1-git-send-email-rk@ti.com>
- <547F0A57.7040806@ti.com>
+	Wed, 10 Dec 2014 11:50:20 -0500
+Date: Wed, 10 Dec 2014 17:50:18 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141210165018.GG1863@nanopsycho.orion>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547F0A57.7040806@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [141203 05:06]:
-> On 12/03/2014 06:03 AM, Ravikumar Kattekola wrote:
-> > Hi,
-> > 
-> > This set does a minor fix and an update:
-> > 
-> >    - Fix a typo in the max voltage property of smps6 (vdd_gpu) regulator node added by
-> >      the patch : c56a831ca47e ("ARM: dts: DRA7: Add TPS659038 PMIC nodes")
-> > 
-> >    - Update max voltage property of smps7 (vdd_core) regulator node to align with the 
-> >      latest Data Manual
-> > 
-> > Regards,
-> > RK
-> > 
-> > Ravikumar Kattekola (2):
-> >   ARM: dts: dra7-evm: Fix typo in SMPS6 (VDD_GPU) max voltage
-> >   ARM: dts: dra7-evm: Update SMPS7 (VDD_CORE) max voltage to match DM
-> > 
-> >  arch/arm/boot/dts/dra7-evm.dts  |    4 ++--
-> >  arch/arm/boot/dts/dra72-evm.dts |    2 +-
-> >  2 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> These apply to
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.19/dt-v2
-> 
-> Acked-by: Nishanth Menon <nm@ti.com>
+Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+>From: Marco Varlese <marco.varlese@intel.com>
+>
+>Switch hardware offers a list of attributes that are configurable
+>on a per port basis.
+>This patch provides a mechanism to configure switch ports by adding
+>an NDO for setting specific values to specific attributes.
+>There will be a separate patch that extends iproute2 to call the
+>new NDO.
 
-Applying both into omap-for-v3.19/fixes thanks.
 
-Tony
+What are these attributes? Can you give some examples. I'm asking
+because there is a plan to pass generic attributes to switch ports
+replacing current specific ndo_switch_port_stp_update. In this case,
+bridge is setting that attribute.
+
+Is there need to set something directly from userspace or does it make
+rather sense to use involved bridge/ovs/bond ? I think that both will be
+needed.
+
+
+>
+>Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+>---
+> include/linux/netdevice.h    |  5 +++++
+> include/uapi/linux/if_link.h |  1 +
+> net/core/rtnetlink.c         | 33 +++++++++++++++++++++++++++++++++
+> 3 files changed, 39 insertions(+)
+>
+>diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+>index c31f74d..4881c7b 100644
+>--- a/include/linux/netdevice.h
+>+++ b/include/linux/netdevice.h
+>@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+>  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+>  *	Called to notify switch device port of bridge port STP
+>  *	state change.
+>+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+>+ *                                u32 attr, u64 value);
+>+ *	Called to set specific switch ports attributes.
+>  */
+> struct net_device_ops {
+> 	int			(*ndo_init)(struct net_device *dev);
+>@@ -1185,6 +1188,8 @@ struct net_device_ops {
+> 							    struct netdev_phys_item_id *psid);
+> 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
+> 							      u8 state);
+>+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
+>+							   u32 attr, u64 value);
+> #endif
+> };
+> 
+>diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+>index f7d0d2d..b35c314 100644
+>--- a/include/uapi/linux/if_link.h
+>+++ b/include/uapi/linux/if_link.h
+>@@ -146,6 +146,7 @@ enum {
+> 	IFLA_PHYS_PORT_ID,
+> 	IFLA_CARRIER_CHANGES,
+> 	IFLA_PHYS_SWITCH_ID,
+>+	IFLA_SWITCH_PORT_CFG,
+> 	__IFLA_MAX
+> };
+> 
+>diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+>index eaa057f..e1be9ca 100644
+>--- a/net/core/rtnetlink.c
+>+++ b/net/core/rtnetlink.c
+>@@ -1389,6 +1389,25 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+> 	return 0;
+> }
+> 
+
+I believe that it would be better to move the code below to
+net/switchdev/switchdev.c
+
+
+>+#ifdef CONFIG_NET_SWITCHDEV
+>+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
+>+{
+>+	int rem, err = -EINVAL;
+>+	struct nlattr *v;
+>+	const struct net_device_ops *ops = dev->netdev_ops;
+>+
+>+	nla_for_each_nested(v, attr, rem) {
+>+		u32 op = nla_type(v);
+>+		u64 value = nla_get_u64(v);
+>+
+>+		err = ops->ndo_switch_port_set_cfg(dev, op, value);
+>+		if (err)
+>+			break;
+>+	}
+>+	return err;
+>+}
+>+#endif
+>+
+> static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+> {
+> 	int rem, err = -EINVAL;
+>@@ -1740,6 +1759,20 @@ static int do_setlink(const struct sk_buff *skb,
+> 			status |= DO_SETLINK_NOTIFY;
+> 		}
+> 	}
+>+#ifdef CONFIG_NET_SWITCHDEV
+>+	if (tb[IFLA_SWITCH_PORT_CFG]) {
+>+		err = -EOPNOTSUPP;
+>+		if (!ops->ndo_switch_port_set_cfg)
+>+			goto errout;
+>+		if (!ops->ndo_switch_parent_id_get)
+>+			goto errout;
+>+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+>+		if (err < 0)
+>+			goto errout;
+>+
+>+		status |= DO_SETLINK_NOTIFY;
+>+	}
+>+#endif
+> 	err = 0;
+> 
+> errout:
+>-- 
+>1.8.5.3
+>
