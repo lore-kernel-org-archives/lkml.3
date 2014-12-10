@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681AbaLJLGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:06:19 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:38182 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbaLJLGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:06:17 -0500
-Date: Wed, 10 Dec 2014 03:06:12 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Dudley Du <dudl@cypress.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v13 09/12] input: cyapa: add gen5 trackpad device
- firmware update function support
-Message-ID: <20141210110612.GA10836@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Dudley Du <dudl@cypress.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
- <1418116304-11392-10-git-send-email-dudley.dulixin@gmail.com>
- <20141210033303.GA4173@hudson.localdomain>
- <20141210085455.GA7174@hudson.localdomain>
- <BN1PR06MB0708DF8CE49D491D55E4F00D1620@BN1PR06MB070.namprd06.prod.outlook.com>
+	id S1755615AbaLJLJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:09:06 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:42680 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753459AbaLJLJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 06:09:03 -0500
+Date: Wed, 10 Dec 2014 13:05:56 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
+        "'oleg@redhat.com'" <oleg@redhat.com>,
+        "'gorcunov@openvz.org'" <gorcunov@openvz.org>,
+        "'pfeiner@google.com'" <pfeiner@google.com>
+Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Message-ID: <20141210110556.GA10630@node.dhcp.inet.fi>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+ <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+ <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+ <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+ <20141208114601.GA28846@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BN1PR06MB0708DF8CE49D491D55E4F00D1620@BN1PR06MB070.namprd06.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dudley,
+On Wed, Dec 10, 2014 at 03:22:21PM +0800, Wang, Yalin wrote:
+> smaps_pte_entry() doesn't ignore zero_huge_page,
+> but it ignore zero_page, because vm_normal_page() will
+> ignore it. We remove vm_normal_page() call, because walk_page_range()
+> have ignore VM_PFNMAP vma maps, it's safe to just use pfn_valid(),
+> so that we can also consider zero_page to be a valid page.
 
-On Wed, Dec 10, 2014 at 09:19:19AM +0000, Dudley Du wrote:
-> Jeremiah,
-> 
-> Thank you very much for the solution. I will aplly it to my local patches immediately.
-> 
-> Do you think it is required to re-submit the patch set right now?
-> 
-
-I think you could if you want to or you could wait to see if any others
-provide more feedback.  It is up to you.
-
-> Thanks,
-> Dudley
-> 
-> > -----Original Message-----
-> > From: linux-input-owner@vger.kernel.org
-> > [mailto:linux-input-owner@vger.kernel.org] On Behalf Of Jeremiah Mahler
-> > Sent: 2014?12?10? 16:55
-> > To: Dudley Du
-> > Cc: linux-kernel@vger.kernel.org; linux-input@vger.kernel.org
-> > Subject: Re: [PATCH v13 09/12] input: cyapa: add gen5 trackpad device firmware
-> > update function support
-> >
-> > Dudley,
-[...]
+We fixed huge zero page accounting in smaps recentely. See mm tree.
 
 -- 
-- Jeremiah Mahler
+ Kirill A. Shutemov
