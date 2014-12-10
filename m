@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197AbaLJWVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:21:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43625 "EHLO mx1.redhat.com"
+	id S1758243AbaLJWV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:21:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758051AbaLJWVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:21:20 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] HID: logitech-hidpp: prefix the name with Logitech
-Date: Wed, 10 Dec 2014 17:21:10 -0500
-Message-Id: <1418250070-28604-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1758200AbaLJWVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 17:21:53 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCHv6 1/3] kernel: add TAINT_LIVEPATCH
+Date: Wed, 10 Dec 2014 16:21:07 -0600
+Message-Id: <291ceff8fc96eb4244141ebf5e53359af21d90be.1418248631.git.jpoimboe@redhat.com>
+In-Reply-To: <cover.1418248631.git.jpoimboe@redhat.com>
+References: <cover.1418248631.git.jpoimboe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current names are reported as "K750", "M705", and it can be misleading
-for the users when they look at their input device list.
+From: Seth Jennings <sjenning@redhat.com>
 
-Prefixing the names with "Logitech " makes things better.
+This adds a new taint flag to indicate when the kernel or a kernel
+module has been live patched.  This will provide a clean indication in
+bug reports that live patching was used.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Additionally, if the crash occurs in a live patched function, the live
+patch module will appear beside the patched function in the backtrace.
+
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
 ---
+ Documentation/oops-tracing.txt  | 2 ++
+ Documentation/sysctl/kernel.txt | 1 +
+ include/linux/kernel.h          | 1 +
+ kernel/panic.c                  | 2 ++
+ 4 files changed, 6 insertions(+)
 
-Hi Jiri,
-
-I'd love to see this one in 3.19 (after a strong review, of course).
-The idea came with the mouse DPI database that Peter is currently working on
-(see http://who-t.blogspot.com.au/2014/12/building-a-dpi-database-for-mice.html).
-
-I think, if you do not qualify the series for 3.19, we should drop it entirely.
-3.19 introduces the hidpp module and changes the labels. The DPI hwdb will check
-on the label to match the actual mouse, so if this one does not get into 3.19,
-we will end up in 3 entries for each Logitech device.
-
-Cheers,
-Benjamin
-
-
- drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
-
-diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index 3846305..8cf4352 100644
---- a/drivers/hid/hid-logitech-hidpp.c
-+++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
- 		(report->rap.sub_id == 0x41);
- }
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index beefb9f..f3ac05c 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -270,6 +270,8 @@ characters, each representing a particular tainted value.
  
-+/**
-+ * hidpp_prefix_name() prefixes the current given name with "Logitech ".
-+ */
-+static void hidpp_prefix_name(char **name, int name_length)
-+{
-+#define PREFIX_SIZE 9 /* "Logitech " */
-+
-+	int new_length;
-+	char *new_name;
-+
-+	if (name_length > PREFIX_SIZE &&
-+	    strncmp(*name, "Logitech ", PREFIX_SIZE) == 0)
-+		/* The prefix has is already in the name */
-+		return;
-+
-+	new_length = name_length + PREFIX_SIZE;
-+	new_name = kzalloc(new_length, GFP_KERNEL);
-+	if (!new_name)
-+		return;
-+
-+	snprintf(new_name, new_length, "Logitech %s", *name);
-+
-+	kfree(*name);
-+
-+	*name = new_name;
-+}
-+
- /* -------------------------------------------------------------------------- */
- /* HIDP++ 1.0 commands                                                        */
- /* -------------------------------------------------------------------------- */
-@@ -318,6 +345,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
- 		return NULL;
+  15: 'L' if a soft lockup has previously occurred on the system.
  
- 	memcpy(name, &response.rap.params[2], len);
++ 16: 'K' if the kernel has been live patched.
 +
-+	/* include the terminating '\0' */
-+	hidpp_prefix_name(&name, len + 1);
-+
- 	return name;
- }
+ The primary reason for the 'Tainted: ' string is to tell kernel
+ debuggers if this is a clean kernel or if anything unusual has
+ occurred.  Tainting is permanent: even if an offending module is
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 75511ef..83ab256 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -843,6 +843,7 @@ can be ORed together:
+ 8192 - An unsigned module has been loaded in a kernel supporting module
+        signature.
+ 16384 - A soft lockup has previously occurred on the system.
++32768 - The kernel has been live patched.
  
-@@ -489,6 +520,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
- 			feature_index, index, name + index,
- 			__name_length - index);
+ ==============================================================
  
-+	/* include the terminating '\0' */
-+	hidpp_prefix_name(&name, __name_length + 1);
-+
- 	return name;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 5449d2f..d03e3de 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -471,6 +471,7 @@ extern enum system_states {
+ #define TAINT_OOT_MODULE		12
+ #define TAINT_UNSIGNED_MODULE		13
+ #define TAINT_SOFTLOCKUP		14
++#define TAINT_LIVEPATCH			15
  
- out_err:
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4d8d6f9..8136ad7 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -226,6 +226,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+ 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
++	{ TAINT_LIVEPATCH,		'K', ' ' },
+ };
+ 
+ /**
+@@ -246,6 +247,7 @@ static const struct tnt tnts[] = {
+  *  'O' - Out-of-tree module has been loaded.
+  *  'E' - Unsigned module has been loaded.
+  *  'L' - A soft lockup has previously occurred.
++ *  'K' - Kernel has been live patched.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
 -- 
 2.1.0
 
