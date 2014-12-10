@@ -1,79 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842AbaLJSvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:51:33 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:25216 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932501AbaLJSvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:51:32 -0500
-Date: Wed, 10 Dec 2014 10:51:16 -0800
-From: Shaohua Li <shli@fb.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, <kernel-team@fb.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 2/3] X86: add a generic API to let vdso code detect
- context switch
-Message-ID: <20141210185116.GA12098@devbig257.prn2.facebook.com>
-References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
- <238c10795d7be218fea8d16ceb183e1e7450da0b.1418006970.git.shli@fb.com>
- <CALCETrW3NZmWEffa+G+c40zcuPcBAzckfn47bLh8-L2G+SfV=g@mail.gmail.com>
+	id S932913AbaLJSv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:51:56 -0500
+Received: from mail-bn1on0117.outbound.protection.outlook.com ([157.56.110.117]:9745
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932501AbaLJSvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 13:51:55 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dexuan Cui <decui@microsoft.com>
+Subject: RE: [PATCH 3/5] Tools: hv: address compiler warnings for
+ hv_kvp_daemon.c
+Thread-Topic: [PATCH 3/5] Tools: hv: address compiler warnings for
+ hv_kvp_daemon.c
+Thread-Index: AQHQE8eX+ZMZRRqUKk2w6iBWjIlqnJyJLPWg
+Date: Wed, 10 Dec 2014 18:51:53 +0000
+Message-ID: <BY2PR0301MB0711EF97E6C5294EFAD75E72A0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+ <1418140103-11854-4-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1418140103-11854-4-git-send-email-vkuznets@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ee43::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
+x-forefront-prvs: 0421BF7135
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(13464003)(377454003)(189002)(199003)(64706001)(110136001)(20776003)(107046002)(99286002)(97736003)(105586002)(21056001)(120916001)(99396003)(54206007)(106356001)(122556002)(40100003)(92566001)(76176999)(54356999)(50986999)(76576001)(54606007)(101416001)(87936001)(2656002)(106116001)(4396001)(77156002)(62966003)(33656002)(46102003)(86362001)(102836002)(19580405001)(68736005)(86612001)(31966008)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CALCETrW3NZmWEffa+G+c40zcuPcBAzckfn47bLh8-L2G+SfV=g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-10_08:2014-12-10,2014-12-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=39.3128602056297
- compositescore=0.928745990228454 urlsuspect_oldscore=0.928745990228454
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.928745990228454 spamscore=0
- recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412100178
-X-FB-Internal: deliver
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBAIq4JC008173
 
-On Wed, Dec 10, 2014 at 10:38:41AM -0800, Andy Lutomirski wrote:
-> On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
-> > vdso code can't disable preempt, so it can be preempted at any time.
-> > This makes a challenge to implement specific features. This patch adds a
-> > generic API to let vdso code detect context switch.
-> >
-> > With this patch, every cpu maintains a context switch count. The upper
-> > bits of the count is the logical cpu id, so the count can't be identical
-> > for any cpu. The low bits of the count will be increased for each
-> > context switch. For a x86_64 cpu with 4096 cpus, the context switch will
-> > be overflowed for 2^(64 - 12) context switch, which is a long time and can be
-> > ignored. The change of the count in giving time can be used to detect if
-> > context switch occurs.
+
+
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Tuesday, December 9, 2014 7:48 AM
+> To: KY Srinivasan
+> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org; Dexuan Cui
+> Subject: [PATCH 3/5] Tools: hv: address compiler warnings for
+> hv_kvp_daemon.c
 > 
-> Why do you need those high bits?  I don't understand how you could
-> possibly confuse one cpu's count with another's unless you fail to
-> make sure that you're reading the same address both times.
+> This patch addresses two types of compiler warnings:
+> ... warning: comparison between signed and unsigned integer expressions [-
+> Wsign-compare] and ... warning: pointer targets in passing argument N of
+> ‚Äòkvp_...‚Äô differ in signedness [-Wpointer-sign]
 > 
-> That being said, I don't like this patch.  I'm not sure I have a much
-> better idea, though.  More thoughts in the 0/0 email to follow.
-the vdso code doesn't disable preemption, so it can be migrated between
-cpus at any time, the usage is:
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Thanks Vitaly.
 
-get_countext_switch_count (in cpu A)
-do_something (in cpu B)
-get_countext_switch_count (in cpu C)
+K. Y
 
-The cpu A, B, C could be completely different. We want to make sure
-there is no preemption here and we use the context switch count to judge
-this. If the high bits is ignored, the context switch count could be
-identical even A != C, then our judgement using the switch count is
-wrong.
+> ---
+>  tools/hv/hv_kvp_daemon.c | 25 ++++++++++++-------------
+>  1 file changed, 12 insertions(+), 13 deletions(-)
+> 
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c index
+> 5a274ca..48a95f9 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -308,7 +308,7 @@ static int kvp_file_init(void)
+>  	return 0;
+>  }
+> 
+> -static int kvp_key_delete(int pool, const char *key, int key_size)
+> +static int kvp_key_delete(int pool, const __u8 *key, int key_size)
+>  {
+>  	int i;
+>  	int j, k;
+> @@ -351,8 +351,8 @@ static int kvp_key_delete(int pool, const char *key,
+> int key_size)
+>  	return 1;
+>  }
+> 
+> -static int kvp_key_add_or_modify(int pool, const char *key, int key_size,
+> const char *value,
+> -			int value_size)
+> +static int kvp_key_add_or_modify(int pool, const __u8 *key, int key_size,
+> +				 const __u8 *value, int value_size)
+>  {
+>  	int i;
+>  	int num_records;
+> @@ -405,7 +405,7 @@ static int kvp_key_add_or_modify(int pool, const char
+> *key, int key_size, const
+>  	return 0;
+>  }
+> 
+> -static int kvp_get_value(int pool, const char *key, int key_size, char *value,
+> +static int kvp_get_value(int pool, const __u8 *key, int key_size, __u8
+> +*value,
+>  			int value_size)
+>  {
+>  	int i;
+> @@ -437,8 +437,8 @@ static int kvp_get_value(int pool, const char *key, int
+> key_size, char *value,
+>  	return 1;
+>  }
+> 
+> -static int kvp_pool_enumerate(int pool, int index, char *key, int key_size,
+> -				char *value, int value_size)
+> +static int kvp_pool_enumerate(int pool, int index, __u8 *key, int key_size,
+> +				__u8 *value, int value_size)
+>  {
+>  	struct kvp_record *record;
+> 
+> @@ -659,7 +659,7 @@ static char *kvp_if_name_to_mac(char *if_name)
+>  	char    *p, *x;
+>  	char    buf[256];
+>  	char addr_file[256];
+> -	int i;
+> +	unsigned int i;
+>  	char *mac_addr = NULL;
+> 
+>  	snprintf(addr_file, sizeof(addr_file), "%s%s%s", "/sys/class/net/",
+> @@ -698,7 +698,7 @@ static char *kvp_mac_to_if_name(char *mac)
+>  	char    buf[256];
+>  	char *kvp_net_dir = "/sys/class/net/";
+>  	char dev_id[256];
+> -	int i;
+> +	unsigned int i;
+> 
+>  	dir = opendir(kvp_net_dir);
+>  	if (dir == NULL)
+> @@ -748,7 +748,7 @@ static char *kvp_mac_to_if_name(char *mac)
+> 
+> 
+>  static void kvp_process_ipconfig_file(char *cmd,
+> -					char *config_buf, int len,
+> +					char *config_buf, unsigned int len,
+>  					int element_size, int offset)
+>  {
+>  	char buf[256];
+> @@ -766,7 +766,7 @@ static void kvp_process_ipconfig_file(char *cmd,
+>  	if (offset == 0)
+>  		memset(config_buf, 0, len);
+>  	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
+> -		if ((len - strlen(config_buf)) < (element_size + 1))
+> +		if (len < strlen(config_buf) + element_size + 1)
+>  			break;
+> 
+>  		x = strchr(p, '\n');
+> @@ -914,7 +914,7 @@ static int kvp_process_ip_address(void *addrp,
+> 
+>  static int
+>  kvp_get_ip_info(int family, char *if_name, int op,
+> -		 void  *out_buffer, int length)
+> +		 void  *out_buffer, unsigned int length)
+>  {
+>  	struct ifaddrs *ifap;
+>  	struct ifaddrs *curp;
+> @@ -1017,8 +1017,7 @@ kvp_get_ip_info(int family, char *if_name, int op,
+>  					weight += hweight32(&w[i]);
+> 
+>  				sprintf(cidr_mask, "/%d", weight);
+> -				if ((length - sn_offset) <
+> -					(strlen(cidr_mask) + 1))
+> +				if (length < sn_offset + strlen(cidr_mask) + 1)
+>  					goto gather_ipaddr;
+> 
+>  				if (sn_offset == 0)
+> --
+> 1.9.3
 
-Thanks,
-Shaohua
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
