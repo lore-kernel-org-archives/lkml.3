@@ -1,186 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbaLJNsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:48:24 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:37582 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753017AbaLJNsW (ORCPT
+	id S1756822AbaLJNtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:49:50 -0500
+Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:55973 "EHLO
+	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753905AbaLJNtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 08:48:22 -0500
-Date: Wed, 10 Dec 2014 15:48:16 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Sakari Ailus <sakari.ailus@linux.intel.com>
-Subject: Re: [PATCH/RFC v9 19/19] leds: aat1290: add support for V4L2 Flash
- sub-device
-Message-ID: <20141210134816.GO15559@valkosipuli.retiisi.org.uk>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-20-git-send-email-j.anaszewski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417622814-10845-20-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Dec 2014 08:49:49 -0500
+Message-ID: <1418219380.3661.36.camel@linaro.org>
+Subject: Re: [PATCH v3] ARM: kprobes: Add test cases for stack consuming
+ instructions
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: masami.hiramatsu.pt@hitachi.com, lizefan@huawei.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 10 Dec 2014 13:49:40 +0000
+In-Reply-To: <5488483D.1080900@huawei.com>
+References: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>
+			 <1418047765-53197-6-git-send-email-wangnan0@huawei.com>
+			 <1418143407.3641.47.camel@linaro.org>
+		 <1418145071.3641.60.camel@linaro.org> <54880309.3010100@huawei.com>
+	 <1418214862.3661.17.camel@linaro.org> <5488483D.1080900@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01b-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+On Wed, 2014-12-10 at 21:18 +0800, Wang Nan wrote:
+[...]
+> Well, I'm just working on a patch which introducing a TEST_INTOFF and disable interrupts
+> for "MRS" testcase. Do you think it is inappropriate?
 
-On Wed, Dec 03, 2014 at 05:06:54PM +0100, Jacek Anaszewski wrote:
-> Add support for V4L2 Flash sub-device to the aat1290 LED Flash class
-> driver. The support allows for V4L2 Flash sub-device to take the control
-> of the LED Flash class device.
-> 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Sakari Ailus <sakari.ailus@linux.intel.com>
-> ---
->  drivers/leds/leds-aat1290.c |   61 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 61 insertions(+)
-> 
-> diff --git a/drivers/leds/leds-aat1290.c b/drivers/leds/leds-aat1290.c
-> index 15d969b..81a8f48 100644
-> --- a/drivers/leds/leds-aat1290.c
-> +++ b/drivers/leds/leds-aat1290.c
-> @@ -21,6 +21,7 @@
->  #include <linux/gpio.h>
->  #include <linux/of_gpio.h>
->  #include <linux/of.h>
-> +#include <media/v4l2-flash.h>
->  #include <linux/workqueue.h>
->  
->  #define AAT1290_MOVIE_MODE_CURRENT_ADDR	17
-> @@ -63,6 +64,7 @@ struct aat1290_led {
->  	struct mutex lock;
->  
->  	struct led_classdev_flash ldev;
-> +	struct v4l2_flash *v4l2_flash;
->  
->  	int flen_gpio;
->  	int en_set_gpio;
-> @@ -280,11 +282,51 @@ static void aat1290_init_flash_settings(struct aat1290_led *led,
->  	setting->val = setting->max;
->  }
->  
-> +#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-> +static void aat1290_init_v4l2_ctrl_config(struct aat1290_led_settings *s,
-> +					struct v4l2_flash_ctrl_config *config)
-> +{
-> +	struct led_flash_setting *setting;
-> +	struct v4l2_ctrl_config *c;
-> +
-> +	c = &config->intensity;
-> +	setting = &s->torch_brightness;
-> +	c->min = setting->min;
-> +	c->max = setting->max;
-> +	c->step = setting->step;
+That's what I started to do, implementing in a similar way to
+DONT_TEST_IN_ITBLOCK, and thought the same ints off feature could be
+used for the stack consuming instructions checks as well.
 
-Hmm. How does the intensity get configured over the V4L2 controls? Based on
-an earlier patch, the intensity control looks very much non-linear.
+Then I realised that for the MRS case it's no use turning ints off for a
+single iteration of a test, because the next iteration could see
+different results, so that would mean turning interrupts off for all
+iterations, which we can't do.
 
-> +	c->def = setting->val;
-> +
-> +	c = &config->flash_timeout;
-> +	setting = &s->flash_timeout;
-> +	c->min = setting->min;
-> +	c->max = setting->max;
-> +	c->step = setting->step;
-> +	c->def = setting->val;
-> +
-> +	config->has_external_strobe = false;
-> +}
-> +#else
-> +#define aat1290_init_v4l2_ctrl_config(s, config)
-> +#endif
-> +
->  static const struct led_flash_ops flash_ops = {
->  	.strobe_set = aat1290_led_flash_strobe_set,
->  	.timeout_set = aat1290_led_flash_timeout_set,
->  };
->  
-> +#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-> +static const struct v4l2_flash_ops v4l2_flash_ops = {
-> +	.external_strobe_set = NULL,
-> +};
-> +
-> +static const struct v4l2_flash_ops *get_v4l2_flash_ops(void)
-> +{
-> +	return &v4l2_flash_ops;
+Also, the FIQ flag may not be under our control if Linux isn't running
+in secure mode, and I was worried that in such cases we could see the
+value of the flag change if secure mode code chose to do so. (Though
+perhaps non-secure mode will always read FIQ flag as zero in such a
+case?)
 
-You can use v4l2_flash_ops directly, no need for a function to return them.
-
-> +}
-> +#else
-> +#define get_v4l2_flash_ops() (NULL)
-> +#endif
-> +
->  static int aat1290_led_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
-> @@ -292,6 +334,9 @@ static int aat1290_led_probe(struct platform_device *pdev)
->  	struct aat1290_led *led;
->  	struct led_classdev *led_cdev;
->  	struct led_classdev_flash *flash;
-> +#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-> +	struct v4l2_flash_ctrl_config v4l2_flash_config;
-> +#endif
->  	struct aat1290_led_settings settings;
->  	int flen_gpio, enset_gpio, ret;
->  
-> @@ -344,6 +389,9 @@ static int aat1290_led_probe(struct platform_device *pdev)
->  
->  	flash->timeout = settings.flash_timeout;
->  
-> +	/* Init V4L2 Flash controls basing on initialized settings */
-> +	aat1290_init_v4l2_ctrl_config(&settings, &v4l2_flash_config);
-> +
->  	/* Init led class */
->  	led_cdev = &flash->led_cdev;
->  	led_cdev->name = led->label;
-> @@ -361,8 +409,20 @@ static int aat1290_led_probe(struct platform_device *pdev)
->  	if (ret < 0)
->  		goto error_gpio_en_set;
->  
-> +	/* Create V4L2 Flash subdev. */
-> +	led->v4l2_flash = v4l2_flash_init(flash,
-> +					  get_v4l2_flash_ops(),
-> +					  dev_node,
-> +					  &v4l2_flash_config);
-
-Less newlines needed; up to you.
-
-> +	if (IS_ERR(led->v4l2_flash)) {
-> +		ret = PTR_ERR(led->v4l2_flash);
-> +		goto error_v4l2_flash_init;
-> +	}
-> +
->  	return 0;
->  
-> +error_v4l2_flash_init:
-> +	led_classdev_flash_unregister(flash);
->  error_gpio_en_set:
->  	if (gpio_is_valid(enset_gpio))
->  		gpio_free(enset_gpio);
-> @@ -378,6 +438,7 @@ static int aat1290_led_remove(struct platform_device *pdev)
->  {
->  	struct aat1290_led *led = platform_get_drvdata(pdev);
->  
-> +	v4l2_flash_release(led->v4l2_flash);
->  	led_classdev_flash_unregister(&led->ldev);
->  	cancel_work_sync(&led->work_brightness_set);
->  
+So in the end I thought the only robust way of writing the tests would
+be to ignore the values of the A and F flags.
 
 -- 
-Kind regards,
+Tixy
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+
