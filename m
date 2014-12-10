@@ -1,155 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196AbaLJUmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:42:25 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:45190 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116AbaLJUmX (ORCPT
+	id S933058AbaLJUq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:46:58 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58210 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932754AbaLJUq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:42:23 -0500
+	Wed, 10 Dec 2014 15:46:57 -0500
+Message-ID: <5488B138.4030106@linaro.org>
+Date: Wed, 10 Dec 2014 20:46:48 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <54863F72.1060401@synaptics.com>
-References: <1416872246-9632-1-git-send-email-aduggan@synaptics.com>
-	<54863F72.1060401@synaptics.com>
-Date: Wed, 10 Dec 2014 15:42:22 -0500
-Message-ID: <CAN+gG=GLcmMFxpScE4h6mrEruNTOFXhJE9xRB16fXds1du3A5A@mail.gmail.com>
-Subject: Re: [PATCH v2] HID: rmi: Scan the report descriptor to determine if
- the device is suitable for the hid-rmi driver
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jason Wessel <jason.wessel@windriver.com>
+CC: linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, Mike Travis <travis@sgi.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] kgdb: Timeout if secondary CPUs ignore the roundup
+References: <1408374110-19656-1-git-send-email-daniel.thompson@linaro.org> <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Hi Jason
 
-On Mon, Dec 8, 2014 at 7:16 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
-> On 11/24/2014 03:37 PM, Andrew Duggan wrote:
->>
->> On composite HID devices there may be multiple HID devices on separate
->> interfaces, but hid-rmi
->> should only bind to the touchpad. The previous version simply checked that
->> the interface protocol
->> was set to mouse. Unfortuately, it is not always the case that the
->> touchpad has the mouse interface
->> protocol set. This patch takes a different approach and scans the report
->> descriptor looking for
->> the Generic Desktop Pointer usage and the Vendor Specific Top Level
->> Collection needed by the
->> hid-rmi driver to interface with the device.
->>
->> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
->> ---
->> This is a second attempt at the patch I submitted back in October. Instead
->> of looking for specific
->> HID reports this patch looks for the Generic Desktop Pointer usage. Having
->> that usage along with
->> the vendor specific collection seems to be a distinctive enough to id the
->> Synaptics touchpad in
->> the composite USB device.
->
-> Any comments on this patch?
+On 11/11/14 17:50, Daniel Thompson wrote:
+> Currently if an active CPU fails to respond to a roundup request the
+> CPU that requested the roundup will become stuck. This needlessly
+> reduces the robustness of the debugger.
+> 
+> This patch introduces a timeout allowing the system state to be examined
+> even when the system contains unresponsive processors. It also modifies
+> kdb's cpu command to make it censor attempts to switch to unresponsive
+> processors and to report their state as (D)ead.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Cc: Mike Travis <travis@sgi.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Dimitri Sivanich <sivanich@sgi.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: kgdb-bugreport@lists.sourceforge.net
+> Cc: Ingo Molnar <mingo@kernel.org>
+> ---
+> 
+> Notes:
+>     I had to spin this one again due to an out-by-one in kdb_cpu() so
+>     I've tackled a couple of other small issues at the same time.
+>     
+>     v3:
+>     
+>     * Fix an out-by-one error in kdb_cpu().
+>     
+>     * Replace NR_CPUS with CONFIG_NR_CPUS to tell checkpatch that we
+>       really want a static limit (Jason Wessel).
+>     
+>     * Removed the "KGDB: " prefix from the pr_crit() in debug_core.c
+>       (kgdb-next contains a patch which introduced pr_fmt() to this file
+>       to the tag will now be applied automatically).
 
-Sorry for the lag on this one.
+It looks like this patch is still at v2 in your kgdb-next tree. It
+really would be better to switch it for v3 before sending Linus a pull
+request. My patch didn't introduce the out-by-one error mentioned about
+but the changes I made did change it from being a latent bug to a real one.
 
->
-> Thanks,
-> Andrew
->
->>   drivers/hid/hid-core.c | 21 ++++++++++++++++-----
->>   include/linux/hid.h    |  4 +++-
->>   2 files changed, 19 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->> index 12b6e67..ba9dc59 100644
->> --- a/drivers/hid/hid-core.c
->> +++ b/drivers/hid/hid-core.c
->> @@ -698,10 +698,20 @@ static void hid_scan_feature_usage(struct hid_parser
->> *parser, u32 usage)
->>   static void hid_scan_collection(struct hid_parser *parser, unsigned
->> type)
->>   {
->>         struct hid_device *hid = parser->device;
->> +       int i;
->>         if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
->>             type == HID_COLLECTION_PHYSICAL)
->>                 hid->group = HID_GROUP_SENSOR_HUB;
->> +
->> +       if ((parser->global.usage_page << 16) == HID_UP_GENDESK)
->> +               for (i = 0; i < parser->local.usage_index; i++)
->> +                       if (parser->local.usage[i] == HID_GD_POINTER)
->> +                               parser->scan_flags
->> +                                       |= HID_SCAN_FLAG_GENDESK_POINTER;
+Also, at this stage in the merge window I'm not sure what you plan to do
+with the other patches still pending from me. They've all been out for
+review for a long time but, obviously, haven't spent any time in linux-next:
 
-Change GENDESK into GD (or remove it) and the line will fit on 80 chars :)
 
->> +
->> +       if ((parser->global.usage_page << 16) == HID_UP_MSVENDOR)
->> +               parser->scan_flags |= HID_SCAN_FLAG_VENDOR_SPECIFIC;
+kdb: Remove stack dump when entering kgdb due to NMI
+http://thread.gmane.org/gmane.linux.kernel/1748706/focus=1823086
 
-This, I don't completely like it.
+kdb: Improve command output searching
+http://thread.gmane.org/gmane.linux.kernel.debugging.kgdb.bugs/6569/focus=1823109
 
-We should have "if ((parser->global.usage_page << 16) >=
-HID_UP_MSVENDOR)". The HUT 1.12 specifies that usage pages between
-0xff00 and 0xffff are vendor specific. So if we want to put a flag on
-it, then using ">="is more appropriate.
+kdb: Avoid printing KERN_ levels to consoles
+  (KERN_ levels are now not-printable characters so putting them to
+  consoles it bad)
+http://thread.gmane.org/gmane.linux.kernel.debugging.kgdb.bugs/6577/focus=112757
 
-Side note, we should really rename this #define HID_UP_MSVENDOR, this
-has nothing to do with Microsoft.
 
->>   }
->>     static int hid_scan_main(struct hid_parser *parser, struct hid_item
->> *item)
->> @@ -783,11 +793,12 @@ static int hid_scan_report(struct hid_device *hid)
->>         * Vendor specific handlings
->>         */
->>         if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
->> -           (hid->group == HID_GROUP_GENERIC) &&
->> -           /* only bind to the mouse interface of composite USB devices
->> */
->> -           (hid->bus != BUS_USB || hid->type == HID_TYPE_USBMOUSE))
->> -               /* hid-rmi should take care of them, not hid-generic */
->> -               hid->group = HID_GROUP_RMI;
->> +           (hid->group == HID_GROUP_GENERIC)) {
->> +               if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
->> +                   && (parser->scan_flags &
->> HID_SCAN_FLAG_GENDESK_POINTER))
->> +                       /* hid-rmi should take care of them, not
->> hid-generic */
->> +                       hid->group = HID_GROUP_RMI;
->> +       }
+Daniel.
 
-I prefer it. The differentiation is done at the report descriptor
-level, it's better for me.
 
->>         /*
->>          * Vendor specific handlings
->> diff --git a/include/linux/hid.h b/include/linux/hid.h
->> index f53c4a9..b019f15 100644
->> --- a/include/linux/hid.h
->> +++ b/include/linux/hid.h
->> @@ -547,7 +547,9 @@ static inline void hid_set_drvdata(struct hid_device
->> *hdev, void *data)
->>   #define HID_GLOBAL_STACK_SIZE 4
->>   #define HID_COLLECTION_STACK_SIZE 4
->>   -#define HID_SCAN_FLAG_MT_WIN_8                       0x00000001
->> +#define HID_SCAN_FLAG_MT_WIN_8                 BIT(0)
->> +#define HID_SCAN_FLAG_VENDOR_SPECIFIC          BIT(1)
->> +#define HID_SCAN_FLAG_GENDESK_POINTER          BIT(2)
->>     struct hid_parser {
->>         struct hid_global     global;
->
->
+>     v2:
+>     
+>     * Set CATASTROPHIC if the system contains unresponsive processors
+>       (Jason Wessel)
+>     
+> 
+>  kernel/debug/debug_core.c       | 9 +++++++--
+>  kernel/debug/kdb/kdb_debugger.c | 4 ++++
+>  kernel/debug/kdb/kdb_main.c     | 4 +++-
+>  3 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+> index 1adf62b39b96..f21580b347cc 100644
+> --- a/kernel/debug/debug_core.c
+> +++ b/kernel/debug/debug_core.c
+> @@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
+>  	int cpu;
+>  	int trace_on = 0;
+>  	int online_cpus = num_online_cpus();
+> +	u64 time_left;
+> 
+>  	kgdb_info[ks->cpu].enter_kgdb++;
+>  	kgdb_info[ks->cpu].exception_state |= exception_state;
+> @@ -595,9 +596,13 @@ return_normal:
+>  	/*
+>  	 * Wait for the other CPUs to be notified and be waiting for us:
+>  	 */
+> -	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
+> -				atomic_read(&slaves_in_kgdb)) != online_cpus)
+> +	time_left = loops_per_jiffy * HZ;
+> +	while (kgdb_do_roundup && --time_left &&
+> +	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
+> +		   online_cpus)
+>  		cpu_relax();
+> +	if (!time_left)
+> +		pr_crit("Timed out waiting for secondary CPUs.\n");
+> 
+>  	/*
+>  	 * At this point the primary processor is completely
+> diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+> index 8859ca34dcfe..15e1a7af5dd0 100644
+> --- a/kernel/debug/kdb/kdb_debugger.c
+> +++ b/kernel/debug/kdb/kdb_debugger.c
+> @@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
+>  		ks->pass_exception = 1;
+>  		KDB_FLAG_SET(CATASTROPHIC);
+>  	}
+> +	/* set CATASTROPHIC if the system contains unresponsive processors */
+> +	for_each_online_cpu(i)
+> +		if (!kgdb_info[i].enter_kgdb)
+> +			KDB_FLAG_SET(CATASTROPHIC);
+>  	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
+>  		KDB_STATE_CLEAR(SSBPT);
+>  		KDB_STATE_CLEAR(DOING_SS);
+> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+> index 379650b984f8..0c1dc7fa2e58 100644
+> --- a/kernel/debug/kdb/kdb_main.c
+> +++ b/kernel/debug/kdb/kdb_main.c
+> @@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
+>  	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
+>  		if (!cpu_online(i)) {
+>  			state = 'F';	/* cpu is offline */
+> +		} else if (!kgdb_info[i].enter_kgdb) {
+> +			state = 'D';	/* cpu is online but unresponsive */
+>  		} else {
+>  			state = ' ';	/* cpu is responding to kdb */
+>  			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
+> @@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
+>  	/*
+>  	 * Validate cpunum
+>  	 */
+> -	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
+> +	if ((cpunum >= CONFIG_NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
+>  		return KDB_BADCPUNUM;
+> 
+>  	dbg_switch_cpu = cpunum;
+> --
+> 1.9.3
+> 
 
-With the minors comments I expressed, this patch is:
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-
-Thanks Andrew!
-
-Cheers,
-Benjamin
