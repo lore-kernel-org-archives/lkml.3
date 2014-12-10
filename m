@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338AbaLJXvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:51:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33455 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758073AbaLJXvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:51:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,554,1413270000"; 
-   d="scan'208";a="621884207"
-Date: Wed, 10 Dec 2014 15:51:16 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 1/2] perf/x86/intel/uncore: Make sure only uncore events
- are collected
-Message-ID: <20141210235116.GL10824@tassilo.jf.intel.com>
-References: <1418243031-20367-1-git-send-email-jolsa@kernel.org>
- <1418243031-20367-2-git-send-email-jolsa@kernel.org>
+	id S1758424AbaLJXvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:51:35 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:37695 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758390AbaLJXve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 18:51:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418243031-20367-2-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141210232911.GE24163@wfg-t540p.sh.intel.com>
+References: <20141210232911.GE24163@wfg-t540p.sh.intel.com>
+Date: Wed, 10 Dec 2014 15:51:33 -0800
+Message-ID: <CAMEtUuxexMXtvK_R7YZEvx_iyK9mAx_zrqr1bkj3PsUwoq0p5A@mail.gmail.com>
+Subject: Re: [net: sock] BUG: unable to handle kernel NULL pointer dereference
+ at 0000000000000007
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKP <lkp@01.org>, LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 09:23:50PM +0100, Jiri Olsa wrote:
-> The uncore_collect_events functions assumes that event group
-> might contain only uncore events which is wrong, because it
-> might contain any type of events.
-> 
-> This bug leads to uncore framework touching 'not' uncore events,
-> which could end up all sorts of bugs.
+On Wed, Dec 10, 2014 at 3:29 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> 0day kernel testing robot got the below dmesg and the first bad commit is
+>
+>     net: sock: allow eBPF programs to be attached to sockets
 
-Thanks for tracking that down. Looks good to me.
+> [init] Kernel was tainted on startup. Will ignore flags that are already set.
+> [init] Started watchdog process, PID is 9354
+> [main] Main thread is alive.
+> [   21.233581] BUG: unable to handle kernel NULL pointer dereference at 0000000000000007
+> [   21.234709] IP: [<ffffffff8156ebda>] sk_attach_bpf+0x39/0xc2
 
--Andi
+thanks for the report! syscall fuzzer is great.
+I missed an extra check. Working on a fix.
