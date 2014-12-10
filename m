@@ -1,166 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524AbaLJIyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 03:54:15 -0500
-Received: from ozlabs.org ([103.22.144.67]:39991 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554AbaLJIyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 03:54:13 -0500
-Date: Wed, 10 Dec 2014 19:54:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hariprasad Shenai <hariprasad@chelsio.com>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-ID: <20141210195405.5af40846@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1755555AbaLJIzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:55:01 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:44948 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaLJIzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 03:55:00 -0500
+Date: Wed, 10 Dec 2014 00:54:55 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v13 09/12] input: cyapa: add gen5 trackpad device
+ firmware update function support
+Message-ID: <20141210085455.GA7174@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-input@vger.kernel.org
+References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+ <1418116304-11392-10-git-send-email-dudley.dulixin@gmail.com>
+ <20141210033303.GA4173@hudson.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=ckAssR/iWDt5AO31t3/Vem"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210033303.GA4173@hudson.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=ckAssR/iWDt5AO31t3/Vem
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Dudley,
 
-Hi all,
+On Tue, Dec 09, 2014 at 07:33:03PM -0800, Jeremiah Mahler wrote:
+> Dudley,
+> 
+> On Tue, Dec 09, 2014 at 05:11:41PM +0800, Dudley Du wrote:
+> > Add firmware image update function supported for gen5 trackpad device,
+> > it can be used through sysfs update_fw interface.
+> > TEST=test on Chromebooks.
+> > 
+> > Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> > ---
+> >  drivers/input/mouse/Kconfig      |   2 +-
+> >  drivers/input/mouse/cyapa_gen5.c | 290 +++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 291 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+> > index d8b46b0..63e8b40 100644
+> > --- a/drivers/input/mouse/Kconfig
+> > +++ b/drivers/input/mouse/Kconfig
+> > @@ -205,7 +205,7 @@ config MOUSE_BCM5974
+> >  
+> >  config MOUSE_CYAPA
+> >  	tristate "Cypress APA I2C Trackpad support"
+> > -	depends on I2C
+> > +	depends on I2C && CRC_ITU_T
+If this line is instead changed to:
 
-After merging the net-next tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
++  depends on I2C
++  select CRC_ITU_T
 
-drivers/net/ethernet/chelsio/cxgb4vf/built-in.o:(.opd+0x630): multiple defi=
-nition of `t4_bar2_sge_qregs'
-drivers/net/ethernet/chelsio/cxgb4/built-in.o:(.opd+0x14d0): first defined =
-here
-drivers/net/ethernet/chelsio/cxgb4vf/built-in.o: In function `.t4_bar2_sge_=
-qregs':
-(.text+0x9220): multiple definition of `.t4_bar2_sge_qregs'
-drivers/net/ethernet/chelsio/cxgb4/built-in.o:(.text+0x24e24): first define=
-d here
+It will upgrade correctly during make oldconfig without removing
+MOUSE_CYAPA.
 
-Caused by commit e85c9a7abfa4 ("cxgb4/cxgb4vf: Add code to calculate T5
-BAR2 Offsets for SGE Queue Registers") which added both versions.  :-(
+And it looks like several other Kconfig files do it this way already.
 
-I have applied this fir patch for today (including the subject
-typo :-)):
+  linux-next$ grep -r CRC_ITU_T $(find ./ -name Kconfig)
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 10 Dec 2014 19:48:02 +1100
-Subject: [PATCH] cxgb4/cxgb4vf: global named must be unique
+> >  	help
+> >  	  This driver adds support for Cypress All Points Addressable (APA)
+> >  	  I2C Trackpads, including the ones used in 2012 Samsung Chromebooks.
+> > diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+> 
+> My initial config had MOUSE_CYAPA=m and CRC_ITU_T=n.
+> I did a 'make oldconfig', no questions were asked, but it removed
+> MOUSE_CYAPA since CRC_ITU_T wasn't enabled.  Since the cyapa modules
+> were removed the touchpad no longer works.  Not a very good upgrade path :-(
+> To fix this I have to manually enable MOUSE_CYAPA and CRC_ITU_T to get
+> it working again.
+> 
+> [...]
+> 
+> -- 
+> - Jeremiah Mahler
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ethernet/chelsio/cxgb4/cxgb4.h      | 2 +-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 4 ++--
- drivers/net/ethernet/chelsio/cxgb4/sge.c        | 2 +-
- drivers/net/ethernet/chelsio/cxgb4/t4_hw.c      | 4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h b/drivers/net/ether=
-net/chelsio/cxgb4/cxgb4.h
-index 2c37e1bf253a..a18d33fdb271 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h
-@@ -1007,7 +1007,7 @@ int t4_prep_fw(struct adapter *adap, struct fw_info *=
-fw_info,
- int t4_prep_adapter(struct adapter *adapter);
-=20
- enum t4_bar2_qtype { T4_BAR2_QTYPE_EGRESS, T4_BAR2_QTYPE_INGRESS };
--int t4_bar2_sge_qregs(struct adapter *adapter,
-+int cxgb4_t4_bar2_sge_qregs(struct adapter *adapter,
- 		      unsigned int qid,
- 		      enum t4_bar2_qtype qtype,
- 		      u64 *pbar2_qoffset,
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/=
-ethernet/chelsio/cxgb4/cxgb4_main.c
-index c8c5b3d36d4e..1645f59648f0 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -3815,7 +3815,7 @@ int cxgb4_bar2_sge_qregs(struct net_device *dev,
- 			 u64 *pbar2_qoffset,
- 			 unsigned int *pbar2_qid)
- {
--	return t4_bar2_sge_qregs(netdev2adap(dev),
-+	return cxgb4_t4_bar2_sge_qregs(netdev2adap(dev),
- 				 qid,
- 				 (qtype =3D=3D CXGB4_BAR2_QTYPE_EGRESS
- 				  ? T4_BAR2_QTYPE_EGRESS
-@@ -4011,7 +4011,7 @@ static void process_db_drop(struct work_struct *work)
- 		unsigned int bar2_qid;
- 		int ret;
-=20
--		ret =3D t4_bar2_sge_qregs(adap, qid, T4_BAR2_QTYPE_EGRESS,
-+		ret =3D cxgb4_t4_bar2_sge_qregs(adap, qid, T4_BAR2_QTYPE_EGRESS,
- 					&bar2_qoffset, &bar2_qid);
- 		if (ret)
- 			dev_err(adap->pdev_dev, "doorbell drop recovery: "
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/etherne=
-t/chelsio/cxgb4/sge.c
-index f12debd98dac..ebf935a1e352 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
-@@ -2270,7 +2270,7 @@ static void __iomem *bar2_address(struct adapter *ada=
-pter,
- 	u64 bar2_qoffset;
- 	int ret;
-=20
--	ret =3D t4_bar2_sge_qregs(adapter, qid, qtype,
-+	ret =3D cxgb4_t4_bar2_sge_qregs(adapter, qid, qtype,
- 				&bar2_qoffset, pbar2_qid);
- 	if (ret)
- 		return NULL;
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c b/drivers/net/ether=
-net/chelsio/cxgb4/t4_hw.c
-index 67345c73e570..28d04153f999 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
-@@ -4031,7 +4031,7 @@ int t4_prep_adapter(struct adapter *adapter)
- }
-=20
- /**
-- *	t4_bar2_sge_qregs - return BAR2 SGE Queue register information
-+ *	cxgb4_t4_bar2_sge_qregs - return BAR2 SGE Queue register information
-  *	@adapter: the adapter
-  *	@qid: the Queue ID
-  *	@qtype: the Ingress or Egress type for @qid
-@@ -4055,7 +4055,7 @@ int t4_prep_adapter(struct adapter *adapter)
-  *	Write Combining Doorbell Buffer. If the BAR2 Queue ID is not 0,
-  *	then these "Inferred Queue ID" register may not be used.
-  */
--int t4_bar2_sge_qregs(struct adapter *adapter,
-+int cxgb4_t4_bar2_sge_qregs(struct adapter *adapter,
- 		      unsigned int qid,
- 		      enum t4_bar2_qtype qtype,
- 		      u64 *pbar2_qoffset,
---=20
-2.1.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/=ckAssR/iWDt5AO31t3/Vem
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUiAoyAAoJEMDTa8Ir7ZwV8DoP/2o6KfcdbYMPfzJCKz7TWpkv
-1SIMakMwGnVGr5esy6DbVTDh35upKz/1VXzhIoepxpKd0cEFDA8yF4FCkEADUDJQ
-EAz7rPD4cKDdiaYgv6sj0fG6yWPP53cQC7aT6Fd4qA0hs2KGVSSUccxah4ZPPRMv
-FV+8c43w4LgWr4MqGA2sMOHIaBCliQ8CZn+p5wM+Kij39SeGffPyAkIBinD5Prm2
-o+7kLgfyA3ACKtJ8gOrLBBg9MqWgbAXepZVydC2JeD9j3Ax94lZwWfi0f8TIEvRt
-jDTTFcYGqYHv1tSQvQijjsN9YcundWLdZNzNT92L7geHJ9AY4jc2zw5WXAthWSmO
-8WSIZRDsTeR2giij6wuK8rGIQGvtyXUaLqt/iMne0Z/zg+tgEkXx/lC3yPvHclOr
-bBD/N1wnpaBAMBaZKZFoa1ip5s1l3b9wg6lZFefGfOdS+ZPB1Lmm3TaDq2o9WPWc
-8dJJXhoz/cEVH4oR8q96vtHg9FCIXiMaUccdlFWO2prIhzcESNLt8eOZ3EuLkhiU
-czySy4u39zglijKZfbjIZPuJexMl4fcMB+jXyj/7zFXl8jNudXDR2+WprJd89gNG
-EPIbHEoJhJqpfhEg2LRa8/+7xBCVoOn+sAFtEVW2NrMZFw2sJy2CZHKf585nQipc
-MyQs4OXVg2wW0i+zt9xk
-=t0Mr
------END PGP SIGNATURE-----
-
---Sig_/=ckAssR/iWDt5AO31t3/Vem--
+-- 
+- Jeremiah Mahler
