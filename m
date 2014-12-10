@@ -1,107 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaLJPxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:53:10 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:48737 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127AbaLJPxG (ORCPT
+	id S932471AbaLJPxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:53:23 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:61902 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932427AbaLJPxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:53:06 -0500
+	Wed, 10 Dec 2014 10:53:18 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCHSET -mm] bitmap, cpumask, nodemask: implement pr_cont functions and use di"
-Date: Wed, 10 Dec 2014 10:52:42 -0500
-Message-Id: <1418226774-30215-1-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>, x86@kernel.org,
+        Mike Travis <travis@sgi.com>
+Subject: [PATCH 06/12] x86: use {cpu|node}mask pr_cont and seq output functions
+Date: Wed, 10 Dec 2014 10:52:48 -0500
+Message-Id: <1418226774-30215-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
+References: <1418226774-30215-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Convert the existing user of cpu{mask|list}_scnprintf() and
+node{mask|list}_scnprintf() which use them just to printk or
+seq_printf() the resulting buffer to use the following functions
+instead respectively.
 
-bitmap implements two variants of scnprintf functions to format a
-bitmap into a string and cpumask and nodemask wrap them to provide
-equivalent interfaces.  The scnprintf family of functions require a
-string buffer as an output target which complicates code paths which
-just want to print out the mask through printk for informational or
-debug purposes as they have to worry about how large the buffer should
-be and whether it's too large to allocate on stack.
+* For printk: cpu{mask|list}_pr_cont() and node{mask|list}_pr_cont().
 
-Neither cpumask or nodemask provides a guildeline on how large the
-target buffer should be forcing users come up with their own solutions
-- some allocate an arbitrarily sized buffer which is small enough to
-allocate on stack but may be too short in corner cases, other come up
-with a custom upper limit calculation considering the output format,
-some allocate the buffer dynamically while one resorted to using lock
-to synchronize access to a static buffer.
+* For seq_file: seq_cpumask[_list]() and seq_nodemask[_list]().
 
-This is an artificial problem which is being solved repeatedly for no
-benefit.  In a lot of cases, the output area already exists and can be
-targeted directly making the intermediate buffer unnecessary.  This
-patchset implement pr_cont variants of the formatting functions and
-convert the scnprintf output function users to use them or seq_*()
-functions to directly target the output area and remove the
-intermediate buffers where possible.
+Because these conversions usually break up a single output function
+call into multiple, the reduction is LOC isn't too big but it removes
+unnecessary complexity and/or arbitrary limit on the length printed.
 
-This patchset contains the following 12 patches.
+* uv_nmi_nr_cpus_pr() got overly smart and implemented "..."
+  abbreviation if the output stretched over the predefined 1024 byte
+  buffer.  Replaced with plain pr_cont.
 
- 0001-bitmap-restructure-bitmap_sn-list-printf.patch
- 0002-bitmap-cpumask-nodemask-implement-pr_cont-variants-o.patch
- 0003-mips-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
- 0004-powerpc-use-cpu-node-mask-pr_cont-and-seq-output-fun.patch
- 0005-tile-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
- 0006-x86-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
- 0007-xtensa-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
- 0008-cpuset-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
- 0009-rcu-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
- 0010-sched-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
- 0011-timer-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
- 0012-percpu-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
+This patch is dependent on the previous patch ("bitmap, cpumask,
+nodemask: implement pr_cont variants of formatting functions") which
+is planned to go through -mm.  It'd be the easiest to route this
+together.  If this should go through the subsystem tree, please wait
+till the forementioned patch is merged to mainline.
 
-The first two patches implement the pr_cont variants of the formatting
-functions.  The rest convert the existing users to pr_cont and seq
-functions subsystem-by-subsystem.  It'd be the easiest to route all
-through -mm but the conversion patches can go through individual
-subsystem trees afterwards if necessary.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: x86@kernel.org
+Cc: Mike Travis <travis@sgi.com>
+---
+ arch/x86/mm/numa.c            |  9 ++++-----
+ arch/x86/platform/uv/uv_nmi.c | 27 +++++++++------------------
+ 2 files changed, 13 insertions(+), 23 deletions(-)
 
-While there's ~70 line increase in LOC, the increase is from the
-restructuring of bitmap output functions and addition of inline
-interface functions along with comments and things get simplified /
-more robust on the user side and future users won't have to try to
-solve the same fruitless problem over and over again.
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1a88370..614a302 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -794,7 +794,6 @@ int early_cpu_to_node(int cpu)
+ void debug_cpumask_set_cpu(int cpu, int node, bool enable)
+ {
+ 	struct cpumask *mask;
+-	char buf[64];
+ 
+ 	if (node == NUMA_NO_NODE) {
+ 		/* early_cpu_to_node() already emits a warning and trace */
+@@ -812,10 +811,10 @@ void debug_cpumask_set_cpu(int cpu, int node, bool enable)
+ 	else
+ 		cpumask_clear_cpu(cpu, mask);
+ 
+-	cpulist_scnprintf(buf, sizeof(buf), mask);
+-	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
+-		enable ? "numa_add_cpu" : "numa_remove_cpu",
+-		cpu, node, buf);
++	printk(KERN_DEBUG "%s cpu %d node %d: mask now ",
++	       enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node);
++	cpulist_pr_cont(mask);
++	pr_cont("\n");
+ 	return;
+ }
+ 
+diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+index c6b146e..61ee9cf 100644
+--- a/arch/x86/platform/uv/uv_nmi.c
++++ b/arch/x86/platform/uv/uv_nmi.c
+@@ -273,20 +273,6 @@ static inline void uv_clear_nmi(int cpu)
+ 	}
+ }
+ 
+-/* Print non-responding cpus */
+-static void uv_nmi_nr_cpus_pr(char *fmt)
+-{
+-	static char cpu_list[1024];
+-	int len = sizeof(cpu_list);
+-	int c = cpumask_weight(uv_nmi_cpu_mask);
+-	int n = cpulist_scnprintf(cpu_list, len, uv_nmi_cpu_mask);
+-
+-	if (n >= len-1)
+-		strcpy(&cpu_list[len - 6], "...\n");
+-
+-	printk(fmt, c, cpu_list);
+-}
+-
+ /* Ping non-responding cpus attemping to force them into the NMI handler */
+ static void uv_nmi_nr_cpus_ping(void)
+ {
+@@ -371,16 +357,21 @@ static void uv_nmi_wait(int master)
+ 			break;
+ 
+ 		/* if not all made it in, send IPI NMI to them */
+-		uv_nmi_nr_cpus_pr(KERN_ALERT
+-			"UV: Sending NMI IPI to %d non-responding CPUs: %s\n");
++		pr_alert("UV: Sending NMI IPI to %d non-responding CPUs: ",
++			 cpumask_weight(uv_nmi_cpu_mask));
++		cpulist_pr_cont(uv_nmi_cpu_mask);
++		pr_cont("\n");
++
+ 		uv_nmi_nr_cpus_ping();
+ 
+ 		/* if all cpus are in, then done */
+ 		if (!uv_nmi_wait_cpus(0))
+ 			break;
+ 
+-		uv_nmi_nr_cpus_pr(KERN_ALERT
+-			"UV: %d CPUs not in NMI loop: %s\n");
++		pr_alert("UV: %d CPUs not in NMI loop: ",
++			 cpumask_weight(uv_nmi_cpu_mask));
++		cpulist_pr_cont(uv_nmi_cpu_mask);
++		pr_cont("\n");
+ 	} while (0);
+ 
+ 	pr_alert("UV: %d of %d CPUs in NMI\n",
+-- 
+2.1.0
 
-The patchset is based on top of -mm as of Dec 9, 2014 and also
-available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-bitmap-pr_cont
-
- arch/mips/netlogic/common/smp.c     |   11 +-
- arch/powerpc/sysdev/xics/ics-opal.c |    7 -
- arch/powerpc/sysdev/xics/ics-rtas.c |    8 -
- arch/tile/kernel/hardwall.c         |    6 -
- arch/tile/kernel/proc.c             |    6 -
- arch/tile/kernel/setup.c            |   12 +-
- arch/tile/mm/homecache.c            |   14 +--
- arch/tile/mm/init.c                 |   12 +-
- arch/x86/mm/numa.c                  |    9 --
- arch/x86/platform/uv/uv_nmi.c       |   27 ++----
- arch/xtensa/kernel/setup.c          |   10 --
- drivers/net/ethernet/tile/tilegx.c  |    6 -
- drivers/net/ethernet/tile/tilepro.c |    6 -
- include/linux/bitmap.h              |    4 
- include/linux/cpumask.h             |   18 ++++
- include/linux/nodemask.h            |   16 +++
- kernel/cpuset.c                     |   13 ---
- kernel/rcu/tree_plugin.h            |    6 -
- kernel/sched/core.c                 |   11 +-
- kernel/sched/stats.c                |   11 --
- kernel/time/tick-sched.c            |   12 --
- lib/bitmap.c                        |  148 ++++++++++++++++++++++++++----------
- mm/percpu.c                         |    7 -
- 23 files changed, 224 insertions(+), 156 deletions(-)
-
-Thanks.
-
---
-tejun
