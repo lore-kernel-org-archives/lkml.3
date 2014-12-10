@@ -1,191 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942AbaLJODy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:03:54 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55640 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756509AbaLJODs (ORCPT
+	id S1756568AbaLJOID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:08:03 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:47122 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905AbaLJOIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:03:48 -0500
-Date: Wed, 10 Dec 2014 06:03:47 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, willy@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
- memory storage
-Message-ID: <20141210140347.GA23252@infradead.org>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+	Wed, 10 Dec 2014 09:08:00 -0500
+Date: Wed, 10 Dec 2014 15:07:53 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        p.zabel@pengutronix.de, shawn.guo@linaro.org, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, mturquette@linaro.org, airlied@linux.ie
+Subject: Re: [PATCH RFC 12/15] ARM: dts: imx6qdl-sabresd: Add support for
+ TRULY TFT480800-16-E MIPI DSI panel
+Message-ID: <20141210140751.GF23558@ulmo.nvidia.com>
+References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+ <1418200648-32656-13-git-send-email-Ying.Liu@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B0nZA57HJSoPbsHY"
 Content-Disposition: inline
-In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+In-Reply-To: <1418200648-32656-13-git-send-email-Ying.Liu@freescale.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is the status of this patch set?
 
-On Fri, Oct 24, 2014 at 05:20:32PM -0400, Matthew Wilcox wrote:
-> DAX is a replacement for the variation of XIP currently supported by
-> the ext2 filesystem.  We have three different things in the tree called
-> 'XIP', and the new focus is on access to data rather than executables,
-> so a name change was in order.  DAX stands for Direct Access.  The X is
-> for eXciting.
-> 
-> The new focus on data access has resulted in more careful attention to
-> races that exist in the current XIP code, but are not hit by the use-case
-> that it was designed for.  XIP's architecture worked fine for ext2, but
-> DAX is architected to work with modern filsystems such as ext4 and XFS.
-> DAX is not intended for use with btrfs; the value that btrfs adds relies
-> on manipulating data and writing data to different locations, while DAX's
-> value is for write-in-place and keeping the kernel from touching the data.
-> 
-> DAX was developed in order to support NV-DIMMs, but it's become clear that
-> its usefuless extends beyond NV-DIMMs and there are several potential
-> customers including the tracing machinery.  Other people want to place
-> the kernel log in an area of memory, as long as they have a BIOS that
-> does not clear DRAM on reboot.
-> 
-> Patch 1 is a bug fix.  It is obviously correct, and should be included
-> into 3.18.
-> 
-> Patch 2 starts the transformation by changing how ->direct_access works.
-> Much code is moved from the drivers and filesystems into the block layer,
-> and we add the flexibility of being able to map more than one page at
-> a time.  It would be good to get this patch into 3.18 as it is also
-> useful for people who are pursuing non-DAX approaches to working with
-> persistent memory.
-> 
-> Patch 3 is also a bug fix, probably worth including in 3.18.
-> 
-> Patches 4 & 5 are infrastructure for DAX.
-> 
-> Patches 6-10 replace the XIP code with its DAX equivalents, transforming
-> ext2 to use the DAX code as we go.  Note that patch 10 is the
-> Documentation patch.
-> 
-> Patches 11-17 clean up after the XIP code, removing the infrastructure
-> that is no longer needed and renaming various XIP things to DAX.
-> Most of these patches were added after Jan found things he didn't
-> like in an earlier version of the ext4 patch ... that had been copied
-> from ext2.  So ext2 i being transformed to do things the same way that
-> ext4 will later.  The ability to mount ext2 filesystems with the 'xip'
-> option is retained, although the 'dax' option is now preferred.
-> 
-> Patch 18 adds some DAX infrastructure to support ext4.
-> 
-> Patch 19 adds DAX support to ext4.  It is broadly similar to ext2's DAX
-> support, but it is more efficient than ext4's due to its support for
-> unwritten extents.
-> 
-> Patch 20 is another cleanup patch renaming XIP to DAX.
-> 
-> 
-> My thanks to Mathieu Desnoyers for his reviews of the v11 patchset.  Most
-> of the changes below were based on his feedback.
-> 
-> Changes since v11:
->  - Rebased to 3.18-rc1, dropping patch "vfs: Add copy_to_iter(),
->    copy_from_iter() and iov_iter_zero()" as it was merged through Al's tree.
->  - Added cc to stable@vger.kernel.org on patch 1
->  - Fixed comment style in brd.c (Mathieu)
->  - Make more functions in fs.h common with and without CONFIG_FS_DAX set
->  - Improve type-checking with !CONFIG_FS_DAX
->  - Simplify check for holes in dax_io()
->  - Harden the loop in dax_clear_blocks()
->  - Add missing check against truncate of a page covering a hole
->  - Fix the page-fault handler to work for block devices too
->  - Change a few more places that mentioned 'XIP' into 'DAX'
->  - Update DAX documentation in a couple of places
-> 
-> Matthew Wilcox (19):
->   axonram: Fix bug in direct_access
->   block: Change direct_access calling convention
->   mm: Fix XIP fault vs truncate race
->   mm: Allow page fault handlers to perform the COW
->   vfs,ext2: Introduce IS_DAX(inode)
->   dax,ext2: Replace XIP read and write with DAX I/O
->   dax,ext2: Replace ext2_clear_xip_target with dax_clear_blocks
->   dax,ext2: Replace the XIP page fault handler with the DAX page fault
->     handler
->   dax,ext2: Replace xip_truncate_page with dax_truncate_page
->   dax: Replace XIP documentation with DAX documentation
->   vfs: Remove get_xip_mem
->   ext2: Remove ext2_xip_verify_sb()
->   ext2: Remove ext2_use_xip
->   ext2: Remove xip.c and xip.h
->   vfs,ext2: Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to
->     CONFIG_FS_DAX
->   ext2: Remove ext2_aops_xip
->   ext2: Get rid of most mentions of XIP in ext2
->   dax: Add dax_zero_page_range
->   brd: Rename XIP to DAX
-> 
-> Ross Zwisler (1):
->   ext4: Add DAX functionality
-> 
->  Documentation/filesystems/00-INDEX |   5 +-
->  Documentation/filesystems/Locking  |   3 -
->  Documentation/filesystems/dax.txt  |  91 +++++++
->  Documentation/filesystems/ext2.txt |   5 +-
->  Documentation/filesystems/ext4.txt |   4 +
->  Documentation/filesystems/vfs.txt  |   7 -
->  Documentation/filesystems/xip.txt  |  68 -----
->  MAINTAINERS                        |   6 +
->  arch/powerpc/sysdev/axonram.c      |  19 +-
->  drivers/block/Kconfig              |  13 +-
->  drivers/block/brd.c                |  28 +-
->  drivers/s390/block/dcssblk.c       |  21 +-
->  fs/Kconfig                         |  21 +-
->  fs/Makefile                        |   1 +
->  fs/block_dev.c                     |  40 +++
->  fs/dax.c                           | 530 +++++++++++++++++++++++++++++++++++++
->  fs/exofs/inode.c                   |   1 -
->  fs/ext2/Kconfig                    |  11 -
->  fs/ext2/Makefile                   |   1 -
->  fs/ext2/ext2.h                     |  10 +-
->  fs/ext2/file.c                     |  45 +++-
->  fs/ext2/inode.c                    |  38 +--
->  fs/ext2/namei.c                    |  13 +-
->  fs/ext2/super.c                    |  53 ++--
->  fs/ext2/xip.c                      |  91 -------
->  fs/ext2/xip.h                      |  26 --
->  fs/ext4/ext4.h                     |   6 +
->  fs/ext4/file.c                     |  50 +++-
->  fs/ext4/indirect.c                 |  18 +-
->  fs/ext4/inode.c                    |  89 +++++--
->  fs/ext4/namei.c                    |  10 +-
->  fs/ext4/super.c                    |  39 ++-
->  fs/open.c                          |   5 +-
->  include/linux/blkdev.h             |   6 +-
->  include/linux/fs.h                 |  34 +--
->  include/linux/mm.h                 |   1 +
->  include/linux/rmap.h               |   2 +-
->  mm/Makefile                        |   1 -
->  mm/fadvise.c                       |   6 +-
->  mm/filemap.c                       |  25 +-
->  mm/filemap_xip.c                   | 483 ---------------------------------
->  mm/madvise.c                       |   2 +-
->  mm/memory.c                        |  33 ++-
->  scripts/diffconfig                 |   1 -
->  44 files changed, 1069 insertions(+), 893 deletions(-)
->  create mode 100644 Documentation/filesystems/dax.txt
->  delete mode 100644 Documentation/filesystems/xip.txt
->  create mode 100644 fs/dax.c
->  delete mode 100644 fs/ext2/xip.c
->  delete mode 100644 fs/ext2/xip.h
->  delete mode 100644 mm/filemap_xip.c
-> 
-> -- 
-> 2.1.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
----end quoted text---
+--B0nZA57HJSoPbsHY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Dec 10, 2014 at 04:37:25PM +0800, Liu Ying wrote:
+[...]
+> diff --git a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
+[...]
+> +&mipi_dsi {
+> +	status = "okay";
+> +
+> +	panel@0 {
+> +		compatible = "himax,hx8369a-dsi";
+> +		reg = <0>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_mipi_panel>;
+> +		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
+> +		reset-delay = <120>;
+> +		bs2-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
+> +		data-lanes = <2>;
+> +		panel-width-mm = <45>;
+> +		panel-height-mm = <76>;
+> +		bs = <10>;
+> +		status = "okay";
+> +
+> +		display-timings {
+> +			native-mode = <&timing1>;
+> +			timing1: truly-tft480800-16-e {
+
+This is the only place where Truly is mentioned. The panel vendor is
+either Truly or it is Himax, it can't be a mix. From this example and
+your patch description it seems like Truly is the manufacturer of the
+panel, hence the panel compatible should really be:
+
+	compatible = "truly,tft480800-16-e";
+
+That it uses an HX8369A chip internally is really secondary, at least
+regarding the binding. If we ever get need to support multiple panels
+with the same driver IC the proper solution would be to abstract that
+code out into a helper library that is used from the various panel
+drivers.
+
+Thierry
+
+--B0nZA57HJSoPbsHY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUiFO3AAoJEN0jrNd/PrOhNVMQAJ7nyeBGoPn6DqBNFXP48D0u
+6WICYrBJ/ZufLiIHcYQsaHpZd2yMz3xuSp+FRdGZWMk8fbYflhgu79xAUIz+KAth
+vP1ew3b7gcokFfHQMunHGrOPQUSsuVIGBHuqiC6dIxqppmSZWkJIhzNXIGJf66xV
+pNqe7Cd3/8v/HhhQUeI3Z47HwTxHMNmO10OLvf5iBatx4GRZy1n5uxu9cE4Dm+RV
+xjvuVciqfgqkHhd5Hrd8YXyOv3tJfGjMl5QEdDOCXx/3Afo+zcMwNp/VOHSoWDKp
+Ewf6qZtkpnQjDkni5e2gCnhFDQ7k1+rLpkQHOMgtEfXLlppKALTlZDw3s6S00mX2
+uJ6YI0a/b/uZiWacOji8YPQNLAaIM36Puf25m1ubng27It2aU3jH3qBxM2yNwqnx
+HRpl6dRNx09FXCW2+UOmlrWslhRbm6gsogNwJKeESqG1BorFlih6v72qHiCD9t0Z
+TScCCaCVBGs7339lT/eq8IGD/z9bdr6997Crepv7srs5/pKmGo15OhNM7Jkw9rWy
+zbFFhDUg6IxbT4Da+OEErRgEvi/zgl24cgSF7iFeVakoOrJPLq6t7GlejP+u+jyM
+ZfowlAith9Q6dib8X4o3TPCulvw4BnP8ovn8U9CIxbEfoY5HgoL0atOa0q9qLAvm
+hHy1NDzgISH1Zxfn61S9
+=Rml8
+-----END PGP SIGNATURE-----
+
+--B0nZA57HJSoPbsHY--
