@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823AbaLJLdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:33:53 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:52849 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbaLJLdv (ORCPT
+	id S1753004AbaLJLpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:45:15 -0500
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:48703 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaLJLpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:33:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL 9/9] ARM64: SoC changes for 3.19
-Date: Wed, 10 Dec 2014 12:33:16 +0100
-Message-ID: <142437558.Xy2szB89Mt@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CA+55aFwU2qa+4BssUg3zCmZVPz5fmAHLgy--2=yb-NjXMZNDhg@mail.gmail.com>
-References: <4491193.a6KEQb1tZH@wuerfel> <2482441.CQUhI8rqR1@wuerfel> <CA+55aFwU2qa+4BssUg3zCmZVPz5fmAHLgy--2=yb-NjXMZNDhg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:mcUfaT6SX5GjHHaxk3SfX2aQ/2tfi4wuV73IDSt3TCdLnFeZxy0
- KkayHOzuci1dZ8uWkqe8SxOHiFQqFrUEk99lXMuhx/Bp4VHMGZQeHAmOHif0r/ghgKt384v
- VQYuGXB5ADyhCrZ/jkB9KAKKN+YEG4gCKy/T4Rrp2rzvX+BeuHz707i9X+yADM/iEwtgKvl
- BlNireEXbsRtCDpord9hQ==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 10 Dec 2014 06:45:12 -0500
+From: Harini Katakam <harinik@xilinx.com>
+To: wsa@the-dreams.de, mark.rutland@arm.com
+Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, harinikatakamlinux@gmail.com,
+        harinik@xilinx.com
+Subject: [PATCH v4 0/2] Cadence I2C driver fixes
+Date: Wed, 10 Dec 2014 17:14:42 +0530
+Message-Id: <1418211884-5329-1-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 December 2014 17:20:43 Linus Torvalds wrote:
-> On Tue, Dec 9, 2014 at 1:46 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/arm64-for-linus
-> 
-> I get the same shortlog this time, but a different diffstat again.
-> 
-> Oh well. At least this time my diffstat is smaller.
-> 
+This series implements workarounds for some bugs in Cadence I2C controller.
 
-Ah, my mistake. This branch included the move of the files that was done in the
-cleanup branch. In the other pull requests I manually did the diffstat to match
-what I expect you would see instead of what "git request-pull" tells me, while
-for this one, the diffstat looked correct to me and I did not recreate one
-manually.
+- The I2C controller when configured in Master Mode generates invalid read transactions.
+When HOLD bit is set and HW timeout occurs, invalid read transactions are
+generated on the bus. This will affect repeated start conditions and large
+data transfer condtions where transfer_size_register has to be updated again.
+The transfer size register rolls over erroneously under these conditions.
+Note that this HW timeout cannot be disabled even if the interrupt is unused.
+Errata link: http://www.xilinx.com/support/answers/61664.html
 
-	Arnd
+-The I2C controller when configured in Master Mode is the missing master completion interrupt.
+During repeated start condition, the driver has to set the HOLD bit for
+the set of transfer being done together and clear the HOLD bit just before
+the last transfer. But the controller does not indicate completion when
+a read/receive transfer is done if the HOLD bit is set. This affects
+all repeated start operation where a read/receive transfer is not
+the last transfer.
+Errata link: http://www.xilinx.com/support/answers/61665.html
+
+To address the above,
+- >252 byte transfers are done such that transfer_size never becomes zero.
+- timeout register value is increased (even though the driver doesn't use this).
+- A check is performed to see if there is any transfer following a
+read/receive transfer in the set of messages using repeated start.
+An error is returned in such cases because if we proceed, completion interrupt
+is never obtained and a SW timeout will occur.
+
+Harini Katakam (2):
+  i2c: cadence: Handle > 252 byte transfers
+  i2c: cadence: Check for errata condition involving master receive
+
+ drivers/i2c/busses/i2c-cadence.c |  187 +++++++++++++++++++++++---------------
+ 1 file changed, 114 insertions(+), 73 deletions(-)
+
+-- 
+1.7.9.5
+
