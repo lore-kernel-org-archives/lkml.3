@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaLJCQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:16:06 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:31801 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaLJCQC (ORCPT
+	id S1755499AbaLJCQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:16:12 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49441 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaLJCQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:16:02 -0500
-X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52679681"
-From: Ray Jui <rjui@broadcom.com>
-To: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
-        "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH v2 3/4] ARM: mach-bcm: Enable I2C support for iProc
-Date: Tue, 9 Dec 2014 18:18:12 -0800
-Message-ID: <1418177893-22094-4-git-send-email-rjui@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418177893-22094-1-git-send-email-rjui@broadcom.com>
-References: <Ray Jui <rjui@broadcom.com>
- <1418177893-22094-1-git-send-email-rjui@broadcom.com>
+	Tue, 9 Dec 2014 21:16:09 -0500
+Message-ID: <5487ACC5.1010002@oracle.com>
+Date: Tue, 09 Dec 2014 21:15:33 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Davidlohr Bueso <davidlohr@hp.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: mm: shmem: freeing mlocked page
+References: <545C4A36.9050702@oracle.com>	<5466142C.60100@oracle.com> <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
+In-Reply-To: <20141118135843.bd711e95d3977c74cf51d803@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable I2C driver support for Broadcom iProc family of SoCs by
-selecting I2C_BCM_IPROC
+On 11/18/2014 04:58 PM, Andrew Morton wrote:
+>> [ 1026.994816] Modules linked in:
+>> > [ 1026.995378] CPU: 7 PID: 7879 Comm: trinity-c374 Not tainted 3.18.0-rc4-next-20141113-sasha-00047-gd1763ce-dirty #1455
+>> > [ 1026.996123] FAULT_INJECTION: forcing a failure.
+>> > [ 1026.996123] name failslab, interval 100, probability 30, space 0, times -1
+>> > [ 1026.999050]  0000000000000000 0000000000000000 0000000000b3d300 ffff88061295bbd8
+>> > [ 1027.000676]  ffffffff92f71097 0000000000000000 ffffea0000b3d300 ffff88061295bc08
+>> > [ 1027.002020]  ffffffff8197ef7a ffffea0000b3d300 ffffffff942dd148 dfffe90000000000
+>> > [ 1027.003359] Call Trace:
+>> > [ 1027.003831] dump_stack (lib/dump_stack.c:52)
+>> > [ 1027.004725] bad_page (mm/page_alloc.c:338)
+>> > [ 1027.005623] free_pages_prepare (mm/page_alloc.c:657 mm/page_alloc.c:763)
+>> > [ 1027.006761] free_hot_cold_page (mm/page_alloc.c:1438)
+>> > [ 1027.007772] ? __page_cache_release (mm/swap.c:66)
+>> > [ 1027.008815] put_page (mm/swap.c:270)
+>> > [ 1027.009665] page_cache_pipe_buf_release (fs/splice.c:93)
+>> > [ 1027.010888] __splice_from_pipe (fs/splice.c:784 fs/splice.c:886)
+>> > [ 1027.011917] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3734)
+>> > [ 1027.012856] ? pipe_lock (fs/pipe.c:69)
+>> > [ 1027.013728] ? write_pipe_buf (fs/splice.c:1534)
+>> > [ 1027.014756] vmsplice_to_user (fs/splice.c:1574)
+>> > [ 1027.015725] ? rcu_read_lock_held (kernel/rcu/update.c:169)
+>> > [ 1027.016757] ? __fget_light (include/linux/fdtable.h:80 fs/file.c:684)
+>> > [ 1027.017782] SyS_vmsplice (fs/splice.c:1656 fs/splice.c:1639)
+>> > [ 1027.018863] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+>> > 
+> So what happened here?  Userspace fed some mlocked memory into splice()
+> and then, while splice() was running, userspace dropped its reference
+> to the memory, leaving splice() with the last reference.  Yet somehow,
+> that page was still marked as being mlocked.  I wouldn't expect the
+> kernel to permit userspace to drop its reference to the memory without
+> first clearing the mlocked state.
+> 
+> Is it possible to work out from trinity sources what the exact sequence
+> was?  Which syscalls are being used, for example?
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/mach-bcm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Phew, this took a long while but I've bisected it (with good confidence) down
+to:
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index aaeec78..86ee90b 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -19,6 +19,7 @@ config ARCH_BCM_IPROC
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_AMBA
- 	select PINCTRL
-+	select I2C_BCM_IPROC
- 	help
- 	  This enables support for systems based on Broadcom IPROC architected SoCs.
- 	  The IPROC complex contains one or more ARM CPUs along with common
--- 
-1.7.9.5
+commit a38246260912ba4a0f8b563704a965a7a97cf3c3
+Author: Davidlohr Bueso <dave@stgolabs.net>
+Date:   Wed Dec 3 18:54:27 2014 +1100
 
+    mm/memory.c: share the i_mmap_rwsem
+
+    The unmap_mapping_range family of functions do the unmapping of user pages
+    (ultimately via zap_page_range_single) without touching the actual
+    interval tree, thus share the lock.
+
+    Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+    Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
+    Acked-by: Hugh Dickins <hughd@google.com>
+    Cc: Oleg Nesterov <oleg@redhat.com>
+    Cc: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Cc: Rik van Riel <riel@redhat.com>
+    Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+    Acked-by: Mel Gorman <mgorman@suse.de>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+
+Thanks,
+Sasha
