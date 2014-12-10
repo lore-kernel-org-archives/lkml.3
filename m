@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaLJKQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:16:51 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:37679 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaLJKQt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:16:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141209053657.75D6A66095A@gitolite.kernel.org>
-References: <20141209053657.75D6A66095A@gitolite.kernel.org>
-Date: Wed, 10 Dec 2014 11:16:47 +0100
-X-Google-Sender-Auth: A-5q6Je3Vher8qPjudce2TI5TH0
-Message-ID: <CAMuHMdXEy6Z4=2off-Y74R6GgKAPnYWwKFTji7ebPE74fddRkA@mail.gmail.com>
-Subject: Re: esp_scsi: make number of tags configurable
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754910AbaLJKRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:17:23 -0500
+Received: from ozlabs.org ([103.22.144.67]:56053 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754464AbaLJKRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:17:22 -0500
+Message-ID: <1418206640.9279.10.camel@ellerman.id.au>
+Subject: Re: [RFC PATCH 7/8] perf probe powerpc: Use DWARF info only if
+ necessary
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        acme@kernel.org, ananth@in.ibm.com
+Date: Wed, 10 Dec 2014 21:17:20 +1100
+In-Reply-To: <50dd0fedb50e3a56ff8f25c44098db3e2a2d6374.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+References: <cover.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+	 <50dd0fedb50e3a56ff8f25c44098db3e2a2d6374.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 6:36 AM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=3707a186c8970e3c4f3c8d9ccf4230b8657e919f
-> Commit:     3707a186c8970e3c4f3c8d9ccf4230b8657e919f
-> Parent:     a87bf29362c763cf35faa17154b699471a8b902e
-> Refname:    refs/heads/master
-> Author:     Hannes Reinecke <hare@suse.de>
-> AuthorDate: Mon Nov 24 15:37:20 2014 +0100
-> Committer:  Christoph Hellwig <hch@lst.de>
-> CommitDate: Mon Nov 24 16:10:23 2014 +0100
->
->     esp_scsi: make number of tags configurable
->
->     Add a field 'num_tags' to the esp structure to allow drivers
->     to overwrite the number of avialable tags if required.
->     Default is ESP_DEFAULT_TAGS.
->
->     Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
->     Acked-by: David S. Miller <davem@davemloft.net>
->     Signed-off-by: Hannes Reinecke <hare@suse.de>
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  drivers/scsi/esp_scsi.c | 12 ++++++------
->  drivers/scsi/esp_scsi.h |  3 +--
->  2 files changed, 7 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/scsi/esp_scsi.c b/drivers/scsi/esp_scsi.c
-> index 7e7687f..57ccb14 100644
-> --- a/drivers/scsi/esp_scsi.c
-> +++ b/drivers/scsi/esp_scsi.c
-> @@ -2317,6 +2317,10 @@ int scsi_esp_register(struct esp *esp, struct device *dev)
->         static int instance;
->         int err;
->
-> +       if (!esp->num_tags)
-> +               esp->num_tags = ESP_DEFAULT_TAGS;
-> +       else if (esp->num_tags >= ESP_MAX_TAG)
+On Tue, 2014-12-09 at 23:04 +0530, Naveen N. Rao wrote:
+> Use symbol table lookups by default if DWARF is not necessary, since
+> powerpc ABIv2 encodes local entry points in the symbol table and the
+> function entry address in DWARF may not be appropriate for kprobes,
+> as described here:
+> https://sourceware.org/bugzilla/show_bug.cgi?id=17638
 
-drivers/scsi/esp_scsi.c: In function ‘scsi_esp_register’:
-drivers/scsi/esp_scsi.c:2399: warning: comparison is always false due
-to limited range of data type
+Needs a better changelog.
 
-ESP_MAX_TAG is 256, num_tags is u8.
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 174c22e..adcdbd2 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -2382,6 +2382,14 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  		}
+>  	}
+>  
+> +#if defined(__powerpc64__) && defined(_CALL_ELF) && _CALL_ELF == 2
+> +	if (!perf_probe_event_need_dwarf(pev)) {
+> +		ret = find_probe_trace_events_from_map(pev, tevs, max_tevs, target);
+> +		if (ret > 0)
+> +			return ret;	/* Found in symbol table */
+> +	}
+> +#endif
 
-> +               esp->num_tags = ESP_MAX_TAG - 1;
+And should be in an arch helper, not a big powerpc wart dropped in the middle
+of the generic code.
 
-Gr{oetje,eeting}s,
+cheers
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
