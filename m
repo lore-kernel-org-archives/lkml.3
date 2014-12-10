@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaLJJer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:34:47 -0500
-Received: from smtp-out-205.synserver.de ([212.40.185.205]:1068 "EHLO
-	smtp-out-188.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750880AbaLJJep (ORCPT
+	id S1752216AbaLJJgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:36:08 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45181 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaLJJgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:34:45 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11107
-Message-ID: <548813AC.1080105@metafoo.de>
-Date: Wed, 10 Dec 2014 10:34:36 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 10 Dec 2014 04:36:05 -0500
+Date: Wed, 10 Dec 2014 15:05:10 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        mpe@ellerman.id.au, ananth@in.ibm.com
+Subject: Re: [RFC PATCH 2/8] perf probe powerpc: Fix symbol fixup issues due
+ to ELF type
+Message-ID: <20141210093510.GG5318@naverao1-tp.in.ibm.com>
+References: <cover.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+ <0412a00009a22762f92c208964df6f842796464e.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+ <20141209210717.GA8788@kernel.org>
 MIME-Version: 1.0
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sound/soc/adi/axi-spdif.c: Support programmable master
- clock
-References: <54806D4E.8040504@topic.nl> <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl>
-In-Reply-To: <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209210717.GA8788@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121009-0025-0000-0000-000000B30B2B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 01:37 PM, Mike Looijmans wrote:
-> If the master clock supports programmable rates, program it to generate
-> the desired frequency. Only apply constraints when the clock is fixed.
-> This allows proper clock generation for both 44100 and 48000 Hz based
-> sampling rates if the platform supports it.
->
-> The clock frequency must be set before enabling it. Enabling the clock
-> was done in "startup", but that occurs before "hw_params" where the rate
-> is known. Enabling a programmable clock without first setting a valid
-> frequency may harm the system. Move the clock start to the hw_params
-> routine, and keep track of whether the clock has been started, because
-> shutdown may be called without having called hw_params first.
-> Starting the clock and enabling the SPDIF output AFTER programming the
-> dividers is a more logical order anyway.
->
-> To detect if the source clock is fixed, the driver calls clk_round_rate
-> for two frequencies. If the results are equal, or if the call returns
-> an error, the driver assumes the clock is fixed.
->
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+On 2014/12/09 06:07PM, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 09, 2014 at 11:04:00PM +0530, Naveen N. Rao escreveu:
+> > If using the symbol table, symbol addresses are not being fixed up
+> > properly, resulting in probes being placed at wrong addresses:
+> > 
+> >   # perf probe do_fork
+> >   Added new event:
+> >     probe:do_fork        (on do_fork)
+> > 
+> >   You can now use it in all perf tools, such as:
+> > 
+> > 	  perf record -e probe:do_fork -aR sleep 1
+> > 
+> >   # cat /sys/kernel/debug/tracing/kprobe_events
+> >   p:probe/do_fork _text+635952
+> >   # printf "%x" 635952
+> >   9b430
+> >   # grep do_fork /boot/System.map
+> >   c0000000000ab430 T .do_fork
+> > 
+> > Fix by checking for ELF type ET_DYN used by ppc64 kernels.
+> 
+> Are you sure this doesn't need to be enclosed in ifdef PPC64?
 
-Hi,
+I felt this change is architecture-independent, though I'm actually not 
+sure if there are other architectures using ET_DYN for their kernel. I 
+can restrict this to ppc64 if you think that would be better.
 
-Sorry for the delay.
+- Naveen
 
-[...]
->
-> +	/* Try to set the master clock */
-> +	clk_set_rate(spdif->clk_ref, rate * 128);
-> +
->   	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
->   			rate * 64 * 2) - 1;
->   	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
-> @@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
->   	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
->   		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
->
-> +	ret = clk_prepare_enable(spdif->clk_ref);
-
-I'm still not convinced this is the right place. I do see your point. But it 
-just feels wrong to enable the clock in hw_params. It's a bit of a dilemma. 
-the startup callback is to early, hw_params is the wrong place and we can't 
-put it in the trigger callback as the trigger callback can not sleep.
-
-But in any way hwparmas can be called multiple times, so you need to handle 
-the case where the clock is already enabled.
-
-> +	if (ret)
-> +		return ret;
-> +	spdif->clk_ref_running = true;
-> +
-> +	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
-> +		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
-
-This should probably be moved to the trigger callback though.
-
-> +
->   	return 0;
->   }
+> 
+> - Arnaldo
+> 
+> > Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> > ---
+> >  tools/perf/util/symbol-elf.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> > index 1e23a5b..67e4392 100644
+> > --- a/tools/perf/util/symbol-elf.c
+> > +++ b/tools/perf/util/symbol-elf.c
+> > @@ -629,7 +629,8 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+> >  						     NULL) != NULL);
+> >  	} else {
+> >  		ss->adjust_symbols = ehdr.e_type == ET_EXEC ||
+> > -				     ehdr.e_type == ET_REL;
+> > +				     ehdr.e_type == ET_REL ||
+> > +				     ehdr.e_type == ET_DYN;
+> >  	}
+> >  
+> >  	ss->name   = strdup(name);
+> > -- 
+> > 2.1.3
+> 
 
