@@ -1,68 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741AbaLJKta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:49:30 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1755799AbaLJKtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:49:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbaLJKt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:49:29 -0500
-Message-ID: <54882533.6080901@nod.at>
-Date: Wed, 10 Dec 2014 11:49:23 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1755758AbaLJKtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:49:40 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel\@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf\@aepfle.de" <olaf@aepfle.de>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "jasowang\@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] tools: hv: kvp_daemon: make IPv6-only-injection work
+References: <1418126489-20627-1-git-send-email-decui@microsoft.com>
+	<877fy1ht1u.fsf@vitty.brq.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E9B7F7@SIXPRD3002MB028.064d.mgd.msft.net>
+Date: Wed, 10 Dec 2014 10:06:40 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E9B7F7@SIXPRD3002MB028.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Wed, 10 Dec 2014 07:34:19 +0000")
+Message-ID: <87tx13ho0v.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Ley Foon Tan <lftan@altera.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Daniel Walter <sahne@0x90.at>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [BUG] uml panics with "Segfault with no mm" in v3.19-rc
-References: <20141210104624.GB32280@tucsk.suse.de>
-In-Reply-To: <20141210104624.GB32280@tucsk.suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Dexuan Cui <decui@microsoft.com> writes:
 
-Am 10.12.2014 um 11:46 schrieb Miklos Szeredi:
-> The guilty commit is:
-> 
->   00f634bc522d "asm-generic: add generic futex for !CONFIG_SMP"
+>> -----Original Message-----
+>> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> Sent: Tuesday, December 9, 2014 21:06 PM
+>> To: Dexuan Cui
+>> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+>> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+>> jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
+>> Subject: Re: [PATCH] tools: hv: kvp_daemon: make IPv6-only-injection work
+>>  ......
+>> > +	 * Here "dhcp_enabled" is only for IPv4 according to Hyper-V host
+>> team.
+>> > +	 *
+>> > +	 * In the case the host only injects 1 IPv6 address:
+>> > +	 * new_val->dhcp_enabled is true, but we can't pass
+>> BOOTPROTO=dhcp to
+>> > +	 * the script hv_set_ifconfig, because in some distros (like RHEL7)
+>> > +	 * BOOTPROTO=dhcp has a special meaning in the config file (e.g.,
+>> > +	 * /etc/sysconfig/network-scripts/ifcfg-eth0): the network init
+>> program
+>> > +	 * ignores any static IP addr information once there is
+>> > +	 * BOOTPROTO=dhcp; as a result, IPv6-only injection can't work.
+>> > +	 *
+>> > +	 * In the case of IPv6-only injection, BOOTPROTO=dhcp doesn't affect
+>> > +	 * Ubuntu because it's ignored by the Ubuntu version of
+>> > +	 * hv_set_ifconfig and it doesn't seem to have special meaning in
+>> > +	 * Ubuntu.
+>> > +	 */
+>> 
+>> I just checked and adding "IPV6ADDR=something" when "BOOTPROTO=dhcp"
+>> works for me with both RHEL7 and Fedora21.
+> It doesn't work in my side. :-(
+> Running 'ifup eth0' shows some errors(I use "set -x")
+> ...
+> + /sbin/dhclient -H localhost -1 -q -lf /var/lib/dhclient/dhclient--eth0.lease -pf /var/run/dhclient-eth0.pid eth0
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> grep: /etc/sysconfig/network-scripts/ifcfg-eth0: Permission dinied.
+> done.
+>
+> I'm trying to find out the cause.
 
-Thanks a lot Miklos!
-Your bisecting faster than I do.
+Selinux? You can try 'setenforce 0' to figure this out.
 
-Let's dig into the issue!
+>
+>> Other than that I think bringing distribution specifics into kernel.git
+>> is not a good idea. /etc/sysconfig/network-scripts/ifcfg-* format is
+>> distro-specific and not all Linux distros support it. Moreover,
+> I agree.
+>
+>> different distros can treat setting differently. I think it was wrong to
+>> stick to this format in kvp daemon from very beginning.
+> We can also think the current format used in kvp daemon is already
+> distro-agnostic -- it just happens to look like the style of network config file
+> used in RHEL :-)
 
-Thanks,
-//richard
+Yes, it is already there and I don't see any point in changing it.
 
-> And the backtrace:
-> 
-> #0  0x00007ffff7866457 in kill () from /lib64/libc.so.6
-> #1  0x000000006002a454 in uml_abort () at arch/um/os-Linux/util.c:93
-> #2  0x000000006002a7e5 in os_dump_core () at arch/um/os-Linux/util.c:148
-> #3  0x000000006001b48a in panic_exit (self=<optimized out>, unused1=<optimized out>, unused2=<optimized out>) at arch/um/kernel/um_arch.c:240
-> #4  0x000000006004e4df in notifier_call_chain (nl=<optimized out>, val=6, v=0xffffffff, nr_to_call=-1, nr_calls=0x0) at kernel/notifier.c:93
-> #5  0x000000006004e558 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:183
-> #6  atomic_notifier_call_chain (nh=<optimized out>, val=<optimized out>, v=<optimized out>) at kernel/notifier.c:193
-> #7  0x0000000060238570 in panic (fmt=<optimized out>) at kernel/panic.c:133
-> #8  0x000000006001ad91 in segv (fi=..., ip=1610803493, is_user=<optimized out>, regs=0x602c1840 <cpu0_irqstack+6208>) at arch/um/kernel/trap.c:218
-> #9  0x000000006001b0f8 in segv_handler (sig=<optimized out>, unused_si=<optimized out>, regs=<optimized out>) at arch/um/kernel/trap.c:191
-> #10 0x0000000060029238 in sig_handler_common (sig=11, si=0x602c1d30 <cpu0_irqstack+7472>, mc=<optimized out>) at arch/um/os-Linux/signal.c:44
-> #11 0x0000000060029304 in sig_handler (sig=<optimized out>, si=<optimized out>, mc=<optimized out>) at arch/um/os-Linux/signal.c:231
-> #12 0x0000000060028dfd in hard_handler (sig=<optimized out>, si=0x6, p=<optimized out>) at arch/um/os-Linux/signal.c:165
-> #13 <signal handler called>
-> #14 memcpy () at arch/x86/um/../lib/memcpy_64.S:160
-> #15 0x000000006001c13d in copy_from_user (to=0x61c49e28, from=<optimized out>, n=<optimized out>) at arch/um/kernel/skas/uaccess.c:145
-> #16 0x0000000060072618 in futex_atomic_cmpxchg_inatomic (newval=<optimized out>, oldval=<optimized out>, uaddr=<optimized out>, uval=<optimized out>) at include/asm-generic/futex.h:109
-> #17 cmpxchg_futex_value_locked (curval=0x61c49e28, uaddr=0x0, uval=<optimized out>, newval=<optimized out>) at kernel/futex.c:596
-> #18 0x0000000060008b70 in futex_detect_cmpxchg () at kernel/futex.c:3020
-> #19 futex_init () at kernel/futex.c:3043
-> #20 0x00000000600166ba in do_one_initcall (fn=0x60008adf <futex_init>) at init/main.c:791
-> 
+>
+>> 
+>> As a solution I would suggest doing the following: kvp daemon writes all
+>> received request details in distro-agnostic format in some temporary
+>> place and then calls distro-specific script to set things up. Actually,
+>> we already have such script: tools/hv/hv_set_ifconfig.sh
+> Yeah, this is exactly what we already have today.
+>
+>> As for this bug I propose the following: remove skipping all
+>> IPADDR/MASK/... settings in case of "BOOTPROTO=dhcp" and let
+>> distro-specific script deal with the rest.
+>> --
+>>   Vitaly
+> OK, so the patch would be 1-line only:
+>
+> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+> index 22b0764..53fdaad 100644
+> --- a/tools/hv/hv_kvp_daemon.c
+> +++ b/tools/hv/hv_kvp_daemon.c
+> @@ -1314,10 +1314,8 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+>                         goto setval_error;
+>
+>                 /*
+> -                * We are done!.
+> +                * We are not done... TODO: add comment here.
+>                  */
+> -               goto setval_done;
+> -
+>         } else {
+>                 error = kvp_write_file(file, "BOOTPROTO", "", "none");
+>                 if (error)
+>
+> I'll send out a v2 after I resolve the "grep ... Permission dinied" issue.
+>
 > Thanks,
-> Miklos
-> 
+> -- Dexuan
+
+-- 
+  Vitaly
