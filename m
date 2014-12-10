@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261AbaLJXGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:06:53 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:46562 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaLJXGv (ORCPT
+	id S1758282AbaLJXKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:10:46 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63512 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757945AbaLJXKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:06:51 -0500
+	Wed, 10 Dec 2014 18:10:43 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jakub Sitnicki <jsitnicki@gmail.com>
+Cc: rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PNP: Switch from __check_region() to __request_region()
+Date: Thu, 11 Dec 2014 00:32:18 +0100
+Message-ID: <2022256.J7VNVZ55j5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com>
+References: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5488C478.9000209@canonical.com>
-References: <5488C478.9000209@canonical.com>
-Date: Wed, 10 Dec 2014 15:06:50 -0800
-Message-ID: <CAPK7rjejMdQ45sVS-ebnqmeYWz3vqaYVXxTdVwUzhByB+nbsLA@mail.gmail.com>
-Subject: Re: [v3.16][v3.17][v3.18][ Regression] scsi: handle flush errors properly
-From: Steven Haber <steven@qumulo.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: JBottomley@parallels.com,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Joe,
+On Monday, December 08, 2014 10:01:57 PM Jakub Sitnicki wrote:
+> PNP core is the last user of the __check_region() which has been
+> deprecated for almost 12 years (since v2.5.54). Replace it with a combo
+> of __request_region() followed by __release_region().
+> 
+> pnp_check_port() and pnp_check_mem() remain racy after this change.
+> 
+> Signed-off-by: Jakub Sitnicki <jsitnicki@gmail.com>
+> ---
+> 
+> There was a previous attempt at making this change 3 years ago but the
+> author has never addressed the review comments:
+> 
+>   https://lkml.org/lkml/2011/8/12/216
+> 
+> The end goal here is to get rid of __check_region() which lands in
+> every kernel image because of the PNP core.
+> 
+> It has been previously pointed out that replacing __check_region()
+> with request_region() obscures the fact that pnp_check_port() is racy:
+> 
+>   https://lkml.org/lkml/2011/8/11/466
+> 
+> Because of that I've also considered just moving __check_region() to
+> PNP core. However, that would require making free_resource() an
+> exported symbol in kernel/resource.c.
+> 
+> On the other hand, a switch to request/release_region() makes
+> pnp_check_port() and pnp_check_mem() follow the same pattern as found
+> in pnp_check_irq() and pnp_check_dma():
+> 
+> 	if (!dev->active) {
+> 		if (request_<resource type>(...))
+> 			return 0;
+> 		free_<resource type>(...);
+> 	}
+>   
+> Admittedly, I was not able to exercise the touched code paths on a
+> commodity x86_64 laptop or under QEMU / VirtualBox (which lack ISA PnP
+> support, AFAIK).
+> 
+> To my understanding, the correct way to test pnp_check_port() or
+> pnp_check_mem() would be by issuing either:
+> 
+>   $ echo fill >/sys/bus/pnp/devices/XX:YY/resources
+> or
+>   $ echo auto >/sys/bus/pnp/devices/XX:YY/resources
+> 
+> ... but only if the device is not attached or active, which is not the
+> case for ACPI PnP devices on my machines. If anyone can provide hints
+> on steps to test this, I will be glad to do so.
+> 
+>  drivers/pnp/resource.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+> index 782e822..f980ff7 100644
+> --- a/drivers/pnp/resource.c
+> +++ b/drivers/pnp/resource.c
+> @@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
+>  	/* check if the resource is already in use, skip if the
+>  	 * device is active because it itself may be in use */
+>  	if (!dev->active) {
+> -		if (__check_region(&ioport_resource, *port, length(port, end)))
+> +		if (!request_region(*port, length(port, end), "pnp"))
+>  			return 0;
+> +		release_region(*port, length(port, end));
 
-Here's some context:
+Shouldn't we also release the resource returned by request_region() if it is
+not NULL?
 
-The SCSI flush command was being treated by a zero-byte write, which
-means that if an error was returned, you wouldn't catch it until a
-subsequent write (or flush). The way writes work is that all possible
-bytes are written, and if something bad happens, an error bubbles out
-on the next write attempt. This holds true even for a zero-byte write.
-This means that before this bug, to guarantee durability you had to
-flush twice (and verify both were error-free). I'm working on a
-storage appliance that relies on the fact that a single flush command
-guarantees a write made durably to a SCSI device. I'm sure many other
-storage products rely on this behavior, too. The patch James shipped
-fixes this bug by special-casing the flush error path. Before flush
-wouldn't return errors; now it does.
+>  	}
+>  
+>  	/* check if the resource is reserved */
+> @@ -241,8 +242,9 @@ int pnp_check_mem(struct pnp_dev *dev, struct resource *res)
+>  	/* check if the resource is already in use, skip if the
+>  	 * device is active because it itself may be in use */
+>  	if (!dev->active) {
+> -		if (check_mem_region(*addr, length(addr, end)))
+> +		if (!request_mem_region(*addr, length(addr, end), "pnp"))
+>  			return 0;
+> +		release_mem_region(*addr, length(addr, end));
+>  	}
+>  
+>  	/* check if the resource is reserved */
+> 
 
-I'm not sure why certain USB drives are failing in the flush path on
-unmount. Since the flush bug existed for such a long time, I suspect
-certain drivers coded around this behavior, and now that it is correct
-we are seeing new bugs exposed.
-
-Based on the simplicity and obviousness of our patch for the flush
-bug, it would really be ideal to diagnose this further rather than
-reverting.
-
-Steven Haber
-Qumulo, Inc.
-
-On Wed, Dec 10, 2014 at 2:08 PM, Joseph Salisbury
-<joseph.salisbury@canonical.com> wrote:
-> Hello James,
->
-> A kernel bug report was opened against Ubuntu [0].  After a kernel
-> bisect, it was found that reverting the following commit resolved this bug:
->
-> commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54
-> Author: James Bottomley <JBottomley@Parallels.com>
-> Date:   Thu Jul 3 19:17:34 2014 +0200
->
->     scsi: handle flush errors properly
->
-> The regression was introduced as of v3.16 and still exits in the 3.18
-> kernel.  It has also made it's way into the stable kernels.
->
-> I was hoping to get your feedback, since you are the patch author.  Do
-> you think gathering any additional data will help diagnose this issue,
-> or would it be best to submit a revert request?
->
->
-> Thanks,
->
-> Joe
->
-> [0] http://pad.lv/1366538
->
