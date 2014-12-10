@@ -1,255 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297AbaLJCSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:18:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54986 "EHLO mx1.redhat.com"
+	id S1756071AbaLJCS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:18:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44320 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412AbaLJCSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:18:07 -0500
-Date: Wed, 10 Dec 2014 10:17:41 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-efi <linux-efi@vger.kernel.org>, Laszlo Ersek <lersek@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Shorten efi regions output
-Message-ID: <20141210021741.GA3280@darkstar.nay.redhat.com>
-References: <20141209095843.GA3990@pd.tnic>
+	id S1755944AbaLJCSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 21:18:25 -0500
+Date: Tue, 9 Dec 2014 18:18:20 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Dev Mailing List <linux-fsdevel@vger.kernel.org>,
+        Linux F2FS Dev Mailing List 
+	<linux-f2fs-devel@lists.sourceforge.net>
+Subject: [GIT PULL] f2fs updates for v3.19
+Message-ID: <20141210021820.GA41187@jaegeuk-mac02.mot.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141209095843.GA3990@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/14 at 10:58am, Borislav Petkov wrote:
-> Hi guys,
-> 
-> so this decoded EFI regions output is nice but can we shorten it? It
-> sticks too far out in the terminal more than anything else in dmesg and
-> staring at it needs me to resize window and such. It probably is an even
-> bigger problem if one's monitor hasn't switched to higher res early
-> during boot.
+Hi Linus,
 
-I have same feeling with you, it is too long for most of people.
+This patch-set includes lots of bug fixes based on clean-ups and refactored
+codes. And inline_dir was introduced and two minor mount options were added.
 
-Since the printk code are for EFI_DEBUG, they are around the #ifdef 
-so I would like to see a kernel param like efi_debug=on, so only efi_debug
-is specified then these verbose messages are printed. Without the param
-kernel can print some basic infomation about the memory ranges.
+Please, pull the following patches.
 
-In arm64 code there's already a uefi_debug param it can be moved to general
-code so that there will be a goable switch.
+Thank you,
 
+The following changes since commit f4ca536f71ad69d9a974d0156d43b24b3f3112de:
 
-> 
-> So here's what I'm seeing with the latest EDKII:
-> 
-> [    0.000000] efi: EFI v2.40 by EDK II
-> [    0.000000] efi:  ACPI=0x7ff2d000  ACPI 2.0=0x7ff2d014 
-> [    0.000000] efi: mem00: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000000000-0x0000000000001000) (0MB)
-> [    0.000000] efi: mem01: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000001000-0x0000000000002000) (0MB)
-> [    0.000000] efi: mem02: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000002000-0x000000000009f000) (0MB)
-> [    0.000000] efi: mem03: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000000009f000-0x00000000000a0000) (0MB)
-> [    0.000000] efi: mem04: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000100000-0x0000000000820000) (7MB)
-> [    0.000000] efi: mem05: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000820000-0x0000000001000000) (7MB)
-> [    0.000000] efi: mem06: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001000000-0x0000000003cbc000) (44MB)
-> [    0.000000] efi: mem07: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000003cbc000-0x0000000004000000) (3MB)
-> [    0.000000] efi: mem08: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004000000-0x0000000005cbc000) (28MB)
-> [    0.000000] efi: mem09: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000005cbc000-0x000000003fffc000) (931MB)
-> [    0.000000] efi: mem10: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000003fffc000-0x0000000040000000) (0MB)
-> [    0.000000] efi: mem11: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000040000000-0x000000007c000000) (960MB)
-> [    0.000000] efi: mem12: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007c000000-0x000000007c020000) (0MB)
-> [    0.000000] efi: mem13: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007c020000-0x000000007ebc5000) (43MB)
-> [    0.000000] efi: mem14: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebc5000-0x000000007ebfe000) (0MB)
-> [    0.000000] efi: mem15: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebfe000-0x000000007ebff000) (0MB)
-> [    0.000000] efi: mem16: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ebff000-0x000000007ec03000) (0MB)
-> [    0.000000] efi: mem17: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec03000-0x000000007ec05000) (0MB)
-> [    0.000000] efi: mem18: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec05000-0x000000007ec06000) (0MB)
-> [    0.000000] efi: mem19: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec06000-0x000000007ec07000) (0MB)
-> [    0.000000] efi: mem20: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec07000-0x000000007ec08000) (0MB)
-> [    0.000000] efi: mem21: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ec08000-0x000000007ece7000) (0MB)
-> [    0.000000] efi: mem22: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ece7000-0x000000007ee3b000) (1MB)
-> [    0.000000] efi: mem23: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007ee3b000-0x000000007ee4e000) (0MB)
-> [    0.000000] efi: mem24: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ee4e000-0x000000007fd4e000) (15MB)
-> [    0.000000] efi: mem25: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007fd4e000-0x000000007fece000) (1MB)
-> [    0.000000] efi: mem26: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007fece000-0x000000007fefe000) (0MB)
-> [    0.000000] efi: mem27: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007fefe000-0x000000007ff22000) (0MB)
-> [    0.000000] efi: mem28: [Reserved           |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff22000-0x000000007ff26000) (0MB)
-> [    0.000000] efi: mem29: [ACPI Reclaim Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff26000-0x000000007ff2e000) (0MB)
-> [    0.000000] efi: mem30: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff2e000-0x000000007ff32000) (0MB)
-> [    0.000000] efi: mem31: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000007ff32000-0x000000007ffd0000) (0MB)
-> [    0.000000] efi: mem32: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x000000007ffd0000-0x0000000080000000) (0MB)
-> [    0.000000] efi: mem33: [Runtime Data       |RUN|  |  |  |   |  |  |  |UC] range=[0x00000000fff00000-0x0000000100000000) (1MB)
-> 
-> and here's with the proposed changes:
-> 
-> * regions get printed first so that vertical alignment gets preserved
-> 
-> * memory types come then, with shorter names but still readable (I hope :))
-> 
-> * efi mem attributes which are not set do not print the empty string.
-> The vertical bar after "UC" is missing on purpose although this is not
-> that totally correct if the region we're printing doesn't have the UC
-> bit set. Then it would issue "|]" at the end but who cares - I'd like to
-> not complicate this function unnecessarily.
-> 
-> This way the output fits much better in dmesg and we shorten it by 30ish
-> columns while preserving it. Diff below.
-> 
-> [    0.000000] efi: EFI v2.40 by EDK II
-> [    0.000000] efi:  ACPI=0x7ff2d000  ACPI 2.0=0x7ff2d014 
-> [    0.000000] efi: mem00: [0x0000000000000000-0x0000000000001000) [Mem        |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem01: [0x0000000000001000-0x0000000000002000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem02: [0x0000000000002000-0x000000000009f000) [Mem        |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem03: [0x000000000009f000-0x00000000000a0000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem04: [0x0000000000100000-0x0000000000820000) [Mem        |WB|WT|WC|UC] (7MB)
-> [    0.000000] efi: mem05: [0x0000000000820000-0x0000000001000000) [BootData   |WB|WT|WC|UC] (7MB)
-> [    0.000000] efi: mem06: [0x0000000001000000-0x0000000003cbc000) [LdrData    |WB|WT|WC|UC] (44MB)
-> [    0.000000] efi: mem07: [0x0000000003cbc000-0x0000000004000000) [Mem        |WB|WT|WC|UC] (3MB)
-> [    0.000000] efi: mem08: [0x0000000004000000-0x0000000005cbc000) [LdrData    |WB|WT|WC|UC] (28MB)
-> [    0.000000] efi: mem09: [0x0000000005cbc000-0x000000003fffc000) [Mem        |WB|WT|WC|UC] (931MB)
-> [    0.000000] efi: mem10: [0x000000003fffc000-0x0000000040000000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem11: [0x0000000040000000-0x000000007c000000) [Mem        |WB|WT|WC|UC] (960MB)
-> [    0.000000] efi: mem12: [0x000000007c000000-0x000000007c020000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem13: [0x000000007c020000-0x000000007ebc5000) [Mem        |WB|WT|WC|UC] (43MB)
-> [    0.000000] efi: mem14: [0x000000007ebc5000-0x000000007ebfe000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem15: [0x000000007ebfe000-0x000000007ebff000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem16: [0x000000007ebff000-0x000000007ec03000) [Mem        |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem17: [0x000000007ec03000-0x000000007ec05000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem18: [0x000000007ec05000-0x000000007ec06000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem19: [0x000000007ec06000-0x000000007ec07000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem20: [0x000000007ec07000-0x000000007ec08000) [LdrData    |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem21: [0x000000007ec08000-0x000000007ece7000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem22: [0x000000007ece7000-0x000000007ee3b000) [BootCode   |WB|WT|WC|UC] (1MB)
-> [    0.000000] efi: mem23: [0x000000007ee3b000-0x000000007ee4e000) [RtData     |RT|WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem24: [0x000000007ee4e000-0x000000007fd4e000) [BootData   |WB|WT|WC|UC] (15MB)
-> [    0.000000] efi: mem25: [0x000000007fd4e000-0x000000007fece000) [BootCode   |WB|WT|WC|UC] (1MB)
-> [    0.000000] efi: mem26: [0x000000007fece000-0x000000007fefe000) [RtCode     |RT|WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem27: [0x000000007fefe000-0x000000007ff22000) [RtData     |RT|WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem28: [0x000000007ff22000-0x000000007ff26000) [Reserved   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem29: [0x000000007ff26000-0x000000007ff2e000) [ACPIRclMem |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem30: [0x000000007ff2e000-0x000000007ff32000) [ACPIMemNVS |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem31: [0x000000007ff32000-0x000000007ffd0000) [BootData   |WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem32: [0x000000007ffd0000-0x0000000080000000) [RtData     |RT|WB|WT|WC|UC] (0MB)
-> [    0.000000] efi: mem33: [0x00000000fff00000-0x0000000100000000) [RtData     |RT|UC] (1MB)
-> 
-> ---
->  arch/x86/platform/efi/efi.c |  5 +++--
->  drivers/firmware/efi/efi.c  | 52 ++++++++++++++++++++++-----------------------
->  2 files changed, 29 insertions(+), 28 deletions(-)
-> 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 6a1ffd777db0..4b76256dcb31 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -203,10 +203,11 @@ static void __init print_efi_memmap(void)
->  		char buf[64];
->  
->  		md = p;
-> -		pr_info("mem%02u: %s range=[0x%016llx-0x%016llx) (%lluMB)\n",
-> -			i, efi_md_typeattr_format(buf, sizeof(buf), md),
-> +		pr_info("mem%02u: [0x%016llx-0x%016llx) %s (%lluMB)\n",
-> +			i,
->  			md->phys_addr,
->  			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
-> +			efi_md_typeattr_format(buf, sizeof(buf), md),
->  			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
->  	}
->  #endif  /*  EFI_DEBUG  */
-> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-> index 8590099ac148..6734072980ee 100644
-> --- a/drivers/firmware/efi/efi.c
-> +++ b/drivers/firmware/efi/efi.c
-> @@ -446,21 +446,23 @@ int __init efi_get_fdt_params(struct efi_fdt_params *params, int verbose)
->  }
->  #endif /* CONFIG_EFI_PARAMS_FROM_FDT */
->  
-> +/* Update this if you're adding a longer string */
-> +#define MEM_TYPE_MAXLEN 11
->  static __initdata char memory_type_name[][20] = {
->  	"Reserved",
-> -	"Loader Code",
-> -	"Loader Data",
-> -	"Boot Code",
-> -	"Boot Data",
-> -	"Runtime Code",
-> -	"Runtime Data",
-> -	"Conventional Memory",
-> -	"Unusable Memory",
-> -	"ACPI Reclaim Memory",
-> -	"ACPI Memory NVS",
-> -	"Memory Mapped I/O",
-> -	"MMIO Port Space",
-> -	"PAL Code"
-> +	"LdrCode",
-> +	"LdrData",
-> +	"BootCode",
-> +	"BootData",
-> +	"RtCode",
-> +	"RtData",
-> +	"Mem",
-> +	"UnusableMem",
-> +	"ACPIRclMem",
-> +	"ACPIMemNVS",
-> +	"MMappedI/O",
-> +	"MMIOPortSpc",
-> +	"PALCode"
->  };
->  
->  char * __init efi_md_typeattr_format(char *buf, size_t size,
-> @@ -474,9 +476,7 @@ char * __init efi_md_typeattr_format(char *buf, size_t size,
->  	if (md->type >= ARRAY_SIZE(memory_type_name))
->  		type_len = snprintf(pos, size, "[type=%u", md->type);
->  	else
-> -		type_len = snprintf(pos, size, "[%-*s",
-> -				    (int)(sizeof(memory_type_name[0]) - 1),
-> -				    memory_type_name[md->type]);
-> +		type_len = snprintf(pos, size, "[%-*s", MEM_TYPE_MAXLEN, memory_type_name[md->type]);
->  	if (type_len >= size)
->  		return buf;
->  
-> @@ -490,15 +490,15 @@ char * __init efi_md_typeattr_format(char *buf, size_t size,
->  		snprintf(pos, size, "|attr=0x%016llx]",
->  			 (unsigned long long)attr);
->  	else
-> -		snprintf(pos, size, "|%3s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
-> -			 attr & EFI_MEMORY_RUNTIME ? "RUN" : "",
-> -			 attr & EFI_MEMORY_XP      ? "XP"  : "",
-> -			 attr & EFI_MEMORY_RP      ? "RP"  : "",
-> -			 attr & EFI_MEMORY_WP      ? "WP"  : "",
-> -			 attr & EFI_MEMORY_UCE     ? "UCE" : "",
-> -			 attr & EFI_MEMORY_WB      ? "WB"  : "",
-> -			 attr & EFI_MEMORY_WT      ? "WT"  : "",
-> -			 attr & EFI_MEMORY_WC      ? "WC"  : "",
-> -			 attr & EFI_MEMORY_UC      ? "UC"  : "");
-> +		snprintf(pos, size, "|%s%s%s%s%s%s%s%s%s]",
-> +			 attr & EFI_MEMORY_RUNTIME ? "RT|"  : "",
-> +			 attr & EFI_MEMORY_XP      ? "XP|"  : "",
-> +			 attr & EFI_MEMORY_RP      ? "RP|"  : "",
-> +			 attr & EFI_MEMORY_WP      ? "WP|"  : "",
-> +			 attr & EFI_MEMORY_UCE     ? "UCE|" : "",
-> +			 attr & EFI_MEMORY_WB      ? "WB|"  : "",
-> +			 attr & EFI_MEMORY_WT      ? "WT|"  : "",
-> +			 attr & EFI_MEMORY_WC      ? "WC|"  : "",
-> +			 attr & EFI_MEMORY_UC      ? "UC"   : "");
->  	return buf;
->  }
-> -- 
-> 2.0.0
-> 
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k (2014-11-03 14:09:33 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/for-f2fs-3.19
+
+for you to fetch changes up to 635aee1fefef921ae4124b127fced62ea6008839:
+
+  f2fs: avoid to ra unneeded blocks in recover flow (2014-12-08 14:19:09 -0800)
+
+----------------------------------------------------------------
+f2fs updates for v3.19
+
+This series includes the following enhancement with refactored flows.
+ o fix inmemory page operations
+ o fix wrong inline_data & inline_dir logics
+ o enhance memory and IO control under memory pressure
+ o consider preemption on radix_tree operation
+ o fix memory leaks and deadlocks
+
+But also, there are a couple of new features:
+ o support inline_dir to store dentries inside inode page
+ o add -o fastboot to reduce booting time
+ o implement -o dirsync
+
+And a lot of clean-ups and minor bug fixes as well.
+
+----------------------------------------------------------------
+Changman Lee (8):
+      f2fs: fix wrong data structure when create slab
+      f2fs: check dirty_nat_cnt before flushing nat entries in journal
+      f2fs: no more dirty_nat_entires when flushing
+      f2fs: cleanup if-statement of phase in gc_data_segment
+      f2fs: cleanup redundant macro
+      f2fs: more fast lookup for gc_inode list
+      f2fs: check if inode state is dirty at fsync
+      f2fs: cleanup path to need cp at fsync
+
+Chao Yu (14):
+      f2fs: add infra struct and helper for inline dir
+      f2fs: add a new mount option for inline dir
+      f2fs: export dir operations for inline dir
+      f2fs: add key function to handle inline dir
+      f2fs: enable inline dir handling
+      f2fs: update f2fs documentation for inline dir support
+      f2fs: avoid unable to restart gc thread in remount
+      f2fs: remove unneeded check code with option in f2fs_remount
+      f2fs: introduce struct inode_management to wrap inner fields
+      f2fs: fix to return correct error number in f2fs_write_begin
+      f2fs: use atomic for counting inode with inline_{dir,inode} flag
+      f2fs: fix to enable readahead for SSA/CP blocks
+      f2fs: introduce is_valid_blkaddr to cleanup codes in ra_meta_pages
+      f2fs: avoid to ra unneeded blocks in recover flow
+
+Gu Zheng (6):
+      f2fs: remove the seems unneeded argument 'type' from __get_victim
+      f2fs: remove the redundant function cond_clear_inode_flag
+      f2fs: introduce f2fs_change_bit to simplify the change bit logic
+      f2fs: set raw_super default to NULL to avoid compile warning
+      f2fs: rename f2fs_set/clear_bit to f2fs_test_and_set/clear_bit
+      f2fs: use current_sit_addr to replace the open code
+
+Jaegeuk Kim (56):
+      f2fs: do not make dirty any inmemory pages
+      f2fs: invalidate inmemory page
+      f2fs: should truncate any allocated block for inline_data write
+      f2fs: fix race conditon on truncation with inline_data
+      f2fs: use highmem for directory pages
+      f2fs: avoid to allocate when inline_data was written
+      f2fs: fix to call f2fs_unlock_op
+      f2fs: avoid build warning
+      f2fs: avoid infinite loop at cp_error
+      f2fs: reuse room_for_filename for inline dentry operation
+      f2fs: reuse find_in_block code for find_in_inline_dir
+      f2fs: fix to wait correct block type
+      f2fs: avoid deadlock on init_inode_metadata
+      f2fs: add stat info for inline_dentry inodes
+      f2fs: fix counting inline_data inode numbers
+      f2fs: reuse core function in f2fs_readdir for inline_dentry
+      f2fs: should not truncate any inline_dentry
+      f2fs: introduce f2fs_dentry_ptr structure for code clean-up
+      f2fs: reuse make_empty_dir code for inline_dentry
+      f2fs: use kmap_atomic instead of kmap
+      f2fs: declare f2fs_convert_inline_dir as a static function
+      f2fs: call write_checkpoint under disabled gc
+      f2fs: flush_dcache_page for inline data
+      f2fs: do not discard data protected by the previous checkpoint
+      f2fs: revisit inline_data to avoid data races and potential bugs
+      f2fs: send discard commands in larger extent
+      f2fs: avoid race condition in handling wait_io
+      f2fs: remove unnecessary macro
+      f2fs: introduce -o fastboot for reducing booting time only
+      f2fs: disable roll-forward when active_logs = 2
+      f2fs: introduce the number of inode entries
+      f2fs: control the memory footprint used by ino entries
+      f2fs: write node pages if checkpoint is not doing
+      f2fs: do not skip any writes under memory pressure
+      f2fs: implement -o dirsync
+      f2fs: reduce the number of inline_data inode before clearing it
+      f2fs: fix deadlock to grab 0'th data page
+      f2fs: convert inline_data when i_size becomes large
+      f2fs: fix to call put_page at the error handling routine
+      f2fs: put the inode page when error was occurred
+      f2fs: submit bio for node blocks in the reclaim path
+      f2fs: write SSA pages under memory pressure
+      f2fs: call flush_dcache_page when the page was updated
+      f2fs: introduce f2fs_dentry_kunmap to clean up
+      f2fs: fix livelock calling f2fs_iget during f2fs_evict_inode
+      f2fs: fix deadlock during inline_data conversion
+      f2fs: make clean the page before writing
+      f2fs: fix to recover converted inline_data
+      f2fs: fix missing kmem_cache_free
+      f2fs: use rw_semaphore for nat entry lock
+      f2fs: call radix_tree_preload before radix_tree_insert
+      f2fs: do retry operations with cond_resched
+      f2fs: count inline_xx in do_read_inode
+      f2fs: set page private for inmemory pages for truncation
+      f2fs: release inmemory pages when the file was closed
+      f2fs: count the number of inmemory pages
+
+Jan Kara (3):
+      f2fs: avoid returning uninitialized value to userspace from f2fs_trim_fs()
+      f2fs: fix possible data corruption in f2fs_write_begin()
+      f2fs: remove pointless bit testing in f2fs_delete_entry()
+
+Markus Elfring (1):
+      f2fs: fix typos for the word "destroy" in jump labels
+
+ Documentation/filesystems/f2fs.txt |   7 +
+ fs/f2fs/acl.c                      | 148 +++++++++++-
+ fs/f2fs/acl.h                      |   5 +-
+ fs/f2fs/checkpoint.c               | 186 ++++++++------
+ fs/f2fs/data.c                     | 166 ++++++-------
+ fs/f2fs/debug.c                    |  15 +-
+ fs/f2fs/dir.c                      | 308 +++++++++++++++---------
+ fs/f2fs/f2fs.h                     | 176 +++++++++++---
+ fs/f2fs/file.c                     | 212 ++++++++++------
+ fs/f2fs/gc.c                       |  89 +++----
+ fs/f2fs/gc.h                       |   5 +
+ fs/f2fs/inline.c                   | 482 +++++++++++++++++++++++++++++--------
+ fs/f2fs/inode.c                    |  44 +++-
+ fs/f2fs/namei.c                    |  58 +++--
+ fs/f2fs/node.c                     | 163 +++++++------
+ fs/f2fs/node.h                     |   8 +-
+ fs/f2fs/recovery.c                 |  14 +-
+ fs/f2fs/segment.c                  | 122 +++++++---
+ fs/f2fs/segment.h                  |   8 +-
+ fs/f2fs/super.c                    |  29 ++-
+ fs/f2fs/xattr.c                    |   6 +-
+ fs/f2fs/xattr.h                    |   6 +-
+ include/linux/f2fs_fs.h            |  27 ++-
+ 23 files changed, 1578 insertions(+), 706 deletions(-)
+
