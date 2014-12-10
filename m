@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaLJNg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:36:26 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:59514 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaLJNgW (ORCPT
+	id S1755888AbaLJNgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:36:24 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:56099 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036AbaLJNgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Dec 2014 08:36:22 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -15,92 +15,68 @@ Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Ingo Molnar <mingo@redhat.com>, linux-gpio@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 1/2] gpio: pcf857x: Propagate wake-up setting to parent irq controller
-Date: Wed, 10 Dec 2014 14:36:14 +0100
-Message-Id: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH 2/2] [RFC] genirq: Set IRQCHIP_SKIP_SET_WAKE for no_irq_chip and dummy_irq_chip
+Date: Wed, 10 Dec 2014 14:36:15 +0100
+Message-Id: <1418218575-17694-2-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
+References: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pcf857x GPIO and interrupt controller uses dummy_irq_chip, which
-does not implement irq_chip.irq_set_wake() and does not set
-IRQCHIP_SKIP_SET_WAKE.
+If no_irq_chip or dummy_irq_chip are used for wake up (e.g. gpio-keys
+with a simple GPIO controller), the following warning is printed on
+resume from s2ram:
 
-This causes two s2ram issues if wake-up is enabled for the pcf857x GPIO
-pins:
-  1. During resume from s2ram, the following warning is printed:
+    WANING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
+    Unbalanced IRQ 113 wake disable
 
-     WARNING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
-     Unbalanced IRQ 113 wake disable
+This happens because no_irq_chip and dummy_irq_chip do not implement
+irq_chip.irq_set_wake(), causing set_irq_wake_real() to return -ENXIO,
+and irq_set_irq_wake() to reset the wake_depth to zero.
 
-  2. Wake-up through the pcf857x GPIO pins may fail, as the parent
-     interrupt controller may be suspended.
-
-Migrate the pcf857x GPIO and interrupt controller from dummy_irq_chip to
-its own irq_chip. This irq chip implements irq_chip.irq_set_wake() to
-propagate its wake-up setting to the parent interrupt controller.
-
-This fixes wake-up through gpio-keys on sh73a0/kzm9g, where the pcf857x
-interrupt is cascaded to irq-renesas-intc-irqpin, and the latter must
-not be suspended when wake-up is enabled.
+Set IRQCHIP_SKIP_SET_WAKE to indicate that irq_chip.irq_set_wake() is
+not implemented.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- drivers/gpio/gpio-pcf857x.c | 33 ++++++++++++++++++++++++++++++++-
- 1 file changed, 32 insertions(+), 1 deletion(-)
+Alternatively, can't we remove IRQCHIP_SKIP_SET_WAKE, and just check for
+the presence of irq_chip.irq_set_wake()?
+I'll be happy to send a patch to do that instead...
 
-diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
-index 236708ad0a5ba0ab..22dbecb004cf6c5b 100644
---- a/drivers/gpio/gpio-pcf857x.c
-+++ b/drivers/gpio/gpio-pcf857x.c
-@@ -218,14 +218,45 @@ static irqreturn_t pcf857x_irq(int irq, void *data)
- 	return IRQ_HANDLED;
- }
+Is there anything that relies on this -ENXIO error code?
+All irq_chip implementations that set IRQCHIP_SKIP_SET_WAKE do not
+implement irq_chip.irq_set_wake(). There are probably more of them that
+forgot to set IRQCHIP_SKIP_SET_WAKE though.
+Am I missing something?
+Commit 60f96b41f71d2a13 ("genirq: Add IRQCHIP_SKIP_SET_WAKE flag")
+doesn't explain why adding the flag was chosen.
+
+Thanks!
+---
+ kernel/irq/dummychip.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/irq/dummychip.c b/kernel/irq/dummychip.c
+index 988dc58e8847f6eb..326a67f2410bf95c 100644
+--- a/kernel/irq/dummychip.c
++++ b/kernel/irq/dummychip.c
+@@ -42,6 +42,7 @@ struct irq_chip no_irq_chip = {
+ 	.irq_enable	= noop,
+ 	.irq_disable	= noop,
+ 	.irq_ack	= ack_bad,
++	.flags		= IRQCHIP_SKIP_SET_WAKE,
+ };
  
-+/*
-+ * NOP functions
-+ */
-+static void noop(struct irq_data *data) { }
-+
-+static unsigned int noop_ret(struct irq_data *data)
-+{
-+	return 0;
-+}
-+
-+static int pcf857x_irq_set_wake(struct irq_data *data, unsigned int on)
-+{
-+	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
-+
-+	irq_set_irq_wake(gpio->client->irq, on);
-+	return 0;
-+}
-+
-+static struct irq_chip pcf857x_irq_chip = {
-+	.name		= "pcf857x",
-+	.irq_startup	= noop_ret,
-+	.irq_shutdown	= noop,
-+	.irq_enable	= noop,
-+	.irq_disable	= noop,
-+	.irq_ack	= noop,
-+	.irq_mask	= noop,
-+	.irq_unmask	= noop,
-+	.irq_set_wake	= pcf857x_irq_set_wake,
-+};
-+
- static int pcf857x_irq_domain_map(struct irq_domain *domain, unsigned int irq,
- 				 irq_hw_number_t hw)
- {
- 	struct pcf857x *gpio = domain->host_data;
- 
- 	irq_set_chip_and_handler(irq,
--				 &dummy_irq_chip,
-+				 &pcf857x_irq_chip,
- 				 handle_level_irq);
-+	irq_set_chip_data(irq, gpio);
- #ifdef CONFIG_ARM
- 	set_irq_flags(irq, IRQF_VALID);
- #else
+ /*
+@@ -57,5 +58,6 @@ struct irq_chip dummy_irq_chip = {
+ 	.irq_ack	= noop,
+ 	.irq_mask	= noop,
+ 	.irq_unmask	= noop,
++	.flags		= IRQCHIP_SKIP_SET_WAKE,
+ };
+ EXPORT_SYMBOL_GPL(dummy_irq_chip);
 -- 
 1.9.1
 
