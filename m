@@ -1,154 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaLJQuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:50:22 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52238 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958AbaLJQuU (ORCPT
+	id S1757677AbaLJQyD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:54:03 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:55515 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312AbaLJQyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:50:20 -0500
-Date: Wed, 10 Dec 2014 17:50:18 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: "Varlese, Marco" <marco.varlese@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Message-ID: <20141210165018.GG1863@nanopsycho.orion>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+	Wed, 10 Dec 2014 11:54:00 -0500
+Date: Wed, 10 Dec 2014 11:53:57 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata changes for v3.19-rc1
+Message-ID: <20141210165357.GD6294@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
->From: Marco Varlese <marco.varlese@intel.com>
->
->Switch hardware offers a list of attributes that are configurable
->on a per port basis.
->This patch provides a mechanism to configure switch ports by adding
->an NDO for setting specific values to specific attributes.
->There will be a separate patch that extends iproute2 to call the
->new NDO.
+Hello,
 
+The only interesting piece is the support for shingled drives.  The
+changes in libata layer are minimal.  All it does is identifying the
+new class of device and report upwards accordingly.
 
-What are these attributes? Can you give some examples. I'm asking
-because there is a plan to pass generic attributes to switch ports
-replacing current specific ndo_switch_port_stp_update. In this case,
-bridge is setting that attribute.
+Thanks.
 
-Is there need to set something directly from userspace or does it make
-rather sense to use involved bridge/ovs/bond ? I think that both will be
-needed.
+The following changes since commit 9a23c1d6f0f5dbac4c9b73fa6cea7c9ee3d29074:
 
+  ahci: fix AHCI parameters not taken into account (2014-11-04 12:56:25 -0500)
 
->
->Signed-off-by: Marco Varlese <marco.varlese@intel.com>
->---
-> include/linux/netdevice.h    |  5 +++++
-> include/uapi/linux/if_link.h |  1 +
-> net/core/rtnetlink.c         | 33 +++++++++++++++++++++++++++++++++
-> 3 files changed, 39 insertions(+)
->
->diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
->index c31f74d..4881c7b 100644
->--- a/include/linux/netdevice.h
->+++ b/include/linux/netdevice.h
->@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
->  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
->  *	Called to notify switch device port of bridge port STP
->  *	state change.
->+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
->+ *                                u32 attr, u64 value);
->+ *	Called to set specific switch ports attributes.
->  */
-> struct net_device_ops {
-> 	int			(*ndo_init)(struct net_device *dev);
->@@ -1185,6 +1188,8 @@ struct net_device_ops {
-> 							    struct netdev_phys_item_id *psid);
-> 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
-> 							      u8 state);
->+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
->+							   u32 attr, u64 value);
-> #endif
-> };
-> 
->diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
->index f7d0d2d..b35c314 100644
->--- a/include/uapi/linux/if_link.h
->+++ b/include/uapi/linux/if_link.h
->@@ -146,6 +146,7 @@ enum {
-> 	IFLA_PHYS_PORT_ID,
-> 	IFLA_CARRIER_CHANGES,
-> 	IFLA_PHYS_SWITCH_ID,
->+	IFLA_SWITCH_PORT_CFG,
-> 	__IFLA_MAX
-> };
-> 
->diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
->index eaa057f..e1be9ca 100644
->--- a/net/core/rtnetlink.c
->+++ b/net/core/rtnetlink.c
->@@ -1389,6 +1389,25 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
-> 	return 0;
-> }
-> 
+are available in the git repository at:
 
-I believe that it would be better to move the code below to
-net/switchdev/switchdev.c
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.19
 
+for you to fetch changes up to 2ba520f0cd65c2e688f8beb495bb6634a61ee17b:
 
->+#ifdef CONFIG_NET_SWITCHDEV
->+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
->+{
->+	int rem, err = -EINVAL;
->+	struct nlattr *v;
->+	const struct net_device_ops *ops = dev->netdev_ops;
->+
->+	nla_for_each_nested(v, attr, rem) {
->+		u32 op = nla_type(v);
->+		u64 value = nla_get_u64(v);
->+
->+		err = ops->ndo_switch_port_set_cfg(dev, op, value);
->+		if (err)
->+			break;
->+	}
->+	return err;
->+}
->+#endif
->+
-> static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
-> {
-> 	int rem, err = -EINVAL;
->@@ -1740,6 +1759,20 @@ static int do_setlink(const struct sk_buff *skb,
-> 			status |= DO_SETLINK_NOTIFY;
-> 		}
-> 	}
->+#ifdef CONFIG_NET_SWITCHDEV
->+	if (tb[IFLA_SWITCH_PORT_CFG]) {
->+		err = -EOPNOTSUPP;
->+		if (!ops->ndo_switch_port_set_cfg)
->+			goto errout;
->+		if (!ops->ndo_switch_parent_id_get)
->+			goto errout;
->+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
->+		if (err < 0)
->+			goto errout;
->+
->+		status |= DO_SETLINK_NOTIFY;
->+	}
->+#endif
-> 	err = 0;
-> 
-> errout:
->-- 
->1.8.5.3
->
+  libata: Remove FIXME comment in atapi_request_sense() (2014-12-04 12:58:50 -0500)
+
+----------------------------------------------------------------
+Geert Uytterhoeven (1):
+      sata_rcar: Document deprecated "renesas,rcar-sata"
+
+Hannes Reinecke (3):
+      libsas: use ata_dev_classify()
+      libata: Implement ATA_DEV_ZAC
+      libata-scsi: Update SATL for ZAC drives
+
+Hans de Goede (1):
+      ahci_sunxi: Make AHCI_HFLAG_NO_PMP flag configurable with a module option
+
+Nicholas Krause (1):
+      libata: Remove FIXME comment in atapi_request_sense()
+
+Valentine Barshak (1):
+      sata_rcar: Add clocks to sata_rcar bindings
+
+ .../devicetree/bindings/ata/sata_rcar.txt          | 11 ++--
+ drivers/ata/ahci_sunxi.c                           | 16 +++++-
+ drivers/ata/libata-core.c                          | 20 +++++--
+ drivers/ata/libata-eh.c                            |  7 ++-
+ drivers/ata/libata-scsi.c                          | 31 ++++++++--
+ drivers/ata/libata-transport.c                     |  1 +
+ drivers/scsi/aic94xx/aic94xx_task.c                | 10 ++--
+ drivers/scsi/isci/request.c                        |  4 +-
+ drivers/scsi/libsas/sas_ata.c                      | 66 ++++------------------
+ drivers/scsi/mvsas/mv_sas.c                        |  4 +-
+ drivers/scsi/pm8001/pm8001_hwi.c                   |  2 +-
+ drivers/scsi/pm8001/pm80xx_hwi.c                   |  2 +-
+ include/linux/libata.h                             |  6 +-
+ include/scsi/libsas.h                              | 11 +---
+ 14 files changed, 98 insertions(+), 93 deletions(-)
+
+-- 
+tejun
