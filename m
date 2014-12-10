@@ -1,82 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaLJCBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:01:14 -0500
-Received: from smtprelay0221.hostedemail.com ([216.40.44.221]:54937 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754081AbaLJCBI (ORCPT
+	id S1754065AbaLJCJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:09:10 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:9576 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170AbaLJCJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:01:08 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3871:3872:4321:4605:5007:6117:6261:7903:10004:10400:10481:10848:11026:11232:11658:11914:12043:12517:12519:12740:13019:13069:13161:13229:13311:13357:19900:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: duck06_7e14c58976520
-X-Filterd-Recvd-Size: 2485
-Message-ID: <1418176864.1047.6.camel@perches.com>
-Subject: Re: [PATCH v2] net: introduce helper macro for_each_cmsghdr
-From: Joe Perches <joe@perches.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Dec 2014 18:01:04 -0800
-In-Reply-To: <5487A455.1090907@cn.fujitsu.com>
-References: <5487A455.1090907@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 9 Dec 2014 21:09:08 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 09 Dec 2014 18:05:51 -0800
+Message-ID: <5487AB39.1050706@nvidia.com>
+Date: Wed, 10 Dec 2014 10:08:57 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Sean Paul <seanpaul@chromium.org>
+CC: Thierry Reding <thierry.reding@gmail.com>, <tbergstrom@nvidia.com>,
+        "Dave Airlie" <airlied@linux.ie>,
+        Stephen Warren <swarren@wwwdotorg.org>, <gnurou@gmail.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drm/tegra: dsi: Add suspend/resume support
+References: <1418020850-7664-1-git-send-email-markz@nvidia.com> <CAOw6vbKegB8cgmqgRit+XdvYNtdEXy3Pcv5=1bYSCJv4v1F2AQ@mail.gmail.com>
+In-Reply-To: <CAOw6vbKegB8cgmqgRit+XdvYNtdEXy3Pcv5=1bYSCJv4v1F2AQ@mail.gmail.com>
+X-Originating-IP: [10.19.224.104]
+X-ClientProxiedBy: HKMAIL102.nvidia.com (10.18.16.11) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 09:39 +0800, Gu Zheng wrote:
-> Introduce helper macro for_each_cmsghdr as a wrapper of the enumerating
-> cmsghdr from msghdr, just cleanup. 
+On 12/10/2014 03:29 AM, Sean Paul wrote:
+> On Sun, Dec 7, 2014 at 10:40 PM, Mark Zhang <markz@nvidia.com> wrote:
+>> This patch adds the suspend/resume support for Tegra drm
+>> driver by calling the corresponding DPMS functions.
+[...]
+>> +       if (dsi->slave) {
+>> +               err = tegra_dsi_pad_calibrate(dsi->slave);
+>> +               if (err < 0) {
+>> +                       dev_err(dsi->slave->dev,
+>> +                               "MIPI calibration failed: %d\n", err);
+>> +                       return err;
+>> +               }
+>> +       }
+> 
+> Move this duplicate call into tegra_dsi_pad_calibrate() to be
+> consistent with the other functions in this file (eg:
+> tegra_dsi_set_timeout).
+> 
 
-Does this even compile?
+Yeah, will do.
 
-So which is it?
+>> +
+>>         err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
+>>         if (err < 0)
+>>                 return err;
+>> @@ -833,6 +850,13 @@ static int tegra_output_dsi_setup_clock(struct tegra_output *output,
+>>                 dev_err(dsi->dev, "failed to set parent clock: %d\n", err);
+>>                 return err;
+>>         }
+>> +       if (dsi->slave) {
+>> +               err = tegra_dsi_ganged_setup(dsi);
+>> +               if (err < 0) {
+>> +                       dev_err(dsi->dev, "DSI ganged setup failed: %d\n", err);
+>> +                       return err;
+>> +               }
+>> +       }
+> 
+> I think this belongs in ->enable() instead of here.
+> 
 
-	for_each_cmsghdr
-or
-	for_each_cmsg_hdr?
+Actually "tegra_dsi_ganged_setup" is not needed any more. This function
+ensures that DSIA & DSIB use the same PLL in ganged mode. But if you
+read the Tegra124/Tegra132 TRM, you'll find there is no way to select
+the clock source for DSIB. I.E, DSIB always uses the same clock source
+with DSIA. Besides, PLLD is the only clock source for DSIA. I.E,
+"clk_get_parent"/"clk_set_parent" doesn't make sense for dsia & dsib
+clock now.
 
-The .h #defines for_each_cmsg_hdr
-but all the uses are for_each_cmsghdr
+I've posted a patch(in tegra clock driver) to fix this:
 
-> diff --git a/Documentation/networking/timestamping/timestamping.c b/Documentation/networking/timestamping/timestamping.c
-[]
-> @@ -169,9 +169,7 @@ static void printpacket(struct msghdr *msg, int res,
->  	       res,
->  	       inet_ntoa(from_addr->sin_addr),
->  	       msg->msg_controllen);
-> -	for (cmsg = CMSG_FIRSTHDR(msg);
-> -	     cmsg;
-> -	     cmsg = CMSG_NXTHDR(msg, cmsg)) {
-> +	for_each_cmsghdr(cmsg, msg) {
->  		printf("   cmsg len %zu: ", cmsg->cmsg_len);
->  		switch (cmsg->cmsg_level) {
->  		case SOL_SOCKET:
-> diff --git a/crypto/af_alg.c b/crypto/af_alg.c
-[]
-> @@ -399,7 +399,7 @@ int af_alg_cmsg_send(struct msghdr *msg, struct af_alg_control *con)
->  {
->  	struct cmsghdr *cmsg;
->  
-> -	for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
-> +	for_each_cmsghdr(cmsg, msg) {
->  		if (!CMSG_OK(msg, cmsg))
->  			return -EINVAL;
->  		if (cmsg->cmsg_level != SOL_ALG)
-> diff --git a/include/linux/socket.h b/include/linux/socket.h
-[]
-> @@ -94,6 +94,10 @@ struct cmsghdr {
->  			     (cmsg)->cmsg_len <= (unsigned long) \
->  			     ((mhdr)->msg_controllen - \
->  			      ((char *)(cmsg) - (char *)(mhdr)->msg_control)))
-> +#define for_each_cmsg_hdr(cmsg, msg)  \
-> +	for (cmsg = CMSG_FIRSTHDR(msg); \
-> +	     cmsg; \
-> +	     cmsg = CMSG_NXTHDR(msg, cmsg))
+http://article.gmane.org/gmane.linux.ports.tegra/20313
 
+And the corresponding changes in dsi driver will arrive soon.
 
+>>
+>>         err = clk_set_rate(dsi->clk_parent, plld);
+>>         if (err < 0) {
+[...]
+>> +
+>> +       drm_modeset_lock_all(tegra->drm);
+>> +       list_for_each_entry(connector, &tegra->drm->mode_config.connector_list,
+>> +                           head) {
+>> +               if (connector->funcs->dpms)
+>> +                       connector->funcs->dpms(connector, connector->dpms);
+>> +       }
+>> +       drm_modeset_unlock_all(tegra->drm);
+>> +
+>> +       drm_helper_resume_force_mode(tegra->drm);
+>> +
+>> +       return 0;
+>> +}
+>> +#endif
+> 
+> So this is the tricky chunk, it definitely does not belong here. I
+> think it makes most sense for this to live in drm.c, however
+> host1x_driver doesn't have suspend/resume hooks.
+> 
 
+Agree. drm.c is the best place for putting this.
+
+> I suspect the correct thing to do here is to add them to
+> host1x_driver, but I'm not sure how much effort is involved in doing
+> that.
+> 
+
+I thought about this before. If we do it in host1x driver, IIUC, it
+means that when host1x starts suspending, it will suspend all host1x
+client devices, right? Honestly I feel this is not a good thing despite
+I can't tell what's the problem in this right now...
+
+Mark
+> Sean
+> 
+>> +
+>> +
+>>  static const struct of_device_id tegra_dsi_of_match[] = {
+>>         { .compatible = "nvidia,tegra114-dsi", },
+>>         { },
+>> @@ -1557,4 +1636,9 @@ struct platform_driver tegra_dsi_driver = {
+>>         },
+>>         .probe = tegra_dsi_probe,
+>>         .remove = tegra_dsi_remove,
+>> +#ifdef CONFIG_PM
+>> +       .suspend = tegra_dsi_suspend,
+>> +       .resume = tegra_dsi_resume,
+>> +#endif
+>> +
+>>  };
+>> --
+>> 1.8.1.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
