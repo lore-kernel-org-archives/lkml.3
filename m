@@ -1,129 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940AbaLJUQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:16:22 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55447 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374AbaLJUQT (ORCPT
+	id S932971AbaLJUQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:16:34 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:35342 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932374AbaLJUQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:16:19 -0500
-Date: Wed, 10 Dec 2014 21:15:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/apic] x86, PCI, ACPI: Kill private function resource_to_addr()
- in arch/x86/pci/acpi.c
-In-Reply-To: <CAE9FiQWaL1Qu1eP-fQV784ucy+r-65AZ95VyiUrefn0dNtfLDw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412101820510.13233@nanos>
-References: <1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com> <tip-e22ce93870deae0e9a54e1539f0088538f187780@git.kernel.org> <CAE9FiQWaL1Qu1eP-fQV784ucy+r-65AZ95VyiUrefn0dNtfLDw@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 10 Dec 2014 15:16:31 -0500
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: jaswinder.singh@linaro.org
+Cc: broonie@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-acpi@lists.linaro.org,
+        patches@linaro.org, arnd@arndb.de,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>
+Subject: [PATCH] Mailbox: Complete wait event only if Tx was successful
+Date: Wed, 10 Dec 2014 15:16:12 -0500
+Message-Id: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014, Yinghai Lu wrote:
+If a wait_for_completion_timeout() call returns due to a timeout,
+the mbox code can still call complete() after returning from the wait.
+This can cause subsequent transmissions on a channel to fail, since
+the wait_for_completion_timeout() sees the completion variable
+is !=0, caused by the erroneous complete() call, and immediately
+returns without waiting for the time as expected by the client.
 
-Can you please
+Fix this by calling complete() only if the TX was successful.
 
-1) Cut out the completely irrelevant information from your replies?
-   It's just annoying to scroll through hundreds of quoted lines to
-   find the guts of the mail.
+Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+---
+ drivers/mailbox/mailbox.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-2) Send patches inline. It's a pain to review and reply and I can't
-   use my normal tooling.
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index 17e9e4a..4acaddb 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
+ 	if (mssg && chan->cl->tx_done)
+ 		chan->cl->tx_done(chan->cl, mssg, r);
  
-> This one cause one system with Nehalem and one with Westmere failing.
-> 
-> [   32.353347] acpi PNP0A08:00: host bridge window expanded to [mem
-> 0x00000000-0xffffffff]; [mem 0x000a0000-0x000bffff] ignored
-> [   32.362897] acpi PNP0A08:00: host bridge window expanded to [mem
-> 0x00000000-0xffffffff]; [mem 0x000d0000-0x000dffff] ignored
-> [   32.382862] acpi PNP0A08:00: host bridge window expanded to [mem
-> 0x00000000-0xffffffff]; [mem 0x00000000-0xffffffff] ignored
-> [   32.402889] acpi PNP0A08:00: host bridge window expanded to [mem
-> 0x00000000-0xffffffff]; [??? 0x00000000-0xffffffff flags 0x0] ignored
-> [   32.423000] acpi PNP0A08:00: host bridge window expanded to [mem
-> 0x00000000-0xffffffff]; [mem 0x00000000-0xffffffff] ignored
-> [   32.602921] PCI host bridge to bus 0000:00
-> [   32.603158] pci_bus 0000:00: root bus resource [bus 00-3f]
-> [   32.622782] pci_bus 0000:00: root bus resource [io  0x0000-0x5fff]
-> [   32.642569] pci_bus 0000:00: root bus resource [mem 0x00000000-0xffffffff]
-> [   32.642893] pci_bus 0000:00: root bus resource [mem
-> 0xfc000000000-0xfc07fffffff pref]
-> 
-> Looks like the commit have several problems.
-> 
-> Attached patch should address them.
-
-> -       struct resource r = {
-> -               .flags = 0
-> -       };
-> +       struct resource r;
->  
-> +       memset(&r, 0, sizeof(r));
-
-What's the point of this change? Both initialize r to 0. memset()
-generates better code, but that's irrelevant for the problem at hand.
-
-And the "fix" is also missing that the address range check happens for
-IORESOURCE_IO as well. Which is silly because
-acpi_dev_resource_address_space() has that already for the IO
-case. But sure, that does not help, because it does not return false,
-it sets the IORESOURCE_DISABLED flag and returns true.
-
-Now the code in setup_resource() clears that flag along with all other
-flags which does not make any sense, at least not without a comment.
-
-But clearing and therefor ignoring IORESOURCE_DISABLED does not make
-any sense at all and is outright wrong.
-
-So there is another interesting flag: IORESOURCE_WINDOW. That's
-cleared as well and of course the rest of that setup code does not
-handle it either. If IORESOURCE_WINDOW is not set, then this is
-address space which is consumed by the bridge itself. So its just
-wrong to treat it as window and try coalescing it with the real window
-spaces.
-
-Also why is this x86 bridge specific?
-
-     if (addr.resource_type == ACPI_MEMORY_RANGE &&
-     	 addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-	    r.flags |= IORESOURCE_PREFETCH;
-
-and not happening in the acpi code? Just because struct resource does
-not have a field for it? Sigh.
-
-This needs more than a hacked together fixup, really. It was wrong
-before Jiangs change already.
-
-> Please fix it before it get into linus tree.
-
-You can be sure that I'm going to fix the whole mess there proper and
-not by applying a cobbled together bandaid.
-
-Thanks,
-
-	tglx
-
-
-
-
-
+-	if (chan->cl->tx_block)
++	if ((!r) && chan->cl->tx_block)
+ 		complete(&chan->tx_complete);
+ }
+ 
+-- 
+1.9.1
 
