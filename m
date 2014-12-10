@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaLJCNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:13:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4730 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754080AbaLJCNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:13:11 -0500
-X-ExtLoop1: 1
+	id S1754797AbaLJCPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:15:54 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:25253 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaLJCPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 21:15:52 -0500
 X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="635317198"
-Date: Wed, 10 Dec 2014 10:12:49 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Alan Tull <atull@opensource.altera.com>
-Cc: kbuild-all@01.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [socfpga-nex:for_next-fpgamgr-without-overlays-v4 8/9]
- drivers/staging/fpga/fpga-mgr.c:46:5: sparse: symbol
- 'fpga_mgr_low_level_state' was not declared. Should it be static?
-Message-ID: <201412101021.JoZosGm6%fengguang.wu@intel.com>
+   d="scan'208";a="52679658"
+From: Ray Jui <rjui@broadcom.com>
+To: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
+Subject: [PATCH v2 0/4] Add I2C support to Broadcom iProc
+Date: Tue, 9 Dec 2014 18:18:09 -0800
+Message-ID: <1418177893-22094-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tree:   git://git.rocketboards.org/linux-socfpga-next for_next-fpgamgr-without-overlays-v4
-head:   590b747bfa6791797c241116453acf50bc4e5dda
-commit: 356ae534a603de3aa8b1cfc173a777f59273d32e [8/9] staging: fpga manager: framework core
-reproduce:
-  # apt-get install sparse
-  git checkout 356ae534a603de3aa8b1cfc173a777f59273d32e
-  make ARCH=x86_64 allmodconfig
-  make C=1 CF=-D__CHECK_ENDIAN__
+This patchset contains the initial I2C support for Broadcom iProc family of
+SoCs.
 
+The iProc I2C controller has separate internal TX and RX FIFOs, each has a
+size of 64 bytes. The iProc I2C controller supports two bus speeds including
+standard mode (100 kHz) and fast mode (400 kHz)
 
-sparse warnings: (new ones prefixed by >>)
+Changes from v1:
+ - Fix function argument parenthesis
+ - Get rid of redundant driver owner field
 
->> drivers/staging/fpga/fpga-mgr.c:46:5: sparse: symbol 'fpga_mgr_low_level_state' was not declared. Should it be static?
->> drivers/staging/fpga/fpga-mgr.c:324:30: sparse: symbol 'fpga_mgr_groups' was not declared. Should it be static?
->> drivers/staging/fpga/fpga-mgr.c:365:25: sparse: symbol 'fpga_mgr_dev_pm_ops' was not declared. Should it be static?
+Ray Jui (4):
+  i2c: iProc: define Broadcom iProc I2C binding
+  i2c: iproc: Add Broadcom iProc I2C Driver
+  ARM: mach-bcm: Enable I2C support for iProc
+  ARM: dts: add I2C device nodes for Broadcom Cygnus
 
-Please review and possibly fold the followup patch.
+ .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37 ++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |   20 +
+ arch/arm/mach-bcm/Kconfig                          |    1 +
+ drivers/i2c/busses/Kconfig                         |    9 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-bcm-iproc.c                 |  502 ++++++++++++++++++++
+ 6 files changed, 570 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+ create mode 100644 drivers/i2c/busses/i2c-bcm-iproc.c
 
----
-0-DAY kernel test infrastructure                Open Source Technology Center
-http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+-- 
+1.7.9.5
+
