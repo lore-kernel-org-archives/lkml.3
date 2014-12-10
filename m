@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927AbaLJTIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:08:20 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:60193 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932870AbaLJTIQ (ORCPT
+	id S933083AbaLJTLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:11:03 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:38398 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932910AbaLJTIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:08:16 -0500
+	Wed, 10 Dec 2014 14:08:20 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: bfields@fieldses.org
 Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
         NeilBrown <neilb@suse.de>
-Subject: [PATCH v2 05/16] sunrpc: abstract out svc_set_num_threads to sv_ops
-Date: Wed, 10 Dec 2014 14:07:49 -0500
-Message-Id: <1418238480-18857-6-git-send-email-jlayton@primarydata.com>
+Subject: [PATCH v2 08/16] sunrpc: set up workqueue function in svc_xprt
+Date: Wed, 10 Dec 2014 14:07:52 -0500
+Message-Id: <1418238480-18857-9-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
 References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
@@ -22,63 +22,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an operation that will do setup of the service. In the case of a
-classic thread-based service that means starting up threads. In the case
-of a workqueue-based service, the setup will do something different.
+For workqueue-based services we'll want to queue a workqueue job
+whenever a xprt needs to be serviced. Add a work_struct to svc_xprt
+and initialize it from a new work_func_t field in the svc_serv_ops.
 
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- fs/nfsd/nfssvc.c           | 8 +++++---
- include/linux/sunrpc/svc.h | 3 +++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ include/linux/sunrpc/svc.h      | 3 +++
+ include/linux/sunrpc/svc_xprt.h | 1 +
+ net/sunrpc/svc.c                | 2 +-
+ net/sunrpc/svc_xprt.c           | 2 ++
+ 4 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 5904c06cfd32..71e7b180c0d9 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -394,6 +394,7 @@ static struct svc_serv_ops nfsd_thread_sv_ops = {
- 	.svo_shutdown		= nfsd_last_thread,
- 	.svo_function		= nfsd,
- 	.svo_enqueue_xprt	= svc_xprt_do_enqueue,
-+	.svo_setup		= svc_set_num_threads,
- 	.svo_module		= THIS_MODULE,
- };
- 
-@@ -506,8 +507,8 @@ int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
- 	/* apply the new numbers */
- 	svc_get(nn->nfsd_serv);
- 	for (i = 0; i < n; i++) {
--		err = svc_set_num_threads(nn->nfsd_serv, &nn->nfsd_serv->sv_pools[i],
--				    	  nthreads[i]);
-+		err = nn->nfsd_serv->sv_ops->svo_setup(nn->nfsd_serv,
-+				&nn->nfsd_serv->sv_pools[i], nthreads[i]);
- 		if (err)
- 			break;
- 	}
-@@ -546,7 +547,8 @@ nfsd_svc(int nrservs, struct net *net)
- 	error = nfsd_startup_net(nrservs, net);
- 	if (error)
- 		goto out_destroy;
--	error = svc_set_num_threads(nn->nfsd_serv, NULL, nrservs);
-+	error = nn->nfsd_serv->sv_ops->svo_setup(nn->nfsd_serv,
-+			NULL, nrservs);
- 	if (error)
- 		goto out_shutdown;
- 	/* We are holding a reference to nn->nfsd_serv which
 diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 7429cdcb48b5..5e172c8329f8 100644
+index 3d2113222dda..8bd53f723485 100644
 --- a/include/linux/sunrpc/svc.h
 +++ b/include/linux/sunrpc/svc.h
-@@ -61,6 +61,9 @@ struct svc_serv_ops {
+@@ -58,6 +58,9 @@ struct svc_serv_ops {
+ 	/* function for service threads to run */
+ 	int		(*svo_function)(void *);
+ 
++	/* xprt work function */
++	work_func_t	svo_xprt_work;
++
  	/* queue up a transport for servicing */
  	void		(*svo_enqueue_xprt)(struct svc_xprt *);
  
-+	/* set up thread (or whatever) execution context */
-+	int		(*svo_setup)(struct svc_serv *, struct svc_pool *, int);
-+
- 	/* optional module to count when adding threads (pooled svcs only) */
- 	struct module	*svo_module;
- };
+diff --git a/include/linux/sunrpc/svc_xprt.h b/include/linux/sunrpc/svc_xprt.h
+index 78512cfe1fe6..096937871cda 100644
+--- a/include/linux/sunrpc/svc_xprt.h
++++ b/include/linux/sunrpc/svc_xprt.h
+@@ -53,6 +53,7 @@ struct svc_xprt {
+ 	struct kref		xpt_ref;
+ 	struct list_head	xpt_list;
+ 	struct list_head	xpt_ready;
++	struct work_struct	xpt_work;
+ 	unsigned long		xpt_flags;
+ #define	XPT_BUSY	0		/* enqueued/receiving */
+ #define	XPT_CONN	1		/* conn pending */
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 165fa1803a0a..135ffbe9d983 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -34,7 +34,7 @@
+ 
+ static void svc_unregister(const struct svc_serv *serv, struct net *net);
+ 
+-#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function)
++#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function || (serv)->sv_ops->svo_xprt_work)
+ 
+ #define SVC_POOL_DEFAULT	SVC_POOL_GLOBAL
+ 
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 4954339315b7..63b42a8578c0 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -157,6 +157,8 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
+ 	xprt->xpt_ops = xcl->xcl_ops;
+ 	kref_init(&xprt->xpt_ref);
+ 	xprt->xpt_server = serv;
++	if (serv->sv_ops->svo_xprt_work)
++		INIT_WORK(&xprt->xpt_work, serv->sv_ops->svo_xprt_work);
+ 	INIT_LIST_HEAD(&xprt->xpt_list);
+ 	INIT_LIST_HEAD(&xprt->xpt_ready);
+ 	INIT_LIST_HEAD(&xprt->xpt_deferred);
 -- 
 2.1.0
 
