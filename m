@@ -1,204 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaLJBnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:43:49 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3780 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370AbaLJBnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:43:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="427149005"
-Message-ID: <5487A548.6070800@intel.com>
-Date: Wed, 10 Dec 2014 09:43:36 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-scsi@vger.kernel.org
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Vinayak Holikatti <vinholikatti@gmail.com>
-Subject: Re: [Update][PATCH] SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-References: <3237237.IIIiULdqDt@vostro.rjw.lan> <3039454.iyzHXUp3Uj@vostro.rjw.lan>
-In-Reply-To: <3039454.iyzHXUp3Uj@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1754041AbaLJBqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:46:33 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:34077 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbaLJBqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 20:46:31 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Omar Sandoval <osandov@osandov.com>
+Subject: [RFC PATCH v3 0/7] btrfs: implement swap file support
+Date: Tue,  9 Dec 2014 17:45:41 -0800
+Message-Id: <cover.1418173063.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 05:47 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: SCSI / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-> 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> CONFIG_PM.
-> 
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
-> drivers/scsi/ and in include/scsi/scsi_device.h.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi, everyone,
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+This patch series, based on v3.18, implements support for swap files on BTRFS.
+Patches 1, 3, and 4 are for the VFS folks, patch 2 is for NFS, and the rest is
+all BTRFS.
 
-Thanks,
-Aaron
+The standard swap file implementation uses bmap() to get a list of physical
+blocks to do I/O on. This doesn't work for BTRFS, which moves disk blocks around
+as part of normal operation (COW, defragmentation, etc.).
 
-> ---
-> 
-> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) which is only in linux-next at the moment (via the
-> linux-pm tree).
-> 
-> Please let me know if it is OK to take this one into linux-pm.
-> 
-> ---
->  drivers/scsi/scsi_pm.c           |   10 ----------
->  drivers/scsi/scsi_priv.h         |    5 ++---
->  drivers/scsi/ufs/ufshcd-pci.c    |   11 ++++-------
->  drivers/scsi/ufs/ufshcd-pltfrm.c |   11 ++++-------
->  include/scsi/scsi_device.h       |    4 ++--
->  5 files changed, 12 insertions(+), 29 deletions(-)
-> 
-> Index: linux-pm/include/scsi/scsi_device.h
-> ===================================================================
-> --- linux-pm.orig/include/scsi/scsi_device.h
-> +++ linux-pm/include/scsi/scsi_device.h
-> @@ -440,13 +440,13 @@ static inline int scsi_execute_req(struc
->  extern void sdev_disable_disk_events(struct scsi_device *sdev);
->  extern void sdev_enable_disk_events(struct scsi_device *sdev);
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
->  extern int scsi_autopm_get_device(struct scsi_device *);
->  extern void scsi_autopm_put_device(struct scsi_device *);
->  #else
->  static inline int scsi_autopm_get_device(struct scsi_device *d) { return 0; }
->  static inline void scsi_autopm_put_device(struct scsi_device *d) {}
-> -#endif /* CONFIG_PM_RUNTIME */
-> +#endif /* CONFIG_PM */
->  
->  static inline int __must_check scsi_device_reprobe(struct scsi_device *sdev)
->  {
-> Index: linux-pm/drivers/scsi/scsi_priv.h
-> ===================================================================
-> --- linux-pm.orig/drivers/scsi/scsi_priv.h
-> +++ linux-pm/drivers/scsi/scsi_priv.h
-> @@ -157,8 +157,7 @@ static inline void scsi_netlink_exit(voi
->  /* scsi_pm.c */
->  #ifdef CONFIG_PM
->  extern const struct dev_pm_ops scsi_bus_pm_ops;
-> -#endif
-> -#ifdef CONFIG_PM_RUNTIME
-> +
->  extern void scsi_autopm_get_target(struct scsi_target *);
->  extern void scsi_autopm_put_target(struct scsi_target *);
->  extern int scsi_autopm_get_host(struct Scsi_Host *);
-> @@ -168,7 +167,7 @@ static inline void scsi_autopm_get_targe
->  static inline void scsi_autopm_put_target(struct scsi_target *t) {}
->  static inline int scsi_autopm_get_host(struct Scsi_Host *h) { return 0; }
->  static inline void scsi_autopm_put_host(struct Scsi_Host *h) {}
-> -#endif /* CONFIG_PM_RUNTIME */
-> +#endif /* CONFIG_PM */
->  
->  extern struct async_domain scsi_sd_pm_domain;
->  extern struct async_domain scsi_sd_probe_domain;
-> Index: linux-pm/drivers/scsi/scsi_pm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/scsi/scsi_pm.c
-> +++ linux-pm/drivers/scsi/scsi_pm.c
-> @@ -213,8 +213,6 @@ static int scsi_bus_restore(struct devic
->  
->  #endif /* CONFIG_PM_SLEEP */
->  
-> -#ifdef CONFIG_PM_RUNTIME
-> -
->  static int sdev_runtime_suspend(struct device *dev)
->  {
->  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> @@ -332,14 +330,6 @@ void scsi_autopm_put_host(struct Scsi_Ho
->  	pm_runtime_put_sync(&shost->shost_gendev);
->  }
->  
-> -#else
-> -
-> -#define scsi_runtime_suspend	NULL
-> -#define scsi_runtime_resume	NULL
-> -#define scsi_runtime_idle	NULL
-> -
-> -#endif /* CONFIG_PM_RUNTIME */
-> -
->  const struct dev_pm_ops scsi_bus_pm_ops = {
->  	.prepare =		scsi_bus_prepare,
->  	.suspend =		scsi_bus_suspend,
-> Index: linux-pm/drivers/scsi/ufs/ufshcd-pci.c
-> ===================================================================
-> --- linux-pm.orig/drivers/scsi/ufs/ufshcd-pci.c
-> +++ linux-pm/drivers/scsi/ufs/ufshcd-pci.c
-> @@ -62,12 +62,7 @@ static int ufshcd_pci_resume(struct devi
->  {
->  	return ufshcd_system_resume(dev_get_drvdata(dev));
->  }
-> -#else
-> -#define ufshcd_pci_suspend	NULL
-> -#define ufshcd_pci_resume	NULL
-> -#endif /* CONFIG_PM */
->  
-> -#ifdef CONFIG_PM_RUNTIME
->  static int ufshcd_pci_runtime_suspend(struct device *dev)
->  {
->  	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
-> @@ -80,11 +75,13 @@ static int ufshcd_pci_runtime_idle(struc
->  {
->  	return ufshcd_runtime_idle(dev_get_drvdata(dev));
->  }
-> -#else /* !CONFIG_PM_RUNTIME */
-> +#else /* !CONFIG_PM */
-> +#define ufshcd_pci_suspend	NULL
-> +#define ufshcd_pci_resume	NULL
->  #define ufshcd_pci_runtime_suspend	NULL
->  #define ufshcd_pci_runtime_resume	NULL
->  #define ufshcd_pci_runtime_idle	NULL
-> -#endif /* CONFIG_PM_RUNTIME */
-> +#endif /* CONFIG_PM */
->  
->  /**
->   * ufshcd_pci_shutdown - main function to put the controller in reset state
-> Index: linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/scsi/ufs/ufshcd-pltfrm.c
-> +++ linux-pm/drivers/scsi/ufs/ufshcd-pltfrm.c
-> @@ -266,12 +266,7 @@ static int ufshcd_pltfrm_resume(struct d
->  {
->  	return ufshcd_system_resume(dev_get_drvdata(dev));
->  }
-> -#else
-> -#define ufshcd_pltfrm_suspend	NULL
-> -#define ufshcd_pltfrm_resume	NULL
-> -#endif
->  
-> -#ifdef CONFIG_PM_RUNTIME
->  static int ufshcd_pltfrm_runtime_suspend(struct device *dev)
->  {
->  	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
-> @@ -284,11 +279,13 @@ static int ufshcd_pltfrm_runtime_idle(st
->  {
->  	return ufshcd_runtime_idle(dev_get_drvdata(dev));
->  }
-> -#else /* !CONFIG_PM_RUNTIME */
-> +#else /* !CONFIG_PM */
-> +#define ufshcd_pltfrm_suspend	NULL
-> +#define ufshcd_pltfrm_resume	NULL
->  #define ufshcd_pltfrm_runtime_suspend	NULL
->  #define ufshcd_pltfrm_runtime_resume	NULL
->  #define ufshcd_pltfrm_runtime_idle	NULL
-> -#endif /* CONFIG_PM_RUNTIME */
-> +#endif /* CONFIG_PM */
->  
->  static void ufshcd_pltfrm_shutdown(struct platform_device *pdev)
->  {
-> 
+Swap-over-NFS introduced an interface through which a filesystem can arbitrate
+swap I/O through address space operations:
+
+- swap_activate() is called by swapon() and informs the address space that the
+  given file is going to be used for swap, so it should take adequate measures
+  like reserving space on disk and pinning block lookup information in memory
+- swap_deactivate() is used to clean up on swapoff()
+- direct_IO() is used to page in and out (this no longer uses readpage as part
+  of this patch series)
+
+Patches 1-4 clean up the necessary infrastructure. There's more that can make
+this better (like resurrecting kernel AIO), but that can be done as a follow-up
+to the work here.
+
+Patches 5 and 6 lay the groundwork needed for using a swap file on BTRFS, and
+patch 7 implements the actual aops.
+
+Version 3 incorporates a bunch of David Sterba's feedback, both style and design
+issues. We now audit various ioctls to prevent them from interfering with swap
+file operation and handle extents which can't be nocow'd.
+
+After some discussion on the mailing list, I decided that for simplicity and
+reliability, it's best to simply disallow COW files and files with shared
+extents (like files with extents shared with a snapshot). From a user's
+perspective, this means that a snapshotted subvolume cannot be used for a swap
+file, but keeping the swap file in a separate subvolume that is never
+snapshotted seems entirely reasonable to me. An alternative suggestion was to
+allow swap files to be snapshotted and to do an implied COW on swap file
+activation, which I was ready to implement until I realized that we can't permit
+snapshotting a subvolume with an active swap file, so this creates a surprising
+inconsistency for users (in my opinion).
+
+As with before, this functionality is tenuously tested in a virtual machine with
+some artificial workloads, but it "works for me". I'm pretty happy with the
+results on my end, so please comment away.
+
+Thanks!
+
+Omar Sandoval (7):
+  direct-io: don't dirty ITER_BVEC pages on read
+  nfs: don't dirty ITER_BVEC pages read through direct I/O
+  swap: use direct I/O for SWP_FILE swap_readpage
+  vfs: update swap_{,de}activate documentation
+  btrfs: prevent ioctls from interfering with a swap file
+  btrfs: add EXTENT_FLAG_SWAPFILE
+  btrfs: enable swap file support
+
+ Documentation/filesystems/Locking |   7 +-
+ Documentation/filesystems/vfs.txt |   7 +-
+ fs/btrfs/ctree.h                  |   3 +
+ fs/btrfs/disk-io.c                |   1 +
+ fs/btrfs/extent_io.c              |   1 +
+ fs/btrfs/extent_map.h             |   1 +
+ fs/btrfs/inode.c                  | 132 ++++++++++++++++++++++++++++++++++++++
+ fs/btrfs/ioctl.c                  |  35 ++++++++--
+ fs/direct-io.c                    |   8 ++-
+ fs/nfs/direct.c                   |   5 +-
+ include/trace/events/btrfs.h      |   3 +-
+ mm/page_io.c                      |  32 +++++++--
+ 12 files changed, 216 insertions(+), 19 deletions(-)
+
+-- 
+2.1.3
 
