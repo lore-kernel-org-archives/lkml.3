@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaLJLtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:49:52 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:58976 "EHLO
+	id S1755819AbaLJLuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:50:06 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:59011 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaLJLtu (ORCPT
+	with ESMTP id S1755670AbaLJLuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:49:50 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-d4-5488335d7fc8
+	Wed, 10 Dec 2014 06:50:00 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-f1-54883366aec6
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: gregkh@linuxfoundation.org
 Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
@@ -15,66 +15,100 @@ Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
         m.szyprowski@samsung.com, kyungmin.park@samsung.com,
         l.czerwinski@samsung.com, s.nawrocki@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 0/6] serial: samsung: add DMA support
-Date: Wed, 10 Dec 2014 12:49:21 +0100
-Message-id: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 1/6] serial: samsung: add struct s3c24xx_uart_dma
+Date: Wed, 10 Dec 2014 12:49:22 +0100
+Message-id: <1418212167-28992-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t9jQd1Y444Qg5PtChZz1q9hs2hevJ7N
-	4vPvXawWvQuuslmcbXrDbvFr2iQ2i8u75rBZnFncy26x9shddosHh3eyWxx+087qwO1xYsZv
-	Fo/9c9ewe/RtWcXocWbBEXaPz5vkAlijuGxSUnMyy1KL9O0SuDJm75vFXLCDp+LcxwOMDYyN
-	XF2MnBwSAiYS71/NYYOwxSQu3FsPZHNxCAlMZ5R4d3UBI4TTziRx//UXdpAqNgEdiS3fJzCC
-	2CICchJPbv9hBiliFpjKJLHp+iQmkISwgKnE5C13wRpYBFQl3s1oYwaxeQVcJaY93coOsU5O
-	4uSxyawTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAgOqGfSOxhXNVgcYhTgYFTi
-	4Q243B4ixJpYVlyZe4hRgoNZSYT3jWRHiBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXFeJfu2ECGB
-	9MSS1OzU1ILUIpgsEwenVAMjQ6AwV97xHYxuG1U3l//4dUphS8X8OplFMpcffVrV8+fb3KNS
-	T02XScXP1RDilyjbP8Xf8FzUt7srTNK5F5orvHTUmsF+Z3KK1CHDv/l93BrMvXrFuVN0u7/k
-	N3t5vHJ/eKtxqehl08ATlnc7Xc7NurTV//ZzAbcstkS7oE2/XjYdfPZ0w7F9SizFGYmGWsxF
-	xYkA4S3aXSQCAAA=
+In-reply-to: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+References: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jQd10444Qg3unWCzmrF/DZtG8eD2b
+	xeffu1gtehdcZbM42/SG3eLXtElsFpd3zWGzOLO4l91i7ZG77BYPDu9ktzj8pp3VgdvjxIzf
+	LB77565h9+jbsorR48yCI+wenzfJBbBGcdmkpOZklqUW6dslcGV8vb2RpeA4X8XGbs0GxpPc
+	XYycHBICJhL/p5xjhrDFJC7cW8/WxcjFISQwnVHi19OvYAkhgXYmiW9t8SA2m4COxJbvExhB
+	bBEBOYknt/8wgzQwC0xlkth0fRJTFyMHh7CAo8TaZ3EgNSwCqhJfpvxhA7F5BVwl1n06xwSx
+	TE7i5LHJrCA2p4CbxKpnK1ghdrlKrL09g20CI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ
+	+bmbGMGh90x6B+OqBotDjAIcjEo8vAGX20OEWBPLiitzDzFKcDArifC+kewIEeJNSaysSi3K
+	jy8qzUktPsQozcGiJM6rZN8WIiSQnliSmp2aWpBaBJNl4uCUamA0e9g/K+9f5HGxsjnWVWVh
+	n4tmcmVN8Vxy6955mfgSDgnXaTafNq9eF3o2Wi2RJyT7+9Tj/91cfdj21lk477lc/cHcdsLO
+	ypLXH2JLciyvBUadZ1rpxLzRa853+02zG3M/hTcpTNHe0v7DPTVs3Yt0/WYlN98z9yK/HQ6f
+	6KfbOfNX7cIJi58psRRnJBpqMRcVJwIAfl0EjTkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This struct contains DMA configuration for each serial port.
+It will be used in next commits adding DMA support in driver.
 
-This patch introduces DMA mode in samsung serial driver. It reduces
-number of interrupts and CPU usage while sending large data blocks.
+Based on previous work of Sylwester Nawrocki and Lukasz Czerwinski.
 
-For TX transfers DMA mode is used when number of bytes to send it larger
-than TX FIFO size, for smaller transfers PIO mode is used.
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/tty/serial/samsung.h | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-For RX transfers DMA mode is used when number of bytes in RX FIFO is
-larger than threshold level. If it's not, we obtain RX timeout interrupt
-and we receive data in PIO mode.
-
-DMA mode is enabled when "dmas" property is defined in device-tree node
-of serial port. Otherwise PIO mode is used.
-
-To have this working, proper residue handling and DMA_PAUSE support in
-DMAC driver are necessary. At many samsung platforms DMAC is pl330, which
-does not have those features in mainline driver yet, so if you would
-like to test series, my patches for pl330 driver are needed. You can
-find them here:
-https://lkml.org/lkml/2014/12/10/156
-
-Entire series is based on previous work of Sylwester Nawrocki and
-Lukasz Czerwinski.
-
-Best regards,
-Robert Baldyga
-
-Robert Baldyga (6):
-  serial: samsung: add struct s3c24xx_uart_dma
-  serial: samsung: alloc dma stucture in ourport
-  serial: s3c: add missing register definitions
-  serial: samsung: add dma reqest/release functions
-  serial: samsung: add DMA support for TX
-  serial: samsung: add DMA support for RX
-
- drivers/tty/serial/samsung.c | 582 +++++++++++++++++++++++++++++++++++++++++--
- drivers/tty/serial/samsung.h |  42 ++++
- include/linux/serial_s3c.h   |  28 +++
- 3 files changed, 634 insertions(+), 18 deletions(-)
-
+diff --git a/drivers/tty/serial/samsung.h b/drivers/tty/serial/samsung.h
+index eb071dd..8dc250c 100644
+--- a/drivers/tty/serial/samsung.h
++++ b/drivers/tty/serial/samsung.h
+@@ -12,6 +12,8 @@
+  * published by the Free Software Foundation.
+ */
+ 
++#include <linux/dmaengine.h>
++
+ struct s3c24xx_uart_info {
+ 	char			*name;
+ 	unsigned int		type;
+@@ -41,6 +43,40 @@ struct s3c24xx_serial_drv_data {
+ 	unsigned int			fifosize[CONFIG_SERIAL_SAMSUNG_UARTS];
+ };
+ 
++struct s3c24xx_uart_dma {
++	dma_filter_fn			fn;
++	void				*rx_param;
++	void				*tx_param;
++
++	unsigned int			rx_chan_id;
++	unsigned int			tx_chan_id;
++
++	struct dma_slave_config		rx_conf;
++	struct dma_slave_config		tx_conf;
++
++	struct dma_chan			*rx_chan;
++	struct dma_chan			*tx_chan;
++
++	dma_addr_t			rx_addr;
++	dma_addr_t			tx_addr;
++
++	dma_cookie_t			rx_cookie;
++	dma_cookie_t			tx_cookie;
++
++	char				*rx_buf;
++
++	dma_addr_t			tx_transfer_addr;
++
++	size_t				rx_size;
++	size_t				tx_size;
++
++	struct dma_async_tx_descriptor	*tx_desc;
++	struct dma_async_tx_descriptor	*rx_desc;
++
++	int				tx_bytes_requested;
++	int				rx_bytes_requested;
++};
++
+ struct s3c24xx_uart_port {
+ 	unsigned char			rx_claimed;
+ 	unsigned char			tx_claimed;
+@@ -59,6 +95,8 @@ struct s3c24xx_uart_port {
+ 	/* reference to platform data */
+ 	struct s3c2410_uartcfg		*cfg;
+ 
++	struct s3c24xx_uart_dma		*dma;
++
+ #ifdef CONFIG_CPU_FREQ
+ 	struct notifier_block		freq_transition;
+ #endif
 -- 
 1.9.1
 
