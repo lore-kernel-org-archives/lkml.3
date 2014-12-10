@@ -1,242 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902AbaLJP30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:29:26 -0500
-Received: from mail-by2on0065.outbound.protection.outlook.com ([207.46.100.65]:37024
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757150AbaLJP3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:29:25 -0500
-X-Greylist: delayed 4261 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 10:29:24 EST
-Date: Wed, 10 Dec 2014 16:29:11 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757929AbaLJPaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:30:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757642AbaLJPaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 10:30:17 -0500
+Date: Wed, 10 Dec 2014 09:25:06 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Miroslav Benes <mbenes@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] livepatch v5: avoid race when checking for state of
+ the patch
+Message-ID: <20141210152506.GA32670@treble.redhat.com>
+References: <1418148307-21434-1-git-send-email-pmladek@suse.cz>
+ <1418148307-21434-2-git-send-email-pmladek@suse.cz>
+ <20141209183249.GA25239@treble.redhat.com>
+ <20141210101147.GB2454@pathway.suse.cz>
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?windows-1252?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/4] gpio/xilinx: Convert the driver to platform device
- interface
-References: <1418225100-2949-1-git-send-email-ricardo.ribalda@gmail.com>
- <1418225100-2949-3-git-send-email-ricardo.ribalda@gmail.com>
-In-Reply-To: <1418225100-2949-3-git-send-email-ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21164.004
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <8a16af8e063b4250ba5e78f2409efef4@BN1AFFO11FD024.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(164054003)(51704005)(189002)(24454002)(199003)(377454003)(479174003)(108616004)(19580395003)(4396001)(47776003)(77156002)(76176999)(50986999)(120916001)(83506001)(54356999)(86362001)(31966008)(107046002)(46102003)(106466001)(77096005)(6806004)(19580405001)(107886001)(20776003)(64706001)(65956001)(62966003)(65806001)(2201001)(50466002)(74316001)(92726002)(21056001)(87936001)(92566001)(99396003)(33646002)(23746002)(104016003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB031;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB031;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB031;
-X-Forefront-PRVS: 0421BF7135
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB031;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141210101147.GB2454@pathway.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 04:24 PM, Ricardo Ribalda Delgado wrote:
-> This way we do not need to transverse the device tree manually and we
-> support hot plugged devices.
+On Wed, Dec 10, 2014 at 11:11:47AM +0100, Petr Mladek wrote:
+> On Tue 2014-12-09 12:32:49, Josh Poimboeuf wrote:
+> > On Tue, Dec 09, 2014 at 07:05:02PM +0100, Petr Mladek wrote:
+> > > klp_patch_enable() and klp_patch_disable() should check the current state
+> > > of the patch under the klp_lock. Otherwise, it might detect that the operation
+> > > is valid but the situation might change before it takes the lock.
+> > 
+> > Hi Petr,
+> > 
+> > Thanks for the patches.
+> > 
+> > I don't think this patch is necessary.  klp_is_enabled() doesn't check
+> > the state of the patch.  It checks the initialization state of the core
+> > module (klp_root_kobj), which can only be set in klp_init().  It's not
+> > protected by the lock, so I don't see the point of this patch.
 > 
-> Also Implement remove callback so the driver can be unloaded
+> Ah, I have misread the name and expected that it checked whether
+> the patch was enabled or disabled. The original code is OK then.
 > 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
-> 
-> v3:
-> Add inited to kernel-doc
-> Keep the driver in susbys_initcall
-> 
-> 
->  drivers/gpio/gpio-xilinx.c | 77 ++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 60 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-> index e668ec4..9a81c82 100644
-> --- a/drivers/gpio/gpio-xilinx.c
-> +++ b/drivers/gpio/gpio-xilinx.c
-> @@ -44,12 +44,18 @@
->   * gpio_state: GPIO state shadow register
->   * gpio_dir: GPIO direction shadow register
->   * gpio_lock: Lock used for synchronization
-> + * inited: True if the port has been inited
->   */
->  struct xgpio_instance {
->  	struct of_mm_gpio_chip mmchip;
->  	u32 gpio_state;
->  	u32 gpio_dir;
->  	spinlock_t gpio_lock;
-> +	bool inited;
-> +};
-> +
-> +struct xgpio {
-> +	struct xgpio_instance port[2];
->  };
->  
->  /**
-> @@ -172,24 +178,56 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
->  }
->  
->  /**
-> + * xgpio_remove - Remove method for the GPIO device.
-> + * @pdev: pointer to the platform device
-> + *
-> + * This function remove gpiochips and frees all the allocated resources.
-> + */
-> +static int xgpio_remove(struct platform_device *pdev)
-> +{
-> +	struct xgpio *xgpio = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < 2; i++) {
-> +		if (!xgpio->port[i].inited)
-> +			continue;
-> +		gpiochip_remove(&xgpio->port[i].mmchip.gc);
-> +
-> +		if (i == 1)
-> +			xgpio->port[i].mmchip.regs -= XGPIO_CHANNEL_OFFSET;
-> +
-> +		iounmap(xgpio->port[i].mmchip.regs);
-> +		kfree(xgpio->port[i].mmchip.gc.label);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
->   * xgpio_of_probe - Probe method for the GPIO device.
-> - * @np: pointer to device tree node
-> + * @pdev: pointer to the platform device
->   *
->   * This function probes the GPIO device in the device tree. It initializes the
->   * driver data structure. It returns 0, if the driver is bound to the GPIO
->   * device, or a negative value if there is an error.
->   */
-> -static int xgpio_of_probe(struct device_node *np)
-> +static int xgpio_probe(struct platform_device *pdev)
->  {
-> +	struct xgpio *xgpio;
->  	struct xgpio_instance *chip;
->  	int status = 0;
-> +	struct device_node *np = pdev->dev.of_node;
->  	const u32 *tree_info;
->  	u32 ngpio;
->  
-> -	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> -	if (!chip)
-> +	xgpio = devm_kzalloc(&pdev->dev, sizeof(*xgpio), GFP_KERNEL);
-> +	if (!xgpio)
->  		return -ENOMEM;
->  
-> +	platform_set_drvdata(pdev, xgpio);
-> +
-> +	chip = &xgpio->port[0];
-> +
->  	/* Update GPIO state shadow register with default value */
->  	of_property_read_u32(np, "xlnx,dout-default", &chip->gpio_state);
->  
-> @@ -209,6 +247,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  	spin_lock_init(&chip->gpio_lock);
->  
-> +	chip->mmchip.gc.dev = &pdev->dev;
->  	chip->mmchip.gc.direction_input = xgpio_dir_in;
->  	chip->mmchip.gc.direction_output = xgpio_dir_out;
->  	chip->mmchip.gc.get = xgpio_get;
-> @@ -219,20 +258,18 @@ static int xgpio_of_probe(struct device_node *np)
->  	/* Call the OF gpio helper to setup and register the GPIO device */
->  	status = of_mm_gpiochip_add(np, &chip->mmchip);
->  	if (status) {
-> -		kfree(chip);
->  		pr_err("%s: error in probe function with status %d\n",
->  		       np->full_name, status);
->  		return status;
->  	}
-> +	chip->inited = true;
->  
->  	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
->  							chip->mmchip.gc.base);
->  
->  	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
->  	if (tree_info && be32_to_cpup(tree_info)) {
-> -		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> -		if (!chip)
-> -			return -ENOMEM;
-> +		chip = &xgpio->port[1];
->  
->  		/* Update GPIO state shadow register with default value */
->  		of_property_read_u32(np, "xlnx,dout-default-2",
-> @@ -254,6 +291,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  		spin_lock_init(&chip->gpio_lock);
->  
-> +		chip->mmchip.gc.dev = &pdev->dev;
->  		chip->mmchip.gc.direction_input = xgpio_dir_in;
->  		chip->mmchip.gc.direction_output = xgpio_dir_out;
->  		chip->mmchip.gc.get = xgpio_get;
-> @@ -264,7 +302,7 @@ static int xgpio_of_probe(struct device_node *np)
->  		/* Call the OF gpio helper to setup and register the GPIO dev */
->  		status = of_mm_gpiochip_add(np, &chip->mmchip);
->  		if (status) {
-> -			kfree(chip);
-> +			xgpio_remove(pdev);
->  			pr_err("%s: error in probe function with status %d\n",
->  			np->full_name, status);
->  			return status;
-> @@ -272,6 +310,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  		/* Add dual channel offset */
->  		chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
-> +		chip->inited = true;
->  
->  		pr_info("XGpio: %s: dual channel registered, base is %d\n",
->  					np->full_name, chip->mmchip.gc.base);
-> @@ -285,19 +324,23 @@ static const struct of_device_id xgpio_of_match[] = {
->  	{ /* end of list */ },
->  };
->  
-> -static int __init xgpio_init(void)
-> -{
-> -	struct device_node *np;
-> +MODULE_DEVICE_TABLE(of, xgpio_of_match);
->  
-> -	for_each_matching_node(np, xgpio_of_match)
-> -		xgpio_of_probe(np);
-> +static struct platform_driver xgpio_plat_driver = {
-> +	.probe		= xgpio_probe,
-> +	.remove		= xgpio_remove,
-> +	.driver		= {
-> +			.name = "gpio-xilinx",
-> +			.of_match_table	= xgpio_of_match,
-> +	},
-> +};
->  
-> -	return 0;
-> +static int __init xgpio_init(void)
-> +{
-> +	return platform_driver_register(&xgpio_plat_driver);
->  }
->  
-> -/* Make sure we get initialized before anyone else tries to use us */
->  subsys_initcall(xgpio_init);
-> -/* No exit call at the moment as we cannot unregister of GPIO chips */
->  
+> Well, Jiri Kosina pointed out that the check did not make much sense.
+> klp_is_enabled() could not be called if the livepatch module is not
+> loaded. And the later check for klp_patch_is_registered() is enough
+> to check whether the klp_enable_patch()/klp_disable_patch() calls
+> are allowed or not.
 
-Still not correct.
-Here should be module_exit if you want to use as module.
-I expect that you haven't tested it.
-
-Thanks,
-Michal
+But livepatch isn't a module, it's part of the kernel.  Even if the init
+function returns an error, that doesn't prevent any of the other
+exported functions from getting called.
 
 
+> 
+> So, I suggest to remove the checks at all.
+> 
+> Best Regards,
+> Petr
+> 
+> 
+> > > 
+> > > Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> > > ---
+> > >  kernel/livepatch/core.c | 16 ++++++++++------
+> > >  1 file changed, 10 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+> > > index d6d0f50e81f8..b848069e44cc 100644
+> > > --- a/kernel/livepatch/core.c
+> > > +++ b/kernel/livepatch/core.c
+> > > @@ -425,11 +425,13 @@ int klp_disable_patch(struct klp_patch *patch)
+> > >  {
+> > >  	int ret;
+> > >  
+> > > -	if (!klp_is_enabled())
+> > > -		return -ENODEV;
+> > > -
+> > >  	mutex_lock(&klp_mutex);
+> > >  
+> > > +	if (!klp_is_enabled()) {
+> > > +		ret = -ENODEV;
+> > > +		goto err;
+> > > +	}
+> > > +
+> > >  	if (!klp_patch_is_registered(patch)) {
+> > >  		ret = -EINVAL;
+> > >  		goto err;
+> > > @@ -489,11 +491,13 @@ int klp_enable_patch(struct klp_patch *patch)
+> > >  {
+> > >  	int ret;
+> > >  
+> > > -	if (!klp_is_enabled())
+> > > -		return -ENODEV;
+> > > -
+> > >  	mutex_lock(&klp_mutex);
+> > >  
+> > > +	if (!klp_is_enabled()) {
+> > > +		ret = -ENODEV;
+> > > +		goto err;
+> > > +	}
+> > > +
+> > >  	if (!klp_patch_is_registered(patch)) {
+> > >  		ret = -EINVAL;
+> > >  		goto err;
+> > > -- 
+> > > 1.8.5.2
+> > > 
+> > 
+> > -- 
+> > Josh
+
+-- 
+Josh
