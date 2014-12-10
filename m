@@ -1,73 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaLJBkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:40:33 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:61446 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaLJBk3 (ORCPT
+	id S1753753AbaLJBlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:41:18 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53031 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679AbaLJBlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:40:29 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org,
-        anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
-        johan@kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] mfd: da9052-core: Fix platform-device id collision
-Date: Tue,  9 Dec 2014 23:39:53 -0200
-Message-Id: <1418175593-23474-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 9 Dec 2014 20:41:17 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5487A418.4060800@jp.fujitsu.com>
+Date: Wed, 10 Dec 2014 10:38:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: James Custer <jcuster@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Russ Anderson <rja@sgi.com>, Derek Fults <dfults@sgi.com>
+Subject: Re: [PATCH] mm: fix invalid use of pfn_valid_within in test_pages_in_a_zone
+References: <1418153696-167580-1-git-send-email-jcuster@sgi.com>,<54878D56.4030508@jp.fujitsu.com> <E0FB9EDDBE1AAD4EA62C90D3B6E4783B739E643B@P-EXMB2-DC21.corp.sgi.com>
+In-Reply-To: <E0FB9EDDBE1AAD4EA62C90D3B6E4783B739E643B@P-EXMB2-DC21.corp.sgi.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+(2014/12/10 9:14), James Custer wrote:
+> It is exactly the same if CONFIG_HOLES_IN_NODE is set, but if CONFIG_HOLES_IN_NODE is not set, then pfn_valid_within is always 1.
 
-Allow multiple DA9052 regulators be registered by registering with
-PLATFORM_DEVID_AUTO instead of PLATFORM_DEVID_NONE.
-   
-The subdevices are currently registered with PLATFORM_DEVID_NONE, which
-will cause a name collision on the platform bus when multiple regulators
-are registered:
+Why don't you set CONFIG_HOLES_IN_ZONE? This BUG is occrred by hole in zone.
+CONFIG_HOLE_IN_ZONE is propered for the system.
 
-[    0.128855] da9052-regulator da9052-regulator: invalid regulator ID specified
-[    0.128973] da9052-regulator: probe of da9052-regulator failed with error -22
-[    0.129148] ------------[ cut here ]------------
-[    0.129200] WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x5c/0x7c()
-[    0.129233] sysfs: cannot create duplicate filename '/devices/platform/soc/60000000.aips/63fc8000.i2c/i2c-0/0-0048/da9052-regulator
-...
-[    0.132891] ------------[ cut here ]------------
-[    0.132924] WARNING: CPU: 0 PID: 1 at lib/kobject.c:240 kobject_add_internal+0x24c/0x2cc()
-[    0.132957] kobject_add_internal failed for da9052-regulator with -EEXIST, don't try to register things with the same name in the same directory.
-...
-[    0.137000] da9052 0-0048: mfd_add_devices failed: -17
-[    0.138486] da9052: probe of 0-0048 failed with error -17
+I think your patch fixes the BUG. But even if fixing the BUG, other issues
+will be occurred by hole in zone.
 
-Based on the fix done by Johan Hovold at commit b6684228726cc255 ("mfd: 
-viperboard: Fix platform-device id collision"). 
+Thanks,
+Yasuaki Ishimatsu
 
-Tested on a imx53-qsb board, where multiple DA9053 regulators can be 
-successfully probed.
+>
+> From: https://lkml.org/lkml/2007/3/21/272
+>
+> "Generally we work under the assumption that memory the mem_map
+> array is contigious and valid out to MAX_ORDER_NR_PAGES block
+> of pages, ie. that if we have validated any page within this
+> MAX_ORDER_NR_PAGES block we need not check any other.  This is not
+> true when CONFIG_HOLES_IN_ZONE is set and we must check each and
+> every reference we make from a pfn.
+>
+> Add a pfn_valid_within() helper which should be used when scanning
+> pages within a MAX_ORDER_NR_PAGES block when we have already
+> checked the validility of the block normally with pfn_valid().
+> This can then be optimised away when we do not have holes within
+> a MAX_ORDER_NR_PAGES block of pages."
+>
+> So, since we're iterating over a pageblock there must be a valid pfn to be able to use pfn_valid_within (which makes sense since if CONFIG_HOLES_IN_NODE is not set, it is always 1).
+>
+> I'm just going off of the documentation there and what makes sense to me based off that documentation. Does that explanation help?
+>
+> Regards,
+> James Custer
+> ________________________________________
+> From: Yasuaki Ishimatsu [isimatu.yasuaki@jp.fujitsu.com]
+> Sent: Tuesday, December 09, 2014 6:01 PM
+> To: James Custer; linux-kernel@vger.kernel.org; linux-mm@kvack.org; akpm@linux-foundation.org; kamezawa.hiroyu@jp.fujitsu.com
+> Cc: Russ Anderson; Derek Fults
+> Subject: Re: [PATCH] mm: fix invalid use of pfn_valid_within in test_pages_in_a_zone
+>
+> (2014/12/10 4:34), James Custer wrote:
+>> Offlining memory by 'echo 0 > /sys/devices/system/memory/memory#/online'
+>> or reading valid_zones 'cat /sys/devices/system/memory/memory#/valid_zones'
+>
+>> causes BUG: unable to handle kernel paging request due to invalid use of
+>> pfn_valid_within. This is due to a bug in test_pages_in_a_zone.
+>
+> The information is not enough to understand what happened on your system.
+> Could you show full BUG messages?
+>
+>>
+>> In order to use pfn_valid_within within a MAX_ORDER_NR_PAGES block of pages,
+>> a valid pfn within the block must first be found. There only needs to be
+>> one valid pfn found in test_pages_in_a_zone in the first place. So the
+>> fix is to replace pfn_valid_within with pfn_valid such that the first
+>> valid pfn within the pageblock is found (if it exists). This works
+>> independently of CONFIG_HOLES_IN_ZONE.
+>>
+>> Signed-off-by: James Custer <jcuster@sgi.com>
+>> ---
+>>    mm/memory_hotplug.c | 11 ++++++-----
+>>    1 file changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index 1bf4807..304c187 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -1331,7 +1331,7 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+>>    }
+>>
+>>    /*
+>> - * Confirm all pages in a range [start, end) is belongs to the same zone.
+>> + * Confirm all pages in a range [start, end) belong to the same zone.
+>>     */
+>>    int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+>>    {
+>> @@ -1342,10 +1342,11 @@ int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+>>        for (pfn = start_pfn;
+>>             pfn < end_pfn;
+>>             pfn += MAX_ORDER_NR_PAGES) {
+>
+>> -             i = 0;
+>> -             /* This is just a CONFIG_HOLES_IN_ZONE check.*/
+>> -             while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
+>> -                     i++;
+>> +             /* Find the first valid pfn in this pageblock */
+>> +             for (i = 0; i < MAX_ORDER_NR_PAGES; i++) {
+>> +                     if (pfn_valid(pfn + i))
+>> +                             break;
+>> +             }
+>
+> If CONFIG_HOLES_IN_NODE is set, there is no difference. Am I making a mistake?
+>
+> Thanks,
+> Yasuaki Ishimatsu
+>
+>
+>>                if (i == MAX_ORDER_NR_PAGES)
+>>                        continue;
+>>                page = pfn_to_page(pfn + i);
+>>
+>
+>
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mfd/da9052-core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-index 52a0c2f..ae498b5 100644
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -554,7 +554,8 @@ int da9052_device_init(struct da9052 *da9052, u8 chip_id)
- 		return ret;
- 	}
- 
--	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
-+	ret = mfd_add_devices(da9052->dev, PLATFORM_DEVID_AUTO,
-+			      da9052_subdev_info,
- 			      ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
- 	if (ret) {
- 		dev_err(da9052->dev, "mfd_add_devices failed: %d\n", ret);
--- 
-1.9.1
 
