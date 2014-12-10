@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaLJMxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:53:42 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62651 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753089AbaLJMxl (ORCPT
+	id S1755310AbaLJMzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:55:18 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:55286 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165AbaLJMzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:53:41 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19J4F62b+gqcJY2ZetcfOnEgpEYqO5Z47o=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 024C462E196
-Date: Wed, 10 Dec 2014 07:53:13 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Marc Zyngier <marc.zyngier@arm.com>, srv_heupstream@mediatek.com,
-        hc.yen@mediatek.com, yh.chen@mediatek.com,
-        linux-kernel@vger.kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, eddie.huang@mediatek.com,
-        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] irqchip: mediatek: Use IS_ERR() instead of NULL
- pointer check
-Message-ID: <20141210125313.GJ22670@titan.lakedaemon.net>
-References: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
- <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
- <20141210121442.GA14485@gmail.com>
+	Wed, 10 Dec 2014 07:55:16 -0500
+Date: Wed, 10 Dec 2014 14:55:10 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: herbert@gondor.apana.org.au
+Cc: davem@davemloft.net, asaf.vertz@tandemg.com, arnd@arndb.de,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] crypto: ux500: fix checkpatch errors
+Message-ID: <20141210125510.GA1904@ubuntu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141210121442.GA14485@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 01:14:43PM +0100, Beniamino Galvani wrote:
-> On Wed, Dec 10, 2014 at 05:55:02PM +0800, Yingjoe Chen wrote:
-> > Beniamino reported a kernel oops caused by an invalid DT file for the
-> > mediatek interrupt polarity extension.
-> > 
-> > The reason is that the interrupt polarity support for mediatek chips
-> > merely checks for NULL pointer instead of a casted error return
-> > value in mtk_sysirq_of_init() so any other casted error value passes
-> > the NULL pointer check and causes a kernel panic when dereferenced.
-> > 
-> > Use IS_ERR() and return the error value via PTR_ERR().
-> > 
-> > Reported-and-tested-by: Beniamino Galvani <b.galvani@gmail.com>
-> 
-> Well, actually I only reported the bug and didn't do any test. Can the
-> "-and-tested" portion of the tag be dropped while applying the patch?
+Fixed a coding style error, code indent should use tabs where possible 
 
-I'd prefer that it be tested before applying.  Would you mind confirming
-that the oops is gone with this patch applied?
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+ drivers/crypto/ux500/cryp/cryp_core.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-thx,
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 92105f3..b189e1d 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -479,13 +479,13 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
+ 		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
+ 		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
+ 		.dst_maxburst = 4,
+-        };
++	};
+ 	struct dma_slave_config cryp2mem = {
+ 		.direction = DMA_DEV_TO_MEM,
+ 		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
+ 		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
+ 		.src_maxburst = 4,
+-        };
++	};
+ 
+ 	dma_cap_zero(device_data->dma.mask);
+ 	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
+@@ -1772,8 +1772,8 @@ static int ux500_cryp_resume(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(ux500_cryp_pm, ux500_cryp_suspend, ux500_cryp_resume);
+ 
+ static const struct of_device_id ux500_cryp_match[] = {
+-        { .compatible = "stericsson,ux500-cryp" },
+-        { },
++	{ .compatible = "stericsson,ux500-cryp" },
++	{ },
+ };
+ 
+ static struct platform_driver cryp_driver = {
+-- 
+1.7.0.4
 
-Jason.
