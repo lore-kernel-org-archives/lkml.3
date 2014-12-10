@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990AbaLJPif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:38:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44205 "EHLO mx2.suse.de"
+	id S1757901AbaLJPq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:46:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35516 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757146AbaLJPid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:38:33 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] blk-mq: Fix uninitialized kobject at CPU hotplugging
-Date: Wed, 10 Dec 2014 16:38:30 +0100
-Message-Id: <1418225910-22108-1-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 2.2.0
+	id S1757686AbaLJPq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 10:46:26 -0500
+Date: Wed, 10 Dec 2014 16:30:14 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [BUG] perf mem: perf mem report fails in TUI mode
+Message-ID: <20141210153014.GC6877@krava.brq.redhat.com>
+References: <CABPqkBTLjQPymwDgNKdOshZimKQ0DGWaqm0gC8uFbwPK7vWrsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTLjQPymwDgNKdOshZimKQ0DGWaqm0gC8uFbwPK7vWrsA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU is hotplugged, the current blk-mq spews a warning like:
+On Tue, Dec 09, 2014 at 11:15:13PM -0500, Stephane Eranian wrote:
+> Hi,
+> 
+> I was running a couple of tests with perf mem from tip.git and
+> found that perf mem -t load rep was failing only in TUI mode.
+> With --stdio, it works fine. I did a bit of investigation and found
+> out that the TUI mode is failing because some symbol (kernel)
+> is showing up with a huge (negative) size. I don't understand
+> the connection between the TUI vs. tty browser and symbols.
+> 
+> To reproduce:
+>     $ perf mem -t load rec my_test_program
+>     $ perf mem -t load rep
+>     $ perf mem -t load rep --stdio
 
-  kobject '(null)' (ffffe8ffffc8b5d8): tried to add an uninitialized object, something is seriously wrong.
-  CPU: 1 PID: 1386 Comm: systemd-udevd Not tainted 3.18.0-rc7-2.g088d59b-default #1
-  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_171129-lamiak 04/01/2014
-   0000000000000000 0000000000000002 ffffffff81605f07 ffffe8ffffc8b5d8
-   ffffffff8132c7a0 ffff88023341d370 0000000000000020 ffff8800bb05bd58
-   ffff8800bb05bd08 000000000000a0a0 000000003f441940 0000000000000007
-  Call Trace:
-   [<ffffffff81005306>] dump_trace+0x86/0x330
-   [<ffffffff81005644>] show_stack_log_lvl+0x94/0x170
-   [<ffffffff81006d21>] show_stack+0x21/0x50
-   [<ffffffff81605f07>] dump_stack+0x41/0x51
-   [<ffffffff8132c7a0>] kobject_add+0xa0/0xb0
-   [<ffffffff8130aee1>] blk_mq_register_hctx+0x91/0xb0
-   [<ffffffff8130b82e>] blk_mq_sysfs_register+0x3e/0x60
-   [<ffffffff81309298>] blk_mq_queue_reinit_notify+0xf8/0x190
-   [<ffffffff8107cfdc>] notifier_call_chain+0x4c/0x70
-   [<ffffffff8105fd23>] cpu_notify+0x23/0x50
-   [<ffffffff81060037>] _cpu_up+0x157/0x170
-   [<ffffffff810600d9>] cpu_up+0x89/0xb0
-   [<ffffffff815fa5b5>] cpu_subsys_online+0x35/0x80
-   [<ffffffff814323cd>] device_online+0x5d/0xa0
-   [<ffffffff81432485>] online_store+0x75/0x80
-   [<ffffffff81236a5a>] kernfs_fop_write+0xda/0x150
-   [<ffffffff811c5532>] vfs_write+0xb2/0x1f0
-   [<ffffffff811c5f42>] SyS_write+0x42/0xb0
-   [<ffffffff8160c4ed>] system_call_fastpath+0x16/0x1b
-   [<00007f0132fb24e0>] 0x7f0132fb24e0
+hi,
+I couldn't reproduce any failure on the acme's perf/core
 
-This is indeed because of an uninitialized kobject for blk_mq_ctx.
-The blk_mq_ctx kobjects are initialized in blk_mq_sysfs_init(), but it
-goes loop over hctx_for_each_ctx(), i.e. it initializes only for
-online CPUs.  Thus, when a CPU is hotplugged, the ctx for the newly
-onlined CPU is registered without initialization.
+since you indicated it's data dependent, could you share
+your perf.data?
 
-This patch fixes the issue by initializing the all ctx kobjects
-belonging to each queue.
+thanks,
+jirka
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=908794
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- block/blk-mq-sysfs.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
-index 371d8800b48a..1630a20d5dcf 100644
---- a/block/blk-mq-sysfs.c
-+++ b/block/blk-mq-sysfs.c
-@@ -390,16 +390,15 @@ static void blk_mq_sysfs_init(struct request_queue *q)
- {
- 	struct blk_mq_hw_ctx *hctx;
- 	struct blk_mq_ctx *ctx;
--	int i, j;
-+	int i;
- 
- 	kobject_init(&q->mq_kobj, &blk_mq_ktype);
- 
--	queue_for_each_hw_ctx(q, hctx, i) {
-+	queue_for_each_hw_ctx(q, hctx, i)
- 		kobject_init(&hctx->kobj, &blk_mq_hw_ktype);
- 
--		hctx_for_each_ctx(hctx, ctx, j)
--			kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
--	}
-+	queue_for_each_ctx(q, ctx, i)
-+		kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
- }
- 
- /* see blk_register_queue() */
--- 
-2.2.0
-
+> 
+> Debugging with TUI is a pain, so I stopped.
+> 
+> I have a patch to improve perf mem a bit but I'd like to get this problem
+> fixed first.
+> 
+> Maybe you have a idea of what's going on.
+> 
+> Thanks.
