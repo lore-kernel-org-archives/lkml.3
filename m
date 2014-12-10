@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaLJCUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:20:19 -0500
-Received: from ozlabs.org ([103.22.144.67]:36609 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539AbaLJCUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:20:18 -0500
-Message-ID: <1418178015.30244.5.camel@concordia>
-Subject: Re: [PATCH V4] powerpc: add little endian flag to syscall_get_arch()
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, anton@samba.org, sgrubb@redhat.com,
-        eparis@parisplace.org, tonyj@suse.de
-Date: Wed, 10 Dec 2014 13:20:15 +1100
-In-Reply-To: <1557787.lOBez6GG22@sifl>
-References: <24fcd2ea2c7633152e74a7a92abab1dd1782745d.1418157273.git.rgb@redhat.com>
-	 <1557787.lOBez6GG22@sifl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1755326AbaLJCUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:20:38 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:53739 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755007AbaLJCUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 21:20:36 -0500
+Message-ID: <5487ADE5.4070705@gmail.com>
+Date: Tue, 09 Dec 2014 18:20:21 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Ray Jui <rjui@broadcom.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] ARM: mach-bcm: Enable I2C support for iProc
+References: <Ray Jui <rjui@broadcom.com> <1418177893-22094-1-git-send-email-rjui@broadcom.com> <1418177893-22094-4-git-send-email-rjui@broadcom.com>
+In-Reply-To: <1418177893-22094-4-git-send-email-rjui@broadcom.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-09 at 21:11 -0500, Paul Moore wrote:
-> On Tuesday, December 09, 2014 03:37:07 PM Richard Guy Briggs wrote:
-> > Since both ppc and ppc64 have LE variants which are now reported by uname,
-> > add that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add
-> > AUDIT_ARCH_PPC64LE variant.
-> > 
-> > Without this,  perf trace and auditctl fail.
-> > 
-> > Mainline kernel reports ppc64le (per a058801) but there is no matching
-> > AUDIT_ARCH_PPC64LE.
-> > 
-> > Since 32-bit PPC LE is not supported by audit, don't advertise it in
-> > AUDIT_ARCH_PPC* variants.
-> > 
-> > See:
-> > 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
-> > 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
-> > 
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> >  arch/powerpc/include/asm/syscall.h |    6 +++++-
-> >  include/uapi/linux/audit.h         |    2 ++
-> >  2 files changed, 7 insertions(+), 1 deletions(-)
+On 09/12/14 18:18, Ray Jui wrote:
+> Enable I2C driver support for Broadcom iProc family of SoCs by
+> selecting I2C_BCM_IPROC
 > 
-> The audit changes look fine to me, but as I mentioned earlier, this should go 
-> in via the ppc tree and not the audit tree.
+> Signed-off-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  arch/arm/mach-bcm/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> Acked-by: Paul Moore <paul@paul-moore.com>
+> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> index aaeec78..86ee90b 100644
+> --- a/arch/arm/mach-bcm/Kconfig
+> +++ b/arch/arm/mach-bcm/Kconfig
+> @@ -19,6 +19,7 @@ config ARCH_BCM_IPROC
+>  	select ARCH_REQUIRE_GPIOLIB
+>  	select ARM_AMBA
+>  	select PINCTRL
+> +	select I2C_BCM_IPROC
 
-Thanks.
+One way to avoid having to modify mach-bcm/Kconfig would be to have your
+i2c driver Kconfig do this:
 
-Yep I'll take it via the powerpc tree, I'll CC stable as well as presumably we
-want this to work in all versions that had LE support.
+default ARCH_BCM_IPROC
 
-cheers
+would that work?
 
+>  	help
+>  	  This enables support for systems based on Broadcom IPROC architected SoCs.
+>  	  The IPROC complex contains one or more ARM CPUs along with common
+> 
 
