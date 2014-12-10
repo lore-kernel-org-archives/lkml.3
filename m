@@ -1,44 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaLJG42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:56:28 -0500
-Received: from smtprelay0028.hostedemail.com ([216.40.44.28]:41259 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752846AbaLJG41 (ORCPT
+	id S1756826AbaLJG5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:57:10 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:35323 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302AbaLJG5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:56:27 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3868:4321:5007:6261:10004:10400:10481:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:19900:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crowd04_550db2383b128
-X-Filterd-Recvd-Size: 1229
-Message-ID: <1418194583.1047.8.camel@perches.com>
-Subject: Re: [PATCH v2] net: introduce helper macro for_each_cmsghdr
-From: Joe Perches <joe@perches.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Dec 2014 22:56:23 -0800
-In-Reply-To: <5487DBD9.1010908@cn.fujitsu.com>
-References: <5487DBD9.1010908@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Dec 2014 01:57:08 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 10 Dec 2014 16:00:55 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm/compaction: stop the isolation when we isolate
+ enough freepage
+Message-ID: <20141210070055.GE13371@js1304-P5Q-DELUXE>
+References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1418022980-4584-5-git-send-email-iamjoonsoo.kim@lge.com>
+ <54857675.5080400@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54857675.5080400@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 13:36 +0800, Gu Zheng wrote:
-> Introduce helper macro for_each_cmsghdr as a wrapper of the enumerating
-> cmsghdr from msghdr, just cleanup. 
+On Mon, Dec 08, 2014 at 10:59:17AM +0100, Vlastimil Babka wrote:
+> On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
+> >From: Joonsoo Kim <js1304@gmail.com>
+> >
+> >Currently, freepage isolation in one pageblock doesn't consider how many
+> >freepages we isolate. When I traced flow of compaction, compaction
+> >sometimes isolates more than 256 freepages to migrate just 32 pages.
+> >
+> >In this patch, freepage isolation is stopped at the point that we
+> >have more isolated freepage than isolated page for migration. This
+> >results in slowing down free page scanner and make compaction success
+> >rate higher.
+> >
+> >stress-highalloc test in mmtests with non movable order 7 allocation shows
+> >increase of compaction success rate and slight improvement of allocation
+> >success rate.
+> >
+> >Allocation success rate on phase 1 (%)
+> >62.70 : 64.00
+> >
+> >Compaction success rate (Compaction success * 100 / Compaction stalls, %)
+> >35.13 : 41.50
+> 
+> This is weird. I could maybe understand that isolating too many
 
-This looks nicer.
-Ideally this would have used: [PATCH V3] as the subject
+In fact, I also didn't fully understand why it results in this
+result. :)
 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
-> v2: use the lower-case macro name as Joe suggested.
+> freepages and then returning them is a waste of time if compaction
+> terminates immediately after the following migration (otherwise we
+> would keep those free pages for the future migrations within same
+> compaction run). And wasting time could reduce success rates for
+> async compaction terminating prematurely due to cond_resched(), but
+> that should be all the difference, unless there's another subtle
+> bug, no?
 
-And a description of the v2->v3 change here.
+My guess is that there is bad effect when we release isolated
+freepages. In asynchronous compaction, this happens quite easily.
+In this case, freepages are returned to page allocator and, maybe,
+they are on pcp list or front of buddy list so they would be used by
+another user at first. This reduces freepages we can utilize so
+compaction is finished earlier.
 
+> 
+> >pfn where both scanners meets on compaction complete
+> >(separate test due to enormous tracepoint buffer)
+> >(zone_start=4096, zone_end=1048576)
+> >586034 : 654378
+> 
+> The difference here suggests that there is indeed another subtle bug
+> related to where free scanner restarts, and we must be leaving the
+> excessively isolated (and then returned) freepages behind. Otherwise
+> I think the scanners should meet at the same place regardless of
+> your patch.
 
+I tried to find another subtle bug, but, can't find any critical one.
+Hmm...
+
+Anyway, regardless of the reason of result, this patch seems reasonable,
+because we don't need to waste time to isolate unneeded freepages.
+
+Thanks.
+
+> 
+> >Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >---
+> >  mm/compaction.c |   17 ++++++++++-------
+> >  1 file changed, 10 insertions(+), 7 deletions(-)
+> >
+> >diff --git a/mm/compaction.c b/mm/compaction.c
+> >index 2fd5f79..12223b9 100644
+> >--- a/mm/compaction.c
+> >+++ b/mm/compaction.c
+> >@@ -422,6 +422,13 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+> >
+> >  		/* If a page was split, advance to the end of it */
+> >  		if (isolated) {
+> >+			cc->nr_freepages += isolated;
+> >+			if (!strict &&
+> >+				cc->nr_migratepages <= cc->nr_freepages) {
+> >+				blockpfn += isolated;
+> >+				break;
+> >+			}
+> >+
+> >  			blockpfn += isolated - 1;
+> >  			cursor += isolated - 1;
+> >  			continue;
+> >@@ -831,7 +838,6 @@ static void isolate_freepages(struct compact_control *cc)
+> >  	unsigned long isolate_start_pfn; /* exact pfn we start at */
+> >  	unsigned long block_end_pfn;	/* end of current pageblock */
+> >  	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+> >-	int nr_freepages = cc->nr_freepages;
+> >  	struct list_head *freelist = &cc->freepages;
+> >
+> >  	/*
+> >@@ -856,11 +862,11 @@ static void isolate_freepages(struct compact_control *cc)
+> >  	 * pages on cc->migratepages. We stop searching if the migrate
+> >  	 * and free page scanners meet or enough free pages are isolated.
+> >  	 */
+> >-	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+> >+	for (; block_start_pfn >= low_pfn &&
+> >+			cc->nr_migratepages > cc->nr_freepages;
+> >  				block_end_pfn = block_start_pfn,
+> >  				block_start_pfn -= pageblock_nr_pages,
+> >  				isolate_start_pfn = block_start_pfn) {
+> >-		unsigned long isolated;
+> >
+> >  		/*
+> >  		 * This can iterate a massively long zone without finding any
+> >@@ -885,9 +891,8 @@ static void isolate_freepages(struct compact_control *cc)
+> >  			continue;
+> >
+> >  		/* Found a block suitable for isolating free pages from. */
+> >-		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
+> >+		isolate_freepages_block(cc, &isolate_start_pfn,
+> >  					block_end_pfn, freelist, false);
+> >-		nr_freepages += isolated;
+> >
+> >  		/*
+> >  		 * Remember where the free scanner should restart next time,
+> >@@ -919,8 +924,6 @@ static void isolate_freepages(struct compact_control *cc)
+> >  	 */
+> >  	if (block_start_pfn < low_pfn)
+> >  		cc->free_pfn = cc->migrate_pfn;
+> >-
+> >-	cc->nr_freepages = nr_freepages;
+> >  }
+> >
+> >  /*
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
