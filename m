@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368AbaLJPwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:52:33 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:60985 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877AbaLJPtG (ORCPT
+	id S932386AbaLJPw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:52:56 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:8751 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967AbaLJPtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:49:06 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-87-54886b713c53
+	Wed, 10 Dec 2014 10:49:02 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-a3-54886b6ce4fd
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -29,175 +29,175 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         boris.brezillon@free-electrons.com
-Subject: [RFC 06/15] gpio: add restrack support
-Date: Wed, 10 Dec 2014 16:48:24 +0100
-Message-id: <1418226513-14105-7-git-send-email-a.hajda@samsung.com>
+Subject: [RFC 04/15] regulator: add restrack support
+Date: Wed, 10 Dec 2014 16:48:22 +0100
+Message-id: <1418226513-14105-5-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
 References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xy7qF2R0hBtM2CVncWneO1eLAi4Us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xy7o52R0hBtOWylvcWneO1eLAi4Us
 	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
 	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
 	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
-	pKTmZJalFunbJXBlTJy/mq1gnVLFneZvrA2Mt2S6GDk4JARMJCbt4exi5AQyxSQu3FvP1sXI
-	xSEksJRRonHyFUYIp49J4sz5BkaQKjYBTYm/m2+ygdgiAjoS13u6mUGKmAU2sEusm74PLCEs
-	oC+xadMzJhCbRUBV4vqaF2DNvALOEidufWCFWCcncfLYZDCbU8BF4u/zvWA1QkA1S7a9Z53A
-	yLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhsfN3BuPSY1SFGAQ5GJR7eHYptIUKs
-	iWXFlbmHGCU4mJVEeBcmd4QI8aYkVlalFuXHF5XmpBYfYmTi4JRqYNS5ypAhMTv97CVltgtn
-	n9st/qLcE+QWLWF6tt+vPO/DAS+PgK1RE/abps2I/Tr7wA1dbkN3HWPnoLmtDgwfVZV1LEy2
-	h2aHvJKRVTn9Qy+1o6Pq/WS9t4Vzvq48OiOzrm/zh96dJt2JfWH7rn5fGfB6wSGxq4fvBrV2
-	frlQ8v3FfOWCk9MP7VViKc5INNRiLipOBADpOWoyawIAAA==
+	pKTmZJalFunbJXBlXPxxgb2gW7li37TFrA2MJ2W7GDk5JARMJPadf88CYYtJXLi3nq2LkYtD
+	SGApo8ScW2ugnD4miRXvFzCBVLEJaEr83XyTDcQWEdCRuN7TzQxSxCywgV1i3fR9YAlhoLFr
+	p79nBLFZBFQlendPB1rBzsEr4CxxQAZimZzEyWOTWUFsTgEXib/P94JVCwFVLNn2nnUCI+8C
+	RoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGR8WUH4+JjVocYBTgYlXh4zRVbQ4RYE8uK
+	K3MPMUpwMCuJ8C5M7ggR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwKh2UCvhznEvm+8xZz9/ZX98
+	XeGTwVuDB48L1gtGbrWJrKgrDd/h/YTn/cfJh6Ufxx5J1Ft2p4vv0Mm9SoqGFZOUegstZTR8
+	9A/edm3p4zReOq9XSrfQlPOqPJ9g/IE5WdXTbl95uEM0Xya84IMVy7rmvcEK4o7pJiv3uFy+
+	c8CPweR1Z+Tk00osxRmJhlrMRcWJAAPLpV1qAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO supports different methods of lookup.
-The patch adds restrack support only to DT based GPIOs.
+Regulators supports various methods of lookup.
+The patch adds restrack support only to DT based regulators.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpio/gpiolib.c        | 81 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/gpio/consumer.h |  4 +++
- include/linux/restrack.h      |  1 +
- 3 files changed, 86 insertions(+)
+ drivers/regulator/core.c           | 77 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regulator/consumer.h | 10 +++++
+ include/linux/restrack.h           |  1 +
+ 3 files changed, 88 insertions(+)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 78fcec9..5d85e20 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -15,6 +15,7 @@
- #include <linux/acpi.h>
- #include <linux/gpio/driver.h>
- #include <linux/gpio/machine.h>
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index cd87c0c..5641e85 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -32,6 +32,7 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/module.h>
 +#include <linux/restrack.h>
  
- #include "gpiolib.h"
- 
-@@ -278,6 +279,8 @@ int gpiochip_add(struct gpio_chip *chip)
- 	if (status)
- 		goto fail;
- 
-+	restrack_up(RESTRACK_TYPE_GPIO, chip->of_node, chip);
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/regulator.h>
+@@ -3733,6 +3734,10 @@ add_dev:
+ 	rdev_init_debugfs(rdev);
+ out:
+ 	mutex_unlock(&regulator_list_mutex);
 +
- 	status = gpiochip_export(chip);
- 	if (status)
- 		goto fail;
-@@ -313,6 +316,7 @@ void gpiochip_remove(struct gpio_chip *chip)
- 	unsigned long	flags;
- 	unsigned	id;
++	if (rdev->dev.of_node)
++		restrack_up(RESTRACK_TYPE_REGULATOR, rdev->dev.of_node, rdev);
++
+ 	return rdev;
  
-+	restrack_down(RESTRACK_TYPE_GPIO, chip->of_node, chip);
- 	acpi_gpiochip_remove(chip);
+ unset_supplies:
+@@ -3767,6 +3772,9 @@ void regulator_unregister(struct regulator_dev *rdev)
+ 	if (rdev == NULL)
+ 		return;
  
- 	spin_lock_irqsave(&gpio_lock, flags);
-@@ -1770,6 +1774,83 @@ void gpiod_put(struct gpio_desc *desc)
- }
- EXPORT_SYMBOL_GPL(gpiod_put);
++	if (rdev->dev.of_node)
++		restrack_down(RESTRACK_TYPE_REGULATOR, rdev->dev.of_node, rdev);
++
+ 	if (rdev->supply) {
+ 		while (rdev->use_count--)
+ 			regulator_disable(rdev->supply);
+@@ -3971,6 +3979,75 @@ static const struct file_operations supply_map_fops = {
+ #endif
+ };
  
-+struct gpiod_restrack_desc {
-+	struct gpio_desc **ptr;
++struct regulator_restrack_desc {
++	struct regulator **ptr;
 +	const char *name;
-+	enum gpiod_flags flags;
-+	struct of_phandle_args spec;
 +	struct restrack_desc desc;
 +};
 +
-+static int gpiod_restrack_init(struct device *dev, struct restrack_desc *desc)
-+{
-+	struct gpiod_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
-+	int ret;
-+
-+	ret = of_get_gpiod_spec(dev, rd->name, 0, &rd->spec);
-+	if (!ret)
-+		desc->if_id = rd->spec.np;
-+	return ret;
-+}
-+
-+static void gpiod_restrack_destroy(struct device *dev,
++static int regulator_restrack_init(struct device *dev,
 +		struct restrack_desc *desc)
 +{
-+	struct gpiod_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++
++	desc->if_id = of_get_regulator(dev, rd->name);
++	return PTR_ERR_OR_ZERO(desc->if_id);
++}
++
++static void regulator_restrack_destroy(struct device *dev,
++		struct restrack_desc *desc)
++{
++	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
 +
 +	of_node_put(desc->if_id);
 +	kfree(rd);
 +}
 +
-+static int gpiod_restrack_ifup(struct device *dev, struct restrack_desc *desc,
-+		void *data)
++static int regulator_restrack_ifup(struct device *dev,
++		struct restrack_desc *desc, void *data)
 +{
-+	struct gpiod_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
 +
-+	*rd->ptr = gpiod_get(dev, rd->name, rd->flags);
++	*rd->ptr = regulator_get(dev, rd->name);
 +	return PTR_ERR_OR_ZERO(*rd->ptr);
 +}
 +
-+static void gpiod_restrack_ifdown(struct device *dev,
++static void regulator_restrack_ifdown(struct device *dev,
 +		struct restrack_desc *desc, void *data)
 +{
-+	struct gpiod_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
 +
-+	gpiod_put(*rd->ptr);
++	regulator_put(*rd->ptr);
 +	*rd->ptr = ERR_PTR(-EPROBE_DEFER);
 +}
 +
-+static const struct restrack_ops gpiod_restrack_ops = {
-+	.if_type = RESTRACK_TYPE_GPIO,
-+	.init = gpiod_restrack_init,
-+	.destroy = gpiod_restrack_destroy,
-+	.if_up = gpiod_restrack_ifup,
-+	.if_down = gpiod_restrack_ifdown,
++static const struct restrack_ops regulator_restrack_ops = {
++	.if_type = RESTRACK_TYPE_REGULATOR,
++	.init = regulator_restrack_init,
++	.destroy = regulator_restrack_destroy,
++	.if_up = regulator_restrack_ifup,
++	.if_down = regulator_restrack_ifdown,
 +};
 +
 +/**
-+ * gpiod_restrack_desc - gpio resource descriptor allocator
-+ * @gpiod: pointer to variable which will be set to gpiod handle
-+ * @name: name of gpio
-+ * @flags: gpiod flags
++ * regulator_restrack_desc - regulator resource descriptor allocator
++ * @regulator: pointer to variable which will be set to regulator handle
++ * @name: name of regulator
 + *
-+ * The function creates resource description for gpio, which shall be used
++ * The function creates resource description for regulator, which shall be used
 + * by *restrack_register functions.
 + */
-+struct restrack_desc *gpiod_restrack_desc(struct gpio_desc **gpiod,
-+		const char *con_id, enum gpiod_flags flags)
++struct restrack_desc *regulator_restrack_desc(struct regulator **regulator,
++		const char *name)
 +{
-+	struct gpiod_restrack_desc *rd;
++	struct regulator_restrack_desc *rd;
 +
-+	RESTRACK_DESC_ALLOC(rd, gpiod_restrack_ops, gpiod, con_id);
-+	if (!rd)
-+		return ERR_PTR(-ENOMEM);
++	RESTRACK_DESC_ALLOC(rd, regulator_restrack_ops, regulator, name);
 +
-+	rd->flags = flags;
-+	return &rd->desc;
++	return rd ? &rd->desc : ERR_PTR(-ENOMEM);
 +}
-+EXPORT_SYMBOL_GPL(gpiod_restrack_desc);
++EXPORT_SYMBOL_GPL(regulator_restrack_desc);
 +
- #ifdef CONFIG_DEBUG_FS
- 
- static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-index 12f146f..55f2e4e 100644
---- a/include/linux/gpio/consumer.h
-+++ b/include/linux/gpio/consumer.h
-@@ -94,6 +94,10 @@ int gpiod_to_irq(const struct gpio_desc *desc);
- struct gpio_desc *gpio_to_desc(unsigned gpio);
- int desc_to_gpio(const struct gpio_desc *desc);
+ static int __init regulator_init(void)
+ {
+ 	int ret;
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index f540b14..69e71ebb 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -551,4 +551,14 @@ static inline int regulator_is_supported_voltage_tol(struct regulator *regulator
+ 					      target_uV + tol_uV);
+ }
  
 +struct restrack_desc;
-+struct restrack_desc *gpiod_restrack_desc(struct gpio_desc **gpiod,
-+		const char *con_id, enum gpiod_flags flags);
++struct restrack_desc *regulator_restrack_desc(struct regulator **regulator,
++		const char *supply);
 +
- #else /* CONFIG_GPIOLIB */
- 
- static inline struct gpio_desc *__must_check __gpiod_get(struct device *dev,
++static inline struct restrack_desc *
++regulator_bulk_restrack_desc(struct regulator_bulk_data *data)
++{
++	return regulator_restrack_desc(&data->consumer, data->supply);
++}
++
+ #endif
 diff --git a/include/linux/restrack.h b/include/linux/restrack.h
-index 4e4eec6..e1aded0 100644
+index af5b617..4e4eec6 100644
 --- a/include/linux/restrack.h
 +++ b/include/linux/restrack.h
-@@ -5,6 +5,7 @@
+@@ -4,6 +4,7 @@
+ #include <linux/track.h>
  
  #define RESTRACK_TYPE_DRM_PANEL 1
- #define RESTRACK_TYPE_REGULATOR 2
-+#define RESTRACK_TYPE_GPIO 3
++#define RESTRACK_TYPE_REGULATOR 2
  
  struct device;
  struct restrack_ctx;
