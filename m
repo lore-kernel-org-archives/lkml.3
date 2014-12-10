@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbaLJQ7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:59:14 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:59656 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227AbaLJQ7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:59:12 -0500
+	id S932377AbaLJQ7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:59:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932227AbaLJQ7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 11:59:15 -0500
+Message-ID: <54887BD9.7030903@redhat.com>
+Date: Wed, 10 Dec 2014 17:59:05 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141210163033.970247616@linux.com>
-References: <20141210163017.092096069@linux.com>
-	<20141210163033.970247616@linux.com>
-Date: Wed, 10 Dec 2014 18:59:11 +0200
-X-Google-Sender-Auth: A02SwF4wNIRxGtXPWT-X5wuNEFY
-Message-ID: <CAOJsxLFEMDwqGtSOBG-6Yjfk7NEzK9pQeTeGuzZFQ=F4Pqmx0Q@mail.gmail.com>
-Subject: Re: [PATCH 5/7] slub: Use end_token instead of NULL to terminate freelists
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm <akpm@linuxfoundation.org>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Tian, Kevin" <kevin.tian@intel.com>, Gerd Hoffmann <kraxel@redhat.com>,
+        "Song, Jike" <jike.song@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Haron, Sandra" <sandra.haron@intel.com>
+Subject: Re: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
+ GVT-g(full GPU virtualization) for KVM
+References: <547FC5DE.4010701@intel.com> <1417769421.11297.37.camel@nilsson.home.kraxel.org> <5481AD24.3000703@redhat.com> <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 6:30 PM, Christoph Lameter <cl@linux.com> wrote:
-> Ending a list with NULL means that the termination of a list is the same
-> for all slab pages. The pointers of freelists otherwise always are
-> pointing to the address space of the page. Make termination of a
-> list possible by setting the lowest bit in the freelist address
-> and use the start address of a page if no other address is available
-> for list termination.
->
-> This will allow us to determine the page struct address from a
-> freelist pointer in the future.
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+
+On 09/12/2014 03:49, Tian, Kevin wrote:
+> - Now we have XenGT/KVMGT separately maintained, and KVMGT lags
+> behind XenGT regarding to features and qualities. Likely you'll continue
+> see stale code (like Xen inst decoder) for some time. In the future we
+> plan to maintain a single kernel repo for both, so KVMGT can share
+> same quality as XenGT once KVM in-kernel dm framework is stable.
+> 
+> - Regarding to Qemu hacks, KVMGT really doesn't have any different 
+> requirements as what have been discussed for GPU pass-through, e.g. 
+> about ISA bridge. Our implementation is based on an old Qemu repo, 
+> and honestly speaking not cleanly developed, because we know we
+> can leverage from GPU pass-through support once it's in Qemu. At 
+> that time we'll leverage the same logic with minimal changes to 
+> hook KVMGT mgmt. APIs (e.g. create/destroy a vGPU instance). So
+> we can ignore this area for now. :-)
+
+Could the virtual device model introduce new registers in order to avoid
+poking at the ISA bridge?  I'm not sure that you "can leverage from GPU
+pass-through support once it's in Qemu", since the Xen IGD passthrough
+support is being added to a separate machine that is specific to Xen IGD
+passthrough; no ISA bridge hacking will probably be allowed on the "-M
+pc" and "-M q35" machine types.
+
+Paolo
