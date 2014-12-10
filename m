@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633AbaLJRqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:46:07 -0500
-Received: from mail-bn1on0063.outbound.protection.outlook.com ([157.56.110.63]:15776
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932209AbaLJRqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:46:06 -0500
-Date: Wed, 10 Dec 2014 09:45:54 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Harini Katakam <harini.katakam@xilinx.com>
-CC: <wsa@the-dreams.de>, <mark.rutland@arm.com>, <michal.simek@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <harinikatakamlinux@gmail.com>,
-        <harinik@xilinx.com>, Vishnu Motghare <vishnum@xilinx.com>
-Subject: Re: [PATCH v4 2/2] i2c: cadence: Check for errata condition
- involving master receive
-References: <1418211884-5329-1-git-send-email-harinik@xilinx.com>
- <1418211884-5329-3-git-send-email-harinik@xilinx.com>
+	id S932641AbaLJRuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:50:09 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48170 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185AbaLJRuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 12:50:07 -0500
+Date: Wed, 10 Dec 2014 18:49:45 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull <atull@opensource.altera.com>
+Cc: gregkh@linuxfoundation.org, jgunthorpe@obsidianresearch.com, hpa@zytor.com,
+        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
+        grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v4 2/6] arm: dts: socfpga: add altera fpga manager
+Message-ID: <20141210174945.GC23358@pengutronix.de>
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+ <1418156090-23578-3-git-send-email-atull@opensource.altera.com>
+ <20141210150109.GA23358@pengutronix.de>
+ <alpine.DEB.2.02.1412101123530.25868@linuxheads99>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418211884-5329-3-git-send-email-harinik@xilinx.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21166.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <6b2bd13bcd934b0fb09712e8950348e6@BN1AFFO11FD005.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(199003)(51704005)(189002)(377424004)(21056001)(92566001)(107046002)(64706001)(83506001)(85202003)(106466001)(4396001)(23676002)(86362001)(54356999)(33646002)(46102003)(53416004)(108616004)(76176999)(110136001)(20776003)(47776003)(50986999)(99396003)(31966008)(77156002)(104016003)(120916001)(551934003)(19580405001)(6806004)(62966003)(87936001)(85182001)(19580395003)(92726002)(74316001)(50466002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB030;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB030;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB030;
-X-Forefront-PRVS: 0421BF7135
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB030;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <alpine.DEB.2.02.1412101123530.25868@linuxheads99>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:42:41 up 56 days,  4:56, 78 users,  load average: 0,03, 0,05,
+ 0,05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 05:14PM +0530, Harini Katakam wrote:
-> Cadence I2C controller has the following bugs:
-> - completion indication is not given to the driver at the end of
-> a read/receive transfer with HOLD bit set.
-> - Invalid read transaction are generated on the bus when HW timeout
-> condition occurs with HOLD bit set.
+On Wed, Dec 10, 2014 at 11:25:59AM -0600, atull wrote:
+> On Wed, 10 Dec 2014, Steffen Trumtrar wrote:
 > 
-> As a result of the above, if a set of messages to be transferred with
-> repeated start includes any transfer following a read transfer,
-> completion is never indicated and timeout occurs.
-> Hence a check is implemented to return -EOPNOTSUPP for such sequences.
+> > Hi!
+> > 
+> > On Tue, Dec 09, 2014 at 02:14:46PM -0600, atull@opensource.altera.com wrote:
+> > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > Add Altera FGPA manager to device tree.
+> > > 
+> > > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > > ---
+> > >  arch/arm/boot/dts/socfpga.dtsi |   10 ++++++++++
+> > >  1 file changed, 10 insertions(+)
+> > > 
+> > > diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> > > index 4472fd9..bab98b6 100644
+> > > --- a/arch/arm/boot/dts/socfpga.dtsi
+> > > +++ b/arch/arm/boot/dts/socfpga.dtsi
+> > > @@ -751,5 +751,15 @@
+> > >  			compatible = "altr,sys-mgr", "syscon";
+> > >  			reg = <0xffd08000 0x4000>;
+> > >  		};
+> > > +
+> > > +		hps_0_fpgamgr: fpgamgr@0xff706000 {
+> > > +			compatible = "altr,fpga-mgr", "simple-bus";
+> > > +			reg = <0xFF706000 0x1000
+> > > +			       0xFFB90000 0x1000>;
+> > > +			interrupts = <0 175 4>;
+> > > +			#address-cells = <1>;
+> > > +			#size-cells = <1>;
+> > > +			ranges;
+> > > +		};
+> > 
+> > The fpgamgr is NOT a bus. You don't need ranges and/or simple-bus.
+> > 
+> > Regards,
+> > Steffen
 > 
-> Signed-off-by: Harini Katakam <harinik@xilinx.com>
-> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
-> ---
+> Actually, I am going to be using this when I add the DT notification 
+> stuff.  That stuff is waiting for DT overlays to show up in the main
+> tree.
 > 
-> v4:
-> Use single dev_warn and make message grep-able.
+> So the choice it to either change this file now, once, or do the minimal 
+> changes and have to change it again later.
 > 
-> v3:
-> Add warning in case of unsupported transfer.
-> 
-> v2:
-> Dont defeteature repeated start. Just check for unsupported conditions in the
-> driver and return error.
-> 
-> ---
->  drivers/i2c/busses/i2c-cadence.c |   14 ++++++++++++++
->  1 file changed, 14 insertions(+)
-> 
-> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
-> index 5f5d4fa..f9269a6 100644
-> --- a/drivers/i2c/busses/i2c-cadence.c
-> +++ b/drivers/i2c/busses/i2c-cadence.c
-> @@ -541,6 +541,20 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
->  	 * processed with a repeated start.
->  	 */
->  	if (num > 1) {
-> +		/*
-> +		 * This controller does not give completion interrupt after a
-> +		 * master receive transfer if HOLD bit is set (repeated start),
-> +		 * resulting in SW timeout. Hence, if a receive transfer is
-> +		 * followed by any other transfer, an error is returned
-> +		 * indicating that this sequence is not supported.
-> +		 */
-> +		for (count = 0; count < num-1; count++) {
-> +			if (msgs[count].flags & I2C_M_RD)
-> +				dev_warn(adap->dev.parent, "No support for "
-> +					 "repeated start when receive is "
-> +					 "followed by a transfer\n");
 
-Still not grepable. There must be no line breaks in the string!
+Yes, that is what I thought. And still, devices can NOT show up
+at the fpgamgr. They show up on the various bridges.
 
-	Sören
+And as far as I understand the DT overlay stuff, you specify in
+the overlay what the parent node will be.
+For i2c this is one of the i2c-hosts, for spi one of the spi-hosts
+and for IP cores in a bitstream one of the bridges.
+
+The fpgamgr is, from my understanding, only responsible for writing
+the bitstream to the FPGA; nothing more.
+
+Regards,
+Steffen
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
