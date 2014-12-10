@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120AbaLJQqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:46:45 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:52313 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaLJQqo (ORCPT
+	id S1758147AbaLJQrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:47:09 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:28287 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758128AbaLJQrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:46:44 -0500
+	Wed, 10 Dec 2014 11:47:07 -0500
+X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
+   d="scan'208";a="52573029"
+Message-ID: <54887901.8070501@broadcom.com>
+Date: Wed, 10 Dec 2014 08:46:57 -0800
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <548856AF.8090805@roeck-us.net>
-References: <1418207937-11648-1-git-send-email-bgolaszewski@baylibre.com>
-	<1418207937-11648-2-git-send-email-bgolaszewski@baylibre.com>
-	<548856AF.8090805@roeck-us.net>
-Date: Wed, 10 Dec 2014 17:46:43 +0100
-Message-ID: <CAMpxmJXp2NT+rie2d2+Z7hixKMyS+xcRNdKRNZaUSJD-aTUVVg@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] hwmon: ina2xx: make shunt resistance configurable
- at run-time
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>, Ray Jui <rjui@broadcom.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        <hauke@hauke-m.de>
+Subject: Re: [PATCH 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
+References: <1418169871-19232-3-git-send-email-rjui@broadcom.com> <9707535.Y78sV0TgX4@wuerfel>
+In-Reply-To: <9707535.Y78sV0TgX4@wuerfel>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-10 15:20 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
->> +       case INA2XX_CALIBRATION:
->> +               if (data->regs[reg] == 0)
->> +                       val = 0;
->> +               else
->> +                       val = data->config->calibration_factor
->> +                                               / data->regs[reg];
->> +               break;
+On 14-12-10 03:31 AM, Arnd Bergmann wrote:
+> On Tuesday 09 December 2014 16:04:29 Ray Jui wrote:
+>> Add initial version of the Broadcom iProc PCIe driver. This driver
+>> has been tested on NSP and Cygnus and is expected to work on all iProc
+>> family of SoCs that deploys the same PCIe host controller
+>>
+>> The driver also supports MSI
+>>
+>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
 >
+> The driver looks suspiciously like the one that Hauke already submitted a
+> while ago for bcm53xx. Please come up with a merged driver that works for
+> both.
+Could you please be a little more specific.  What driver did "Hauke 
+already submitted"?  I do not see any driver in the kernel you are 
+talking about.
 >
-> This doesn't really make sense. What you want to show is rshunt, not the
-> above.
-> I think it would be better to write a separate show function to display it.
+> Are you sure that iProc isn't based on the BCMA bus infrastructure after
+> all? Even the physical address of your PCI host falls into the address
+> range that is used for the internal BCMA bus on the other chips!
+BCMA seems to be for MIPS architectures.  It seems to be quite specific 
+to those architectures using BCMA.  I see no use of it in bcm53xx code?
+>
+> 	Arnd
+>
 
-Hi Guenter,
-
-this is the only way to display values read from the chip. It also
-tells the user what the actual programmed value is. In fact it was
-your suggestion (https://lkml.org/lkml/2014/11/30/233) and I agree
-that it's a better alternative. Are you sure you don't want it done
-this way?
-
-Bart
