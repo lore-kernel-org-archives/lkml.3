@@ -1,130 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaLJAON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 19:14:13 -0500
-Received: from relay2.sgi.com ([192.48.180.65]:54812 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751394AbaLJAOM convert rfc822-to-8bit (ORCPT
+	id S1752692AbaLJAVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 19:21:49 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:32774 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394AbaLJAVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 19:14:12 -0500
-From: James Custer <jcuster@sgi.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Russ Anderson <rja@sgi.com>, Derek Fults <dfults@sgi.com>
-Subject: RE: [PATCH] mm: fix invalid use of pfn_valid_within in
- test_pages_in_a_zone
-Thread-Topic: [PATCH] mm: fix invalid use of pfn_valid_within in
- test_pages_in_a_zone
-Thread-Index: AQHQE+c4w8D45UhtEkyx/M4RV9FbRZyIVagA//+c/Y0=
-Date: Wed, 10 Dec 2014 00:14:09 +0000
-Message-ID: <E0FB9EDDBE1AAD4EA62C90D3B6E4783B739E643B@P-EXMB2-DC21.corp.sgi.com>
-References: <1418153696-167580-1-git-send-email-jcuster@sgi.com>,<54878D56.4030508@jp.fujitsu.com>
-In-Reply-To: <54878D56.4030508@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.15.0.160]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Dec 2014 19:21:45 -0500
 MIME-Version: 1.0
+In-Reply-To: <971ad3f6-90fd-4e3f-916c-8988af3c826d@email.android.com>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
+ <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
+ <87388xodlj.fsf@x220.int.ebiederm.org> <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
+ <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com>
+ <87ppbtn4mv.fsf@x220.int.ebiederm.org> <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
+ <87a92xn2io.fsf@x220.int.ebiederm.org> <87r3w8liw4.fsf@x220.int.ebiederm.org>
+ <87iohklfvj.fsf_-_@x220.int.ebiederm.org> <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrVfKiXuY=KY_=nHpkTyLWgpy_3DK=4Mr2mhpyX9z1TzrA@mail.gmail.com> <971ad3f6-90fd-4e3f-916c-8988af3c826d@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 9 Dec 2014 16:21:23 -0800
+Message-ID: <CALCETrWpzvNm=fjOa3_+4QOqYP8qZUJvQAd6AsRZ71xyHZQRCg@mail.gmail.com>
+Subject: Re: [CFT][PATCH 7/8] userns: Add a knob to disable setgroups on a per
+ user namespace basis
+To: "Eric W.Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is exactly the same if CONFIG_HOLES_IN_NODE is set, but if CONFIG_HOLES_IN_NODE is not set, then pfn_valid_within is always 1.
-
-From: https://lkml.org/lkml/2007/3/21/272
-
-"Generally we work under the assumption that memory the mem_map
-array is contigious and valid out to MAX_ORDER_NR_PAGES block
-of pages, ie. that if we have validated any page within this
-MAX_ORDER_NR_PAGES block we need not check any other.  This is not
-true when CONFIG_HOLES_IN_ZONE is set and we must check each and
-every reference we make from a pfn.
-
-Add a pfn_valid_within() helper which should be used when scanning
-pages within a MAX_ORDER_NR_PAGES block when we have already
-checked the validility of the block normally with pfn_valid().
-This can then be optimised away when we do not have holes within
-a MAX_ORDER_NR_PAGES block of pages."
-
-So, since we're iterating over a pageblock there must be a valid pfn to be able to use pfn_valid_within (which makes sense since if CONFIG_HOLES_IN_NODE is not set, it is always 1).
-
-I'm just going off of the documentation there and what makes sense to me based off that documentation. Does that explanation help?
-
-Regards,
-James Custer
-________________________________________
-From: Yasuaki Ishimatsu [isimatu.yasuaki@jp.fujitsu.com]
-Sent: Tuesday, December 09, 2014 6:01 PM
-To: James Custer; linux-kernel@vger.kernel.org; linux-mm@kvack.org; akpm@linux-foundation.org; kamezawa.hiroyu@jp.fujitsu.com
-Cc: Russ Anderson; Derek Fults
-Subject: Re: [PATCH] mm: fix invalid use of pfn_valid_within in test_pages_in_a_zone
-
-(2014/12/10 4:34), James Custer wrote:
-> Offlining memory by 'echo 0 > /sys/devices/system/memory/memory#/online'
-> or reading valid_zones 'cat /sys/devices/system/memory/memory#/valid_zones'
-
-> causes BUG: unable to handle kernel paging request due to invalid use of
-> pfn_valid_within. This is due to a bug in test_pages_in_a_zone.
-
-The information is not enough to understand what happened on your system.
-Could you show full BUG messages?
-
+On Tue, Dec 9, 2014 at 4:04 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
 >
-> In order to use pfn_valid_within within a MAX_ORDER_NR_PAGES block of pages,
-> a valid pfn within the block must first be found. There only needs to be
-> one valid pfn found in test_pages_in_a_zone in the first place. So the
-> fix is to replace pfn_valid_within with pfn_valid such that the first
-> valid pfn within the pageblock is found (if it exists). This works
-> independently of CONFIG_HOLES_IN_ZONE.
 >
-> Signed-off-by: James Custer <jcuster@sgi.com>
-> ---
->   mm/memory_hotplug.c | 11 ++++++-----
->   1 file changed, 6 insertions(+), 5 deletions(-)
+> On December 9, 2014 4:28:38 PM CST, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Tue, Dec 9, 2014 at 12:42 PM, Eric W. Biederman
+>><ebiederm@xmission.com> wrote:
+>>>
+>>> - Expose the knob to user space through a proc file
+>>/proc/<pid>/setgroups
+>>>
+>>>   A value of "deny" means the setgroups system call is disabled in
+>>the
+>>>   current processes user namespace and can not be enabled in the
+>>>   future in this user namespace.
+>>>
+>>>   A value of "allow" means the segtoups system call is enabled.
+>>>
+>>> - Descendant user namespaces inherit the value of setgroups from
+>>>   their parents.
+>>>
+>>> - A proc file is used (instead of a sysctl) as sysctls
+>>>   currently do not pass in a struct file so file_ns_capable
+>>>   is unusable.
+>>
+>>Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+>>
+>>But I still don't like the name "setgroups".  People may look at that
+>>and have no clue what the scope of the setting is.  And anyone who, as
+>>root, writes "deny" to /proc/self/setgroups, thinking that it acts on
+>>self, will be in for a surprise.
 >
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 1bf4807..304c187 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1331,7 +1331,7 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
->   }
->
->   /*
-> - * Confirm all pages in a range [start, end) is belongs to the same zone.
-> + * Confirm all pages in a range [start, end) belong to the same zone.
->    */
->   int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
->   {
-> @@ -1342,10 +1342,11 @@ int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
->       for (pfn = start_pfn;
->            pfn < end_pfn;
->            pfn += MAX_ORDER_NR_PAGES) {
-
-> -             i = 0;
-> -             /* This is just a CONFIG_HOLES_IN_ZONE check.*/
-> -             while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
-> -                     i++;
-> +             /* Find the first valid pfn in this pageblock */
-> +             for (i = 0; i < MAX_ORDER_NR_PAGES; i++) {
-> +                     if (pfn_valid(pfn + i))
-> +                             break;
-> +             }
-
-If CONFIG_HOLES_IN_NODE is set, there is no difference. Am I making a mistake?
-
-Thanks,
-Yasuaki Ishimatsu
-
-
->               if (i == MAX_ORDER_NR_PAGES)
->                       continue;
->               page = pfn_to_page(pfn + i);
+> True setgroups isn't perfect.  Documenting it in a manpage may have to be enough. The only real improvement I can think of would be to make the setting a sysctl.   But I think pursuing that approaches the point where perfection is the enemy of getting this problem fixed.
 >
 
+Would "userns_setgroups" be okay?
 
+--Andy
+
+> Eric
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
