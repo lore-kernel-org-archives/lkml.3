@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553AbaLJOn4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:43:56 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33427 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbaLJOnz (ORCPT
+	id S1757630AbaLJOoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:44:15 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:65143 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423AbaLJOoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:43:55 -0500
-Message-ID: <54885C22.3030808@gmail.com>
-Date: Wed, 10 Dec 2014 23:43:46 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 10 Dec 2014 09:44:13 -0500
 MIME-Version: 1.0
-To: ejt@redhat.com
-CC: dm-devel@redhat.com, gregkh@linuxfoundation.org, snitzer@redhat.com,
-        agk@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
-References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com> <5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141210100033.GA21108@debian> <548827BD.3050803@gmail.com> <20141210123349.GC21108@debian> <548843A0.6040906@gmail.com> <20141210131325.GD21108@debian> <54884B33.4090709@gmail.com> <20141210134223.GE21108@debian>
-In-Reply-To: <20141210134223.GE21108@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5486C591.7030509@suse.cz>
+References: <000301d01385$45554a60$cfffdf20$%yang@samsung.com>
+	<5486C591.7030509@suse.cz>
+Date: Wed, 10 Dec 2014 22:44:13 +0800
+Message-ID: <CAL1ERfOZ5eiJTDneh=5HAoOs7z2AhxxrKaLL9sHKtRk0Cfcf6Q@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm: page_alloc: remove redundant set_freepage_migratetype()
+ calls
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/14 10:42 PM, Joe Thornber wrote:
-> On Wed, Dec 10, 2014 at 10:31:31PM +0900, Akira Hayakawa wrote:
->> Joe,
+On Tue, Dec 9, 2014 at 5:49 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+> On 12/09/2014 08:51 AM, Weijie Yang wrote:
 >>
->>> So you copy the bio payload to a different block of ram and then
->>> complete the bio?  Or does the rambuf refer to the bio payload
->>> directly?
->> Good question.
->> The answer is, copy the data (got by bio_data(bio)) to rambuf once
->> and ack if it's not barrier things.
->> It would be nice if data in rambuf points to bio payload but it now copies
->> because bio payload can be reused after completion. Am I right?
->> Is there a way of eliminate memory copying?
-> 
-> You *have* to eliminate this memory copying.  Remap the bios to the
-> relevant portion of your log, and don't complete them until you log
-> chunk is coherent.
-> 
+>> The freepage_migratetype is a temporary cached value which represents
+>> the free page's pageblock migratetype. Now we use it in two scenarios:
+>>
+>> 1. Use it as a cached value in page freeing path. This cached value
+>> is temporary and non-100% update, which help us decide which pcp
+>> freelist and buddy freelist the page should go rather than using
+>> get_pfnblock_migratetype() to save some instructions.
+>> When there is race between page isolation and free path, we need use
+>> additional method to get a accurate value to put the free pages to
+>> the correct freelist and get a precise free pages statistics.
+>>
+>> 2. Use it in page alloc path to update NR_FREE_CMA_PAGES statistics.
+>
+>
+> Maybe add that in this case, the value is only valid between being set by
+> __rmqueue_smallest/__rmqueue_fallback and being consumed by rmqueue_bulk or
+> buffered_rmqueue for the purposes of statistics.
+> Oh, except that in rmqueue_bulk, we are placing it on pcplists, so it's case
+> 1. Tricky.
 
-Barrier writes don't ack until the log is written on cache device.
-I guess treating other writes as well will do this work.
+I will add more description and comments in the next version.
+Thanks.
 
-But, it will be much better if I can do this by manipulating reference count
-of the bio payload. I am not sure how the implementation would be.
+> Anyway, the comments for get/set_freepage_migratetype() say:
+>
+> /* It's valid only if the page is free path or free_list */
+>
+> And that's not really true. So should it instead say something like "The
+> value is only valid when the page is on pcp list, for determining on which
+> free list the page should go if the pcp list is flushed. It is also
+> temporarily valid during allocation from free list."
 
-Anyway, thanks for advice,
+I will update the comments. Thanks
 
-- Akira
+>> This patch aims at the scenario 1 and removes two redundant
+>> set_freepage_migratetype() calls, which will make sense in the hot path.
+>>
+>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+>> ---
+>>   mm/page_alloc.c |    2 --
+>>   1 file changed, 2 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 616a2c9..99af01a 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -775,7 +775,6 @@ static void __free_pages_ok(struct page *page,
+>> unsigned int order)
+>>         migratetype = get_pfnblock_migratetype(page, pfn);
+>>         local_irq_save(flags);
+>>         __count_vm_events(PGFREE, 1 << order);
+>> -       set_freepage_migratetype(page, migratetype);
+>>         free_one_page(page_zone(page), page, pfn, order, migratetype);
+>>         local_irq_restore(flags);
+>>   }
+>> @@ -1024,7 +1023,6 @@ int move_freepages(struct zone *zone,
+>>                 order = page_order(page);
+>>                 list_move(&page->lru,
+>>                           &zone->free_area[order].free_list[migratetype]);
+>> -               set_freepage_migratetype(page, migratetype);
+>>                 page += 1 << order;
+>>                 pages_moved += 1 << order;
+>>         }
+>>
+>
