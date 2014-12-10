@@ -1,55 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124AbaLJVYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 16:24:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54077 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932426AbaLJVYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 16:24:24 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Anjana Sasindran <anjanasasindran123@gmail.com>
-Cc: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: cpuidle: Added a blank line after declarations
-Date: Wed, 10 Dec 2014 22:45:59 +0100
-Message-ID: <354575085.t1Bv5Pht3m@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418233044-12059-1-git-send-email-anjanasasindran123@gmail.com>
-References: <1418233044-12059-1-git-send-email-anjanasasindran123@gmail.com>
+	id S933228AbaLJVbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 16:31:33 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46648 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932426AbaLJVba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 16:31:30 -0500
+Message-ID: <5488BB96.9070609@ti.com>
+Date: Wed, 10 Dec 2014 16:31:02 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>
+Subject: Re: [PATCH v7 2/3] net: Add Keystone NetCP ethernet driver
+References: <1417556503-22290-1-git-send-email-m-karicheri2@ti.com> <1417556503-22290-3-git-send-email-m-karicheri2@ti.com> <20141209.131053.2026868499542642866.davem@davemloft.net>
+In-Reply-To: <20141209.131053.2026868499542642866.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 10, 2014 11:07:24 PM Anjana Sasindran wrote:
-> This patch fix the checkpatch.pl warning:
-> 
-> WARNING: Missing blank line after declarations
+On 12/09/2014 01:10 PM, David Miller wrote:
+> From: Murali Karicheri<m-karicheri2@ti.com>
+> Date: Tue, 2 Dec 2014 16:41:42 -0500
+>
+>> +static void set_pkt_info_le(u32 buff, u32 buff_len, u32 ndesc,
+>> +			    struct knav_dma_desc *desc)
+>> +{
+>> +	desc->buff_len = cpu_to_le32(buff_len);
+>> +	desc->buff = cpu_to_le32(buff);
+>> +	desc->next_desc = cpu_to_le32(ndesc);
+>> +}
+>
+> The members of knav_dma_desc are "u32", so you are going to get tons of
+> static checker warnings from trying to assign cpu_to_le32()'s result
+> (which is a le32) into them.
+David,
 
-Please send a patch to checkpatch.pl maintainers to make it not complain in
-this case instead.  Thanks!
+Thanks for your comment.
 
-> Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
-> ---
->  drivers/cpuidle/driver.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-> index e431d11..7fa66f6 100644
-> --- a/drivers/cpuidle/driver.c
-> +++ b/drivers/cpuidle/driver.c
-> @@ -144,6 +144,7 @@ static inline void __cpuidle_unset_driver(struct cpuidle_driver *drv)
->  static void cpuidle_setup_broadcast_timer(void *arg)
->  {
->  	int cpu = smp_processor_id();
-> +
->  	clockevents_notify((long)(arg), &cpu);
->  }
->  
-> 
+Are you referring to the static code analyser sparse that is invoked 
+through?
+
+make C=1 CHECK=sparse
+
+I am running it now.
+
+I started a build of v3.18-rc7 with this option and seeing a lot of
+warnings. Am I using the right tool? A snapshot of the output is below
+
+   CHECK   drivers/clk/clk.c
+include/linux/err.h:40:16: warning: testing a 'safe expression'
+include/linux/err.h:40:16: warning: testing a 'safe expression'
+include/linux/err.h:40:16: warning: testing a 'safe expression'
+include/linux/err.h:40:16: warning: testing a 'safe expression'
+drivers/clk/clk.c:2263:5: warning: symbol '__clk_get' was not declared. 
+Should it be static?
+drivers/clk/clk.c:2274:6: warning: symbol '__clk_put' was not declared. 
+Should it be static?
+drivers/clk/clk.c:2647:37: warning: incorrect type in assignment 
+(different modifiers)
+drivers/clk/clk.c:2647:37:    expected void ( *[usertype] clk_init_cb )( 
+... )
+drivers/clk/clk.c:2647:37:    got void const *const data
+drivers/clk/clk.c:67:22: warning: context imbalance in 'clk_enable_lock' 
+- wrong count at exit
+drivers/clk/clk.c:92:9: warning: context imbalance in 
+'clk_enable_unlock' - unexpected unlock
+   CC      drivers/clk/clk.o
+   CHECK   drivers/clk/clk-divider.c
+drivers/clk/clk-divider.c:362:9: warning: context imbalance in 
+'clk_divider_set_rate' - different lock contexts for basic block
+   CC      drivers/clk/clk-divider.o
+   CHECK   drivers/clk/clk-fixed-factor.c
+   CC      drivers/clk/clk-fixed-factor.o
+   CHECK   drivers/clk/clk-fixed-rate.c
+   CC      drivers/clk/clk-fixed-rate.o
+   CHECK   drivers/clk/clk-gate.c
+drivers/clk/clk-gate.c:71:9: warning: context imbalance in 
+'clk_gate_endisable' - different lock contexts for basic block
+   CC      drivers/clk/clk-gate.o
+   CHECK   drivers/clk/clk-mux.c
+drivers/clk/clk-mux.c:69:12: warning: context imbalance in 
+'clk_mux_set_parent' - different lock contexts for basic block
+   CC      drivers/clk/clk-mux.o
+   CHECK   drivers/clk/clk-composite.c
+   CC      drivers/clk/clk-composite.o
+   CHECK   drivers/clk/clk-fractional-divider.c
+drivers/clk/clk-fractional-divider.c:36:9: warning: context imbalance in 
+'clk_fd_recalc_rate' - different lock contexts for basic block
+drivers/clk/clk-fractional-divider.c:65:12: warning: context imbalance 
+in 'clk_fd_set_rate' - different lock contexts for basic block
+   CC      drivers/clk/clk-fractional-divider.o
+   CHECK   drivers/clk/clk-gpio-gate.c
+drivers/clk/clk-gpio-gate.c:189:13: warning: symbol 
+'of_gpio_gate_clk_setup' was not declared. Should it be static?
+   CC      drivers/clk/clk-gpio-gate.o
+   CHECK   drivers/clk/clk-conf.c
+   CC      drivers/clk/clk-conf.o
+   CHECK   drivers/clk/keystone/pll.c
+   CC      drivers/clk/keystone/pll.o
+   CHECK   drivers/clk/keystone/gate.c
+drivers/clk/keystone/gate.c:118:12: warning: context imbalance in 
+'keystone_clk_enable' - different lock contexts for basic block
+drivers/clk/keystone/gate.c:148:9: warning: context imbalance in 
+'keystone_clk_disable' - different lock contexts for basic block
+   CC      drivers/clk/keystone/gate.o
+   LD      drivers/clk/keystone/built-in.o
+   LD      drivers/clk/built-in.o
+   CHECK   drivers/clocksource/clksrc-of.c
+drivers/clocksource/clksrc-of.c:37:27: warning: incorrect type in 
+assignment (different modifiers)
+drivers/clocksource/clksrc-of.c:37:27:    expected void ( *[usertype] 
+init_func )( ... )
+drivers/clocksource/clksrc-of.c:37:27:    got void const *const data
+   CC      drivers/clocksource/clksrc-of.o
+   CHECK   drivers/clocksource/mmio.c
+   CC      drivers/clocksource/mmio.o
+   CHECK   drivers/clocksource/arm_arch_timer.c
+   CC      drivers/clocksource/arm_arch_timer.o
+   CHECK   drivers/clocksource/dummy_timer.c
+   CC      drivers/clocksource/dummy_timer.o
+   CHECK   drivers/clocksource/timer-keystone.c
+   CC      drivers/clocksource/timer-keystone.o
+   LD      drivers/clocksource/built-in.o
+   LD      drivers/crypto/built-in.o
+   CHECK   drivers/dma/dmaengine.c
+   CC      drivers/dma/dmaengine.o
+   CHECK   drivers/dma/virt-dma.c
+drivers/dma/virt-dma.c:22:14: warning: symbol 'vchan_tx_submit' was not 
+declared. Should it be static?
+   CC      drivers/dma/virt-dma.o
+   CHECK   drivers/dma/of-dma.c
+   CC      drivers/dma/of-dma.o
+   CHECK   drivers/dma/edma.c
+drivers/dma/edma.c:560:32: warning: symbol 'edma_prep_dma_memcpy' was 
+not declared. Should it be static?
+drivers/dma/edma.c:1099:6: warning: symbol 'edma_filter_fn' was not 
+declared. Should it be static?
+
+
+
+
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Murali Karicheri
+Linux Kernel, Texas Instruments
