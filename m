@@ -1,198 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742AbaLJS3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:29:04 -0500
-Received: from smtprelay0106.hostedemail.com ([216.40.44.106]:57472 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932414AbaLJS3D (ORCPT
+	id S932774AbaLJSaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:30:07 -0500
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:48905 "HELO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932479AbaLJSaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:29:03 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:2:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:2892:2902:3138:3139:3140:3141:3142:3870:3871:3876:4049:4118:4321:4605:5007:6119:6261:7903:8603:8660:9121:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:13148:13230:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hour05_1468ad2331558
-X-Filterd-Recvd-Size: 7549
-Message-ID: <1418236138.18092.13.camel@perches.com>
-Subject: [PATCH] irda: Convert function pointer arrays and uses to const
-From: Joe Perches <joe@perches.com>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Dec 2014 10:28:58 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Dec 2014 13:30:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOftzPjp3++6X50m27fhnAqVPsNRRfrhtmWGoeVi_8v3KCHWhA@mail.gmail.com>
+References: <1417575363-13770-1-git-send-email-joestringer@nicira.com>
+	<1417575363-13770-2-git-send-email-joestringer@nicira.com>
+	<CALnjE+o4tbQVTyVkzdOG8zj=qxPZ8Dv3vGHbYkBmghxsLgKkkw@mail.gmail.com>
+	<CANr6G5yOqVkA6hf3J9mk41Kh=0k3sM3tQx4sdADSgFaAx9xrWg@mail.gmail.com>
+	<CALnjE+pnJqHFaKZAGgN2Q_q-sAfuGYOb6fX0utkb-J1-JFv7dg@mail.gmail.com>
+	<CAOftzPjp3++6X50m27fhnAqVPsNRRfrhtmWGoeVi_8v3KCHWhA@mail.gmail.com>
+Date: Wed, 10 Dec 2014 10:29:53 -0800
+Message-ID: <CALnjE+or2G6Ajfz2m0eA4vXH6XfqYYWaqwWkcYzdGtM7+6qb+w@mail.gmail.com>
+Subject: Re: [ovs-dev] [PATCHv11 net-next 2/2] openvswitch: Add support for
+ unique flow IDs.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: "dev@openvswitch.org" <dev@openvswitch.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making things const is a good thing.
+On Wed, Dec 10, 2014 at 10:15 AM, Joe Stringer <joestringer@nicira.com> wrote:
+> On 9 December 2014 at 22:11, Pravin Shelar <pshelar@nicira.com> wrote:
+>> On Tue, Dec 9, 2014 at 4:25 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>> On 9 December 2014 at 10:32, Pravin Shelar <pshelar@nicira.com> wrote:
+>>>> On Tue, Dec 2, 2014 at 6:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>> @@ -424,10 +475,9 @@ static struct sw_flow *masked_flow_lookup(struct table_instance *ti,
+>>>>>         ovs_flow_mask_key(&masked_key, unmasked, mask);
+>>>>>         hash = flow_hash(&masked_key, key_start, key_end);
+>>>>>         head = find_bucket(ti, hash);
+>>>>> -       hlist_for_each_entry_rcu(flow, head, hash_node[ti->node_ver]) {
+>>>>> -               if (flow->mask == mask && flow->hash == hash &&
+>>>>> -                   flow_cmp_masked_key(flow, &masked_key,
+>>>>> -                                         key_start, key_end))
+>>>>> +       hlist_for_each_entry_rcu(flow, head, flow_hash.node[ti->node_ver]) {
+>>>>> +               if (flow->mask == mask && flow->flow_hash.hash == hash &&
+>>>>> +                   flow_cmp_masked_key(flow, &masked_key, key_start, key_end))
+>>>>>                         return flow;
+>>>>>         }
+>>>>>         return NULL;
+>>>>> @@ -469,7 +519,40 @@ struct sw_flow *ovs_flow_tbl_lookup_exact(struct flow_table *tbl,
+>>>>>         /* Always called under ovs-mutex. */
+>>>>>         list_for_each_entry(mask, &tbl->mask_list, list) {
+>>>>>                 flow = masked_flow_lookup(ti, match->key, mask);
+>>>>> -               if (flow && ovs_flow_cmp_unmasked_key(flow, match))  /* Found */
+>>>>> +               if (flow && !flow->ufid &&
+>>>> why not NULL check for flow->unmasked_key here rather than ufid?
+>>>
+>>> In this version, I tried to consistently use flow->ufid as the switch
+>>> for whether UFID exists or not. In the next version, this statement
+>>> would refer to flow->id->ufid_len.
+>>>
+>>> The current approach means that ovs_flow_tbl_lookup_exact() is really
+>>> ovs_flow_tbl_lookup_unmasked_key(). Do you think this should remain
+>>> specific to unmasked key or should it be made to check that the
+>>> identifier (ufid OR unmasked key) is the same?
+>>
+>> It is easier to read code if we check for flow->unmasked_key here.
+>> ovs_flow_cmp_unmasked_key() has assert on ufid anyways.
+>
+> With the change to put UFID/unmasked key in the same struct, there
+> will be no such pointer to check, only ufid_len.
+>
+right, Lets keep the check for ufid_len.
 
-(x86-64 defconfig with all irda)
-$ size net/irda/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 109276	   1868	    244	 111388	  1b31c	net/irda/built-in.o.new
- 108828	   2316	    244	 111388	  1b31c	net/irda/built-in.o.old
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/net/irda/parameters.h  | 6 +++---
- net/irda/ircomm/ircomm_param.c | 8 ++++----
- net/irda/irttp.c               | 6 ++++--
- net/irda/parameters.c          | 8 ++++----
- net/irda/qos.c                 | 6 +++---
- 5 files changed, 18 insertions(+), 16 deletions(-)
-
-diff --git a/include/net/irda/parameters.h b/include/net/irda/parameters.h
-index 42713c9..2d9cd00 100644
---- a/include/net/irda/parameters.h
-+++ b/include/net/irda/parameters.h
-@@ -71,17 +71,17 @@ typedef int (*PV_HANDLER)(void *self, __u8 *buf, int len, __u8 pi,
- 			  PV_TYPE type, PI_HANDLER func);
- 
- typedef struct {
--	PI_HANDLER func;  /* Handler for this parameter identifier */
-+	const PI_HANDLER func;  /* Handler for this parameter identifier */
- 	PV_TYPE    type;  /* Data type for this parameter */
- } pi_minor_info_t;
- 
- typedef struct {
--	pi_minor_info_t *pi_minor_call_table;
-+	const pi_minor_info_t *pi_minor_call_table;
- 	int len;
- } pi_major_info_t;
- 
- typedef struct {
--	pi_major_info_t *tables;
-+	const pi_major_info_t *tables;
- 	int              len;
- 	__u8             pi_mask;
- 	int              pi_major_offset;
-diff --git a/net/irda/ircomm/ircomm_param.c b/net/irda/ircomm/ircomm_param.c
-index 27be782..3c4caa6 100644
---- a/net/irda/ircomm/ircomm_param.c
-+++ b/net/irda/ircomm/ircomm_param.c
-@@ -61,12 +61,12 @@ static int ircomm_param_dte(void *instance, irda_param_t *param, int get);
- static int ircomm_param_dce(void *instance, irda_param_t *param, int get);
- static int ircomm_param_poll(void *instance, irda_param_t *param, int get);
- 
--static pi_minor_info_t pi_minor_call_table_common[] = {
-+static const pi_minor_info_t pi_minor_call_table_common[] = {
- 	{ ircomm_param_service_type, PV_INT_8_BITS },
- 	{ ircomm_param_port_type,    PV_INT_8_BITS },
- 	{ ircomm_param_port_name,    PV_STRING }
- };
--static pi_minor_info_t pi_minor_call_table_non_raw[] = {
-+static const pi_minor_info_t pi_minor_call_table_non_raw[] = {
- 	{ ircomm_param_data_rate,    PV_INT_32_BITS | PV_BIG_ENDIAN },
- 	{ ircomm_param_data_format,  PV_INT_8_BITS },
- 	{ ircomm_param_flow_control, PV_INT_8_BITS },
-@@ -74,13 +74,13 @@ static pi_minor_info_t pi_minor_call_table_non_raw[] = {
- 	{ ircomm_param_enq_ack,      PV_INT_16_BITS },
- 	{ ircomm_param_line_status,  PV_INT_8_BITS }
- };
--static pi_minor_info_t pi_minor_call_table_9_wire[] = {
-+static const pi_minor_info_t pi_minor_call_table_9_wire[] = {
- 	{ ircomm_param_dte,          PV_INT_8_BITS },
- 	{ ircomm_param_dce,          PV_INT_8_BITS },
- 	{ ircomm_param_poll,         PV_NO_VALUE },
- };
- 
--static pi_major_info_t pi_major_call_table[] = {
-+static const pi_major_info_t pi_major_call_table[] = {
- 	{ pi_minor_call_table_common,  3 },
- 	{ pi_minor_call_table_non_raw, 6 },
- 	{ pi_minor_call_table_9_wire,  3 }
-diff --git a/net/irda/irttp.c b/net/irda/irttp.c
-index 3ef0b08..b6ab41d 100644
---- a/net/irda/irttp.c
-+++ b/net/irda/irttp.c
-@@ -71,11 +71,13 @@ static void irttp_status_indication(void *instance,
- 				    LINK_STATUS link, LOCK_STATUS lock);
- 
- /* Information for parsing parameters in IrTTP */
--static pi_minor_info_t pi_minor_call_table[] = {
-+static const pi_minor_info_t pi_minor_call_table[] = {
- 	{ NULL, 0 },                                             /* 0x00 */
- 	{ irttp_param_max_sdu_size, PV_INTEGER | PV_BIG_ENDIAN } /* 0x01 */
- };
--static pi_major_info_t pi_major_call_table[] = { { pi_minor_call_table, 2 } };
-+static const pi_major_info_t pi_major_call_table[] = {
-+	{ pi_minor_call_table, 2 }
-+};
- static pi_param_info_t param_info = { pi_major_call_table, 1, 0x0f, 4 };
- 
- /************************ GLOBAL PROCEDURES ************************/
-diff --git a/net/irda/parameters.c b/net/irda/parameters.c
-index 006786b..16ce32f 100644
---- a/net/irda/parameters.c
-+++ b/net/irda/parameters.c
-@@ -52,7 +52,7 @@ static int irda_insert_no_value(void *self, __u8 *buf, int len, __u8 pi,
- static int irda_param_unpack(__u8 *buf, char *fmt, ...);
- 
- /* Parameter value call table. Must match PV_TYPE */
--static PV_HANDLER pv_extract_table[] = {
-+static const PV_HANDLER pv_extract_table[] = {
- 	irda_extract_integer, /* Handler for any length integers */
- 	irda_extract_integer, /* Handler for 8  bits integers */
- 	irda_extract_integer, /* Handler for 16 bits integers */
-@@ -62,7 +62,7 @@ static PV_HANDLER pv_extract_table[] = {
- 	irda_extract_no_value /* Handler for no value parameters */
- };
- 
--static PV_HANDLER pv_insert_table[] = {
-+static const PV_HANDLER pv_insert_table[] = {
- 	irda_insert_integer, /* Handler for any length integers */
- 	irda_insert_integer, /* Handler for 8  bits integers */
- 	irda_insert_integer, /* Handler for 16 bits integers */
-@@ -449,7 +449,7 @@ static int irda_param_unpack(__u8 *buf, char *fmt, ...)
- int irda_param_insert(void *self, __u8 pi, __u8 *buf, int len,
- 		      pi_param_info_t *info)
- {
--	pi_minor_info_t *pi_minor_info;
-+	const pi_minor_info_t *pi_minor_info;
- 	__u8 pi_minor;
- 	__u8 pi_major;
- 	int type;
-@@ -504,7 +504,7 @@ EXPORT_SYMBOL(irda_param_insert);
- static int irda_param_extract(void *self, __u8 *buf, int len,
- 			      pi_param_info_t *info)
- {
--	pi_minor_info_t *pi_minor_info;
-+	const pi_minor_info_t *pi_minor_info;
- 	__u8 pi_minor;
- 	__u8 pi_major;
- 	int type;
-diff --git a/net/irda/qos.c b/net/irda/qos.c
-index 5ed6c9a..25ba850 100644
---- a/net/irda/qos.c
-+++ b/net/irda/qos.c
-@@ -122,7 +122,7 @@ static __u32 max_line_capacities[10][4] = {
- 	{ 800000, 400000, 160000, 80000 }, /* 16000000 bps */
- };
- 
--static pi_minor_info_t pi_minor_call_table_type_0[] = {
-+static const pi_minor_info_t pi_minor_call_table_type_0[] = {
- 	{ NULL, 0 },
- /* 01 */{ irlap_param_baud_rate,       PV_INTEGER | PV_LITTLE_ENDIAN },
- 	{ NULL, 0 },
-@@ -134,7 +134,7 @@ static pi_minor_info_t pi_minor_call_table_type_0[] = {
- /* 08 */{ irlap_param_link_disconnect, PV_INT_8_BITS }
- };
- 
--static pi_minor_info_t pi_minor_call_table_type_1[] = {
-+static const pi_minor_info_t pi_minor_call_table_type_1[] = {
- 	{ NULL, 0 },
- 	{ NULL, 0 },
- /* 82 */{ irlap_param_max_turn_time,   PV_INT_8_BITS },
-@@ -144,7 +144,7 @@ static pi_minor_info_t pi_minor_call_table_type_1[] = {
- /* 86 */{ irlap_param_min_turn_time,   PV_INT_8_BITS },
- };
- 
--static pi_major_info_t pi_major_call_table[] = {
-+static const pi_major_info_t pi_major_call_table[] = {
- 	{ pi_minor_call_table_type_0, 9 },
- 	{ pi_minor_call_table_type_1, 7 },
- };
-
-
+> However, we could shift this check at the start of the function instead.
