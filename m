@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaLJCJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:09:25 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:55516 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaLJCJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:09:19 -0500
-Message-ID: <5487AB3D.6070306@huawei.com>
-Date: Wed, 10 Dec 2014 10:09:01 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1754963AbaLJCLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 21:11:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753559AbaLJCLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 21:11:33 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        mpe@ellerman.id.au, anton@samba.org, sgrubb@redhat.com,
+        eparis@parisplace.org, tonyj@suse.de
+Subject: Re: [PATCH V4] powerpc: add little endian flag to syscall_get_arch()
+Date: Tue, 09 Dec 2014 21:11:19 -0500
+Message-ID: <1557787.lOBez6GG22@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <24fcd2ea2c7633152e74a7a92abab1dd1782745d.1418157273.git.rgb@redhat.com>
+References: <24fcd2ea2c7633152e74a7a92abab1dd1782745d.1418157273.git.rgb@redhat.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-tip-commits@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH V3 1/2] x86/mm: fix zone ranges boot printout
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the usual physical memory layout boot printout:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0xc3fffffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0xbf78ffff]
-[    0.000000]   node   0: [mem 0x100000000-0x63fffffff]
-[    0.000000]   node   1: [mem 0x640000000-0xc3fffffff]
-...
+On Tuesday, December 09, 2014 03:37:07 PM Richard Guy Briggs wrote:
+> Since both ppc and ppc64 have LE variants which are now reported by uname,
+> add that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add
+> AUDIT_ARCH_PPC64LE variant.
+> 
+> Without this,  perf trace and auditctl fail.
+> 
+> Mainline kernel reports ppc64le (per a058801) but there is no matching
+> AUDIT_ARCH_PPC64LE.
+> 
+> Since 32-bit PPC LE is not supported by audit, don't advertise it in
+> AUDIT_ARCH_PPC* variants.
+> 
+> See:
+> 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+> 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  arch/powerpc/include/asm/syscall.h |    6 +++++-
+>  include/uapi/linux/audit.h         |    2 ++
+>  2 files changed, 7 insertions(+), 1 deletions(-)
 
-This is the log when we set "mem=2G" on the boot cmdline:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]  // should be 0x7fffffff, right?
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
+The audit changes look fine to me, but as I mentioned earlier, this should go 
+in via the ppc tree and not the audit tree.
 
-This patch fixes the printout, the following log shows the right ranges:
-...
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0x7fffffff]
-[    0.000000]   Normal   empty
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x00099fff]
-[    0.000000]   node   0: [mem 0x00100000-0x7fffffff]
-...
+Acked-by: Paul Moore <paul@paul-moore.com>
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
----
- arch/x86/include/asm/dma.h | 2 +-
- arch/x86/mm/init.c         | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+> diff --git a/arch/powerpc/include/asm/syscall.h
+> b/arch/powerpc/include/asm/syscall.h index 6fa2708..d1934e5 100644
+> --- a/arch/powerpc/include/asm/syscall.h
+> +++ b/arch/powerpc/include/asm/syscall.h
+> @@ -90,6 +90,10 @@ static inline void syscall_set_arguments(struct
+> task_struct *task,
+> 
+>  static inline int syscall_get_arch(void)
+>  {
+> -	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> +	int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> +#ifdef __LITTLE_ENDIAN__
+> +	arch |= __AUDIT_ARCH_LE;
+> +#endif
+> +	return arch;
+>  }
+>  #endif	/* _ASM_SYSCALL_H */
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 4d100c8..d82beec 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -364,7 +364,9 @@ enum {
+>  #define AUDIT_ARCH_PARISC	(EM_PARISC)
+>  #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+>  #define AUDIT_ARCH_PPC		(EM_PPC)
+> +/* do not define AUDIT_ARCH_PPCLE since it is not supported by audit */
+>  #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
+> +#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_S390		(EM_S390)
+>  #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
+>  #define AUDIT_ARCH_SH		(EM_SH)
 
-diff --git a/arch/x86/include/asm/dma.h b/arch/x86/include/asm/dma.h
-index 0bdb0c5..fe884e1 100644
---- a/arch/x86/include/asm/dma.h
-+++ b/arch/x86/include/asm/dma.h
-@@ -70,7 +70,7 @@
- #define MAX_DMA_CHANNELS	8
- 
- /* 16MB ISA DMA zone */
--#define MAX_DMA_PFN   ((16 * 1024 * 1024) >> PAGE_SHIFT)
-+#define MAX_DMA_PFN   ((16UL * 1024 * 1024) >> PAGE_SHIFT)
- 
- /* 4GB broken PCI/AGP hardware bus master zone */
- #define MAX_DMA32_PFN ((4UL * 1024 * 1024 * 1024) >> PAGE_SHIFT)
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..07244aa 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -674,10 +674,10 @@ void __init zone_sizes_init(void)
- 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
- 
- #ifdef CONFIG_ZONE_DMA
--	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
-+	max_zone_pfns[ZONE_DMA]		= min(MAX_DMA_PFN, max_low_pfn);
- #endif
- #ifdef CONFIG_ZONE_DMA32
--	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
-+	max_zone_pfns[ZONE_DMA32]	= min(MAX_DMA32_PFN, max_low_pfn);
- #endif
- 	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
- #ifdef CONFIG_HIGHMEM
 -- 
-2.0.0
-
+paul moore
+security and virtualization @ redhat
 
