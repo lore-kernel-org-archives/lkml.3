@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaLJJzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:55:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaLJJzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:55:04 -0500
-Message-ID: <54881876.70309@suse.cz>
-Date: Wed, 10 Dec 2014 10:55:02 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754214AbaLJJzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:55:22 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:53478 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751520AbaLJJzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 04:55:16 -0500
+X-Listener-Flag: 11101
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Marc Zyngier <marc.zyngier@arm.com>, <srv_heupstream@mediatek.com>,
+        <hc.yen@mediatek.com>, <yh.chen@mediatek.com>,
+        <linux-kernel@vger.kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, <nathan.chung@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, <eddie.huang@mediatek.com>,
+        <yingjoe.chen@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+Subject: [PATCH v2] irqchip: mediatek: Use IS_ERR() instead of NULL pointer check
+Date: Wed, 10 Dec 2014 17:55:02 +0800
+Message-ID: <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
+References: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm/page_alloc: expands broken freepage to proper
- buddy list when steal
-References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com> <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com> <54856F88.8090300@suse.cz> <20141210063840.GC13371@js1304-P5Q-DELUXE>
-In-Reply-To: <20141210063840.GC13371@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 07:38 AM, Joonsoo Kim wrote:
-> On Mon, Dec 08, 2014 at 10:29:44AM +0100, Vlastimil Babka wrote:
->> On 12/08/2014 08:16 AM, Joonsoo Kim wrote:
->>> There is odd behaviour when we steal freepages from other migratetype
->>> buddy list. In try_to_steal_freepages(), we move all freepages in
->>> the pageblock that founded freepage is belong to to the request
->>> migratetype in order to mitigate fragmentation. If the number of moved
->>> pages are enough to change pageblock migratetype, there is no problem. If
->>> not enough, we don't change pageblock migratetype and add broken freepages
->>> to the original migratetype buddy list rather than request migratetype
->>> one. For me, this is odd, because we already moved all freepages in this
->>> pageblock to the request migratetype. This patch fixes this situation to
->>> add broken freepages to the request migratetype buddy list in this case.
->>
->> I'd rather split the fix from the refactoring. And maybe my
->> description is longer, but easier to understand? (I guess somebody
->> else should judge this)
->
-> Your patch is much better to understand than mine. :)
-> No need to judge from somebody else.
-> After your patch is merged, I will resubmit these on top of it.
+Beniamino reported a kernel oops caused by an invalid DT file for the
+mediatek interrupt polarity extension.
 
-Thanks. I'm doing another evaluation focusing on number of unmovable 
-pageblocks as Mel suggested and then resubmit with tracepoint fixed.
+The reason is that the interrupt polarity support for mediatek chips
+merely checks for NULL pointer instead of a casted error return
+value in mtk_sysirq_of_init() so any other casted error value passes
+the NULL pointer check and causes a kernel panic when dereferenced.
 
-Vlastimil
+Use IS_ERR() and return the error value via PTR_ERR().
+
+Reported-and-tested-by: Beniamino Galvani <b.galvani@gmail.com>
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+---
+ drivers/irqchip/irq-mtk-sysirq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/irqchip/irq-mtk-sysirq.c b/drivers/irqchip/irq-mtk-sysirq.c
+index 7e342df..0b0d2c0 100644
+--- a/drivers/irqchip/irq-mtk-sysirq.c
++++ b/drivers/irqchip/irq-mtk-sysirq.c
+@@ -137,9 +137,9 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
+ 		return -ENOMEM;
+ 
+ 	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
+-	if (!chip_data->intpol_base) {
++	if (IS_ERR(chip_data->intpol_base)) {
+ 		pr_err("mtk_sysirq: unable to map sysirq register\n");
+-		ret = -ENOMEM;
++		ret = PTR_ERR(chip_data->intpol_base);
+ 		goto out_free;
+ 	}
+ 
+-- 
+1.8.1.1.dirty
+
