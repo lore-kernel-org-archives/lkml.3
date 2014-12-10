@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262AbaLJVtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 16:49:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57329 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaLJVtp (ORCPT
+	id S933233AbaLJVyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 16:54:08 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:62967 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932924AbaLJVyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 16:49:45 -0500
-Date: Wed, 10 Dec 2014 13:49:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET -mm] bitmap, cpumask, nodemask: implement pr_cont
- functions and use di"
-Message-Id: <20141210134944.0599597b96026cf2f1597e45@linux-foundation.org>
-In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
-References: <1418226774-30215-1-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Dec 2014 16:54:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <1410546745-919-1-git-send-email-tony@atomide.com>
+References: <1410546745-919-1-git-send-email-tony@atomide.com>
+Date: Wed, 10 Dec 2014 13:54:04 -0800
+X-Google-Sender-Auth: G0ScE7_zAVfrNt6D2h_4SjChZgo
+Message-ID: <CAGXu5jLxXCRH+ffgW_CcA6NRFneQT4THQtvsBM0TytZtawvuGA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pstore-ram: Fix hangs by using write-combine mappings
+From: Kees Cook <keescook@chromium.org>
+To: Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014 10:52:42 -0500 Tejun Heo <tj@kernel.org> wrote:
+On Fri, Sep 12, 2014 at 11:32 AM, Tony Lindgren <tony@atomide.com> wrote:
+> From: Rob Herring <robherring2@gmail.com>
+>
+> Currently trying to use pstore on at least ARMs can hang as we're
+> mapping the peristent RAM with pgprot_noncached().
+>
+> On ARMs, pgprot_noncached() will actually make the memory strongly
+> ordered, and as the atomic operations pstore uses are implementation
+> defined for strongly ordered memory, they may not work. So basically
+> atomic operations have undefined behavior on ARM for device or strongly
+> ordered memory types.
+>
+> Let's fix the issue by using write-combine variants for mappings. This
+> corresponds to normal, non-cacheable memory on ARM. For many other
+> architectures, this change does not change the mapping type as by
+> default we have:
+>
+> #define pgprot_writecombine pgprot_noncached
+>
+> The reason why pgprot_noncached() was originaly used for pstore
+> is because Colin Cross <ccross@android.com> had observed lost
+> debug prints right before a device hanging write operation on some
+> systems. For the platforms supporting pgprot_noncached(), we can
+> add a an optional configuration option to support that. But let's
+> get pstore working first before adding new features.
+>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> [tony@atomide.com: updated description]
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 
->  0001-bitmap-restructure-bitmap_sn-list-printf.patch
->  0002-bitmap-cpumask-nodemask-implement-pr_cont-variants-o.patch
->  0003-mips-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
->  0004-powerpc-use-cpu-node-mask-pr_cont-and-seq-output-fun.patch
->  0005-tile-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
->  0006-x86-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
->  0007-xtensa-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
->  0008-cpuset-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
->  0009-rcu-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
->  0010-sched-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
->  0011-timer-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
->  0012-percpu-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
-> 
-> The first two patches implement the pr_cont variants of the formatting
-> functions.  The rest convert the existing users to pr_cont and seq
-> functions subsystem-by-subsystem.  It'd be the easiest to route all
-> through -mm but the conversion patches can go through individual
-> subsystem trees afterwards if necessary.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-But you're working on other code which will depend on this?  If so
-perhaps these should be held in your tree.
+Please Cc: stable@vger.kernel.org on this one too.
+
+Thanks!
+
+-Kees
+
+> ---
+>  fs/pstore/ram_core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+> index 9d7b9a8..24f94b0 100644
+> --- a/fs/pstore/ram_core.c
+> +++ b/fs/pstore/ram_core.c
+> @@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
+>         page_start = start - offset_in_page(start);
+>         page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
+>
+> -       prot = pgprot_noncached(PAGE_KERNEL);
+> +       prot = pgprot_writecombine(PAGE_KERNEL);
+>
+>         pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
+>         if (!pages) {
+> @@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
+>         buffer_start_add = buffer_start_add_locked;
+>         buffer_size_add = buffer_size_add_locked;
+>
+> -       return ioremap(start, size);
+> +       return ioremap_wc(start, size);
+>  }
+>
+>  static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
+> --
+> 2.1.0
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
