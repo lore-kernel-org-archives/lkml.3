@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136AbaLJLup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:50:45 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:59095 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914AbaLJLum (ORCPT
+	id S1756196AbaLJLuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:50:55 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:43716 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152AbaLJLux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:50:42 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-33-548833902d87
+	Wed, 10 Dec 2014 06:50:53 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-6f-5488339ba0bc
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: gregkh@linuxfoundation.org
 Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
@@ -15,363 +15,349 @@ Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
         m.szyprowski@samsung.com, kyungmin.park@samsung.com,
         l.czerwinski@samsung.com, s.nawrocki@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 5/6] serial: samsung: add DMA support for TX
-Date: Wed, 10 Dec 2014 12:49:26 +0100
-Message-id: <1418212167-28992-6-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 6/6] serial: samsung: add DMA support for RX
+Date: Wed, 10 Dec 2014 12:49:27 +0100
+Message-id: <1418212167-28992-7-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
 References: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jQd0Jxh0hBidXKVrMWb+GzaJ58Xo2
-	i8+/d7Fa9C64ymZxtukNu8WvaZPYLC7vmsNmcWZxL7vF2iN32S0eHN7JbnH4TTurA7fHiRm/
-	WTz2z13D7tG3ZRWjx5kFR9g9Pm+SC2CN4rJJSc3JLEst0rdL4MpofNDJWLA/qGLyshlMDYzv
-	XboYOTgkBEwk1k7j7mLkBDLFJC7cW8/WxcjFISQwnVFiwYFj7BBOO5PEscdvWUGq2AR0JLZ8
-	n8AIYosIyEk8uf2HGaSIWWAqk8Sm65OYQKYKC9hIPPlSA1LDIqAq8WROLzuIzSvgKnFm1nZm
-	iG1yEiePTQabySngJrHq2QowWwioZu3tGWwTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dL
-	zs/dxAgOvmfSOxhXNVgcYhTgYFTi4Q243B4ixJpYVlyZe4hRgoNZSYT3jWRHiBBvSmJlVWpR
-	fnxRaU5q8SFGaQ4WJXFeJfu2ECGB9MSS1OzU1ILUIpgsEwenVAOjXdVi1Tcun/JvL/jFXLNH
-	0HHy4qrFvr4Caj9jnS5ICN0N4+hx39DK94mzTIMl8V5Cx6IfL+T2uXlnPZNnKLrV/WSlXO+i
-	VsegmH36Mt2KjYdyfhe1J7Wv589fWTPn3qHbDy5vLjtRoDb9qq+o93LZjG0ZsWZvj180dU/9
-	+1j9ammrCofA7mYlluKMREMt5qLiRACqpcULOgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jQd3Zxh0hBu0TJCzmrF/DZtG8eD2b
+	xeffu1gtehdcZbM42/SG3eLXtElsFpd3zWGzOLO4l91i7ZG77BYPDu9ktzj8pp3VgdvjxIzf
+	LB77565h9+jbsorR48yCI+wenzfJBbBGcdmkpOZklqUW6dslcGVMO3WFqWCpT8X8L5/YGxiP
+	2XcxcnJICJhI/O/sZoOwxSQu3FsPZHNxCAlMZ5SY+ecrE4TTziTx8tJbZpAqNgEdiS3fJzCC
+	2CICchJPbv9hBiliFpjKJLHp+iQmkISwgI3Etq9rwIpYBFQlLjauBWvmFXCVuDZ7NhPEOjmJ
+	k8cms4LYnAJuEquerQCzhYBq1t6ewTaBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
+	jOAAfCa9g3FVg8UhRgEORiUe3oDL7SFCrIllxZW5hxglOJiVRHjfSHaECPGmJFZWpRblxxeV
+	5qQWH2KU5mBREudVsm8LERJITyxJzU5NLUgtgskycXBKNTDaHTv/IU038Wli23+LoJ1l1y0W
+	X331Xbtiv2HCM/HKPc8eLn6zgod3hoIQV5PToTuifcVHAp/6/njo+vhuZdXe40EuL7auuJRt
+	uZwlfkKL57eU1S9UrGYfVFCb93ClwAbzEqNF7Z4rQt4s5Rfs+3zY/8uaowvi1VnUexje5eTw
+	TbeJWvktOJ5DiaU4I9FQi7moOBEAGQI9JTwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add TX DMA transfers support for samsung serial driver. It's enabled
-when "dmas" property is defined in serial device-tree node, otherwise
-TX transfers are prerformed using PIO.
+Add RX DMA transfers support for samsung serial driver. It's enabled
+when DMA controller for RX channel is specified in device-tree.
 
-TX DMA is used for data segments larger than fifosize to reduce number
-of interrupts during data transmission. For buffers shorter than fifosize
-PIO mode is selected.
-
-Data blocks for DMA transfers are aligned to cache line size to avoid
-problems with coherency (some areas of TX circ buffer can be used by
-CPU during DMA transaction, so we have to ensure that our data is always
-consistent).
+DMA transactions are started when number of bytes in RX FIFO reaches
+trigger level, otherwise PIO mode is used. DMA transfer size is always
+PAGE_SIZE which can cause large latency when smaller data amount is
+transferred, so we always terminate DMA transaction on RX timeout
+interrupt. Timeout interval is set to 64 frame times.
 
 Based on previous work of Sylwester Nawrocki and Lukasz Czerwinski.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/tty/serial/samsung.c | 238 ++++++++++++++++++++++++++++++++++++++++---
- drivers/tty/serial/samsung.h |   3 +
- 2 files changed, 225 insertions(+), 16 deletions(-)
+ drivers/tty/serial/samsung.c | 233 ++++++++++++++++++++++++++++++++++++++++++-
+ drivers/tty/serial/samsung.h |   1 +
+ 2 files changed, 231 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index 825c819..c046180 100644
+index c046180..dae3c16 100644
 --- a/drivers/tty/serial/samsung.c
 +++ b/drivers/tty/serial/samsung.c
-@@ -81,6 +81,8 @@ static void dbg(const char *fmt, ...)
- #define S3C24XX_SERIAL_MAJOR	204
- #define S3C24XX_SERIAL_MINOR	64
+@@ -83,6 +83,8 @@ static void dbg(const char *fmt, ...)
  
-+#define S3C24XX_TX_PIO			1
-+#define S3C24XX_TX_DMA			2
+ #define S3C24XX_TX_PIO			1
+ #define S3C24XX_TX_DMA			2
++#define S3C24XX_RX_PIO			1
++#define S3C24XX_RX_DMA			2
  /* macros to change one thing to another */
  
  #define tx_enabled(port) ((port)->unused[0])
-@@ -157,33 +159,217 @@ static void s3c24xx_serial_rx_disable(struct uart_port *port)
- static void s3c24xx_serial_stop_tx(struct uart_port *port)
+@@ -373,9 +375,65 @@ void s3c24xx_serial_start_tx(struct uart_port *port)
+ 	}
+ }
+ 
++static void s3c24xx_uart_copy_rx_to_tty(struct s3c24xx_uart_port *ourport,
++		struct tty_port *tty, int count)
++{
++	struct s3c24xx_uart_dma *dma = ourport->dma;
++	int copied;
++
++	if (!count)
++		return;
++
++	dma_sync_single_for_cpu(ourport->port.dev, dma->rx_addr,
++				dma->rx_size, DMA_FROM_DEVICE);
++
++	ourport->port.icount.rx += count;
++	if (!tty) {
++		dev_err(ourport->port.dev, "No tty port\n");
++		return;
++	}
++	copied = tty_insert_flip_string(tty,
++			((unsigned char *)(ourport->dma->rx_buf)), count);
++	if (copied != count) {
++		WARN_ON(1);
++		dev_err(ourport->port.dev, "RxData copy to tty layer failed\n");
++	}
++}
++
++static int s3c24xx_serial_rx_fifocnt(struct s3c24xx_uart_port *ourport,
++				     unsigned long ufstat);
++
++static void uart_rx_drain_fifo(struct s3c24xx_uart_port *ourport)
++{
++	struct uart_port *port = &ourport->port;
++	struct tty_port *tty = &port->state->port;
++	unsigned int ch, ufstat;
++	unsigned int count;
++
++	ufstat = rd_regl(port, S3C2410_UFSTAT);
++	count = s3c24xx_serial_rx_fifocnt(ourport, ufstat);
++
++	if (!count)
++		return;
++
++	while (count-- > 0) {
++		ch = rd_regb(port, S3C2410_URXH);
++
++		ourport->port.icount.rx++;
++		tty_insert_flip_char(tty, ch, TTY_NORMAL);
++	}
++
++	tty_flip_buffer_push(tty);
++}
++
+ static void s3c24xx_serial_stop_rx(struct uart_port *port)
  {
  	struct s3c24xx_uart_port *ourport = to_ourport(port);
 +	struct s3c24xx_uart_dma *dma = ourport->dma;
-+	struct circ_buf *xmit = &port->state->xmit;
++	struct tty_port *t = &port->state->port;
 +	struct dma_tx_state state;
-+	int count;
++	enum dma_status dma_status;
++	unsigned int received;
  
--	if (tx_enabled(port)) {
--		if (s3c24xx_serial_has_interrupt_mask(port))
--			__set_bit(S3C64XX_UINTM_TXD,
--				portaddrl(port, S3C64XX_UINTM));
--		else
--			disable_irq_nosync(ourport->tx_irq);
--		tx_enabled(port) = 0;
--		if (port->flags & UPF_CONS_FLOW)
--			s3c24xx_serial_rx_enable(port);
-+	if (!tx_enabled(port))
-+		return;
-+
-+	if (s3c24xx_serial_has_interrupt_mask(port))
-+		__set_bit(S3C64XX_UINTM_TXD,
-+			portaddrl(port, S3C64XX_UINTM));
-+	else
-+		disable_irq_nosync(ourport->tx_irq);
-+
-+	if (dma && dma->tx_chan && ourport->tx_in_progress == S3C24XX_TX_DMA) {
-+		dmaengine_pause(dma->tx_chan);
-+		dmaengine_tx_status(dma->tx_chan, dma->tx_cookie, &state);
-+		dmaengine_terminate_all(dma->tx_chan);
-+		dma_sync_single_for_cpu(ourport->port.dev,
-+			dma->tx_transfer_addr, dma->tx_size, DMA_TO_DEVICE);
-+		async_tx_ack(dma->tx_desc);
-+		count = dma->tx_bytes_requested - state.residue;
-+		xmit->tail = (xmit->tail + count) & (UART_XMIT_SIZE - 1);
-+		port->icount.tx += count;
+ 	if (rx_enabled(port)) {
+ 		dbg("s3c24xx_serial_stop_rx: port=%p\n", port);
+@@ -386,6 +444,17 @@ static void s3c24xx_serial_stop_rx(struct uart_port *port)
+ 			disable_irq_nosync(ourport->rx_irq);
+ 		rx_enabled(port) = 0;
  	}
-+
-+	tx_enabled(port) = 0;
-+	ourport->tx_in_progress = 0;
-+
-+	if (port->flags & UPF_CONS_FLOW)
-+		s3c24xx_serial_rx_enable(port);
-+
-+	ourport->tx_mode = 0;
-+}
-+
-+static void s3c24xx_serial_start_next_tx(struct s3c24xx_uart_port *ourport);
-+
-+static void s3c24xx_serial_tx_dma_complete(void *args)
++	if (dma && dma->rx_chan) {
++		dmaengine_pause(dma->tx_chan);
++		dma_status = dmaengine_tx_status(dma->rx_chan,
++				dma->rx_cookie, &state);
++		if (dma_status == DMA_IN_PROGRESS ||
++			dma_status == DMA_PAUSED) {
++			received = dma->rx_bytes_requested - state.residue;
++			dmaengine_terminate_all(dma->rx_chan);
++			s3c24xx_uart_copy_rx_to_tty(ourport, t, received);
++		}
++	}
+ }
+ 
+ static inline struct s3c24xx_uart_info
+@@ -417,12 +486,157 @@ static int s3c24xx_serial_rx_fifocnt(struct s3c24xx_uart_port *ourport,
+ 	return (ufstat & info->rx_fifomask) >> info->rx_fifoshift;
+ }
+ 
++static void s3c64xx_start_rx_dma(struct s3c24xx_uart_port *ourport);
++static void s3c24xx_serial_rx_dma_complete(void *args)
 +{
 +	struct s3c24xx_uart_port *ourport = args;
 +	struct uart_port *port = &ourport->port;
-+	struct circ_buf *xmit = &port->state->xmit;
++
 +	struct s3c24xx_uart_dma *dma = ourport->dma;
++	struct tty_port *t = &port->state->port;
++	struct tty_struct *tty = tty_port_tty_get(&ourport->port.state->port);
++
 +	struct dma_tx_state state;
 +	unsigned long flags;
-+	int count;
++	int received;
 +
-+
-+	dmaengine_tx_status(dma->tx_chan, dma->tx_cookie, &state);
-+	count = dma->tx_bytes_requested - state.residue;
-+	async_tx_ack(dma->tx_desc);
-+
-+	dma_sync_single_for_cpu(ourport->port.dev, dma->tx_transfer_addr,
-+				dma->tx_size, DMA_TO_DEVICE);
++	dmaengine_tx_status(dma->rx_chan,  dma->rx_cookie, &state);
++	received  = dma->rx_bytes_requested - state.residue;
++	async_tx_ack(dma->rx_desc);
 +
 +	spin_lock_irqsave(&port->lock, flags);
 +
-+	xmit->tail = (xmit->tail + count) & (UART_XMIT_SIZE - 1);
-+	port->icount.tx += count;
-+	ourport->tx_in_progress = 0;
++	if (received)
++		s3c24xx_uart_copy_rx_to_tty(ourport, t, received);
 +
-+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-+		uart_write_wakeup(port);
++	if (tty) {
++		tty_flip_buffer_push(t);
++		tty_kref_put(tty);
++	}
 +
-+	s3c24xx_serial_start_next_tx(ourport);
++	s3c64xx_start_rx_dma(ourport);
++
 +	spin_unlock_irqrestore(&port->lock, flags);
 +}
 +
-+static void enable_tx_dma(struct s3c24xx_uart_port *ourport)
++static void s3c64xx_start_rx_dma(struct s3c24xx_uart_port *ourport)
 +{
-+	struct uart_port *port = &ourport->port;
-+	u32 ucon;
-+
-+	/* Mask Tx interrupt */
-+	if (s3c24xx_serial_has_interrupt_mask(port))
-+		__set_bit(S3C64XX_UINTM_TXD,
-+			  portaddrl(port, S3C64XX_UINTM));
-+	else
-+		disable_irq_nosync(ourport->tx_irq);
-+
-+	/* Enable tx dma mode */
-+	ucon = rd_regl(port, S3C2410_UCON);
-+	ucon &= ~(S3C64XX_UCON_TXBURST_MASK | S3C64XX_UCON_TXMODE_MASK);
-+	ucon |= (dma_get_cache_alignment() >= 16) ?
-+		S3C64XX_UCON_TXBURST_16 : S3C64XX_UCON_TXBURST_1;
-+	ucon |= S3C64XX_UCON_TXMODE_DMA;
-+	wr_regl(port,  S3C2410_UCON, ucon);
-+
-+	ourport->tx_mode = S3C24XX_TX_DMA;
-+}
-+
-+static void enable_tx_pio(struct s3c24xx_uart_port *ourport)
-+{
-+	struct uart_port *port = &ourport->port;
-+	u32 ucon, ufcon;
-+
-+	/* Set ufcon txtrig */
-+	ourport->tx_in_progress = S3C24XX_TX_PIO;
-+	ufcon = rd_regl(port, S3C2410_UFCON);
-+	wr_regl(port,  S3C2410_UFCON, ufcon);
-+
-+	/* Enable tx pio mode */
-+	ucon = rd_regl(port, S3C2410_UCON);
-+	ucon &= ~(S3C64XX_UCON_TXMODE_MASK);
-+	ucon |= S3C64XX_UCON_TXMODE_CPU;
-+	wr_regl(port,  S3C2410_UCON, ucon);
-+
-+	/* Unmask Tx interrupt */
-+	if (s3c24xx_serial_has_interrupt_mask(port))
-+		__clear_bit(S3C64XX_UINTM_TXD,
-+			    portaddrl(port, S3C64XX_UINTM));
-+	else
-+		enable_irq(ourport->tx_irq);
-+
-+	ourport->tx_mode = S3C24XX_TX_PIO;
- }
- 
--static void s3c24xx_serial_start_tx(struct uart_port *port)
-+static void s3c24xx_serial_start_tx_pio(struct s3c24xx_uart_port *ourport)
-+{
-+	if (ourport->tx_mode != S3C24XX_TX_PIO)
-+		enable_tx_pio(ourport);
-+}
-+
-+static int s3c24xx_serial_start_tx_dma(struct s3c24xx_uart_port *ourport,
-+				      unsigned int count)
-+{
-+	struct uart_port *port = &ourport->port;
-+	struct circ_buf *xmit = &port->state->xmit;
 +	struct s3c24xx_uart_dma *dma = ourport->dma;
 +
++	dma_sync_single_for_device(ourport->port.dev, dma->rx_addr,
++				dma->rx_size, DMA_FROM_DEVICE);
 +
-+	if (ourport->tx_mode != S3C24XX_TX_DMA)
-+		enable_tx_dma(ourport);
-+
-+	while (xmit->tail & (dma_get_cache_alignment() - 1)) {
-+		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
-+			return 0;
-+		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
-+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-+		port->icount.tx++;
-+		count--;
-+	}
-+
-+	dma->tx_size = count & ~(dma_get_cache_alignment() - 1);
-+	dma->tx_transfer_addr = dma->tx_addr + xmit->tail;
-+
-+	dma_sync_single_for_device(ourport->port.dev, dma->tx_transfer_addr,
-+				dma->tx_size, DMA_TO_DEVICE);
-+
-+	dma->tx_desc = dmaengine_prep_slave_single(dma->tx_chan,
-+				dma->tx_transfer_addr, dma->tx_size,
-+				DMA_MEM_TO_DEV, DMA_PREP_INTERRUPT);
-+	if (!dma->tx_desc) {
-+		dev_err(ourport->port.dev, "Unable to get desc for Tx\n");
-+		return -EIO;
-+	}
-+
-+	dma->tx_desc->callback = s3c24xx_serial_tx_dma_complete;
-+	dma->tx_desc->callback_param = ourport;
-+	dma->tx_bytes_requested = dma->tx_size;
-+
-+	ourport->tx_in_progress = S3C24XX_TX_DMA;
-+	dma->tx_cookie = dmaengine_submit(dma->tx_desc);
-+	dma_async_issue_pending(dma->tx_chan);
-+	return 0;
-+}
-+
-+static void s3c24xx_serial_start_next_tx(struct s3c24xx_uart_port *ourport)
-+{
-+	struct uart_port *port = &ourport->port;
-+	struct circ_buf *xmit = &port->state->xmit;
-+	unsigned long count;
-+
-+	/* Get data size up to the end of buffer */
-+	count = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
-+
-+	if (!count) {
-+		s3c24xx_serial_stop_tx(port);
++	dma->rx_desc = dmaengine_prep_slave_single(dma->rx_chan,
++				dma->rx_addr, dma->rx_size, DMA_DEV_TO_MEM,
++				DMA_PREP_INTERRUPT);
++	if (!dma->rx_desc) {
++		dev_err(ourport->port.dev, "Unable to get desc for Rx\n");
 +		return;
 +	}
 +
-+	if (!ourport->dma || !ourport->dma->tx_chan || count < port->fifosize)
-+		s3c24xx_serial_start_tx_pio(ourport);
-+	else
-+		s3c24xx_serial_start_tx_dma(ourport, count);
++	dma->rx_desc->callback = s3c24xx_serial_rx_dma_complete;
++	dma->rx_desc->callback_param = ourport;
++	dma->rx_bytes_requested = dma->rx_size;
++
++	dma->rx_cookie = dmaengine_submit(dma->rx_desc);
++	dma_async_issue_pending(dma->rx_chan);
++}
+ 
+ /* ? - where has parity gone?? */
+ #define S3C2410_UERSTAT_PARITY (0x1000)
+ 
+-static irqreturn_t
+-s3c24xx_serial_rx_chars(int irq, void *dev_id)
++static void enable_rx_dma(struct s3c24xx_uart_port *ourport)
++{
++	struct uart_port *port = &ourport->port;
++	unsigned int ucon;
++
++	/* set Rx mode to DMA mode */
++	ucon = rd_regl(port, S3C2410_UCON);
++	ucon &= ~(S3C64XX_UCON_RXBURST_MASK |
++			S3C64XX_UCON_TIMEOUT_MASK |
++			S3C64XX_UCON_EMPTYINT_EN |
++			S3C64XX_UCON_DMASUS_EN |
++			S3C64XX_UCON_TIMEOUT_EN |
++			S3C64XX_UCON_RXMODE_MASK);
++	ucon |= S3C64XX_UCON_RXBURST_16 |
++			0xf << S3C64XX_UCON_TIMEOUT_SHIFT |
++			S3C64XX_UCON_EMPTYINT_EN |
++			S3C64XX_UCON_TIMEOUT_EN |
++			S3C64XX_UCON_RXMODE_DMA;
++	wr_regl(port, S3C2410_UCON, ucon);
++
++	ourport->rx_mode = S3C24XX_RX_DMA;
 +}
 +
-+void s3c24xx_serial_start_tx(struct uart_port *port)
- {
- 	struct s3c24xx_uart_port *ourport = to_ourport(port);
-+	struct circ_buf *xmit = &port->state->xmit;
- 
- 	if (!tx_enabled(port)) {
- 		if (port->flags & UPF_CONS_FLOW)
- 			s3c24xx_serial_rx_disable(port);
- 
--		if (s3c24xx_serial_has_interrupt_mask(port))
--			__clear_bit(S3C64XX_UINTM_TXD,
--				portaddrl(port, S3C64XX_UINTM));
--		else
--			enable_irq(ourport->tx_irq);
- 		tx_enabled(port) = 1;
-+		if (!ourport->dma || !ourport->dma->tx_chan) {
-+			if (s3c24xx_serial_has_interrupt_mask(port))
-+				__clear_bit(S3C64XX_UINTM_TXD,
-+						portaddrl(port, S3C64XX_UINTM));
-+			else
-+				enable_irq(ourport->tx_irq);
++static void enable_rx_pio(struct s3c24xx_uart_port *ourport)
++{
++	struct uart_port *port = &ourport->port;
++	unsigned int ucon;
 +
-+			s3c24xx_serial_start_tx_pio(ourport);
-+		}
-+	}
++	/* set Rx mode to DMA mode */
++	ucon = rd_regl(port, S3C2410_UCON);
++	ucon &= ~(S3C64XX_UCON_TIMEOUT_MASK |
++			S3C64XX_UCON_EMPTYINT_EN |
++			S3C64XX_UCON_DMASUS_EN |
++			S3C64XX_UCON_TIMEOUT_EN |
++			S3C64XX_UCON_RXMODE_MASK);
++	ucon |= 0xf << S3C64XX_UCON_TIMEOUT_SHIFT |
++			S3C64XX_UCON_TIMEOUT_EN |
++			S3C64XX_UCON_RXMODE_CPU;
++	wr_regl(port, S3C2410_UCON, ucon);
 +
-+	if (ourport->dma && ourport->dma->tx_chan) {
-+		if (!uart_circ_empty(xmit) && !ourport->tx_in_progress)
-+			s3c24xx_serial_start_next_tx(ourport);
- 	}
- }
- 
-@@ -333,10 +519,17 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
- 	struct uart_port *port = &ourport->port;
- 	struct circ_buf *xmit = &port->state->xmit;
- 	unsigned long flags;
--	int count = port->fifosize;
-+	int count;
- 
- 	spin_lock_irqsave(&port->lock, flags);
- 
-+	count = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
++	ourport->rx_mode = S3C24XX_RX_PIO;
++}
 +
-+	if (ourport->dma && ourport->dma->tx_chan && count >= port->fifosize) {
-+		s3c24xx_serial_start_tx_dma(ourport, count);
-+		goto out;
-+	}
++static irqreturn_t s3c24xx_serial_rx_chars_dma(int irq, void *dev_id)
++{
++	unsigned int utrstat, ufstat, received;
++	struct s3c24xx_uart_port *ourport = dev_id;
++	struct uart_port *port = &ourport->port;
++	struct s3c24xx_uart_dma *dma = ourport->dma;
++	struct tty_struct *tty = tty_port_tty_get(&ourport->port.state->port);
++	struct tty_port *t = &port->state->port;
++	unsigned long flags;
++	struct dma_tx_state state;
 +
- 	if (port->x_char) {
- 		wr_regb(port, S3C2410_UTXH, port->x_char);
- 		port->icount.tx++;
-@@ -355,6 +548,7 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
- 
- 	/* try and drain the buffer... */
- 
-+	count = port->fifosize;
- 	while (!uart_circ_empty(xmit) && count-- > 0) {
- 		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
- 			break;
-@@ -572,6 +766,7 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
- 	if (ourport->dma)
- 		s3c24xx_serial_release_dma(ourport);
- 
-+	ourport->tx_in_progress = 0;
- }
- 
- static int s3c24xx_serial_startup(struct uart_port *port)
-@@ -650,8 +845,19 @@ static int s3c64xx_serial_startup(struct uart_port *port)
- 	tx_enabled(port) = 0;
- 	ourport->tx_claimed = 1;
- 
++	utrstat = rd_regl(port, S3C2410_UTRSTAT);
++	ufstat = rd_regl(port, S3C2410_UFSTAT);
++
 +	spin_lock_irqsave(&port->lock, flags);
 +
-+	ufcon = rd_regl(port, S3C2410_UFCON);
-+	ufcon |= S3C2410_UFCON_RESETRX | S3C2410_UFCON_RESETTX;
-+	wr_regl(port, S3C2410_UFCON, ufcon);
++	if (!(utrstat & S3C2410_UTRSTAT_TIMEOUT)) {
++		s3c64xx_start_rx_dma(ourport);
++		if (ourport->rx_mode == S3C24XX_RX_PIO)
++			enable_rx_dma(ourport);
++		goto finish;
++	}
 +
-+	enable_rx_pio(ourport);
++	if (ourport->rx_mode == S3C24XX_RX_DMA) {
++		dmaengine_pause(dma->rx_chan);
++		dmaengine_tx_status(dma->rx_chan, dma->rx_cookie, &state);
++		dmaengine_terminate_all(dma->rx_chan);
++		received = dma->rx_bytes_requested - state.residue;
++		s3c24xx_uart_copy_rx_to_tty(ourport, t, received);
 +
++		enable_rx_pio(ourport);
++	}
++
++	uart_rx_drain_fifo(ourport);
++
++	if (tty) {
++		tty_flip_buffer_push(t);
++		tty_kref_put(tty);
++	}
++
++	wr_regl(port, S3C2410_UTRSTAT, S3C2410_UTRSTAT_TIMEOUT);
++
++finish:
 +	spin_unlock_irqrestore(&port->lock, flags);
 +
- 	/* Enable Rx Interrupt */
- 	__clear_bit(S3C64XX_UINTM_RXD, portaddrl(port, S3C64XX_UINTM));
++	return IRQ_HANDLED;
++}
 +
- 	dbg("s3c64xx_serial_startup ok\n");
- 	return ret;
++static irqreturn_t s3c24xx_serial_rx_chars_pio(int irq, void *dev_id)
+ {
+ 	struct s3c24xx_uart_port *ourport = dev_id;
+ 	struct uart_port *port = &ourport->port;
+@@ -513,6 +727,16 @@ out:
+ 	return IRQ_HANDLED;
  }
+ 
++
++static irqreturn_t s3c24xx_serial_rx_chars(int irq, void *dev_id)
++{
++	struct s3c24xx_uart_port *ourport = dev_id;
++
++	if (ourport->dma && ourport->dma->rx_chan)
++		return s3c24xx_serial_rx_chars_dma(irq, dev_id);
++	return s3c24xx_serial_rx_chars_pio(irq, dev_id);
++}
++
+ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
+ {
+ 	struct s3c24xx_uart_port *ourport = id;
+@@ -818,6 +1042,8 @@ err:
+ static int s3c64xx_serial_startup(struct uart_port *port)
+ {
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
++	unsigned long flags;
++	unsigned int ufcon;
+ 	int ret;
+ 
+ 	dbg("s3c64xx_serial_startup: port=%p (%08llx,%p)\n",
+@@ -848,7 +1074,8 @@ static int s3c64xx_serial_startup(struct uart_port *port)
+ 	spin_lock_irqsave(&port->lock, flags);
+ 
+ 	ufcon = rd_regl(port, S3C2410_UFCON);
+-	ufcon |= S3C2410_UFCON_RESETRX | S3C2410_UFCON_RESETTX;
++	ufcon |= S3C2410_UFCON_RESETRX | S3C2410_UFCON_RESETTX |
++			S5PV210_UFCON_RXTRIG8;
+ 	wr_regl(port, S3C2410_UFCON, ufcon);
+ 
+ 	enable_rx_pio(ourport);
 diff --git a/drivers/tty/serial/samsung.h b/drivers/tty/serial/samsung.h
-index 8dc250c..e60011c 100644
+index e60011c..d275032 100644
 --- a/drivers/tty/serial/samsung.h
 +++ b/drivers/tty/serial/samsung.h
-@@ -86,6 +86,9 @@ struct s3c24xx_uart_port {
- 	unsigned int			rx_irq;
- 	unsigned int			tx_irq;
+@@ -88,6 +88,7 @@ struct s3c24xx_uart_port {
  
-+	unsigned int			tx_in_progress;
-+	unsigned int			tx_mode;
-+
+ 	unsigned int			tx_in_progress;
+ 	unsigned int			tx_mode;
++	unsigned int			rx_mode;
+ 
  	struct s3c24xx_uart_info	*info;
  	struct clk			*clk;
- 	struct clk			*baudclk;
 -- 
 1.9.1
 
