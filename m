@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195AbaLJU5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:57:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25135 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758053AbaLJU5f (ORCPT
+	id S1758215AbaLJU5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:57:51 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:48793 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758197AbaLJU5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:57:35 -0500
-Date: Wed, 10 Dec 2014 15:57:26 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@fb.com, linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) for-jens-3.19 for v3.19 Xen blkfront driver updates.
-Message-ID: <20141210205726.GA13822@laptop.dumpdata.com>
+	Wed, 10 Dec 2014 15:57:50 -0500
+Date: Wed, 10 Dec 2014 20:57:46 +0000
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Long Li <longli@microsoft.com>
+Cc: kys@microsoft.com, haiyangz@microsoft.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
+Message-ID: <20141210205746.GB1209@sucs.org>
+References: <1418200705-488-1-git-send-email-longli@microsoft.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1418200705-488-1-git-send-email-longli@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 10, 2014 at 12:38:25AM -0800, Long Li wrote:
+> MSFT targets currently claim SPC-2 compliance while they implement
+> post SPC-2 features. With this patch we can correctly handle
+> WRITE_SAME_16 issues.
+> 
+> This patch fixes an issue where the flag is setup too late in drive
+> initialization process.
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Li, is this a fix for the issue I keep whinging about over in
+https://lkml.org/lkml/2014/10/21/23 ?
 
-Hey Jens,
+If is the same issue you may want to CC Martin on this...
 
-These are two fixes for Xen blkfront. They harden how it deals with
-broken backends.
-
-Please git pull the following branch:
-
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git for-jens-3.19
-
-in your for-3.19-drivers branch. This branch is based on:
-9af8785 NVMe: Fix command setup on IO retry
-
-Thanks!
-
-The changelog:
-
-drivers/block/xen-blkfront.c | 65 ++++++++++++++++++++++++++------------------
- 1 file changed, 39 insertions(+), 26 deletions(-)
-
-Vitaly Kuznetsov (2):
-      xen/blkfront: improve protection against issuing unsupported REQ_FUA
-      xen/blkfront: remove redundant flush_op
-
-
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUiLOyAAoJEFjIrFwIi8fJmT8IAIKqaJmH8LJVwddN7wz1LtNS
-75WqyXuTsx8yFptqpRlbF80W6oRmDJZ7UWiNhKC8var8/uv6jVY11HdcmU2TZJQh
-W+Tl63GYDkgqP42+ahD6CGFD1beB+fVUSVDVf+D4qe9pF+0nBHum9L4F5NMoqE+s
-sOhTIhmHaLQ7jYdjPKjW0sigNP3T0pRSCY5dQfboBxFnUgnOkmxPB4SFwB3LFcjj
-TNVjCZIc8sjYaOjEY39W+gKyGiukKAUkwGgmy8Klgh+Sp5SbGEH3ErtmHmuYFh/X
-CbupR/Mj5xMUSs6QH4jkch/NxUUsqGZrA2goDL23HD0ustqzF5sXEowbui9lNZ0=
-=BJFW
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
+-- 
+Sitsofe | http://sucs.org/~sits/
