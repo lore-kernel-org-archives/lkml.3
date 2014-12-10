@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaLJMwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:52:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40724 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761AbaLJMwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:52:06 -0500
-Date: Wed, 10 Dec 2014 13:52:02 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: rcu_sched stall detected, but no state dump
-Message-ID: <alpine.LNX.2.00.1412101334380.22639@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755766AbaLJMwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:52:35 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:37221 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbaLJMwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 07:52:34 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1678380546-1041685850-1418215923=:22639"
+In-Reply-To: <54883DB6.10504@linux.vnet.ibm.com>
+References: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
+	<54883DB6.10504@linux.vnet.ibm.com>
+Date: Wed, 10 Dec 2014 18:22:32 +0530
+Message-ID: <CAKohpokJxXe2RNc4Jqb20PJo2adr49nKBbzdXzYk9=H4kNjfRQ@mail.gmail.com>
+Subject: Re: [Query] Spurious interrupts from clockevent device on X86 Ivybridge
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Santosh Shukla <santosh.shukla@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 10 December 2014 at 18:03, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
 
---1678380546-1041685850-1418215923=:22639
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+> Right. We get an interrupt when nobody had asked for it to be delivered
+> or had asked for it to be delivered and later canceled the request. It
+> is most often in the latter situation, that there can be race
+> conditions. If these race conditions are not taken care of, they can
+> result in spurious interrupts.
 
+But the delta time will be very small then, right ?
 
-Hi,
+> Since the difference is 1us and not a noticeably high value, it is most
+> probably because during hrtimer handling, we traverse all queued timers
+> and call their handlers, till we find timers whose expiry is in the
+> future. I would not be surprised if we overshoot the expiry of the
+> timers at the end of the list by a microsecond by the time we call their
+> handlers.
 
-today I came across RCU stall which was correctly detected, but there is 
-no state dump. This is a bit suspicious, I think. 
+Looks like you misunderstood what he wrote. He isn't saying that we
+serviced the timers/hrtimers sometime after we should have.
 
-This is the output in serial console:
+What he is saying is: we got the clockevent device's interrupt at the
+time we requested but hrtimer_update_base() returned a time
+lesser than what it *should* have. And that results in a spurious
+interrupt.. We enqueue again for 1 us and service the timer then.
 
-[  105.727003] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  105.727003]  (detected by 0, t=21002 jiffies, g=3269, c=3268, q=138)
-[  105.727003] INFO: Stall ended before state dump start
-[  168.732006] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  168.732006]  (detected by 0, t=84007 jiffies, g=3269, c=3268, q=270)
-[  168.732006] INFO: Stall ended before state dump start
-[  231.737003] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  231.737003]  (detected by 0, t=147012 jiffies, g=3269, c=3268, q=388)
-[  231.737003] INFO: Stall ended before state dump start
-[  294.742003] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  294.742003]  (detected by 0, t=210017 jiffies, g=3269, c=3268, q=539)
-[  294.742003] INFO: Stall ended before state dump start
-[  357.747003] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  357.747003]  (detected by 0, t=273022 jiffies, g=3269, c=3268, q=693)
-[  357.747003] INFO: Stall ended before state dump start
-[  420.752003] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  420.752003]  (detected by 0, t=336027 jiffies, g=3269, c=3268, q=806)
-[  420.752003] INFO: Stall ended before state dump start
-...
+Or am I missing something ?
 
-It can be reproduced by trivial code attached to this mail (infinite 
-loop in kernel thread created in kernel module). I have CONFIG_PREEMPT=n. 
-The kernel thread is scheduled on the same CPU which causes soft lockup 
-(reliably detected when lockup detector is on). There is certainly RCU 
-stall, but I would expect a state dump. Is this an expected behaviour? 
-Maybe I overlooked some config option, don't know.
-
-I tested 3.18 and also next-20141210. If it is improper behaviour I could 
-try to find a good kernel release and bisect it.
-
-Best regards,
 --
-Miroslav Benes
-SUSE Labs
---1678380546-1041685850-1418215923=:22639
-Content-Type: TEXT/x-c++src; name=kthread_mod.c
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LNX.2.00.1412101352020.22639@pobox.suse.cz>
-Content-Description: 
-Content-Disposition: attachment; filename=kthread_mod.c
-
-I2luY2x1ZGUgPGxpbnV4L21vZHVsZS5oPg0KI2luY2x1ZGUgPGxpbnV4L2tl
-cm5lbC5oPg0KI2luY2x1ZGUgPGxpbnV4L2t0aHJlYWQuaD4NCiNpbmNsdWRl
-IDxsaW51eC9kZWxheS5oPg0KDQpzdGF0aWMgc3RydWN0IHRhc2tfc3RydWN0
-ICp0ZXN0X3RocmVhZDsNCg0Kc3RhdGljIGludCB0ZXN0X3RocmVhZF9mbih2
-b2lkICpkYXRhKQ0Kew0KCXdoaWxlICgxKSB7DQoJCWlmIChrdGhyZWFkX3No
-b3VsZF9zdG9wKCkpDQoJCQlicmVhazsNCg0KLy8JCW1zbGVlcCgxMDAwKTsN
-Cgl9DQoNCglyZXR1cm4gMDsNCn0NCg0Kc3RhdGljIGludCBfX2luaXQgdGVz
-dF9tb2R1bGVfaW5pdCh2b2lkKQ0Kew0KCXRlc3RfdGhyZWFkID0ga3RocmVh
-ZF9ydW4odGVzdF90aHJlYWRfZm4sIE5VTEwsICJ0ZXN0X3RocmVhZCIpOw0K
-DQoJcmV0dXJuIDA7DQp9DQoNCnN0YXRpYyB2b2lkIF9fZXhpdCB0ZXN0X21v
-ZHVsZV9jbGVhbnVwKHZvaWQpDQp7DQoJa3RocmVhZF9zdG9wKHRlc3RfdGhy
-ZWFkKTsNCn0NCg0KbW9kdWxlX2luaXQodGVzdF9tb2R1bGVfaW5pdCk7DQpt
-b2R1bGVfZXhpdCh0ZXN0X21vZHVsZV9jbGVhbnVwKTsNCg0KTU9EVUxFX0xJ
-Q0VOU0UoIkdQTCIpOw0KDQoNCg==
-
---1678380546-1041685850-1418215923=:22639--
+viresh
