@@ -1,93 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923AbaLJSzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:55:17 -0500
-Received: from mail-bl2on0117.outbound.protection.outlook.com ([65.55.169.117]:24128
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932501AbaLJSzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:55:15 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dexuan Cui <decui@microsoft.com>
-Subject: RE: [PATCH 4/5] Tools: hv: address compiler warnings for
- hv_fcopy_daemon.c
-Thread-Topic: [PATCH 4/5] Tools: hv: address compiler warnings for
- hv_fcopy_daemon.c
-Thread-Index: AQHQE8s0MgLIHRxbeE6RUFJzMGfpO5yJLgXA
-Date: Wed, 10 Dec 2014 18:55:13 +0000
-Message-ID: <BY2PR0301MB071185A92053C71F55ADDDF4A0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
- <1418140103-11854-5-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1418140103-11854-5-git-send-email-vkuznets@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::2]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0773;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0773;
-x-forefront-prvs: 0421BF7135
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(189002)(377454003)(199003)(51704005)(99396003)(120916001)(97736003)(76576001)(122556002)(107046002)(99286002)(102836002)(110136001)(68736005)(105586002)(40100003)(20776003)(106116001)(106356001)(46102003)(64706001)(86612001)(31966008)(19580405001)(4396001)(87936001)(76176999)(77156002)(86362001)(50986999)(21056001)(92566001)(101416001)(2656002)(54356999)(33656002)(62966003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0773;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S932801AbaLJS6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:58:41 -0500
+Received: from nm21.bullet.mail.bf1.yahoo.com ([98.139.212.180]:38130 "EHLO
+	nm21.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932501AbaLJS6k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 13:58:40 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.ca;
+	b=YE8QAB5B6c8FBcoxCj0C5tWg4KFNVOg6EiDnWXxc4gEVckFGhMxfSK6wJnHZCF71kv4RNWo69/T0m2EgyVO/wL70TcgAxBS3KqSpPwsJ5PjDL+iYbAzBKipdvYDFt9H4Kf/cM+WassDinIp8y1pEI6CQ1P5MZrPNTMoYLKU6C5fvmcoV7MXfTAq7mE9Otv8eYlk+1hjGsLc389uJWoBNuVL8JSr7tmWlI3J8RvuSfZn8BEHpY+1byTw2HqcnuG6r5fQhlZ4cdCPZQXJ5MwDf+s6I6rhGvlofCSjNPDY7NJvOWUxsQFDnPDqW6aH7E6ph38rqZy08e3bo/qhwXMyiaw==;
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 749526.66649.bm@omp1017.mail.bf1.yahoo.com
+X-YMail-OSG: bXnOW54VM1kX4GkGoAPTMpIZDbX4QxSuItdB3c0kOmU8X4g0H4OWLaqKLxn.247
+ TqZIPyOYXicZTdIzMqXBNOWyMhfMTK.tBOmTpT9Ntkzpni.mCVm3QOybgOrjmxhVv24tKkHtylWw
+ yYj.TJKFsE1nFjrqlIDu1EAm42wrKkLcjFV6kwAEBpBgjG8o1p4_wtUvt_KcKAWTmN1HsZ1vNBuZ
+ yxqVLSIk1b7zv2sIJ_udi2WZ1CoN5LqG85rJezOItd5CRwoZlfgxjx82StK57ZkWqXFLtpHjUwt8
+ hpKraiKisAzsHQDTXGZ0alyHH3wTlC8L.T1Zpucuhoi1O0WO8q3RlXHwG9XXHTOkJI2vZAxrM2Tz
+ Khtot46KlTYu05dk_ihflvnazrtVZ36U0e2XYCpb1eJgWH9I9VHqrDPWisaeF.GWuoMFSqa9yAOb
+ MVFZ3dkU4gQj8PBHBVjmgSN43EkeGYoVHFK2ngtIKQam9DPZl2T9c7k_Qxo9kkv_eRTT.YJNrYdi
+ 33QkNhuVTX2tp13L3m6vFVrPVOgiph8.pPf08roVNm.goYjSk.cHd.Pqd0tG2k.IrWZ8K6OkrwuY
+ tZCoxYOjp2z9lWA--
+Date: Wed, 10 Dec 2014 18:57:40 +0000 (UTC)
+From: Denis Du <dudenis2000@yahoo.ca>
+Reply-To: Denis Du <dudenis2000@yahoo.ca>
+To: Jiri Slaby <jslaby@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jmmahler@gmail.com" <jmmahler@gmail.com>
+Cc: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Message-ID: <166984712.4678215.1418237860359.JavaMail.yahoo@jws10661.mail.bf1.yahoo.com>
+In-Reply-To: <548895D9.6090402@suse.cz>
+References: <548895D9.6090402@suse.cz>
+Subject: Re: [PATCH] TTY: Fix the missing lock for the TTY ldisc buffer
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBAItPg1008218
 
 
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Tuesday, December 9, 2014 7:48 AM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; Dexuan Cui
-> Subject: [PATCH 4/5] Tools: hv: address compiler warnings for
-> hv_fcopy_daemon.c
+ 
+
+
+On 12/10/2014, 07:38 PM, Denis Du wrote:
 > 
-> This patch addresses two types of compiler warnings:
-> ... warning: unused variable ‚Äòfd‚Äô [-Wunused-variable] and ... warning: format
-> ‚Äò%s‚Äô expects argument of type ‚Äòchar *‚Äô, but argument 5 has type ‚Äò__u16 *‚Äô [-
-> Wformat=]
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Hi, Guys:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Hi, are you sending this using some robot? I think I have seen like ten
+copies of this patch already.
+
+
+
+Sorry, I always have troubles to send the patch in correct format, even now I am not 
+
+100% sure this patch have the correct format. My company's firewall policy messed up
+many things, I have to try my yahoo personal e-mail.
+
+> It was found that the 3.12 kernel tty layer will lose or corrupt data
+> when have a full-duplex communication, especially in high baud rate, for
+> example 230k for my OMAP5 uart. Eventually I found there is lock missing
+> between copy data to ldisc layer buffer and copy data from the same
+> buffer to user space. I believe this issue existed since 3.8
+> kernel(since this kernel , it start to remove most of the spin-locks)
+> and I didn't find any fix even through 3.17 kernel. This patch was
+> tested to be works great with no any data loss again on 3.12 kernel.
+> 
+> This patch was built for the latest kernel, but I cannot test it.
+> Somebody may give a test.
+> 
+> I did try to use the existed lock atomic_read_lock, but it doesn‚Äôt work.
+
+Anyway, adding Peter Hurley to CC who was working on eliminating locks
+from this code lately. More precisely since 3.12 we have no locks there,
+which would explain why are you seeing it starting 3.12.
+
+> Signed-off-by: Hui Du <dudenis2000@yahoo.ca>
+> 
 > ---
->  tools/hv/hv_fcopy_daemon.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/tty/n_tty.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 > 
-> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-> index f437d73..1a23872 100644
-> --- a/tools/hv/hv_fcopy_daemon.c
-> +++ b/tools/hv/hv_fcopy_daemon.c
-> @@ -51,7 +51,7 @@ static int hv_start_fcopy(struct hv_start_fcopy *smsg)
-> 
->  	p = (char *)smsg->path_name;
->  	snprintf(target_fname, sizeof(target_fname), "%s/%s",
-> -		(char *)smsg->path_name, smsg->file_name);
-> +		 (char *)smsg->path_name, (char *)smsg->file_name);
-> 
->  	syslog(LOG_INFO, "Target file name: %s", target_fname);
->  	/*
-> @@ -137,7 +137,7 @@ void print_usage(char *argv[])
-> 
->  int main(int argc, char *argv[])
->  {
-> -	int fd, fcopy_fd, len;
-> +	int fcopy_fd, len;
->  	int error;
->  	int daemonize = 1, long_index = 0, opt;
->  	int version = FCOPY_CURRENT_VERSION;
-> --
-> 1.9.3
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 2e900a9..6e5c6ae 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -125,6 +125,7 @@ struct n_tty_data {
+>  
+>      struct mutex atomic_read_lock;
+>      struct mutex output_lock;
+> +    struct mutex read_buf_lock;
+>  };
+>  
+>  static inline size_t read_cnt(struct n_tty_data *ldata)
+> @@ -1691,7 +1692,7 @@ n_tty_receive_buf_common(struct tty_struct *tty,
+> const unsigned char *cp,
+>      int room, n, rcvd = 0;
+>  
+>      down_read(&tty->termios_rwsem);
+> -
+> +    mutex_lock(&ldata->read_buf_lock);
+>      while (1) {
+>          room = receive_room(tty);
+>          n = min(count, room);
+> @@ -1710,6 +1711,7 @@ n_tty_receive_buf_common(struct tty_struct *tty,
+> const unsigned char *cp,
+>  
+>      tty->receive_room = room;
+>      n_tty_check_throttle(tty);
+> +    mutex_unlock(&ldata->read_buf_lock);
+>      up_read(&tty->termios_rwsem);
+>  
+>      return rcvd;
+> @@ -1876,6 +1878,7 @@ static int n_tty_open(struct tty_struct *tty)
+>      ldata->overrun_time = jiffies;
+>      mutex_init(&ldata->atomic_read_lock);
+>      mutex_init(&ldata->output_lock);
+> +    mutex_init(&ldata->read_buf_lock);
+>  
+>      tty->disc_data = ldata;
+>      reset_buffer_flags(tty->disc_data);
+> @@ -1939,6 +1942,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
+>      size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
+>  
+>      retval = 0;
+> +    mutex_lock(&ldata->read_buf_lock);
+>      n = min(read_cnt(ldata), N_TTY_BUF_SIZE - tail);
+>      n = min(*nr, n);
+>      if (n) {
+> @@ -1954,6 +1958,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
+>          *b += n;
+>          *nr -= n;
+>      }
+> +    mutex_unlock(&ldata->read_buf_lock);
+>      return retval;
+>  }
+>  
+> @@ -1992,6 +1997,7 @@ static int canon_copy_from_read_buf(struct
+> tty_struct *tty,
+>      bool eof_push = 0;
+>  
+>      /* N.B. avoid overrun if nr == 0 */
+> +    mutex_lock(&ldata->read_buf_lock);
+>      n = min(*nr, read_cnt(ldata));
+>      if (!n)
+>          return 0;
+> @@ -2052,6 +2058,7 @@ static int canon_copy_from_read_buf(struct
+> tty_struct *tty,
+>              ldata->push = 0;
+>          tty_audit_push(tty);
+>      }
+> +    mutex_unlock(&ldata->read_buf_lock);
+>      return eof_push ? -EAGAIN : 0;
+>  }
+>  
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+-- 
+js
+suse labs
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
