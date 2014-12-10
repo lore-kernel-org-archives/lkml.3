@@ -1,98 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568AbaLJOID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:08:03 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47122 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905AbaLJOIA (ORCPT
+	id S1757068AbaLJOIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:08:19 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47113 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464AbaLJOIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:08:00 -0500
-Date: Wed, 10 Dec 2014 15:07:53 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        p.zabel@pengutronix.de, shawn.guo@linaro.org, kernel@pengutronix.de,
-        linux@arm.linux.org.uk, mturquette@linaro.org, airlied@linux.ie
-Subject: Re: [PATCH RFC 12/15] ARM: dts: imx6qdl-sabresd: Add support for
- TRULY TFT480800-16-E MIPI DSI panel
-Message-ID: <20141210140751.GF23558@ulmo.nvidia.com>
-References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
- <1418200648-32656-13-git-send-email-Ying.Liu@freescale.com>
+	Wed, 10 Dec 2014 09:08:17 -0500
+Message-ID: <548853CB.7000704@roeck-us.net>
+Date: Wed, 10 Dec 2014 06:08:11 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B0nZA57HJSoPbsHY"
-Content-Disposition: inline
-In-Reply-To: <1418200648-32656-13-git-send-email-Ying.Liu@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i8k: Autodetect maximal fan speed and fan RPM multiplier
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412092123.22271@pali> <20141209224208.GA13149@roeck-us.net> <201412101250.13891@pali>
+In-Reply-To: <201412101250.13891@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.548853DB.056B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/10/2014 03:50 AM, Pali Rohár wrote:
+> On Tuesday 09 December 2014 23:42:08 Guenter Roeck wrote:
+>> On Tue, Dec 09, 2014 at 09:23:22PM +0100, Pali Rohár wrote:
+>>> On Tuesday 09 December 2014 21:20:23 Guenter Roeck wrote:
+>>>> On Tue, Dec 09, 2014 at 09:07:00PM +0100, Pali Rohár wrote:
+>>>>> This patch adds new function i8k_get_fan_nominal_rpm()
+>>>>> for doing SMM call which will return nominal fan RPM
+>>>>> for specified fan speed. It returns nominal RPM value
+>>>>> at which fan operate when speed is set. It looks like
+>>>>> RPM value is not accurate, but still provides very
+>>>>> useful information.
+>>>>>
+>>>>> First it can be used to validate if certain fan speed
+>>>>> could be accepted by SMM for setting fan speed and we
+>>>>> can use this routine to detect maximal fan speed.
+>>>>>
+>>>>> Second it returns RPM value, so we can check if value
+>>>>> looks correct with multiplier 30 or multiplier 1 (until
+>>>>> now only these two multiplier was used). If RPM value
+>>>>> with multiplier 30 is too high, then multiplier 1 is
+>>>>> used.
+>>>>>
+>>>>> In case when SMM reports that new function is not
+>>>>> supported we will fallback to old hardcoded values.
+>>>>> Maximal fan speed would be 2 and RPM multiplier 30.
+>>>>>
+>>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>>>>> ---
+>>>>> I tested this patch only on my Dell Latitude E6440 and
+>>>>> autodetection worked fine Before appying this patch it
+>>>>> should be tested on some other dell machines too but if
+>>>>> machine does not support i8k_get_fan_nominal_rpm()
+>>>>> driver should fallback to old values. So patch should
+>>>>> be without regressions.
+>>>>
+>>>> It looks like many of your error checks are unnecessary.
+>>>> Why did you add those ?
+>>>>
+>>>> Please refrain from adding unnecessary code.
+>>>>
+>>>> Guenter
+>>>
+>>> Which error checks do you mean?
+>>
+>> There are several you added. I noticed the ones around
+>> 'index', which would only be hit on coding errors. At that
+>> point I stopped looking further and did not verify which of
+>> the other added error checks are unnecessary as well.
+>>
+>> A quick additional check reveals that the fan variable range
+>> check in i8k_get_fan_nominal_rpm is completely unnecessary -
+>> if the range was wrong, the calling code would fail as well,
+>> since you unconditionally write into an array indexed by the
+>> very same variable. Given the simplicity of the calling code,
+>> it can even be mathematically proven that the error condition
+>> you are checking can never happen.
+>>
+>> With that I really stopped looking further.
+>>
+>> Guenter
+>>
+>
+> Should I remove those access out-of-array checks?
+>
 
---B0nZA57HJSoPbsHY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If you want me to look into it further. In general, I don't accept
+code like this, since it increases kernel size for no good reason.
+It also makes it more difficult to find _real_ problems in the code
+since it distracts from seeing those.
 
-On Wed, Dec 10, 2014 at 04:37:25PM +0800, Liu Ying wrote:
-[...]
-> diff --git a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
-[...]
-> +&mipi_dsi {
-> +	status = "okay";
-> +
-> +	panel@0 {
-> +		compatible = "himax,hx8369a-dsi";
-> +		reg = <0>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_mipi_panel>;
-> +		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
-> +		reset-delay = <120>;
-> +		bs2-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
-> +		data-lanes = <2>;
-> +		panel-width-mm = <45>;
-> +		panel-height-mm = <76>;
-> +		bs = <10>;
-> +		status = "okay";
-> +
-> +		display-timings {
-> +			native-mode = <&timing1>;
-> +			timing1: truly-tft480800-16-e {
+Guenter
 
-This is the only place where Truly is mentioned. The panel vendor is
-either Truly or it is Himax, it can't be a mix. From this example and
-your patch description it seems like Truly is the manufacturer of the
-panel, hence the panel compatible should really be:
-
-	compatible = "truly,tft480800-16-e";
-
-That it uses an HX8369A chip internally is really secondary, at least
-regarding the binding. If we ever get need to support multiple panels
-with the same driver IC the proper solution would be to abstract that
-code out into a helper library that is used from the various panel
-drivers.
-
-Thierry
-
---B0nZA57HJSoPbsHY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUiFO3AAoJEN0jrNd/PrOhNVMQAJ7nyeBGoPn6DqBNFXP48D0u
-6WICYrBJ/ZufLiIHcYQsaHpZd2yMz3xuSp+FRdGZWMk8fbYflhgu79xAUIz+KAth
-vP1ew3b7gcokFfHQMunHGrOPQUSsuVIGBHuqiC6dIxqppmSZWkJIhzNXIGJf66xV
-pNqe7Cd3/8v/HhhQUeI3Z47HwTxHMNmO10OLvf5iBatx4GRZy1n5uxu9cE4Dm+RV
-xjvuVciqfgqkHhd5Hrd8YXyOv3tJfGjMl5QEdDOCXx/3Afo+zcMwNp/VOHSoWDKp
-Ewf6qZtkpnQjDkni5e2gCnhFDQ7k1+rLpkQHOMgtEfXLlppKALTlZDw3s6S00mX2
-uJ6YI0a/b/uZiWacOji8YPQNLAaIM36Puf25m1ubng27It2aU3jH3qBxM2yNwqnx
-HRpl6dRNx09FXCW2+UOmlrWslhRbm6gsogNwJKeESqG1BorFlih6v72qHiCD9t0Z
-TScCCaCVBGs7339lT/eq8IGD/z9bdr6997Crepv7srs5/pKmGo15OhNM7Jkw9rWy
-zbFFhDUg6IxbT4Da+OEErRgEvi/zgl24cgSF7iFeVakoOrJPLq6t7GlejP+u+jyM
-ZfowlAith9Q6dib8X4o3TPCulvw4BnP8ovn8U9CIxbEfoY5HgoL0atOa0q9qLAvm
-hHy1NDzgISH1Zxfn61S9
-=Rml8
------END PGP SIGNATURE-----
-
---B0nZA57HJSoPbsHY--
