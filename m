@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630AbaLJOoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:44:15 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:65143 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423AbaLJOoN (ORCPT
+	id S1757671AbaLJOr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:47:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824AbaLJOr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:44:13 -0500
+	Wed, 10 Dec 2014 09:47:27 -0500
+Date: Wed, 10 Dec 2014 09:47:24 -0500
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
+        hpa@zytor.com, monstr@monstr.eu, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
+        grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, s.trumtrar@pengutronix.de,
+        jason@lakedaemon.net, kyle.teske@ni.com, nico@linaro.org, balbi@ti.com,
+        m.chehab@samsung.com, davidb@codeaurora.org, rob@landley.net,
+        davem@davemloft.net, cesarb@cesarb.net, sameo@linux.intel.com,
+        akpm@linux-foundation.org, linus.walleij@linaro.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v4 4/6] fpga manager: add sysfs interface document
+Message-ID: <20141210144724.GA17184@kroah.com>
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+ <1418156090-23578-5-git-send-email-atull@opensource.altera.com>
+ <c234f48c2ff145b4810cef72482bb49c@BL2FFO11FD045.protection.gbl>
 MIME-Version: 1.0
-In-Reply-To: <5486C591.7030509@suse.cz>
-References: <000301d01385$45554a60$cfffdf20$%yang@samsung.com>
-	<5486C591.7030509@suse.cz>
-Date: Wed, 10 Dec 2014 22:44:13 +0800
-Message-ID: <CAL1ERfOZ5eiJTDneh=5HAoOs7z2AhxxrKaLL9sHKtRk0Cfcf6Q@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: page_alloc: remove redundant set_freepage_migratetype()
- calls
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c234f48c2ff145b4810cef72482bb49c@BL2FFO11FD045.protection.gbl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 5:49 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
-> On 12/09/2014 08:51 AM, Weijie Yang wrote:
->>
->> The freepage_migratetype is a temporary cached value which represents
->> the free page's pageblock migratetype. Now we use it in two scenarios:
->>
->> 1. Use it as a cached value in page freeing path. This cached value
->> is temporary and non-100% update, which help us decide which pcp
->> freelist and buddy freelist the page should go rather than using
->> get_pfnblock_migratetype() to save some instructions.
->> When there is race between page isolation and free path, we need use
->> additional method to get a accurate value to put the free pages to
->> the correct freelist and get a precise free pages statistics.
->>
->> 2. Use it in page alloc path to update NR_FREE_CMA_PAGES statistics.
->
->
-> Maybe add that in this case, the value is only valid between being set by
-> __rmqueue_smallest/__rmqueue_fallback and being consumed by rmqueue_bulk or
-> buffered_rmqueue for the purposes of statistics.
-> Oh, except that in rmqueue_bulk, we are placing it on pcplists, so it's case
-> 1. Tricky.
+On Wed, Dec 10, 2014 at 10:42:39AM +0100, Michal Simek wrote:
+> Hi Greg,
+> 
+> On 12/09/2014 09:14 PM, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Add documentation for new fpga manager sysfs interface.
+> > 
+> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-class-fpga-manager |   38 ++++++++++++++++++++
+> >  1 file changed, 38 insertions(+)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-manager
+> 
+> What's the rule for adding sysfs doc for driver which is added to staging?
+> Is this location fine?
 
-I will add more description and comments in the next version.
-Thanks.
+No, staging drivers should be "self-contained" so when^Wif we delete
+them, it is easy to do so :)
 
-> Anyway, the comments for get/set_freepage_migratetype() say:
->
-> /* It's valid only if the page is free path or free_list */
->
-> And that's not really true. So should it instead say something like "The
-> value is only valid when the page is on pcp list, for determining on which
-> free list the page should go if the pcp list is flushed. It is also
-> temporarily valid during allocation from free list."
+Put it in the same directory as your driver.
 
-I will update the comments. Thanks
+thanks,
 
->> This patch aims at the scenario 1 and removes two redundant
->> set_freepage_migratetype() calls, which will make sense in the hot path.
->>
->> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
->> ---
->>   mm/page_alloc.c |    2 --
->>   1 file changed, 2 deletions(-)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 616a2c9..99af01a 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -775,7 +775,6 @@ static void __free_pages_ok(struct page *page,
->> unsigned int order)
->>         migratetype = get_pfnblock_migratetype(page, pfn);
->>         local_irq_save(flags);
->>         __count_vm_events(PGFREE, 1 << order);
->> -       set_freepage_migratetype(page, migratetype);
->>         free_one_page(page_zone(page), page, pfn, order, migratetype);
->>         local_irq_restore(flags);
->>   }
->> @@ -1024,7 +1023,6 @@ int move_freepages(struct zone *zone,
->>                 order = page_order(page);
->>                 list_move(&page->lru,
->>                           &zone->free_area[order].free_list[migratetype]);
->> -               set_freepage_migratetype(page, migratetype);
->>                 page += 1 << order;
->>                 pages_moved += 1 << order;
->>         }
->>
->
+greg k-h
