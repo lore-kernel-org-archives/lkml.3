@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514AbaLJOmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:42:15 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:36939 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756561AbaLJOmN (ORCPT
+	id S1757553AbaLJOn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:43:56 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:33427 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341AbaLJOnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:42:13 -0500
-Subject: [PATCH] staging, addi_apci_1500: fix IRQ spew
-From: Alan Cox <alan@linux.intel.com>
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Wed, 10 Dec 2014 14:42:01 +0000
-Message-ID: <20141210144140.3964.42851.stgit@localhost.localdomain>
-User-Agent: StGit/0.17-dirty
+	Wed, 10 Dec 2014 09:43:55 -0500
+Message-ID: <54885C22.3030808@gmail.com>
+Date: Wed, 10 Dec 2014 23:43:46 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: ejt@redhat.com
+CC: dm-devel@redhat.com, gregkh@linuxfoundation.org, snitzer@redhat.com,
+        agk@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
+References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com> <5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141210100033.GA21108@debian> <548827BD.3050803@gmail.com> <20141210123349.GC21108@debian> <548843A0.6040906@gmail.com> <20141210131325.GD21108@debian> <54884B33.4090709@gmail.com> <20141210134223.GE21108@debian>
+In-Reply-To: <20141210134223.GE21108@debian>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver very carefully checks if the card is the IRQ source, and if it
-isn't thoughtfully spews crap at_dev_warn() level. Remove the spewage so it
-can be used on a shared interrupt line.
+On 12/10/14 10:42 PM, Joe Thornber wrote:
+> On Wed, Dec 10, 2014 at 10:31:31PM +0900, Akira Hayakawa wrote:
+>> Joe,
+>>
+>>> So you copy the bio payload to a different block of ram and then
+>>> complete the bio?  Or does the rambuf refer to the bio payload
+>>> directly?
+>> Good question.
+>> The answer is, copy the data (got by bio_data(bio)) to rambuf once
+>> and ack if it's not barrier things.
+>> It would be nice if data in rambuf points to bio payload but it now copies
+>> because bio payload can be reused after completion. Am I right?
+>> Is there a way of eliminate memory copying?
+> 
+> You *have* to eliminate this memory copying.  Remap the bios to the
+> relevant portion of your log, and don't complete them until you log
+> chunk is coherent.
+> 
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=88651
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- .../comedi/drivers/addi-data/hwdrv_apci1500.c      |    4 ----
- 1 file changed, 4 deletions(-)
+Barrier writes don't ack until the log is written on cache device.
+I guess treating other writes as well will do this work.
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-index 0ea081e..b7b9857 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-@@ -2175,10 +2175,6 @@ static void apci1500_interrupt(int irq, void *d)
- 			devpriv->iobase + APCI1500_Z8536_CONTROL_REGISTER);
- 		/* Authorizes the main interrupt on the board */
- 		outb(0xD0, devpriv->iobase + APCI1500_Z8536_CONTROL_REGISTER);
--	} else {
--		dev_warn(dev->class_dev,
--			"Interrupt from unknown source\n");
--
- 	}
- }
- 
+But, it will be much better if I can do this by manipulating reference count
+of the bio payload. I am not sure how the implementation would be.
 
+Anyway, thanks for advice,
+
+- Akira
