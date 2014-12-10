@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244AbaLJGzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:55:42 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:49270 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323AbaLJGzk (ORCPT
+	id S1754496AbaLJG42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:56:28 -0500
+Received: from smtprelay0028.hostedemail.com ([216.40.44.28]:41259 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752846AbaLJG41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:55:40 -0500
-From: Shalin Mehta <shalinmehta85@gmail.com>
-X-Google-Original-From: Shalin Mehta < shalinmehta85@gmail.com>
-To: andreas.dilger@intel.com
-Cc: gregkh@linuxfoundation.org, bergwolf@gmail.com, gdonald@gmail.com,
-        peterz@infradead.org, tranmanphong@gmail.com, massa.nomura@gmail.com,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, majordomo@vger.kernel.org,
-        Shalin Mehta <shalinmehta85@gmail.com>
-Subject: [PATCH] staging: lustre: Fix the warning messages about casting without __user macro
-Date: Tue,  9 Dec 2014 22:56:12 -0800
-Message-Id: <1418194573-1271-1-git-send-email-shalinmehta85@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 10 Dec 2014 01:56:27 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3868:4321:5007:6261:10004:10400:10481:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:19900:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crowd04_550db2383b128
+X-Filterd-Recvd-Size: 1229
+Message-ID: <1418194583.1047.8.camel@perches.com>
+Subject: Re: [PATCH v2] net: introduce helper macro for_each_cmsghdr
+From: Joe Perches <joe@perches.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 09 Dec 2014 22:56:23 -0800
+In-Reply-To: <5487DBD9.1010908@cn.fujitsu.com>
+References: <5487DBD9.1010908@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shalin Mehta <shalinmehta85@gmail.com>
+On Wed, 2014-12-10 at 13:36 +0800, Gu Zheng wrote:
+> Introduce helper macro for_each_cmsghdr as a wrapper of the enumerating
+> cmsghdr from msghdr, just cleanup. 
 
-This issue is showed up while compiling with sparse. The iov_base in struct iovec struct explicitly declares that the assigned value should be user space pointer with __user macro. Where as here, the __user macro isn't used while casting.
+This looks nicer.
+Ideally this would have used: [PATCH V3] as the subject
 
-Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
----
- drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> ---
+> v2: use the lower-case macro name as Joe suggested.
 
-diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
-index d29f5f1..c40b7e0 100644
---- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
-+++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
-@@ -131,7 +131,7 @@ ksocknal_send_iov (ksock_conn_t *conn, ksock_tx_t *tx)
- 		LASSERT (tx->tx_niov > 0);
- 
- 		if (nob < (int) iov->iov_len) {
--			iov->iov_base = (void *)((char *)iov->iov_base + nob);
-+			iov->iov_base = (void __user *)((char __user *)iov->iov_base + nob);
- 			iov->iov_len -= nob;
- 			return rc;
- 		}
-@@ -1052,7 +1052,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
- 		case  KSOCK_PROTO_V3:
- 			conn->ksnc_rx_state = SOCKNAL_RX_KSM_HEADER;
- 			conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
--			conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg;
-+			conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg;
- 
- 			conn->ksnc_rx_nob_wanted = offsetof(ksock_msg_t, ksm_u);
- 			conn->ksnc_rx_nob_left = offsetof(ksock_msg_t, ksm_u);
-@@ -1066,7 +1066,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
- 			conn->ksnc_rx_nob_left = sizeof(lnet_hdr_t);
- 
- 			conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
--			conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg.ksm_u.lnetmsg;
-+			conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg.ksm_u.lnetmsg;
- 			conn->ksnc_rx_iov[0].iov_len  = sizeof (lnet_hdr_t);
- 			break;
- 
-@@ -1093,7 +1093,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
- 	do {
- 		nob = MIN (nob_to_skip, sizeof (ksocknal_slop_buffer));
- 
--		conn->ksnc_rx_iov[niov].iov_base = ksocknal_slop_buffer;
-+		conn->ksnc_rx_iov[niov].iov_base = (void __user *)ksocknal_slop_buffer;
- 		conn->ksnc_rx_iov[niov].iov_len  = nob;
- 		niov++;
- 		skipped += nob;
-@@ -1218,7 +1218,7 @@ ksocknal_process_receive (ksock_conn_t *conn)
- 		conn->ksnc_rx_nob_left = sizeof(ksock_lnet_msg_t);
- 
- 		conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
--		conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg.ksm_u.lnetmsg;
-+		conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg.ksm_u.lnetmsg;
- 		conn->ksnc_rx_iov[0].iov_len  = sizeof(ksock_lnet_msg_t);
- 
- 		conn->ksnc_rx_niov = 1;
--- 
-1.9.1
+And a description of the v2->v3 change here.
+
 
