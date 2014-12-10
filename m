@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101AbaLJPvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:51:54 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:60985 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758015AbaLJPtI (ORCPT
+	id S1758116AbaLJPwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:52:04 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:63200 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757870AbaLJPwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:49:08 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-ba-54886b722820
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: linux-kernel@vger.kernel.org (open list)
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/CLKDEV SUPPORT),
-        linux-gpio@vger.kernel.org (open list:GPIO SUBSYSTEM),
-        dri-devel@lists.freedesktop.org (open list:DRM PANEL DRIVERS),
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        boris.brezillon@free-electrons.com
-Subject: [RFC 07/15] clk: add DT parsing function
-Date: Wed, 10 Dec 2014 16:48:25 +0100
-Message-id: <1418226513-14105-8-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xy7pF2R0hBisuKlrcWneO1eLAi4Us
-	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
-	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
-	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
-	pKTmZJalFunbJXBlfDjTzV5wmqPixuyLLA2Mn9m6GDk4JARMJD7Mtepi5AQyxSQu3FsPFObi
-	EBJYyiix+Pc1Zginj0ni/eRWRpAqNgFNib+bb7KB2CICOhLXe7rBipgFNrBLrJu+DywhLGAo
-	8eLWYhaQDSwCqhJfLiiChHkFnCW2XpvFCrFNTuLksclgNqeAi8Tf53vB5gsB1SzZ9p51AiPv
-	AkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghkfFlB+PiY1aHGAU4GJV4eM0VW0OEWBPL
-	iitzDzFKcDArifAuTO4IEeJNSaysSi3Kjy8qzUktPsTIxMEp1cBYvZOxb9LnvNntX1i9ft+Q
-	1ToYWhLVz6a+LOzwHRbpyNTHB/mzVvqwn2o40PFL3W1fVmNk6OGWxFy1W/r8v3j3tUmceeJl
-	eVwg8wlD69LLbM94vLqytOaJNihe2tKnKXt5/Y5pNz43psho1Jgp/Tw4s9DC7RxTWYFX7BmJ
-	kpyv9rvDpASLtZVYijMSDbWYi4oTAfUIKadqAgAA
+	Wed, 10 Dec 2014 10:52:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>, yh.chen@mediatek.com
+Subject: Re: [PATCH 2/4] irqchip: mediatek: Add support for mt8173
+Date: Wed, 10 Dec 2014 15:41:15 +0100
+Message-ID: <4428865.bnDr16Yqvr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418222233.21309.17.camel@mtksdaap41>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com> <2545975.QDuBFbG7BN@wuerfel> <1418222233.21309.17.camel@mtksdaap41>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:BhnP1PwS+BZy9xprUQUYQVUTIIpc51HAQtiVM3iz7ChqCkfZqqJ
+ tJOjaVZd7nAQzsRF68922LmCN7BfdOSzmDXUmhHa7Yd98EdXphujmq3lSs6+xHpozeCgSfU
+ 0e8tPeyCR7o3XXMQrc2idWFAX2enITQuSpaLUvrm9sMCLqlr0rjS21FgvAtoozw0Tl4jnBV
+ FkfEHOwIIKU9ZCM9wsqmg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds function for parsing Device Tree to get
-clock specifier. The function could be ultimately used
-by clock core.
+On Wednesday 10 December 2014 22:37:13 Yingjoe Chen wrote:
+> OK, I'll change to something like this in next version:
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/clk/clkdev.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+I've just taken another look at the driver and have a different
+suggestion:
 
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index da4bda8..bd22750 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -120,6 +120,29 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
- 	return clk;
- }
- EXPORT_SYMBOL(of_clk_get_by_name);
-+
-+static int of_get_clock_spec(struct device *dev, const char *name,
-+		struct of_phandle_args *spec)
-+{
-+	struct device_node *np = dev->of_node;
-+
-+	while (np) {
-+		int idx = 0;
-+
-+		if (name)
-+			idx = of_property_match_string(np, "clock-names", name);
-+
-+		if (!of_parse_phandle_with_args(np, "clocks", "#clock-cells",
-+						idx, spec))
-+			return 0;
-+
-+		np = np->parent;
-+		if (np && !of_get_property(np, "clock-ranges", NULL))
-+			break;
-+	}
-+
-+	return -ENOENT;
-+}
- #endif
- 
- /*
--- 
-1.9.1
+> --- a/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+> +++ b/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+> @@ -17,12 +17,17 @@ Required properties:
+>    use the same interrupt-cells format as GIC.
+>  - reg: Physical base address of the intpol registers and length of memory
+>    mapped region.
+> 
+> +Optional properties:
+> +- mediatek,intpol-number: The number of interrupts supported by intpol,
+> +  default 224 if omitted.
+> +
+>  Example:
+>         sysirq: interrupt-controller@10200100 {
+>                 compatible = "mediatek,mt6589-sysirq", "mediatek,mt6577-sysirq";
+>                 interrupt-controller;
+>                 #interrupt-cells = >;
+>                 interrupt-parent = <&gic>;
+>                 reg = <0 0x10200100 0 0x1c>;
+> +               mediatek,intpol-number = <224>;
+>         };
 
+The number of interrupt pins directly corresponds to the size of the reg
+property in bits, so I think you can just use that and don't even need
+another property.
+
+	Arnd
