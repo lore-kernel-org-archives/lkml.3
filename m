@@ -1,110 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaLJR0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:26:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38163 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021AbaLJR0e (ORCPT
+	id S932560AbaLJR3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:29:48 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34850 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433AbaLJR3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:26:34 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        kernel-team@lists.ubuntu.com
-Subject: [3.16.y-ckt stable] Patch "xen-netfront: Fix handling packets on compound pages with skb_linearize" has been added to staging queue
-Date: Wed, 10 Dec 2014 17:26:28 +0000
-Message-Id: <1418232388-16853-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-X-Extended-Stable: 3.16
+	Wed, 10 Dec 2014 12:29:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141210163034.078015357@linux.com>
+References: <20141210163017.092096069@linux.com>
+	<20141210163034.078015357@linux.com>
+Date: Wed, 10 Dec 2014 19:29:45 +0200
+X-Google-Sender-Auth: yW57hJGx3RTG0GVwJdJNgnEPGzo
+Message-ID: <CAOJsxLGtqtDSvvSXnQBGdXFfX_osWKuQ5R8Q0ai0VMv2hQC3eg@mail.gmail.com>
+Subject: Re: [PATCH 6/7] slub: Drop ->page field from kmem_cache_cpu
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm <akpm@linuxfoundation.org>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, iamjoonsoo@lge.com,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On Wed, Dec 10, 2014 at 6:30 PM, Christoph Lameter <cl@linux.com> wrote:
+> Dropping the page field is possible since the page struct address
+> of an object or a freelist pointer can now always be calcualted from
+> the address. No freelist pointer will be NULL anymore so use
+> NULL to signify the condition that the current cpu has no
+> percpu slab attached to it.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-    xen-netfront: Fix handling packets on compound pages with skb_linearize
-
-to the linux-3.16.y-queue branch of the 3.16.y-ckt extended stable tree 
-which can be found at:
-
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.16.y-queue
-
-This patch is scheduled to be released in version 3.16.7-ckt3.
-
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.16.y-ckt tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Luis
-
-------
-
->From 079f869ca5082866d276b686721e89a649e622fe Mon Sep 17 00:00:00 2001
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Mon, 11 Aug 2014 18:32:23 +0100
-Subject: xen-netfront: Fix handling packets on compound pages with
- skb_linearize
-
-commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
-
-There is a long known problem with the netfront/netback interface: if the guest
-tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
-it gets dropped. The reason is that netback maps these slots to a frag in the
-frags array, which is limited by size. Having so many slots can occur since
-compound pages were introduced, as the ring protocol slice them up into
-individual (non-compound) page aligned slots. The theoretical worst case
-scenario looks like this (note, skbs are limited to 64 Kb here):
-linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
-using 2 slots
-first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
-end and the beginning of a page, therefore they use 3 * 15 = 45 slots
-last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
-Although I don't think this 51 slots skb can really happen, we need a solution
-which can deal with every scenario. In real life there is only a few slots
-overdue, but usually it causes the TCP stream to be blocked, as the retry will
-most likely have the same buffer layout.
-This patch solves this problem by linearizing the packet. This is not the
-fastest way, and it can fail much easier as it tries to allocate a big linear
-area for the whole packet, but probably easier by an order of magnitude than
-anything else. Probably this code path is not touched very frequently anyway.
-
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Paul Durrant <paul.durrant@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/xen-netfront.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 055222bae6e4..23359aeb1ba0 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -628,9 +628,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
- 		xennet_count_skb_frag_slots(skb);
- 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
--		net_alert_ratelimited(
--			"xennet: skb rides the rocket: %d slots\n", slots);
--		goto drop;
-+		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
-+				    slots, skb->len);
-+		if (skb_linearize(skb))
-+			goto drop;
- 	}
-
- 	spin_lock_irqsave(&queue->tx_lock, flags);
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
