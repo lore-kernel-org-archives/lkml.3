@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982AbaLJPZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:25:10 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:34212 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757455AbaLJPZH (ORCPT
+	id S1757965AbaLJPZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:25:08 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48116 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757940AbaLJPZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:25:07 -0500
+	Wed, 10 Dec 2014 10:25:05 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
@@ -14,151 +14,42 @@ To: Linus Walleij <linus.walleij@linaro.org>,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v3 1/4] gpio/xilinx: Remove offset property
-Date: Wed, 10 Dec 2014 16:24:57 +0100
-Message-Id: <1418225100-2949-2-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v3 0/4] gpio/xilinx: Add support for PCI mapped devices and rmmod
+Date: Wed, 10 Dec 2014 16:24:56 +0100
+Message-Id: <1418225100-2949-1-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418225100-2949-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1418225100-2949-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of calculating the register offset per call, pre-calculate it on
-probe time.
+The main purpose of this patchset is to use the driver on a PCI mapped fpga.
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
+This patchset also converts the driver to platform device, so it will support
+hot plugged devices and rmmod.
 
-v3: Remove offset from kernel-doc
+Changeset:
 
- drivers/gpio/gpio-xilinx.c | 34 +++++++++++-----------------------
- 1 file changed, 11 insertions(+), 23 deletions(-)
+v3
+Suggested by Michal Simek <michal.simek@xilinx.com>
+-Add patch for fixing kernel-doc
+-Leave the driver at subsys_initcall
 
-diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-index ba18b06..e668ec4 100644
---- a/drivers/gpio/gpio-xilinx.c
-+++ b/drivers/gpio/gpio-xilinx.c
-@@ -43,14 +43,12 @@
-  * struct of_mm_gpio_chip mmchip: OF GPIO chip for memory mapped banks
-  * gpio_state: GPIO state shadow register
-  * gpio_dir: GPIO direction shadow register
-- * offset: GPIO channel offset
-  * gpio_lock: Lock used for synchronization
-  */
- struct xgpio_instance {
- 	struct of_mm_gpio_chip mmchip;
- 	u32 gpio_state;
- 	u32 gpio_dir;
--	u32 offset;
- 	spinlock_t gpio_lock;
- };
- 
-@@ -65,12 +63,8 @@ struct xgpio_instance {
- static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
- {
- 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
--	struct xgpio_instance *chip =
--	    container_of(mm_gc, struct xgpio_instance, mmchip);
- 
--	void __iomem *regs = mm_gc->regs + chip->offset;
--
--	return !!(xgpio_readreg(regs + XGPIO_DATA_OFFSET) & BIT(gpio));
-+	return !!(xgpio_readreg(mm_gc->regs + XGPIO_DATA_OFFSET) & BIT(gpio));
- }
- 
- /**
-@@ -88,7 +82,6 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
- 	struct xgpio_instance *chip =
- 	    container_of(mm_gc, struct xgpio_instance, mmchip);
--	void __iomem *regs = mm_gc->regs;
- 
- 	spin_lock_irqsave(&chip->gpio_lock, flags);
- 
-@@ -98,8 +91,7 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- 	else
- 		chip->gpio_state &= ~BIT(gpio);
- 
--	xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
--							 chip->gpio_state);
-+	xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- }
-@@ -119,13 +111,12 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
- 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
- 	struct xgpio_instance *chip =
- 	    container_of(mm_gc, struct xgpio_instance, mmchip);
--	void __iomem *regs = mm_gc->regs;
- 
- 	spin_lock_irqsave(&chip->gpio_lock, flags);
- 
- 	/* Set the GPIO bit in shadow register and set direction as input */
- 	chip->gpio_dir |= BIT(gpio);
--	xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
-+	xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- 
-@@ -148,7 +139,6 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
- 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
- 	struct xgpio_instance *chip =
- 	    container_of(mm_gc, struct xgpio_instance, mmchip);
--	void __iomem *regs = mm_gc->regs;
- 
- 	spin_lock_irqsave(&chip->gpio_lock, flags);
- 
-@@ -157,12 +147,11 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
- 		chip->gpio_state |= BIT(gpio);
- 	else
- 		chip->gpio_state &= ~BIT(gpio);
--	xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
--		       chip->gpio_state);
-+	xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
- 
- 	/* Clear the GPIO bit in shadow register and set direction as output */
- 	chip->gpio_dir &= ~BIT(gpio);
--	xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
-+	xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- 
-@@ -178,10 +167,8 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
- 	struct xgpio_instance *chip =
- 	    container_of(mm_gc, struct xgpio_instance, mmchip);
- 
--	xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
--							chip->gpio_state);
--	xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET,
--							 chip->gpio_dir);
-+	xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET,	chip->gpio_state);
-+	xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
- }
- 
- /**
-@@ -247,9 +234,6 @@ static int xgpio_of_probe(struct device_node *np)
- 		if (!chip)
- 			return -ENOMEM;
- 
--		/* Add dual channel offset */
--		chip->offset = XGPIO_CHANNEL_OFFSET;
--
- 		/* Update GPIO state shadow register with default value */
- 		of_property_read_u32(np, "xlnx,dout-default-2",
- 				     &chip->gpio_state);
-@@ -285,6 +269,10 @@ static int xgpio_of_probe(struct device_node *np)
- 			np->full_name, status);
- 			return status;
- 		}
-+
-+		/* Add dual channel offset */
-+		chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
-+
- 		pr_info("XGpio: %s: dual channel registered, base is %d\n",
- 					np->full_name, chip->mmchip.gc.base);
- 	}
+
+v2
+Suggested by Alexandre Courbot <gnurou@gmail.com>
+Merge 2 and 3 (convert to platform device and implement remove)
+
+
+Ricardo Ribalda Delgado (4):
+  gpio/xilinx: Remove offset property
+  gpio/xilinx: Convert the driver to platform device interface
+  gpio/xilinx: Add support for X86 Arch
+  gpio/xilinx: Fix kernel-doc
+
+ drivers/gpio/Kconfig       |   4 +-
+ drivers/gpio/gpio-xilinx.c | 148 ++++++++++++++++++++++++++++-----------------
+ 2 files changed, 94 insertions(+), 58 deletions(-)
+
 -- 
 2.1.3
 
