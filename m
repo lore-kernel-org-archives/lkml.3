@@ -1,60 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814AbaLJSih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:38:37 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:62223 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaLJSig (ORCPT
+	id S932851AbaLJSjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:39:06 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:41075 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812AbaLJSjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:38:36 -0500
+	Wed, 10 Dec 2014 13:39:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418226774-30215-8-git-send-email-tj@kernel.org>
-References: <1418226774-30215-1-git-send-email-tj@kernel.org>
-	<1418226774-30215-8-git-send-email-tj@kernel.org>
-Date: Wed, 10 Dec 2014 21:38:35 +0300
-Message-ID: <CAMo8BfJ_8Ob7hKpjnVKkeK3m8gh+cGZwNNQZWmPMa-dktXeUBA@mail.gmail.com>
-Subject: Re: [PATCH 07/12] xtensa: use {cpu|node}mask pr_cont and seq output functions
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>
+In-Reply-To: <238c10795d7be218fea8d16ceb183e1e7450da0b.1418006970.git.shli@fb.com>
+References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
+ <238c10795d7be218fea8d16ceb183e1e7450da0b.1418006970.git.shli@fb.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Dec 2014 10:38:41 -0800
+Message-ID: <CALCETrW3NZmWEffa+G+c40zcuPcBAzckfn47bLh8-L2G+SfV=g@mail.gmail.com>
+Subject: Re: [PATCH 2/3] X86: add a generic API to let vdso code detect
+ context switch
+To: Shaohua Li <shli@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 6:52 PM, Tejun Heo <tj@kernel.org> wrote:
-> Convert the existing user of cpu{mask|list}_scnprintf() and
-> node{mask|list}_scnprintf() which use them just to printk or
-> seq_printf() the resulting buffer to use the following functions
-> instead respectively.
+On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
+> vdso code can't disable preempt, so it can be preempted at any time.
+> This makes a challenge to implement specific features. This patch adds a
+> generic API to let vdso code detect context switch.
 >
-> * For printk: cpu{mask|list}_pr_cont() and node{mask|list}_pr_cont().
->
-> * For seq_file: seq_cpumask[_list]() and seq_nodemask[_list]().
->
-> Because these conversions usually break up a single output function
-> call into multiple, the reduction is LOC isn't too big but it removes
-> unnecessary complexity and/or arbitrary limit on the length printed.
->
-> This patch is dependent on the previous patch ("bitmap, cpumask,
-> nodemask: implement pr_cont variants of formatting functions") which
-> is planned to go through -mm.  It'd be the easiest to route this
-> together.  If this should go through the subsystem tree, please wait
-> till the forementioned patch is merged to mainline.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
-> Cc: linux-xtensa@linux-xtensa.org
-> ---
->  arch/xtensa/kernel/setup.c | 10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
+> With this patch, every cpu maintains a context switch count. The upper
+> bits of the count is the logical cpu id, so the count can't be identical
+> for any cpu. The low bits of the count will be increased for each
+> context switch. For a x86_64 cpu with 4096 cpus, the context switch will
+> be overflowed for 2^(64 - 12) context switch, which is a long time and can be
+> ignored. The change of the count in giving time can be used to detect if
+> context switch occurs.
 
-Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+Why do you need those high bits?  I don't understand how you could
+possibly confuse one cpu's count with another's unless you fail to
+make sure that you're reading the same address both times.
+
+That being said, I don't like this patch.  I'm not sure I have a much
+better idea, though.  More thoughts in the 0/0 email to follow.
+
+--Andy
+
+>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Shaohua Li <shli@fb.com>
+> ---
+>  arch/x86/Kconfig               |  4 ++++
+>  arch/x86/include/asm/vdso.h    | 34 ++++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/vvar.h    |  6 ++++++
+>  arch/x86/kernel/asm-offsets.c  |  6 ++++++
+>  arch/x86/vdso/vclock_gettime.c | 12 ++++++++++++
+>  arch/x86/vdso/vma.c            |  6 ++++++
+>  kernel/sched/core.c            |  5 +++++
+>  7 files changed, 73 insertions(+)
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 41a503c..4978e31 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1920,6 +1920,10 @@ config COMPAT_VDSO
+>           If unsure, say N: if you are compiling your own kernel, you
+>           are unlikely to be using a buggy version of glibc.
+>
+> +config VDSO_CS_DETECT
+> +       def_bool y
+> +       depends on X86_64
+> +
+>  config CMDLINE_BOOL
+>         bool "Built-in kernel command line"
+>         ---help---
+> diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+> index 8021bd2..42d6d2c 100644
+> --- a/arch/x86/include/asm/vdso.h
+> +++ b/arch/x86/include/asm/vdso.h
+> @@ -4,6 +4,7 @@
+>  #include <asm/page_types.h>
+>  #include <linux/linkage.h>
+>  #include <linux/init.h>
+> +#include <generated/bounds.h>
+>
+>  #ifndef __ASSEMBLER__
+>
+> @@ -49,6 +50,39 @@ extern const struct vdso_image *selected_vdso32;
+>
+>  extern void __init init_vdso_image(const struct vdso_image *image);
+>
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +struct vdso_percpu_data {
+> +       /* layout: | cpu ID | context switch count | */
+> +       unsigned long cpu_cs_count;
+> +} ____cacheline_aligned;
+> +
+> +struct vdso_data {
+> +       int dummy;
+> +       struct vdso_percpu_data vpercpu[0];
+> +};
+> +extern struct vdso_data vdso_data;
+> +
+> +#ifdef CONFIG_SMP
+> +#define VDSO_CS_COUNT_BITS \
+> +       (sizeof(unsigned long) * 8 - NR_CPUS_BITS)
+> +static inline void vdso_inc_cpu_cs_count(int cpu)
+> +{
+> +       unsigned long cs = vdso_data.vpercpu[cpu].cpu_cs_count;
+> +       cs++;
+> +       cs &= (1L << VDSO_CS_COUNT_BITS) - 1;
+> +       vdso_data.vpercpu[cpu].cpu_cs_count = cs |
+> +               (((unsigned long)cpu) << VDSO_CS_COUNT_BITS);
+> +       smp_wmb();
+> +}
+> +#else
+> +static inline void vdso_inc_cpu_cs_count(int cpu)
+> +{
+> +       vdso_data.vpercpu[cpu].cpu_cs_count++;
+> +       smp_wmb();
+> +}
+> +#endif
+> +#endif
+> +
+>  #endif /* __ASSEMBLER__ */
+>
+>  #endif /* _ASM_X86_VDSO_H */
+> diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+> index fcbe621..394ab65 100644
+> --- a/arch/x86/include/asm/vvar.h
+> +++ b/arch/x86/include/asm/vvar.h
+> @@ -47,6 +47,12 @@ extern char __vvar_page;
+>  DECLARE_VVAR(0, volatile unsigned long, jiffies)
+>  DECLARE_VVAR(16, int, vgetcpu_mode)
+>  DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
+> +#if defined(CONFIG_VDSO_CS_DETECT) && defined(CONFIG_X86_64)
+> +/*
+> + * this one needs to be last because it ends with a per-cpu array.
+> + */
+> +DECLARE_VVAR(320, struct vdso_data, vdso_data)
+> +#endif
+>  /*
+>   * you must update VVAR_TOTAL_SIZE to reflect all of the variables we're
+>   * stuffing into the vvar area.  Don't change any of the above without
+> diff --git a/arch/x86/kernel/asm-offsets.c b/arch/x86/kernel/asm-offsets.c
+> index 0ab31a9..7321cdc 100644
+> --- a/arch/x86/kernel/asm-offsets.c
+> +++ b/arch/x86/kernel/asm-offsets.c
+> @@ -17,6 +17,7 @@
+>  #include <asm/bootparam.h>
+>  #include <asm/suspend.h>
+>  #include <asm/vgtod.h>
+> +#include <asm/vdso.h>
+>
+>  #ifdef CONFIG_XEN
+>  #include <xen/interface/xen.h>
+> @@ -74,6 +75,11 @@ void common(void) {
+>         DEFINE(PTREGS_SIZE, sizeof(struct pt_regs));
+>
+>         BLANK();
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +       DEFINE(VVAR_TOTAL_SIZE, ALIGN(320 + sizeof(struct vdso_data)
+> +               + sizeof(struct vdso_percpu_data) * CONFIG_NR_CPUS, PAGE_SIZE));
+> +#else
+>         DEFINE(VVAR_TOTAL_SIZE,
+>                 ALIGN(128 + sizeof(struct vsyscall_gtod_data), PAGE_SIZE));
+> +#endif
+>  }
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 9793322..438b3be 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -17,6 +17,8 @@
+>  #include <asm/vvar.h>
+>  #include <asm/unistd.h>
+>  #include <asm/msr.h>
+> +#include <asm/vdso.h>
+> +#include <asm/vsyscall.h>
+>  #include <linux/math64.h>
+>  #include <linux/time.h>
+>
+> @@ -289,6 +291,16 @@ notrace static void do_monotonic_coarse(struct timespec *ts)
+>         } while (unlikely(gtod_read_retry(gtod, seq)));
+>  }
+>
+> +#if defined(CONFIG_VDSO_CS_DETECT) && defined(CONFIG_X86_64)
+> +notrace unsigned long __vdso_get_context_switch_count(void)
+> +{
+> +       int cpu = __getcpu() & VGETCPU_CPU_MASK;
+> +
+> +       smp_rmb();
+> +       return VVAR(vdso_data).vpercpu[cpu].cpu_cs_count;
+> +}
+> +#endif
+> +
+>  notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+>  {
+>         switch (clock) {
+> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+> index fc37067..400e454 100644
+> --- a/arch/x86/vdso/vma.c
+> +++ b/arch/x86/vdso/vma.c
+> @@ -22,6 +22,8 @@
+>  unsigned int __read_mostly vdso64_enabled = 1;
+>
+>  extern unsigned short vdso_sync_cpuid;
+> +
+> +DEFINE_VVAR(struct vdso_data, vdso_data);
+>  #endif
+>
+>  void __init init_vdso_image(const struct vdso_image *image)
+> @@ -42,6 +44,10 @@ void __init init_vdso_image(const struct vdso_image *image)
+>  #if defined(CONFIG_X86_64)
+>  static int __init init_vdso(void)
+>  {
+> +       int cpu;
+> +       for (cpu =0; cpu < CONFIG_NR_CPUS; cpu++)
+> +               vdso_inc_cpu_cs_count(cpu);
+> +
+>         init_vdso_image(&vdso_image_64);
+>
+>  #ifdef CONFIG_X86_X32_ABI
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 89e7283..5e4100a 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2238,6 +2238,11 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+>  {
+>         struct mm_struct *mm = rq->prev_mm;
+>         long prev_state;
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +       int cpu = smp_processor_id();
+> +
+> +       vdso_inc_cpu_cs_count(cpu);
+> +#endif
+>
+>         rq->prev_mm = NULL;
+>
+> --
+> 1.8.1
+>
+
+
 
 -- 
-Thanks.
--- Max
+Andy Lutomirski
+AMA Capital Management, LLC
