@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaLJKVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:21:21 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58164 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaLJKVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:21:19 -0500
-Message-ID: <54881E99.3000309@gmail.com>
-Date: Wed, 10 Dec 2014 19:21:13 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: snitzer@redhat.com, gregkh@linuxfoundation.org
-CC: dm-devel@redhat.com, agk@redhat.com, linux-kernel@vger.kernel.org,
-        ejt@redhat.com
-Subject: Re: staging: writeboost: Add dm-writeboost
-References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com> <5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141209154859.GC26238@redhat.com>
-In-Reply-To: <20141209154859.GC26238@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753169AbaLJKXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:23:11 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:49426
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749AbaLJKXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:23:09 -0500
+x-originating-ip: 72.167.245.219
+From: Dexuan Cui <decui@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, vkuznets@redhat.com,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+        kys@microsoft.com
+Cc: haiyangz@microsoft.com
+Subject: [PATCH v2] tools: hv: kvp_daemon: make IPv6-only-injection work
+Date: Wed, 10 Dec 2014 03:33:20 -0800
+Message-Id: <1418211200-1166-1-git-send-email-decui@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In the case the host only injects an IPv6 address, the dhcp_enabled flag is
+true (it's only for IPv4 according to Hyper-V host team), but we still need to
+proceed to parse the IPv6 information.
 
-> BUT if you'd still like dm-writeboost to go into staging
-> _without_ any of these 5 work items being completed I'll ack it but to
-> be very clear: dm-writeboost will not migrate out of staging until these
-> items are resolved.
-Yes. I will go into staging.
-Greg, I will send you a patch with some fixes on TODO.
+Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+---
 
-I agree with the 5 work times to be done for md.
-I add some comments below,
+v2: removed the distro-specific logic as Vitaly suggested.
 
->> i) Get this test so it's performance is similar to raw spindle.
-Yes.
+ tools/hv/hv_kvp_daemon.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
->> ii) Write good documentation in Documentation/device-mapper/.  eg. How
->>     do I remove a cache?  When should I use dm-writeboost rather than
->>     bcache or dm-cache?
->>
->> iii) Provide an equivalent to the fsck tool to repair a damaged cache.
-OK. I took a look at tools for DM-cache.
-I will implement something similar.
-But please remember, since Writeboost is log-structured fsck tools aren't essentially needed.
-On power failure, some logs at the head may be half done and discarding these logs can roll the state back.
-
->  iv) perform full code review to catch various implementation issues,
->      any style nits, etc.
->  v) explore/implement read caching support (could the lack of read
->     caching be contributing to why the git_extract test is so poor?)
-This will be my first work in staging.
-
-- Akira
-
-On 12/10/14 12:48 AM, Mike Snitzer wrote:
-> On Tue, Dec 09 2014 at 10:12am -0500,
-> Joe Thornber <thornber@redhat.com> wrote:
-> 
->> On Mon, Dec 08, 2014 at 06:04:41AM +0900, Akira Hayakawa wrote:
->>> Mike and Alasdair,
->>> I need your ack
->>
->> Hi Akira,
->>
->> I just spent some time playing with your latest code.  On the positive
->> side I am seeing some good performance with the fio tests.  Which is
->> great, we know your design should outperform dm-cache with small
->> random io.
->>
->> However I'm still getting v. poor results with the git-extract test,
->> which clones a linux kernel repo, and then checks out 5 revisions, all
->> with drop_caches in between.
-> 
-> Thanks for re-evaluating dm-writeboost performance Joe.
-> 
->> It's fine to have different benefits of the caching software depending
->> on the load.  But I think the worst case should always be close to the
->> performance of the raw spindle device.
->>
->> If you get the following work items done I will ack to go upstream:
->>
->> i) Get this test so it's performance is similar to raw spindle.
->>
->> ii) Write good documentation in Documentation/device-mapper/.  eg. How
->>     do I remove a cache?  When should I use dm-writeboost rather than
->>     bcache or dm-cache?
->>
->> iii) Provide an equivalent to the fsck tool to repair a damaged cache.
-> 
-> I agree with this TODO list.  But I'd also add:
->  iv) perform full code review to catch various implementation issues,
->      any style nits, etc.
-> 
->  v) explore/implement read caching support (could the lack of read
->     caching be contributing to why the git_extract test is so poor?)
-> 
-> Item iv) would be a task for myself and anyone else interested in
-> getting dm-writeboost ready for inclusion.  Akira, I can start working
-> on dm-writeboost code review once I complete review of the dm-dedup
-> target (my current priority) -- but realistically that likely won't be
-> until the new year.
-> 
-> BTW, I'm really not seeing much point putting dm-writeboost in staging.
-> I'd be happy to take dm-writeboost into drivers/md/ once the above list
-> is resolved.  BUT if you'd still like dm-writeboost to go into staging
-> _without_ any of these 5 work items being completed I'll ack it but to
-> be very clear: dm-writeboost will not migrate out of staging until these
-> items are resolved.
-> 
-> Thanks,
-> Mike
-> 
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 6a6432a..4b3ee35 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1308,16 +1308,17 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	if (error)
+ 		goto setval_error;
+ 
++	/*
++	 * The dhcp_enabled flag is only for IPv4. In the case the host only
++	 * injects an IPv6 address, the flag is true, but we still need to
++	 * proceed to parse and pass the IPv6 information to the
++	 * disto-specific script hv_set_ifconfig.
++	 */
+ 	if (new_val->dhcp_enabled) {
+ 		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
+ 		if (error)
+ 			goto setval_error;
+ 
+-		/*
+-		 * We are done!.
+-		 */
+-		goto setval_done;
+-
+ 	} else {
+ 		error = kvp_write_file(file, "BOOTPROTO", "", "none");
+ 		if (error)
+@@ -1345,7 +1346,6 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	if (error)
+ 		goto setval_error;
+ 
+-setval_done:
+ 	fclose(file);
+ 
+ 	/*
+-- 
+1.9.1
 
