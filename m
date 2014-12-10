@@ -1,918 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674AbaLJMlf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:41:35 -0500
-Received: from mail-bn1on0086.outbound.protection.outlook.com ([157.56.110.86]:4104
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755469AbaLJMlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:41:31 -0500
-X-Greylist: delayed 10770 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 07:41:31 EST
-Date: Wed, 10 Dec 2014 13:41:07 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754060AbaLJMnC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:43:02 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:60860 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaLJMnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 07:43:00 -0500
+Date: Wed, 10 Dec 2014 13:42:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL, v2] x86/microcode tree changes for v3.19
+Message-ID: <20141210124254.GA25436@gmail.com>
+References: <20141209132745.GA31656@gmail.com>
 MIME-Version: 1.0
-To: <atull@opensource.altera.com>, <gregkh@linuxfoundation.org>,
-        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
-        <michal.simek@xilinx.com>, <rdunlap@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v4 5/6] staging: fpga manager: framework core
-References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
- <1418156090-23578-6-git-send-email-atull@opensource.altera.com>
-In-Reply-To: <1418156090-23578-6-git-send-email-atull@opensource.altera.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21164.004
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <049ad99df824432caa190566141d1525@BN1BFFO11FD005.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(199003)(479174003)(377454003)(22564002)(189002)(24454002)(164054003)(83506001)(99396003)(104016003)(87936001)(74316001)(6806004)(50466002)(19580405001)(20776003)(65956001)(65806001)(19580395003)(64706001)(47776003)(76176999)(50986999)(62966003)(77156002)(54356999)(33646002)(108616004)(4396001)(92566001)(2201001)(575784001)(86362001)(21056001)(120916001)(23746002)(46102003)(31966008)(106466001)(107046002)(15975445007)(92726002)(77096005)(65826006)(107986001)(2004002)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB028;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB028;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB028;
-X-Forefront-PRVS: 0421BF7135
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB028;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209132745.GA31656@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 09:14 PM, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
+> Linus,
 > 
-> Supports standard ops for low level FPGA drivers.
-> Various manufacturors' FPGAs can be supported by adding low
-> level drivers.  Each driver needs to register its ops
-> using fpga_mgr_register().
+> Please pull the latest x86-microcode-for-linus git tree from:
 > 
-> Exports methods of doing operations to program  FPGAs. These
-> should be sufficient for individual drivers to request FPGA
-> programming directly if desired.
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-microcode-for-linus
 > 
-> Adds a sysfs interface.  The sysfs interface can be compiled out
-> where desired in production builds.
+>    # HEAD: e913b8cd4548cd0a407b7debd6ec9104e84d050d Merge tag 'microcode_fixes_for_3.19' of git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp into x86/microcode
 > 
-> Resume is supported by calling low level driver's resume
-> function, then reloading the firmware image.
+> The main changes in this cycle are:
 > 
-> The following are exported as GPL:
-> * fpga_mgr_reset
->    Reset the FGPA.
+>   - Reload microcode when resuming and the case when only the 
+>     early loader has been utilized. (Borislav Petkov)
 > 
-> * fpga_mgr_write
->    Write a image (in buffer) to the FPGA.
-> 
-> * fpga_mgr_firmware_write
->    Request firmware by file name and write it to the FPGA.
-> 
-> * fpga_mgr_name
->    Get name of FPGA manager.
-> 
-> * fpga_mgr_state
->    Get a state of framework as a string.
-> 
-> * fpga_mgr_register and fpga_mgr_remove
->    Register/unregister low level fpga manager driver.
-> 
-> The following sysfs files are created:
-> * /sys/class/fpga_manager/<fpga>/name
->   Name of low level driver.
-> 
-> * /sys/class/fpga_manager/<fpga>/firmware
->   Name of FPGA image file to load using firmware class.
->   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
-> 
->   read: read back name of image file previous loaded
->   $ cat /sys/class/fpga_manager/<fpga>/firmware
-> 
-> * /sys/class/fpga_manager/<fpga>/reset
->   reset the FPGA
->   $ echo 1 > /sys/class/fpga_manager/<fpga>/reset
-> 
-> * /sys/class/fpga_manager/<fpga>/state
->   State of fpga framework state machine
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
-> v2: s/mangager/manager/
->     check for invalid request_nr
->     add fpga reset interface
->     rework the state code
->     remove FPGA_MGR_FAIL flag
->     add _ERR states to fpga manager states enum
->     low level state op now returns a state enum value
->     initialize framework state from driver state op
->     remove unused fpga read stuff
->     merge sysfs.c into fpga-mgr.c
->     move suspend/resume from bus.c to fpga-mgr.c
-> 
-> v3: Add struct device to fpga_manager (not as a pointer)
->     Add to_fpga_manager
->     Don't get irq in fpga-mgr.c (let low level driver do it)
->     remove from struct fpga_manager: nr, np, parent
->     get rid of fpga_mgr_get_new_minor()
->     simplify fpga_manager_register:
->       reorder parameters
->       use dev instead of pdev
->     get rid of code that used to make more sense when this
->       was a char driver, don't alloc_chrdev_region
->     use a mutex instead of flags
-> 
-> v4: Move to drivers/staging
-> ---
->  drivers/staging/Kconfig         |    2 +
->  drivers/staging/Makefile        |    1 +
->  drivers/staging/fpga/Kconfig    |   21 ++
->  drivers/staging/fpga/Makefile   |   10 +
->  drivers/staging/fpga/fpga-mgr.c |  485 +++++++++++++++++++++++++++++++++++++++
->  include/linux/fpga-mgr.h        |  104 +++++++++
->  6 files changed, 623 insertions(+)
->  create mode 100644 drivers/staging/fpga/Kconfig
->  create mode 100644 drivers/staging/fpga/Makefile
->  create mode 100644 drivers/staging/fpga/fpga-mgr.c
->  create mode 100644 include/linux/fpga-mgr.h
-> 
-> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-> index 4690ae9..4338a4c 100644
-> --- a/drivers/staging/Kconfig
-> +++ b/drivers/staging/Kconfig
-> @@ -108,4 +108,6 @@ source "drivers/staging/skein/Kconfig"
->  
->  source "drivers/staging/unisys/Kconfig"
->  
-> +source "drivers/staging/fpga/Kconfig"
-> +
->  endif # STAGING
-> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-> index c780a0e..43654a2 100644
-> --- a/drivers/staging/Makefile
-> +++ b/drivers/staging/Makefile
-> @@ -46,3 +46,4 @@ obj-$(CONFIG_MTD_SPINAND_MT29F)	+= mt29f_spinand/
->  obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
->  obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
->  obj-$(CONFIG_UNISYSSPAR)	+= unisys/
-> +obj-$(CONFIG_FPGA)		+= fpga/
-> diff --git a/drivers/staging/fpga/Kconfig b/drivers/staging/fpga/Kconfig
-> new file mode 100644
-> index 0000000..e775b17
-> --- /dev/null
-> +++ b/drivers/staging/fpga/Kconfig
-> @@ -0,0 +1,21 @@
-> +#
-> +# FPGA framework configuration
-> +#
-> +
-> +menu "FPGA devices"
-> +
-> +config FPGA
-> +	tristate "FPGA Framework"
-> +	help
-> +	  Say Y here if you want support for configuring FPGAs from the
-> +	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
-> +	  manager drivers.
-> +
+>   - Also, do not load the driver on paravirt guests.
+>     (Boris Ostrovsky)
 
-I would add here
-if FPGA
+There's one more fix from Boris that I forgot to apply - find the 
+updated pull request below.
 
-
-> +config FPGA_MGR_SYSFS
-> +	bool "FPGA Manager SysFS Interface"
-> +	depends on FPGA
-
-remove this line.
-
-> +	depends on SYSFS
-> +	help
-> +	  FPGA Manager SysFS interface.
-> +
-
-maybe this is not needed at, i2c has no this dependency too and compilation
-looks good too.
-
-
-endif here
-
-The reason is that all "low level" drivers will depend on FPGA that's why with this
-we don't need to add depends on FPGA to every entry.
-
-> +endmenu
-> diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
-> new file mode 100644
-> index 0000000..c8a676f
-> --- /dev/null
-> +++ b/drivers/staging/fpga/Makefile
-> @@ -0,0 +1,10 @@
-> +#
-> +# Makefile for the fpga framework and fpga manager drivers.
-> +#
-> +
-> +fpga-mgr-core-y += fpga-mgr.o
-> +
-> +# Core FPGA Manager Framework
-> +obj-$(CONFIG_FPGA)			+= fpga-mgr-core.o
-
-Just
-obj-$(CONFIG_FPGA)			+= fpga-mgr.o
-should be enough here.
-
-> +
-> +# FPGA Manager Drivers
-> diff --git a/drivers/staging/fpga/fpga-mgr.c b/drivers/staging/fpga/fpga-mgr.c
-> new file mode 100644
-> index 0000000..d08cb82
-> --- /dev/null
-> +++ b/drivers/staging/fpga/fpga-mgr.c
-> @@ -0,0 +1,485 @@
-> +/*
-> + * FPGA Manager Core
-> + *
-> + *  Copyright (C) 2013-2014 Altera Corporation
-> + *
-> + * With code from the mailing list:
-> + * Copyright (C) 2013 Xilinx, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-
-Greg, Grant: What about to use just SPDX?
-
-SPDX-License-Identifier:     GPL-2.0
-
-> +#include <linux/delay.h>
-> +#include <linux/firmware.h>
-> +#include <linux/fpga-mgr.h>
-
-I think it will be worth to add this to linux/fpga/ folder.
-
-> +#include <linux/fs.h>
-> +#include <linux/idr.h>
-> +#include <linux/interrupt.h>
-
-Already added by fpga-mgr.h
-
-> +#include <linux/kernel.h>
-
-linux/delay.h is adding this header already.
-
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/pm.h>
-> +#include <linux/slab.h>
-> +#include <linux/vmalloc.h>
-> +
-> +static DEFINE_MUTEX(fpga_mgr_mutex);
-> +static DEFINE_IDA(fpga_mgr_ida);
-> +static struct class *fpga_mgr_class;
-> +
-> +static LIST_HEAD(fpga_manager_list);
-> +
-> +/*
-> + * Get FPGA state from low level driver
-> + * return value is same enum as fpga_mgr_framework_state
-
-This is enum fpga_mgr_states based on fpga-mgr.h
-
-> + *
-> + * This will be used to initialize framework state
-> + */
-
-We have an opportunity to have this in kernel-doc format.
-Description is pretty similar to kernel doc anyway.
-
-> +int fpga_mgr_low_level_state(struct fpga_manager *mgr)
-
-static enum fpga_mgr_states here
-
-
-
-
-> +{
-> +	if (!mgr || !mgr->mops || !mgr->mops->state)
-> +		return FPGA_MGR_STATE_UNKNOWN;
-> +
-> +	return mgr->mops->state(mgr);
-> +}
-> +
-> +/*
-> + * Unlocked version
-> + */
-> +static int __fpga_mgr_reset(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (!mgr->mops->reset)
-> +		return -EINVAL;
-> +
-> +	ret = mgr->mops->reset(mgr);
-> +
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +
-> +	return ret;
-> +}
-> +
-> +int fpga_mgr_reset(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	ret = __fpga_mgr_reset(mgr);
-> +
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_reset);
-> +
-> +/*
-> + * Unlocked
-> + */
-> +static int __fpga_mgr_stage_write_init(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (mgr->mops->write_init) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_INIT;
-> +		ret = mgr->mops->write_init(mgr);
-> +		if (ret) {
-> +			mgr->state = FPGA_MGR_STATE_WRITE_INIT_ERR;
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __fpga_mgr_stage_write(struct fpga_manager *mgr, const char *buf,
-> +				  size_t count)
-> +{
-> +	int ret;
-> +
-> +	mgr->state = FPGA_MGR_STATE_WRITE;
-> +	ret = mgr->mops->write(mgr, buf, count);
-> +	if (ret) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_ERR;
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __fpga_mgr_stage_write_complete(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (mgr->mops->write_complete) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE;
-> +		ret = mgr->mops->write_complete(mgr);
-> +		if (ret) {
-> +			mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE_ERR;
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +
-> +	return 0;
-> +}
-> +
-> +static int __fpga_mgr_write(struct fpga_manager *mgr, const char *buf,
-> +			    size_t count)
-> +{
-> +	int ret;
-> +
-> +	ret = __fpga_mgr_stage_write_init(mgr);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = __fpga_mgr_stage_write(mgr, buf, count);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return __fpga_mgr_stage_write_complete(mgr);
-> +}
-> +
-> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-> +{
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	dev_info(&mgr->dev, "writing buffer to %s\n", mgr->name);
-> +
-> +	ret = __fpga_mgr_write(mgr, buf, count);
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
-> +
-> +/*
-> + * Grab lock, request firmware, and write out to the FPGA.
-> + * Update the state before each step to provide info on what step
-> + * failed if there is a failure.
-> + */
-> +int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name)
-> +{
-> +	const struct firmware *fw;
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	dev_info(&mgr->dev, "writing %s to %s\n", image_name, mgr->name);
-> +
-> +	mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ;
-> +	ret = request_firmware(&fw, image_name, &mgr->dev);
-> +	if (ret) {
-> +		mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ_ERR;
-> +		goto fw_wr_exit;
-> +	}
-> +
-> +	ret = __fpga_mgr_write(mgr, fw->data, fw->size);
-> +	if (ret)
-> +		goto fw_wr_exit;
-> +
-> +	strcpy(mgr->image_name, image_name);
-> +
-> +fw_wr_exit:
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_firmware_write);
-> +
-> +int fpga_mgr_name(struct fpga_manager *mgr, char *buf)
-> +{
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	return sprintf(buf, "%s\n", mgr->name);
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_name);
-> +
-> +#if IS_ENABLED(CONFIG_FPGA_MGR_SYSFS)
-
-This shouldn't be needed.
-
-> +const char *state_str[] = {
-
-static const ...
-
-> +	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
-> +	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
-> +	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
-> +	[FPGA_MGR_STATE_RESET] =		"reset",
-> +
-> +	/* write sequence */
-> +	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
-> +	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
-> +	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
-> +	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
-> +	[FPGA_MGR_STATE_WRITE] =		"write",
-> +	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
-> +	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
-> +	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
-> +
-> +	[FPGA_MGR_STATE_OPERATING] =		"operating",
-> +};
-> +
-> +/*
-> + * class attributes
-> + */
-> +static ssize_t fpga_mgr_name_show(struct device *dev,
-> +				  struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	return fpga_mgr_name(mgr, buf);
-> +}
-> +
-> +static ssize_t fpga_mgr_state_show(struct device *dev,
-> +				   struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	return sprintf(buf, "%s\n", state_str[mgr->state]);
-> +}
-> +
-> +static ssize_t fpga_mgr_firmware_show(struct device *dev,
-> +				      struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	return sprintf(buf, "%s\n", mgr->image_name);
-> +}
-> +
-> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	unsigned int len;
-> +	char image_name[NAME_MAX];
-> +	int ret;
-> +
-> +	/* lose terminating \n */
-> +	strcpy(image_name, buf);
-> +	len = strlen(image_name);
-> +	if (image_name[len - 1] == '\n')
-> +		image_name[len - 1] = 0;
-> +
-> +	ret = fpga_mgr_firmware_write(mgr, image_name);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t fpga_mgr_reset_store(struct device *dev,
-> +				    struct device_attribute *attr,
-> +				    const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	unsigned long val;
-> +	int ret;
-> +
-> +	ret = kstrtoul(buf, 0, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (val == 1) {
-> +		ret = fpga_mgr_reset(mgr);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL);
-
-DEVICE_ATTR_RO - name change.
-
-> +static DEVICE_ATTR(state, S_IRUGO, fpga_mgr_state_show, NULL);
-
-DEVICE_ATTR_RO
-
-> +static DEVICE_ATTR(firmware, S_IRUGO | S_IWUSR,
-> +		   fpga_mgr_firmware_show, fpga_mgr_firmware_store);
-
-
-DEVICE_ATTR_RW
-
-> +static DEVICE_ATTR(reset, S_IWUSR, NULL, fpga_mgr_reset_store);
-
-DEVICE_ATTR_WO
-
-> +
-> +static struct attribute *fpga_mgr_attrs[] = {
-> +	&dev_attr_name.attr,
-> +	&dev_attr_state.attr,
-> +	&dev_attr_firmware.attr,
-> +	&dev_attr_reset.attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group fpga_mgr_group = {
-> +	.attrs = fpga_mgr_attrs,
-> +};
-> +
-> +const struct attribute_group *fpga_mgr_groups[] = {
-> +	&fpga_mgr_group,
-> +	NULL,
-> +};
-> +#else
-> +#define fpga_mgr_groups NULL
-> +#endif /* CONFIG_FPGA_MGR_SYSFS */
-
-ATTRIBUTE_GROUPS(fpga_mgr)
-
-> +
-> +static int fpga_mgr_suspend(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	if (mgr->mops->suspend)
-> +		return mgr->mops->suspend(mgr);
-> +
-> +	return 0;
-> +}
-> +
-> +static int fpga_mgr_resume(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	int ret = 0;
-> +
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	if (mgr->mops->resume) {
-> +		ret = mgr->mops->resume(mgr);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	if (strlen(mgr->image_name) != 0)
-> +		fpga_mgr_firmware_write(mgr, mgr->image_name);
-> +
-> +	return 0;
-> +}
-> +
-> +const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
-
-static
-
-> +	.suspend	= fpga_mgr_suspend,
-> +	.resume		= fpga_mgr_resume,
-> +};
-> +
-> +static void fpga_mgr_dev_release(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	dev_dbg(dev, "releasing '%s'\n", dev_name(dev));
-> +	kfree(mgr);
-> +}
-> +
-> +int fpga_mgr_register(struct device *dev, const char *name,
-> +		      struct fpga_manager_ops *mops,
-> +		      void *priv)
-> +{
-> +	struct fpga_manager *mgr;
-> +	int id, ret;
-> +
-> +	BUG_ON(!mops || !name || !strlen(name));
-
-Isn't this pretty strong? Any reasonable reaction will be better.
-
-> +
-> +	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
-> +	if (id < 0)
-> +		return id;
-> +
-> +	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
-> +	if (!mgr)
-> +		return -ENOMEM;
-
-here is missing error path handling because you got id.
-It should be moved before ida_simple_get call
-
-> +
-> +	mutex_init(&mgr->lock);
-> +
-> +	mgr->name = name;
-> +	mgr->mops = mops;
-> +	mgr->priv = priv;
-> +
-> +	/*
-> +	 * Initialize framework state by requesting low level driver read state
-> +	 * from device.  FPGA may be in reset mode or may have been programmed
-> +	 * by bootloader or EEPROM.
-> +	 */
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +
-> +	INIT_LIST_HEAD(&mgr->list);
-> +	mutex_lock(&fpga_mgr_mutex);
-> +	list_add(&mgr->list, &fpga_manager_list);
-> +	mutex_unlock(&fpga_mgr_mutex);
-> +
-> +	device_initialize(&mgr->dev);
-> +	mgr->dev.class = fpga_mgr_class;
-> +	mgr->dev.parent = dev;
-> +	mgr->dev.of_node = dev->of_node;
-> +	mgr->dev.release = fpga_mgr_dev_release;
-> +	mgr->dev.id = id;
-> +	dev_set_name(&mgr->dev, "%d", id);
-> +	ret = device_add(&mgr->dev);
-> +	if (ret)
-> +		goto error_device;
-> +
-> +	dev_info(&mgr->dev, "fpga manager [%s] registered as id %d\n",
-> +		 dev_name(&mgr->dev), id);
-> +
-> +	return 0;
-> +
-> +error_device:
-> +	ida_simple_remove(&fpga_mgr_ida, id);
-> +	kfree(mgr);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_register);
-> +
-> +void fpga_mgr_remove(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	int id;
-> +
-> +	if (mgr)
-> +		id = mgr->dev.id;
-
-Why is here the checking? What cases this can cover if mrg
-is not there?
-
-> +
-> +	device_unregister(dev);
-> +
-> +	if (mgr) {
-> +		if (mgr->mops->fpga_remove)
-> +			mgr->mops->fpga_remove(mgr);
-> +
-> +		mutex_lock(&fpga_mgr_mutex);
-> +		list_del(&mgr->list);
-> +		mutex_unlock(&fpga_mgr_mutex);
-> +		kfree(mgr);
-> +		ida_simple_remove(&fpga_mgr_ida, id);
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_remove);
-> +
-> +static int __init fpga_mgr_dev_init(void)
-> +{
-> +	pr_info("FPGA Manager framework driver\n");
-> +
-> +	fpga_mgr_class = class_create(THIS_MODULE, "fpga_manager");
-> +	if (IS_ERR(fpga_mgr_class))
-> +		return PTR_ERR(fpga_mgr_class);
-> +
-> +	fpga_mgr_class->dev_groups = fpga_mgr_groups;
-> +	fpga_mgr_class->pm = &fpga_mgr_dev_pm_ops;
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit fpga_mgr_dev_exit(void)
-> +{
-> +	class_destroy(fpga_mgr_class);
-> +	ida_destroy(&fpga_mgr_ida);
-> +}
-> +
-> +MODULE_AUTHOR("Alan Tull <atull@opensource.altera.com>");
-> +MODULE_DESCRIPTION("FPGA Manager framework driver");
-> +MODULE_LICENSE("GPL v2");
-> +
-> +subsys_initcall(fpga_mgr_dev_init);
-> +module_exit(fpga_mgr_dev_exit);
-> diff --git a/include/linux/fpga-mgr.h b/include/linux/fpga-mgr.h
-> new file mode 100644
-> index 0000000..7ac762c
-> --- /dev/null
-> +++ b/include/linux/fpga-mgr.h
-> @@ -0,0 +1,104 @@
-> +/*
-> + * FPGA Framework
-> + *
-> + *  Copyright (C) 2013-2014 Altera Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/device.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/limits.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +
-> +#ifndef _LINUX_FPGA_MGR_H
-> +#define _LINUX_FPGA_MGR_H
-> +
-> +struct fpga_manager;
-> +
-> +/*
-> + * fpga_manager_ops are the low level functions implemented by a specific
-> + * fpga manager driver.  Leaving any of these out that aren't needed is fine
-> + * as they are all tested for NULL before being called.
-> + */
-> +struct fpga_manager_ops {
-> +	/* Returns an enum value of the FPGA's state */
-> +	int (*state)(struct fpga_manager *mgr);
-
-here return should be enum not int.
-
-> +
-> +	/* Put FPGA into reset state */
-> +	int (*reset)(struct fpga_manager *mgr);
-> +
-> +	/* Prepare the FPGA to receive confuration data */
-> +	int (*write_init)(struct fpga_manager *mgr);
-> +
-> +	/* Write count bytes of configuration data to the FPGA */
-> +	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
-> +
-> +	/* Return FPGA to default state after writing is done */
-> +	int (*write_complete)(struct fpga_manager *mgr);
-> +
-
-Here are missing read options which were in any previous series.
-But they can be added in the following patch.
-
-> +	/* Optional: Set FPGA into a specific state during driver remove */
-> +	void (*fpga_remove)(struct fpga_manager *mgr);
-> +
-> +	int (*suspend)(struct fpga_manager *mgr);
-> +
-> +	int (*resume)(struct fpga_manager *mgr);
-> +};
-> +
-> +/* Valid states may vary by manufacturer; superset is: */
-> +enum fpga_mgr_states {
-> +	FPGA_MGR_STATE_UNKNOWN,		/* can't determine state */
-> +	FPGA_MGR_STATE_POWER_OFF,	/* FPGA power is off */
-> +	FPGA_MGR_STATE_POWER_UP,	/* FPGA reports power is up */
-> +	FPGA_MGR_STATE_RESET,		/* FPGA held in reset state */
-> +
-> +	/* write sequence */
-> +	FPGA_MGR_STATE_FIRMWARE_REQ,	/* firmware request in progress */
-> +	FPGA_MGR_STATE_FIRMWARE_REQ_ERR, /* firmware request failed */
-> +	FPGA_MGR_STATE_WRITE_INIT,	/* preparing FPGA for programming */
-> +	FPGA_MGR_STATE_WRITE_INIT_ERR,	/* Error during write_init stage */
-> +	FPGA_MGR_STATE_WRITE,		/* FPGA ready to receive image data */
-> +	FPGA_MGR_STATE_WRITE_ERR,	/* Error while programming FPGA */
-> +	FPGA_MGR_STATE_WRITE_COMPLETE,	/* Doing post programming steps */
-> +	FPGA_MGR_STATE_WRITE_COMPLETE_ERR, /* Error during write_complete */
-> +
-> +	FPGA_MGR_STATE_OPERATING,	/* FPGA is programmed and operating */
-> +};
-> +
-
-kernel-doc here will be good.
-
-> +struct fpga_manager {
-> +	const char *name;
-> +	struct device dev;
-> +	struct list_head list;
-> +	struct mutex lock;
-> +	enum fpga_mgr_states state;
-> +	char image_name[NAME_MAX];
-> +
-> +	struct fpga_manager_ops *mops;
-> +	void *priv;
-> +};
-> +
-> +#define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
-> +
-> +#if IS_ENABLED(CONFIG_FPGA)
-
-you can simple remove this if.
-
-> +
-> +int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name);
-> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count);
-> +int fpga_mgr_name(struct fpga_manager *mgr, char *buf);
-> +int fpga_mgr_reset(struct fpga_manager *mgr);
-> +int fpga_mgr_register(struct device *pdev, const char *name,
-> +		      struct fpga_manager_ops *mops, void *priv);
-> +void fpga_mgr_remove(struct device *dev);
-> +
-> +#endif /* CONFIG_FPGA */
-> +#endif /*_LINUX_FPGA_MGR_H */
-> 
+(If you already pulled the previous tree then you can safely pull 
+this tree on top of it.)
 
 Thanks,
-Michal
 
+	Ingo
+
+=====================================>
+
+Linus,
+
+Please pull the latest x86-microcode-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-microcode-for-linus
+
+   # HEAD: 25cdb9c86826f8d035d8aaa07fc36832e76bd8a0 x86/microcode/intel: Fish out the stashed microcode for the BSP
+
+The main changes in this cycle are:
+ 
+  - Reload microcode when resuming and the case when only the 
+    early loader has been utilized. (Borislav Petkov)
+
+  - Also, do not load the driver on paravirt guests.
+    (Boris Ostrovsky)
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Boris Ostrovsky (1):
+      x86, microcode: Don't initialize microcode code on paravirt
+
+Borislav Petkov (4):
+      x86, microcode, AMD: Do not use smp_processor_id() in preemtible context
+      x86, microcode, intel: Drop unused parameter
+      x86, microcode: Reload microcode on resume
+      x86/microcode/intel: Fish out the stashed microcode for the BSP
+
+
+ arch/x86/include/asm/microcode.h            |  2 ++
+ arch/x86/include/asm/microcode_amd.h        |  4 ++-
+ arch/x86/include/asm/microcode_intel.h      |  2 ++
+ arch/x86/kernel/cpu/microcode/amd.c         |  8 +++---
+ arch/x86/kernel/cpu/microcode/amd_early.c   | 20 +++++++++++++-
+ arch/x86/kernel/cpu/microcode/core.c        | 10 ++-----
+ arch/x86/kernel/cpu/microcode/core_early.c  | 21 +++++++++++++++
+ arch/x86/kernel/cpu/microcode/intel_early.c | 42 +++++++++++++++++++++++------
+ 8 files changed, 87 insertions(+), 22 deletions(-)
+
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index 64dc362506b7..201b520521ed 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -78,6 +78,7 @@ static inline void __exit exit_amd_microcode(void) {}
+ extern void __init load_ucode_bsp(void);
+ extern void load_ucode_ap(void);
+ extern int __init save_microcode_in_initrd(void);
++void reload_early_microcode(void);
+ #else
+ static inline void __init load_ucode_bsp(void) {}
+ static inline void load_ucode_ap(void) {}
+@@ -85,6 +86,7 @@ static inline int __init save_microcode_in_initrd(void)
+ {
+ 	return 0;
+ }
++static inline void reload_early_microcode(void) {}
+ #endif
+ 
+ #endif /* _ASM_X86_MICROCODE_H */
+diff --git a/arch/x86/include/asm/microcode_amd.h b/arch/x86/include/asm/microcode_amd.h
+index b7b10b82d3e5..af935397e053 100644
+--- a/arch/x86/include/asm/microcode_amd.h
++++ b/arch/x86/include/asm/microcode_amd.h
+@@ -59,7 +59,7 @@ static inline u16 find_equiv_id(struct equiv_cpu_entry *equiv_cpu_table,
+ 
+ extern int __apply_microcode_amd(struct microcode_amd *mc_amd);
+ extern int apply_microcode_amd(int cpu);
+-extern enum ucode_state load_microcode_amd(u8 family, const u8 *data, size_t size);
++extern enum ucode_state load_microcode_amd(int cpu, u8 family, const u8 *data, size_t size);
+ 
+ #define PATCH_MAX_SIZE PAGE_SIZE
+ extern u8 amd_ucode_patch[PATCH_MAX_SIZE];
+@@ -68,10 +68,12 @@ extern u8 amd_ucode_patch[PATCH_MAX_SIZE];
+ extern void __init load_ucode_amd_bsp(void);
+ extern void load_ucode_amd_ap(void);
+ extern int __init save_microcode_in_initrd_amd(void);
++void reload_ucode_amd(void);
+ #else
+ static inline void __init load_ucode_amd_bsp(void) {}
+ static inline void load_ucode_amd_ap(void) {}
+ static inline int __init save_microcode_in_initrd_amd(void) { return -EINVAL; }
++void reload_ucode_amd(void) {}
+ #endif
+ 
+ #endif /* _ASM_X86_MICROCODE_AMD_H */
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index bbe296e0bce1..dd4c20043ce7 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -68,11 +68,13 @@ extern void __init load_ucode_intel_bsp(void);
+ extern void load_ucode_intel_ap(void);
+ extern void show_ucode_info_early(void);
+ extern int __init save_microcode_in_initrd_intel(void);
++void reload_ucode_intel(void);
+ #else
+ static inline __init void load_ucode_intel_bsp(void) {}
+ static inline void load_ucode_intel_ap(void) {}
+ static inline void show_ucode_info_early(void) {}
+ static inline int __init save_microcode_in_initrd_intel(void) { return -EINVAL; }
++static inline void reload_ucode_intel(void) {}
+ #endif
+ 
+ #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
+diff --git a/arch/x86/kernel/cpu/microcode/amd.c b/arch/x86/kernel/cpu/microcode/amd.c
+index 8fffd845e22b..bfbbe6195e2d 100644
+--- a/arch/x86/kernel/cpu/microcode/amd.c
++++ b/arch/x86/kernel/cpu/microcode/amd.c
+@@ -376,7 +376,7 @@ static enum ucode_state __load_microcode_amd(u8 family, const u8 *data,
+ 	return UCODE_OK;
+ }
+ 
+-enum ucode_state load_microcode_amd(u8 family, const u8 *data, size_t size)
++enum ucode_state load_microcode_amd(int cpu, u8 family, const u8 *data, size_t size)
+ {
+ 	enum ucode_state ret;
+ 
+@@ -390,8 +390,8 @@ enum ucode_state load_microcode_amd(u8 family, const u8 *data, size_t size)
+ 
+ #if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
+ 	/* save BSP's matching patch for early load */
+-	if (cpu_data(smp_processor_id()).cpu_index == boot_cpu_data.cpu_index) {
+-		struct ucode_patch *p = find_patch(smp_processor_id());
++	if (cpu_data(cpu).cpu_index == boot_cpu_data.cpu_index) {
++		struct ucode_patch *p = find_patch(cpu);
+ 		if (p) {
+ 			memset(amd_ucode_patch, 0, PATCH_MAX_SIZE);
+ 			memcpy(amd_ucode_patch, p->data, min_t(u32, ksize(p->data),
+@@ -444,7 +444,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+ 		goto fw_release;
+ 	}
+ 
+-	ret = load_microcode_amd(c->x86, fw->data, fw->size);
++	ret = load_microcode_amd(cpu, c->x86, fw->data, fw->size);
+ 
+  fw_release:
+ 	release_firmware(fw);
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 06674473b0e6..737737edbd1e 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -389,7 +389,7 @@ int __init save_microcode_in_initrd_amd(void)
+ 	eax   = cpuid_eax(0x00000001);
+ 	eax   = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
+ 
+-	ret = load_microcode_amd(eax, container, container_size);
++	ret = load_microcode_amd(smp_processor_id(), eax, container, container_size);
+ 	if (ret != UCODE_OK)
+ 		retval = -EINVAL;
+ 
+@@ -402,3 +402,21 @@ int __init save_microcode_in_initrd_amd(void)
+ 
+ 	return retval;
+ }
++
++void reload_ucode_amd(void)
++{
++	struct microcode_amd *mc;
++	u32 rev, eax;
++
++	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, eax);
++
++	mc = (struct microcode_amd *)amd_ucode_patch;
++
++	if (mc && rev < mc->hdr.patch_id) {
++		if (!__apply_microcode_amd(mc)) {
++			ucode_new_rev = mc->hdr.patch_id;
++			pr_info("microcode: reload patch_level=0x%08x\n",
++				ucode_new_rev);
++		}
++	}
++}
+diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+index 2ce9051174e6..15c29096136b 100644
+--- a/arch/x86/kernel/cpu/microcode/core.c
++++ b/arch/x86/kernel/cpu/microcode/core.c
+@@ -466,13 +466,7 @@ static void mc_bp_resume(void)
+ 	if (uci->valid && uci->mc)
+ 		microcode_ops->apply_microcode(cpu);
+ 	else if (!uci->mc)
+-		/*
+-		 * We might resume and not have applied late microcode but still
+-		 * have a newer patch stashed from the early loader. We don't
+-		 * have it in uci->mc so we have to load it the same way we're
+-		 * applying patches early on the APs.
+-		 */
+-		load_ucode_ap();
++		reload_early_microcode();
+ }
+ 
+ static struct syscore_ops mc_syscore_ops = {
+@@ -557,7 +551,7 @@ static int __init microcode_init(void)
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int error;
+ 
+-	if (dis_ucode_ldr)
++	if (paravirt_enabled() || dis_ucode_ldr)
+ 		return 0;
+ 
+ 	if (c->x86_vendor == X86_VENDOR_INTEL)
+diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
+index 2c017f242a78..d45df4bd16ab 100644
+--- a/arch/x86/kernel/cpu/microcode/core_early.c
++++ b/arch/x86/kernel/cpu/microcode/core_early.c
+@@ -176,3 +176,24 @@ int __init save_microcode_in_initrd(void)
+ 
+ 	return 0;
+ }
++
++void reload_early_microcode(void)
++{
++	int vendor, x86;
++
++	vendor = x86_vendor();
++	x86 = x86_family();
++
++	switch (vendor) {
++	case X86_VENDOR_INTEL:
++		if (x86 >= 6)
++			reload_ucode_intel();
++		break;
++	case X86_VENDOR_AMD:
++		if (x86 >= 0x10)
++			reload_ucode_amd();
++		break;
++	default:
++		break;
++	}
++}
+diff --git a/arch/x86/kernel/cpu/microcode/intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
+index b88343f7a3b3..ec9df6f9cd47 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_early.c
++++ b/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -650,8 +650,7 @@ static inline void print_ucode(struct ucode_cpu_info *uci)
+ }
+ #endif
+ 
+-static int apply_microcode_early(struct mc_saved_data *mc_saved_data,
+-				 struct ucode_cpu_info *uci)
++static int apply_microcode_early(struct ucode_cpu_info *uci, bool early)
+ {
+ 	struct microcode_intel *mc_intel;
+ 	unsigned int val[2];
+@@ -680,7 +679,10 @@ static int apply_microcode_early(struct mc_saved_data *mc_saved_data,
+ #endif
+ 	uci->cpu_sig.rev = val[1];
+ 
+-	print_ucode(uci);
++	if (early)
++		print_ucode(uci);
++	else
++		print_ucode_info(uci, mc_intel->hdr.date);
+ 
+ 	return 0;
+ }
+@@ -715,12 +717,17 @@ _load_ucode_intel_bsp(struct mc_saved_data *mc_saved_data,
+ 		      unsigned long initrd_end_early,
+ 		      struct ucode_cpu_info *uci)
+ {
++	enum ucode_state ret;
++
+ 	collect_cpu_info_early(uci);
+ 	scan_microcode(initrd_start_early, initrd_end_early, mc_saved_data,
+ 		       mc_saved_in_initrd, uci);
+-	load_microcode(mc_saved_data, mc_saved_in_initrd,
+-		       initrd_start_early, uci);
+-	apply_microcode_early(mc_saved_data, uci);
++
++	ret = load_microcode(mc_saved_data, mc_saved_in_initrd,
++			     initrd_start_early, uci);
++
++	if (ret == UCODE_OK)
++		apply_microcode_early(uci, true);
+ }
+ 
+ void __init
+@@ -749,7 +756,8 @@ load_ucode_intel_bsp(void)
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+ 	_load_ucode_intel_bsp(&mc_saved_data, mc_saved_in_initrd,
+-			      initrd_start_early, initrd_end_early, &uci);
++			      initrd_start_early, initrd_end_early,
++			      &uci);
+ #endif
+ }
+ 
+@@ -783,5 +791,23 @@ void load_ucode_intel_ap(void)
+ 	collect_cpu_info_early(&uci);
+ 	load_microcode(mc_saved_data_p, mc_saved_in_initrd_p,
+ 		       initrd_start_addr, &uci);
+-	apply_microcode_early(mc_saved_data_p, &uci);
++	apply_microcode_early(&uci, true);
++}
++
++void reload_ucode_intel(void)
++{
++	struct ucode_cpu_info uci;
++	enum ucode_state ret;
++
++	if (!mc_saved_data.mc_saved_count)
++		return;
++
++	collect_cpu_info_early(&uci);
++
++	ret = generic_load_microcode_early(mc_saved_data.mc_saved,
++					   mc_saved_data.mc_saved_count, &uci);
++	if (ret != UCODE_OK)
++		return;
++
++	apply_microcode_early(&uci, false);
+ }
