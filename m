@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaLJDb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 22:31:29 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:14851 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437AbaLJDb1 (ORCPT
+	id S1754594AbaLJDdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 22:33:14 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:56837 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789AbaLJDdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 22:31:27 -0500
-X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52527429"
-Message-ID: <5487BE86.30900@broadcom.com>
-Date: Tue, 9 Dec 2014 19:31:18 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 9 Dec 2014 22:33:12 -0500
+Date: Tue, 9 Dec 2014 19:33:03 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v13 09/12] input: cyapa: add gen5 trackpad device
+ firmware update function support
+Message-ID: <20141210033303.GA4173@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, dmitry.torokhov@gmail.com,
+	rydberg@euromail.se, bleung@google.com, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418116304-11392-1-git-send-email-dudley.dulixin@gmail.com>
+ <1418116304-11392-10-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
-To: Varka Bhadram <varkabhadram@gmail.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Scott Branden" <sbranden@broadcom.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/4] i2c: iproc: Add Broadcom iProc I2C Driver
-References: <rjui@broadcom.com>	<1418172891-19441-1-git-send-email-rjui@broadcom.com>	<1418172891-19441-3-git-send-email-rjui@broadcom.com>	<5487A2D6.8070901@gmail.com>	<5487A4C9.2000604@broadcom.com>	<CAEUmHyZ+VqjzL4LkQozGJtnictPNXHYWM2qMKvD=LmfQdcT8iQ@mail.gmail.com> <CAEUmHyZ86r=7KzJzfE9_upv45vN7geW9woqMkaGaBPwfp3xbMQ@mail.gmail.com>
-In-Reply-To: <CAEUmHyZ86r=7KzJzfE9_upv45vN7geW9woqMkaGaBPwfp3xbMQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418116304-11392-10-git-send-email-dudley.dulixin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dudley,
 
+On Tue, Dec 09, 2014 at 05:11:41PM +0800, Dudley Du wrote:
+> Add firmware image update function supported for gen5 trackpad device,
+> it can be used through sysfs update_fw interface.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> ---
+>  drivers/input/mouse/Kconfig      |   2 +-
+>  drivers/input/mouse/cyapa_gen5.c | 290 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 291 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+> index d8b46b0..63e8b40 100644
+> --- a/drivers/input/mouse/Kconfig
+> +++ b/drivers/input/mouse/Kconfig
+> @@ -205,7 +205,7 @@ config MOUSE_BCM5974
+>  
+>  config MOUSE_CYAPA
+>  	tristate "Cypress APA I2C Trackpad support"
+> -	depends on I2C
+> +	depends on I2C && CRC_ITU_T
+>  	help
+>  	  This driver adds support for Cypress All Points Addressable (APA)
+>  	  I2C Trackpads, including the ones used in 2012 Samsung Chromebooks.
+> diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
 
-On 12/9/2014 7:28 PM, Varka Bhadram wrote:
->
->
-> On Wed, Dec 10, 2014 at 8:51 AM, Varka Bhadram <varkabhadram@gmail.com
-> <mailto:varkabhadram@gmail.com>> wrote:
->
->     On Wed, Dec 10, 2014 at 7:11 AM, Ray Jui <rjui@broadcom.com
->     <mailto:rjui@broadcom.com>> wrote:
->
->
->
->         On 12/9/2014 5:33 PM, Varka Bhadram wrote:
->
->
->             On Wednesday 10 December 2014 06:24 AM, Ray Jui wrote:
->
->                 Add initial support to the Broadcom iProc I2C controller
->                 found in the
->                 iProc family of SoCs.
->
->                 The iProc I2C controller has separate internal TX and RX
->                 FIFOs, each has
->                 a size of 64 bytes. The iProc I2C controller supports
->                 two bus speeds
->                 including standard mode (100kHz) and fast mode (400kHz)
->
->                 Signed-off-by: Ray Jui <rjui@broadcom.com
->                 <mailto:rjui@broadcom.com>>
->                 Reviewed-by: Scott Branden <sbranden@broadcom.com
->                 <mailto:sbranden@broadcom.com>>
->                 ---
->                    drivers/i2c/busses/Kconfig         |    9 +
->                    drivers/i2c/busses/Makefile        |    1 +
->                    drivers/i2c/busses/i2c-bcm-iproc.c |  503
->                 ++++++++++++++++++++++++++++++++++++
->                    3 files changed, 513 insertions(+)
->                    create mode 100644 drivers/i2c/busses/i2c-bcm-iproc.c
->
->     (...)
->
->                 +static int bcm_iproc_i2c_probe(struct platform_device
->                 *pdev)
->                 +{
->                 +    int irq, ret = 0;
->                 +    struct bcm_iproc_i2c_dev *dev;
->                 +    struct i2c_adapter *adap;
->                 +    struct resource *res;
->                 +
->                 +    dev = devm_kzalloc(&pdev->dev, sizeof(*dev),
->                 GFP_KERNEL);
->                 +    if (!dev)
->                 +        return -ENOMEM;
->                 +
->                 +    platform_set_drvdata(pdev, dev);
->                 +    dev->device = &pdev->dev;
->                 +    init_completion(&dev->done);
->                 +
->                 +    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->                 +    if (!res)
->                 +        return -ENODEV;
->
->
->             We can remove this resource check. This checking will happen
->             with
->             devm_ioremap_resource()
->
->         Don't you need to obtain a valid resource and pass it into
->         devm_ioremap_resource? Without 'res' being assigned a valid
->         resource, devm_ioremap_resource will reject with "invalid resource".
->
->     platform_get_resource() will return a resource, checking on this
->     resource is happening at
->     http://lxr.free-electrons.com/source/lib/devres.c#L115. So no need
->     to check it explicitly.
->
->     If you check here it will be duplication of check with resource. Two
->     times we are checking on
->     the resource. No point of doing like that.
->
->     Thanks.
-Sorry I misunderstood what you meant. Okay I'll get rid of if (!res) 
-check there. Thanks.
+My initial config had MOUSE_CYAPA=m and CRC_ITU_T=n.
+I did a 'make oldconfig', no questions were asked, but it removed
+MOUSE_CYAPA since CRC_ITU_T wasn't enabled.  Since the cyapa modules
+were removed the touchpad no longer works.  Not a very good upgrade path :-(
+To fix this I have to manually enable MOUSE_CYAPA and CRC_ITU_T to get
+it working again.
 
->
->
-> See this: http://lxr.free-electrons.com/source/lib/devres.c#L102
->
-> --
-> Thanks and Regards,
-> Varka Bhadram.
+[...]
+
+-- 
+- Jeremiah Mahler
