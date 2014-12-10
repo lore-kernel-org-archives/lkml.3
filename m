@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389AbaLJWqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:46:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48726 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933041AbaLJWqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:46:07 -0500
-Date: Wed, 10 Dec 2014 14:45:43 -0800
-From: tip-bot for Andy Shevchenko <tipbot@zytor.com>
-Message-ID: <tip-c528d8b32d130956b3c158394d854e948cfc3411@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        david.a.cohen@linux.intel.com, andriy.shevchenko@linux.intel.com,
-        tglx@linutronix.de, joro@8bytes.org, jiang.liu@linux.intel.com,
-        hpa@zytor.com
-Reply-To: hpa@zytor.com, jiang.liu@linux.intel.com, joro@8bytes.org,
-        tglx@linutronix.de, andriy.shevchenko@linux.intel.com,
-        david.a.cohen@linux.intel.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1418236165-13961-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1418236165-13961-1-git-send-email-andriy.shevchenko@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, ioapic:
-  Add proper legacy interrupt check to mp_map_pin_to_irq()
-Git-Commit-ID: c528d8b32d130956b3c158394d854e948cfc3411
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933401AbaLJWrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:47:53 -0500
+Received: from ec2-54-183-128-9.us-west-1.compute.amazonaws.com ([54.183.128.9]:52598
+	"EHLO ip-172-31-29-154.us-west-1.compute.internal"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933041AbaLJWru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 17:47:50 -0500
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 17:47:50 EST
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141208114813.GA2724@gmail.com>
+References: <20141124041629.GA17907@kmo-pixel>
+	<20141204110027.GA28552@gmail.com>
+	<20141206030205.GA22669@kmo-pixel>
+	<20141208114813.GA2724@gmail.com>
+Date: Wed, 10 Dec 2014 14:42:14 -0800
+Message-ID: <CAF1ivSYYTO-abY32rFy2SVscPpxJaDyDZTULygXTys3rgWLONg@mail.gmail.com>
+Subject: Re: Block layer projects that I haven't had time for
+From: Ming Lin <mlin@minggr.net>
+To: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, linux-fsdevel@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c528d8b32d130956b3c158394d854e948cfc3411
-Gitweb:     http://git.kernel.org/tip/c528d8b32d130956b3c158394d854e948cfc3411
-Author:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-AuthorDate: Wed, 10 Dec 2014 20:29:25 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 10 Dec 2014 23:43:56 +0100
+On Mon, Dec 8, 2014 at 3:48 AM, Dongsu Park
+<dongsu.park@profitbricks.com> wrote:
+> Thanks for the reply.
+>
+> On 05.12.2014 19:02, Kent Overstreet wrote:
+>> On Thu, Dec 04, 2014 at 12:00:27PM +0100, Dongsu Park wrote:
+>> > Playing a little with your block_stuff tree based on 3.15, however,
+>> > I think there still seems to be a couple of issues.
+>> > First of all, it doesn't work with virtio-blk. A testing Qemu VM panics
+>> > at the very early stage of booting. This issue should be addressed as
+>> > the first step, so that other parts can be tested.
+>>
+>> Really? I was testing with virtio-blk, that's odd..
+>
+> The culprit seems to be the plugging commit.
+> Before that change, it works well also with virtio-blk.
+> Though that's not the only issue...
+>
+>> > Moreover, I've already tried to rebase these patches on top of current
+>> > mainline, 3.18-rc7. It's now compilable, but it seems to introduce
+>> > more bugs about direct-IO. I didn't manage to find out the reason.
+>> > I'd need to also look at the previous review comments in [1], [2].
+>> >
+>> > Don't you have other trees based on top of 3.17 or higher?
+>> > If not, can I create my own tree based on 3.18-rc7 to publish?
+>>
+>> Yeah, I'd post what you have now and I'll try and take a look.
+>
+> I've created a git tree to include what I have right now.
+> Please see <https://github.com/dongsupark/linux>.
+>
+> To be able to handle different issues one by one,
+> I got the entire tree separated out into 4 branches based on 3.18.
+>
+> * block-generic-req-for-next : the most stable branch you can test with.
+>   With this branch, you can test most of block drivers as well as file
+>   systems with less critical bugs. Though it's not 100% perfect yet,
+>   e.g. btrfs doesn't seem to work quite well. Thus more tests are needed.
+>
+> * block-mpage-bvecs-for-next : block-generic-req-for-next + multipage bvecs.
+>   This branch shows a critical issue that writing blocks to ext4 rootfs
+>   causes the whole system to crash. Need-to-investigate.
 
-x86, ioapic: Add proper legacy interrupt check to mp_map_pin_to_irq()
+I tried block-mpage-bvecs-for-next branch on qemu-kvm with ext4 rootfs.
+Run "sync" will stuck in kernel.
 
-Since commit bfa644bfa9e3 (x86, irq: Convert IOAPIC to use hierarchy
-irqdomain interfaces) Intel MID platforms crashes on boot:
+[  480.751901] INFO: task sync:4424 blocked for more than 120 seconds.
+[  480.753064]       Not tainted 3.18.0-00025-g46c8231 #39
+[  480.753720] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  480.754737] sync            D ffff88001fc11180     0  4424   4338 0x00000000
+[  480.755719]  ffff88001cdfbc98 0000000000000086 ffff88001cdfbba8
+ffff880014adefc0
+[  480.756810]  0000000000011180 0000000000004000 ffffffff81813460
+ffff880014adefc0
+[  480.758102]  ffff88001cdfbbc8 ffffffff812f08be ffff88001cdfbc18
+ffff880014adf028
+[  480.759454] Call Trace:
+[  480.759852]  [<ffffffff812f08be>] ? debug_smp_processor_id+0x17/0x19
+[  480.760609]  [<ffffffff8106093e>] ? __enqueue_entity+0x69/0x6b
+[  480.761318]  [<ffffffff8106017e>] ? __dequeue_entity+0x33/0x38
+[  480.762026]  [<ffffffff810601ab>] ? set_next_entity+0x28/0x7d
+[  480.762739]  [<ffffffff8105a4fb>] ? get_parent_ip+0xf/0x3f
+[  480.763425]  [<ffffffff8108562b>] ? ktime_get+0x50/0x8f
+[  480.763848]  [<ffffffff8148abdb>] ? bit_wait_timeout+0x60/0x60
+[  480.764555]  [<ffffffff8148a6be>] schedule+0x6a/0x6c
+[  480.765186]  [<ffffffff8148a74f>] io_schedule+0x8f/0xcd
+[  480.765841]  [<ffffffff8148ac19>] bit_wait_io+0x3e/0x42
+[  480.766493]  [<ffffffff8148ae80>] __wait_on_bit+0x4d/0x86
+[  480.767183]  [<ffffffff810d4302>] ? find_get_pages_tag+0x106/0x133
+[  480.767847]  [<ffffffff810d4a63>] wait_on_page_bit+0x76/0x78
+[  480.768532]  [<ffffffff8106ab59>] ? wake_atomic_t_function+0x2d/0x2d
+[  480.769262]  [<ffffffff810d511f>] filemap_fdatawait_range+0x7e/0x11d
+[  480.769992]  [<ffffffff8148a639>] ? preempt_schedule+0x36/0x51
+[  480.770677]  [<ffffffff8105a4fb>] ? get_parent_ip+0xf/0x3f
+[  480.771848]  [<ffffffff810d51df>] filemap_fdatawait+0x21/0x23
+[  480.772530]  [<ffffffff811458ce>] sync_inodes_sb+0x158/0x1aa
+[  480.773201]  [<ffffffff81480303>] ? br_mdb_dump+0x225/0x495
+[  480.773885]  [<ffffffff81149ad8>] ? fdatawrite_one_bdev+0x18/0x18
+[  480.774592]  [<ffffffff81149aec>] sync_inodes_one_sb+0x14/0x16
+[  480.775278]  [<ffffffff81125937>] iterate_supers+0x6f/0xc4
+[  480.775847]  [<ffffffff81149bf4>] sys_sync+0x35/0x83
+[  480.776460]  [<ffffffff8148da52>] system_call_fastpath+0x12/0x17
 
- Enabling APIC mode:  Flat.  Using 1 I/O APICs
- BUG: unable to handle kernel NULL pointer dereference at 00000018
- IP: [<c107bdc6>] __irq_domain_alloc_irqs+0xff/0x250
 
-The reason is that mp_map_pin_to_irq() assumes blindly that any non
-PCI interrupt is legacy, but thats wrong for MID platforms as they
-have no legacy interrupt support.
+Here is a quick hack.
 
-alloc_irq_from_domain() and mp_init_irq_at_boot() have checks for
-this, but mp_map_pin_to_irq() is lacking one.
+diff --git a/block/bio.c b/block/bio.c
+index 4020ccc..fbc7108 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -829,6 +829,11 @@ int bio_add_page(struct bio *bio, struct page *page,
+                if (bvec_to_phys(bv) + bv->bv_len ==
+                    page_to_phys(page) + offset) {
+                        bv->bv_len += len;
++                       /*
++                        * Page is not added to bio vec.
++                        * Clear PG_writeback so
+filemap_fdatawait_range() won't wait for it.
++                        */
++                       TestClearPageWriteback(page);
+                        goto done;
+                }
+        }
 
-Instead of copying the same code another time, move the check to an
-inline function and use it everywhere.
-
-[ tglx: Massaged changelog ]
-
-Fixes: bfa644bfa9e3 'x86, irq: Convert IOAPIC to use hierarchy irqdomain interfaces'
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1418236165-13961-1-git-send-email-andriy.shevchenko@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/io_apic.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ed22b4c..f60e06e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -149,6 +149,11 @@ static inline u32 mp_pin_to_gsi(int ioapic, int pin)
- 	return mp_ioapic_gsi_routing(ioapic)->gsi_base + pin;
- }
- 
-+static inline bool mp_is_legacy_irq(int irq)
-+{
-+	return irq >= 0 && irq < nr_legacy_irqs();
-+}
-+
- /*
-  * Initialize all legacy IRQs and all pins on the first IOAPIC
-  * if we have legacy interrupt controller. Kernel boot option "pirq="
-@@ -159,7 +164,7 @@ static inline int mp_init_irq_at_boot(int ioapic, int irq)
- 	if (!nr_legacy_irqs())
- 		return 0;
- 
--	return ioapic == 0 || (irq >= 0 && irq < nr_legacy_irqs());
-+	return ioapic == 0 || mp_is_legacy_irq(irq);
- }
- 
- static inline struct irq_domain *mp_ioapic_irqdomain(int ioapic)
-@@ -960,7 +965,7 @@ static int alloc_irq_from_domain(struct irq_domain *domain, int ioapic, u32 gsi,
- 		 */
- 		if (!ioapic_initialized || gsi >= nr_legacy_irqs())
- 			irq = gsi;
--		legacy = irq >= 0 && irq < nr_legacy_irqs();
-+		legacy = mp_is_legacy_irq(irq);
- 		break;
- 	case IOAPIC_DOMAIN_STRICT:
- 		irq = gsi;
-@@ -1031,8 +1036,8 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
- 		return -ENOSYS;
- 
- 	if (idx >= 0 && test_bit(mp_irqs[idx].srcbus, mp_bus_not_pci)) {
--		legacy = true;
- 		irq = mp_irqs[idx].srcbusirq;
-+		legacy = mp_is_legacy_irq(irq);
- 	}
- 
- 	mutex_lock(&ioapic_mutex);
+Thanks,
+Ming
