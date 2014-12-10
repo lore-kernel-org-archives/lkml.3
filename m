@@ -1,104 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671AbaLJRvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:51:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268AbaLJRvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:51:45 -0500
-Date: Wed, 10 Dec 2014 18:50:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        paulmck@linux.vnet.ibm.com, peterz@infradead.org, bp@suse.de,
-        jkosina@suse.cz
-Subject: Re: [PATCH v4] CPU hotplug: active_writer not woken up in some
-	cases - deadlock
-Message-ID: <20141210175055.GA11802@redhat.com>
-References: <1418217721-42919-1-git-send-email-dahi@linux.vnet.ibm.com>
+	id S932690AbaLJRzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:55:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38482 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268AbaLJRy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 12:54:59 -0500
+Date: Wed, 10 Dec 2014 17:54:52 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.16.y-ckt stable] Patch "xen-netfront: Fix handling packets on
+ compound pages with skb_linearize" has been added to staging queue
+Message-ID: <20141210175452.GE10463@hercules>
+References: <1418232388-16853-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1418217721-42919-1-git-send-email-dahi@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418232388-16853-1-git-send-email-luis.henriques@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10, David Hildenbrand wrote:
->
-> @@ -127,20 +119,16 @@ void put_online_cpus(void)
->  {
->  	if (cpu_hotplug.active_writer == current)
->  		return;
-> -	if (!mutex_trylock(&cpu_hotplug.lock)) {
-> -		atomic_inc(&cpu_hotplug.puts_pending);
-> -		cpuhp_lock_release();
-> -		return;
-> -	}
-> -
-> -	if (WARN_ON(!cpu_hotplug.refcount))
-> -		cpu_hotplug.refcount++; /* try to fix things up */
->  
-> -	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
-> -		wake_up_process(cpu_hotplug.active_writer);
-> -	mutex_unlock(&cpu_hotplug.lock);
-> -	cpuhp_lock_release();
-> +	if (atomic_dec_and_test(&cpu_hotplug.refcount) &&
-> +	    waitqueue_active(&cpu_hotplug.wq))
-> +		wake_up(&cpu_hotplug.wq);
+On Wed, Dec 10, 2014 at 05:26:28PM +0000, Luis Henriques wrote:
+> This is a note to let you know that I have just added a patch titled
+> 
+>     xen-netfront: Fix handling packets on compound pages with skb_linearize
+> 
+> to the linux-3.16.y-queue branch of the 3.16.y-ckt extended stable tree 
+> which can be found at:
+> 
+>  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.16.y-queue
+> 
+> This patch is scheduled to be released in version 3.16.7-ckt3.
+> 
+> If you, or anyone else, feels it should not be added to this tree, please 
+> reply to this email.
+> 
 
-OK, waitqueue_active() looks safe... prepare_to_wait() has a barrier.
+Ups, sorry!  I thought I had this one dropped after David Vrabel
+comment.  Now dropped for sure.
 
->  void cpu_hotplug_begin(void)
->  {
-> +	DEFINE_WAIT(wait);
-> +
->  	cpu_hotplug.active_writer = current;
->  
-> -	cpuhp_lock_acquire();
->  	for (;;) {
-> +		cpuhp_lock_acquire();
+Cheers,
+--
+Luís
 
-not sure I understand why did you move cpuhp_lock_acquire() into
-the loop, but this is minor.
 
->  		mutex_lock(&cpu_hotplug.lock);
-> -		apply_puts_pending(1);
-> -		if (likely(!cpu_hotplug.refcount))
-> +		prepare_to_wait(&cpu_hotplug.wq, &wait, TASK_UNINTERRUPTIBLE);
-> +		if (likely(!atomic_read(&cpu_hotplug.refcount)))
->  			break;
-> -		__set_current_state(TASK_UNINTERRUPTIBLE);
->  		mutex_unlock(&cpu_hotplug.lock);
-> +		cpuhp_lock_release();
->  		schedule();
+> For more information about the 3.16.y-ckt tree, see
+> https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+> 
+> Thanks.
+> -Luis
+> 
+> ------
+> 
+> From 079f869ca5082866d276b686721e89a649e622fe Mon Sep 17 00:00:00 2001
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Mon, 11 Aug 2014 18:32:23 +0100
+> Subject: xen-netfront: Fix handling packets on compound pages with
+>  skb_linearize
+> 
+> commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
+> 
+> There is a long known problem with the netfront/netback interface: if the guest
+> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+> it gets dropped. The reason is that netback maps these slots to a frag in the
+> frags array, which is limited by size. Having so many slots can occur since
+> compound pages were introduced, as the ring protocol slice them up into
+> individual (non-compound) page aligned slots. The theoretical worst case
+> scenario looks like this (note, skbs are limited to 64 Kb here):
+> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+> using 2 slots
+> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+> Although I don't think this 51 slots skb can really happen, we need a solution
+> which can deal with every scenario. In real life there is only a few slots
+> overdue, but usually it causes the TCP stream to be blocked, as the retry will
+> most likely have the same buffer layout.
+> This patch solves this problem by linearizing the packet. This is not the
+> fastest way, and it can fail much easier as it tries to allocate a big linear
+> area for the whole packet, but probably easier by an order of magnitude than
+> anything else. Probably this code path is not touched very frequently anyway.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Cc: Wei Liu <wei.liu2@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: Paul Durrant <paul.durrant@citrix.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xenproject.org
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Cc: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  drivers/net/xen-netfront.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+> index 055222bae6e4..23359aeb1ba0 100644
+> --- a/drivers/net/xen-netfront.c
+> +++ b/drivers/net/xen-netfront.c
+> @@ -628,9 +628,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
+>  		xennet_count_skb_frag_slots(skb);
+>  	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
+> -		net_alert_ratelimited(
+> -			"xennet: skb rides the rocket: %d slots\n", slots);
+> -		goto drop;
+> +		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
+> +				    slots, skb->len);
+> +		if (skb_linearize(skb))
+> +			goto drop;
 >  	}
-> +
-> +	finish_wait(&cpu_hotplug.wq, &wait);
->  }
-
-This is subjective, but how about
-
-	static bool xxx(void)
-	{
-		mutex_lock(&cpu_hotplug.lock);
-		if (atomic_read(&cpu_hotplug.refcount) == 0)
-			return true;
-		mutex_unlock(&cpu_hotplug.lock);
-		return false;
-	}
-
-	void cpu_hotplug_begin(void)
-	{
-		cpu_hotplug.active_writer = current;
-
-		cpuhp_lock_acquire();
-		wait_event(&cpu_hotplug.wq, xxx());
-	}
-
-instead?
-
-Oleg.
-
+> 
+>  	spin_lock_irqsave(&queue->tx_lock, flags);
