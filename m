@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328AbaLJUxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:53:24 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:2584 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932426AbaLJUxW (ORCPT
+	id S933345AbaLJUxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:53:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22830 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932426AbaLJUxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:53:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AshIAIyxiFR5LCj0PGdsb2JhbABZgwaBKoI1g3qtDQYGkA+DWoRLBAICgR0XAQEBAQEGAQEBATg7hA0BBTocIxAIAw4KCSUPBSUDBxoTiDfYTAEBAQcCAR8YhXWJFBEBB0kHgyGBFQEElnKVXSowgQQIF4EgAQEB
-Date: Thu, 11 Dec 2014 07:53:18 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
- memory storage
-Message-ID: <20141210205318.GD24183@dastard>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
- <20141210140347.GA23252@infradead.org>
- <20141210141211.GD2220@wil.cx>
+	Wed, 10 Dec 2014 15:53:32 -0500
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: martin.petersen@oracle.com, jejb@kernel.org, hch@infradead.org,
+        linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
+        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/22] [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the module parameter max_sgl_entries
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1418131643-11568-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+Date: Wed, 10 Dec 2014 15:52:58 -0500
+In-Reply-To: <1418131643-11568-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	(Sreekanth Reddy's message of "Tue, 9 Dec 2014 18:57:23 +0530")
+Message-ID: <yq1wq5zcjmd.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210141211.GD2220@wil.cx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 09:12:11AM -0500, Matthew Wilcox wrote:
-> On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
-> > What is the status of this patch set?
-> 
-> I have no outstanding bug reports against it.  Linus told me that he
-> wants to see it come through Andrew's tree.  I have an email two weeks
-> ago from Andrew saying that it's on his list.  I would love to see it
-> merged since it's almost a year old at this point.
+>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
 
-Yup, and I've been sitting on the XFS patches to enable DAX for
-quite a few months. I'm waiting for it to hit the upstream trees so
-I can push it...
+@@ -2486,9 +2486,13 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
+ 
+ 	/* command line tunables  for max sgl entries */
+ 	if (max_sgl_entries != -1) {
+-		ioc->shost->sg_tablesize = (max_sgl_entries <
+-		    MPT2SAS_SG_DEPTH) ? max_sgl_entries :
+-		    MPT2SAS_SG_DEPTH;
++		if (max_sgl_entries > MPT2SAS_SG_DEPTH)
++			printk(MPT2SAS_WARN_FMT
++			 "setting max_sgl_entries(%d), overriding kernel"
++			 " defined SCSI_MAX_SG_SEGMENTS(%d)\n", ioc->name,
++			  max_sgl_entries, MPT2SAS_SG_DEPTH);
++		ioc->shost->sg_tablesize =  min_t(unsigned short,
++			     max_sgl_entries, SCSI_MAX_SG_CHAIN_SEGMENTS);
+ 	} else {
+ 		ioc->shost->sg_tablesize = MPT2SAS_SG_DEPTH;
+ 	}
 
-Cheers,
+Wouldn't it be better to print the new scatterlist limit after it has
+been clamped to reflect what it's actually being set to?
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Martin K. Petersen	Oracle Linux Engineering
