@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229AbaLJU0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:26:18 -0500
-Received: from hauke-m.de ([5.39.93.123]:49514 "EHLO hauke-m.de"
+	id S933114AbaLJU3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:29:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7047 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932821AbaLJU0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:26:16 -0500
-Message-ID: <5488AC64.9010306@hauke-m.de>
-Date: Wed, 10 Dec 2014 21:26:12 +0100
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932806AbaLJU3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 15:29:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
+   d="scan'208";a="621787304"
+Date: Wed, 10 Dec 2014 12:28:49 -0800
+From: Kristen Carlson Accardi <kristen@linux.intel.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: <dirk.j.brandewie@intel.com>, <linda.knippers@hp.com>,
+        <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>, <corbet@lwn.net>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <ethan.kernel@gmail.com>
+Subject: Re: [PATCH 2/2 V9] intel_pstate: add kernel parameter to force
+ loading.
+Message-ID: <20141210122849.17d258d8@kcaccard-desk.amr.corp.intel.com>
+In-Reply-To: <1418089399-9310-1-git-send-email-ethan.zhao@oracle.com>
+References: <1418089399-9310-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Ray Jui <rjui@broadcom.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
-References: <1418169871-19232-3-git-send-email-rjui@broadcom.com> <9707535.Y78sV0TgX4@wuerfel> <54887901.8070501@broadcom.com> <CAGVrzcbZ_f43Vf1mu2XErVi_Jehjggh2TREyrSs84ntSm98yvg@mail.gmail.com>
-In-Reply-To: <CAGVrzcbZ_f43Vf1mu2XErVi_Jehjggh2TREyrSs84ntSm98yvg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 07:46 PM, Florian Fainelli wrote:
-> 2014-12-10 8:46 GMT-08:00 Scott Branden <sbranden@broadcom.com>:
->> On 14-12-10 03:31 AM, Arnd Bergmann wrote:
->>>
->>> On Tuesday 09 December 2014 16:04:29 Ray Jui wrote:
->>>>
->>>> Add initial version of the Broadcom iProc PCIe driver. This driver
->>>> has been tested on NSP and Cygnus and is expected to work on all iProc
->>>> family of SoCs that deploys the same PCIe host controller
->>>>
->>>> The driver also supports MSI
->>>>
->>>> Signed-off-by: Ray Jui <rjui@broadcom.com>
->>>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
->>>
->>>
->>> The driver looks suspiciously like the one that Hauke already submitted a
->>> while ago for bcm53xx. Please come up with a merged driver that works for
->>> both.
->>
->> Could you please be a little more specific.  What driver did "Hauke already
->> submitted"?  I do not see any driver in the kernel you are talking about.
+On Tue, 9 Dec 2014 10:43:19 +0900
+Ethan Zhao <ethan.zhao@oracle.com> wrote:
+
+> To force loading on Oracle Sun X86 servers, provide one kernel command line
+> parameter
 > 
-> https://www.marc.info/?l=linux-pci&m=141547043110684&w=2
-
-Yes it also looks similar to me. Your code also contains the same
-comments as the driver used on Northstar (BCM5301X). Your driver has
-some more features, but I just have access to the consumer SoC Northstar
-where the PCIe controller is only used to connect some Broadcom Wifi
-chips to the SoC. I do not know If this controller does not have these
-features or the driver I used as a reference does not implement them.
-
-When I find some time I will try this driver on a Northstar device. I
-think your driver is more advanced then the one I send to the mailing list.
-
-When you want to stay with pure device tree I will send a patch adding
-additional support for registering to bcma.
-
-Does your SoC also have a third PCIe controller which shares the PHY
-with the USB 3 controller?
-
-Why is this stuff in the iproc_pcie_check_link() function needed? I
-think it is strange that the controller driver has to check if the
-device is there and set the correct speed. When we do not check if the
-card is there on BCM5301X the device stops working.
-
->>> Are you sure that iProc isn't based on the BCMA bus infrastructure after
->>> all? Even the physical address of your PCI host falls into the address
->>> range that is used for the internal BCMA bus on the other chips!
->>
->> BCMA seems to be for MIPS architectures.  It seems to be quite specific to
->> those architectures using BCMA.  I see no use of it in bcm53xx code?
+>   intel_pstate = force
 > 
-> BCMA lives in its own directory in drivers/bcma/ and is not specific
-> to MIPS actually. Older BCM47xx/BCM53xx MIPS-based SoCs traditionally
-> started with a discoverable Silicon Sonics Backplane (drivers/ssb) and
-> progressively migrated to BCMA (drivers/bcma), both subsystems offer a
-> very similar bus/device/driver abstraction and discovery mechanism.
+> For those who be aware of the risk of no power capping capabily working and
+> try to get better performance with this driver.
+> 
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> Tested-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+> Reviewed-by: Linda Knippers <linda.knippers@hp.com>
 
-With mainline kernel 3.18 you can boot Linux on a BCM5301X SoC and bcma
-will find all the cores.
+Acked-by: Kristen Carlson Accardi <kristen@linux.intel.com>
 
-Hauke
+> ---
+>  v2: change to hardware vendor specific naming parameter.
+>  v4: refine code and doc.
+>  v5&v6: fix a typo in doc.
+>  v7: change enum PCC to PPC.
+>  v8: change the name of kernel command line parameter to generic one.
+>  v9: refine doc
+> 
+>  Documentation/kernel-parameters.txt | 5 +++++
+>  drivers/cpufreq/intel_pstate.c      | 6 +++++-
+>  2 files changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 479f332..7d0983e 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		       disable
+>  		         Do not enable intel_pstate as the default
+>  		         scaling driver for the supported processors
+> +		       force
+> +			 Enable intel_pstate on systems that prohibit it by default
+> +			 in favor of acpi-cpufreq. Forcing the intel_pstate driver
+> +			 instead of acpi-cpufreq may disable platform features, such
+> +			 as thermal controls and power capping, that rely on ACPI
+> +			 P-States information being indicated to OSPM and therefore
+> +			 should be used with caution. This option does not work with
+> +			 processors that aren't supported by the intel_pstate driver
+> +			 or on platforms that use pcc-cpufreq instead of acpi-cpufreq.
+>  
+>  	intremap=	[X86-64, Intel-IOMMU]
+>  			on	enable Interrupt Remapping (default)
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 1bb62ca..2654e13 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>  };
+>  
+>  static int __initdata no_load;
+> +static unsigned int  force_load;
+>  
+>  static int intel_pstate_msrs_not_valid(void)
+>  {
+> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>  			case PSS:
+>  				return intel_pstate_no_acpi_pss();
+>  			case PPC:
+> -				return intel_pstate_has_acpi_ppc();
+> +				return intel_pstate_has_acpi_ppc() &&
+> +					(!force_load);
+>  			}
+>  	}
+>  
+> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+>  
+>  	if (!strcmp(str, "disable"))
+>  		no_load = 1;
+> +	if (!strcmp(str, "force"))
+> +		force_load = 1;
+>  	return 0;
+>  }
+>  early_param("intel_pstate", intel_pstate_setup);
+
