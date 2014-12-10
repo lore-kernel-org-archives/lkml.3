@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152AbaLJTtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:49:49 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47155 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932886AbaLJTtp (ORCPT
+	id S933172AbaLJTuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:50:03 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:39122 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932884AbaLJTt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:49:45 -0500
-Date: Wed, 10 Dec 2014 14:49:43 -0500 (EST)
-Message-Id: <20141210.144943.1497210993149601967.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, Thomas.Lendacky@amd.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141210122036.133457c9@canb.auug.org.au>
-References: <20141210122036.133457c9@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 10 Dec 2014 11:49:45 -0800 (PST)
+	Wed, 10 Dec 2014 14:49:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <5488A203.7000600@linux.intel.com>
+References: <alpine.DEB.2.11.1412091504490.16275@nanos>
+	<CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>
+	<5488A203.7000600@linux.intel.com>
+Date: Wed, 10 Dec 2014 11:49:58 -0800
+X-Google-Sender-Auth: vn2dGeNbbicnpsPJ2-AmCZ5xVKA
+Message-ID: <CA+55aFwTpZ8U7vUvBE8xkX1_vfktyVDcCwchssMhhP44M8TzUg@mail.gmail.com>
+Subject: Re: [GIT pull] x86 mpx support for 3.19
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 10 Dec 2014 12:20:36 +1100
+On Wed, Dec 10, 2014 at 11:41 AM, Dave Hansen
+<dave.hansen@linux.intel.com> wrote:
+>
+> But, this is the kind of option that we want to be *sure* is enabled
+> unless folks know exactly what they are doing, so we should probably
+> hide it behind CONFIG_EXPERT as well, just as SMEP is.
 
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/ethernet/amd/xgbe/xgbe-desc.c between commit 03ccc4c0a9da
-> ("amd-xgbe: Do not clear interrupt indicator") from the net tree and
-> commit c9f140ebb008 ("amd-xgbe: Separate Tx/Rx ring data fields into
-> new structs") from the net-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+I disagree.
 
-As you have seen there are a lot of merge hassles to sort out between
-the 'net' and 'net-next' tree right now, probably I just added a few
-more :-)
+SMEP doesn't have any performance overhead, and SMEP is available in
+processors available today. So SMEP doesn't even have a config option,
+because there is no downside with having it on and enabled.
 
-I'll try to do the merge by the end of today so that these headaches
-go away for you.
+MPX, in contrast, you don't even normally want to run at all as a
+normal user because of the overheads. That's going to be true even
+when it's available.
 
-Thanks.
+So I would claim the exact reverse: right now, enabling MPX should be
+something only experts should do.
+
+                  Linus
