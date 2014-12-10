@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaLJIrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 03:47:53 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:59482 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578AbaLJIrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 03:47:51 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <paulmck@linux.vnet.ibm.com>
-CC: <davem@davemloft.net>, <eric.dumazet@gmail.com>, <jon.maloy@ericsson.com>,
-        <erik.hugne@ericsson.com>, <netdev@vger.kernel.org>,
-        <kbuild-all@01.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next RESEND 2/2] ipv6: fix sparse warning
-Date: Wed, 10 Dec 2014 16:46:07 +0800
-Message-ID: <1418201167-9591-3-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418201167-9591-1-git-send-email-ying.xue@windriver.com>
-References: <1418201167-9591-1-git-send-email-ying.xue@windriver.com>
+	id S1754142AbaLJIsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:48:12 -0500
+Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:62720
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753004AbaLJIsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 03:48:08 -0500
+X-Greylist: delayed 847 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 03:48:07 EST
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <p.zabel@pengutronix.de>,
+        <thierry.reding@gmail.com>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <mturquette@linaro.org>, <airlied@linux.ie>
+Subject: [PATCH RFC 00/15] Add support for i.MX MIPI DSI DRM driver
+Date: Wed, 10 Dec 2014 16:37:13 +0800
+Message-ID: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 2.1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(243025005)(199003)(120916001)(48376002)(21056001)(99396003)(50986999)(50466002)(77156002)(62966003)(46102003)(68736005)(77096005)(97736003)(15975445007)(36756003)(31966008)(6806004)(2351001)(107046002)(229853001)(19580395003)(87936001)(106466001)(105606002)(104016003)(110136001)(64706001)(84676001)(89996001)(47776003)(20776003)(86362001)(92566001)(50226001)(4396001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB0637;
+X-Forefront-PRVS: 0421BF7135
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following spare warning when using
+Hi,
 
-make C=1 CF=-D__CHECK_ENDIAN__ net/ipv6/addrconf.o
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+This series adds support for i.MX MIPI DSI DRM driver.
+Currently, the MIPI DSI driver only supports the burst with sync pulse mode.
 
-To silence above spare complaint, an RCU annotation should be added
-to "next" pointer of hlist_node structure through hlist_next_rcu()
-macro when iterating over a hlist with
-hlist_for_each_entry_continue_rcu_bh().
+This series also includes a DRM panel driver for the Truly TFT480800-16-E panel
+which is driven by the Himax HX8369A driver IC.  The driver IC data sheet could
+be found at [1].  As mentioned by the data sheet, the driver IC supports several
+interface modes.  Currently, the DRM panel driver only supports the MIPI DSI video
+mode.  New interface modes could be added later(perhaps, just like the way the DRM
+simple panel driver supports both MIPI DSI interface panels and simple(parallel)
+interface panels).
 
-By the way, this commit also resolves the same error appearing in
-hlist_for_each_entry_continue_rcu().
+The MIPI DSI feature is tested on i.MX6Q SabreSD board and i.MX6DL SabreSD board.
+The MIPI DSI display could be enabled directly on i.MX6Q SabreSD board after
+applying this series, because the 26.4MHz pixel clock the panel requires could be
+derived from the IPU HSP clock(264MHz) with an integer divider.
+On i.MX6DL SabreSD board, we need to manually disable the LVDS and HDMI displays in
+the device tree blob, since the i.MX6DL IPU HSP clock is 198MHz at present, which
+makes the pixel clock share the PLL5 video clock source with the LVDS and HDMI,
+thus, the panel cannot get the pixel clock rate it wants.
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
----
- include/linux/rculist.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Patch 01/15 is needed to get a precise pixel clock rate(26.4MHz) from the PLL5 video
+clock.  If we don't have this patch, the pixel clock rate is about 20MHz, which
+causes a horitonal shift on the display image.
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 866d9c9..32bd4ad 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -524,11 +524,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
-  * @member:	the name of the hlist_node within the struct.
-  */
- #define hlist_for_each_entry_continue_rcu(pos, member)			\
--	for (pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
--			typeof(*(pos)), member);			\
-+	for (pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
-+			&(pos)->member)), typeof(*(pos)), member);	\
- 	     pos;							\
--	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
--			typeof(*(pos)), member))
-+	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(	\
-+			&(pos)->member)), typeof(*(pos)), member))
- 
- /**
-  * hlist_for_each_entry_continue_rcu_bh - iterate over a hlist continuing after current point
-@@ -536,11 +536,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
-  * @member:	the name of the hlist_node within the struct.
-  */
- #define hlist_for_each_entry_continue_rcu_bh(pos, member)		\
--	for (pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
--			typeof(*(pos)), member);			\
-+	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(  \
-+			&(pos)->member)), typeof(*(pos)), member);	\
- 	     pos;							\
--	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
--			typeof(*(pos)), member))
-+	     pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(	\
-+			&(pos)->member)), typeof(*(pos)), member))
- 
- /**
-  * hlist_for_each_entry_from_rcu - iterate over a hlist continuing from current point
+This series can be applied on the drm-next branch.
+
+[1] http://www.allshore.com/pdf/Himax_HX8369-A.pdf
+
+Liu Ying (15):
+  clk: divider: Correct parent clk round rate if no bestdiv is normally
+    found
+  of: Add vendor prefix for Himax Technologies Inc.
+  of: Add vendor prefix for Truly Semiconductors Limited
+  drm/dsi: Do not add DSI devices for the child nodes with input-port
+    property
+  ARM: dts: imx6qdl: Add input-port property to MIPI DSI node's CTRC
+    child nodes
+  ARM: dts: imx6q: Add MIPI DSI remote end points for IPU2 DI0/1 end
+    points
+  ARM: imx6q: Add GPR3 MIPI muxing control register field shift bits
+    definition
+  ARM: imx6q: clk: Add the video_27m clock
+  drm: imx: Add MIPI DSI host controller driver
+  drm: panel: Add support for Himax HX8369A MIPI DSI panel
+  ARM: dtsi: imx6qdl: Add support for MIPI DSI host controller
+  ARM: dts: imx6qdl-sabresd: Add support for TRULY TFT480800-16-E MIPI
+    DSI panel
+  ARM: imx_v6_v7_defconfig: Cleanup for imx drm being moved out of
+    staging
+  ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
+  ARM: imx_v6_v7_defconfig: Add support for Himax HX8369A panel
+
+ .../devicetree/bindings/drm/imx/mipi_dsi.txt       |   81 ++
+ .../devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt  |    4 +
+ .../devicetree/bindings/panel/himax,hx8369a.txt    |   86 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |    2 +
+ arch/arm/boot/dts/imx6q.dtsi                       |    4 +
+ arch/arm/boot/dts/imx6qdl-sabresd.dtsi             |   41 +
+ arch/arm/boot/dts/imx6qdl.dtsi                     |    9 +
+ arch/arm/configs/imx_v6_v7_defconfig               |   17 +-
+ arch/arm/mach-imx/clk-imx6q.c                      |    1 +
+ drivers/clk/clk-divider.c                          |    3 +-
+ drivers/gpu/drm/drm_mipi_dsi.c                     |    5 +-
+ drivers/gpu/drm/imx/Kconfig                        |    6 +
+ drivers/gpu/drm/imx/Makefile                       |    1 +
+ drivers/gpu/drm/imx/imx-mipi-dsi.c                 | 1017 ++++++++++++++++++++
+ drivers/gpu/drm/panel/Kconfig                      |    6 +
+ drivers/gpu/drm/panel/Makefile                     |    1 +
+ drivers/gpu/drm/panel/panel-hx8369a.c              |  627 ++++++++++++
+ include/dt-bindings/clock/imx6qdl-clock.h          |    3 +-
+ include/linux/mfd/syscon/imx6q-iomuxc-gpr.h        |    1 +
+ 19 files changed, 1903 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
+ create mode 100644 Documentation/devicetree/bindings/panel/himax,hx8369a.txt
+ create mode 100644 drivers/gpu/drm/imx/imx-mipi-dsi.c
+ create mode 100644 drivers/gpu/drm/panel/panel-hx8369a.c
+
 -- 
-1.7.9.5
+2.1.0
 
