@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaLJC7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 21:59:21 -0500
-Received: from mail-by2on0146.outbound.protection.outlook.com ([207.46.100.146]:25696
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751550AbaLJC7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 21:59:19 -0500
-From: Dexuan Cui <decui@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>, KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
- cleanup
-Thread-Topic: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
- cleanup
-Thread-Index: AQHQE8eay5ykY3ZCeUaN76OLAi2BS5yIHzIg
-Date: Wed, 10 Dec 2014 02:58:50 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
-References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.132]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:206.191.249.68;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(377454003)(13464003)(51704005)(51914003)(199003)(189002)(2421001)(21056001)(77156002)(55846006)(62966003)(69596002)(6806004)(33656002)(19580395003)(19580405001)(84676001)(23676002)(4396001)(99396003)(120916001)(2656002)(86146001)(87936001)(31966008)(16796002)(50466002)(50986999)(76176999)(86612001)(92566001)(86362001)(46102003)(64706001)(20776003)(47776003)(66066001)(54356999)(81156004)(106466001)(1511001)(106116001)(105606002)(2501002)(97736003)(2561002)(102836002)(68736005)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1212;H:064-smtp-out.microsoft.com;FPR:;SPF:Fail;MLV:sfv;PTR:ErrorRetry;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1212;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:CY1PR0301MB1212;
-X-Forefront-PRVS: 0421BF7135
-Authentication-Results: spf=fail (sender IP is 206.191.249.68)
- smtp.mailfrom=decui@microsoft.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1212;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0860;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1753650AbaLJDFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 22:05:22 -0500
+Received: from ns.horizon.com ([71.41.210.147]:56374 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751792AbaLJDFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 22:05:21 -0500
+Date: 9 Dec 2014 22:05:18 -0500
+Message-ID: <20141210030518.19336.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: [GIT PULL] arch/nios2 for v3.19
+Cc: arnd@arndb.de, lftan@altera.com, linux@horizon.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org
+In-Reply-To: <20141210015421.GB3370@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBA2xTQM003757
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Tuesday, December 9, 2014 23:48 PM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; Dexuan Cui
-> Subject: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
+> Actually, git already preserves the signed annotated tag.  That's the
+> only way git show --show-signature can verify the tag's gpg signature.
 > 
-> When someone does 'make' in tools/hv/ issues appear:
-> - hv_fcopy_daemon is not being built;
-> - lots of compiler warnings.
+> You can see original signed annotated tag via a command like this:
 > 
-> This is just a cleanup. Compile-tested by myself on top of linux-next/master.
-> 
-> Piggyback this series and send "[PATCH 5/5] Tools: hv: do not add redundant
-> '/'
->  in hv_start_fcopy()"
-> 
-> Vitaly Kuznetsov (5):
->   Tools: hv: add mising fcopyd to the Makefile
->   Tools: hv: remove unused bytes_written from kvp_update_file()
->   Tools: hv: address compiler warnings for hv_kvp_daemon.c
->   Tools: hv: address compiler warnings for hv_fcopy_daemon.c
->   Tools: hv: do not add redundant '/' in hv_start_fcopy()
-> 
->  tools/hv/Makefile          |  4 ++--
->  tools/hv/hv_fcopy_daemon.c | 10 ++--------
->  tools/hv/hv_kvp_daemon.c   | 29 +++++++++++++----------------
->  3 files changed, 17 insertions(+), 26 deletions(-)
-> 
-> --
-> 1.9.3
+> git cat-file -p 18b34d9a7a085ba8f9cafa6a0d002e2cbac87c1f
 
-Hi Vitaly,
-Thanks for the patchset!
+TIL, thank you!
 
-Acked-by: Dexuan Cui <decui@microsoft.com>
+For the others watching in, as you know all commits have "headers"
+which are normally not printed.  The above commit looks like
 
-PS, I added Greg into the TO list.
-The hv code in drivers/hv/ and tools/hv/ usually has to go into
-Greg's tree first.
+>  tree 939755a58a68aae5e1241b2a905ea612aeb2e589
+>  parent 502fde1a0a2990ec54eab5241d3135c545da7372
+>  parent bf40c92635d63fcc574c52649f7cda13e0418ac1
+>  author Linus Torvalds <torvalds@linux-foundation.org> 1405282495 -0700
+>  committer Linus Torvalds <torvalds@linux-foundation.org> 1405282495 -0700
+>  mergetag object bf40c92635d63fcc574c52649f7cda13e0418ac1
+>   type commit
+>   tag ext4_for_linus_stable
+>   tagger Theodore Ts'o <tytso@mit.edu> 1405281748 -0400
+>   
+>   More bug fixes for ext4 -- most importantly, a fix for a bug
+>   (introduced in 3.15) that can end up triggering a file system
+>   corruption error after a journal replay.  (It shouldn't lead to any
+>   actual data corruption, but it is scary and can force file systems to
+>   be remounted read-only, etc.)
+>   -----BEGIN PGP SIGNATURE-----
 
--- Dexuan
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The "mergetag" header contains the original annotated tag, indented
+by one space.
+
+In this case, Ted included the same message (formatted slightly
+differently) in the pull e-mail and Linus copied it into the
+merge commit, so it worked out in the end.
