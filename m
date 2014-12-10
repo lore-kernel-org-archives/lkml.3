@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027AbaLJRIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:08:32 -0500
-Received: from resqmta-po-11v.sys.comcast.net ([96.114.154.170]:35707 "EHLO
-	resqmta-po-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756901AbaLJRIa (ORCPT
+	id S932448AbaLJRIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:08:42 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:34708 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757904AbaLJRIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:08:30 -0500
-Date: Wed, 10 Dec 2014 11:08:28 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Pekka Enberg <penberg@kernel.org>
-cc: akpm <akpm@linuxfoundation.org>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 3/7] slub: Do not use c->page on free
-In-Reply-To: <CAOJsxLFEN_w7q6NvbxkH2KTujB9auLkQgskLnGtN9iBQ4hV9sw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412101107350.6291@gentwo.org>
-References: <20141210163017.092096069@linux.com> <20141210163033.717707217@linux.com> <CAOJsxLFEN_w7q6NvbxkH2KTujB9auLkQgskLnGtN9iBQ4hV9sw@mail.gmail.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Dec 2014 12:08:31 -0500
+Date: Wed, 10 Dec 2014 12:08:27 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup changes for v3.19-rc1
+Message-ID: <20141210170827.GE6294@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014, Pekka Enberg wrote:
+Hello, again.
 
-> > +static bool same_slab_page(struct kmem_cache *s, struct page *page, void *p)
->
-> Why are you passing a pointer to struct kmem_cache here? You don't
-> seem to use it.
+cpuset got simplified a bit.  cgroup core got a fix on unified
+hierarchy and grew some effective css related interfaces which will be
+used for blkio support for writeback IO traffic which is currently
+being worked on.
 
-True.
-> > +{
-> > +       long d = p - page->address;
-> > +
-> > +       return d > 0 && d < (1 << MAX_ORDER) && d < (compound_order(page) << PAGE_SHIFT);
-> > +}
->
-> Can you elaborate on what this is doing? I don't really understand it.
+Thanks.
 
-Checks if the pointer points to the slab page. Also it tres to avoid
-having to call compound_order needlessly. Not sure if that optimization is
-worth it.
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
 
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.19
+
+for you to fetch changes up to eeecbd1971517103e06f11750dd1a9a1dc37e4e6:
+
+  cgroup: implement cgroup_get_e_css() (2014-11-18 02:49:52 -0500)
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      cpuset: lock vs unlock typo
+
+Tejun Heo (6):
+      cgroup: separate out cgroup_calc_child_subsys_mask() from cgroup_refresh_child_subsys_mask()
+      cgroup: restructure child_subsys_mask handling in cgroup_subtree_control_write()
+      cgroup: fix the async css offline wait logic in cgroup_subtree_control_write()
+      cgroup: add cgroup_subsys->css_released()
+      cgroup: add cgroup_subsys->css_e_css_changed()
+      cgroup: implement cgroup_get_e_css()
+
+Vladimir Davydov (2):
+      cpuset: convert callback_mutex to a spinlock
+      cpuset: simplify cpuset_node_allowed API
+
+ include/linux/cgroup.h |   4 ++
+ include/linux/cpuset.h |  37 ++---------
+ kernel/cgroup.c        | 175 ++++++++++++++++++++++++++++++++++---------------
+ kernel/cpuset.c        | 162 ++++++++++++++++-----------------------------
+ mm/hugetlb.c           |   2 +-
+ mm/oom_kill.c          |   2 +-
+ mm/page_alloc.c        |   6 +-
+ mm/slab.c              |   2 +-
+ mm/slub.c              |   3 +-
+ mm/vmscan.c            |   5 +-
+ 10 files changed, 200 insertions(+), 198 deletions(-)
+
+-- 
+tejun
