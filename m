@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552AbaLJPyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:54:50 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:33733 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453AbaLJPxV (ORCPT
+	id S932539AbaLJPyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:54:22 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:41979 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932460AbaLJPxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:53:21 -0500
+	Wed, 10 Dec 2014 10:53:22 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 08/12] cpuset: use {cpu|node}mask pr_cont and seq output functions
-Date: Wed, 10 Dec 2014 10:52:50 -0500
-Message-Id: <1418226774-30215-9-git-send-email-tj@kernel.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 09/12] rcu: use {cpu|node}mask pr_cont and seq output functions
+Date: Wed, 10 Dec 2014 10:52:51 -0500
+Message-Id: <1418226774-30215-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
 References: <1418226774-30215-1-git-send-email-tj@kernel.org>
@@ -34,10 +34,6 @@ Because these conversions usually break up a single output function
 call into multiple, the reduction is LOC isn't too big but it removes
 unnecessary complexity and/or arbitrary limit on the length printed.
 
-* kernel/cpuset.c::cpuset_print_task_mems_allowed() used a static
-  buffer which is protected by a dedicated spinlock.  Replaced with
-  plain pr_conts.
-
 This patch is dependent on the previous patch ("bitmap, cpumask,
 nodemask: implement pr_cont variants of formatting functions") which
 is planned to go through -mm.  It'd be the easiest to route this
@@ -46,51 +42,35 @@ till the forementioned patch is merged to mainline.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 ---
- kernel/cpuset.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ kernel/rcu/tree_plugin.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index fdf1759..6a7f466 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2614,8 +2614,6 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
- 	return nodes_intersects(tsk1->mems_allowed, tsk2->mems_allowed);
- }
- 
--#define CPUSET_NODELIST_LEN	(256)
--
- /**
-  * cpuset_print_task_mems_allowed - prints task's cpuset and mems_allowed
-  * @tsk: pointer to task_struct of some task.
-@@ -2625,23 +2623,18 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
-  */
- void cpuset_print_task_mems_allowed(struct task_struct *tsk)
- {
--	 /* Statically allocated to prevent using excess stack. */
--	static char cpuset_nodelist[CPUSET_NODELIST_LEN];
--	static DEFINE_SPINLOCK(cpuset_buffer_lock);
- 	struct cgroup *cgrp;
- 
--	spin_lock(&cpuset_buffer_lock);
- 	rcu_read_lock();
- 
- 	cgrp = task_cs(tsk)->css.cgroup;
--	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
--			   tsk->mems_allowed);
- 	pr_info("%s cpuset=", tsk->comm);
- 	pr_cont_cgroup_name(cgrp);
--	pr_cont(" mems_allowed=%s\n", cpuset_nodelist);
-+	pr_cont(" mems_allowed=");
-+	nodelist_pr_cont(tsk->mems_allowed);
-+	pr_cont("\n");
- 
- 	rcu_read_unlock();
--	spin_unlock(&cpuset_buffer_lock);
- }
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 7a72858..a788a6f 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -53,7 +53,6 @@ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+ static cpumask_var_t rcu_nocb_mask; /* CPUs to have callbacks offloaded. */
+ static bool have_rcu_nocb_mask;	    /* Was rcu_nocb_mask allocated? */
+ static bool __read_mostly rcu_nocb_poll;    /* Offload kthread are to poll. */
+-static char __initdata nocb_buf[NR_CPUS * 5];
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
  
  /*
+@@ -2377,8 +2376,9 @@ void __init rcu_init_nohz(void)
+ 		cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+ 			    rcu_nocb_mask);
+ 	}
+-	cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+-	pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
++	pr_info("\tOffload RCU callbacks from CPUs: ");
++	cpulist_pr_cont(rcu_nocb_mask);
++	pr_cont(".\n");
+ 	if (rcu_nocb_poll)
+ 		pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+ 
 -- 
 2.1.0
 
