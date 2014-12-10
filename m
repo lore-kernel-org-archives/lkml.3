@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943AbaLJTIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:08:22 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:45769 "EHLO
+	id S933001AbaLJTIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:08:34 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58685 "EHLO
 	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890AbaLJTIR (ORCPT
+	with ESMTP id S932945AbaLJTIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:08:17 -0500
+	Wed, 10 Dec 2014 14:08:30 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: bfields@fieldses.org
 Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
         NeilBrown <neilb@suse.de>
-Subject: [PATCH v2 06/16] sunrpc: move pool_mode definitions into svc.h
-Date: Wed, 10 Dec 2014 14:07:50 -0500
-Message-Id: <1418238480-18857-7-git-send-email-jlayton@primarydata.com>
+Subject: [PATCH v2 14/16] sunrpc: add more tracepoints around svc_xprt handling
+Date: Wed, 10 Dec 2014 14:07:58 -0500
+Message-Id: <1418238480-18857-15-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
 References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
@@ -22,141 +22,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In later patches, we're going to need to allow code external to svc.c
-to figure out what pool_mode is in use. Move these definitions into
-svc.h to prepare for that.
-
-Also, make the svc_pool_map object available and exported so that other
-modules can peek in there to get insight into what pool mode is in use.
-Likewise, export svc_pool_map_get/put function to make it safe to do so.
+Turn the svc_xprt_dequeue and svc_xprt_do_enqueue tracepoints into a
+event classes, and use them to add events for svc_xprt_enqueued,
+svc_xprt_active, svc_xprt_received, and svc_xprt_enqueue.
 
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- include/linux/sunrpc/svc.h | 25 +++++++++++++++++++++++++
- net/sunrpc/svc.c           | 31 +++++++------------------------
- 2 files changed, 32 insertions(+), 24 deletions(-)
+ include/trace/events/sunrpc.h | 36 +++++++++++++++++++++++++++---------
+ net/sunrpc/svc_wq.c           |  4 ++++
+ net/sunrpc/svc_xprt.c         |  9 ++++++++-
+ 3 files changed, 39 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 5e172c8329f8..28e5f5716a87 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -428,6 +428,29 @@ struct svc_procedure {
- };
+diff --git a/include/trace/events/sunrpc.h b/include/trace/events/sunrpc.h
+index b9c1dc6c825a..41e09a1b962d 100644
+--- a/include/trace/events/sunrpc.h
++++ b/include/trace/events/sunrpc.h
+@@ -496,28 +496,40 @@ DEFINE_EVENT(svc_rqst_status, svc_send,
+ 		{ (1UL << XPT_CACHE_AUTH),	"XPT_CACHE_AUTH"},	\
+ 		{ (1UL << XPT_LOCAL),		"XPT_LOCAL"})
  
- /*
-+ * Mode for mapping cpus to pools.
-+ */
-+enum {
-+	SVC_POOL_AUTO = -1,	/* choose one of the others */
-+	SVC_POOL_GLOBAL,	/* no mapping, just a single global pool
-+				 * (legacy & UP mode) */
-+	SVC_POOL_PERCPU,	/* one pool per cpu */
-+	SVC_POOL_PERNODE	/* one pool per numa node */
-+};
+-TRACE_EVENT(svc_xprt_do_enqueue,
+-	TP_PROTO(struct svc_xprt *xprt, struct svc_rqst *rqst),
++/* events associated with both a rqst and a xprt */
++DECLARE_EVENT_CLASS(svc_xprt_rqst_event,
++	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
+ 
+-	TP_ARGS(xprt, rqst),
++	TP_ARGS(rqst, xprt),
+ 
+ 	TP_STRUCT__entry(
+-		__field(struct svc_xprt *, xprt)
+ 		__field(struct svc_rqst *, rqst)
++		__field(struct svc_xprt *, xprt)
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->xprt = xprt;
+ 		__entry->rqst = rqst;
++		__entry->xprt = xprt;
+ 	),
+ 
+-	TP_printk("xprt=0x%p addr=%pIScp pid=%d flags=%s", __entry->xprt,
+-		(struct sockaddr *)&__entry->xprt->xpt_remote,
+-		__entry->rqst ? __entry->rqst->rq_task->pid : 0,
++	TP_printk("rqst=0x%p xprt=0x%p addr=%pIScp flags=%s", __entry->rqst,
++		__entry->xprt, (struct sockaddr *)&__entry->xprt->xpt_remote,
+ 		show_svc_xprt_flags(__entry->xprt->xpt_flags))
+ );
+ 
+-TRACE_EVENT(svc_xprt_dequeue,
++DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_enqueued,
++	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
++	TP_ARGS(rqst, xprt));
 +
-+struct svc_pool_map {
-+	int count;			/* How many svc_servs use us */
-+	int mode;			/* Note: int not enum to avoid
-+					 * warnings about "enumeration value
-+					 * not handled in switch" */
-+	unsigned int npools;
-+	unsigned int *pool_to;		/* maps pool id to cpu or node */
-+	unsigned int *to_pool;		/* maps cpu or node to pool id */
-+};
++DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_active,
++	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
++	TP_ARGS(rqst, xprt));
 +
-+extern struct svc_pool_map svc_pool_map;
++DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_received,
++	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
++	TP_ARGS(rqst, xprt));
 +
-+/*
-  * Function prototypes.
-  */
- int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
-@@ -438,6 +461,8 @@ struct svc_serv *svc_create(struct svc_program *, unsigned int,
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
- 					struct svc_pool *pool, int node);
- void		   svc_exit_thread(struct svc_rqst *);
-+unsigned int	   svc_pool_map_get(void);
-+void		   svc_pool_map_put(void);
- struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
- 			struct svc_serv_ops *);
- int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 9b4b4d8d109a..04c083a53121 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -36,34 +36,17 @@ static void svc_unregister(const struct svc_serv *serv, struct net *net);
++DECLARE_EVENT_CLASS(svc_xprt_event,
+ 	TP_PROTO(struct svc_xprt *xprt),
  
- #define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function)
+ 	TP_ARGS(xprt),
+@@ -539,6 +551,12 @@ TRACE_EVENT(svc_xprt_dequeue,
+ 		show_svc_xprt_flags(__entry->flags))
+ );
  
--/*
-- * Mode for mapping cpus to pools.
-- */
--enum {
--	SVC_POOL_AUTO = -1,	/* choose one of the others */
--	SVC_POOL_GLOBAL,	/* no mapping, just a single global pool
--				 * (legacy & UP mode) */
--	SVC_POOL_PERCPU,	/* one pool per cpu */
--	SVC_POOL_PERNODE	/* one pool per numa node */
--};
- #define SVC_POOL_DEFAULT	SVC_POOL_GLOBAL
- 
- /*
-  * Structure for mapping cpus to pools and vice versa.
-  * Setup once during sunrpc initialisation.
-  */
--static struct svc_pool_map {
--	int count;			/* How many svc_servs use us */
--	int mode;			/* Note: int not enum to avoid
--					 * warnings about "enumeration value
--					 * not handled in switch" */
--	unsigned int npools;
--	unsigned int *pool_to;		/* maps pool id to cpu or node */
--	unsigned int *to_pool;		/* maps cpu or node to pool id */
--} svc_pool_map = {
--	.count = 0,
-+struct svc_pool_map svc_pool_map = {
- 	.mode = SVC_POOL_DEFAULT
- };
-+EXPORT_SYMBOL_GPL(svc_pool_map);
++DEFINE_EVENT(svc_xprt_event, svc_xprt_enqueue,
++	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
 +
- static DEFINE_MUTEX(svc_pool_map_mutex);/* protects svc_pool_map.count only */
++DEFINE_EVENT(svc_xprt_event, svc_xprt_dequeue,
++	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++
+ TRACE_EVENT(svc_wake_up,
+ 	TP_PROTO(int pid),
  
- static int
-@@ -236,7 +219,7 @@ svc_pool_map_init_pernode(struct svc_pool_map *m)
-  * vice versa).  Initialise the map if we're the first user.
-  * Returns the number of pools.
-  */
--static unsigned int
-+unsigned int
- svc_pool_map_get(void)
- {
- 	struct svc_pool_map *m = &svc_pool_map;
-@@ -271,7 +254,7 @@ svc_pool_map_get(void)
- 	mutex_unlock(&svc_pool_map_mutex);
- 	return m->npools;
+diff --git a/net/sunrpc/svc_wq.c b/net/sunrpc/svc_wq.c
+index 1ca26d51b8ec..779eb51e4bbb 100644
+--- a/net/sunrpc/svc_wq.c
++++ b/net/sunrpc/svc_wq.c
+@@ -257,6 +257,8 @@ svc_wq_enqueue_xprt(struct svc_xprt *xprt)
+ 	struct svc_serv *serv = xprt->xpt_server;
+ 	struct svc_rqst *rqstp;
+ 
++	trace_svc_xprt_enqueue(xprt);
++
+ 	if (!svc_xprt_has_something_to_do(xprt))
+ 		return;
+ 
+@@ -290,9 +292,11 @@ out:
+ 	rqstp = find_svc_rqst(serv);
+ 	if (!rqstp) {
+ 		queue_work(serv->sv_wq, &xprt->xpt_work);
++		trace_svc_xprt_enqueued(NULL, xprt);
+ 		return;
+ 	}
+ 	rqstp->rq_xprt = xprt;
+ 	queue_work(serv->sv_wq, &rqstp->rq_work);
++	trace_svc_xprt_enqueued(rqstp, xprt);
  }
--
-+EXPORT_SYMBOL_GPL(svc_pool_map_get);
- 
- /*
-  * Drop a reference to the global map of cpus to pools.
-@@ -280,7 +263,7 @@ svc_pool_map_get(void)
-  * mode using the pool_mode module option without
-  * rebooting or re-loading sunrpc.ko.
-  */
--static void
-+void
- svc_pool_map_put(void)
- {
- 	struct svc_pool_map *m = &svc_pool_map;
-@@ -297,7 +280,7 @@ svc_pool_map_put(void)
- 
- 	mutex_unlock(&svc_pool_map_mutex);
+ EXPORT_SYMBOL_GPL(svc_wq_enqueue_xprt);
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 17398eb9f38f..c759f04c9ee9 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -242,6 +242,7 @@ void svc_add_new_perm_xprt(struct svc_serv *serv, struct svc_xprt *new)
+ 	spin_lock_bh(&serv->sv_lock);
+ 	list_add(&new->xpt_list, &serv->sv_permsocks);
+ 	spin_unlock_bh(&serv->sv_lock);
++	trace_svc_xprt_received(NULL, new);
+ 	svc_xprt_received(new);
  }
--
-+EXPORT_SYMBOL_GPL(svc_pool_map_put);
  
- static int svc_pool_map_get_node(unsigned int pidx)
- {
+@@ -329,6 +330,8 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
+ 	int cpu;
+ 	bool queued = false;
+ 
++	trace_svc_xprt_enqueue(xprt);
++
+ 	if (!svc_xprt_has_something_to_do(xprt))
+ 		goto out;
+ 
+@@ -402,7 +405,7 @@ redo_search:
+ 	rqstp = NULL;
+ 	put_cpu();
+ out:
+-	trace_svc_xprt_do_enqueue(xprt, rqstp);
++	trace_svc_xprt_enqueued(rqstp, xprt);
+ }
+ EXPORT_SYMBOL_GPL(svc_xprt_do_enqueue);
+ 
+@@ -738,6 +741,7 @@ static void svc_add_new_temp_xprt(struct svc_serv *serv, struct svc_xprt *newxpt
+ 			  jiffies + svc_conn_age_period * HZ);
+ 	}
+ 	spin_unlock_bh(&serv->sv_lock);
++	trace_svc_xprt_received(NULL, newxpt);
+ 	svc_xprt_received(newxpt);
+ }
+ 
+@@ -746,6 +750,8 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
+ 	struct svc_serv *serv = rqstp->rq_server;
+ 	int len = 0;
+ 
++	trace_svc_xprt_active(rqstp, xprt);
++
+ 	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
+ 		dprintk("svc_recv: found XPT_CLOSE\n");
+ 		svc_delete_xprt(xprt);
+@@ -780,6 +786,7 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
+ 		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
+ 	}
+ 	/* clear XPT_BUSY: */
++	trace_svc_xprt_received(rqstp, xprt);
+ 	svc_xprt_received(xprt);
+ out:
+ 	trace_svc_handle_xprt(xprt, len);
 -- 
 2.1.0
 
