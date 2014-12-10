@@ -1,107 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346AbaLJN2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:28:48 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:59655 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850AbaLJN2q (ORCPT
+	id S1756484AbaLJNbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:31:40 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:43517 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928AbaLJNbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 08:28:46 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID sBADShSV021181, This message is accepted by code: ctloc85258
-From: Chunhao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chunhao Lin <hau@realtek.com>
-Subject: [PATCH net-next v2] r8169:update rtl8168g pcie ephy parameter
-Date: Wed, 10 Dec 2014 21:28:38 +0800
-Message-ID: <1418218118-15018-1-git-send-email-hau@realtek.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 10 Dec 2014 08:31:38 -0500
+Message-ID: <54884B33.4090709@gmail.com>
+Date: Wed, 10 Dec 2014 22:31:31 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+To: ejt@redhat.com
+CC: dm-devel@redhat.com, gregkh@linuxfoundation.org, snitzer@redhat.com,
+        agk@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
+References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com> <5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141210100033.GA21108@debian> <548827BD.3050803@gmail.com> <20141210123349.GC21108@debian> <548843A0.6040906@gmail.com> <20141210131325.GD21108@debian>
+In-Reply-To: <20141210131325.GD21108@debian>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ephy parameter to rtl8168g.
-Also change the common function of rtl8168g from "rtl_hw_start_8168g_1" to
- "rtl_hw_start_8168g". And function "rtl_hw_start_8168g_1" is used for
-setting rtl8168g hardware parameters.
+Joe,
 
-Following is the explanation of what hardware parameter change for.
-rtl8168g may erroneous judge the PCIe signal quality and show the error bit
-on PCI configuration space when in PCIe low power mode.
-The following ephy parameters are for above issue.
-{ 0x00, 0x0000,	0x0008 }
-{ 0x0c, 0x37d0,	0x0820 }
-{ 0x1e, 0x0000,	0x0001 }
+> So you copy the bio payload to a different block of ram and then
+> complete the bio?  Or does the rambuf refer to the bio payload
+> directly?
+Good question.
+The answer is, copy the data (got by bio_data(bio)) to rambuf once
+and ack if it's not barrier things.
+It would be nice if data in rambuf points to bio payload but it now copies
+because bio payload can be reused after completion. Am I right?
+Is there a way of eliminate memory copying?
+ 
+> I generally find it quicker to investigate problems on the machine
+> that are actually exhibiting the problem ;) Seriously though, you're
+> asking us to send this upstream; it needs to work on consumer level
+> hardware.
+OK, I see. I will continue evaluation on my machine too.
 
-rtl8168g may return to PCIe L0 from PCIe L0s low power mode too slow.
-The following ephy parameter is for above issue.
-{ 0x19, 0x8000,	0x0000 }
+> I've got a big machine with Fusion IO storage that I can run the same
+> tests on later.
+What is the limit of random write performance is one of my concerns.
+I guess it can be over 1GB/sec.
 
-Signed-off-by: Chunhao Lin <hau@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
+- Akira
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b9c2f33..b77efcb 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5919,7 +5919,7 @@ static void rtl_hw_start_8411(struct rtl8169_private *tp)
- 	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000, ERIAR_EXGMAC);
- }
- 
--static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
-+static void rtl_hw_start_8168g(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
- 	struct pci_dev *pdev = tp->pci_dev;
-@@ -5954,6 +5954,24 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 	rtl_pcie_state_l2l3_enable(tp, false);
- }
- 
-+static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168g_1[] = {
-+		{ 0x00, 0x0000,	0x0008 },
-+		{ 0x0c, 0x37d0,	0x0820 },
-+		{ 0x1e, 0x0000,	0x0001 },
-+		{ 0x19, 0x8000,	0x0000 }
-+	};
-+
-+	rtl_hw_start_8168g(tp);
-+
-+	/* disable aspm and clock request before access ephy */
-+	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
-+	rtl_ephy_init(tp, e_info_8168g_1, ARRAY_SIZE(e_info_8168g_1));
-+}
-+
- static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -5964,7 +5982,7 @@ static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
- 		{ 0x1e, 0xffff,	0x20eb }
- 	};
- 
--	rtl_hw_start_8168g_1(tp);
-+	rtl_hw_start_8168g(tp);
- 
- 	/* disable aspm and clock request before access ephy */
- 	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
-@@ -5983,7 +6001,7 @@ static void rtl_hw_start_8411_2(struct rtl8169_private *tp)
- 		{ 0x1e, 0x0000,	0x2000 }
- 	};
- 
--	rtl_hw_start_8168g_1(tp);
-+	rtl_hw_start_8168g(tp);
- 
- 	/* disable aspm and clock request before access ephy */
- 	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
--- 
-1.9.1
+On 12/10/14 10:13 PM, Joe Thornber wrote:
+> On Wed, Dec 10, 2014 at 09:59:12PM +0900, Akira Hayakawa wrote:
+>> Joe,
+>>
+>> I appreciate your continuous work.
+>>
+>> Is that read or write?
+>> The difference between Type 0 and 1 should only show up in write path.
+>> So is it write test?
+> 
+> Yes, writing across the whole device using 'dd'.
+> 
+> These are the tests:
+> 
+>   dmtest list --suite writeboost -n /wipe_device/
+> 
+>> And what is the unit of each result?
+> 
+> seconds.
+> 
+>>
+>>> So maybe it's just volume of IO that's causing the problem?  What's
+>>> the difference between Type 0 and Type 1?  In the code I notice you
+>>> have 'rambuf' structures, are you caching IO in memory?
+>> "rambuf" is a temporary space that every write data comes in.
+>> 127*4KB data are once stored there and 4KB metadata section are added
+>> then it becomes a log and flushed to the cache device sequentially (512KB each).
+> 
+> So you copy the bio payload to a different block of ram and then
+> complete the bio?  Or does the rambuf refer to the bio payload
+> directly?
+> 
+>> By the way,
+>> I think more clearer discussion can be done if tests are done on physical machines
+>> to isolate things relevant to VM. I will also add these tests to dmts later and
+>> run on my machine.
+>> But, it will be much better if we have good server with RAID-ed backing store
+>> and the newest SSD (How would it be if it's PCI-e SSD)... 
+> 
+> I generally find it quicker to investigate problems on the machine
+> that are actually exhibiting the problem ;) Seriously though, you're
+> asking us to send this upstream; it needs to work on consumer level
+> hardware.
+> 
+> I've got a big machine with Fusion IO storage that I can run the same
+> tests on later.
+> 
+> - Joe
+> 
 
