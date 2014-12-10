@@ -1,39 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423AbaLJPPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:15:34 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:34039 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757739AbaLJPPa (ORCPT
+	id S1757796AbaLJPRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:17:13 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:45398 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341AbaLJPRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:15:30 -0500
+	Wed, 10 Dec 2014 10:17:10 -0500
+Date: Wed, 10 Dec 2014 15:16:59 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sameo@linux.intel.com, lee.jone@linaro.org,
+        lgirdwood@gmail.com, broonie@kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com
+Subject: Re: [PATCH v8 1/4] mfd: rt5033: Add Richtek RT5033 driver core.
+Message-ID: <20141210151659.GE23481@x1>
+References: <1418126634-4781-1-git-send-email-beomho.seo@samsung.com>
+ <1418126634-4781-2-git-send-email-beomho.seo@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <f86daba7727c4537947191ba871f4606@BY2FFO11FD006.protection.gbl>
-References: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
- <1418217710-11987-3-git-send-email-ricardo.ribalda@gmail.com> <f86daba7727c4537947191ba871f4606@BY2FFO11FD006.protection.gbl>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 10 Dec 2014 16:15:07 +0100
-Message-ID: <CAPybu_0CTY1TthEsv_-WY_8yuBTaFCu3-a0Q8kY4EUk-RCpPng@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] gpio/xilinx: Convert the driver to platform device interface
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418126634-4781-2-git-send-email-beomho.seo@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agree on all :)
+On Tue, 09 Dec 2014, Beomho Seo wrote:
 
-Regarding the kernel-doc patch I rather add it after the other changes.
+> This patch adds a new driver for Richtek RT5033 driver.
+> RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+> flash LED current source, LDO and synchronous Buck converter. It is interfaced
+> to host controller using I2C interface.
+> 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jone@linaro.org>
+> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+> Changes in v8
+> - Add description of hardware.
+> - Move structure.
+> 
+> Changes in v7
+> - Use small description.
+> - Change some names for a variable.
+> - Revise of_device_id struct style.
+> 
+> Changes in v6
+> - Fix white space issue in mfd cell struct.
+> 
+> Changes in v5
+> - Change possible built as a module.
+> - Revise rt5033_dev mfd cell entry.
+> - Fix incorrect typo.
+> - Add module alias.
+> 
+> Changes in v4
+> - none.
+> 
+> Changes in v3
+> - Correct sentence errors.
+> - Add author information the top of each drivers.
+> - Remove unnecessary pre-initialise, struct member(rt5033->i2c) and blink.
+> - Change some return check.
+> - Use bool and of_match_ptr().
+> 
+> Changes in v2
+> - Remove volatile_reg callback. Because this driver not in use regmap cache.
+> - Revmoe unnecessary subnode of_compatible.
+> - Add define for set_high impedance mode of charger.
+> ---
+>  drivers/mfd/Kconfig                |   12 ++
+>  drivers/mfd/Makefile               |    1 +
+>  drivers/mfd/rt5033.c               |  142 ++++++++++++++++++++
+>  include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rt5033.h         |   62 +++++++++
+>  5 files changed, 477 insertions(+)
+>  create mode 100644 drivers/mfd/rt5033.c
+>  create mode 100644 include/linux/mfd/rt5033-private.h
+>  create mode 100644 include/linux/mfd/rt5033.h
 
+Applied for v3.20, thanks.
 
-Will resend in a second, tell me if you want your reviewed-by or
-ack-by for any  of the 3 patches
-
-Thanks!
 -- 
-Ricardo Ribalda
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
